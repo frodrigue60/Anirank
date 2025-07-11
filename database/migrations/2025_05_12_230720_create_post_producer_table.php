@@ -16,7 +16,7 @@ return new class extends Migration
         Schema::create('post_producer', function (Blueprint $table) {
             $table->id();
             $table->foreignId('post_id')->constrained('posts')->onDelete('cascade');
-            $table->foreignId('producer_id')->constrained('producers')->onDelete('cascade');
+            $table->foreignId('studio_id')->constrained('studios')->onDelete('cascade');
             $table->timestamps();
         });
     }

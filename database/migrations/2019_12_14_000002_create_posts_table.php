@@ -24,9 +24,9 @@ return new class extends Migration
             $table->string('thumbnail_src')->nullable();
             $table->string('banner')->nullable();
             $table->string('banner_src')->nullable();
-            $table->foreignId('year_id')->nullable()->constrained('years')->onDelete(null);
-            $table->foreignId('season_id')->nullable()->constrained('seasons')->onDelete(null);
-            $table->foreignId('format_id')->nullable()->constrained('formats')->onDelete(null);
+            $table->foreignId('year_id')->nullable()->constrained('years')->onDelete('set null');
+            $table->foreignId('season_id')->nullable()->constrained('seasons')->onDelete('set null');
+            $table->foreignId('format_id')->nullable()->constrained('formats')->onDelete('set null');
             $table->timestamps();
         });
     }

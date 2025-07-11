@@ -350,7 +350,7 @@ class PostController extends Controller
         $json = json_decode($body);
 
         $data[] = $json->data->Media;
-        dd($data);
+        //dd($data);
         $this->generateMassive($data);
         $success = 'Single post created successfully';
         return redirect(route('admin.posts.index'))->with('success', $success);

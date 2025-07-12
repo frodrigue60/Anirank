@@ -2,7 +2,7 @@
 @section('meta')
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="{{ url()->current() }}" />
-    @if (isset($currentSeason->name))
+    @if (isset($currentSeason->name) && isset($currentYear->name))
         <meta name="keywords"
             content="ranking, top, anime openings {{ $currentSeason->name }}, openings anime {{ $currentSeason->name }}, anime endings {{ $currentSeason->name }}, endings anime {{ $currentSeason->name }}, of {{ $currentSeason->name }}">
         @if (Request::is('openings'))
@@ -50,7 +50,12 @@
 @section('content')
     <div class="container mb-3 ">
         <div class="d-flex justify-content-center align-items-center">
-            <h2 class="p-0 m-0">{{ $currentSeason->name }} {{ $currentYear->name }}</h2>
+            @if (isset($currentSeason) && isset($currentYear))
+                <h2 class="p-0 m-0">{{ $currentSeason->name }} {{ $currentYear->name }}</h2>
+            @else
+                <h2 class="p-0 m-0">Season: N/A Year: N/A</h2>
+            @endif
+
         </div>
         <div>
             <div class="mb-3 d-flex justify-content-between align-items-center">
@@ -71,5 +76,5 @@
 @endsection
 
 @section('script')
-     @vite(['resources/js/seasonal.js'])
+    @vite(['resources/js/seasonal.js'])
 @endsection

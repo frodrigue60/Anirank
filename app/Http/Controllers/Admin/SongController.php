@@ -41,29 +41,44 @@ class SongController extends Controller
      */
     public function store(Request $request)
     {
+        $name_romaji = null;
+        $name_jp = null;
         $song = new Song();
-        $song->song_romaji = Str::of($request->song_romaji)->trim();
-        $song->song_jp = Str::of($request->song_jp)->trim();
+
+        if ($request->has('song_romaji')) {
+            list($name_romaji, $name_jp) = $this->parseName($request->song_romaji);
+
+            $song->song_romaji = $name_romaji;
+            $song->song_jp =$name_jp;
+        }
+        //$song->song_romaji = Str::of($request->song_romaji)->trim();
+        //$song->song_jp = Str::of($request->song_jp)->trim();
+
         $song->song_en = Str::of($request->song_en)->trim();
         $song->post_id =  $request->post_id;
         $song->season_id = $request->season_id;
         $song->year_id = $request->year_id;
         $song->type = $request->type;
 
-        $artistsNames = (explode(',', $request->artists));
+        $rawNamesList = (explode(',', $request->artists));
 
         $artistsIds = [];
 
-        foreach ($artistsNames as $name) {
-            $name = trim(preg_replace('/\s+/', ' ', $name));
+        foreach ($rawNamesList as $rawName) {
+            //Separate the name and name_jp using the parseName method, remove extra spaces
+            list($name, $name_jp) = $this->parseName($rawName);
 
-            if ($name != '') {
+            //dd($name, $name_jp);
+
+            if ($name != '' && $name != null) {
                 $artist = Artist::firstOrCreate(
                     [
+                        'name' =>  $name,
                         'slug' => Str::slug($name),
                     ],
                     [
                         'name' =>  $name,
+                        'name_jp' => $name_jp ? $name_jp : null
                     ]
                 );
                 $artistsIds[] = $artist->id;
@@ -91,6 +106,24 @@ class SongController extends Controller
             return redirect(route('admin.posts.index'))->with('error', 'error');
         }
     }
+
+
+    function parseName($rawName)
+    {
+        // Expresión regular para capturar el texto antes y dentro de los paréntesis
+        if (preg_match('/^(.*?)\s*\((.*?)\)$/u', trim($rawName), $matches)) {
+            $name = trim(preg_replace('/\s+/', ' ', $matches[1]));
+            $name_jp = trim(preg_replace('/\s+/', ' ', $matches[2]));
+        } else {
+            // Si no hay paréntesis, asumimos que solo hay nombre
+            $name = trim($rawName);
+            $name_jp = null;
+        }
+
+        return [$name, $name_jp];
+    }
+
+
 
     /**
      * Display the specified resource.
@@ -163,12 +196,12 @@ class SongController extends Controller
         }
 
         $latestVersion = Song::where('post_id', $song->post_id)
-                ->where('type', $request->type)
-                ->where('id', '!=', $song->id)
-                ->max('theme_num');
+            ->where('type', $request->type)
+            ->where('id', '!=', $song->id)
+            ->max('theme_num');
 
         if (($request->theme_num != null) && ($request->theme_num > $latestVersion)) {
-                $song->theme_num = $request->theme_num;
+            $song->theme_num = $request->theme_num;
         } else {
             $newVersion = $latestVersion !== null ? $latestVersion + 1 : 1;
             $song->theme_num = $newVersion;

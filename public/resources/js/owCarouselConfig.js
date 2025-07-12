@@ -4,7 +4,7 @@ $(".owl-carousel").owlCarousel({
     margin: 15,
     autoWidth: true,
     dots: false,
-    autoplay: false,
+    autoplay: true,
     autoplayTimeout: 3000,
     autoplayHoverPause: true,
     rewind: true,

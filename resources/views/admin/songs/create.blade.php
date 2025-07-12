@@ -29,7 +29,7 @@
                         </div>
                         <div class="mb-3">
                             <label for="songRomaji" class="form-label">Song name (romaji)</label>
-                            <input type="text" class="form-control" placeholder="Song Name Romaji" id="songRomaji"
+                            <input type="text" class="form-control" placeholder="Song Name Romaji + (Kanji)" id="songRomaji"
                                 name="song_romaji" value="{{ old('song_romaji') }}">
                         </div>
                         <div class="mb-3">
@@ -44,8 +44,8 @@
                         </div>
                         <div class="mb-3">
                             <label for="artists-input" class="form-label">Artists</label>
-                            <input type="text" class="form-control" placeholder="Artist 1, Artist 2, Artist 3..." id="artists-input"
-                                name="artists" value="{{ old('artists') }}">
+                            <input type="text" class="form-control" placeholder="Artist 1 + (Kanji), Artist 2  + (Kanji), Artist 3  + (Kanji)..." id="artists-input"
+                                name="artists" value="{{ old('artists') }}" required>
                         </div>
 
                         {{-- <div class="row">

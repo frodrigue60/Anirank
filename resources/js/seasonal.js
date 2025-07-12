@@ -25,13 +25,14 @@ async function fetchData(type) {
 
         const response = await API.get(API.SONGS.SEASONAL, headersData, params);
 
-        if (!response.html) {
-            throw new Error('html: Invalid data structure');
+        try {
+            validateResponse(response);
+            //console.log(response.songs);
+            renderData(response.html);
+            updateHeader(type);
+        } catch (error) {
+            console.error(error);
         }
-
-        renderData(response.html);
-
-        updateHeader(type);
 
     } catch (error) {
         error.message = `UserService: ${error.message}`;
@@ -58,3 +59,24 @@ toggleBtn.addEventListener('click', () => {
     currentType = currentType === 'OP' ? 'ED' : 'OP';
     fetchData(currentType);
 });
+
+
+function validateResponse({ songs, html }) {
+    if (!songs) {
+        showError('Songs data is null or undefined!', 'songs');
+    }else if ( songs.length === 0) {
+        showError('No songs avaible!', 'songs');
+    }
+    /* if (!html) {
+        showError('Invalid HTML data structure!', 'html');
+    } */
+}
+
+function showError(message, context) {
+    swal('Error!', message, 'error', {
+        timer: 2000,
+        buttons: false
+    });
+    throw new Error(`${context}: ${message}`);
+}
+

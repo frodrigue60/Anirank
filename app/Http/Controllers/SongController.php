@@ -180,6 +180,8 @@ class SongController extends Controller
         $currentSeason = Season::where('current', true)->first();
         $currentYear = Year::where('current', true)->first();
 
+        //dd($currentSeason, $currentYear);
+
         return view('public.seasonal', compact('currentSeason', 'currentYear'/* , 'openings', 'endings' */));
     }
 

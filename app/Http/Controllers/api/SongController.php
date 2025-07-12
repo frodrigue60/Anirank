@@ -325,32 +325,41 @@ class SongController extends Controller
         $currentSeason = Season::where('current', true)->first();
         $currentYear = Year::where('current', true)->first();
         $sort = 'title';
-
         //$user = Auth::check() ? Auth::User() : null;
+        if ($currentSeason && $currentYear) {
+            //$songs = $this->setScoreOnlyVariants($themes, $user);
 
-        $songs = Song::with(['post'])
-            /* SONG QUERY */
-            ->where('type', $type)
-            ->whereHas('post', function ($query) use ($currentSeason, $currentYear, $status) {
-                /* POST QUERY */
-                $query->where('status', $status)
-                    ->when($currentSeason, function ($query, $currentSeason) {
-                        $query->where('season_id', $currentSeason->id);
-                    })
-                    ->when($currentYear, function ($query, $currentYear) {
-                        $query->where('year_id', $currentYear->id);
-                    });
-            })
-            /* SONG VARIANT QUERY */
-            ->get();
+            $songs = Song::with(['post'])
+                /* SONG QUERY */
+                ->where('type', $type)
+                ->whereHas('post', function ($query) use ($currentSeason, $currentYear, $status) {
+                    /* POST QUERY */
+                    $query->where('status', $status)
+                        ->when($currentSeason, function ($query, $currentSeason) {
+                            $query->where('season_id', $currentSeason->id);
+                        })
+                        ->when($currentYear, function ($query, $currentYear) {
+                            $query->where('year_id', $currentYear->id);
+                        });
+                })
+                /* SONG VARIANT QUERY */
+                ->get();
 
-        //$songs = $this->setScoreOnlyVariants($themes, $user);
-        $songs = $this->sortSongs($sort, $songs);
 
-        return response()->json([
-            'songs' => $songs,
-            'html' => view('partials.songs.cards-v2', compact('songs'))->render()
-        ]);
+            $songs = $this->sortSongs($sort, $songs);
+
+            return response()->json([
+                'songs' => $songs,
+                'html' => view('partials.songs.cards-v2', compact('songs'))->render()
+            ]);
+        } else {
+            $songs = null;
+
+            return response()->json([
+                'songs' => $songs,
+                'html' => null
+            ]);
+        }
     }
 
     public function ranking(Request $request)
@@ -684,18 +693,18 @@ class SongController extends Controller
 
     public function comments($song_id)
     {
-        $comments = Comment::with('replies','user')
-        ->where('commentable_id', $song_id)
-        ->where('commentable_type', Song::class)
-        ->where('parent_id', null)
-        ->get()
-        ->sortByDesc('created_at');
+        $comments = Comment::with('replies', 'user')
+            ->where('commentable_id', $song_id)
+            ->where('commentable_type', Song::class)
+            ->where('parent_id', null)
+            ->get()
+            ->sortByDesc('created_at');
 
-        $comments = $this->paginate($comments,3)->withQueryString();
+        $comments = $this->paginate($comments, 3)->withQueryString();
 
         return response()->json([
             'comments' => $comments,
-            'html' => view('partials.songs.show.comments.comments',['comments' => $comments])->render()
+            'html' => view('partials.songs.show.comments.comments', ['comments' => $comments])->render()
         ]);
     }
 

@@ -28,9 +28,10 @@
                                 name="theme_num" value="{{ old('theme_num') }}">
                         </div>
                         <div class="mb-3">
-                            <label for="songRomaji" class="form-label">Song name (romaji)</label>
-                            <input type="text" class="form-control" placeholder="Song Name Romaji + (Kanji)" id="songRomaji"
+                            <label for="songRomaji" class="form-label">Song name romaji</label>
+                            <input type="text" class="form-control" placeholder="Song Name Romaji" id="songRomaji"
                                 name="song_romaji" value="{{ old('song_romaji') }}">
+                            <p class="text-muted"><small>Support song name romaji + (Kanji characters)</small></p>
                         </div>
                         <div class="mb-3">
                             <label for="songJp" class="form-label">Song name (JP)</label>
@@ -41,11 +42,13 @@
                             <label for="songEn" class="form-label">Song name (EN)</label>
                             <input type="text" class="form-control" placeholder="Song Name EN" id="songEn"
                                 name="song_en" value="{{ old('song_en') }}">
+                            <p class="text-muted"><small>Support song name english + (Kanji characters)</small></p>
                         </div>
                         <div class="mb-3">
                             <label for="artists-input" class="form-label">Artists</label>
-                            <input type="text" class="form-control" placeholder="Artist 1 + (Kanji), Artist 2  + (Kanji), Artist 3  + (Kanji)..." id="artists-input"
-                                name="artists" value="{{ old('artists') }}" required>
+                            <input type="text" class="form-control" placeholder="Artist 1, Artist 2, Artist 3 ..."
+                                id="artists-input" name="artists" value="{{ old('artists') }}" required>
+                            <p class="text-muted"><small>Support artists names + (Kanji characters), seperated by comma</small></p>
                         </div>
 
                         {{-- <div class="row">

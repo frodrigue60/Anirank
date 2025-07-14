@@ -977,8 +977,24 @@ class PostController extends Controller
         ];
         $artists = Artist::all();
 
+        $post = Post::with('songs')->find($post_id);
 
-        return view('admin.songs.create', compact('artists', 'types', 'post', 'seasons', 'years'));
+        $breadcrumb = Breadcrumb::generate([
+            [
+                'name' => 'Index',
+                'url' => route('admin.posts.index'),
+            ],
+            [
+                'name' => $post->title,
+                'url' => route('admin.posts.songs', $post->id),
+            ],
+            [
+                'name' => 'Add song',
+                'url' => '',
+            ],
+        ]);
+
+        return view('admin.songs.create', compact('artists', 'types', 'post', 'seasons', 'years', 'breadcrumb'));
     }
 
     public function songs($post_id)

@@ -45,16 +45,23 @@ class SongController extends Controller
         $name_jp = null;
         $song = new Song();
 
-        if ($request->has('song_romaji')) {
+        if ($request->song_romaji != null && $request->song_romaji != '') {
             list($name_romaji, $name_jp) = $this->parseName($request->song_romaji);
 
             $song->song_romaji = $name_romaji;
-            $song->song_jp =$name_jp;
+            $song->song_jp = $name_jp;
+        }
+
+        if ($request->song_en != null && $request->song_en != '') {
+            list($name_en, $name_jp) = $this->parseName($request->song_en);
+
+            $song->song_en = $name_en;
+            $song->song_jp = $name_jp;
         }
         //$song->song_romaji = Str::of($request->song_romaji)->trim();
         //$song->song_jp = Str::of($request->song_jp)->trim();
+        //$song->song_en = Str::of($request->song_en)->trim();
 
-        $song->song_en = Str::of($request->song_en)->trim();
         $song->post_id =  $request->post_id;
         $song->season_id = $request->season_id;
         $song->year_id = $request->year_id;
@@ -63,7 +70,9 @@ class SongController extends Controller
         $rawNamesList = (explode(',', $request->artists));
 
         $artistsIds = [];
+        //dd($song);
 
+        //artists save section
         foreach ($rawNamesList as $rawName) {
             //Separate the name and name_jp using the parseName method, remove extra spaces
             list($name, $name_jp) = $this->parseName($rawName);

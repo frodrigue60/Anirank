@@ -101,10 +101,10 @@ class Song extends Model
     {
         if ($this->song_romaji != null) {
             return $this->song_romaji;
-        } elseif ($this->song_jp != null) {
-            return $this->song_jp;
         } elseif ($this->song_en != null) {
             return $this->song_en;
+        } elseif ($this->song_jp != null) {
+            return $this->song_jp;
         } else {
             return 'n/a';
         }
@@ -125,7 +125,7 @@ class Song extends Model
     {
         // Cargar relaciones necesarias si no están ya cargadas
         if (!$this->relationLoaded('post') || !$this->post->relationLoaded('songs')) {
-            $this->load(['post','songVariants']);
+            $this->load(['post', 'songVariants']);
         }
 
         $smallestVariant = $this->post->songs->flatMap(function ($song) {

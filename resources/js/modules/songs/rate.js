@@ -68,6 +68,12 @@ async function rate(userScore) {
             ratingBtn.classList.add('btn-warning');
             scoreSpan.textContent = response.average;
             hideModal('modal-rating');
+
+
+            swal('Success', 'Thanks for rate this song!', 'success', {
+                buttons: false,
+                timer: 1500,
+            });
         }
 
     } catch (error) {

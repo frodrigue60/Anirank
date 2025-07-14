@@ -12,7 +12,7 @@ document.body.addEventListener('click', (event) => {
     }
 });
 
-document.body.addEventListener('submit', (event) => {
+/* document.body.addEventListener('submit', (event) => {
     event.preventDefault();
     formReply = event.target.closest('form.form-reply');
 
@@ -29,7 +29,28 @@ document.body.addEventListener('submit', (event) => {
         formReply.querySelector('textarea').value = '';
     }
 
+}); */
+document.body.addEventListener('submit', (event) => {
+    event.preventDefault();
+
+    const formReply = event.target.closest('form.form-reply');
+
+    if (!formReply) return; // Evita errores si no es un formulario de respuesta
+
+    const replyContent = formReply.querySelector('textarea[name=content]').value;
+    const parentId = formReply.dataset.parentCommentId;
+
+    if (replyContent.trim() !== '') {
+        replyComment(parentId, replyContent);
+    } else {
+        swal('Invalid reply', 'Reply content can not be null', 'error', {
+            buttons: false,
+            timer: 1500,
+        });
+        formReply.querySelector('textarea').value = '';
+    }
 });
+
 
 async function replyComment(parentId, replyContent) {
 
@@ -58,7 +79,6 @@ async function replyComment(parentId, replyContent) {
         throw error;
     } finally {
         toggleReplyForm(parentId);
-        formReply.querySelector('textarea').value = '';
     }
 }
 

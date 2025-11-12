@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  # Servicio PHP (Laravel + Composer)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rateable-app
+    volumes:
+      - ./:/var/www/html
+    environment:
+      - DB_HOST=mysql
+      - DB_DATABASE=rateable
+      - DB_USERNAME=laravel
+      - DB_PASSWORD=secret
+    networks:
+      - rateable-network
+    depends_on:
+      - mysql
+
+  # Servicio Nginx
+  webserver:
+    image: nginx:alpine
+    container_name: rateable-webserver
+    ports:
+      - "8080:80"
+    volumes:
+      - ./:/var/www/html
+      - ./docker/nginx/rateable.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - rateable-network
+    depends_on:
+      - app
+
+  # Servicio MySQL
+  mysql:
+    image: mysql:8.0
+    container_name: rateable-mysql
+    environment:
+      MYSQL_DATABASE: rateable
+      MYSQL_USER: laravel
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      - rateable-network
+
+  # Servicio opcional para manejar colas (Queue Worker)
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rateable-worker
+    volumes:
+      - ./:/var/www/html
+    command: bash -c "php artisan queue:work --sleep=3 --tries=3"
+    depends_on:
+      - mysql
+    networks:
+      - rateable-network
+
+volumes:
+  mysql_data:
+
+networks:
+  rateable-network:
+    driver: bridge

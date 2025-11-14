@@ -1,23 +1,6 @@
 {{-- resources/views/components/add-to-playlist.blade.php --}}
-{{-- <div id="addToPlaylistModal" class="modal" style="display: none;">
-    <div class="modal-content">
-        <span class="close">&times;</span>
-        <h3 class="modal-title">Add to playlist</h3>
-        <input type="hidden" id="currentPostId">
-        
-        <div class="playlist-list"  id="playlist-list">
-            
-        </div>
-        
-        <div class="modal-actions">
-            <button id="createNewPlaylistBtn" class="btn btn-sm btn-primary">New Playlist</button>
-            <button class="btn btn-sm btn-secondary close-modal">Close</button>
-        </div>
-    </div>
-</div> --}}
-
 <div class="modal fade" id="addToPlaylistModal" tabindex="-1" aria-labelledby="addToPlaylistModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-scrollable">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="addToPlaylistModalLabel">Add to playlist</h5>

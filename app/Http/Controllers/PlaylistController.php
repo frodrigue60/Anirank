@@ -21,12 +21,12 @@ class PlaylistController extends Controller
     public function store(Request $request) {
         $request->validate([
             'name' => 'required|string|max:255',
-            /* 'description' => 'nullable|string', */
+            'description' => 'nullable|string|max:255',
         ]);
 
         $playlist = new Playlist();
         $playlist->name = $request->input('name');
-        /* $playlist->description = $request->input('description'); */
+        $playlist->description = $request->input('description');
         $playlist->user_id = Auth::id();
         $playlist->save();
 
@@ -46,12 +46,12 @@ class PlaylistController extends Controller
     public function update(Request $request, Playlist $playlist) {
          $request->validate([
             'name' => 'required|string|max:255',
-            /* 'description' => 'nullable|string', */
+            'description' => 'nullable|string|max:255',
         ]);
 
         $playlist = new Playlist();
         $playlist->name = $request->input('name');
-        /* $playlist->description = $request->input('description'); */
+        $playlist->description = $request->input('description');
         $playlist->user_id = Auth::id();
         $playlist->save();
 

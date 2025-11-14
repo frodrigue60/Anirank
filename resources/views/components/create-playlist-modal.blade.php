@@ -9,11 +9,11 @@
                 <label for="playlistName">Nombre:</label>
                 <input type="text" id="playlistName" name="name" required>
             </div>
-            {{-- <div class="form-group">
+            <div class="form-group">
                 <label for="playlistDescription">Descripción:</label>
                 <textarea id="playlistDescription" name="description"></textarea>
-            </div> --}}
-            <button type="submit">Crear Playlist</button>
+            </div>
+            <button type="submit" class="btn btn-sm btn-primary">Crear Playlist</button>
         </form>
     </div>
 </div>

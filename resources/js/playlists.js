@@ -4,13 +4,11 @@ import { API, csrfToken, token } from '@/app.js';
 let headersData = null;
 let bodyData = null;
 const currentSong = document.querySelector('#add-to-playlist').dataset.songId;
-//console.log(currentSong);
 
 class PlaylistManager {
     constructor() {
         this.initModals();
         this.bindEvents();
-        //this.currentSong = null;
     }
 
     initModals() {
@@ -19,15 +17,12 @@ class PlaylistManager {
     }
 
     bindEvents() {
-        // Abrir modal de añadir a playlist
         document.querySelectorAll('#add-to-playlist').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                //this.currentSong = e.target.dataset.postId;
                 this.openAddToPlaylistModal();
             });
         });
 
-        // Añadir post a playlist existente
         document.addEventListener('click', (e) => {
             if (e.target.classList.contains('add-to-playlist-btn')) {
                 const playlistId = e.target.dataset.playlistId;
@@ -35,26 +30,22 @@ class PlaylistManager {
             }
         });
 
-        // Crear nueva playlist desde modal
         document.getElementById('createPlaylistForm')?.addEventListener('submit', (e) => {
             e.preventDefault();
             this.createPlaylist();
         });
 
-        // Botón para crear nueva playlist
         document.getElementById('createNewPlaylistBtn')?.addEventListener('click', () => {
             this.closeAddToPlaylistModal();
             this.openCreatePlaylistModal();
         });
 
-        // Cerrar modales
         document.querySelectorAll('.modal .close, .close-modal').forEach(closeBtn => {
             closeBtn.addEventListener('click', () => {
                 this.closeAllModals();
             });
         });
 
-        // Cerrar modal al hacer click fuera
         window.addEventListener('click', (e) => {
             if (e.target === this.createPlaylistModal) {
                 this.closeAllModals();
@@ -66,14 +57,10 @@ class PlaylistManager {
     }
 
     openAddToPlaylistModal() {
-        //document.getElementById('currentSong').value = this.currentSong;
         this.addToPlaylistModal.style.display = 'block';
-        //this.updatePlaylistButtonsState();
     }
 
     updatePlaylistButtonsState() {
-        // Aquí podrías hacer una petición para verificar el estado actual
-        // y actualizar los botones (añadir/remover)
     }
 
     openCreatePlaylistModal() {
@@ -83,12 +70,10 @@ class PlaylistManager {
     closeAllModals() {
         this.createPlaylistModal.style.display = 'none';
         this.addToPlaylistModal.style.display = 'none';
-        //this.currentSong = null;
     }
 
     closeAddToPlaylistModal() {
         this.addToPlaylistModal.style.display = 'none';
-        //this.currentSong = null;
     }
 
     closeCreatePlaylistModal() {
@@ -119,17 +104,15 @@ class PlaylistManager {
                 button.classList.add('btn-success');
                 this.showNotification(response.message, 'success');
 
-                // Cerrar modal después de un tiempo
                 setTimeout(() => {
                     this.closeAllModals();
                 }, 1000);
 
-                updateUI(currentSong, playlistId, response.data.in_playlist, response.data.action, button);
-                //getPlaylists();
+                let inPlaylist = response.data.in_playlist;
+                let action = response.data.action;
 
-
+                updateUI(playlistId, inPlaylist, action, button);
             } else {
-                //throw new Error(response.message || 'Error al añadir a la playlist');
                 throw new Error("No se pudo añadir a la playlist");
             }
         } catch (error) {
@@ -137,13 +120,11 @@ class PlaylistManager {
 
             button.textContent = 'Error';
             this.showNotification('error', 'error');
-            // Restaurar botón después de un tiempo
             setTimeout(() => {
                 this.closeAllModals();
                 button.textContent = 'Add';
                 button.disabled = false;
             }, 1000);
-            //getPlaylists();
         }
     }
 
@@ -156,28 +137,28 @@ class PlaylistManager {
             submitButton.textContent = 'Creando...';
             submitButton.disabled = true;
 
-            const formData = new FormData(form);
-
             headersData = {
                 'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json',
-                'Authorization': 'Bearer ' + token
+                'Authorization': 'Bearer ' + token,
+                'Accept': 'application/json, text/html;q=0.9',
+                'Content-Type': 'application/json',
             };
-            bodyData = formData;
+
+            const formData = new FormData(form);
+            const json = Object.fromEntries(formData.entries());
+            bodyData = JSON.stringify(json)
 
             const response = await API.post(API.PLAYLISTS.BASE, headersData, bodyData);
-
-            let data = response || {};
-            console.log(response);
 
             if (response.status === 201) {
                 this.showNotification('Playlist created', 'success');
                 form.reset();
-
-                this.closeCreatePlaylistModal();
-                getPlaylists();
+                submitButton.textContent = originalText;
+                submitButton.disabled = false;
+                this.closeAllModals();
+                console.log(response);
+                renderNewPlaylistElement(response.playlist, '#playlist-list');
                 this.openAddToPlaylistModal();
-                
 
             } else {
                 throw new Error(data.message || 'Error al crear playlist (front side)');
@@ -191,7 +172,6 @@ class PlaylistManager {
     }
 
     showNotification(message, type) {
-        // Puedes implementar un sistema de notificaciones más elegante
         const notification = document.createElement('div');
         notification.className = `notification ${type}`;
         notification.textContent = message;
@@ -215,31 +195,68 @@ class PlaylistManager {
 }
 
 
-// Función simple para generar un elemento de playlist
-function createPlaylistElement(playlist, currentSong) {
-    const isInPlaylist = currentSong &&
-        playlist.posts &&
-        playlist.posts.some(post => post.id == currentSong);
+
+function createPlaylistElement(playlist) {
+    const isInPlaylist = playlist.is_in_playlist || false;
+
+    const buttonClass = isInPlaylist ? 'btn-success' : 'btn-primary';
+    const buttonText = isInPlaylist ? 'Added' : 'Add';
 
     return `
         <div class="playlist-item" data-playlist-id="${playlist.id}">
             <div class="playlist-info">
-                <strong>${playlist.name}</strong>
-                <small>${playlist.posts_count || 0} posts</small>
+                <strong>${escapeHtml(playlist.name)}</strong>
+                <small id="counter-${playlist.id}">
+                    ${playlist.songs_count || 0} songs
+                </small>
             </div>
-            <button class="add-to-playlist-btn" 
+
+            <button class="btn btn-sm ${buttonClass} add-to-playlist-btn"
                     data-playlist-id="${playlist.id}"
-                    ${isInPlaylist ? 'style="background: #28a745;"' : ''}>
-                ${isInPlaylist ? '✓ En playlist' : 'Añadir'}
+                    data-song-id="${playlist.song_id || window.currentSongId}">
+                ${buttonText}
             </button>
         </div>
     `;
 }
 
-// Función para renderizar playlists rápidamente
+// Función segura para escapar HTML
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function renderNewPlaylistElement(playlist, containerSelector) {
+
+    const container = document.querySelector(containerSelector);
+    if (!container) return;
+    let btnClass = '';
+    let btnText = '';
+    if (playlist.isInPlaylist) {
+        btnClass = 'btn-success';
+        btnText = 'Added';
+    } else {
+        btnClass = 'btn-primary';
+        btnText = 'Add';
+    }
+    container.innerHTML += `
+        <div class="playlist-item" data-playlist-id="${playlist.id}">
+            <div class="playlist-info">
+                <strong>${playlist.name}</strong>
+                <small>${playlist.songs_count || 0} posts</small>
+            </div>
+            <button class="btn btn-sm  ${btnClass} add-to-playlist-btn" 
+                    data-playlist-id="${playlist.id}">
+                ${btnText}
+            </button>
+        </div>
+    `;
+}
+
+
 function renderPlaylistsQuick(playlists, containerSelector, currentSong) {
     const container = document.querySelector(containerSelector);
-    container.innerHTML = '';
     if (!container) return;
 
     if (playlists.length === 0) {
@@ -252,16 +269,7 @@ function renderPlaylistsQuick(playlists, containerSelector, currentSong) {
     ).join('');
 }
 
-function renderSsrPlaylists(html, containerSelector) {
-    const container = document.querySelector(containerSelector);
-    container.innerHTML = '';
-    container.innerHTML = html;
-    if (!container) return;
-}
-
-// Función para actualizar la UI
-const updateUI = (currentSong, playlistId, inPlaylist, action, button) => {
-    // Ejemplo: cambiar icono/botón según el estado
+const updateUI = (playlistId, inPlaylist, action, button) => {
 
     if (inPlaylist) {
         button.classList.remove('btn-primary');
@@ -286,16 +294,15 @@ const updateUI = (currentSong, playlistId, inPlaylist, action, button) => {
         }
         counter.textContent = count;
     }
-    
+
 };
 
-
 async function getPlaylists() {
-
     headersData = {
         'X-CSRF-TOKEN': csrfToken,
         'Accept': 'application/json',
-        'Authorization': 'Bearer ' + token
+        'Authorization': 'Bearer ' + token,
+        'Accept': 'application/json, text/html;q=0.9',
     };
 
     let params = {
@@ -304,18 +311,13 @@ async function getPlaylists() {
 
     const response = await API.get(API.PLAYLISTS.BASE, headersData, params);
 
-    //let data = response || {};
-    console.log(response);
-
     if (response.playlists.length === 0) {
         return;
     }
 
-    //renderPlaylistsQuick(response.playlists, '#playlist-list', currentSong);
-    renderSsrPlaylists(response.html, '#playlist-list');
+    renderPlaylistsQuick(response.playlists, '#playlist-list', currentSong);
 }
 
-// Inicializar cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', () => {
     new PlaylistManager();
     getPlaylists();

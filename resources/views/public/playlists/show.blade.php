@@ -8,7 +8,9 @@
         <p>{{ $playlist->description != null ? $playlist->description : 'description' }}</p>
 
         @foreach ($playlist->songs as $item)
-            <a href="{{ $item->url }}">{{ $item->name }}</a>
+            <p>
+                <a href="{{ $item->url }}">{{ $item->name }}</a>
+            </p>
         @endforeach
     </div>
 @endsection

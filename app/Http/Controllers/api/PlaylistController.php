@@ -15,21 +15,7 @@ class PlaylistController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-
-    /* public function index()
-    {
-        $playlists = Auth::user()->playlists()->withCount('songs')->get();
-
-        $html = view('components.items-playlist', compact('playlists'))->render();
-
-        return response()->json([
-            'html' => $html,
-            'playlists' => $playlists,
-            'message' => 'Playlists retrieved successfully',
-            'status' => 200
-        ], 200);
-    } */
-    public function index(Request $request)
+    /* public function index(Request $request)
     {
         //return response()->json(['song_id' => $request->all()], 200);
         // Obligatorio: el ID de la canción que el usuario quiere añadir/quitar
@@ -54,18 +40,45 @@ class PlaylistController extends Controller
             ->pluck('playlist_id')
             ->toArray();
 
-        // Renderizamos el componente Blade
-        $html = view('components.items-playlist', [
-            'playlists'        => $playlists,
-            'playlistsWithSong' => $playlistsWithSong,  // ← clave para saber si ya está añadida
-            'songId'           => $songId,             // opcional, útil en JS
-        ])->render();
-
         return response()->json([
-            'html'       => $html,
             'playlists'  => $playlists,
             'message'    => 'Playlists retrieved successfully',
             'status'     => 200
+        ], 200);
+    } */
+
+    public function index(Request $request)
+    {
+        $songId = $request->query('song_id') ?? $request->input('song_id');
+
+        if (!$songId) {
+            return response()->json(['error' => 'song_id is required'], 400);
+        }
+
+        $user = auth()->user();
+
+        $playlists = $user->playlists()
+            ->withCount('songs')
+            ->get();
+
+        // IDs de playlists que contienen la canción
+        $playlistsWithSong = DB::table('playlist_song')
+            ->where('song_id', $songId)
+            ->whereIn('playlist_id', $playlists->pluck('id'))
+            ->pluck('playlist_id')
+            ->toArray();
+
+        // Añadir campo booleano a cada playlist
+        $playlists = $playlists->map(function ($playlist) use ($playlistsWithSong) {
+            $playlist->is_in_playlist = in_array($playlist->id, $playlistsWithSong);
+            return $playlist;
+        });
+
+        return response()->json([
+            'playlists' => $playlists,
+            'song_id'   => $songId,
+            'message'   => 'Playlists retrieved successfully',
+            'status'    => 200
         ], 200);
     }
 
@@ -99,7 +112,7 @@ class PlaylistController extends Controller
         ]);
 
         return response()->json([
-            'playlists' => $playlist,
+            'playlist' => $playlist,
             'message' => 'Playlist created successfully',
             'status' => 201
         ], 201);

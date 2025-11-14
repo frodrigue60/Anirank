@@ -6,20 +6,7 @@
         <input type="hidden" id="currentPostId">
         
         <div class="playlist-list"  id="playlist-list">
-            {{-- @foreach(auth()->user()->playlists as $playlist)
-                <div class="playlist-item" data-playlist-id="{{ $playlist->id }}">
-                    <div class="playlist-info">
-                        <strong>{{ $playlist->name }}</strong>
-                        <small>{{ $playlist->posts_count ?? 0 }} posts</small>
-                    </div>
-                    <button class="add-to-playlist-btn" 
-                            data-playlist-id="{{ $playlist->id }}">
-                        {{ $playlist->posts->contains($post->id ?? 0) ? '✓ En playlist' : 'Añadir' }}
-                    </button>
-                </div>
-            @endforeach --}}
             
-           
         </div>
         
         <div class="modal-actions">

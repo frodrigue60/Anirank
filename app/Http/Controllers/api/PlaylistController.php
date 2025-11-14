@@ -102,12 +102,12 @@ class PlaylistController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            /*  'description' => 'nullable|string', */
+             'description' => 'nullable|string|max:255',
         ]);
 
         $playlist = Playlist::create([
             'name' => $request->name,
-            /*  'description' => $request->description, */
+             'description' => $request->description,
             'user_id' => Auth::id(),
         ]);
 

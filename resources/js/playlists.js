@@ -1,252 +1,216 @@
-// public/js/playlists.js
-import { API, csrfToken, token } from '@/app.js';
+import { API, csrfToken, token, bootstrap } from '@/app.js';
 
-let headersData = null;
-let bodyData = null;
 const currentSong = document.querySelector('#add-to-playlist').dataset.songId;
+let headersData = {};
+let bodyData = {};
 
 class PlaylistManager {
     constructor() {
+        this.cache = new Map(); // ← caché: songId → { playlists, timestamp }
+        this.currentSong = null;
+        this.addToPlaylistModal = null;
+        this.createPlaylistModal = null;
+        this.init();
+    }
+
+    init() {
+        this.currentSong = document.querySelector('#add-to-playlist')?.dataset.songId;
         this.initModals();
         this.bindEvents();
     }
 
     initModals() {
-        this.createPlaylistModal = document.getElementById('createPlaylistModal');
-        this.addToPlaylistModal = document.getElementById('addToPlaylistModal');
+        const addEl = document.getElementById('addToPlaylistModal');
+        const createEl = document.getElementById('createPlaylistModal');
+        this.addToPlaylistModal = addEl ? new bootstrap.Modal(addEl) : null;
+        this.createPlaylistModal = createEl ? new bootstrap.Modal(createEl) : null;
     }
 
     bindEvents() {
+        // Abrir modal principal
         document.querySelectorAll('#add-to-playlist').forEach(btn => {
-            btn.addEventListener('click', (e) => {
+            btn.addEventListener('click', () => {
                 this.openAddToPlaylistModal();
             });
         });
 
-        document.addEventListener('click', (e) => {
-            if (e.target.classList.contains('add-to-playlist-btn')) {
+        // Añadir/quitar canción
+        document.addEventListener('click', e => {
+            if (e.target.matches('.add-to-playlist-btn')) {
                 const playlistId = e.target.dataset.playlistId;
                 this.addPostToPlaylist(playlistId, e.target);
             }
         });
 
-        document.getElementById('createPlaylistForm')?.addEventListener('submit', (e) => {
+        // Crear playlist
+        document.getElementById('createPlaylistForm')?.addEventListener('submit', e => {
             e.preventDefault();
             this.createPlaylist();
         });
 
+        // Botón "New Playlist"
         document.getElementById('createNewPlaylistBtn')?.addEventListener('click', () => {
-            this.closeAddToPlaylistModal();
-            this.openCreatePlaylistModal();
+            this.addToPlaylistModal?.hide();
+            this.createPlaylistModal?.show();
         });
+    }
 
-        document.querySelectorAll('.modal .close, .close-modal').forEach(closeBtn => {
-            closeBtn.addEventListener('click', () => {
-                this.closeAllModals();
+    async openAddToPlaylistModal() {
+        // ← Solo carga si NO está en caché o si es una canción diferente
+        if (!this.cache.has(this.currentSong)) {
+            await this.loadPlaylists();
+        }
+
+        renderPlaylistsQuick(this.cache.get(this.currentSong).playlists, '#playlist-list');
+        this.addToPlaylistModal?.show();
+    }
+
+    async loadPlaylists() {
+        try {
+            const response = await API.get(API.PLAYLISTS.BASE, {
+                'X-CSRF-TOKEN': csrfToken,
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json'
+            }, { song_id: this.currentSong });
+
+            this.cache.set(this.currentSong, {
+                playlists: response.playlists,
+                timestamp: Date.now()
             });
-        });
-
-        window.addEventListener('click', (e) => {
-            if (e.target === this.createPlaylistModal) {
-                this.closeAllModals();
-            }
-            if (e.target === this.addToPlaylistModal) {
-                this.closeAllModals();
-            }
-        });
-    }
-
-    openAddToPlaylistModal() {
-        this.addToPlaylistModal.style.display = 'block';
-    }
-
-    updatePlaylistButtonsState() {
-    }
-
-    openCreatePlaylistModal() {
-        this.createPlaylistModal.style.display = 'block';
-    }
-
-    closeAllModals() {
-        this.createPlaylistModal.style.display = 'none';
-        this.addToPlaylistModal.style.display = 'none';
-    }
-
-    closeAddToPlaylistModal() {
-        this.addToPlaylistModal.style.display = 'none';
-    }
-
-    closeCreatePlaylistModal() {
-        this.createPlaylistModal.style.display = 'none';
+        } catch (error) {
+            console.error('Error cargando playlists:', error);
+            this.showNotification('Error al cargar playlists', 'error');
+        }
     }
 
     async addPostToPlaylist(playlistId, button) {
+        const originalText = button.textContent;
+        button.textContent = 'Adding...';
+        button.disabled = true;
+
+        headersData = {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken,
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+        };
+        bodyData = JSON.stringify({ song_id: currentSong });
+        
         try {
-            const originalText = button.textContent;
-            button.textContent = 'Adding...';
-            button.disabled = true;
-
-            headersData = {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json, text/html;q=0.9',
-                'X-CSRF-TOKEN': csrfToken,
-                'Authorization': 'Bearer ' + token,
-            }
-            bodyData = JSON.stringify({
-                song_id: currentSong
-            });
-
             const response = await API.post(API.PLAYLISTS.TOGGLE_SONG(playlistId), headersData, bodyData);
-            console.log(response);
 
-            if (response.success === true) {
-                button.textContent = 'added';
-                button.classList.add('btn-success');
+            if (response.success) {
+                const { in_playlist, action } = response.data;
+                updateUI(playlistId, in_playlist, action, button);
+
+                // ← ACTUALIZAR CACHÉ
+                const cached = this.cache.get(this.currentSong);
+                if (cached) {
+                    const playlist = cached.playlists.find(p => p.id == playlistId);
+                    if (playlist) {
+                        playlist.is_in_playlist = in_playlist;
+                        playlist.songs_count += in_playlist ? 1 : -1;
+                    }
+                }
+
                 this.showNotification(response.message, 'success');
-
-                setTimeout(() => {
-                    this.closeAllModals();
-                }, 1000);
-
-                let inPlaylist = response.data.in_playlist;
-                let action = response.data.action;
-
-                updateUI(playlistId, inPlaylist, action, button);
+                setTimeout(() => this.addToPlaylistModal?.hide(), 800);
             } else {
-                throw new Error("No se pudo añadir a la playlist");
+                throw new Error(response.message);
             }
         } catch (error) {
-            console.log(error);
-
             button.textContent = 'Error';
-            this.showNotification('error', 'error');
+            this.showNotification('Error al modificar playlist', 'error');
             setTimeout(() => {
-                this.closeAllModals();
-                button.textContent = 'Add';
+                button.textContent = originalText;
                 button.disabled = false;
-            }, 1000);
+            }, 1500);
         }
     }
 
     async createPlaylist() {
         const form = document.getElementById('createPlaylistForm');
-        const submitButton = form.querySelector('button[type="submit"]');
-        const originalText = submitButton.textContent;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
 
         try {
-            submitButton.textContent = 'Creando...';
-            submitButton.disabled = true;
-
-            headersData = {
-                'X-CSRF-TOKEN': csrfToken,
-                'Authorization': 'Bearer ' + token,
-                'Accept': 'application/json, text/html;q=0.9',
-                'Content-Type': 'application/json',
-            };
+            submitBtn.textContent = 'Creando...';
+            submitBtn.disabled = true;
 
             const formData = new FormData(form);
-            const json = Object.fromEntries(formData.entries());
-            bodyData = JSON.stringify(json)
+            const data = Object.fromEntries(formData.entries());
+            data.song_id = currentSong; // Añadir canción automáticamente
+            
+            const response = await API.post(
+                API.PLAYLISTS.BASE,
+                {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json'
+                },
+                JSON.stringify(data)
+            );
 
-            const response = await API.post(API.PLAYLISTS.BASE, headersData, bodyData);
-
-            if (response.status === 201) {
-                this.showNotification('Playlist created', 'success');
+            if (response.status === 201 || response.playlist) {
                 form.reset();
-                submitButton.textContent = originalText;
-                submitButton.disabled = false;
-                this.closeAllModals();
-                console.log(response);
-                renderNewPlaylistElement(response.playlist, '#playlist-list');
-                this.openAddToPlaylistModal();
+                this.createPlaylistModal?.hide();
+                this.showNotification('Playlist creada', 'success');
 
+                // ← AÑADIR AL DOM (sin request)
+                renderNewPlaylistElement(response.playlist);
+
+                // ← ACTUALIZAR CACHÉ
+                const cached = this.cache.get(this.currentSong) || { playlists: [] };
+                cached.playlists.unshift({
+                    ...response.playlist,
+                    is_in_playlist: true,
+                    songs_count: (response.playlist.songs_count || 0) + 1
+                });
+                this.cache.set(this.currentSong, cached);
+
+                this.addToPlaylistModal?.show();
             } else {
-                throw new Error(data.message || 'Error al crear playlist (front side)');
+                throw new Error(response.message);
             }
         } catch (error) {
-            console.error('Error:', error);
+            console.error(error);
             this.showNotification('Error al crear playlist', 'error');
-            submitButton.textContent = originalText;
-            submitButton.disabled = false;
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
         }
     }
 
     showNotification(message, type) {
-        const notification = document.createElement('div');
-        notification.className = `notification ${type}`;
-        notification.textContent = message;
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 20px;
-            border-radius: 5px;
-            color: white;
-            z-index: 10000;
-            background: ${type === 'success' ? '#28a745' : '#dc3545'};
+        const alert = document.createElement('div');
+        alert.className = `alert alert-${type === 'success' ? 'success' : 'danger'} position-fixed`;
+        alert.style.cssText = 'top: 20px; right: 20px; z-index: 1055; min-width: 300px;';
+        alert.innerHTML = `
+            <div class="d-flex align-items-center">
+                <span>${message}</span>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+            </div>
         `;
-
-        document.body.appendChild(notification);
-
-        setTimeout(() => {
-            notification.remove();
-        }, 3000);
+        document.body.appendChild(alert);
+        setTimeout(() => alert.remove(), 3000);
     }
 }
 
-
-
+// === Plantilla de item ===
 function createPlaylistElement(playlist) {
     const isInPlaylist = playlist.is_in_playlist || false;
-
-    const buttonClass = isInPlaylist ? 'btn-success' : 'btn-primary';
-    const buttonText = isInPlaylist ? 'Added' : 'Add';
+    const btnClass = isInPlaylist ? 'btn-success' : 'btn-primary';
+    const btnText = isInPlaylist ? 'Added' : 'Add';
 
     return `
-        <div class="playlist-item" data-playlist-id="${playlist.id}">
+        <div class="d-flex justify-content-between align-items-center p-2 border-bottom playlist-item" data-playlist-id="${playlist.id}">
             <div class="playlist-info">
                 <strong>${escapeHtml(playlist.name)}</strong>
-                <small id="counter-${playlist.id}">
+                <small class="text-muted" id="counter-${playlist.id}">
                     ${playlist.songs_count || 0} songs
                 </small>
             </div>
-
-            <button class="btn btn-sm ${buttonClass} add-to-playlist-btn"
-                    data-playlist-id="${playlist.id}"
-                    data-song-id="${playlist.song_id || window.currentSongId}">
-                ${buttonText}
-            </button>
-        </div>
-    `;
-}
-
-// Función segura para escapar HTML
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-function renderNewPlaylistElement(playlist, containerSelector) {
-
-    const container = document.querySelector(containerSelector);
-    if (!container) return;
-    let btnClass = '';
-    let btnText = '';
-    if (playlist.isInPlaylist) {
-        btnClass = 'btn-success';
-        btnText = 'Added';
-    } else {
-        btnClass = 'btn-primary';
-        btnText = 'Add';
-    }
-    container.innerHTML += `
-        <div class="playlist-item" data-playlist-id="${playlist.id}">
-            <div class="playlist-info">
-                <strong>${playlist.name}</strong>
-                <small>${playlist.songs_count || 0} posts</small>
-            </div>
-            <button class="btn btn-sm  ${btnClass} add-to-playlist-btn" 
+            <button class="btn btn-sm ${btnClass} add-to-playlist-btn"
                     data-playlist-id="${playlist.id}">
                 ${btnText}
             </button>
@@ -254,71 +218,59 @@ function renderNewPlaylistElement(playlist, containerSelector) {
     `;
 }
 
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
 
-function renderPlaylistsQuick(playlists, containerSelector, currentSong) {
+// === Render nuevo elemento ===
+function renderNewPlaylistElement(playlist) {
+    const container = document.getElementById('playlist-list');
+    const noMsg = document.getElementById('no-playlists-msg');
+    if (!container) return;
+
+    if (noMsg) noMsg.style.display = 'none';
+
+    const html = createPlaylistElement({
+        ...playlist,
+        is_in_playlist: false // porque acabamos de añadir la canción
+    });
+
+    container.insertAdjacentHTML('afterend', html);
+}
+
+// === Renderizado rápido ===
+function renderPlaylistsQuick(playlists, containerSelector) {
     const container = document.querySelector(containerSelector);
+    const noMsg = document.getElementById('no-playlists-msg');
     if (!container) return;
 
     if (playlists.length === 0) {
-        container.innerHTML = '<p class="no-playlists">No tienes playlists creadas</p>';
+        container.innerHTML = '';
+        if (noMsg) noMsg.style.display = 'block';
         return;
     }
 
-    container.innerHTML = playlists.map(playlist =>
-        createPlaylistElement(playlist, currentSong)
-    ).join('');
+    if (noMsg) noMsg.style.display = 'none';
+    container.innerHTML = playlists.map(createPlaylistElement).join('');
 }
 
+// === Actualizar UI ===
 const updateUI = (playlistId, inPlaylist, action, button) => {
-
-    if (inPlaylist) {
-        button.classList.remove('btn-primary');
-        button.classList.add('btn-success');
-    } else {
-        button.classList.remove('btn-success');
-        button.classList.add('btn-primary');
-    }
-
+    button.classList.toggle('btn-success', inPlaylist);
+    button.classList.toggle('btn-primary', !inPlaylist);
+    button.textContent = inPlaylist ? 'Added' : 'Add';
     button.disabled = false;
 
-    const counter = document.querySelector('#counter-' + playlistId);
-
+    const counter = document.getElementById(`counter-${playlistId}`);
     if (counter) {
-        let count = parseInt(counter.textContent);
-        if (action === 'added') {
-            count++;
-            button.textContent = 'Added';
-        } else if (action === 'removed') {
-            count--;
-            button.textContent = 'Add';
-        }
-        counter.textContent = count;
+        let count = parseInt(counter.textContent) || 0;
+        counter.textContent = (inPlaylist ? count + 1 : count - 1) + ' songs';
     }
-
 };
 
-async function getPlaylists() {
-    headersData = {
-        'X-CSRF-TOKEN': csrfToken,
-        'Accept': 'application/json',
-        'Authorization': 'Bearer ' + token,
-        'Accept': 'application/json, text/html;q=0.9',
-    };
-
-    let params = {
-        song_id: currentSong
-    };
-
-    const response = await API.get(API.PLAYLISTS.BASE, headersData, params);
-
-    if (response.playlists.length === 0) {
-        return;
-    }
-
-    renderPlaylistsQuick(response.playlists, '#playlist-list', currentSong);
-}
-
+// === Inicializar ===
 document.addEventListener('DOMContentLoaded', () => {
     new PlaylistManager();
-    getPlaylists();
 });

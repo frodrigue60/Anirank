@@ -50,4 +50,4 @@ function hideModal(modalId) {
     }
 }
 
-export { API, token, csrfToken, hideModal, swal };
+export { API, token, csrfToken, hideModal, swal, bootstrap };

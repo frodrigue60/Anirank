@@ -58,25 +58,6 @@
 </head>
 
 <body class="">
-    @if (Auth::check() && Auth::user()->isStaff())
-        @if (config('app.env') === 'local')
-            @php
-                $envString = 'local';
-                $color = 'green';
-                
-            @endphp
-        @else
-            @php
-                $envString = 'production';
-                $color = 'orange';
-            @endphp
-        @endif
-
-        <div style="background-color: {{ $color }};color:black; text-align: center; padding: 5px;">
-            <i class="fa-solid fa-warning"></i> <span>{{ $envString }}</span>
-        </div>
-    @endif
-
     <div id="app">
         {{-- <div class="loader-container">
             <div class="spinner-border text-primary" role="status">

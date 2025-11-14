@@ -49,6 +49,10 @@ const ENDPOINTS = {
         SONGS: (id) => `${API_BASE_URL}/studios/${id}/songs`,
         ANIMES: (id) => `${API_BASE_URL}/studios/${id}/animes`,
         FILTER: `${API_BASE_URL}/studios/filter`,
+    },
+    PLAYLISTS: {
+        BASE: `${API_BASE_URL}/playlists`,
+        TOGGLE_SONG: (playlistId) => `${API_BASE_URL}/playlists/${playlistId}/toggle-song`,
     }
 };
 

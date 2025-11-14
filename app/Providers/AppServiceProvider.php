@@ -36,11 +36,11 @@ class AppServiceProvider extends ServiceProvider
         Reaction::observe(ReactionObserver::class);
         User::observe(UserObserver::class);
 
-        if (!App::environment([
+        /* if (!App::environment([
             'local',
             'testing',
         ])) {
             URL::forceScheme('https');
-        }
+        } */
     }
 }

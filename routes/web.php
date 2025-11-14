@@ -153,6 +153,9 @@ Route::get('/favorites', [UserController::class, 'favorites'])->name('favorites'
 //REPORTS
 Route::post('reports/store', [ReportController::class, 'store'])->name('reports.store');
 
+//PLAYLIST ROUTES
+Route::resource('playlists', App\Http\Controllers\PlaylistController::class);
+
 //SONG VARIANT ROUTES
 Route::post('/variant/{variant}/rate', [SongVariantController::class, 'rate'])->name('variant.rate');
 Route::post('variants/{variant}/like', [SongVariantController::class, 'like'])->name('variants.like');

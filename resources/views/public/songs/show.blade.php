@@ -60,9 +60,9 @@
             @endforeach
         </div>
         <!-- VIDEO CONTAINER -->
-        <div class="mb-2" {{-- style="border: solid 1px red;" --}}>
-            <div class="" id="video_container">
-                <video id="player"class="ratio-16x9 w-100" controls autoplay>
+        <div class="mb-2 w-100 ratio-16x9" {{-- style="border: solid 1px red;" --}}>
+            <div class="w-100 ratio-16x9" id="video_container">
+                <video id="player"class="w-100 ratio-16x9" controls autoplay>
                     <source id="video-source" src="" type="video/webm" />
                 </video>
             </div>
@@ -172,6 +172,12 @@
                     </div>
                 </div>
                 <div class="d-flex gap-2">
+                    {{-- En tu vista de posts --}}
+                    @auth
+                        <button class="btn btn-primary rounded-pill" id="add-to-playlist" data-song-id="{{ $song->id }}">
+                            <i class="fa-solid fa-list"></i> <span>Playlist</span>
+                        </button>
+                    @endauth
                     <!-- FAVORITE BUTTON -->
                     <button type="submit"
                         class="btn {{ $song->isFavorited() ? 'btn-danger' : 'btn-primary' }} rounded-pill d-flex flex-row gap-2 align-items-center"
@@ -188,6 +194,12 @@
                 </div>
             </div>
         </div>
+
+        {{-- Add to Playlist Modal --}}
+        @auth
+            @include('components.add-to-playlist')
+            @include('components.create-playlist-modal')
+        @endauth
 
         {{-- Report Modal --}}
         @include('partials.songs.show.report-modal')
@@ -236,6 +248,6 @@
     @vite(['resources/js/api_get_video.js', 'resources/js/modules/songs/get_comments.js'])
 
     @auth
-        @vite(['resources/js/modules/songs/delete_comment.js', 'resources/js/modules/songs/make_comment.js', 'resources/js/modules/songs/like.js', 'resources/js/modules/songs/dislike.js', 'resources/js/modules/songs/toggle_favorite.js', 'resources/js/modules/songs/rate.js', 'resources/js/modules/songs/report.js', 'resources/js/modules/comments/like.js', 'resources/js/modules/comments/dislike.js', 'resources/js/modules/comments/reply.js'])
+        @vite(['resources/js/playlists.js', 'resources/css/playlists.css', 'resources/js/modules/songs/delete_comment.js', 'resources/js/modules/songs/make_comment.js', 'resources/js/modules/songs/like.js', 'resources/js/modules/songs/dislike.js', 'resources/js/modules/songs/toggle_favorite.js', 'resources/js/modules/songs/rate.js', 'resources/js/modules/songs/report.js', 'resources/js/modules/comments/like.js', 'resources/js/modules/comments/dislike.js', 'resources/js/modules/comments/reply.js'])
     @endauth
 @endsection

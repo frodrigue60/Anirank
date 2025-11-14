@@ -86,6 +86,10 @@
                                 <i class="fa-solid fa-heart"></i>
                                 Favorites
                             </a>
+                            <a class="dropdown-item" href="{{ route('playlists.index') }}">
+                                <i class="fa-solid fa-list"></i>
+                                Playlists
+                            </a>
 
                             {{-- <a class="dropdown-item" href="{{ route('request.create') }}">
                                 <i class="fa-solid fa-pen"></i> Request</a> --}}

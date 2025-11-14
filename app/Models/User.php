@@ -121,4 +121,53 @@ class User extends Authenticatable
     {
         return $this->hasMany(Comment::class);
     }
+
+    /* PLAYLISTS */
+    public function playlists()
+    {
+        return $this->hasMany(Playlist::class);
+    }
+
+    /**
+     * Obtener playlists con conteo de posts (para eficiencia)
+     */
+    public function playlistsWithCount()
+    {
+        return $this->playlists()->withCount('posts');
+    }
+
+    /**
+     * Obtener playlists públicas de otros usuarios
+     */
+    public function publicPlaylists()
+    {
+        return Playlist::where('is_public', true)
+            ->where('user_id', '!=', $this->id)
+            ->with('user')
+            ->withCount('posts');
+    }
+
+    /**
+     * Verificar si el usuario puede ver una playlist específica
+     */
+    public function canViewPlaylist(Playlist $playlist)
+    {
+        return $playlist->user_id === $this->id || $playlist->is_public;
+    }
+
+    /**
+     * Obtener el número total de playlists del usuario
+     */
+    public function getPlaylistsCountAttribute()
+    {
+        return $this->playlists()->count();
+    }
+
+    /**
+     * Obtener el número total de posts en todas las playlists del usuario
+     */
+    public function getTotalPlaylistPostsAttribute()
+    {
+        return $this->playlists()->withCount('posts')->get()->sum('posts_count');
+    }
 }

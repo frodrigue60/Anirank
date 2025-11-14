@@ -248,6 +248,16 @@ class Song extends Model
         return false;
     }
 
+    public function playlists()
+    {
+        return $this->belongsToMany(Playlist::class);
+    }
+
+    public function isInPlaylist($playlistId)
+    {
+        return $this->playlists()->where('playlist_id', $playlistId)->exists();
+    }
+
     /* public function getUserRatingAttribute($song_id)
     {
         $user = Auth::user();

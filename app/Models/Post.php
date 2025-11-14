@@ -80,16 +80,19 @@ class Post extends Model
         return $this->belongsTo(Season::class);
     }
 
-    public function getOpeningsAttribute(){
+    public function getOpeningsAttribute()
+    {
         return Song::with('songVariants')->where('type', 'OP')->where('post_id', $this->id)->get();
     }
 
-    public function studios(){
+    public function studios()
+    {
         return $this->belongsToMany(Studio::class);
     }
 
-    public function producers(){
-        return $this->belongsToMany(Studio::class,'post_producer','post_id','studio_id');
+    public function producers()
+    {
+        return $this->belongsToMany(Studio::class, 'post_producer', 'post_id', 'studio_id');
     }
 
     public function format()
@@ -97,7 +100,8 @@ class Post extends Model
         return $this->belongsTo(Format::class);
     }
 
-    public function externalLinks(){
+    public function externalLinks()
+    {
         return $this->belongsToMany(ExternalLink::class);
     }
 }

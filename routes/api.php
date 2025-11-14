@@ -10,6 +10,7 @@ use App\Http\Controllers\api\ArtistController as apiArtistController;
 use App\Http\Controllers\api\SongController as apiSongController;
 use App\Http\Controllers\api\UserRequestController as apiUserRequestController;
 use App\Http\Controllers\Api\StudioController as apiStudioController;
+use App\Http\Controllers\Api\PlaylistController as apiPlaylistController;
 
 /*
 |--------------------------------------------------------------------------
@@ -66,6 +67,10 @@ Route::get('studios/{studio}/animes', [apiStudioController::class, 'postsFilter'
 
 #AUTH ROUTES
 Route::middleware(['auth:sanctum'])->group(function () {
+    #PLAYLISTS
+    Route::resource('playlists', apiPlaylistController::class);
+    Route::post('/playlists/{playlist}/toggle-song', [apiPlaylistController::class, 'toggleSong'])->name('playlists.toggle.song');
+
     #VARIANTS
     Route::post('variants/{variant}/like', [apiSongVariantController::class, 'like'])->name('api.variants.like');
     Route::post('variants/{variant}/dislike', [apiSongVariantController::class, 'dislike'])->name('api.variants.dislike');

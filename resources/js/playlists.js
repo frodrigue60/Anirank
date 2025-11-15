@@ -95,7 +95,7 @@ class PlaylistManager {
             'Accept': 'application/json'
         };
         bodyData = JSON.stringify({ song_id: currentSong });
-        
+
         try {
             const response = await API.post(API.PLAYLISTS.TOGGLE_SONG(playlistId), headersData, bodyData);
 
@@ -140,7 +140,7 @@ class PlaylistManager {
             const formData = new FormData(form);
             const data = Object.fromEntries(formData.entries());
             data.song_id = currentSong; // Añadir canción automáticamente
-            
+
             const response = await API.post(
                 API.PLAYLISTS.BASE,
                 {
@@ -152,21 +152,24 @@ class PlaylistManager {
                 JSON.stringify(data)
             );
 
+            // Dentro del if (response.status === 201 || response.playlist)
             if (response.status === 201 || response.playlist) {
                 form.reset();
                 this.createPlaylistModal?.hide();
                 this.showNotification('Playlist creada', 'success');
 
-                // ← AÑADIR AL DOM (sin request)
-                renderNewPlaylistElement(response.playlist);
-
-                // ← ACTUALIZAR CACHÉ
-                const cached = this.cache.get(this.currentSong) || { playlists: [] };
-                cached.playlists.unshift({
+                const newPlaylist = {
                     ...response.playlist,
-                    is_in_playlist: true,
-                    songs_count: (response.playlist.songs_count || 0) + 1
-                });
+                    is_in_playlist: false,
+                    songs_count: response.playlist.songs_count || 0
+                };
+
+                // AÑADIR AL DOM (al final)
+                renderNewPlaylistElement(newPlaylist);
+
+                // ACTUALIZAR CACHÉ
+                const cached = this.cache.get(this.currentSong) || { playlists: [] };
+                cached.playlists.push(newPlaylist); // ← al final
                 this.cache.set(this.currentSong, cached);
 
                 this.addToPlaylistModal?.show();
@@ -202,20 +205,33 @@ function createPlaylistElement(playlist) {
     const btnClass = isInPlaylist ? 'btn-success' : 'btn-primary';
     const btnText = isInPlaylist ? 'Added' : 'Add';
 
-    return `
-        <div class="d-flex justify-content-between align-items-center p-2 border-bottom playlist-item" data-playlist-id="${playlist.id}">
-            <div class="playlist-info">
-                <strong>${escapeHtml(playlist.name)}</strong>
-                <small class="text-muted" id="counter-${playlist.id}">
-                    ${playlist.songs_count || 0} songs
-                </small>
-            </div>
-            <button class="btn btn-sm ${btnClass} add-to-playlist-btn"
-                    data-playlist-id="${playlist.id}">
-                ${btnText}
-            </button>
-        </div>
-    `;
+    const item = document.createElement('div');
+    item.className = 'd-flex justify-content-between align-items-center p-2 border-bottom playlist-item';
+    item.dataset.playlistId = playlist.id;
+
+    // Sanitizar nombre
+    const nameSpan = document.createElement('strong');
+    nameSpan.textContent = playlist.name;
+
+    const counter = document.createElement('small');
+    counter.className = 'text-muted';
+    counter.id = `counter-${playlist.id}`;
+    counter.textContent = `${playlist.songs_count || 0} songs`;
+
+    const infoDiv = document.createElement('div');
+    infoDiv.className = 'playlist-info';
+    infoDiv.appendChild(nameSpan);
+    infoDiv.appendChild(counter);
+
+    const button = document.createElement('button');
+    button.className = `btn btn-sm ${btnClass} add-to-playlist-btn`;
+    button.dataset.playlistId = playlist.id;
+    button.textContent = btnText;
+
+    item.appendChild(infoDiv);
+    item.appendChild(button);
+
+    return item;
 }
 
 function escapeHtml(text) {
@@ -230,14 +246,21 @@ function renderNewPlaylistElement(playlist) {
     const noMsg = document.getElementById('no-playlists-msg');
     if (!container) return;
 
+    // Ocultar mensaje "no playlists"
     if (noMsg) noMsg.style.display = 'none';
 
-    const html = createPlaylistElement({
+    // EVITAR DUPLICADOS
+    const exists = container.querySelector(`[data-playlist-id="${playlist.id}"]`);
+    if (exists) return;
+
+    const element = createPlaylistElement({
         ...playlist,
-        is_in_playlist: false // porque acabamos de añadir la canción
+        is_in_playlist: false,
+        songs_count: playlist.songs_count || 0
     });
 
-    container.insertAdjacentHTML('afterend', html);
+    // AÑADIR AL FINAL
+    container.appendChild(element);
 }
 
 // === Renderizado rápido ===
@@ -246,14 +269,25 @@ function renderPlaylistsQuick(playlists, containerSelector) {
     const noMsg = document.getElementById('no-playlists-msg');
     if (!container) return;
 
+    // Limpiar
+    container.innerHTML = '';
+
     if (playlists.length === 0) {
-        container.innerHTML = '';
         if (noMsg) noMsg.style.display = 'block';
         return;
     }
 
     if (noMsg) noMsg.style.display = 'none';
-    container.innerHTML = playlists.map(createPlaylistElement).join('');
+
+    // Fragmento para rendimiento
+    const fragment = document.createDocumentFragment();
+
+    playlists.forEach(playlist => {
+        const element = createPlaylistElement(playlist);
+        fragment.appendChild(element);
+    });
+
+    container.appendChild(fragment);
 }
 
 // === Actualizar UI ===

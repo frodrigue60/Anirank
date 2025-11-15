@@ -72,7 +72,28 @@ async function getVariantVideo(variantId) {
             videoSourceTag.setAttribute('src', response.video.publicUrl);
         } else {
             //console.log('is embed');
-            videoContainer.innerHTML = response.video.embed_code;
+            //videoContainer.innerHTML = response.video.embed_code;
+            const embedUrl = parseEmbed(response.video.embed_code || response.video.url);
+
+            if (embedUrl) {
+                // Crear iframe limpio
+                const iframe = document.createElement('iframe');
+                iframe.src = embedUrl;
+                iframe.allow = 'autoplay; encrypted-media; fullscreen';
+                //iframe.allowFullscreen = true;
+                //iframe.frameBorder = '0';
+                iframe.className = 'ratio ratio-16x9';
+                iframe.style.width = '100%';
+                iframe.style.height = '100%';
+
+                videoContainer.innerHTML = ''; // Limpiar <source>
+                videoContainer.appendChild(iframe);
+
+                // Limpiar source para evitar conflicto
+                videoSourceTag.removeAttribute('src');
+            } else {
+                console.error('URL de embed no válida:', video);
+            }
         }
 
     } catch (error) {
@@ -81,4 +102,53 @@ async function getVariantVideo(variantId) {
     } finally {
         //console.log('finally');
     }
+}
+
+// === Detectar y parsear embed ===
+function parseEmbed(input) {
+    if (!input) return null;
+
+    const str = input.trim();
+
+    // 1. Si ya es un <iframe>, extraer src
+    const iframeMatch = str.match(/<iframe[^>]+src=["']([^"']+)["']/i);
+    if (iframeMatch) {
+        return buildEmbedUrl(iframeMatch[1]);
+    }
+
+    // 2. Si es una URL limpia (YouTube/Vimeo)
+    if (/^https?:\/\//i.test(str)) {
+        return buildEmbedUrl(str);
+    }
+
+    return null;
+}
+
+function buildEmbedUrl(url) {
+    // YouTube
+    if (/youtube\.com|youtu\.be/i.test(url)) {
+        const id = extractYouTubeId(url);
+        return id ? `https://www.youtube.com/embed/${id}?autoplay=1&rel=0` : null;
+    }
+
+    // Vimeo
+    if (/vimeo\.com/i.test(url)) {
+        const id = url.split('/').pop().split('?')[0];
+        return id ? `https://player.vimeo.com/video/${id}?autoplay=1` : null;
+    }
+
+    return null;
+}
+
+function extractYouTubeId(url) {
+    const patterns = [
+        /youtube\.com.*v=([^"&?/ ]{11})/,
+        /youtu\.be\/([^"&?/ ]{11})/,
+        /youtube\.com\/embed\/([^"&?/ ]{11})/
+    ];
+    for (const pattern of patterns) {
+        const match = url.match(pattern);
+        if (match) return match[1];
+    }
+    return null;
 }

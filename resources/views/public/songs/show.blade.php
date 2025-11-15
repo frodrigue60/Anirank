@@ -60,12 +60,18 @@
             @endforeach
         </div>
         <!-- VIDEO CONTAINER -->
-        <div class="mb-2 w-100 ratio-16x9" {{-- style="border: solid 1px red;" --}}>
-            <div class="w-100 ratio-16x9" id="video_container">
-                <video id="player"class="w-100 ratio-16x9" controls autoplay>
+        <div class="mb-2 w-100" {{-- style="border: solid 1px red;" --}}>
+            <div class="w-100" id="video_container">
+                <video id="player"class="ratio ratio-16x9" controls autoplay>
                     <source id="video-source" src="" type="video/webm" />
                 </video>
             </div>
+            {{-- <div id="video_container" class="ratio ratio-16x9">
+                <video id="player" controls>
+                    <source id="video-source" src="" type="video/mp4">
+                    Tu navegador no soporta video.
+                </video>
+            </div> --}}
         </div>
 
         <div class="">
@@ -248,6 +254,6 @@
     @vite(['resources/js/api_get_video.js', 'resources/js/modules/songs/get_comments.js'])
 
     @auth
-        @vite(['resources/js/playlists.js', 'resources/css/playlists.css', 'resources/js/modules/songs/delete_comment.js', 'resources/js/modules/songs/make_comment.js', 'resources/js/modules/songs/like.js', 'resources/js/modules/songs/dislike.js', 'resources/js/modules/songs/toggle_favorite.js', 'resources/js/modules/songs/rate.js', 'resources/js/modules/songs/report.js', 'resources/js/modules/comments/like.js', 'resources/js/modules/comments/dislike.js', 'resources/js/modules/comments/reply.js'])
+        @vite(['resources/js/playlists.js', 'resources/js/modules/songs/delete_comment.js', 'resources/js/modules/songs/make_comment.js', 'resources/js/modules/songs/like.js', 'resources/js/modules/songs/dislike.js', 'resources/js/modules/songs/toggle_favorite.js', 'resources/js/modules/songs/rate.js', 'resources/js/modules/songs/report.js', 'resources/js/modules/comments/like.js', 'resources/js/modules/comments/dislike.js', 'resources/js/modules/comments/reply.js'])
     @endauth
 @endsection

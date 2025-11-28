@@ -210,13 +210,13 @@ function createPlaylistElement(playlist) {
     item.dataset.playlistId = playlist.id;
 
     // Sanitizar nombre
-    const nameSpan = document.createElement('strong');
+    const nameSpan = document.createElement('span');
     nameSpan.textContent = playlist.name;
 
-    const counter = document.createElement('small');
+    const counter = document.createElement('p');
     counter.className = 'text-muted';
     counter.id = `counter-${playlist.id}`;
-    counter.textContent = `${playlist.songs_count || 0} songs`;
+    counter.textContent = ` ${playlist.songs_count || 0} songs`;
 
     const infoDiv = document.createElement('div');
     infoDiv.className = 'playlist-info';

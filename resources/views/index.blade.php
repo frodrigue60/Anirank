@@ -1,32 +1,36 @@
 @extends('layouts.app')
+
+@section('title', 'Ranking Anime Openings & Endings | ' . config('app.name'))
+
 @section('meta')
-    @if (Request::is('/'))
-        <title>Ranking Anime Openings & Endings | {{ env('APP_NAME') }}</title>
-        <meta name="title" content="Search, play, and rate anime openings and endings">
-        <meta name="description"
-            content="The site you were looking for to rate openings and endings of your favorite animes. Discover which are the most popular opening and endings.">
-        <meta name="keywords"
-            content="top anime openings, top anime endings, ranking openings anime, ranking endings anime, Best Anime Openings Of All Time, openings anime, endings anime">
-        <link rel="canonical" href="{{ url()->current() }}">
-        <meta name="robots" content="index, follow, max-image-preview:standard">
-        <meta property="og:type" content="website" />
-        <meta property="og:image" content="{{ asset('resources/images/og-image-wide.png') }}">
-        <meta property="og:image:secure_url" content="{{ asset('resources/images/og-image-wide.png') }}">
-        <meta property="og:image:type" content="image/png">
-        <meta property="og:image:width" content="828">
-        <meta property="og:image:height" content="450">
-        <meta property="og:site_name" content="{{ env('APP_NAME') }}" />
-        <meta property="og:url" content="{{ url()->current() }}" />
-        <meta property="og:image:alt" content="Anirank banner" />
-        <meta name="twitter:card" content="summary" />
-        <meta name="twitter:site" content="@frodrigue60" />
-        <meta name="twitter:creator" content="@frodrigue60" />
-        <meta property="og:title" content="Search, play, and rate anime openings and endings" />
-        <meta property="og:description"
-            content="The site you were looking for to rate openings and endings of your favorite animes. Discover which are the most popular opening and endings." />
-        {{-- <meta property="og:image" content="{{ asset('resources/images/og-twitter-image.png') }}" /> --}}
-    @endif
+    <meta name="title" content="Search, play, and rate anime openings and endings">
+    <meta name="description"
+        content="The site you were looking for to rate openings and endings of your favorite animes. Discover which are the most popular opening and endings.">
+    <meta name="keywords"
+        content="top anime openings, top anime endings, ranking openings anime, ranking endings anime, Best Anime Openings Of All Time, openings anime, endings anime">
+    <link rel="canonical" href="{{ url()->current() }}">
+    <meta name="robots" content="index, follow, max-image-preview:standard">
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="{{ asset('resources/images/og-image-wide.png') }}">
+    <meta property="og:image:secure_url" content="{{ asset('resources/images/og-image-wide.png') }}">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="828">
+    <meta property="og:image:height" content="450">
+    <meta property="og:url" content="{{ url()->current() }}" />
+    <meta property="og:image:alt" content="Anirank banner" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:site" content="@frodrigue60" />
+    <meta name="twitter:creator" content="@frodrigue60" />
+    <meta property="og:title" content="Search, play, and rate anime openings and endings" />
+    <meta property="og:description"
+        content="The site you were looking for to rate openings and endings of your favorite animes. Discover which are the most popular opening and endings." />
 @endsection
+
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('resources/owlcarousel/assets/owl.carousel.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('resources/owlcarousel/assets/owl.theme.default.min.css') }}">
+@endpush
+
 @section('content')
     <div class="container">
         <!-- TOP -->
@@ -72,15 +76,8 @@
             </div>
         </section>
         <hr class="">
-        <!-- MOST VIEWED SONGS -->
-        {{-- <secttion class="mb-3">
-            <h2 class=" section-header">Most Viewed</h2>
-            <div class="owl-carousel gap-3">
-                @include('partials.songs.cards-v2', ['songs' => $viewed])
-            </div>
-        </secttion> --}}
 
-        <!-- MOST VIEWED SONGS -->
+        <!-- MOST VIEWED ARTISTS -->
         <secttion class="mb-3">
             <h2 class=" section-header">Recents Artists</h2>
             <div class="owl-carousel gap-3">
@@ -88,10 +85,16 @@
             </div>
         </secttion>
     </div>
-
-
 @endsection
 
-{{-- @section('script')
+@push('scripts')
+    @if (config('app.env') === 'local')
+        <script src="{{ asset('resources/js/jquery-3.6.3.slim.min.js') }}"></script>
+    @else
+        <script src="https://code.jquery.com/jquery-3.6.3.slim.min.js"
+            integrity="sha256-ZwqZIVdD3iXNyGHbSYdsmWP//UBokj2FHAxKuSBKDSo=" crossorigin="anonymous"></script>
+    @endif
 
-@endsection --}}
+    <script src="{{ asset('resources/owlcarousel/owl.carousel.min.js') }}" defer></script>
+    <script src="{{ asset('resources/js/owCarouselConfig.js') }}" defer></script>
+@endpush

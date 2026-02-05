@@ -7,10 +7,10 @@
             </div> --}}
             <div class="modal-body p-2">
                 <div class="my-3 d-flex align-items-center">
-                   {{--  <div class="p-2">
+                    {{--  <div class="p-2">
                         <i class="fa-solid fa-search"></i>
                     </div> --}}
-                    <form class="d-flex w-100" role="search" id="form-search" data-url-base="{{ env('APP_URL') }}">
+                    <form class="d-flex w-100" role="search" id="form-search" data-url-base="{{ config('app.url') }}">
                         <input id="searchInputModal" class="form-control " type="search" placeholder="Search"
                             aria-label="Search" autocomplete="off">
                     </form>

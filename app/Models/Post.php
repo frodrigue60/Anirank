@@ -16,8 +16,11 @@ class Post extends Model
         'slug',
         'type',
         'thumbnail',
+        'thumbnail_src',
         'status',
-        'format'
+        'format',
+        'banner',
+        'banner_src'
     ];
 
     protected static function boot()
@@ -31,25 +34,6 @@ class Post extends Model
 
             if ($post->banner_src != null && Storage::disk('public')->exists($post->banner)) {
                 Storage::disk('public')->delete($post->banner);
-            }
-
-            $post->load('songs.songVariants.video');
-
-            foreach ($post->songs as $song) {
-                foreach ($song->songVariants as $variant) {
-                    if ($variant->video) {
-                        $video = $variant->video;
-
-                        //Log::info("Intentando eliminar archivo: " . $video->video_src);
-
-                        if ($video->video_src != null && Storage::disk('public')->exists($video->video_src)) {
-                            Storage::disk('public')->delete($video->video_src);
-                            //Log::info("Archivo eliminado con éxito");
-                        } else {
-                            //Log::info("Archivo no eliminado - No existe en: " . $video->video_src);
-                        }
-                    }
-                }
             }
         });
     }
@@ -80,9 +64,14 @@ class Post extends Model
         return $this->belongsTo(Season::class);
     }
 
-    public function getOpeningsAttribute()
+    public function openings()
     {
-        return Song::with('songVariants')->where('type', 'OP')->where('post_id', $this->id)->get();
+        return $this->hasMany(Song::class)->where('type', Song::TYPE_OPENING);
+    }
+
+    public function endings()
+    {
+        return $this->hasMany(Song::class)->where('type', Song::TYPE_ENDING);
     }
 
     public function studios()

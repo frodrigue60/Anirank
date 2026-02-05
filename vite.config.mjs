@@ -46,8 +46,7 @@ export default defineConfig({
                 'resources/css/post.css',
                 'resources/css/ranking.css',
                 'resources/css/fivestars.css',
-                'resources/js/playlists.js',
-                'resources/css/playlists.css'
+                'resources/js/playlists.js'
             ],
             refresh: true,
         })

@@ -31,4 +31,26 @@ class Video extends Model
     {
         return $this->belongsTo(SongVariant::class);
     }
+
+    public function isEmbed()
+    {
+        return $this->type === 'embed';
+    }
+
+    public function isLocal()
+    {
+        return $this->type === 'file';
+    }
+
+    public function getEmbedUrlAttribute()
+    {
+        if (!$this->isEmbed()) return null;
+
+        return $this->embed_code;
+    }
+
+    public function getLocalUrlAttribute()
+    {
+        return $this->isLocal() ? env('APP_URL').Storage::url($this->video_src) : null;
+    }
 }

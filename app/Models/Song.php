@@ -28,6 +28,9 @@ class Song extends Model
         'views'
     ];
 
+    public const TYPE_OPENING = 'OP';
+    public const TYPE_ENDING = 'ED';
+
     protected static function boot()
     {
         parent::boot();

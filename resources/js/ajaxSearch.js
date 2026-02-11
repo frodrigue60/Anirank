@@ -1,15 +1,13 @@
-import { API, csrfToken } from '@/app.js';
+import { API, csrfToken } from "@/app.js";
 
-const formSearch = document.querySelector('#form-search');
-const modalSearch = document.querySelector('#modal-search');
+const formSearch = document.querySelector("#form-search");
+const modalSearch = document.querySelector("#modal-search");
 const postsDiv = document.querySelector("#posts");
 const artistsDiv = document.querySelector("#artists");
 const usersDiv = document.querySelector("#users");
-const input = formSearch.querySelector('#searchInputModal');
-//const loaderContainer = document.querySelector('.loader-container');
-//const siteBody = document.querySelector('body');
-const modalBody = document.querySelector('#modalBody');
-const resDiv = document.querySelector('.res');
+const input = formSearch.querySelector("#searchInputModal");
+const modalBody = document.querySelector("#modalBody");
+const resDiv = document.querySelector(".res");
 let headersData = {};
 let params = {};
 const baseUrl = formSearch.dataset.urlBase;
@@ -17,134 +15,152 @@ const baseUrl = formSearch.dataset.urlBase;
 let typingTimer;
 const delay = 250;
 
-//loaderContainer.style.display = 'none';
-//siteBody.removeAttribute('hidden');
 nullValueInput();
 
-modalSearch.addEventListener('shown.bs.modal', function () {
-    input.focus();
-    input.addEventListener('input', () => {
+// Handle focus when modal is shown via Nav button
+document.addEventListener("click", (e) => {
+    if (
+        e.target.closest('[data-modal-toggle="modal-search"]') ||
+        (e.target.closest("button") &&
+            e.target.closest("button").onclick &&
+            e.target
+                .closest("button")
+                .onclick.toString()
+                .includes("modal-search"))
+    ) {
+        setTimeout(() => input.focus(), 100);
+    }
+});
+
+input.addEventListener("input", () => {
+    resetDivs();
+    insertLoader();
+
+    clearTimeout(typingTimer);
+    if (input.value.length >= 1) {
+        typingTimer = setTimeout(function () {
+            apiSearch();
+        }, delay);
+    } else {
         resetDivs();
-        insertLoader();
+        nullValueInput();
+    }
+});
 
-        if (input.value.length >= 1) {
-            setTimeout(function(){
-                apiSearch();
-            },300)
-        } else {
-            resetDivs();
+async function apiSearch() {
+    try {
+        headersData = {
+            Accept: "application/json, text/html;q=0.9",
+            "X-CSRF-TOKEN": csrfToken,
+        };
+
+        let q = input.value;
+        const response = await API.get(
+            API.POSTS.SEARCH(q),
+            headersData,
+            params,
+        );
+
+        resetDivs();
+
+        if (
+            response.posts.length === 0 &&
+            response.artists.length === 0 &&
+            response.users.length === 0
+        ) {
             nullValueInput();
-        }
-
-    })
-
-    async function apiSearch() {
-        try {
-            headersData = {
-                'Accept': 'application/json, text/html;q=0.9',
-                'X-CSRF-TOKEN': csrfToken,
-            }
-
-            let q = input.value;
-
-            const response = await API.get(API.POSTS.SEARCH(q), headersData, params);
-
-            //return console.log(response);
-
-            resetDivs();
-
-            response.posts.forEach(post => {
+        } else {
+            response.posts.forEach((post) => {
                 let url = baseUrl + "/anime/" + post.slug;
+                let resultDiv = document.createElement("div");
+                resultDiv.className =
+                    "group p-3 hover:bg-white/5 rounded-xl transition-all truncate border border-transparent hover:border-white/5";
 
-                let resultDiv = document.createElement('div');
-                resultDiv.classList.add('result', 'text-truncate');
-
-                let a = document.createElement('a');
+                let a = document.createElement("a");
                 a.href = url;
-                a.textContent = post.title;
+                a.className =
+                    "text-white/80 group-hover:text-primary font-bold transition-colors flex items-center gap-3";
+                a.innerHTML = `<span class="material-symbols-outlined text-white/20 text-[18px]">movie</span> ${post.title}`;
 
                 resultDiv.appendChild(a);
                 postsDiv.appendChild(resultDiv);
             });
 
-            response.artists.forEach(artist => {
+            response.artists.forEach((artist) => {
                 let url = baseUrl + "/artists/" + artist.slug;
+                let resultDiv = document.createElement("div");
+                resultDiv.className =
+                    "group p-3 hover:bg-white/5 rounded-xl transition-all truncate border border-transparent hover:border-white/5";
 
-                let resultDiv = document.createElement('div');
-                resultDiv.classList.add('result', 'text-truncate');
-
-                let a = document.createElement('a');
+                let a = document.createElement("a");
                 a.href = url;
-                a.textContent = artist.name;
+                a.className =
+                    "text-white/80 group-hover:text-primary font-bold transition-colors flex items-center gap-3";
+                a.innerHTML = `<span class="material-symbols-outlined text-white/20 text-[18px]">person</span> ${artist.name}`;
 
                 resultDiv.appendChild(a);
                 artistsDiv.appendChild(resultDiv);
             });
 
-            response.users.forEach(user => {
-
+            response.users.forEach((user) => {
                 let url = baseUrl + "/users/" + user.slug;
+                let resultDiv = document.createElement("div");
+                resultDiv.className =
+                    "group p-3 hover:bg-white/5 rounded-xl transition-all truncate border border-transparent hover:border-white/5";
 
-                let resultDiv = document.createElement('div');
-                resultDiv.classList.add('result', 'text-truncate');
-
-                let a = document.createElement('a');
+                let a = document.createElement("a");
                 a.href = url;
-                a.textContent = user.name;
+                a.className =
+                    "text-white/80 group-hover:text-primary font-bold transition-colors flex items-center gap-3";
+                a.innerHTML = `<span class="material-symbols-outlined text-white/20 text-[18px]">group</span> ${user.name}`;
 
                 resultDiv.appendChild(a);
                 usersDiv.appendChild(resultDiv);
             });
-
-            resDiv.classList.remove('hidden');
-
-        } catch (error) {
-            throw new Error(error);
         }
+
+        resDiv.classList.remove("hidden");
+    } catch (error) {
+        console.error("Search error:", error);
     }
-});
+}
+
 function resetDivs() {
     postsDiv.innerHTML = "";
     artistsDiv.innerHTML = "";
     usersDiv.innerHTML = "";
 }
+
 function nullValueInput() {
-    postsDiv.appendChild(createResultDiv('posts'));
-    artistsDiv.appendChild(createResultDiv('artists'));
-    usersDiv.appendChild(createResultDiv('users'));
+    postsDiv.appendChild(createResultDiv("No results matched your search"));
+    artistsDiv.appendChild(createResultDiv("No results matched your search"));
+    usersDiv.appendChild(createResultDiv("No results matched your search"));
 }
 
-function createResultDiv(element_id) {
-    let div = document.createElement('div');
-    div.className = 'result';
-    div.id = element_id; // Puedes asignar un id si es necesario
+function createResultDiv(text) {
+    let div = document.createElement("div");
+    div.className = "p-3 text-white/20 italic text-sm font-medium";
 
-    let span = document.createElement('span');
-    span.textContent = 'Nothing';
+    let span = document.createElement("span");
+    span.textContent = text;
 
     div.appendChild(span);
-
     return div;
 }
+
 function createLoadingElement() {
-    const div = document.createElement('div');
-    div.className = 'd-flex justify-content-center';
+    const div = document.createElement("div");
+    div.className = "flex justify-center py-8";
 
-    const spinnerDiv = document.createElement('div');
-    spinnerDiv.className = 'spinner-border';
-    spinnerDiv.setAttribute('role', 'status');
+    const spinner = document.createElement("div");
+    spinner.className =
+        "animate-spin rounded-full h-8 w-8 border-b-2 border-primary";
 
-    const visuallyHiddenSpan = document.createElement('span');
-    visuallyHiddenSpan.className = 'visually-hidden';
-    visuallyHiddenSpan.textContent = 'Loading...';
-
-    spinnerDiv.appendChild(visuallyHiddenSpan);
-    div.appendChild(spinnerDiv);
-
+    div.appendChild(spinner);
     return div;
 }
+
 function insertLoader() {
+    postsDiv.innerHTML = ""; // Clear before loading
     postsDiv.appendChild(createLoadingElement());
-    artistsDiv.appendChild(createLoadingElement());
-    usersDiv.appendChild(createLoadingElement());
 }

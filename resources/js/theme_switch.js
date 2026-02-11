@@ -1,35 +1,53 @@
-const btnToggleTheme = document.getElementById('themeToggle');
-const _themeIcon = document.getElementById('themeIcon');
-const htmlElement = document.documentElement;
+document.addEventListener("DOMContentLoaded", () => {
+    const btnToggleTheme = document.getElementById("themeToggle");
+    const htmlElement = document.documentElement;
 
-let lightThemeIcon = document.createElement("i");
-lightThemeIcon.classList.add('fa-solid', 'fa-sun');
-let darkThemeIcon = document.createElement("i");
-darkThemeIcon.classList.add('fa-solid', 'fa-moon');
+    if (!btnToggleTheme) return;
 
-const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    const lightThemeIcon = document.createElement("i");
+    lightThemeIcon.classList.add("fa-solid", "fa-sun");
+    const darkThemeIcon = document.createElement("i");
+    darkThemeIcon.classList.add("fa-solid", "fa-moon");
 
-htmlElement.setAttribute('data-bs-theme', savedTheme);
-updateIcon(savedTheme);
+    const updateIcon = (theme) => {
+        btnToggleTheme.innerHTML = "";
+        btnToggleTheme.appendChild(
+            theme === "dark" ? darkThemeIcon : lightThemeIcon,
+        );
+    };
 
-btnToggleTheme.addEventListener('click', function () {
-    const currentTheme = htmlElement.getAttribute('data-bs-theme');
-    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    // Initial icon state
+    const currentTheme = htmlElement.classList.contains("dark")
+        ? "dark"
+        : "light";
+    updateIcon(currentTheme);
 
-    htmlElement.setAttribute('data-bs-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
-    updateIcon(newTheme);
-});
+    btnToggleTheme.addEventListener("click", () => {
+        const isDark = htmlElement.classList.contains("dark");
+        const newTheme = isDark ? "light" : "dark";
 
-function updateIcon(theme) {
-    btnToggleTheme.innerHTML = '';
-    btnToggleTheme.appendChild(theme === 'dark' ? darkThemeIcon : lightThemeIcon);
-}
+        if (newTheme === "dark") {
+            htmlElement.classList.add("dark");
+        } else {
+            htmlElement.classList.remove("dark");
+        }
 
-window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
-    if (!localStorage.getItem('theme')) {
-        const newTheme = e.matches ? 'dark' : 'light';
-        htmlElement.setAttribute('data-bs-theme', newTheme);
+        localStorage.setItem("theme", newTheme);
         updateIcon(newTheme);
-    }
+    });
+
+    // Listen for system theme changes
+    window
+        .matchMedia("(prefers-color-scheme: dark)")
+        .addEventListener("change", (e) => {
+            if (!localStorage.getItem("theme")) {
+                const newTheme = e.matches ? "dark" : "light";
+                if (newTheme === "dark") {
+                    htmlElement.classList.add("dark");
+                } else {
+                    htmlElement.classList.remove("dark");
+                }
+                updateIcon(newTheme);
+            }
+        });
 });

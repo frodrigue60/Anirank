@@ -20,7 +20,13 @@ class PostController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index() {}
+    public function index()
+    {
+        $posts = Post::orderBy("created_at", "desc")->paginate(10);
+        return response()->json([
+            "posts" => $posts
+        ]);
+    }
 
     /**
      * Store a newly created resource in storage.

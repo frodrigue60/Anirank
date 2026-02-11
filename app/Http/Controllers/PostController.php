@@ -51,35 +51,30 @@ class PostController extends Controller
             ->sortByDesc('views')
             ->take(25);
 
-        $openings = Song::with(['post'])
-            ->whereHas('post', function ($query) use ($status) {
-                $query->where('status', $status);
+        $weaklyRanking = Song::with(['post', 'artists'])
+            ->withAvg('ratings', 'rating')
+            ->whereHas('post', function ($q) use ($status) {
+                $q->where('status', $status);
             })
-            ->where('type', 'OP')
             ->get()
-            ->sortByDesc('averageRating')
-            ->take(3);
+            ->sortByDesc('ratings_avg_rating')
+            ->take(6);
 
-        #Add to song ["formattedUserScore" => 8.0,"formattedScore" => 8.0,"rawUserScore" => 80.0,"rawScore" => 80.0,"scoreString" => "8.0/10"] attributes
-        $openings = $this->setScoreSongs($openings, $user);
-
-        $endings = Song::with(['post'])
-            ->whereHas('post', function ($query) use ($status) {
-                $query->where('status', $status);
-            })
-            ->where('type', 'ED')
-            ->get()
-            ->sortByDesc('averageRating')
-            ->take(3);
-
-        $endings = $this->setScoreSongs($endings, $user);
+        $weaklyRanking = $this->setScoreSongs($weaklyRanking, $user);
 
         //dd($openings[0]);
 
         $artists = Artist::all()->sortByDesc('created_at')->take(20);
         //dd($artists);
 
-        return view('index', compact('openings', 'endings', 'recently', 'popular', 'viewed', 'artists'));
+        $featuredSong = Song::with(['post', 'artists'])
+            ->whereHas('post', function ($q) use ($status) {
+                $q->where('status', $status);
+            })
+            ->inRandomOrder()
+            ->first();
+
+        return view('index', compact('weaklyRanking', 'recently', 'popular', 'viewed', 'artists', 'featuredSong'));
     }
 
     public function animes(Request $request)

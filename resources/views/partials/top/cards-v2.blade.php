@@ -1,7 +1,4 @@
-@php
-    $j = 1;
-@endphp
-@foreach ($items as $song)
+@foreach ($items as $index => $song)
     @isset($song->post)
         @php
             $img_url = null;
@@ -14,89 +11,65 @@
                     'https://static.vecteezy.com/system/resources/thumbnails/005/170/408/small/banner-abstract-geometric-white-and-gray-color-background-illustration-free-vector.jpg';
             }
 
+            $rankNumber = $items->firstItem() + $index;
+            $formattedRank = str_pad($rankNumber, 2, '0', STR_PAD_LEFT);
         @endphp
-        {{-- <div class="card-2 mb-2">
-            <img class="card-2-bg" src="{{ $img_url }}" alt="{{ $song->post->title }}">
-            <div class="gradient-1">
-                <div class="m-2 fs-5">
 
-                    <span class="">
-                        # {{ $j++ }}
-                    </span>
+        <div
+            class="ranking-row grid grid-cols-[60px_1fr_120px_140px] gap-4 px-8 py-5 items-center transition-colors border-b border-white/5 hover:bg-white/5 group">
+            {{-- Rank Column --}}
+            <div class="flex flex-col items-center gap-1">
+                <span
+                    class="text-2xl font-black {{ $rankNumber <= 3 ? 'text-primary' : 'text-white/90' }}">{{ $formattedRank }}</span>
+                <div class="flex items-center text-white/20">
+                    <span class="material-symbols-outlined text-sm">horizontal_rule</span>
                 </div>
             </div>
-            <div class="card-2-data p-2 d-flex flex-row justify-content-between w-100 gap-2">
-                <div class="d-flex flex-column overflow-hidden">
-                    @isset($song)
-                        <a class="no-deco  bold text-truncate" href="{{ $song->urlFirstVariant }}">{{ $song->name }}
-                        </a>
-                        <span class="d-inline-block text-truncate">
+
+            {{-- Theme Info Column --}}
+            <div class="flex items-center gap-6">
+                <div class="w-16 h-16 rounded-lg overflow-hidden shrink-0 shadow-lg shadow-black/40 border border-white/10">
+                    <img alt="Cover"
+                        class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        src="{{ $img_url }}" />
+                </div>
+                <div class="min-w-0">
+                    <h3 class="text-lg font-bold text-white truncate leading-tight mb-1">{{ $song->name }}</h3>
+                    <div class="flex items-center gap-2 text-sm">
+                        <span class="text-primary font-bold truncate">{{ $song->post->title }}</span>
+                        <span class="w-1 h-1 rounded-full bg-white/20 shrink-0"></span>
+                        <span class="text-white/60 truncate">
                             @if (isset($song->artists) && count($song->artists) != 0)
-                                @foreach ($song->artists as $index => $artist)
-                                    <a class="no-deco " href="{{ $artist->url }}">{{ $artist->name }}</a>
-                                    @if ($index < count($song->artists) - 1)
-                                        ,
-                                    @endif
-                                @endforeach
+                                {{ implode(', ', $song->artists->pluck('name')->toArray()) }}
                             @else
-                                <span>N/A</span>
-                            @endif
-                        </span>
-                        <a class="no-deco  text-truncate" target="_blank" rel="noopener noreferrer"
-                            href="{{ $song->post->url }}">{{ $song->post->title }}</a>
-                    @endisset
-                </div>
-                <div class="d-flex align-items-end">
-                    <div class="badge rounded-pill  fw-medium">
-                        <span id="score">{{ $song->scoreString }}</span>
-                        <span>
-                            @if ($song->userScore)
-                                <i style="color: rgb(162, 240, 181)" class="fa fa-star" aria-hidden="true"></i>
-                            @else
-                                <i class="fa fa-star" aria-hidden="true"></i>
+                                N/A
                             @endif
                         </span>
                     </div>
                 </div>
             </div>
-        </div> --}}
 
-        <div class="card d-flex flex-row gap-2 rounded-1 w-100 overflow-hidden">
-            <div>
-                <img class="" style="width: auto;height:100px;" src="{{ $img_url }}" alt="{{ $song->post->title }}">
+            {{-- Score Column --}}
+            <div class="text-center">
+                <div class="text-2xl font-black text-white tracking-tight">{{ round($song->averageRating, 2) }}</div>
+                <div class="text-[10px] font-bold text-white/30 uppercase tracking-widest">Avg Rating</div>
             </div>
-            <div class="d-flex w-100 overflow-hidden p-2 gap-2">
-                <div class="d-flex flex-column justify-content-center me-auto overflow-hidden">
-                    <div class="overflow-hidden  text-truncate">
-                         <a class="no-deco " href="{{ $song->url }}">
-                        {{ $song->name }}
-                    </a>
-                    </div>
-                    <div class="overflow-hidden text-truncate">
-                        @if (isset($song->artists) && count($song->artists) != 0)
-                                @foreach ($song->artists as $index => $artist)
-                                    <a class="no-deco " href="{{ $artist->url }}">{{ $artist->name }}</a>
-                                    @if ($index < count($song->artists) - 1)
-                                        ,
-                                    @endif
-                                @endforeach
-                            @else
-                                <span>N/A</span>
-                            @endif
-                    </div>
-                    <div class="overflow-hidden text-truncate">
-                        <a class="no-deco " href="{{ $song->post->url }}">
-                        {{ $song->post->title }}
-                    </a>
-                    </div>
 
-                </div>
-                <div class="d-flex align-items-end">
-                    <div class="badge bg-secondary rounded-pill  fw-medium">
-                        <span id="score">{{ round($song->averageRating) }}</span>
-                        <span><i class="fa-solid fa-star"></i></span>
-                    </div>
-                </div>
+            {{-- Actions Column --}}
+            <div class="flex items-center justify-end gap-2">
+                <button
+                    class="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 hover:bg-primary text-white transition-all shadow-lg hover:shadow-primary/20">
+                    <span class="material-symbols-outlined text-[20px] filled">play_arrow</span>
+                </button>
+                <button
+                    class="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/10 text-white/40 hover:text-red-400 transition-all">
+                    <span
+                        class="material-symbols-outlined text-[20px] {{ $song->userScore ? 'filled text-red-400' : '' }}">favorite</span>
+                </button>
+                <button
+                    class="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/10 text-white/40 transition-all">
+                    <span class="material-symbols-outlined text-[20px]">more_vert</span>
+                </button>
             </div>
         </div>
     @endisset

@@ -31,7 +31,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        Paginator::useBootstrap();
+        Paginator::useTailwind();
+        Paginator::defaultView('pagination::tailwind');
+        Paginator::defaultSimpleView('pagination::simple-tailwind');
 
         Reaction::observe(ReactionObserver::class);
         User::observe(UserObserver::class);

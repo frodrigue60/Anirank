@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-bs-theme="dark">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark">
 
 <head>
     <meta charset="utf-8">
@@ -7,6 +7,15 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta http-equiv="Content-Security-Policy" content="block-all-mixed-content">
+
+    {{-- New Theme Fonts & Icons --}}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@300;400;500;600;700&family=Noto+Sans:wght@400;500;700&display=swap"
+        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet">
 
     <title>@yield('title', config('app.name'))</title>
 
@@ -36,14 +45,17 @@
     {{-- Theme Detection (Blocking to prevent flickers) --}}
     <script>
         (function() {
-            const theme = localStorage.getItem('theme') ||
-                (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-            document.documentElement.setAttribute('data-bs-theme', theme);
+            const theme = localStorage.getItem('theme') || 'dark';
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
         })();
     </script>
 
     {{-- Main Assets (Vite) --}}
-    @vite(['resources/sass/app.scss', 'resources/css/app.css', 'resources/css/userProfile.css', 'resources/css/post.css', 'resources/css/ranking.css', 'resources/css/fivestars.css', 'resources/js/app.js', 'resources/js/ajaxSearch.js', 'resources/js/theme_switch.js'])
+    @vite(['resources/sass/app.scss', 'resources/css/userProfile.css', 'resources/css/post.css', 'resources/css/ranking.css', 'resources/css/fivestars.css', 'resources/js/app.js', 'resources/js/ajaxSearch.js', 'resources/js/theme_switch.js'])
 
     @auth
         @vite(['resources/js/make_request.js'])
@@ -58,10 +70,12 @@
             crossorigin="anonymous" referrerpolicy="no-referrer" />
     @endif
 
+    {{--  @livewireStyles --}}
     @stack('styles')
 </head>
 
-<body>
+<body
+    class="bg-background-dark text-white font-display min-h-screen flex flex-col overflow-x-hidden antialiased selection:bg-primary selection:text-white transition-colors duration-300">
     <div id="app">
         @include('layouts.navbar')
 
@@ -86,7 +100,6 @@
 
     {{-- Scripts --}}
     @if (config('app.env') === 'local')
-        <script src="{{ asset('resources/js/popper.min.js') }}"></script>
         <script src="{{ asset('resources/font-awesome-6.4.2/js/all.min.js') }}"></script>
     @else
         <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/js/all.min.js"
@@ -94,6 +107,7 @@
             crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     @endif
 
+    {{-- @livewireScripts --}}
     @stack('scripts')
     @yield('script')
 </body>

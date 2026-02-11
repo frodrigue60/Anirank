@@ -29,6 +29,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 #POSTS
 //Route::resource('posts', apiPostController::class);
+Route::get('/', [apiPostController::class, 'index'])->name('api.post.index');
 Route::get('search/{q}', [apiPostController::class, 'search'])->name('api.posts.search');
 Route::get('animes', [apiPostController::class, 'animes'])->name('api.posts.animes');
 

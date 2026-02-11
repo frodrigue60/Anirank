@@ -32,7 +32,7 @@ class SongVariant extends Model
         parent::boot();
 
         static::deleting(function ($songVariant) {
-            if ($songVariant->video && file_exists(public_path($songVariant->video->video_src))) {
+            if ($songVariant->video && Storage::disk('public')->exists($songVariant->video->video_src)) {
                 Storage::disk('public')->delete($songVariant->video->video_src);
             }
         });

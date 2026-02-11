@@ -48,28 +48,58 @@
     @endif
 @endsection
 @section('content')
-    <div class="container mb-3 ">
-        <div class="d-flex justify-content-center align-items-center">
-            @if (isset($currentSeason) && isset($currentYear))
-                <h2 class="p-0 m-0">{{ $currentSeason->name }} {{ $currentYear->name }}</h2>
-            @else
-                <h2 class="p-0 m-0">Season: N/A Year: N/A</h2>
-            @endif
+    <div class="max-w-[1440px] mx-auto px-6 md:px-14 py-8 md:py-12">
+        <div class="mb-12">
+            <div class="flex flex-col md:flex-row md:items-end justify-between gap-8">
+                <div>
+                    <div class="flex items-center gap-2 mb-3">
+                        <span
+                            class="bg-primary/20 text-primary text-[10px] font-black px-2.5 py-1 rounded-full border border-primary/30 uppercase tracking-[0.2em]">Active
+                            Season</span>
+                    </div>
+                    @if (isset($currentSeason) && isset($currentYear))
+                        <h1 class="text-4xl md:text-5xl lg:text-6xl font-black tracking-tighter text-white">
+                            {{ $currentSeason->name }} <span class="text-primary">{{ $currentYear->name }}</span>
+                        </h1>
+                    @else
+                        <h1 class="text-4xl md:text-5xl lg:text-6xl font-black tracking-tighter text-white/40">Season: N/A
+                        </h1>
+                    @endif
+                    <p class="text-white/50 mt-4 text-lg font-medium max-w-2xl">Exploring the latest themes and musical
+                        trends from this season's anime releases.</p>
+                </div>
 
-        </div>
-        <div>
-            <div class="mb-3 d-flex justify-content-between align-items-center">
-                <h3 id="section-header" class="p-0 m-0">OPENINGS</h3>
-                <button type="button" class="btn btn-primary" id="toggle-type-btn">
-                    <i class="fa-solid fa-rotate"></i> <span id="btn-toggle-text">Endings</span>
-                </button>
+                {{-- Toggle Switcher (Two-sided style) --}}
+                <div
+                    class="relative flex items-center p-1 bg-surface-darker/50 rounded-2xl border border-white/5 w-fit select-none">
+                    {{-- Sliding Background --}}
+                    <div id="toggle-bg"
+                        class="absolute h-[calc(100%-8px)] w-[calc(50%-4px)] bg-primary rounded-xl shadow-lg shadow-primary/20 transition-all duration-300 ease-out left-1">
+                    </div>
 
+                    <button data-type="OP" id="toggle-op"
+                        class="relative z-10 flex items-center gap-2 px-8 py-3 rounded-xl text-white font-bold transition-all duration-300">
+                        <span class="material-symbols-outlined text-[20px] filled">play_circle</span>
+                        <span>Openings</span>
+                    </button>
+
+                    <button data-type="ED" id="toggle-ed"
+                        class="relative z-10 flex items-center gap-2 px-8 py-3 rounded-xl text-white/40 font-bold transition-all duration-300">
+                        <span class="material-symbols-outlined text-[20px]">skip_next</span>
+                        <span>Endings</span>
+                    </button>
+
+                    {{-- Hidden input/trigger for compatibility with existing JS --}}
+                    <button id="toggle-type-btn" class="hidden"></button>
+                    <span id="section-header" class="hidden">OPENINGS</span>
+                    <span id="btn-toggle-text" class="hidden">Endings</span>
+                </div>
             </div>
-            {{--  <div class="contenedor-tarjetas mb-3" id="data">
-                <!-- DATA --->
-            </div> --}}
-            <div class="results mb-3" id="data">
-                <!-- DATA --->
+        </div>
+
+        <div class="pb-20">
+            <div class="results grid grid-cols-1 gap-6" id="data">
+                <!-- DATA INJECTED BY JS --->
             </div>
         </div>
     </div>

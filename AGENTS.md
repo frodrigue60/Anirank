@@ -17,9 +17,34 @@
 ## Tech Stack
 
 - **Backend**: PHP 8.2, Laravel 9.x
-- **Frontend**: Blade templates, Bootstrap 5, Vite, Vanilla JS
+- **Frontend**: Blade templates, Tailwind CSS, Vite, Vanilla JS
 - **Database**: MySQL 8.0
-- **Environment**: Docker (PHP-FPM, Nginx, MySQL) for local development
+- **Environment**: Laragon / Docker
+
+---
+
+## Design System
+
+The application uses a **Modern Dark Theme** with a deep purple aesthetic.
+
+### Typography
+
+- **Display**: `Spline Sans` (Headings, UI labels)
+- **Body**: `Noto Sans` (Descriptions, content)
+- **Icons**: Google Material Symbols (Outlined)
+
+### Color Palette
+
+- **Primary**: `#7f13ec` (Purple accent)
+- **Background**: `#191022` (Deep dark purple)
+- **Surface**: `#2a2136` (Lighter purple for cards/panels)
+- **Surface Darker**: `#22192e` (Used for sidebar and dropdowns)
+
+### Custom Components (SCSS/Tailwind)
+
+- `.glass-panel`: Frosted glass effect (`backdrop-filter: blur(12px)`) with transparent background.
+- `.hero-glow`: Purple shadow glow (`box-shadow`) for high-impact sections.
+- `.filled`: Utility class for Material Symbols to use the "FILL" variation.
 
 ---
 

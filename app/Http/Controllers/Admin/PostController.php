@@ -248,9 +248,12 @@ class PostController extends Controller
             $this->storePostImages($post, $request);
 
             if ($post->update()) {
-
-                Storage::disk('public')->delete($old_thumbnail);
-                Storage::disk('public')->delete($old_banner);
+                if ($old_thumbnail && $old_thumbnail !== $post->thumbnail) {
+                    Storage::disk('public')->delete($old_thumbnail);
+                }
+                if ($old_banner && $old_banner !== $post->banner) {
+                    Storage::disk('public')->delete($old_banner);
+                }
                 return redirect(route('admin.posts.index'))->with('success', 'Post Updated Successfully');
             } else {
                 return redirect(route('admin.posts.index'))->with('error', 'Something has wrong');
@@ -797,8 +800,6 @@ class PostController extends Controller
             if (extension_loaded('gd')) {
                 $imageContent = Image::make($imageContent)->encode('webp', 100); //->resize(150, 212)
                 $file_name = Str::slug($post->slug) . '-' . time() . '.webp';
-            } else {
-                $file_name = Str::slug($post->slug) . '-' . time() . '.' . 'png';
             }
             $path = 'thumbnails/' . $file_name;
             $this->storeSingleImage($path, $imageContent);
@@ -819,10 +820,8 @@ class PostController extends Controller
             $imageContent = $response->getBody()->getContents();
 
             if (extension_loaded('gd')) {
-                $file_name = Str::slug($post->slug) . '-' . time() . '.' . 'webp';
+                $file_name = Str::slug($post->slug) . '-' . time() . '.webp';
                 $imageContent = Image::make($imageContent)->encode('webp', 100); //->resize(150, 212)
-            } else {
-                $file_name = Str::slug($post->slug) . '-' . time() . '.' . 'png';
             }
             $path = 'anime_banner/' . $file_name;
             $this->storeSingleImage($path, $imageContent);
@@ -932,7 +931,7 @@ class PostController extends Controller
                 $post->banner_src = $request->banner_src;
 
                 $client = new Client();
-                $response = $client->get($request->thumbnail_src);
+                $response = $client->get($request->banner_src);
                 $imageContent = $response->getBody()->getContents();
 
                 if (extension_loaded('gd')) {

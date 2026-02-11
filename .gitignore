@@ -21,3 +21,4 @@ yarn-error.log
 public/resources/.gitignore
 public/ngrok.exe
 public/.ngrok.exe.old
+/Stitch

@@ -136,7 +136,7 @@ class SongController extends Controller
 
 
         //dd($comments);
-        
+
 
 
         return view('public.songs.show', compact('song', 'post', 'userRating', 'firstVariant', 'comments'));

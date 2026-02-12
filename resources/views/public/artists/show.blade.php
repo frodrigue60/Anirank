@@ -39,30 +39,9 @@
                 </div>
             </div>
 
-            {{-- Filter Panel --}}
-            <section class="bg-surface-dark/30 p-6 rounded-2xl border border-white/5 shadow-2xl backdrop-blur-md">
-                @include('components.filter.container', [
-                    'apiEndpoint' => '',
-                    'method' => 'GET',
-                    'fields' => ['name', 'type', 'year', 'season', 'sort', 'artist-id'],
-                ])
-            </section>
+            {{-- Livewire Table Component --}}
+            <livewire:artist-themes-table :artist="$artist" />
 
-            {{-- Data Container --}}
-            <section class="min-h-[400px]">
-                <div class="results grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="data">
-                    {{-- AJAX Results --}}
-                </div>
-
-                {{-- Loader --}}
-                <div class="flex justify-center py-20" id="loader">
-                    <div class="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-                </div>
-            </section>
         </div>
     </div>
-@endsection
-
-@section('script')
-    @vite(['resources/js/filter_artist_themes.js'])
 @endsection

@@ -52,7 +52,7 @@
                                     class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent p-4 pt-10">
                                     <div class="flex items-center gap-1 text-yellow-400 font-bold text-lg">
                                         <span class="material-symbols-outlined filled text-[20px]">star</span>
-                                        <span>{{ number_format($song->ratings_avg_rating ?? 0, 1) }}/10</span>
+                                        <span>{{ number_format($song->ratings_avg_rating ?? 0, 1) }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -131,7 +131,7 @@
                                             <div
                                                 class="flex items-center gap-1 bg-surface-dark px-2 py-0.5 rounded text-yellow-400 text-xs font-bold">
                                                 <span class="material-symbols-outlined filled text-[14px]">star</span>
-                                                {{ number_format($song->ratings_avg_rating ?? 0, 1) }}/10
+                                                {{ number_format($song->ratings_avg_rating ?? 0, 1) }}
                                             </div>
                                         </div>
                                         <p class="text-sm text-primary font-medium truncate">{{ $song->post->title }}</p>

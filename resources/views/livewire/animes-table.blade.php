@@ -98,7 +98,7 @@
     {{-- Content Grid/List --}}
     <div class="min-h-[400px]">
         @if ($viewMode === 'grid_small')
-            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-4 md:gap-6">
+            <div class="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-4 md:gap-6">
                 @foreach ($posts as $post)
                     <div class="group relative">
                         <div class="aspect-[2/3] rounded-lg overflow-hidden bg-surface-darker shadow-lg relative">
@@ -147,8 +147,7 @@
                             {{-- Overlay: Title & Studio --}}
                             <div
                                 class="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent flex flex-col justify-end p-2 pointer-events-none">
-                                <h3
-                                    class="text-sm font-bold text-white leading-tight line-clamp-2 mb-0.5 text-shadow-sm">
+                                <h3 class="text-sm font-bold text-white leading-tight line-clamp-2 mb-0.5 text-shadow-sm">
                                     {{ $post->title }}
                                 </h3>
                                 @if ($post->studios->isNotEmpty())
@@ -187,19 +186,22 @@
                             {{-- Footer: Tags Placeholder --}}
                             <div
                                 class="mt-3 pt-3 border-t border-white/5 flex flex-wrap gap-1.5 opacity-60 hover:opacity-100 transition-opacity">
-                                {{-- 
+                                {{--
                                 @if ($post->tags)
-                                    @foreach ($post->tags->take(3) as $tag)
-                                        <a href="#" class="px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-bold text-primary hover:bg-primary hover:text-white transition-colors">
-                                            {{ $tag->name }}
-                                        </a>
-                                    @endforeach
+                                @foreach ($post->tags->take(3) as $tag)
+                                <a href="#"
+                                    class="px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-bold text-primary hover:bg-primary hover:text-white transition-colors">
+                                    {{ $tag->name }}
+                                </a>
+                                @endforeach
                                 @endif
                                 --}}
                                 {{-- Example Placeholder --}}
-                                {{-- 
-                                <span class="px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-bold text-white/40">Action</span>
-                                <span class="px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-bold text-white/40">Fantasy</span> 
+                                {{--
+                                <span
+                                    class="px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-bold text-white/40">Action</span>
+                                <span
+                                    class="px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-bold text-white/40">Fantasy</span>
                                 --}}
                             </div>
                         </div>

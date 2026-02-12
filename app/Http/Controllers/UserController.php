@@ -46,7 +46,10 @@ class UserController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function create() {}
+    public function create()
+    {
+        return abort(404);
+    }
 
     /**
      * Store a newly created resource in storage.
@@ -54,7 +57,10 @@ class UserController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request) {}
+    public function store(Request $request)
+    {
+        return abort(404);
+    }
 
     /**
      * Display the specified resource.
@@ -64,7 +70,7 @@ class UserController extends Controller
      */
     public function show($id)
     {
-        //
+        return abort(404);
     }
 
     /**
@@ -73,7 +79,10 @@ class UserController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function edit($id) {}
+    public function edit($id)
+    {
+        return abort(404);
+    }
 
     /**
      * Update the specified resource in storage.
@@ -82,7 +91,10 @@ class UserController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id) {}
+    public function update(Request $request, $id)
+    {
+        return abort(404);
+    }
 
     /**
      * Remove the specified resource from storage.
@@ -90,7 +102,10 @@ class UserController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id) {}
+    public function destroy($id)
+    {
+        return abort(404);
+    }
 
     public function userList($slug)
     {
@@ -263,35 +278,32 @@ class UserController extends Controller
     public function uploadProfilePic(Request $request)
     {
         if ($request->hasFile('image')) {
-
             $validator = Validator::make($request->all(), [
                 'image' => 'mimes:png,jpg,jpeg,webp|max:2048'
             ]);
 
             if ($validator->fails()) {
-                $errors = $validator->getMessageBag();
-                return redirect(route('profile'))->with('status', $errors);
+                return redirect(route('profile'))->with('error', 'Invalid file format or size.');
             }
 
-            //$user_email = Auth::user()->email;
             $user = Auth::user();
-            $old_user_image = $user->image;
+            $old_image = $user->image;
 
             $extension = $request->image->extension();
             $file_name = $user->slug . '-' . time() . '.' . $extension;
-            $path = 'profile/';
+            $path = 'profile';
 
-            $request->image->storeAs($path, $file_name, 'public');
+            $storedPath = $request->image->storeAs($path, $file_name, 'public');
 
-            if (isset($old_user_image) && Storage::disk('public')->exists($old_user_image)) {
-                Storage::disk('public')->delete($old_user_image);
+            if ($storedPath) {
+                $user->update(['image' => $storedPath]);
+
+                if ($old_image && Storage::disk('public')->exists($old_image)) {
+                    Storage::disk('public')->delete($old_image);
+                }
+
+                return redirect(route('profile'))->with('success', 'Profile picture updated successfully!');
             }
-
-            DB::table('users')
-                ->where('id', $user->id)
-                ->update(['image' => $path . $file_name]);
-
-            return redirect(route('profile'))->with('success', 'Image uploaded successfully!');
         }
 
         return redirect(route('profile'))->with('warning', 'File not found');
@@ -299,35 +311,32 @@ class UserController extends Controller
     public function uploadBannerPic(Request $request)
     {
         if ($request->hasFile('banner')) {
-
             $validator = Validator::make($request->all(), [
                 'banner' => 'mimes:png,jpg,jpeg,webp|max:2048'
             ]);
 
             if ($validator->fails()) {
-                $errors = $validator->getMessageBag();
-                return redirect(route('profile'))->with('error', $errors);
+                return redirect(route('profile'))->with('error', 'Invalid file format or size.');
             }
 
-            $user = Auth::user()->id;
-            $old_banner_image = $user->banner;
-
+            $user = Auth::user();
+            $old_banner = $user->banner;
 
             $extension = $request->banner->extension();
             $file_name = $user->slug . '-' . time() . '.' . $extension;
-            $path = 'banner/';
+            $path = 'banner';
 
-            $request->banner->storeAs($path, $file_name, 'public');
+            $storedPath = $request->banner->storeAs($path, $file_name, 'public');
 
-            if (isset($old_banner_image) && Storage::disk('public')->exists($old_banner_image)) {
-                Storage::disk('public')->delete($old_banner_image);
+            if ($storedPath) {
+                $user->update(['banner' => $storedPath]);
+
+                if ($old_banner && Storage::disk('public')->exists($old_banner)) {
+                    Storage::disk('public')->delete($old_banner);
+                }
+
+                return redirect(route('profile'))->with('success', 'Banner updated successfully!');
             }
-
-            DB::table('users')
-                ->where('id', $user->id)
-                ->update(['banner' => $path . $file_name]);
-
-            return redirect(route('profile'))->with('success', 'Image uploaded successfully!');
         }
         return redirect(route('profile'))->with('warning', 'File not found');
     }

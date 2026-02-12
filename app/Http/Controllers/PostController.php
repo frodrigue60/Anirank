@@ -83,7 +83,7 @@ class PostController extends Controller
         $years = Year::all()->sortByDesc('name');
         $formats = Format::all();
 
-        return view('public.animes.index', compact('seasons', 'years', 'formats'));
+        return view('public.posts.index', compact('seasons', 'years', 'formats'));
     }
 
 

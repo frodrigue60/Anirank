@@ -12,7 +12,12 @@ class PlaylistController extends Controller
 {
     public function index()
     {
-        $playlists = Auth::user()->playlists()->withCount('songs')->get();
+        $playlists = Auth::user()->playlists()
+            ->withCount('songs')
+            ->with(['songs' => function ($query) {
+                $query->with('post')->limit(1);
+            }])
+            ->get();
         return view('public.playlists.index', compact('playlists'));
     }
 
@@ -41,42 +46,49 @@ class PlaylistController extends Controller
 
     public function show(Playlist $playlist)
     {
+        $playlist->load(['songs.post', 'songs.songVariants.video']);
+
         $queue = $playlist->songs->map(function ($song) {
-            // 1. Tomar la primera variante (puedes ordenar por calidad, etc.)
+            // 1. Tomar la primera variante
             $firstVariant = $song->songVariants->first();
 
-            // 2. Si no hay variante, saltar
             if (!$firstVariant) {
                 return null;
             }
 
-            // 3. Obtener el video asociado (hasOne)
+            // 2. Obtener el video asociado
             $video = $firstVariant->video;
 
-            // 4. Si no hay video, saltar
             if (!$video) {
                 return null;
             }
 
-            // 5. Construir item
+            // 3. Determinar el thumbnail (preferencia al post)
+            $thumbnail = asset('images/default.jpg');
+            if ($song->post && $song->post->thumbnail && Storage::disk('public')->exists($song->post->thumbnail)) {
+                $thumbnail = Storage::url($song->post->thumbnail);
+            } elseif ($song->thumbnail) {
+                $thumbnail = $song->thumbnail;
+            }
+
+            // 4. Construir item
             return [
                 'song_id'        => $song->id,
                 'song_title'     => $song->name,
                 'variant_id'     => $firstVariant->id,
                 'variant_quality' => $firstVariant->quality ?? 'unknown',
                 'video_id'       => $video->id,
-                'video_type'     => $video->type, // 'embed' o 'file'
+                'video_type'     => $video->type,
                 'video_url'      => $video->type === 'embed'
                     ? $video->embed_url
                     : $video->local_url,
                 'duration'       => $video->duration ?? 0,
-                'thumbnail'      => $song->thumbnail ?? asset('images/default.jpg'),
+                'thumbnail'      => $thumbnail,
             ];
         })
-            ->filter() // elimina nulls
-            ->values(); // reindexa
+            ->filter()
+            ->values();
 
-        //dd($playlist, $queue);
         return view('public.playlists.show', compact('playlist', 'queue'));
     }
 
@@ -92,10 +104,8 @@ class PlaylistController extends Controller
             'description' => 'nullable|string|max:255',
         ]);
 
-        $playlist = new Playlist();
         $playlist->name = $request->input('name');
         $playlist->description = $request->input('description');
-        $playlist->user_id = Auth::id();
         $playlist->save();
 
         $message = 'Playlist updated successfully.';

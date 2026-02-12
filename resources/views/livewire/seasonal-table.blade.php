@@ -131,8 +131,7 @@
 
                                     @if ($song->artists->isNotEmpty())
                                         @foreach ($song->artists as $artist)
-                                            <a href="{{ route('artists.show', $artist->slug) }}"
-                                                class="text-white/60 truncate">
+                                            <a href="{{ route('artists.show', $artist->slug) }}" class="text-white/60 truncate">
                                                 {{ $artist->name }}
                                             </a>
                                         @endforeach
@@ -146,7 +145,8 @@
 
                         {{-- Score Column --}}
                         <div class="text-center">
-                            <div class="text-2xl font-black text-white tracking-tight">{{ round($song->averageRating, 2) }}
+                            <div class="text-2xl font-black text-white tracking-tight">
+                                {{ number_format($song->averageRating, 1) }}
                             </div>
                             <div class="text-[10px] font-bold text-white/30 uppercase tracking-widest">Avg Rating</div>
                         </div>

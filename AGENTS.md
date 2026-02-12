@@ -17,7 +17,7 @@
 ## Tech Stack
 
 - **Backend**: PHP 8.2, Laravel 9.x
-- **Frontend**: Blade templates, Tailwind CSS, Vite, Vanilla JS
+- **Frontend**: Blade templates, Livewire 2.x, Tailwind CSS, Vite, Vanilla JS
 - **Database**: MySQL 8.0
 - **Environment**: Laragon / Docker
 
@@ -193,6 +193,7 @@ Standard Laravel user model with extensions.
 | `password`     | string | Hashed password.                            |
 | `type`         | string | Role: `admin`, `editor`, `creator`, `user`. |
 | `image`        | string | Path to profile picture.                    |
+| `banner`       | string | Path to profile banner.                     |
 | `score_format` | string | User's preferred rating display format.     |
 | `slug`         | string | URL-friendly identifier.                    |
 
@@ -392,13 +393,13 @@ Handles user profile, favorites, and settings.
 
 | Method                | Route                         | Description                                   |
 | --------------------- | ----------------------------- | --------------------------------------------- |
-| `index()`             | `GET /users`                  | List all users (paginated).                   |
-| `show($id)`           | `GET /users/{id}`             | Public user profile.                          |
-| `favorites(Request)`  | `GET /favorites`              | Current user's favorites list (with filters). |
+| `index()`             | `GET /profile`                | Current user dashboard (uses `UserSettings`). |
+| `show($slug)`         | `GET /users/{slug}`           | Public user profile.                          |
+| `favorites(Request)`  | `GET /favorites`              | Favorites list (uses `FavoritesTable`).       |
 | `userList($slug)`     | `GET /user/{slug}/list`       | A specific user's rated themes list.          |
-| `uploadProfilePic()`  | `POST /profile/upload-pic`    | Upload profile picture.                       |
-| `uploadBannerPic()`   | `POST /profile/upload-banner` | Upload profile banner.                        |
-| `changeScoreFormat()` | `POST /profile/score-format`  | Change user's preferred score display format. |
+| `uploadProfilePic()`  | `POST /profile/upload-pic`    | (Legacy) Upload profile picture.              |
+| `uploadBannerPic()`   | `POST /profile/upload-banner` | (Legacy) Upload profile banner.               |
+| `changeScoreFormat()` | `POST /profile/score-format`  | (Legacy) Change score display format.         |
 | `welcome()`           | `GET /welcome`                | Welcome/onboarding page.                      |
 
 **Key Helper Methods:**
@@ -448,17 +449,17 @@ Handles commenting on songs and variants.
 
 ### `PlaylistController`
 
-Handles user-created playlists.
+Handles user-created playlists and the immersive player.
 
-| Method                      | Route                       | Description                     |
-| --------------------------- | --------------------------- | ------------------------------- |
-| `index()`                   | `GET /playlists`            | List user's playlists.          |
-| `create()`                  | `GET /playlists/create`     | Show create playlist form.      |
-| `store(Request)`            | `POST /playlists`           | Create a new playlist.          |
-| `show(Playlist)`            | `GET /playlists/{playlist}` | View playlist with video queue. |
-| `edit(Playlist)`            | `GET /playlists/{id}/edit`  | Edit playlist form.             |
-| `update(Request, Playlist)` | `PUT /playlists/{id}`       | Update playlist details.        |
-| `destroy(Playlist)`         | `DELETE /playlists/{id}`    | Delete a playlist.              |
+| Method                      | Route                       | Description                               |
+| --------------------------- | --------------------------- | ----------------------------------------- |
+| `index()`                   | `GET /playlists`            | Premium grid of user's playlists.         |
+| `create()`                  | `GET /playlists/create`     | Glassmorphic creation form.               |
+| `store(Request)`            | `POST /playlists`           | Create a new playlist.                    |
+| `show(Playlist)`            | `GET /playlists/{playlist}` | **Cinema Mode** playback page with queue. |
+| `edit(Playlist)`            | `GET /playlists/{id}/edit`  | Glassmorphic edit form.                   |
+| `update(Request, Playlist)` | `PUT /playlists/{id}`       | Update details (Fixed persistence bug).   |
+| `destroy(Playlist)`         | `DELETE /playlists/{id}`    | Delete a playlist.                        |
 
 ---
 
@@ -1249,6 +1250,34 @@ Base URL: `/api`
 | `/api/requests` | GET | `Api\UserRequestController@index` | `api.requests.index` |
 | `/api/requests` | POST | `Api\UserRequestController@store` | `api.requests.store` |
 | `/api/requests/{id}`| DELETE| `Api\UserRequestController@destroy` | `api.requests.destroy`|
+
+---
+
+## Livewire Components
+
+The application heavily utilizes **Livewire** for reactive UI components, especially for filtering, searching, and user settings.
+
+### User & Navigation
+
+- **`UserSettings`**: Handles avatar and banner uploads with reactive previews. Manages scoring system preferences.
+- **`FavoritesTable`**: Powers the "My Favorites" page with infinite scroll and multi-criteria filtering.
+- **`AnimesTable`**: Dynamic anime search and grid with view mode switching (List/Grid).
+- **`ArtistsTable`**: Artist listing with real-time search and A-Z sorting.
+- **`ArtistThemesTable`**: Specialized song listing for artist profile pages.
+- **`StudiosTable`**: Studio discovery with infinite scroll.
+- **`StudioAnimesTable`**: Catalog of anime produced by a specific studio.
+
+### Discovery & Ranking
+
+- **`RankingTable`**: Global and seasonal leaderboards for songs.
+- **`SeasonalTable`**: Browse themes by season with OP/ED toggles and infinite scroll.
+- **`ThemesTable`**: The primary discovery engine for all themes across the platform.
+
+### Implementation Patterns
+
+- **Infinite Scroll**: Uses Alpine.js with an `Intersection Observer` to trigger `loadMore()` on components.
+- **Event Listeners**: Components like `UserSettings` emit events (e.g., `avatarUpdated`) that other parts of the UI listen for to update shared headers/banners without a refresh.
+- **Glassmorphic Design**: All component views use `surface-dark` backgrounds and `backdrop-blur-md` for a consistent premium look.
 
 ---
 

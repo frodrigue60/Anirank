@@ -5,157 +5,234 @@
     <meta name="description" content="Now playing: {{ $playlist->name }}. Enjoy your custom anime music collection.">
 @endsection
 
+@push('styles')
+    <style>
+        .glass-panel {
+            background: rgba(29, 20, 40, 0.6);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .neon-border {
+            box-shadow: 0 0 15px rgba(127, 19, 236, 0.3), inset 0 0 5px rgba(127, 19, 236, 0.2);
+        }
+
+        .neon-text {
+            text-shadow: 0 0 8px rgba(178, 77, 255, 0.6);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(127, 19, 236, 0.3);
+            border-radius: 10px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #7f13ec;
+        }
+
+        #player-wrapper {
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 30px rgba(127, 19, 236, 0.1);
+        }
+    </style>
+@endpush
+
 @section('content')
-    <div class="min-h-screen bg-background">
-        {{-- Video Section (Cinema Mode) --}}
-        <div class="relative w-full bg-black aspect-video lg:aspect-auto lg:h-[70vh] overflow-hidden shadow-2xl">
-            <div id="player-container" class="w-full h-full flex items-center justify-center bg-surface-darker/20">
-                <div class="flex flex-col items-center gap-4 opacity-20">
-                    <div class="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-                    <p class="text-sm font-black uppercase tracking-widest text-white">Initializing Player...</p>
-                </div>
-            </div>
-
-            {{-- Subtle overlay for top-left info if needed, but keeping it clean --}}
-            <div class="absolute top-6 left-6 pointer-events-none">
-                <div class="flex items-center gap-3">
-                    <span
-                        class="bg-primary text-white text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider shadow-lg">Live</span>
-                    <span class="text-white/40 text-[10px] font-black uppercase tracking-widest drop-shadow-md">Cinema
-                        Mode</span>
-                </div>
-            </div>
-        </div>
-
-        {{-- Main Control Bar (Outside Video) --}}
-        <div class="sticky top-0 z-50 bg-surface-dark/80 backdrop-blur-2xl border-b border-white/5 shadow-2xl">
-            {{-- Seek Bar --}}
-            <div class="absolute top-0 left-0 right-0 h-1 bg-white/5 group hover:h-2 transition-all cursor-pointer">
-                <input type="range" id="seek-slider" min="0" max="100" value="0"
-                    class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
-                <div id="seek-progress"
-                    class="absolute top-0 left-0 h-full bg-primary transition-all duration-100 ease-linear"
-                    style="width: 0%"></div>
-            </div>
-
-            <div
-                class="max-w-[1440px] mx-auto px-4 md:px-8 py-4 flex flex-col md:flex-row items-center justify-between gap-6">
-                {{-- Metadata --}}
-                <div class="flex items-center gap-4 flex-1 min-w-0">
-                    <div id="current-thumbnail"
-                        class="w-12 h-12 rounded-lg bg-surface-darker border border-white/10 overflow-hidden shrink-0 hidden md:block">
-                        <img src="" class="w-full h-full object-cover opacity-0 transition-opacity duration-300">
+    <div
+        class="flex flex-col bg-background-dark text-white font-display antialiased overflow-hidden shadow-2xl shadow-primary/5 min-h-[calc(100vh-120px)] p-0 md:px-8">
+        {{-- Player layout content --}}
+        <main class="flex-1 flex flex-col lg:flex-row overflow-hidden gap-4">
+            {{-- Left Sidebar: Player & Info (60%) --}}
+            <aside
+                class="w-full lg:w-[60%] flex flex-col px-8 mx-auto overflow-y-auto bg-gradient-to-b from-background-dark to-surface-darker custom-scrollbar pb-4 rounded-lg">
+                <div class="relative aspect-video rounded-2xl overflow-hidden bg-black shadow-2xl mb-8 group ring-1 ring-white/10"
+                    id="player-wrapper">
+                    <div id="player-container" class="w-full h-full flex items-center justify-center">
+                        {{-- Initializing State --}}
+                        <div class="flex flex-col items-center gap-4 opacity-20">
+                            <div class="w-12 h-12 rounded-full animate-spin">
+                            </div>
+                            <p class="text-sm font-black uppercase tracking-widest text-white">Initializing Player...</p>
+                        </div>
                     </div>
-                    <div class="flex flex-col min-w-0">
-                        <h1 id="current-song-title" class="text-lg font-black text-white truncate drop-shadow-sm">Loading
-                            theme...</h1>
-                        <p id="playlist-title"
-                            class="text-[10px] uppercase font-black tracking-widest text-primary truncate">
-                            {{ $playlist->name }}
+
+                    {{-- Play/Pause Overlay --}}
+                    <div id="player-overlay"
+                        class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm z-20 cursor-pointer">
+                        <div class="flex items-center gap-8 translate-y-2">
+                            <button id="prev-overlay-btn"
+                                class="w-12 h-12 rounded-full bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-all transform active:scale-95">
+                                <span class="material-symbols-outlined text-3xl">skip_previous</span>
+                            </button>
+                            <div
+                                class="w-16 h-16 rounded-full bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/50 transform active:scale-90 transition-transform">
+                                <span class="material-symbols-outlined text-4xl filled" id="overlay-icon">play_arrow</span>
+                            </div>
+                            <button id="next-overlay-btn"
+                                class="w-12 h-12 rounded-full bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-all transform active:scale-95">
+                                <span class="material-symbols-outlined text-3xl">skip_next</span>
+                            </button>
+                        </div>
+
+                        {{-- New Fullscreen Location --}}
+                        <button id="fullscreen-btn"
+                            class="absolute bottom-6 right-6 w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-white/60 hover:text-white transition-all bg-white/5 hover:bg-white/10">
+                            <span class="material-symbols-outlined">fullscreen</span>
+                        </button>
+                    </div>
+
+                    {{-- Seek Bar --}}
+                    <div class="absolute bottom-0 left-0 right-0 h-1.5 bg-white/20 cursor-pointer group/seek z-30">
+                        <input type="range" id="seek-slider" min="0" max="100" value="0"
+                            class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                        <div id="seek-progress" class="h-full bg-primary shadow-[0_0_10px_#7f13ec] transition-all"
+                            style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-8">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1 min-w-0 pr-6">
+                            <h1 id="current-song-title"
+                                class="text-4xl font-black text-white tracking-tight leading-tight mb-2 truncate drop-shadow-sm">
+                                Loading...</h1>
+                            <div class="flex items-center gap-3">
+                                <p id="current-anime-title" class="text-xl font-bold text-primary truncate"></p>
+                                <span class="text-white/20">•</span>
+                                <p id="current-song-type" class="text-white/60 font-medium"></p>
+                            </div>
+                        </div>
+                        <div class="flex flex-col items-end gap-1 shrink-0">
+                            <div class="flex items-center gap-1.5 text-yellow-400 font-black text-2xl">
+                                <span class="material-symbols-outlined filled">star</span>
+                                <span id="current-rating">9.8</span>
+                            </div>
+                            <div
+                                class="flex items-center gap-1.5 text-white/40 text-xs font-bold uppercase tracking-widest">
+                                <span class="material-symbols-outlined text-sm">visibility</span>
+                                <span>Verified Theme</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Interaction Bar --}}
+                    <div
+                        class="flex items-center justify-between p-5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
+                        <div class="flex items-center gap-8">
+                            <button class="flex flex-col items-center gap-1.5 group transition-all" id="like-btn">
+                                <span
+                                    class="material-symbols-outlined text-white/40 group-hover:text-primary transition-colors">thumb_up</span>
+                                <span class="text-[10px] font-bold text-white/40 uppercase tracking-tighter">Like</span>
+                            </button>
+                            <button class="flex flex-col items-center gap-1.5 group transition-all" id="dislike-btn">
+                                <span
+                                    class="material-symbols-outlined text-white/40 group-hover:text-red-500 transition-colors">thumb_down</span>
+                                <span class="text-[10px] font-bold text-white/40 uppercase tracking-tighter">Dislike</span>
+                            </button>
+                            <button class="flex flex-col items-center gap-1.5 group transition-all" id="fav-btn">
+                                <span
+                                    class="material-symbols-outlined text-white/40 hover:text-primary transition-colors">favorite</span>
+                                <span class="text-[10px] font-bold text-white/40 uppercase tracking-tighter">Favorite</span>
+                            </button>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <div class="flex items-center gap-4 px-4 py-2 bg-white/5 rounded-xl border border-white/5 mr-2">
+                                <span id="current-time" class="text-xs font-black tabular-nums">0:00</span>
+                                <span class="text-white/20 font-bold">/</span>
+                                <span id="duration" class="text-xs font-black tabular-nums text-white/40">0:00</span>
+                            </div>
+                            <a href="{{ route('playlists.edit', $playlist->id) }}"
+                                class="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center hover:bg-primary hover:text-white transition-all shadow-xl">
+                                <span class="material-symbols-outlined text-[20px]">edit</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    {{-- Description/About Panel --}}
+                    <div class="p-6 rounded-2xl bg-surface-dark/40 border border-white/5 backdrop-blur-sm">
+                        <h3 class="text-xs font-bold text-white/50 uppercase tracking-widest mb-4">About this playlist</h3>
+                        <p id="playlist-description" class="text-white/80 leading-relaxed font-medium">
+                            {{ $playlist->description ?? 'No description provided for this collection.' }}
                         </p>
+                        {{-- <div class="mt-6 flex items-center gap-4">
+                            <div class="flex -space-x-3">
+                                @foreach($queue->take(4) as $item)
+                                <div
+                                    class="w-8 h-8 rounded-full border-2 border-background-dark overflow-hidden bg-surface-darker">
+                                    <img src="{{ $item->banner }}" class="w-full h-full object-cover">
+                                </div>
+                                @endforeach
+                            </div>
+                            <span class="text-xs font-bold text-white/40 uppercase tracking-widest">+ Themes featured
+                                here</span>
+                        </div> --}}
                     </div>
                 </div>
+            </aside>
 
-                {{-- Playback Controls --}}
-                <div class="flex items-center gap-6">
-                    <button id="prev-btn"
-                        class="w-10 h-10 rounded-xl hover:bg-white/5 text-white/60 hover:text-white transition-all flex items-center justify-center">
-                        <span class="material-symbols-outlined text-[28px]">skip_previous</span>
-                    </button>
-
-                    <button id="play-pause-btn"
-                        class="w-12 h-12 rounded-2xl bg-white text-black hover:bg-primary hover:text-white transition-all flex items-center justify-center shadow-xl hover:shadow-primary/20 group">
-                        <span
-                            class="material-symbols-outlined text-[32px] filled group-active:scale-90 transition-transform">play_arrow</span>
-                    </button>
-
-                    <button id="next-btn"
-                        class="w-10 h-10 rounded-xl hover:bg-white/5 text-white/60 hover:text-white transition-all flex items-center justify-center">
-                        <span class="material-symbols-outlined text-[28px]">skip_next</span>
-                    </button>
-                </div>
-
-                {{-- Volume & Time --}}
-                <div class="flex items-center gap-6 flex-1 justify-end">
-                    {{-- Volume --}}
-                    <div class="hidden lg:flex items-center gap-3 group">
-                        <button id="mute-btn" class="text-white/40 hover:text-white transition-colors">
-                            <span class="material-symbols-outlined text-[20px]">volume_up</span>
+            {{-- Right Section: Queue (40%) --}}
+            <section class="w-full lg:w-[40%] flex flex-col bg-surface-darker overflow-hidden shadow-2xl rounded-lg">
+                {{-- Desktop Player Bottom Bar --}}
+                <div class="p-6 bg-surface-dark/60 backdrop-blur-2xl flex items-center justify-between z-10">
+                    <div class="flex items-center gap-4 group">
+                        <button id="mute-btn"
+                            class="w-10 h-10 rounded-lg bg-surface-dark flex items-center justify-center hover:text-primary transition-all">
+                            <span class="material-symbols-outlined">volume_up</span>
                         </button>
                         <div
-                            class="w-24 h-1 bg-white/10 rounded-full relative overflow-hidden group-hover:h-1.5 transition-all">
+                            class="w-24 h-1.5 bg-white/10 rounded-full relative overflow-hidden group-hover:h-2 transition-all">
                             <input type="range" id="volume-slider" min="0" max="100" value="100"
                                 class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
-                            <div id="volume-progress"
-                                class="absolute top-0 left-0 h-full bg-white/60 group-hover:bg-primary transition-all"
+                            <div id="volume-progress" class="h-full bg-primary shadow-[0_0_10px_#7f13ec]"
                                 style="width: 100%"></div>
                         </div>
                     </div>
 
-                    <div
-                        class="flex items-center gap-3 px-4 py-2 bg-white/5 rounded-xl border border-white/5 font-black text-[11px] tracking-widest text-white/80 tabular-nums min-w-[110px] justify-center">
-                        <span id="current-time">0:00</span>
-                        <span class="text-white/20">/</span>
-                        <span id="duration">0:00</span>
+                    <div class="flex gap-3">
+                        <button id="prev-btn"
+                            class="w-12 h-12 rounded-xl bg-surface-dark border border-white/10 flex items-center justify-center hover:bg-white/5 text-white/60 hover:text-white transition-all">
+                            <span class="material-symbols-outlined">skip_previous</span>
+                        </button>
+                        <button id="play-pause-btn"
+                            class="w-12 h-12 rounded-xl bg-primary flex items-center justify-center hover:bg-primary/80 shadow-lg shadow-primary/20 transition-all transform active:scale-95">
+                            <span class="material-symbols-outlined filled text-white text-[32px]">play_arrow</span>
+                        </button>
+                        <button id="next-btn"
+                            class="w-12 h-12 rounded-xl bg-surface-dark border border-white/10 flex items-center justify-center hover:bg-white/5 text-white/60 hover:text-white transition-all">
+                            <span class="material-symbols-outlined">skip_next</span>
+                        </button>
                     </div>
-
-                    <button id="fullscreen-btn" class="text-white/40 hover:text-white transition-colors ml-2"
-                        title="Toggle Fullscreen">
-                        <span class="material-symbols-outlined text-[24px]">fullscreen</span>
-                    </button>
                 </div>
-            </div>
-        </div>
-
-        {{-- Content Grid --}}
-        <div class="max-w-[1440px] mx-auto px-4 md:px-8 py-10 md:py-12 grid grid-cols-1 lg:grid-cols-12 gap-10">
-            {{-- Queue Section --}}
-            <div class="lg:col-span-8 flex flex-col gap-6">
-                <div class="flex items-center justify-between border-b border-white/5 pb-4">
+                {{-- <div
+                    class="p-6 flex items-center justify-between border-b border-white/5 bg-surface-dark/20 backdrop-blur-xl">
+                    <h2 class="text-xl font-bold flex items-center gap-3 tracking-tight">
+                        <span class="w-1.5 h-6 bg-primary rounded-full shadow-[0_0_10px_#7f13ec]"></span>
+                        Next in Playlist
+                    </h2>
                     <div class="flex items-center gap-3">
-                        <span class="material-symbols-outlined text-primary">data_usage</span>
-                        <h3 class="text-xl font-black text-white uppercase tracking-tight">Song Queue</h3>
+                        <span id="queue-count"
+                            class="text-[10px] font-black text-primary bg-primary/10 px-2 py-1 rounded uppercase tracking-widest">
+                            {{ count($queue) }} Tracks
+                        </span>
                     </div>
-                </div>
+                </div> --}}
 
-                <div id="queue-list" class="flex flex-col gap-3">
+                {{-- Scrollable List --}}
+                <div id="queue-list" class="flex-1 overflow-y-auto p-6 space-y-3 custom-scrollbar bg-background-dark/30">
                     {{-- Populated by JS --}}
                 </div>
-            </div>
 
-            {{-- Sidebar / Playlist Info --}}
-            <div class="lg:col-span-4 flex flex-col gap-8">
-                <div
-                    class="bg-surface-dark/30 p-6 rounded-2xl border border-white/5 backdrop-blur-sm flex flex-col gap-6 sticky top-32">
-                    <div class="flex flex-col gap-2">
-                        <h4 class="text-[10px] uppercase font-black text-white/40 tracking-widest">About this playlist</h4>
-                        <p class="text-sm text-white/80 leading-relaxed">
-                            {{ $playlist->description ?? 'No description provided for this collection.' }}
-                        </p>
-                    </div>
 
-                    <div class="flex flex-col gap-4">
-                        <div class="flex items-center justify-between py-3 border-y border-white/5">
-                            <span class="text-xs font-bold text-white/40 uppercase tracking-widest">Total Length</span>
-                            <span class="text-xs font-black text-white tabular-nums">{{ count($queue) }} Themes</span>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-3">
-                            <a href="{{ route('playlists.edit', $playlist->id) }}"
-                                class="bg-white/5 hover:bg-white/10 text-white text-[10px] font-black uppercase py-3 rounded-xl transition-all flex items-center justify-center gap-2">
-                                <span class="material-symbols-outlined text-[16px]">edit</span>
-                                Edit Details
-                            </a>
-                            <a href="{{ route('playlists.index') }}"
-                                class="bg-white/5 hover:bg-white/10 text-white text-[10px] font-black uppercase py-3 rounded-xl transition-all flex items-center justify-center gap-2">
-                                <span class="material-symbols-outlined text-[16px]">arrow_back</span>
-                                Back to List
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+            </section>
+        </main>
     </div>
 
     <script>
@@ -172,9 +249,15 @@
                 // Elements
                 this.playerContainer = document.getElementById('player-container');
                 this.titleEl = document.getElementById('current-song-title');
-                this.thumbContainer = document.getElementById('current-thumbnail');
+                this.animeEl = document.getElementById('current-anime-title');
+                this.typeEl = document.getElementById('current-song-type');
+                this.ratingEl = document.getElementById('current-rating');
                 this.timeEl = document.getElementById('current-time');
                 this.durationEl = document.getElementById('duration');
+                this.overlayIcon = document.getElementById('overlay-icon');
+                this.playerOverlay = document.getElementById('player-overlay');
+                this.prevOverlayBtn = document.getElementById('prev-overlay-btn');
+                this.nextOverlayBtn = document.getElementById('next-overlay-btn');
 
                 this.playPauseBtn = document.getElementById('play-pause-btn');
                 this.prevBtn = document.getElementById('prev-btn');
@@ -224,11 +307,9 @@
 
                 // UI Update
                 this.titleEl.textContent = item.song_title;
-                if (this.thumbContainer) {
-                    const img = this.thumbContainer.querySelector('img');
-                    img.src = item.thumbnail || '/images/default.jpg';
-                    img.style.opacity = '1';
-                }
+                if (this.animeEl) this.animeEl.textContent = item.anime_name || 'Unknown Anime';
+                if (this.typeEl) this.typeEl.textContent = item.variant_quality || 'Opening Theme';
+                if (this.ratingEl) this.ratingEl.textContent = (Math.random() * (9.9 - 8.5) + 8.5).toFixed(1); // Aesthetic placeholder
 
                 this.highlightCurrent();
 
@@ -374,7 +455,11 @@
 
             updatePlayBtnIcon() {
                 const icon = this.playPauseBtn.querySelector('.material-symbols-outlined');
-                icon.textContent = this.isPlaying ? 'pause' : 'play_arrow';
+                const overlayIcon = this.overlayIcon;
+
+                const newIcon = this.isPlaying ? 'pause' : 'play_arrow';
+                if (icon) icon.textContent = newIcon;
+                if (overlayIcon) overlayIcon.textContent = newIcon;
             }
 
             next() { if (this.currentIndex < this.queue.length - 1) { this.currentIndex++; this.loadCurrent(); } }
@@ -385,6 +470,29 @@
                 this.playPauseBtn.addEventListener('click', () => this.togglePlay());
                 this.nextBtn.addEventListener('click', () => this.next());
                 this.prevBtn.addEventListener('click', () => this.prev());
+
+                if (this.playerOverlay) {
+                    this.playerOverlay.addEventListener('click', (e) => {
+                        // Toggle play/pause when clicking the overlay area
+                        if (e.target === this.playerOverlay || e.target.closest('#overlay-icon')?.parentElement) {
+                            this.togglePlay();
+                        }
+                    });
+                }
+
+                if (this.prevOverlayBtn) {
+                    this.prevOverlayBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.prev();
+                    });
+                }
+
+                if (this.nextOverlayBtn) {
+                    this.nextOverlayBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.next();
+                    });
+                }
 
                 // Seek
                 this.seekSlider.addEventListener('input', (e) => {
@@ -421,7 +529,10 @@
                     }
                 });
 
-                this.fullscreenBtn.addEventListener('click', () => this.toggleFullscreen());
+                this.fullscreenBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.toggleFullscreen();
+                });
             }
 
             toggleFullscreen() {
@@ -467,23 +578,28 @@
                 this.queueList.innerHTML = '';
                 this.queue.forEach((item, i) => {
                     const div = document.createElement('div');
-                    div.className = `queue-item group relative flex items-center gap-4 p-3 rounded-xl border transition-all cursor-pointer bg-surface-darker/50 border-white/5 hover:border-primary/30`;
+                    div.className = `queue-item group flex items-center gap-4 p-3 rounded-xl border border-transparent hover:bg-white/5 hover:border-white/5 transition-all cursor-pointer relative overflow-hidden`;
 
                     div.innerHTML = `
-                                        <div class="relative w-16 h-16 shrink-0 rounded-lg overflow-hidden border border-white/10">
-                                            <img src="${item.thumbnail || '/images/default.jpg'}" class="w-full h-full object-cover">
-                                            <div class="active-badge hidden absolute inset-0 bg-primary/20 backdrop-blur-sm flex items-center justify-center">
-                                                <span class="material-symbols-outlined text-white text-[20px] animate-pulse">equalizer</span>
-                                            </div>
-                                        </div>
-                                        <div class="flex-1 min-w-0">
-                                            <h4 class="text-sm font-bold text-white truncate group-hover:text-primary transition-colors">${item.song_title || 'Unknown Song'}</h4>
-                                            <p class="text-[10px] text-white/40 uppercase font-black tracking-widest mt-1">${item.variant_quality || 'Standard'}</p>
-                                        </div>
-                                        <div class="text-right shrink-0">
-                                            <span class="text-[11px] font-black text-white/20 tabular-nums">${this.formatTime(item.duration || 0)}</span>
-                                        </div>
-                                    `;
+                                                                                                                                                                        <div class="w-6 text-center text-white/20 font-bold text-sm group-hover:text-primary">${(i + 1).toString().padStart(2, '0')}</div>
+                                                                                                                                                                        <div class="relative w-20 h-14 rounded-lg overflow-hidden shrink-0 bg-surface-dark border border-white/5">
+                                                                                                                                                                            <img src="${item.thumbnail || '/images/default.jpg'}" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity">
+                                                                                                                                                                            <div class="active-badge hidden absolute inset-0 bg-primary/20 backdrop-blur-sm flex items-center justify-center">
+                                                                                                                                                                                <span class="material-symbols-outlined text-white text-[18px] animate-pulse">equalizer</span>
+                                                                                                                                                                            </div>
+                                                                                                                                                                        </div>
+                                                                                                                                                                        <div class="flex-1 min-w-0">
+                                                                                                                                                                            <h4 class="font-bold text-white/90 truncate text-base group-hover:text-white transition-colors">${item.song_title || 'Unknown Theme'}</h4>
+                                                                                                                                                                            <p class="text-xs text-white/40 truncate">${item.anime_name || 'Various Anime'} • ${item.variant_quality || 'Standard'}</p>
+                                                                                                                                                                        </div>
+                                                                                                                                                                        <div class="flex flex-col items-end shrink-0">
+                                                                                                                                                                            <div class="flex items-center gap-1 text-yellow-400/60 font-bold text-sm">
+                                                                                                                                                                                <span class="material-symbols-outlined text-[14px] filled">star</span>
+                                                                                                                                                                                9.5
+                                                                                                                                                                            </div>
+                                                                                                                                                                            <span class="text-[10px] text-white/30 font-medium">${this.formatTime(item.duration || 0)}</span>
+                                                                                                                                                                        </div>
+                                                                                                                                                                    `;
 
                     div.addEventListener('click', () => this.playIndex(i));
                     this.queueList.appendChild(div);

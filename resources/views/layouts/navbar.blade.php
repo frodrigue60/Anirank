@@ -77,7 +77,7 @@
 
                 <!-- User dropdown -->
                 <div id="user-dropdown"
-                    class="z-50 hidden absolute right-0 mt-3 w-56 glass-panel rounded-xl border border-white/10 shadow-2xl overflow-hidden py-1 bg-surface-darker">
+                    class="z-50 hidden absolute right-0 mt-3 w-56 rounded-xl border border-white/10 shadow-2xl overflow-hidden py-1 bg-[#1e1e2e]">
                     @auth
                         <div class="px-4 py-3 border-b border-white/5">
                             <p class="text-sm font-bold text-white truncate">{{ Auth::user()->name }}</p>

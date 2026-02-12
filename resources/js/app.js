@@ -1,5 +1,11 @@
 import API from "@api/index.js";
 import swal from "sweetalert";
+import Alpine from "alpinejs";
+import intersect from "@alpinejs/intersect";
+
+Alpine.plugin(intersect);
+window.Alpine = Alpine;
+Alpine.start();
 
 function hideModal(id) {
     const modal = document.getElementById(id);

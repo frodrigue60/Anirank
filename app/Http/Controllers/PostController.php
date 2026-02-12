@@ -83,7 +83,7 @@ class PostController extends Controller
         $years = Year::all()->sortByDesc('name');
         $formats = Format::all();
 
-        return view('public.filter', compact('seasons', 'years', 'formats'));
+        return view('public.animes.index', compact('seasons', 'years', 'formats'));
     }
 
 
@@ -139,7 +139,7 @@ class PostController extends Controller
         $types = $this->filterTypesSortChar()['types'];
         $sortMethods = $this->filterTypesSortChar()['sortMethods'];
 
-        return view('public.filter', compact('seasons', 'years', 'sortMethods', 'types'));
+        return view('public.themes.index', compact('seasons', 'years', 'sortMethods', 'types'));
     }
 
     public function setScoreOnlyVariants($variants, $user = null)

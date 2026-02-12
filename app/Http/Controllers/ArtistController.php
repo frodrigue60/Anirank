@@ -25,7 +25,7 @@ class ArtistController extends Controller
      */
     public function index()
     {
-        return view('public.filter');
+        return view('public.artists.index');
     }
 
     /**
@@ -59,6 +59,6 @@ class ArtistController extends Controller
         //$songs = $artist->songs;
 
         //return view('public.artists.show', compact('artist', 'seasons', 'years', 'sortMethods', 'types', 'songs'));
-        return view('public.filter', compact('artist', 'seasons', 'years', 'sortMethods', 'types'));
+        return view('public.artists.show', compact('artist', 'seasons', 'years', 'sortMethods', 'types'));
     }
 }

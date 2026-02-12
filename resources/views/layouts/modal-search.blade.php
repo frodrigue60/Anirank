@@ -33,7 +33,7 @@
                     </div>
                     <form role="search" id="form-search" data-url-base="{{ config('app.url') }}">
                         <input id="searchInputModal"
-                            class="w-full bg-surface-dark border border-white/10 rounded-full py-4 pl-12 pr-6 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all font-medium text-lg"
+                            class="w-full !bg-surface-dark border border-white/10 rounded-full py-4 pl-12 pr-6 !text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all font-medium text-lg"
                             type="search" placeholder="Search anime, artists, users..." autocomplete="off">
                     </form>
                 </div>

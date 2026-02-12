@@ -17,7 +17,7 @@ class StudioController extends Controller
      */
     public function index()
     {
-        return view('public.filter');
+        return view('public.studios.index');
     }
 
     /**
@@ -56,7 +56,7 @@ class StudioController extends Controller
         $formats = Format::all();
 
         $studio = Studio::where('slug', $slug)->first();
-        return view('public.filter', compact('studio', 'seasons', 'years', 'sortMethods', 'formats'));
+        return view('public.studios.show', compact('studio', 'seasons', 'years', 'sortMethods', 'formats'));
     }
 
     /**

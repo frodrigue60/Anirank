@@ -70,7 +70,12 @@
             crossorigin="anonymous" referrerpolicy="no-referrer" />
     @endif
 
-    {{--  @livewireStyles --}}
+    @livewireStyles
+    <style>
+        [x-cloak] {
+            display: none !important;
+        }
+    </style>
     @stack('styles')
 </head>
 
@@ -96,6 +101,8 @@
         </main>
 
         @include('layouts.footer.footer-v1')
+
+        <x-toast />
     </div>
 
     {{-- Scripts --}}
@@ -107,7 +114,7 @@
             crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     @endif
 
-    {{-- @livewireScripts --}}
+    @livewireScripts
     @stack('scripts')
     @yield('script')
 </body>

@@ -52,7 +52,7 @@
                                     class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent p-4 pt-10">
                                     <div class="flex items-center gap-1 text-yellow-400 font-bold text-lg">
                                         <span class="material-symbols-outlined filled text-[20px]">star</span>
-                                        <span>{{ number_format($featuredSong->ratings_avg_rating ?? 0, 1) }}/10</span>
+                                        <span>{{ number_format($song->ratings_avg_rating ?? 0, 1) }}/10</span>
                                     </div>
                                 </div>
                             </div>
@@ -79,7 +79,7 @@
                             </div>
                             <div class="flex items-center gap-4 mt-2 justify-center md:justify-start">
                                 <a href="{{ $featuredSong->getUrlAttribute() }}"
-                                    class="bg-primary hover:bg-primary/90 text-white h-12 px-8 rounded-full font-bold flex items-center gap-2 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-primary/30">
+                                    class="bg-primary hover:bg-primary/80 text-white h-12 px-8 rounded-full font-bold flex items-center gap-2 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-primary/30">
                                     <span class="material-symbols-outlined filled">play_circle</span>
                                     <span>Play Now</span>
                                 </a>
@@ -231,11 +231,11 @@
                 <div class="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent"></div>
                 <div class="relative z-10 text-white">
                     <span
-                        class="bg-primary text-white text-[10px] font-bold uppercase px-2 py-1 rounded mb-2 inline-block">Discord</span>
+                        class="bg-[#5865F2] text-white text-[10px] font-bold uppercase px-2 py-1 rounded mb-2 inline-block">Discord</span>
                     <h3 class="text-2xl font-bold mb-2 leading-tight">Join Our Community</h3>
                     <p class="text-white/70 text-sm mb-4">Discuss your favorite themes with other fans!</p>
                     <a href="#"
-                        class="w-full bg-white text-black font-bold py-3 rounded-lg hover:bg-gray-200 transition-colors inline-block text-center">Join
+                        class="w-full bg-[#5865F2] text-white font-bold py-3 rounded-lg hover:bg-[#4752C4] transition-colors inline-block text-center">Join
                         Now</a>
                 </div>
             </div>

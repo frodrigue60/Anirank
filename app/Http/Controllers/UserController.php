@@ -95,7 +95,7 @@ class UserController extends Controller
     public function userList($slug)
     {
         //dd($userId);
-        $user = User::where('slug', $slug)->select('id','slug', 'score_format', 'image', 'banner', 'name')->first();
+        $user = User::where('slug', $slug)->select('id', 'slug', 'score_format', 'image', 'banner', 'name')->first();
 
         if (!$user) {
             return redirect('/')->with('warning', 'Invalid user');
@@ -106,7 +106,7 @@ class UserController extends Controller
         $types = $this->filterTypesSortChar()['types'];
         $sortMethods = $this->filterTypesSortChar()['sortMethods'];
         //dd($songs);
-        return view('public.filter', compact('seasons', 'years', 'sortMethods', 'types', 'user'));
+        return view('public.users.list', compact('seasons', 'years', 'sortMethods', 'types', 'user'));
     }
 
 
@@ -168,7 +168,7 @@ class UserController extends Controller
             return response()->json(['html' => $view, "lastPage" => $song_variants->lastPage()]);
         }
         //dd($songs);
-        return view('public.filter', compact('seasons', 'years', 'sortMethods', 'types', 'user'));
+        return view('public.users.favorites', compact('seasons', 'years', 'sortMethods', 'types', 'user'));
     }
 
     public function paginate($songs, $perPage = 18, $page = null, $options = [])

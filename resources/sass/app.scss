@@ -1412,3 +1412,19 @@ img.card-2-bg {
         display: none;
     }
 }
+
+/* GLOBAL INPUT FIX */
+input, select, textarea {
+    background-color: #22192e !important; 
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+input::placeholder {
+    color: rgba(255, 255, 255, 0.3) !important;
+}
+
+select option {
+    background-color: #22192e !important;
+    color: #ffffff !important;
+}

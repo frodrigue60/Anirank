@@ -1,85 +1,68 @@
- @extends('layouts.app')
- @section('meta')
- @endsection
- @section('content')
-     @php
-         $thumbnailUrl = '';
+@extends('layouts.app')
 
-         if ($artist->thumbnail != null && Storage::disk('public')->exists($artist->thumbnail)) {
-             $thumbnailUrl = Storage::url($artist->thumbnail);
-         } elseif ($artist->thumbnail_src != null) {
-             $thumbnailUrl = $artist->thumbnail_src;
-         } else {
-             $thumbnailUrl = asset('resources/images/default-thumbnail.jpg');
-         }
-     @endphp
-     <div class="container">
-         <div class="row">
-             <div class="col-12 col-lg-3 text-center" {{-- style="border: solid 1px blue" --}}>
-                 <div class="position-relative overflow-hidden rounded-1 m-2">
-                     <img class="" loading="lazy" src="{{ $thumbnailUrl }}" alt="{{ $artist->title }}">
-                 </div>
-                 <div>
-                     <h6>Alternative Name</h6>
-                     <span>{{ $artist->name_js ? $artist->name_jp : 'N/A' }}</span>
-                 </div>
-                 <hr>
-                 <div>
-                     <h6>Active</h6>
-                     <span> Date 1 - Date 2</span>
-                 </div>
-                 <hr>
-                 <div class="d-flex flex-column">
-                     <h6>Members</h6>
-                     <span>Member 1</span>
-                     <span>Member 2</span>
-                     <span>Member 3</span>
-                     <span>Member 4</span>
-                 </div>
-                 <hr>
-                 <div class="d-flex flex-column">
-                     <h6>Related Series</h6>
-                     <a href="">Serie 1</a>
-                     <a href="">Serie 2</a>
-                     <a href="">Serie 3</a>
-                     <a href="">Serie 4</a>
-                 </div>
-                 <hr>
-                 <div class="d-flex flex-column">
-                     <h6>External Links</h6>
-                     <a href="">Link 1</a>
-                     <a href="">Link 2</a>
-                     <a href="">Link 3</a>
-                     <a href="">Link 4</a>
-                     <a href="">Link 5</a>
-                 </div>
-             </div>
-             <div class="col-12 col-lg-9" {{-- style="border: solid 1px red" --}}>
-                 <div class="">
-                     <div>
-                         <h2>Artist Infomation</h2>
-                     </div>
-                     <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore
-                         et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut
-                         aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse
-                         cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-                         culpa qui officia deserunt mollit anim id est laborum.</p>
-                 </div>
-                 <div class="my-3 bg-secondary p-2">
-                     <h4>Menu Options</h4>
-                 </div>
-                 <hr>
-                 <div class=" d-flex flex-wrap gap-2 justify-content-center">
-                     @include('partials.songs.cards-v2', ['sonsg' => $songs])
-                 </div>
+@section('meta')
+    <title>{{ $artist->name }} - Themes</title>
+    <meta title="{{ $artist->name }} - Themes">
+    <link rel="canonical" href="{{ url()->current() }}">
+    <meta name="description" content="Explore themes by {{ $artist->name }}.">
+    <meta name="robots" content="index, follow, max-image-preview:standard">
+@endsection
 
-             </div>
-         </div>
+@section('content')
+    <div class="max-w-[1440px] mx-auto px-4 md:px-8 py-10">
+        <div class="flex flex-col gap-8">
+            {{-- Header --}}
+            <div class="flex items-center gap-6">
+                @php
+                    $thumbnailUrl = null;
+                    if ($artist->thumbnail != null && Storage::disk('public')->exists($artist->thumbnail)) {
+                        $thumbnailUrl = Storage::url($artist->thumbnail);
+                    } elseif ($artist->thumbnail_src != null) {
+                        $thumbnailUrl = $artist->thumbnail_src;
+                    }
+                @endphp
 
+                @if ($thumbnailUrl)
+                    <div class="w-24 h-24 rounded-full overflow-hidden ring-4 ring-primary/20 shadow-xl shrink-0">
+                        <img src="{{ $thumbnailUrl }}" alt="{{ $artist->name }}" class="w-full h-full object-cover">
+                    </div>
+                @else
+                    <div
+                        class="w-24 h-24 rounded-full bg-surface-darker flex items-center justify-center text-white/10 shrink-0">
+                        <span class="material-symbols-outlined text-4xl">person</span>
+                    </div>
+                @endif
 
+                <div>
+                    <h1 class="text-3xl md:text-4xl font-black text-white mb-2">{{ $artist->name }}</h1>
+                    <div class="h-1 w-20 bg-primary rounded-full"></div>
+                </div>
+            </div>
 
-     </div>
- @endsection
+            {{-- Filter Panel --}}
+            <section class="bg-surface-dark/30 p-6 rounded-2xl border border-white/5 shadow-2xl backdrop-blur-md">
+                @include('components.filter.container', [
+                    'apiEndpoint' => '',
+                    'method' => 'GET',
+                    'fields' => ['name', 'type', 'year', 'season', 'sort', 'artist-id'],
+                ])
+            </section>
 
- @push('script')
- @endpush
+            {{-- Data Container --}}
+            <section class="min-h-[400px]">
+                <div class="results grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="data">
+                    {{-- AJAX Results --}}
+                </div>
+
+                {{-- Loader --}}
+                <div class="flex justify-center py-20" id="loader">
+                    <div class="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+                </div>
+            </section>
+        </div>
+    </div>
+@endsection
+
+@section('script')
+    @vite(['resources/js/filter_artist_themes.js'])
+@endsection

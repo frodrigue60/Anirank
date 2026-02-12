@@ -41,7 +41,7 @@
                         class="group relative bg-surface-dark/30 rounded-2xl border border-white/5 p-5 backdrop-blur-sm hover:bg-surface-dark/50 transition-all flex flex-col gap-4 overflow-hidden">
 
                         {{-- Cover Image Background --}}
-                        <div class="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <div class="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity pointer-events-none">
                             <img src="{{ $cover }}" class="w-full h-full object-cover blur-sm scale-110">
                             <div class="absolute inset-0 bg-gradient-to-b from-surface-darker/80 to-surface-darker"></div>
                         </div>

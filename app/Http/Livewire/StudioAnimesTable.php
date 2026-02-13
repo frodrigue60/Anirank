@@ -14,22 +14,26 @@ class StudioAnimesTable extends Component
     use WithPagination;
 
     public $studioId;
+    public $studio;
     public $name = '';
     public $year_id = '';
     public $season_id = '';
     public $format_id = '';
     public $perPage = 18;
+    public $viewMode = 'grid_small'; // grid_small, grid_large, list
 
     protected $queryString = [
         'name' => ['except' => ''],
         'year_id' => ['except' => ''],
         'season_id' => ['except' => ''],
         'format_id' => ['except' => ''],
+        'viewMode' => ['except' => 'grid_small'],
     ];
 
     public function mount($studioId)
     {
         $this->studioId = $studioId;
+        $this->studio = \App\Models\Studio::findOrFail($studioId);
     }
 
     public function updatingName()
@@ -57,6 +61,11 @@ class StudioAnimesTable extends Component
         $this->perPage += 12;
     }
 
+    public function setViewMode($mode)
+    {
+        $this->viewMode = $mode;
+    }
+
     public function render()
     {
         $posts = Post::query()
@@ -78,6 +87,7 @@ class StudioAnimesTable extends Component
             ->when($this->format_id, function ($query) {
                 $query->where('format_id', $this->format_id);
             })
+            ->with(['format', 'season', 'year', 'studios', 'producers'])
             ->orderBy('title', 'asc')
             ->paginate($this->perPage);
 

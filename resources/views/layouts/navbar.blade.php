@@ -39,6 +39,10 @@
                             class="flex items-center gap-3 px-4 py-2 text-sm text-white/80 hover:bg-white/5 hover:text-primary transition-colors">
                             <span class="material-symbols-outlined text-[18px]">business</span> Studios
                         </a>
+                        <a href="{{ route('producers.index') }}"
+                            class="flex items-center gap-3 px-4 py-2 text-sm text-white/80 hover:bg-white/5 hover:text-primary transition-colors">
+                            <span class="material-symbols-outlined text-[18px]">token</span> Producers
+                        </a>
                     </div>
                 </div>
             </nav>
@@ -61,10 +65,10 @@
                         @php
                             $userImage =
                                 Auth::user()->image && Storage::disk('public')->exists(Auth::user()->image)
-                                ? Storage::url(Auth::user()->image)
-                                : 'https://www.gravatar.com/avatar/' .
-                                md5(strtolower(trim(Auth::user()->email))) .
-                                '?d=mp';
+                                    ? Storage::url(Auth::user()->image)
+                                    : 'https://www.gravatar.com/avatar/' .
+                                        md5(strtolower(trim(Auth::user()->email))) .
+                                        '?d=mp';
                         @endphp
                         <div class="w-9 h-9 rounded-full bg-cover bg-center ring-2 ring-transparent group-hover:ring-primary transition-all shadow-lg"
                             style="background-image: url('{{ $userImage }}');"></div>
@@ -213,6 +217,11 @@
                 <span class="material-symbols-outlined">business</span>
                 <span class="font-medium text-sm">Studios</span>
             </a>
+            <a href="{{ route('producers.index') }}"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl text-white/60 hover:text-white hover:bg-white/5 transition-all">
+                <span class="material-symbols-outlined">token</span>
+                <span class="font-medium text-sm">Producers</span>
+            </a>
         </nav>
 
 
@@ -220,7 +229,7 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
+    document.addEventListener('DOMContentLoaded', function() {
         // Dropdown Utility
         function setupDropdown(buttonId, menuId) {
             const btn = document.getElementById(buttonId);

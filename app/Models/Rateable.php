@@ -118,6 +118,14 @@ trait Rateable
 
     public function getAverageRatingAttribute()
     {
+        if (array_key_exists('ratings_avg_rating', $this->attributes)) {
+            return $this->attributes['ratings_avg_rating'];
+        }
+
+        if (isset($this->ratings_avg_rating)) {
+            return $this->ratings_avg_rating;
+        }
+
         return $this->averageRating();
     }
 

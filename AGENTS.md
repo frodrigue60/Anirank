@@ -77,8 +77,8 @@ Represents an **anime series**.
 
 - `hasMany` → `Song`, `Report`
 - `belongsTo` → `Year`, `Season`, `Format`
-- `belongsToMany` → `Studio`, `ExternalLink`
-- Custom: `openings()`, `endings()`, `producers()` (via pivot `post_producer`)
+- `belongsToMany` → `Studio`, `Producer`, `ExternalLink`
+- Custom: `openings()`, `endings()`
 
 ---
 
@@ -284,7 +284,8 @@ Marks an entity as favorited by a user.
 | -------------- | ------------------------------------------------------ |
 | `Year`         | Represents a year (e.g., 2024). Has many Posts, Songs. |
 | `Season`       | Represents a season (Winter, Spring, Summer, Fall).    |
-| `Studio`       | Animation studio. Many-to-many with Post.              |
+| `Studio`       | Animation studio (creative). Many-to-many with Post.   |
+| `Producer`     | Production company/committee. Many-to-many with Post.  |
 | `Format`       | Anime format (TV, Movie, OVA). Has many Posts.         |
 | `ExternalLink` | External links (MAL, AniList). Many-to-many with Post. |
 | `Report`       | User-submitted reports for SongVariants.               |
@@ -432,6 +433,17 @@ Handles animation studio pages.
 
 ---
 
+### `ProducerController`
+
+Handles production company and committee pages.
+
+| Method        | Route                   | Description                           |
+| ------------- | ----------------------- | ------------------------------------- |
+| `index()`     | `GET /producers`        | Filter/browse all producers.          |
+| `show($slug)` | `GET /producers/{slug}` | Producer detail with all their anime. |
+
+---
+
 ### `CommentController`
 
 Handles commenting on songs and variants.
@@ -528,6 +540,7 @@ All admin controllers are located in `app/Http/Controllers/Admin/` and are prote
 - `getSeasonalAnimes(Request)` → Fetch seasonal anime list from AniList.
 - `generateMassive($data)` → Bulk import anime from AniList seasonal data.
 - `forceUpdate($id)` → Re-sync anime data from AniList.
+- `syncAllFromAnilist()` → **Bulk Synchronizer**: Re-evaluates all posts and re-links them to Studios or Producers based on AniList flags.
 - `wipePosts()` → Delete all posts (dangerous, admin-only).
 
 **Image Handling:**
@@ -704,14 +717,43 @@ Manages seasonal tags (e.g., "Winter 2024") for categorization.
 
 ---
 
+### `Admin\StudioController`
+
+Manages animation studio records.
+
+| Method                 | Route                         | Description                          |
+| ---------------------- | ----------------------------- | ------------------------------------ |
+| `index()`              | `GET admin/studios`           | List all studios with search.        |
+| `create()`             | `GET admin/studios/create`    | Create studio form.                  |
+| `store(Request)`       | `POST admin/studios`          | Create new studio.                   |
+| `edit($id)`            | `GET admin/studios/{id}/edit` | Edit studio form.                    |
+| `update(Request, $id)` | `PUT admin/studios/{id}`      | Update studio details.               |
+| `destroy($id)`         | `DELETE admin/studios/{id}`   | Delete studio (detaches from posts). |
+
+---
+
+### `Admin\ProducerController`
+
+Manages production company/committee records.
+
+| Method                 | Route                           | Description                            |
+| ---------------------- | ------------------------------- | -------------------------------------- |
+| `index()`              | `GET admin/producers`           | List all producers with search.        |
+| `create()`             | `GET admin/producers/create`    | Create producer form.                  |
+| `store(Request)`       | `POST admin/producers`          | Create new producer.                   |
+| `edit($id)`            | `GET admin/producers/{id}/edit` | Edit producer form.                    |
+| `update(Request, $id)` | `PUT admin/producers/{id}`      | Update producer details.               |
+| `destroy($id)`         | `DELETE admin/producers/{id}`   | Delete producer (detaches from posts). |
+
+---
+
 ### Other Admin Controllers
 
-| Controller               | Purpose                                               |
-| ------------------------ | ----------------------------------------------------- |
-| `CommentControlle` (sic) | View and moderate comments.                           |
-| `StudioController`       | CRUD for animation studios.                           |
-| `FormatController`       | CRUD for anime formats (TV, Movie, OVA, etc.).        |
-| `ExternalLinkController` | CRUD for external links (MAL, AniList, YouTube URLs). |
+| Controller        | Purpose                                               |
+| ----------------- | ----------------------------------------------------- |
+| `CommentControl`  | View and moderate comments.                           |
+| `FormatControl`   | CRUD for anime formats (TV, Movie, OVA, etc.).        |
+| `ExternalLinkCon` | CRUD for external links (MAL, AniList, YouTube URLs). |
 
 ---
 
@@ -881,12 +923,23 @@ Anime formats (TV, Movie, OVA, etc.).
 
 #### `studios`
 
-Animation studios.
+Animation studios (creative entities).
 
 | Column       | Type          | Description        |
 | ------------ | ------------- | ------------------ |
 | `id`         | `bigint` (PK) | Primary key        |
 | `name`       | `string`      | Studio name        |
+| `slug`       | `string`      | URL-friendly name  |
+| `timestamps` | `datetime`    | Created/updated at |
+
+#### `producers`
+
+Production companies and committees (business entities).
+
+| Column       | Type          | Description        |
+| ------------ | ------------- | ------------------ |
+| `id`         | `bigint` (PK) | Primary key        |
+| `name`       | `string`      | Producer name      |
 | `slug`       | `string`      | URL-friendly name  |
 | `timestamps` | `datetime`    | Created/updated at |
 
@@ -1033,6 +1086,7 @@ User requests (add anime, fix issues).
 | -------------------- | ------------------------------------ | ------------------------------ |
 | `artist_song`        | `artist_id`, `song_id`               | Artists ↔ Songs                |
 | `post_studio`        | `post_id`, `studio_id`               | Posts ↔ Studios                |
+| `post_producer`      | `post_id`, `producer_id`             | Posts ↔ Producers              |
 | `external_link_post` | `post_id`, `external_link_id`        | Posts ↔ External Links         |
 | `playlist_song`      | `playlist_id`, `song_id`, `position` | Playlists ↔ Songs (with order) |
 
@@ -1059,20 +1113,21 @@ Routes are defined in `routes/web.php` and `routes/api.php`.
 
 #### Public Routes
 
-| Route                   | Method | Controller / Action        | Name         | Description               |
-| ----------------------- | ------ | -------------------------- | ------------ | ------------------------- |
-| `/`                     | GET    | `PostController@index`     | `/`          | Homepage with top OPs/EDs |
-| `/themes`               | GET    | `PostController@themes`    | `themes`     | Browse all themes         |
-| `/anime/{slug}`         | GET    | `PostController@show`      | `post.show`  | Anime detail page         |
-| `/animes`               | GET    | `PostController@animes`    | `animes`     | Browse all anime          |
-| `/anime/{anime}/{song}` | GET    | `SongController@show`      | `songs.show` | Song detail page          |
-| `/seasonal`             | GET    | `SongController@seasonal`  | `seasonal`   | Seasonal songs view       |
-| `/ranking`              | GET    | `SongController@ranking`   | `ranking`    | Song rankings             |
-| `/welcome`              | GET    | `UserController@welcome`   | `welcome`    | Welcome/onboarding page   |
-| `/users/{slug}`         | GET    | `UserController@userList`  | `user.list`  | User's rated themes list  |
-| `/profile`              | GET    | `UserController@index`     | `profile`    | Current user's profile    |
-| `/favorites`            | GET    | `UserController@favorites` | `favorites`  | Current user's favorites  |
-| `/offline`              | GET    | (view)                     | —            | Offline fallback page     |
+| Route                   | Method | Controller / Action        | Name              | Description               |
+| ----------------------- | ------ | -------------------------- | ----------------- | ------------------------- |
+| `/`                     | GET    | `PostController@index`     | `/`               | Homepage with top OPs/EDs |
+| `/themes`               | GET    | `PostController@themes`    | `themes`          | Browse all themes         |
+| `/anime/{slug}`         | GET    | `PostController@show`      | `post.show`       | Anime detail page         |
+| `/animes`               | GET    | `PostController@animes`    | `animes`          | Browse all anime          |
+| `/anime/{anime}/{song}` | GET    | `SongController@show`      | `songs.show`      | Song detail page          |
+| `/seasonal`             | GET    | `SongController@seasonal`  | `seasonal`        | Seasonal songs view       |
+| `/ranking`              | GET    | `SongController@ranking`   | `ranking`         | Song rankings             |
+| `/welcome`              | GET    | `UserController@welcome`   | `welcome`         | Welcome/onboarding page   |
+| `/users/{slug}`         | GET    | `UserController@userList`  | `user.list`       | User's rated themes list  |
+| `/profile`              | GET    | `UserController@index`     | `profile`         | Current user's profile    |
+| `/favorites`            | GET    | `UserController@favorites` | `favorites`       | Current user's favorites  |
+| `/producers`            | GET    | `ProducerController@index` | `producers.index` | Browse all producers      |
+| `/offline`              | GET    | (view)                     | —                 | Offline fallback page     |
 
 #### Resource Routes (Public)
 
@@ -1082,6 +1137,7 @@ Routes are defined in `routes/web.php` and `routes/api.php`.
 | `years`     | `YearController`     | Full resource   |
 | `seasons`   | `SeasonController`   | Full resource   |
 | `studios`   | `StudioController`   | Full resource   |
+| `producers` | `ProducerController` | Full resource   |
 | `playlists` | `PlaylistController` | Full resource   |
 
 #### User Interaction Routes
@@ -1144,6 +1200,7 @@ All admin routes use the `admin.` prefix for naming.
 | `requests` | `Admin\UserRequestController`| Full CRUD |
 | `comments` | `Admin\CommentController` | Full CRUD |
 | `studios` | `Admin\StudioController` | Full CRUD |
+| `producers`| `Admin\ProducerController`| Full CRUD |
 | `years` | `Admin\YearController` | Full CRUD + toggle |
 | `seasons` | `Admin\SeasonController` | Full CRUD + toggle |
 
@@ -1264,8 +1321,10 @@ The application heavily utilizes **Livewire** for reactive UI components, especi
 - **`AnimesTable`**: Dynamic anime search and grid with view mode switching (List/Grid).
 - **`ArtistsTable`**: Artist listing with real-time search and A-Z sorting.
 - **`ArtistThemesTable`**: Specialized song listing for artist profile pages.
-- **`StudiosTable`**: Studio discovery with infinite scroll.
-- **`StudioAnimesTable`**: Catalog of anime produced by a specific studio.
+- **`StudiosTable`**: Studio discovery with infinite scroll and dynamic counting.
+- **`StudioAnimesTable`**: Catalog of anime produced by a specific studio with advanced filtering.
+- **`ProducersTable`**: Producer discovery with series counting and alphabetical sorting.
+- **`ProducerAnimesTable`**: specialized grid for series produced by a specific company.
 
 ### Discovery & Ranking
 

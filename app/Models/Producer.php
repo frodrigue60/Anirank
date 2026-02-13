@@ -14,8 +14,8 @@ class Producer extends Model
         'slug'
     ];
 
-    public function post()
+    public function posts()
     {
-        return $this->belongsToMany(Studio::class, 'post_producer', 'post_id', 'studio_id');
+        return $this->belongsToMany(Post::class);
     }
 }

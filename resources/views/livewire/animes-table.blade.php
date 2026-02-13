@@ -98,7 +98,7 @@
     {{-- Content Grid/List --}}
     <div class="min-h-[400px]">
         @if ($viewMode === 'grid_small')
-            <div class="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-4 md:gap-6">
+            <div class="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
                 @foreach ($posts as $post)
                     <div class="group relative">
                         <div class="aspect-[2/3] rounded-lg overflow-hidden bg-surface-darker shadow-lg relative">

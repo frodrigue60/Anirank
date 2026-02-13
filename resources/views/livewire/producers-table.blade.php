@@ -15,7 +15,7 @@
                     </span>
                     <input wire:model.debounce.500ms="search" type="text" id="search"
                         class="w-full bg-surface-darker border border-white/10 rounded-lg py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-primary/50 transition-all placeholder:text-white/20"
-                        placeholder="Search studio...">
+                        placeholder="Search producer...">
                 </div>
             </div>
 
@@ -42,9 +42,9 @@
 
     {{-- Grid Section --}}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        @forelse($studios as $studio)
+        @forelse($producers as $producer)
             @php
-                $featuredPost = $studio->posts->first();
+                $featuredPost = $producer->posts->first();
                 $bgUrl = '';
                 if ($featuredPost) {
                     if ($featuredPost->banner) {
@@ -63,7 +63,7 @@
                         'https://static.vecteezy.com/system/resources/thumbnails/005/170/408/small/banner-abstract-geometric-white-and-gray-color-background-illustration-free-vector.jpg';
                 }
             @endphp
-            <a href="{{ route('studios.show', $studio->slug) }}"
+            <a href="{{ route('producers.show', $producer->slug) }}"
                 class="group relative overflow-hidden rounded-xl bg-slate-800 aspect-[16/10] border border-transparent hover:border-primary/50 transition-all cursor-pointer shadow-lg shadow-black/20">
                 <div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
                     style="background-image: url('{{ $bgUrl }}');filter: brightness(0.5);"></div>
@@ -72,23 +72,17 @@
                     <div class="flex justify-between items-end">
                         <div>
                             <h3 class="text-2xl font-bold text-white group-hover:text-primary transition-colors">
-                                {{ $studio->name }}</h3>
-                            {{-- <p class="text-slate-300 text-sm font-medium">Featured: <span
-                                    class="text-white">{{ $featuredPost->title ?? 'N/A' }}</span></p> --}}
+                                {{ $producer->name }}</h3>
                         </div>
-                        {{-- <div
-                            class="bg-primary/90 px-3 py-1 rounded text-white text-xs font-bold flex items-center gap-1">
-                            <span class="material-symbols-outlined text-sm">star</span> 8.5
-                        </div> --}}
                     </div>
                     <div class="mt-4 flex items-center justify-between border-t border-white/10 pt-4">
                         <div class="flex flex-col">
                             <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Produced</span>
-                            <span class="text-white text-sm font-semibold">{{ $studio->posts_count }} Series</span>
+                            <span class="text-white text-sm font-semibold">{{ $producer->posts_count }} Series</span>
                         </div>
                         <div class="flex flex-col items-end">
-                            <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Founded</span>
-                            <span class="text-white text-sm font-semibold">N/A</span>
+                            <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Type</span>
+                            <span class="text-white text-sm font-semibold">Producer</span>
                         </div>
                     </div>
                 </div>
@@ -96,13 +90,13 @@
         @empty
             <div class="col-span-full flex flex-col items-center justify-center py-20 opacity-40">
                 <span class="material-symbols-outlined text-6xl mb-4">search_off</span>
-                <p class="text-xl font-bold">No studios found</p>
+                <p class="text-xl font-bold">No producers found</p>
             </div>
         @endforelse
     </div>
 
     {{-- Infinite Scroll Trigger --}}
-    @if ($studios->hasMorePages())
+    @if ($producers->hasMorePages())
         <div x-data="{
             observe() {
                 let observer = new IntersectionObserver((entries) => {

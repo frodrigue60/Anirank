@@ -13,6 +13,11 @@
                     class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-xl transition-all shadow-lg shadow-blue-900/20 hover:scale-105 active:scale-95">
                     <i class="fa-solid fa-plus mr-2"></i> CREATE POST
                 </a>
+                <a href="{{ route('admin.posts.sync-all') }}"
+                    onclick="return confirm('This will update all posts with AniList data. It may take some time. Continue?')"
+                    class="inline-flex items-center px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold rounded-xl transition-all shadow-lg shadow-emerald-900/20 hover:scale-105 active:scale-95">
+                    <i class="fa-solid fa-sync mr-2"></i> BULK SYNC ANILIST
+                </a>
                 <a href="{{ route('admin.posts.wipe') }}"
                     class="inline-flex items-center px-4 py-2 bg-zinc-800 hover:bg-red-600 text-zinc-300 hover:text-white text-sm font-semibold rounded-xl transition-all shadow-lg hover:scale-105 active:scale-95 border border-zinc-700 hover:border-red-500">
                     <i class="fa-solid fa-trash-can mr-2"></i> WIPE ALL

@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers\admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Studio;
+use App\Models\Producer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
-class StudioController extends Controller
+class ProducerController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -16,8 +16,8 @@ class StudioController extends Controller
      */
     public function index()
     {
-        $studios = Studio::paginate(15);
-        return view('admin.studios.index', compact('studios'));
+        $producers = Producer::paginate(15);
+        return view('admin.producers.index', compact('producers'));
     }
 
     /**
@@ -27,7 +27,7 @@ class StudioController extends Controller
      */
     public function create()
     {
-        return view('admin.studios.create');
+        return view('admin.producers.create');
     }
 
     /**
@@ -39,15 +39,15 @@ class StudioController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required|unique:studios,name',
+            'name' => 'required|unique:producers,name',
         ]);
 
-        Studio::create([
+        Producer::create([
             'name' => $request->name,
             'slug' => Str::slug($request->name),
         ]);
 
-        return redirect()->route('admin.studios.index')->with('success', 'Studio created successfully.');
+        return redirect()->route('admin.producers.index')->with('success', 'Producer created successfully.');
     }
 
     /**
@@ -58,8 +58,8 @@ class StudioController extends Controller
      */
     public function edit($id)
     {
-        $studio = Studio::findOrFail($id);
-        return view('admin.studios.edit', compact('studio'));
+        $producer = Producer::findOrFail($id);
+        return view('admin.producers.edit', compact('producer'));
     }
 
     /**
@@ -71,18 +71,18 @@ class StudioController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $studio = Studio::findOrFail($id);
+        $producer = Producer::findOrFail($id);
 
         $request->validate([
-            'name' => 'required|unique:studios,name,' . $studio->id,
+            'name' => 'required|unique:producers,name,' . $producer->id,
         ]);
 
-        $studio->update([
+        $producer->update([
             'name' => $request->name,
             'slug' => Str::slug($request->name),
         ]);
 
-        return redirect()->route('admin.studios.index')->with('success', 'Studio updated successfully.');
+        return redirect()->route('admin.producers.index')->with('success', 'Producer updated successfully.');
     }
 
     /**
@@ -93,9 +93,9 @@ class StudioController extends Controller
      */
     public function destroy($id)
     {
-        $studio = Studio::findOrFail($id);
-        $studio->delete();
+        $producer = Producer::findOrFail($id);
+        $producer->delete();
 
-        return redirect()->route('admin.studios.index')->with('success', 'Studio deleted successfully.');
+        return redirect()->route('admin.producers.index')->with('success', 'Producer deleted successfully.');
     }
 }

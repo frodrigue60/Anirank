@@ -31,7 +31,8 @@ use App\Http\Controllers\Admin\{
     YearController as AdminYearController,
     SeasonController as AdminSeasonController,
     CommentControlle as AdminCommentController,
-    StudioController as AdminStudioController
+    StudioController as AdminStudioController,
+    ProducerController as AdminProducerController
 };
 
 /*
@@ -70,6 +71,7 @@ Route::resource('artists', ArtistController::class)->only(['index', 'show']);
 Route::resource('years', YearController::class);
 Route::resource('seasons', SeasonController::class);
 Route::resource('studios', StudioController::class);
+Route::resource('producers', ProducerController::class);
 Route::resource('playlists', PlaylistController::class);
 
 /*
@@ -95,6 +97,7 @@ Route::middleware('staff')->prefix('admin')->as('admin.')->group(function () {
     Route::resource('requests', AdminUserRequestController::class);
     Route::resource('comments', AdminCommentController::class);
     Route::resource('studios', AdminStudioController::class);
+    Route::resource('producers', AdminProducerController::class);
 
     // Reports
     Route::get('/reports/{report}/toggle', [AdminReportController::class, 'toggleStatus'])->name('reports.toggle');
@@ -110,6 +113,7 @@ Route::middleware('staff')->prefix('admin')->as('admin.')->group(function () {
         Route::get('/get-by-id/{id}', 'getById')->name('get.by.id');
         Route::post('/get-seasonal-animes', 'getSeasonalAnimes')->name('get.seasonal.animes');
         Route::get('/{id}/force-update', 'forceUpdate')->name('force.update');
+        Route::get('/sync-all', 'syncAllFromAnilist')->name('sync-all');
         Route::get('/wipe', 'wipePosts')->name('wipe');
     });
     Route::resource('posts', AdminPostController::class);

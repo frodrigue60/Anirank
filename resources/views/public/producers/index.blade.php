@@ -1,10 +1,10 @@
 @extends('layouts.app')
 
 @section('meta')
-    <title>Studio {{ $studio->name }} | {{ config('app.name') }}</title>
-    <meta title="Studio {{ $studio->name }}">
+    <title>Producers | {{ config('app.name') }}</title>
+    <meta title="Producers">
     <link rel="canonical" href="{{ url()->current() }}">
-    <meta name="description" content="Explore animes produced by {{ $studio->name }}.">
+    <meta name="description" content="Explore production companies and committees.">
     <meta name="robots" content="index, follow, max-image-preview:standard">
 @endsection
 
@@ -13,16 +13,12 @@
         {{-- Header Section --}}
         <div class="flex flex-col md:flex-row justify-between items-end gap-4">
             <div>
-                <h1 class="text-3xl font-black tracking-tight text-white mb-2">Studio: {{ $studio->name }}</h1>
+                <h1 class="text-3xl font-black tracking-tight text-white mb-2">Producers</h1>
                 <div class="h-1 w-20 bg-primary rounded-full"></div>
             </div>
         </div>
 
         {{-- Livewire Table component --}}
-        @livewire('studio-animes-table', ['studioId' => $studio->id])
+        @livewire('producers-table')
     </div>
-@endsection
-
-@section('script')
-    {{-- Legacy filter scripts removed --}}
 @endsection

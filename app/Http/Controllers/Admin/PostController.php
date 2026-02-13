@@ -358,176 +358,116 @@ class PostController extends Controller
         $success = 'Single post created successfully';
         return redirect(route('admin.posts.index'))->with('success', $success);
     }
-    public function getSeasonalAnimes(Request $request)
+    public function syncAllFromAnilist()
     {
-
-        $year = $request->year;
-        $season = Str::upper($request->season);
-        $type = $request->type;
-
-        $validator = Validator::make($request->all(), [
-            'year' => 'required|integer|min_digits:4|max_digits:4',
-            'season' => 'required|in:WINTER,SPRING,SUMMER,FALL'
-        ]);
-
-        if ($validator->fails()) {
-            $messageBag = $validator->getMessageBag();
-            return redirect(route('admin.posts.index'))->with('error', $messageBag);
-        }
-
+        $posts = Post::whereNotNull('anilist_id')->get();
         $client = new Client();
-        $variables = [
-            'year' => $year,
-            'season' => $season,
-            'page' => 1,
-            'perPage' => 50,
-            'format_in' => $type,
-        ];
 
-        $hasNextPage = true;
+        foreach ($posts as $post) {
+            try {
+                $variables = ["id" => $post->anilist_id];
+                $response = $client->post('https://graphql.anilist.co', [
+                    'json' => [
+                        'query' => $this->buildGraphQLQueryId(),
+                        'variables' => $variables,
+                    ]
+                ]);
+                $body = $response->getBody()->__toString();
+                $json = json_decode($body);
+                $item = $json->data->Media;
 
-        $data = [];
-        while ($hasNextPage) {
-            $response = $client->post('https://graphql.anilist.co', [
-                'json' => [
-                    'query' => $this->buildGraphQLQuerySeasonal(),
-                    'variables' => $variables,
-                ]
-            ]);
-
-            $body = $response->getBody()->__toString();
-            $json = json_decode($body);
-
-            $collection = $json->data->Page->media;
-            $pageInfo = $json->data->Page->pageInfo;
-            $hasNextPage = $pageInfo->hasNextPage;
-            $variables['page']++;
-            foreach ($collection as $item) {
-                array_push($data, $item);
+                $this->updatePostFromAnilistData($post, $item);
+            } catch (\Throwable $th) {
+                // Skip or log error
+                continue;
             }
         }
 
-        //dd($data);
-        $this->generateMassive($data);
-        $success = count($data) . ' Posts created successfully ';
-        return redirect(route('admin.posts.index'))->with('success', $success);
+        return redirect(route('admin.posts.index'))->with('success', 'All posts synchronized with AniList');
+    }
+
+    private function updatePostFromAnilistData($post, $item)
+    {
+        $post->description = $item->description;
+        $post->anilist_id = $item->id;
+
+        $externalLinks = $item->externalLinks;
+        $studios = $item->studios->nodes;
+        $idStudios = [];
+        $idProducers = [];
+        $idLinks = [];
+        $format_name = $item->format;
+
+        foreach ($studios as $key => $value) {
+            if ($value->isAnimationStudio) {
+                $studio = Studio::firstOrCreate(
+                    ['slug' => Str::slug($value->name)],
+                    ['name' =>  $value->name, 'slug' => Str::slug($value->name)]
+                );
+                array_push($idStudios, $studio->id);
+            } else {
+                $producer = Producer::firstOrCreate(
+                    ['slug' => Str::slug($value->name)],
+                    ['name' =>  $value->name, 'slug' => Str::slug($value->name)]
+                );
+                array_push($idProducers, $producer->id);
+            }
+        }
+
+        foreach ($externalLinks as $key => $value) {
+            $externalLink = ExternalLink::firstOrCreate(
+                ['url' => $value->url],
+                ['icon' => $value->icon, 'name' =>  $value->site, 'type' => $value->type, 'url' => $value->url]
+            );
+            array_push($idLinks, $externalLink->id);
+        }
+
+        $format = Format::firstOrCreate(
+            ['slug' => Str::slug($format_name)],
+            ['name' =>  $format_name, 'slug' => Str::slug($format_name)]
+        );
+
+        $post->format()->associate($format);
+
+        $this->saveAnimeBanner($item, $post);
+        $this->saveAnimeThumbnail($item, $post);
+
+        if (!empty($item->season) && !empty($item->seasonYear)) {
+            $season = Season::firstOrCreate(['name' =>  $item->season]);
+            $post->season_id = $season->id;
+            $year = Year::firstOrCreate(['name' =>  $item->seasonYear]);
+            $post->year_id = $year->id;
+        } else if (!$item->season and !$item->seasonYear && isset($item->startDate->month)) {
+            $month_al = $item->startDate->month;
+            $year_al = $item->startDate->year;
+
+            $season = Season::firstOrCreate(['name' =>  $this->assignSeason($month_al)]);
+            $post->season_id = $season->id;
+
+            $year = Year::firstOrCreate(['name' =>  $year_al]);
+            $post->year_id = $year->id;
+        }
+
+        if ($post->save()) {
+            $post->studios()->sync($idStudios);
+            $post->producers()->sync($idProducers);
+            $post->externalLinks()->sync($idLinks);
+        }
     }
 
     public function generateMassive($data)
     {
-        //dd($data);
         foreach ($data as $item) {
-
             $post_exist = Post::where('title', $item->title->romaji)->first();
-
             if ($post_exist) {
                 continue;
             }
             $post = new Post;
             $post->title = $item->title->romaji;
             $post->slug = Str::slug($post->title);
-            $post->description = $item->description;
-            $post->anilist_id = $item->id;
             $post->status = true;
 
-            $post->season_id = null;
-            $post->year_id = null;
-
-            $externalLinks = $item->externalLinks;
-            $studios = $item->studios->nodes;
-            $idStudios = [];
-            $idProducers = [];
-            $idLinks = [];
-            $format_name = $item->format;
-
-
-            foreach ($studios as $key => $value) {
-                $studio = Studio::firstOrCreate(
-                    [
-                        'slug' => Str::slug($value->name),
-                    ],
-                    [
-                        'name' =>  $value->name,
-                        'slug' => Str::slug($value->name)
-                    ]
-                );
-
-                array_push($idStudios, $studio->id);
-
-                if ($value->isAnimationStudio) {
-                    array_push($idProducers, $studio->id);
-                }
-            }
-
-            foreach ($externalLinks as $key => $value) {
-                $externalLink = ExternalLink::firstOrCreate(
-                    [
-                        'url' => $value->url,
-                    ],
-                    [
-                        'icon' => $value->icon,
-                        'name' =>  $value->site,
-                        'type' => $value->type,
-                        'url' => $value->url
-                    ]
-                );
-                array_push($idLinks, $externalLink->id);
-            }
-
-            $format = Format::firstOrCreate(
-                [
-                    'slug' => Str::slug($format_name),
-                ],
-                [
-                    'name' =>  $format_name,
-                    'slug' => Str::slug($format_name)
-                ]
-            );
-
-            $post->format()->associate($format);
-
-            $this->saveAnimeBanner($item, $post);
-            $this->saveAnimeThumbnail($item, $post);
-
-            //dd($item);
-
-            if (!empty($item->season) && !empty($item->seasonYear)) {
-                $season = Season::firstOrCreate([
-                    'name' =>  $item->season,
-                ]);
-
-                $post->season_id = $season->id;
-
-                $year = Year::firstOrCreate([
-                    'name' =>  $item->seasonYear,
-                ]);
-
-                $post->year_id = $year->id;
-            } else {
-                if (!$item->season and !$item->seasonYear) {
-                    $month_al = $item->startDate->month;
-                    $year_al = $item->startDate->year;
-
-                    $season = Season::firstOrCreate([
-                        'name' =>  $this->assignSeason($month_al),
-                    ]);
-                    $post->season_id = $season->id;
-
-                    $year = Year::firstOrCreate([
-                        'name' =>  $year_al,
-                    ]);
-
-                    $post->year_id = $year->id;
-                }
-            }
-
-
-
-            if ($post->save()) {
-                $post->studios()->sync($idStudios);
-                $post->producers()->sync($idProducers);
-                $post->externalLinks()->sync($idLinks);
-            }
+            $this->updatePostFromAnilistData($post, $item);
         }
     }
 
@@ -536,10 +476,7 @@ class PostController extends Controller
         $post = Post::find($id);
 
         try {
-            $variables = [
-                "id" => $post->anilist_id
-            ];
-
+            $variables = ["id" => $post->anilist_id];
             $client = new \GuzzleHttp\Client;
             $response = $client->post('https://graphql.anilist.co', [
                 'json' => [
@@ -550,86 +487,10 @@ class PostController extends Controller
             $body = $response->getBody()->__toString();
             $json = json_decode($body);
 
-            $data[] = $json->data->Media;
+            $this->updatePostFromAnilistData($post, $json->data->Media);
 
-            $post_anilist = $data[0];
-            $externalLinks = $post_anilist->externalLinks;
-            $studios = $post_anilist->studios->nodes;
-            $idStudios = [];
-            $idProducers = [];
-            $idLinks = [];
-            $format_name = $post_anilist->format;
-            //dd($post_anilist);
-
-            if (!$post_anilist->season and !$post_anilist->seasonYear) {
-                $month_al = $post_anilist->startDate->month;
-                $year_al = $post_anilist->startDate->year;
-
-                $season = Season::firstOrCreate([
-                    'name' =>  $this->assignSeason($month_al),
-                ]);
-                $post->season_id = $season->id;
-
-                $year = Year::firstOrCreate([
-                    'name' =>  $year_al,
-                ]);
-
-                $post->year_id = $year->id;
-            }
-
-            foreach ($studios as $key => $value) {
-
-                $studio = Studio::firstOrCreate(
-                    [
-                        'slug' => Str::slug($value->name),
-                    ],
-                    [
-                        'name' =>  $value->name,
-                        'slug' => Str::slug($value->name)
-                    ]
-                );
-
-                array_push($idStudios, $studio->id);
-
-                if ($value->isAnimationStudio) {
-                    array_push($idProducers, $studio->id);
-                }
-            }
-
-            foreach ($externalLinks as $key => $value) {
-                $externalLink = ExternalLink::firstOrCreate(
-                    [
-                        'url' => $value->url,
-                    ],
-                    [
-                        'icon' => $value->icon,
-                        'name' =>  $value->site,
-                        'type' => $value->type,
-                        'url' => $value->url
-                    ]
-                );
-                array_push($idLinks, $externalLink->id);
-            }
-
-            $format = Format::firstOrCreate(
-                [
-                    'slug' => Str::slug($format_name),
-                ],
-                [
-                    'name' =>  $format_name,
-                    'slug' => Str::slug($format_name)
-                ]
-            );
-
-            $post->studios()->sync($idStudios);
-            $post->producers()->sync($idProducers);
-            $post->externalLinks()->sync($idLinks);
-            $post->format()->associate($format);
-            $post->save();
-
-            return redirect(route('post.show', $post->slug))->with('sucess', 'Post updated');
+            return redirect(route('post.show', $post->slug))->with('success', 'Post updated');
         } catch (\Throwable $th) {
-            //dd($th);
             return redirect(route('post.show', $post->slug))->with('error', $th->getMessage());
         }
     }

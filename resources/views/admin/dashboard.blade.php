@@ -71,6 +71,32 @@
                     <p class="text-3xl font-black text-white">{{ \App\Models\User::count() }}</p>
                     <p class="text-xs font-bold text-zinc-500 uppercase tracking-widest mt-1">Total Users</p>
                 </div>
+
+                {{-- Producers Stat --}}
+                <div
+                    class="bg-zinc-900/50 backdrop-blur-md border border-zinc-800 p-6 rounded-3xl hover:border-cyan-500/50 transition-all group">
+                    <div class="flex items-center justify-between mb-4">
+                        <div
+                            class="w-12 h-12 bg-cyan-500/10 rounded-2xl flex items-center justify-center text-cyan-500 group-hover:bg-cyan-600 group-hover:text-white transition-all">
+                            <i class="fa-solid fa-building text-xl"></i>
+                        </div>
+                    </div>
+                    <p class="text-3xl font-black text-white">{{ \App\Models\Producer::count() }}</p>
+                    <p class="text-xs font-bold text-zinc-500 uppercase tracking-widest mt-1">Total Producers</p>
+                </div>
+
+                {{-- Studios Stat --}}
+                <div
+                    class="bg-zinc-900/50 backdrop-blur-md border border-zinc-800 p-6 rounded-3xl hover:border-blue-400/50 transition-all group">
+                    <div class="flex items-center justify-between mb-4">
+                        <div
+                            class="w-12 h-12 bg-blue-400/10 rounded-2xl flex items-center justify-center text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                            <i class="fa-solid fa-palette text-xl"></i>
+                        </div>
+                    </div>
+                    <p class="text-3xl font-black text-white">{{ \App\Models\Studio::count() }}</p>
+                    <p class="text-xs font-bold text-zinc-500 uppercase tracking-widest mt-1">Total Studios</p>
+                </div>
             </div>
 
             {{-- Management Hub --}}
@@ -179,6 +205,39 @@
                         <h3 class="text-xl font-bold text-white mb-2">Requests</h3>
                         <p class="text-sm text-zinc-400 leading-relaxed">Process content addition requests and community
                             suggestions.</p>
+                    </a>
+
+                    {{-- Producers Card --}}
+                    <a href="{{ route('admin.producers.index') }}"
+                        class="group p-6 bg-zinc-900/50 backdrop-blur-xl border border-zinc-800 rounded-3xl hover:bg-zinc-800/50 transition-all hover:scale-[1.02] active:scale-95 shadow-xl">
+                        <div class="flex items-start justify-between mb-6">
+                            <div
+                                class="w-14 h-14 rounded-2xl bg-cyan-600/20 flex items-center justify-center text-cyan-500 group-hover:bg-cyan-600 group-hover:text-white transition-all shadow-lg shadow-cyan-900/10">
+                                <i class="fa-solid fa-building text-2xl"></i>
+                            </div>
+                            <i
+                                class="fa-solid fa-arrow-right text-zinc-700 group-hover:text-cyan-500 transition-colors"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2">Producers</h3>
+                        <p class="text-sm text-zinc-400 leading-relaxed">Manage anime production companies and their linked
+                            entries.</p>
+                    </a>
+
+                    {{-- Studios Card --}}
+                    <a href="{{ route('admin.studios.index') }}"
+                        class="group p-6 bg-zinc-900/50 backdrop-blur-xl border border-zinc-800 rounded-3xl hover:bg-zinc-800/50 transition-all hover:scale-[1.02] active:scale-95 shadow-xl">
+                        <div class="flex items-start justify-between mb-6">
+                            <div
+                                class="w-14 h-14 rounded-2xl bg-blue-400/20 flex items-center justify-center text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-lg shadow-blue-900/10">
+                                <i class="fa-solid fa-palette text-2xl"></i>
+                            </div>
+                            <i
+                                class="fa-solid fa-arrow-right text-zinc-700 group-hover:text-blue-400 transition-colors"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2">Studios</h3>
+                        <p class="text-sm text-zinc-400 leading-relaxed">Organize animation studios and monitor their
+                            seasonal
+                            project portfolios.</p>
                     </a>
                 </div>
             </div>

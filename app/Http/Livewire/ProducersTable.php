@@ -3,11 +3,10 @@
 namespace App\Http\Livewire;
 
 use App\Models\Producer;
-use App\Models\Studio;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-class StudiosTable extends Component
+class ProducersTable extends Component
 {
     use WithPagination;
 
@@ -37,7 +36,7 @@ class StudiosTable extends Component
 
     public function render()
     {
-        $studios = Studio::query()
+        $producers = Producer::query()
             ->withCount(['posts' => function ($query) {
                 if (!auth()->check() || !auth()->user()->isStaff()) {
                     $query->where('status', true);
@@ -48,7 +47,11 @@ class StudiosTable extends Component
                     $query->where('status', true);
                 }
             })
-            ->with('posts')
+            ->with(['posts' => function ($query) {
+                if (!auth()->check() || !auth()->user()->isStaff()) {
+                    $query->where('status', true);
+                }
+            }])
             ->when($this->search, function ($query) {
                 $query->where('name', 'like', '%' . $this->search . '%');
             })
@@ -66,8 +69,8 @@ class StudiosTable extends Component
             })
             ->paginate($this->perPage);
 
-        return view('livewire.studios-table', [
-            'studios' => $studios,
+        return view('livewire.producers-table', [
+            'producers' => $producers,
         ]);
     }
 }

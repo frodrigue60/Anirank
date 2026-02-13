@@ -9,6 +9,7 @@ use App\Models\Artist;
 use App\Models\User;
 use App\Models\Year;
 use App\Models\Season;
+use App\Models\Song;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -22,9 +23,20 @@ class PostController extends Controller
      */
     public function index()
     {
-        $posts = Post::orderBy("created_at", "desc")->paginate(10);
+        $featuredTheme = Song::with('post')->withAvg('ratings', 'rating')->orderBy('created_at', 'desc')->first();
+        $weaklyOpenings = Song::with('post')->withAvg('ratings', 'rating')->where('type', 'OP')->limit(6)->get();
+        $weaklyEndings = Song::with('post')->withAvg('ratings', 'rating')->where('type', 'ED')->limit(6)->get();
+        $newlyReleases = Song::with('post')->withAvg('ratings', 'rating')->orderBy('created_at', 'desc')->limit(10)->get();
+        //$topRatedSongs = Song::orderBy('rating', 'desc')->limit(10)->get();
+        //$mostPopularSongs = Song::orderBy('score', 'desc')->limit(10)->get();
+
         return response()->json([
-            "posts" => $posts
+            'featuredTheme' => $featuredTheme,
+            'weaklyOpenings' => $weaklyOpenings,
+            'weaklyEndings' => $weaklyEndings,
+            'newlyReleases' => $newlyReleases,
+            //'topRatedSongs' => $topRatedSongs,
+            //'mostPopularSongs' => $mostPopularSongs
         ]);
     }
 

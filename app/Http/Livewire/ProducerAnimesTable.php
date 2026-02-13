@@ -9,11 +9,11 @@ use App\Models\Format;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-class StudioAnimesTable extends Component
+class ProducerAnimesTable extends Component
 {
     use WithPagination;
 
-    public $studioId;
+    public $producerId;
     public $name = '';
     public $year_id = '';
     public $season_id = '';
@@ -27,9 +27,9 @@ class StudioAnimesTable extends Component
         'format_id' => ['except' => ''],
     ];
 
-    public function mount($studioId)
+    public function mount($producerId)
     {
-        $this->studioId = $studioId;
+        $this->producerId = $producerId;
     }
 
     public function updatingName()
@@ -63,8 +63,8 @@ class StudioAnimesTable extends Component
             ->when(!auth()->check() || !auth()->user()->isStaff(), function ($query) {
                 $query->where('status', true);
             })
-            ->whereHas('studios', function ($query) {
-                $query->where('studios.id', $this->studioId);
+            ->whereHas('producers', function ($query) {
+                $query->where('producers.id', $this->producerId);
             })
             ->when($this->name, function ($query) {
                 $query->where('title', 'like', '%' . $this->name . '%');
@@ -81,7 +81,7 @@ class StudioAnimesTable extends Component
             ->orderBy('title', 'asc')
             ->paginate($this->perPage);
 
-        return view('livewire.studio-animes-table', [
+        return view('livewire.producer-animes-table', [
             'posts' => $posts,
             'years' => Year::orderBy('name', 'desc')->get(),
             'seasons' => Season::all(),

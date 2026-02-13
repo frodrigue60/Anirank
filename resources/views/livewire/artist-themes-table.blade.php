@@ -96,36 +96,51 @@
 
     {{-- Data Container --}}
     <div class="min-h-[400px]">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
             @foreach ($songs as $song)
-                <a href="{{ $song->url }}"
-                    class="group relative bg-surface-darker p-4 rounded-xl hover:bg-surface-dark transition-colors cursor-pointer border border-white/5 flex gap-4 items-center">
-                    <div class="relative w-20 h-20 shrink-0 rounded-lg overflow-hidden">
-                        <img src="{{ $song->thumbnailUrl }}" alt="{{ $song->title }}"
-                            class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
-                        <div
-                            class="absolute top-1 left-1 {{ $loop->iteration <= 3 ? 'bg-primary' : 'bg-surface-dark' }} text-white text-xs font-bold px-1.5 py-0.5 rounded shadow border border-white/10">
-                            #{{ $loop->iteration }}</div>
+                <div
+                    class="group relative overflow-hidden rounded-xl h-48 card-hover transition-all duration-300 border border-primary/10 bg-background-dark">
+                    <div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
+                        data-alt="Anime banner for Demon Slayer"
+                        style="background-image: url('{{ asset('storage/' . $song->post->banner ?? $song->post->banner_src) }}'); filter: brightness(0.5);">
                     </div>
-                    <div class="flex-1 min-w-0">
-                        <div class="flex items-center justify-between">
-                            <h3 class="font-bold text-white truncate text-lg" title="{{ $song->title }}">
-                                {{ $song->name }}
-                            </h3>
+                    <div
+                        class="absolute inset-0 bg-gradient-to-r from-background-dark via-background-dark/80 to-transparent">
+                    </div>
+                    <div class="relative h-full p-6 flex items-center justify-between">
+                        <div class="space-y-1">
                             <div
-                                class="flex items-center gap-1 bg-surface-dark px-2 py-0.5 rounded text-yellow-400 text-xs font-bold">
-                                <span class="material-symbols-outlined filled text-[14px]">star</span>
-                                {{ number_format($song->averageRating ?? 0, 1) }}
+                                class="inline-flex items-center px-2 py-0.5 rounded bg-primary text-[10px] font-bold text-white mb-2 uppercase tracking-wider">
+                                {{ $song->slug }}</div>
+                            <h3
+                                class="text-2xl font-bold text-white group-hover:text-primary transition-colors text-glow">
+                                {{ $song->name }}</h3>
+                            <div class="text-slate-300 text-sm font-medium">
+                                @foreach ($song->artists as $artist)
+                                    <span
+                                        class="hover:text-primary transition-colors cursor-pointer">{{ $artist->name }}</span>
+                                    @if (!$loop->last)
+                                        ,
+                                    @endif
+                                @endforeach
                             </div>
+                            <div class="text-slate-500 text-xs italic mt-2">
+                                {{ $song->post->title }}</div>
                         </div>
-                        <p class="text-sm text-primary font-medium truncate">{{ $song->post->title }}</p>
-                        <p class="text-xs text-white/50 truncate">
-                            @foreach ($song->artists as $artist)
-                                {{ $artist->name }}{{ !$loop->last ? ', ' : '' }}
-                            @endforeach
-                        </p>
+                        <div class="flex flex-col items-end gap-2">
+                            <div
+                                class="glass px-3 py-2 rounded-lg border-primary/30 flex items-center gap-1.5 shadow-lg">
+                                <span class="material-symbols-outlined text-primary text-sm fill-1">star</span>
+                                <span
+                                    class="text-white font-bold text-lg">{{ number_format($song->averageRating ?? 0, 1) }}</span>
+                            </div>
+                            <a href="{{ route('songs.show', [$song->post->slug, $song->slug]) }}"
+                                class="mt-4 flex items-center justify-center h-10 w-10 rounded-full bg-white/10 hover:bg-primary transition-all text-white backdrop-blur-sm border border-white/10 group-hover:border-primary/50">
+                                <span class="material-symbols-outlined">play_arrow</span>
+                            </a>
+                        </div>
                     </div>
-                </a>
+                </div>
             @endforeach
         </div>
 

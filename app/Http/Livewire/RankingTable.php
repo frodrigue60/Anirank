@@ -4,15 +4,12 @@ namespace App\Http\Livewire;
 
 use Livewire\Component;
 use App\Models\Song;
-use App\Models\Season;
-use App\Models\Year;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Collection;
 
 class RankingTable extends Component
 {
-    public $rankingType = '0'; // 0 = GLOBAL, 1 = SEASONAL
     public $currentSection = 'ALL'; // ALL, OP or ED
     public $perPage = 15;
     public $page = 1;
@@ -22,16 +19,9 @@ class RankingTable extends Component
 
     public function mount()
     {
-        $this->rankingType = '0';
         $this->currentSection = 'ALL';
     }
 
-    public function switchRankingType($type)
-    {
-        $this->rankingType = $type;
-        $this->page = 1;
-        $this->hasMorePages = true;
-    }
 
     public function updatedCurrentSection()
     {
@@ -72,15 +62,6 @@ class RankingTable extends Component
             $query->where('type', $this->currentSection);
         }
 
-        if ($this->rankingType === '1') {
-            $currentSeason = Season::where('current', true)->first();
-            $currentYear = Year::where('current', true)->first();
-
-            $query->whereHas('post', function ($query) use ($currentSeason, $currentYear) {
-                if ($currentSeason) $query->where('season_id', $currentSeason->id);
-                if ($currentYear) $query->where('year_id', $currentYear->id);
-            });
-        }
 
         $songsCount = $query->count();
         $songs = $query->get()
@@ -148,13 +129,8 @@ class RankingTable extends Component
 
     public function render()
     {
-        $currentSeason = Season::where('current', true)->first();
-        $currentYear = Year::where('current', true)->first();
-
         return view('livewire.ranking-table', [
             'songs' => $this->songs,
-            'currentSeason' => $currentSeason,
-            'currentYear' => $currentYear,
         ]);
     }
 }

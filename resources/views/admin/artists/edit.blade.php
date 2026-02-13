@@ -1,43 +1,66 @@
-@extends ('layouts.app')
-
-@section('title', 'Tags Create')
+@extends('layouts.app')
 
 @section('content')
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="card  ">
-                <div class="card-header">
-                    @php
-                        if (isset($artist)) {
-                            $name = $artist->name.'('.$artist->name_jp.')';
-                        }
-                    @endphp
-                    <h5 class="card-title">Edit artist: {{isset($name) ? $name : ''}}</h5>
-                </div>
-                <div class="card-body">
-                    <form method="post" action="{{ route('admin.artists.update', $artist->id) }}"
-                        enctype="multipart/form-data">
-                        @method('PUT')
-                        @csrf
-                        <div class="mb-3">
-                            <label for="nameArtist">Artist Name</label>
-                            <input type="text" id="nameArtist" name="name" class="form-control" required=""
-                                value="{{ $artist->name }}">
-                        </div>
-                        <div class="mb-3">
-                            <label for="nameArtistJp">Artist Name (JP)</label>
-                            <input type="text" id="nameArtistJp" name="name_jp" class="form-control"
-                                value="{{ $artist->name_jp }}">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {{-- Header Section --}}
+        <div class="mb-8">
+            <a href="{{ route('admin.artists.index') }}"
+                class="text-blue-500 hover:text-blue-400 text-sm font-bold flex items-center mb-2 transition-colors">
+                <i class="fa-solid fa-arrow-left mr-2"></i> BACK TO ARTISTS
+            </a>
+            <h1 class="text-3xl font-bold text-white tracking-tight">Edit Artist</h1>
+            <p class="text-zinc-400 mt-1">Updating profile for <span
+                    class="text-blue-400 font-semibold">{{ $artist->name }}</span></p>
+        </div>
+
+        {{-- Form Card --}}
+        <div class="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800 rounded-3xl shadow-xl overflow-hidden p-8">
+            <form method="post" action="{{ route('admin.artists.update', $artist->id) }}" enctype="multipart/form-data"
+                class="space-y-8">
+                @csrf
+                @method('PUT')
+
+                <div class="space-y-6">
+                    <h3 class="text-xs font-bold text-zinc-500 uppercase tracking-widest flex items-center">
+                        <i class="fa-solid fa-user-tag mr-2 text-blue-500"></i> ARTIST DETAILS
+                    </h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-2">
+                            <label for="nameArtist"
+                                class="block text-sm font-bold text-zinc-400 uppercase tracking-widest">Artist Name
+                                (Romaji)</label>
+                            <input type="text" name="name" id="nameArtist" required
+                                value="{{ old('name', $artist->name) }}"
+                                class="block w-full bg-zinc-950/50 border border-zinc-800 text-white rounded-2xl px-4 py-3 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all text-sm h-12"
+                                placeholder="e.g. LiSA">
                         </div>
 
-                        <div class="d-flex">
-                            <button type="submit" class="btn btn-primary w-100">Submit</button>
+                        <div class="space-y-2">
+                            <label for="nameArtistJp"
+                                class="block text-sm font-bold text-zinc-400 uppercase tracking-widest">Artist Name
+                                (JP)</label>
+                            <input type="text" name="name_jp" id="nameArtistJp"
+                                value="{{ old('name_jp', $artist->name_jp) }}"
+                                class="block w-full bg-zinc-950/50 border border-zinc-800 text-white rounded-2xl px-4 py-3 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all text-sm h-12"
+                                placeholder="e.g. 織部 里沙">
                         </div>
-                    </form>
+                    </div>
                 </div>
-                {{-- <div class="card-footer">
-                </div> --}}
-            </div>
+
+                {{-- Action --}}
+                <div class="pt-4 flex flex-col sm:flex-row gap-4">
+                    <button
+                        class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-6 rounded-2xl transition-all shadow-lg shadow-blue-900/20 active:scale-[0.98] flex items-center justify-center gap-2 text-sm uppercase tracking-widest">
+                        <i class="fa-solid fa-check-double"></i>
+                        SAVE CHANGES
+                    </button>
+                    <a href="{{ route('admin.artists.index') }}"
+                        class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold py-4 px-6 rounded-2xl transition-all flex items-center justify-center gap-2 text-sm uppercase tracking-widest border border-zinc-700">
+                        CANCEL
+                    </a>
+                </div>
+            </form>
         </div>
     </div>
 @endsection

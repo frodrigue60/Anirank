@@ -9,8 +9,8 @@ class Report extends Model
 {
     use HasFactory;
 
-    public function songVariant(){
-        
-        return $this->belongsTo(SongVariant::class);
+    public function Song()
+    {
+        return $this->belongsTo(Song::class);
     }
 }

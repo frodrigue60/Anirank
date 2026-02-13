@@ -1,118 +1,148 @@
 @extends('layouts.app')
 
-@section('meta')
-    <link rel="stylesheet"
-        href="https://cdn.jsdelivr.net/gh/habibmhamadi/multi-select-tag@2.0.1/dist/css/multi-select-tag.css">
-
-    <style>
-        .mult-select-tag ul li {
-            color: black;
-        }
-    </style>
-@endsection
-
 @section('content')
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="card  ">
-                <div class="card-header">
-                    <h5 class="card-title">
-                        Create Post
-                    </h5>
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {{-- Header Section --}}
+        <div class="mb-8">
+            <a href="{{ route('admin.posts.index') }}"
+                class="text-blue-500 hover:text-blue-400 text-sm font-bold flex items-center mb-2 transition-colors">
+                <i class="fa-solid fa-arrow-left mr-2"></i> BACK TO POSTS
+            </a>
+            <h1 class="text-3xl font-bold text-white tracking-tight">Create Manual Post</h1>
+            <p class="text-zinc-400 mt-1">Manually add a new anime entry to the directory.</p>
+        </div>
+
+        {{-- Form Card --}}
+        <div class="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800 rounded-3xl shadow-xl overflow-hidden p-8">
+            <form method="post" action="{{ route('admin.posts.store') }}" enctype="multipart/form-data" class="space-y-8">
+                @csrf
+
+                {{-- Basic Information --}}
+                <div class="space-y-6">
+                    <h3 class="text-xs font-bold text-zinc-500 uppercase tracking-widest flex items-center">
+                        <i class="fa-solid fa-circle-info mr-2 text-blue-500"></i> BASIC INFORMATION
+                    </h3>
+
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <label for="titleAnime"
+                                class="block text-sm font-bold text-zinc-400 uppercase tracking-widest">Post Title</label>
+                            <input type="text" name="title" id="titleAnime" required value="{{ old('title') }}"
+                                class="block w-full bg-zinc-950/50 border border-zinc-800 text-white rounded-2xl px-4 py-3 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all text-sm h-12"
+                                placeholder="e.g. Shingeki no Kyojin">
+                        </div>
+
+                        <div class="space-y-2">
+                            <label for="description"
+                                class="block text-sm font-bold text-zinc-400 uppercase tracking-widest">Description</label>
+                            <textarea name="description" id="description" rows="5"
+                                class="block w-full bg-zinc-950/50 border border-zinc-800 text-white rounded-2xl px-4 py-3 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all text-sm"
+                                placeholder="Enter anime synopsis...">{{ old('description') }}</textarea>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <form method="post" action="{{ route('admin.posts.store') }}" enctype="multipart/form-data">
-                        @csrf
-                        <div class="mb-3">
-                            <label for="titleAnime" class="form-label">Post Title</label>
-                            <input type="text" class="form-control" placeholder="Anime Title" id="titleAnime"
-                                name="title" required value="{{ old('title') }}">
+
+                {{-- Status & Metadata --}}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    @if (Auth::user()->isAdmin() || Auth::user()->isEditor())
+                        <div class="space-y-2">
+                            <label for="statusId"
+                                class="block text-sm font-bold text-zinc-400 uppercase tracking-widest">Publication
+                                Status</label>
+                            <select name="postStatus" id="statusId"
+                                class="block w-full bg-zinc-950/50 border border-zinc-800 text-white rounded-2xl px-4 py-3 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all text-sm h-12">
+                                <option value="">Select a status</option>
+                                @foreach ($postStatus as $item)
+                                    <option value="{{ $item['value'] }}"
+                                        {{ old('postStatus') == $item['value'] ? 'selected' : '' }}>
+                                        {{ $item['name'] }}
+                                    </option>
+                                @endforeach
+                            </select>
                         </div>
-                        <div class="mb-3">
-                            <label for="exampleFormControlTextarea1" class="form-label">Description</label>
-                            <textarea class="form-control" id="exampleFormControlTextarea1" name="description" rows="3">{{ old('description') }}</textarea>
-                        </div>
-                        @if (Auth::User()->isAdmin() || Auth::User()->isEditor())
-                            <div class="mb-3">
-                                <label for="statusId" class="form-label">Status</label>
-                                <select class="form-select" name="postStatus" id="statusId" style="width:100%;">
-                                    <option value="">Selecte a post status</option>
-                                    @foreach ($postStatus as $item)
-                                        <option {{ old('type') == $item['value'] ? 'selected' : '' }}
-                                            value="{{ $item['value'] }}">{{ $item['name'] }} </option>
-                                    @endforeach
-                                </select>
+                    @endif
+
+                    <div class="space-y-2">
+                        <label for="year"
+                            class="block text-sm font-bold text-zinc-400 uppercase tracking-widest">Release Year</label>
+                        <select name="year" id="year" required
+                            class="block w-full bg-zinc-950/50 border border-zinc-800 text-white rounded-2xl px-4 py-3 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all text-sm h-12">
+                            <option value="">Select year</option>
+                            @foreach ($years as $year)
+                                <option value="{{ $year->id }}" {{ old('year') == $year->id ? 'selected' : '' }}>
+                                    {{ $year->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label for="season"
+                            class="block text-sm font-bold text-zinc-400 uppercase tracking-widest">Season</label>
+                        <select name="season" id="season" required
+                            class="block w-full bg-zinc-950/50 border border-zinc-800 text-white rounded-2xl px-4 py-3 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all text-sm h-12">
+                            <option value="">Select season</option>
+                            @foreach ($seasons as $season)
+                                <option value="{{ $season->id }}" {{ old('season') == $season->id ? 'selected' : '' }}>
+                                    {{ $season->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                {{-- Visuals --}}
+                <div class="space-y-6 bg-zinc-950/30 p-6 rounded-3xl border border-zinc-800/50">
+                    <h3 class="text-xs font-bold text-zinc-500 uppercase tracking-widest flex items-center">
+                        <i class="fa-solid fa-image mr-2 text-blue-500"></i> MEDIA ASSETS
+                    </h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {{-- Thumbnail --}}
+                        <div class="space-y-4">
+                            <div class="space-y-2">
+                                <label for="thumbnail_src" class="block text-sm font-bold text-zinc-400">Thumbnail
+                                    URL</label>
+                                <input type="text" name="thumbnail_src" id="thumbnail_src"
+                                    value="{{ old('thumbnail_src') }}"
+                                    class="block w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all text-sm"
+                                    placeholder="https://...">
                             </div>
-                        @endif
-                        <div class="mb-3">
-                            <label for="thumbnail_src" class="form-label">Image Source Url</label>
-                            <input type="text" class="form-control" placeholder="Image link" id="thumbnail_src"
-                                name="thumbnail_src" value="{{ old('thumbnail_src') }}">
-                        </div>
-                        <div class="mb-3">
-                            <label for="formFile" class="form-label">Upload Image Thumbnail</label>
-                            <input class="form-control" type="file" id="formFile" name="file">
-                        </div>
-                        <div class="mb-3">
-                            <label for="thumbnail_src" class="form-label">Banner Source Url</label>
-                            <input type="text" class="form-control" placeholder="Image link" id="banner_src"
-                                name="banner_src" value="{{ old('banner_src') }}">
-                        </div>
-                        <div class="mb-3">
-                            <label for="formFileBanner" class="form-label">Upload Banner Thumbnail</label>
-                            <input class="form-control" type="file" id="formFileBanner" name="banner">
-                        </div>
-                        {{-- <div class="col-md mb-3">
-                            <label for="tags-select">Select season</label>
-                            <select class="form-select" name="tags[]" id="tags-select" multiple>
-                                <option value="">Select tags</option>
-                                @isset($tags)
-                                    @php
-                                        $plucked = $tags->pluck('name')->toArray();
-                                    @endphp
-                                    @foreach ($tags as $tag)
-                                        <option {{ in_array(old('tags[]'), $plucked) ? 'selected' : '' }} value="{{ $tag->id }}">
-                                            {{ $tag->name }}</option>
-                                    @endforeach
-                                @endisset
-                            </select>
-                        </div> --}}
-
-                        <div class="mb-3">
-                            <label for="year" class="form-label">Year</label>
-                            <select class="form-select" name="year" id="year" required>
-                                <option selected>Select year</option>
-                                @foreach ($years as $year)
-                                    <option value="{{ $year->id }}" {{ old('year') == $year->id ? 'selected' :'' }}>{{$year->name}}</option>
-                                @endforeach
-                            </select>
+                            <div class="space-y-2">
+                                <label for="formFile" class="block text-sm font-bold text-zinc-400">OR Upload
+                                    Thumbnail</label>
+                                <input type="file" name="file" id="formFile"
+                                    class="block w-full text-xs text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-zinc-800 file:text-zinc-300 hover:file:bg-zinc-700 transition-all">
+                            </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="season" class="form-label">Season</label>
-                            <select class="form-select" name="season" id="season" required>
-                                <option selected>Select season</option>
-                                @foreach ($seasons as $season)
-                                    <option value="{{ $season->id }}" {{ old('season') == $season->id ? 'selected' :'' }}>{{$season->name}}</option>
-                                @endforeach
-                            </select>
+                        {{-- Banner --}}
+                        <div class="space-y-4">
+                            <div class="space-y-2">
+                                <label for="banner_src" class="block text-sm font-bold text-zinc-400">Banner URL</label>
+                                <input type="text" name="banner_src" id="banner_src" value="{{ old('banner_src') }}"
+                                    class="block w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all text-sm"
+                                    placeholder="https://...">
+                            </div>
+                            <div class="space-y-2">
+                                <label for="formFileBanner" class="block text-sm font-bold text-zinc-400">OR Upload
+                                    Banner</label>
+                                <input type="file" name="banner" id="formFileBanner"
+                                    class="block w-full text-xs text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-zinc-800 file:text-zinc-300 hover:file:bg-zinc-700 transition-all">
+                            </div>
                         </div>
-
-
-                        <div class="d-flex">
-                            <button class="btn btn-primary w-100" type="submit">Submit</button>
-                        </div>
-                    </form>
+                    </div>
                 </div>
-            </div>
+
+                {{-- Action --}}
+                <div class="pt-4">
+                    <button
+                        class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-6 rounded-2xl transition-all shadow-lg shadow-blue-900/20 active:scale-[0.98] flex items-center justify-center gap-2 text-sm uppercase tracking-widest">
+                        <i class="fa-solid fa-save"></i>
+                        SAVE POST ENTRY
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
-@endsection
-
-@section('script')
-    {{-- <script src="https://cdn.jsdelivr.net/gh/habibmhamadi/multi-select-tag@2.0.1/dist/js/multi-select-tag.js"></script>
-
-    <script>
-        new MultiSelectTag('tags-select');
-    </script> --}}
 @endsection

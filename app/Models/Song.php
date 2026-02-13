@@ -276,4 +276,9 @@ class Song extends Model
 
         return $userRating;
     } */
+
+    public function reports()
+    {
+        return $this->hasMany(Report::class);
+    }
 }

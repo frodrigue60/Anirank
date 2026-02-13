@@ -1,4 +1,4 @@
-<div class="max-w-[1440px] mx-auto px-6 md:px-14 py-8 md:py-12">
+<div x-data="{}" class="max-w-[1440px] mx-auto px-6 md:px-14 py-8 md:py-12">
     <div class="mb-12">
         <div class="flex flex-col md:flex-row md:items-end justify-between gap-8">
             <div>
@@ -31,45 +31,15 @@
                 <h2 class="text-xl font-bold text-white tracking-tight">Leaderboard</h2>
             </div>
 
-            <div class="relative" x-data="{ open: false, selected: @entangle('currentSection') }">
-                <button @click="open = !open" @click.away="open = false"
-                    class="flex items-center bg-background-dark/50 border border-white/5 rounded-xl px-4 py-2.5 hover:border-primary/50 transition-all min-w-[160px] justify-between group/select">
-                    <div class="flex items-center gap-2">
-                        <span class="material-symbols-outlined text-sm text-primary">list_alt</span>
-                        <span class="text-sm font-bold text-white tracking-tight"
-                            x-text="selected === 'OP' ? 'Openings' : 'Endings'"></span>
-                    </div>
-                    <span class="material-symbols-outlined text-white/20 text-lg transition-transform duration-300"
-                        :class="open ? 'rotate-180' : ''">expand_more</span>
-                </button>
-
-                {{-- Custom Options Portal/Dropdown --}}
-                <div x-show="open" x-cloak x-transition:enter="transition ease-out duration-200"
-                    x-transition:enter-start="opacity-0 translate-y-2"
-                    x-transition:enter-end="opacity-100 translate-y-0"
-                    class="absolute right-0 mt-2 w-full min-w-[180px] bg-surface-darker/95 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden shadow-2xl z-50">
-
-                    <button @click="selected = 'OP'; open = false;"
-                        class="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors group/opt"
-                        :class="selected === 'OP' ? 'bg-primary/10' : ''">
-                        <span class="material-symbols-outlined text-sm"
-                            :class="selected === 'OP' ? 'text-primary' : 'text-white/40'">music_note</span>
-                        <span class="text-sm font-bold"
-                            :class="selected === 'OP' ? 'text-white' : 'text-white/60'">Openings</span>
-                        <span x-show="selected === 'OP'"
-                            class="material-symbols-outlined text-primary text-sm ms-auto">check</span>
-                    </button>
-
-                    <button @click="selected = 'ED'; open = false;"
-                        class="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors group/opt"
-                        :class="selected === 'ED' ? 'bg-primary/10' : ''">
-                        <span class="material-symbols-outlined text-sm"
-                            :class="selected === 'ED' ? 'text-primary' : 'text-white/40'">album</span>
-                        <span class="text-sm font-bold"
-                            :class="selected === 'ED' ? 'text-white' : 'text-white/60'">Endings</span>
-                        <span x-show="selected === 'ED'"
-                            class="material-symbols-outlined text-primary text-sm ms-auto">check</span>
-                    </button>
+            <div class="relative">
+                <select wire:model="currentSection"
+                    class="appearance-none bg-background-dark/50 border border-white/5 rounded-xl px-4 py-2.5 hover:border-primary/50 transition-all min-w-[160px] text-sm font-bold text-white tracking-tight cursor-pointer focus:outline-none focus:border-primary/50">
+                    <option value="ALL">All Themes</option>
+                    <option value="OP">Openings</option>
+                    <option value="ED">Endings</option>
+                </select>
+                <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <span class="material-symbols-outlined text-white/20 text-lg">expand_more</span>
                 </div>
             </div>
         </div>
@@ -131,7 +101,8 @@
 
                                     @if ($song->artists->isNotEmpty())
                                         @foreach ($song->artists as $artist)
-                                            <a href="{{ route('artists.show', $artist->slug) }}" class="text-white/60 truncate">
+                                            <a href="{{ route('artists.show', $artist->slug) }}"
+                                                class="text-white/60 truncate">
                                                 {{ $artist->name }}
                                             </a>
                                         @endforeach
@@ -154,20 +125,17 @@
                         {{-- Actions Column --}}
                         <div class="flex items-center justify-end gap-2">
                             <button
-                                class="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 hover:bg-primary text-white transition-all shadow-lg hover:shadow-primary/20">
-                                <span class="material-symbols-outlined text-[20px] filled">play_arrow</span>
+                                @click.stop="console.log('SeasonalTable: Alpine triggered for ID', {{ $song->id }}); window.playSongGlobal({{ $song->id }})"
+                                onclick="console.log('SeasonalTable: Native HTML click for ID {{ $song->id }}')"
+                                class="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 hover:bg-primary text-white transition-all shadow-lg hover:shadow-primary/20 cursor-pointer z-[99]">
+                                <span
+                                    class="material-symbols-outlined text-[20px] filled pointer-events-none">play_arrow</span>
                             </button>
-                            <button
+                            <button wire:click="toggleFavorite({{ $song->id }})" wire:loading.attr="disabled"
                                 class="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/10 text-white/40 hover:text-red-400 transition-all">
                                 <span
-                                    class="material-symbols-outlined text-[20px] {{ $song->userScore ? 'filled text-red-400' : '' }}">favorite</span>
+                                    class="material-symbols-outlined text-[20px] {{ $song->isFavorited() ? 'filled text-red-400' : '' }}">favorite</span>
                             </button>
-                            <div class="relative" x-data="{ open: false }">
-                                <button @click="open = !open"
-                                    class="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/10 text-white/40 transition-all">
-                                    <span class="material-symbols-outlined text-[20px]">more_vert</span>
-                                </button>
-                            </div>
                         </div>
                     </div>
                 @endisset
@@ -179,7 +147,8 @@
             <div x-data x-intersect="$wire.loadMore()"
                 class="p-8 border-t border-white/5 bg-surface-darker/30 flex flex-col items-center gap-4">
                 <div class="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-                <span class="text-xs font-bold text-white/20 uppercase tracking-widest">Loading more themes...</span>
+                <span class="text-xs font-bold text-white/20 uppercase tracking-widest">Loading more
+                    themes...</span>
             </div>
         @endif
     </div>

@@ -104,46 +104,27 @@
                             <h1 id="current-song-title"
                                 class="text-4xl font-black text-white tracking-tight leading-tight mb-2 truncate drop-shadow-sm">
                                 Loading...</h1>
-                            <div class="flex items-center gap-3">
+                            <div class="flex flex-col items-start gap-3">
                                 <p id="current-anime-title" class="text-xl font-bold text-primary truncate"></p>
-                                <span class="text-white/20">•</span>
-                                <p id="current-song-type" class="text-white/60 font-medium"></p>
+                                <p id="current-artists" class="text-white/80 font-bold truncate"></p>
+
                             </div>
                         </div>
                         <div class="flex flex-col items-end gap-1 shrink-0">
-                            <div class="flex items-center gap-1.5 text-yellow-400 font-black text-2xl">
-                                <span class="material-symbols-outlined filled">star</span>
-                                <span id="current-rating">9.8</span>
-                            </div>
+                            <livewire:song-interactions :songId="$queue[0]['song_id']" mode="score" />
                             <div
                                 class="flex items-center gap-1.5 text-white/40 text-xs font-bold uppercase tracking-widest">
-                                <span class="material-symbols-outlined text-sm">visibility</span>
-                                <span>Verified Theme</span>
+                                <p id="current-song-type" class="text-white/60 font-medium"></p>
                             </div>
                         </div>
                     </div>
 
-                    {{-- Interaction Bar --}}
                     <div
                         class="flex items-center justify-between p-5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
-                        <div class="flex items-center gap-8">
-                            <button class="flex flex-col items-center gap-1.5 group transition-all" id="like-btn">
-                                <span
-                                    class="material-symbols-outlined text-white/40 group-hover:text-primary transition-colors">thumb_up</span>
-                                <span class="text-[10px] font-bold text-white/40 uppercase tracking-tighter">Like</span>
-                            </button>
-                            <button class="flex flex-col items-center gap-1.5 group transition-all" id="dislike-btn">
-                                <span
-                                    class="material-symbols-outlined text-white/40 group-hover:text-red-500 transition-colors">thumb_down</span>
-                                <span class="text-[10px] font-bold text-white/40 uppercase tracking-tighter">Dislike</span>
-                            </button>
-                            <button class="flex flex-col items-center gap-1.5 group transition-all" id="fav-btn">
-                                <span
-                                    class="material-symbols-outlined text-white/40 hover:text-primary transition-colors">favorite</span>
-                                <span class="text-[10px] font-bold text-white/40 uppercase tracking-tighter">Favorite</span>
-                            </button>
+                        <div class="flex-1">
+                            <livewire:song-interactions :songId="$queue[0]['song_id']" />
                         </div>
-                        <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-4 ml-8">
                             <div class="flex items-center gap-4 px-4 py-2 bg-white/5 rounded-xl border border-white/5 mr-2">
                                 <span id="current-time" class="text-xs font-black tabular-nums">0:00</span>
                                 <span class="text-white/20 font-bold">/</span>
@@ -164,7 +145,7 @@
                         </p>
                         {{-- <div class="mt-6 flex items-center gap-4">
                             <div class="flex -space-x-3">
-                                @foreach($queue->take(4) as $item)
+                                @foreach ($queue->take(4) as $item)
                                 <div
                                     class="w-8 h-8 rounded-full border-2 border-background-dark overflow-hidden bg-surface-darker">
                                     <img src="{{ $item->banner }}" class="w-full h-full object-cover">
@@ -250,6 +231,7 @@
                 this.playerContainer = document.getElementById('player-container');
                 this.titleEl = document.getElementById('current-song-title');
                 this.animeEl = document.getElementById('current-anime-title');
+                this.artistEl = document.getElementById('current-artists');
                 this.typeEl = document.getElementById('current-song-type');
                 this.ratingEl = document.getElementById('current-rating');
                 this.timeEl = document.getElementById('current-time');
@@ -295,8 +277,10 @@
                 // Keyboard shortcuts
                 document.addEventListener('keydown', (e) => {
                     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-                    if (e.key === ' ') { e.preventDefault(); this.togglePlay(); }
-                    else if (e.key === 'ArrowRight') this.next();
+                    if (e.key === ' ') {
+                        e.preventDefault();
+                        this.togglePlay();
+                    } else if (e.key === 'ArrowRight') this.next();
                     else if (e.key === 'ArrowLeft') this.prev();
                 });
             }
@@ -308,8 +292,14 @@
                 // UI Update
                 this.titleEl.textContent = item.song_title;
                 if (this.animeEl) this.animeEl.textContent = item.anime_name || 'Unknown Anime';
-                if (this.typeEl) this.typeEl.textContent = item.variant_quality || 'Opening Theme';
-                if (this.ratingEl) this.ratingEl.textContent = (Math.random() * (9.9 - 8.5) + 8.5).toFixed(1); // Aesthetic placeholder
+                if (this.artistEl) this.artistEl.textContent = item.artist_names || 'Unknown Artist';
+                if (this.typeEl) this.typeEl.textContent = item.song_type || 'Theme';
+                if (this.ratingEl) this.ratingEl.textContent = item.average_rating || 'N/A';
+
+                // Sync Livewire
+                if (window.Livewire) {
+                    Livewire.emit('songChanged', item.song_id);
+                }
 
                 this.highlightCurrent();
 
@@ -350,7 +340,8 @@
             parseEmbedInput(input) {
                 if (!input) return null;
                 const str = input.trim();
-                const embedMatch = str.match(/<embed[^>]+src=["']([^"']+)["']/i) || str.match(/<iframe[^>]+src=["']([^"']+)["']/i);
+                const embedMatch = str.match(/<embed[^>]+src=["']([^"']+)["']/i) || str.match(
+                    /<iframe[^>]+src=["']([^"']+)["']/i);
                 if (embedMatch) return this.buildEmbedUrl(embedMatch[1]);
                 if (/^https?:\/\//i.test(str)) return this.buildEmbedUrl(str);
                 return null;
@@ -359,7 +350,8 @@
             buildEmbedUrl(url) {
                 if (/youtube\.com|youtu\.be/i.test(url)) {
                     const id = this.extractYouTubeId(url);
-                    return id ? `https://www.youtube.com/embed/${id}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1` : null;
+                    return id ? `https://www.youtube.com/embed/${id}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1` :
+                        null;
                 }
                 return url;
             }
@@ -392,7 +384,13 @@
                 const createPlayer = () => {
                     this.ytPlayer = new YT.Player('yt-player-instance', {
                         videoId: id,
-                        playerVars: { autoplay: 1, controls: 0, modestbranding: 1, rel: 0, iv_load_policy: 3 },
+                        playerVars: {
+                            autoplay: 1,
+                            controls: 0,
+                            modestbranding: 1,
+                            rel: 0,
+                            iv_load_policy: 3
+                        },
                         events: {
                             onReady: (e) => {
                                 this.isPlaying = true;
@@ -431,7 +429,8 @@
                 this.playerContainer.appendChild(video);
                 this.currentPlayer = video;
 
-                video.addEventListener('loadedmetadata', () => this.durationEl.textContent = this.formatTime(video.duration));
+                video.addEventListener('loadedmetadata', () => this.durationEl.textContent = this.formatTime(video
+                    .duration));
                 video.addEventListener('timeupdate', () => {
                     this.timeEl.textContent = this.formatTime(video.currentTime);
                     const percent = (video.currentTime / video.duration) * 100;
@@ -439,9 +438,15 @@
                     this.seekSlider.value = percent;
                 });
                 video.addEventListener('ended', () => this.next());
-                video.addEventListener('play', () => { this.isPlaying = true; this.updatePlayBtnIcon(); });
-                video.addEventListener('pause', () => { this.isPlaying = false; this.updatePlayBtnIcon(); });
-                video.play().catch(() => { });
+                video.addEventListener('play', () => {
+                    this.isPlaying = true;
+                    this.updatePlayBtnIcon();
+                });
+                video.addEventListener('pause', () => {
+                    this.isPlaying = false;
+                    this.updatePlayBtnIcon();
+                });
+                video.play().catch(() => {});
             }
 
             togglePlay() {
@@ -462,9 +467,22 @@
                 if (overlayIcon) overlayIcon.textContent = newIcon;
             }
 
-            next() { if (this.currentIndex < this.queue.length - 1) { this.currentIndex++; this.loadCurrent(); } }
-            prev() { if (this.currentIndex > 0) { this.currentIndex--; this.loadCurrent(); } }
-            playIndex(index) { this.currentIndex = index; this.loadCurrent(); }
+            next() {
+                if (this.currentIndex < this.queue.length - 1) {
+                    this.currentIndex++;
+                    this.loadCurrent();
+                }
+            }
+            prev() {
+                if (this.currentIndex > 0) {
+                    this.currentIndex--;
+                    this.loadCurrent();
+                }
+            }
+            playIndex(index) {
+                this.currentIndex = index;
+                this.loadCurrent();
+            }
 
             bindEvents() {
                 this.playPauseBtn.addEventListener('click', () => this.togglePlay());
@@ -474,7 +492,8 @@
                 if (this.playerOverlay) {
                     this.playerOverlay.addEventListener('click', (e) => {
                         // Toggle play/pause when clicking the overlay area
-                        if (e.target === this.playerOverlay || e.target.closest('#overlay-icon')?.parentElement) {
+                        if (e.target === this.playerOverlay || e.target.closest('#overlay-icon')
+                            ?.parentElement) {
                             this.togglePlay();
                         }
                     });
@@ -578,9 +597,11 @@
                 this.queueList.innerHTML = '';
                 this.queue.forEach((item, i) => {
                     const div = document.createElement('div');
-                    div.className = `queue-item group flex items-center gap-4 p-3 rounded-xl border border-transparent hover:bg-white/5 hover:border-white/5 transition-all cursor-pointer relative overflow-hidden`;
+                    div.className =
+                        `queue-item group flex items-center gap-4 p-3 rounded-xl border border-transparent hover:bg-white/5 hover:border-white/5 transition-all cursor-pointer relative overflow-hidden`;
 
-                    div.innerHTML = `
+                    div.innerHTML =
+                        `
                                                                                                                                                                         <div class="w-6 text-center text-white/20 font-bold text-sm group-hover:text-primary">${(i + 1).toString().padStart(2, '0')}</div>
                                                                                                                                                                         <div class="relative w-20 h-14 rounded-lg overflow-hidden shrink-0 bg-surface-dark border border-white/5">
                                                                                                                                                                             <img src="${item.thumbnail || '/images/default.jpg'}" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity">
@@ -590,12 +611,12 @@
                                                                                                                                                                         </div>
                                                                                                                                                                         <div class="flex-1 min-w-0">
                                                                                                                                                                             <h4 class="font-bold text-white/90 truncate text-base group-hover:text-white transition-colors">${item.song_title || 'Unknown Theme'}</h4>
-                                                                                                                                                                            <p class="text-xs text-white/40 truncate">${item.anime_name || 'Various Anime'} • ${item.variant_quality || 'Standard'}</p>
+                                                                                                                                                                            <p class="text-xs text-white/40 truncate">${item.artist_names || 'Various Artists'} • ${item.anime_name || 'Various Anime'} • ${item.song_type || 'Theme'}</p>
                                                                                                                                                                         </div>
                                                                                                                                                                         <div class="flex flex-col items-end shrink-0">
                                                                                                                                                                             <div class="flex items-center gap-1 text-yellow-400/60 font-bold text-sm">
                                                                                                                                                                                 <span class="material-symbols-outlined text-[14px] filled">star</span>
-                                                                                                                                                                                9.5
+                                                                                                                                                                                ${item.average_rating || 'N/A'}
                                                                                                                                                                             </div>
                                                                                                                                                                             <span class="text-[10px] text-white/30 font-medium">${this.formatTime(item.duration || 0)}</span>
                                                                                                                                                                         </div>
@@ -630,9 +651,19 @@
                 }, 1000);
             }
 
-            stopYouTubeTimeTracking() { if (this.youtubeTimeInterval) { clearInterval(this.youtubeTimeInterval); this.youtubeTimeInterval = null; } }
-            showEmpty() { this.playerContainer.innerHTML = '<div class="opacity-40 flex flex-col items-center gap-4"><span class="material-symbols-outlined text-6xl">videocam_off</span><p class="font-bold">No themes in this playlist</p></div>'; }
-            showError(m) { this.playerContainer.innerHTML = `<div class="text-red-500 font-bold p-10 text-center">${m}</div>`; }
+            stopYouTubeTimeTracking() {
+                if (this.youtubeTimeInterval) {
+                    clearInterval(this.youtubeTimeInterval);
+                    this.youtubeTimeInterval = null;
+                }
+            }
+            showEmpty() {
+                this.playerContainer.innerHTML =
+                    '<div class="opacity-40 flex flex-col items-center gap-4"><span class="material-symbols-outlined text-6xl">videocam_off</span><p class="font-bold">No themes in this playlist</p></div>';
+            }
+            showError(m) {
+                this.playerContainer.innerHTML = `<div class="text-red-500 font-bold p-10 text-center">${m}</div>`;
+            }
         }
 
         document.addEventListener('DOMContentLoaded', () => new PlaylistPlayer());

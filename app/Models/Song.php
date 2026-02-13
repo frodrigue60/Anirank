@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Post;
 use App\Models\SongVariant;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Models\Rateable;
@@ -36,18 +35,8 @@ class Song extends Model
         parent::boot();
 
         static::deleting(function ($song) {
-
-            $song->load('songVariants.video');
-
             foreach ($song->songVariants as $variant) {
-                if ($variant->video) {
-
-                    $video = $variant->video;
-
-                    if ($video->video_src != null && Storage::disk('public')->exists($video->video_src)) {
-                        Storage::disk('public')->delete($video->video_src);
-                    }
-                }
+                $variant->delete();
             }
         });
     }
@@ -82,6 +71,11 @@ class Song extends Model
         return $this->hasMany(SongVariant::class);
     }
 
+    public function firstSongVariant()
+    {
+        return $this->hasOne(SongVariant::class)->orderBy('version_number');
+    }
+
     public function comments()
     {
         return $this->morphMany(Comment::class, 'commentable');
@@ -102,15 +96,7 @@ class Song extends Model
 
     public function getNameAttribute()
     {
-        if ($this->song_romaji != null) {
-            return $this->song_romaji;
-        } elseif ($this->song_en != null) {
-            return $this->song_en;
-        } elseif ($this->song_jp != null) {
-            return $this->song_jp;
-        } else {
-            return 'n/a';
-        }
+        return $this->song_romaji ?? $this->song_en ?? $this->song_jp ?? 'n/a';
     }
 
     public function getUrlAttribute()
@@ -249,6 +235,24 @@ class Song extends Model
             return $this->favorites()->where('user_id', Auth::id())->exists();
         }
         return false;
+    }
+
+    public function toggleFavorite()
+    {
+        if (!Auth::check()) {
+            return false;
+        }
+
+        $userId = Auth::id();
+        $favorite = $this->favorites()->where('user_id', $userId)->first();
+
+        if ($favorite) {
+            $favorite->delete();
+            return false;
+        } else {
+            $this->favorites()->create(['user_id' => $userId]);
+            return true;
+        }
     }
 
     public function playlists()

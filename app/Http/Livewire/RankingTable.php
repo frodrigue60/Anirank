@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Collection;
 class RankingTable extends Component
 {
     public $rankingType = '0'; // 0 = GLOBAL, 1 = SEASONAL
-    public $currentSection = 'OP'; // OP or ED
+    public $currentSection = 'ALL'; // ALL, OP or ED
     public $perPage = 15;
     public $page = 1;
     public $hasMorePages = true;
@@ -23,7 +23,7 @@ class RankingTable extends Component
     public function mount()
     {
         $this->rankingType = '0';
-        $this->currentSection = 'OP';
+        $this->currentSection = 'ALL';
     }
 
     public function switchRankingType($type)
@@ -45,6 +45,18 @@ class RankingTable extends Component
         $this->page++;
     }
 
+    public function toggleFavorite($songId)
+    {
+        if (!Auth::check()) {
+            return $this->emit('showLoginModal'); // O el nombre del evento para login si existe
+        }
+
+        $song = Song::find($songId);
+        if ($song) {
+            $song->toggleFavorite();
+        }
+    }
+
     public function getSongsProperty()
     {
         $status = true;
@@ -52,10 +64,13 @@ class RankingTable extends Component
         $perPage = $this->perPage * $this->page;
 
         $query = Song::with(['post', 'artists'])
-            ->where('type', $this->currentSection)
             ->whereHas('post', function ($query) use ($status) {
                 $query->where('status', $status);
             });
+
+        if ($this->currentSection !== 'ALL') {
+            $query->where('type', $this->currentSection);
+        }
 
         if ($this->rankingType === '1') {
             $currentSeason = Season::where('current', true)->first();

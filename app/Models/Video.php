@@ -16,8 +16,8 @@ class Video extends Model
         parent::boot();
 
         static::deleting(function ($video) {
-            if ($video->video_src != null && Storage::disk('public')->exists($video->video_src)) {
-                Storage::disk('public')->delete($video->video_src);
+            if ($video->video_src && Storage::exists('public/' . $video->video_src)) {
+                Storage::delete('public/' . $video->video_src);
             }
         });
     }
@@ -51,6 +51,6 @@ class Video extends Model
 
     public function getLocalUrlAttribute()
     {
-        return $this->isLocal() ? env('APP_URL').Storage::url($this->video_src) : null;
+        return $this->isLocal() ? env('APP_URL') . Storage::url($this->video_src) : null;
     }
 }

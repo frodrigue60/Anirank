@@ -112,6 +112,17 @@
                             <img src="{{ $thumbnailUrl }}" alt="{{ $post->title }}" loading="lazy"
                                 class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
 
+                            <div class="absolute top-3 right-3 flex items-end gap-1.5 z-20">
+                                <span
+                                    class="px-2 py-1 rounded bg-black/60 backdrop-blur-md border border-white/10 text-[10px] font-black uppercase tracking-widest text-white shadow-xl">
+                                    {{ $post->format->name }}
+                                </span>
+                                <span
+                                    class="px-2 py-1 rounded bg-primary/80 backdrop-blur-md border border-primary/20 text-[10px] font-black uppercase tracking-widest text-white shadow-lg flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-[14px] leading-none">music_note</span>
+                                    {{ $post->songs->count() }}
+                                </span>
+                            </div>
                             {{-- Hover Overlay --}}
                             <div
                                 class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
@@ -129,10 +140,10 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 @foreach ($posts as $post)
                     <div
-                        class="flex bg-surface-dark rounded-lg overflow-hidden h-[180px] shadow-sm hover:shadow-md transition-shadow group relative border border-white/5">
+                        class="flex bg-surface-dark rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow group relative border border-white/5">
 
                         {{-- COVER (Left) --}}
-                        <div class="w-[120px] md:w-[130px] shrink-0 relative">
+                        <div class="w-[120px] md:w-[180px] shrink-0 relative aspect-[2/3]">
                             @php
                                 $thumbnailUrl = $post->thumbnail_src;
                                 if ($post->thumbnail && Storage::disk('public')->exists($post->thumbnail)) {
@@ -147,12 +158,13 @@
                             {{-- Overlay: Title & Studio --}}
                             <div
                                 class="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent flex flex-col justify-end p-2 pointer-events-none">
-                                <h3 class="text-sm font-bold text-white leading-tight line-clamp-2 mb-0.5 text-shadow-sm">
+                                <h3
+                                    class="text-sm font-bold text-white leading-tight line-clamp-2 mb-0.5 text-shadow-sm">
                                     {{ $post->title }}
                                 </h3>
-                                @if ($post->studios->isNotEmpty())
-                                    <div class="text-[10px] font-bold text-primary truncate">
-                                        {{ $post->studios->first()->name }}
+                                @if ($post->producers->isNotEmpty())
+                                    <div class="text-[12px] font-bold text-primary truncate">
+                                        {{ $post->producers->first()->name }}
                                     </div>
                                 @endif
                             </div>
@@ -162,40 +174,52 @@
                         <div class="flex-1 p-3 flex flex-col min-w-0 bg-surface-darker/30">
                             {{-- Header: Season/Year & Format --}}
                             <div
-                                class="flex items-center justify-between text-[11px] font-bold text-white/50 mb-2 uppercase tracking-wide">
-                                <div>
-                                    @if ($post->season && $post->year)
-                                        {{ $post->season->name }} {{ $post->year->name }}
-                                    @else
-                                        Start Date N/A
-                                    @endif
-                                </div>
+                                class="flex items-center justify-start text-[11px] font-bold text-white/50 mb-2 uppercase tracking-wide gap-2">
                                 <div class="flex items-center gap-2">
+                                    @if ($post->season && $post->year)
+                                        <span>{{ $post->season->name }} {{ $post->year->name }}</span>
+                                    @else
+                                        <span>Start Date N/A</span>
+                                    @endif
+
                                     @if ($post->format)
-                                        <span>{{ $post->format->name }}</span>
+                                        <span>&bull;</span>
+                                        <span> {{ $post->format->name }}</span>
+                                    @endif
+
+                                    @if ($post->songs->isNotEmpty())
+                                        <span>&bull;</span>
+                                        <span> {{ $post->songs->count() }} Songs</span>
                                     @endif
                                 </div>
+                            </div>
+                            <div>
+
                             </div>
 
 
                             {{-- Body: Description --}}
-                            <div class="text-xs text-white/60 overflow-hidden line-clamp-5 leading-relaxed mb-auto">
+                            <div class="text-xs text-white/60 overflow-hidden line-clamp-6 leading-relaxed mb-auto">
                                 {!! strip_tags($post->description) !!}
                             </div>
 
                             {{-- Footer: Tags Placeholder --}}
                             <div
                                 class="mt-3 pt-3 border-t border-white/5 flex flex-wrap gap-1.5 opacity-60 hover:opacity-100 transition-opacity">
-                                {{--
+
                                 @if ($post->tags)
-                                @foreach ($post->tags->take(3) as $tag)
-                                <a href="#"
-                                    class="px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-bold text-primary hover:bg-primary hover:text-white transition-colors">
-                                    {{ $tag->name }}
-                                </a>
-                                @endforeach
+                                    @foreach ($post->tags->take(3) as $tag)
+                                        <a href="#"
+                                            class="px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-bold text-primary hover:bg-primary hover:text-white transition-colors">
+                                            {{ $tag->name }}
+                                        </a>
+                                    @endforeach
+                                @else
+                                    <span
+                                        class="px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-bold text-white/40">No
+                                        Tags</span>
                                 @endif
-                                --}}
+
                                 {{-- Example Placeholder --}}
                                 {{--
                                 <span
@@ -236,7 +260,12 @@
                                     <span>{{ $post->format->name }}</span>
                                 @endif
                                 @if ($post->season && $post->year)
-                                    <span>&bull; {{ $post->season->name }} {{ $post->year->name }}</span>
+                                    <span>&bull;</span>
+                                    <span>{{ $post->season->name }} {{ $post->year->name }}</span>
+                                @endif
+                                @if ($post->songs->isNotEmpty())
+                                    <span>&bull;</span>
+                                    <span>{{ $post->songs->count() }} Songs</span>
                                 @endif
                             </div>
                         </div>

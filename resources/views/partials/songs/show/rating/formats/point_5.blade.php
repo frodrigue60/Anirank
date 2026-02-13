@@ -1,57 +1,30 @@
-<form action="" method="post" id="rating-form" class="d-flex flex-column py-4" data-song="{{ $song->id }}">
+<div class="w-full flex flex-col items-center" x-data="{ score: @entangle('ratingValue').defer }">
     <style>
-        .rate {
-            float: left;
-            height: 46px;
-            padding: 0 10px;
-        }
-
-        .rate:not(:checked)>input {
-            position: absolute;
-            top: -9999px;
-        }
-
-        .rate:not(:checked)>label {
-            float: right;
-            width: 1em;
-            overflow: hidden;
-            white-space: nowrap;
-            cursor: pointer;
-            font-size: 40px;
-            color: #ccc;
-        }
-
-        .rate:not(:checked)>label:before {
-            content: '★ ';
-        }
-
-        .rate>input:checked~label {
-            color: #ffc700;
-        }
-
-        .rate:not(:checked)>label:hover,
-        .rate:not(:checked)>label:hover~label {
-            color: #deb217;
-        }
-
-        .rate>input:checked+label:hover,
-        .rate>input:checked+label:hover~label,
-        .rate>input:checked~label:hover,
-        .rate>input:checked~label:hover~label,
-        .rate>label:hover~input:checked~label {
-            color: #c59b08;
+        .star-gradient-fill {
+            background: linear-gradient(135deg, #7f13ec, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 8px rgba(127, 19, 236, 0.6));
         }
     </style>
-    <div class="rate">
-        <input type="radio" id="star5" name="score" value="100" {{ $format_rating == 100 ? 'checked' : '' }} />
-        <label for="star5" title="text">5 stars</label>
-        <input type="radio" id="star4" name="score" value="80" {{ $format_rating == 80 ? 'checked' : '' }} />
-        <label for="star4" title="text">4 stars</label>
-        <input type="radio" id="star3" name="score" value="60" {{ $format_rating == 60 ? 'checked' : '' }} />
-        <label for="star3" title="text">3 stars</label>
-        <input type="radio" id="star2" name="score" value="40" {{ $format_rating == 40 ? 'checked' : '' }} />
-        <label for="star2" title="text">2 stars</label>
-        <input type="radio" id="star1" name="score" value="20" {{ $format_rating == 20 ? 'checked' : '' }} />
-        <label for="star1" title="text">1 star</label>
+
+    <div class="my-6 relative">
+        <div class="text-[84px] font-bold leading-none tracking-tighter text-white drop-shadow-[0_0_20px_rgba(127,19,236,0.3)] text-center" x-text="(score / 20).toFixed(1)">
+            {{ number_format($ratingValue / 20, 1) }}
+        </div>
+        <p class="text-sm text-white/40 font-medium uppercase tracking-widest mt-2">Personal Score</p>
     </div>
-</form>
+
+    <div class="flex items-center justify-center gap-1 my-8">
+        @for ($i = 1; $i <= 5; $i++)
+            <button @click="score = {{ $i * 20 }}" class="group p-1 relative">
+                {{-- Empty Star --}}
+                <span class="material-symbols-outlined text-[48px] text-white/10"
+                    :class="Math.round(score/20) >= {{ $i }} ? 'star-gradient-fill filled' : ''">
+                    star
+                </span>
+            </button>
+        @endfor
+    </div>
+
+</div>

@@ -14,7 +14,7 @@ class SeasonalTable extends Component
 {
     use WithPagination;
 
-    public $currentSection = 'OP'; // OP or ED
+    public $currentSection = 'ALL'; // ALL, OP or ED
     public $perPage = 15;
     public $page = 1;
     public $hasMorePages = true;
@@ -23,7 +23,7 @@ class SeasonalTable extends Component
 
     public function mount()
     {
-        $this->currentSection = 'OP';
+        $this->currentSection = 'ALL';
     }
 
     public function updatedCurrentSection()
@@ -39,14 +39,29 @@ class SeasonalTable extends Component
         }
     }
 
+    public function toggleFavorite($songId)
+    {
+        if (!Auth::check()) {
+            return $this->emit('showLoginModal');
+        }
+
+        $song = Song::find($songId);
+        if ($song) {
+            $song->toggleFavorite();
+        }
+    }
+
     public function render()
     {
         $currentSeason = Season::where('current', true)->first();
         $currentYear = Year::where('current', true)->first();
         $user = Auth::user();
 
-        $query = Song::with(['post', 'artists'])
-            ->where('type', $this->currentSection);
+        $query = Song::with(['post', 'artists']);
+
+        if ($this->currentSection !== 'ALL') {
+            $query->where('type', $this->currentSection);
+        }
 
         // Filter by Current Season and Year
         if ($currentSeason && $currentYear) {

@@ -27,7 +27,7 @@
 
                     <div class="flex flex-col sm:flex-row gap-3">
                         <div class="flex-1 relative">
-                            <input type="file" id="profile-file" wire:model="image"
+                            <input type="file" id="profile-file" wire:model.defer="image"
                                 accept="image/jpg, image/jpeg, image/png, image/webp"
                                 class="w-full bg-surface-darker border border-white/10 rounded-lg py-2 px-3 text-sm text-white/60 file:mr-4 file:py-1.5 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-black file:uppercase file:bg-primary/20 file:text-primary hover:file:bg-primary/30 transition-all cursor-pointer">
                             <div wire:loading wire:target="image" class="absolute right-3 top-1/2 -translate-y-1/2">
@@ -86,7 +86,7 @@
 
                     <div class="flex flex-col sm:flex-row gap-3">
                         <div class="flex-1 relative">
-                            <input type="file" id="banner-file" wire:model="banner"
+                            <input type="file" id="banner-file" wire:model.defer="banner"
                                 accept="image/jpg, image/jpeg, image/png, image/webp"
                                 class="w-full bg-surface-darker border border-white/10 rounded-lg py-2 px-3 text-sm text-white/60 file:mr-4 file:py-1.5 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-black file:uppercase file:bg-primary/20 file:text-primary hover:file:bg-primary/30 transition-all cursor-pointer">
                             <div wire:loading wire:target="banner" class="absolute right-3 top-1/2 -translate-y-1/2">
@@ -138,7 +138,7 @@
                     <div class="relative">
                         <select
                             class="w-full bg-surface-darker border border-white/10 rounded-lg py-3 pl-4 pr-10 text-sm text-white focus:outline-none focus:border-primary/50 transition-all appearance-none cursor-pointer hover:bg-surface-darker/80"
-                            id="select-score-format" wire:model="score_format" required>
+                            id="select-score-format" wire:model.defer="score_format" required>
                             <option value="">Select Scoring System</option>
                             @foreach ($score_formats as $item)
                                 <option value="{{ $item['value'] }}">

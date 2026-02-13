@@ -46,7 +46,7 @@ class PlaylistController extends Controller
 
     public function show(Playlist $playlist)
     {
-        $playlist->load(['songs.post', 'songs.songVariants.video']);
+        $playlist->load(['songs.post', 'songs.songVariants.video', 'songs.artists']);
 
         $queue = $playlist->songs->map(function ($song) {
             // 1. Tomar la primera variante
@@ -72,18 +72,30 @@ class PlaylistController extends Controller
             }
 
             // 4. Construir item
+            $typeLabels = [
+                'OP' => 'OPENING',
+                'ED' => 'ENDING',
+                'INS' => 'INSERT',
+                'OTH' => 'OTHER',
+            ];
+            $formattedType = ($typeLabels[$song->type] ?? 'THEME') . ' ' . ($song->theme_num ?? '');
+
             return [
-                'song_id'        => $song->id,
-                'song_title'     => $song->name,
-                'variant_id'     => $firstVariant->id,
+                'song_id'         => $song->id,
+                'song_title'      => $song->name,
+                'artist_names'    => $song->artists->pluck('name')->join(', '),
+                'anime_name'      => $song->post->title ?? 'Unknown Anime',
+                'song_type'       => trim($formattedType),
+                'average_rating'  => number_format($song->averageRating, 1) ?? 'N/A',
+                'variant_id'      => $firstVariant->id,
                 'variant_quality' => $firstVariant->quality ?? 'unknown',
-                'video_id'       => $video->id,
-                'video_type'     => $video->type,
-                'video_url'      => $video->type === 'embed'
+                'video_id'        => $video->id,
+                'video_type'      => $video->type,
+                'video_url'       => $video->type === 'embed'
                     ? $video->embed_url
                     : $video->local_url,
-                'duration'       => $video->duration ?? 0,
-                'thumbnail'      => $thumbnail,
+                'duration'        => $video->duration ?? 0,
+                'thumbnail'       => $thumbnail,
             ];
         })
             ->filter()

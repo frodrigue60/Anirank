@@ -109,7 +109,7 @@
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center justify-between">
                             <h3 class="font-bold text-white truncate text-lg" title="{{ $song->title }}">
-                                {{ $song->title }}
+                                {{ $song->name }}
                             </h3>
                             <div
                                 class="flex items-center gap-1 bg-surface-dark px-2 py-0.5 rounded text-yellow-400 text-xs font-bold">

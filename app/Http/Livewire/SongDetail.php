@@ -366,15 +366,33 @@ class SongDetail extends Component
         $this->showRatingModal = true;
     }
 
-    public function rate($value)
+    public function rate($value = null)
     {
         if (!Auth::check()) return redirect()->route('login');
 
-        $this->song->rateOnce($value, Auth::id());
-        $this->calculateScore(); // Update displayed score
-        $this->showRatingModal = false;
+        try {
+            $value = $value ?? $this->ratingValue;
 
-        $this->dispatchBrowserEvent('toast', ['type' => 'success', 'message' => 'Song rated successfully!']);
+            if ($value < 0 || $value > 100) {
+                throw new \Exception('Invalid rating value.');
+            }
+
+            $this->song->rateOnce($value, Auth::id());
+            $this->calculateScore(); // Update displayed score
+            $this->showRatingModal = false;
+
+            $this->dispatchBrowserEvent('toast', [
+                'type' => 'success',
+                'message' => 'Rating Saved!',
+                'description' => "You rated {$this->song->name} with {$value} points."
+            ]);
+        } catch (\Exception $e) {
+            $this->dispatchBrowserEvent('toast', [
+                'type' => 'error',
+                'message' => 'Error saving rating',
+                'description' => $e->getMessage()
+            ]);
+        }
     }
 
     public function render()

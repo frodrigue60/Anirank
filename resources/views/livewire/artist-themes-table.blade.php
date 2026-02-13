@@ -23,6 +23,7 @@
                 <div class="relative">
                     <select wire:model="type"
                         class="w-full h-11 bg-surface-dark border-white/10 rounded-xl text-sm text-white/80 focus:ring-primary focus:border-primary py-2 pl-4 pr-10 appearance-none cursor-pointer transition-all hover:bg-surface-dark/80 focus:bg-surface-darker">
+                        <option value="">All Types</option>
                         @foreach ($types as $t)
                             <option value="{{ $t['value'] }}">{{ $t['name'] }}</option>
                         @endforeach
@@ -84,12 +85,12 @@
             </div>
 
             {{-- Clear Button --}}
-            <button wire:click="clearFilters"
+            {{-- <button wire:click="clearFilters"
                 class="self-end h-11 bg-primary/10 hover:bg-primary/20 text-primary px-6 rounded-xl font-bold text-sm transition-all border border-primary/20 flex items-center gap-2 group/btn">
                 <span
                     class="material-symbols-outlined text-lg group-hover/btn:rotate-180 transition-transform">close</span>
                 Clear
-            </button>
+            </button> --}}
         </div>
     </section>
 
@@ -99,49 +100,30 @@
             @foreach ($songs as $song)
                 <a href="{{ $song->url }}"
                     class="group relative bg-surface-darker p-4 rounded-xl hover:bg-surface-dark transition-colors cursor-pointer border border-white/5 flex gap-4 items-center">
-                    <div class="relative w-24 h-24 shrink-0 rounded-lg overflow-hidden shadow-lg border border-white/5">
+                    <div class="relative w-20 h-20 shrink-0 rounded-lg overflow-hidden">
                         <img src="{{ $song->thumbnailUrl }}" alt="{{ $song->title }}"
                             class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
                         <div
-                            class="absolute top-1 left-1 {{ $loop->iteration <= 3 ? 'bg-primary' : 'bg-surface-dark' }} text-white text-[10px] font-black px-1.5 py-0.5 rounded shadow border border-white/10 uppercase tracking-tighter">
+                            class="absolute top-1 left-1 {{ $loop->iteration <= 3 ? 'bg-primary' : 'bg-surface-dark' }} text-white text-xs font-bold px-1.5 py-0.5 rounded shadow border border-white/10">
                             #{{ $loop->iteration }}</div>
                     </div>
                     <div class="flex-1 min-w-0">
-                        <div class="flex items-center justify-between gap-2 mb-1">
-                            <h3 class="font-bold text-white truncate text-lg group-hover:text-primary transition-colors"
-                                title="{{ $song->title }}">
-                                {{ $song->title }}
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-bold text-white truncate text-lg" title="{{ $song->title }}">
+                                {{ $song->name }}
                             </h3>
-                        </div>
-                        <p class="text-sm text-primary font-black truncate mb-1.5 uppercase tracking-wide">
-                            {{ $song->post->title }}</p>
-
-                        <div class="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2">
                             <div
-                                class="flex items-center gap-1.5 bg-black/40 px-2 py-0.5 rounded-lg border border-white/5 text-yellow-400 text-xs font-black">
+                                class="flex items-center gap-1 bg-surface-dark px-2 py-0.5 rounded text-yellow-400 text-xs font-bold">
                                 <span class="material-symbols-outlined filled text-[14px]">star</span>
-                                {{ number_format($song->averageRating / 10, 1) }}/10
-                            </div>
-
-                            <div class="flex items-center gap-1.5 text-white/30">
-                                <span class="material-symbols-outlined text-[16px]">visibility</span>
-                                <span
-                                    class="text-[11px] font-black tracking-wider uppercase">{{ number_format($song->view_count) }}</span>
-                            </div>
-
-                            <div class="flex items-center gap-1.5 text-white/30">
-                                <span class="material-symbols-outlined text-[16px]">calendar_today</span>
-                                <span
-                                    class="text-[11px] font-black tracking-wider uppercase">{{ $song->post->year->name ?? 'N/A' }}</span>
+                                {{ number_format($song->averageRating ?? 0, 1) }}
                             </div>
                         </div>
-
-                        <div class="mt-3 flex items-center gap-2">
-                            <span
-                                class="bg-white/5 text-white/40 text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-widest border border-white/5">
-                                {{ $song->type }}{{ $song->number }}
-                            </span>
-                        </div>
+                        <p class="text-sm text-primary font-medium truncate">{{ $song->post->title }}</p>
+                        <p class="text-xs text-white/50 truncate">
+                            @foreach ($song->artists as $artist)
+                                {{ $artist->name }}{{ !$loop->last ? ', ' : '' }}
+                            @endforeach
+                        </p>
                     </div>
                 </a>
             @endforeach
@@ -150,19 +132,19 @@
         {{-- Infinite Scroll Trigger --}}
         @if ($hasMorePages)
             <div x-data="{
-                        observe() {
-                            let observer = new IntersectionObserver((entries) => {
-                                entries.forEach(entry => {
-                                    if (entry.isIntersecting) {
-                                        @this.call('loadMore')
-                                    }
-                                })
-                            }, {
-                                rootMargin: '200px'
-                            })
-                            observer.observe(this.$el)
-                        }
-                    }" x-init="observe()" class="flex justify-center py-12">
+                observe() {
+                    let observer = new IntersectionObserver((entries) => {
+                        entries.forEach(entry => {
+                            if (entry.isIntersecting) {
+                                @this.call('loadMore')
+                            }
+                        })
+                    }, {
+                        rootMargin: '200px'
+                    })
+                    observer.observe(this.$el)
+                }
+            }" x-init="observe()" class="flex justify-center py-12">
                 <div class="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
             </div>
         @endif

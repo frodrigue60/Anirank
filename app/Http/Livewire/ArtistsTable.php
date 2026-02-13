@@ -58,13 +58,14 @@ class ArtistsTable extends Component
         // Sorting logic
         if ($this->sortBy === 'A-Z') {
             $query->orderBy('name', 'asc');
-        } elseif ($this->sortBy === 'Z-A') {
+        }
+        if ($this->sortBy === 'Z-A') {
             $query->orderBy('name', 'desc');
         }
-
-        if ($this->sortByThemes === 'Most Themes') {
+        if ($this->sortBy === 'most_themes') {
             $query->orderBy('songs_count', 'desc');
-        } elseif ($this->sortByThemes === 'Least Themes') {
+        }
+        if ($this->sortBy === 'least_themes') {
             $query->orderBy('songs_count', 'asc');
         }
 

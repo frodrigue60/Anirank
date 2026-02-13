@@ -70,6 +70,7 @@ class ThemesTable extends Component
     {
         $query = Song::with(['post', 'artists'])
             ->withAvg('ratings', 'rating')
+            ->withCount('likes')
             ->whereHas('post', function ($q) {
                 $q->where('status', true);
 
@@ -93,20 +94,17 @@ class ThemesTable extends Component
         // Sorting Logic
         switch ($this->sort) {
             case 'title':
-                // Sorting by related model column requires join or custom logic
-                // Using simpler approach for now: sort by collection (less efficient) or join
-                // For efficiency/standard paginator, doing join is better
                 $query->join('posts', 'songs.post_id', '=', 'posts.id')
                     ->orderBy('posts.title');
                 break;
             case 'averageRating':
-                $query->orderByDesc('averageRating');
+                $query->orderByDesc('ratings_avg_rating');
                 break;
             case 'view_count':
-                $query->orderByDesc('view_count');
+                $query->orderByDesc('views');
                 break;
             case 'likeCount':
-                $query->orderByDesc('likeCount');
+                $query->orderByDesc('likes_count');
                 break;
             case 'recent':
             default:
@@ -150,7 +148,7 @@ class ThemesTable extends Component
             'years' => Year::orderBy('name', 'desc')->get(),
             'seasons' => Season::all(),
             'types' => [
-                ['name' => 'All', 'value' => 'all'],
+                /* ['name' => 'All', 'value' => 'all'], */
                 ['name' => 'Opening', 'value' => 'OP'],
                 ['name' => 'Ending', 'value' => 'ED'],
                 ['name' => 'Insert', 'value' => 'INS'],

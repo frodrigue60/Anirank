@@ -151,7 +151,7 @@ class ArtistThemesTable extends Component
             'years' => Year::orderBy('name', 'desc')->get(),
             'seasons' => Season::all(),
             'types' => [
-                ['name' => 'All', 'value' => 'all'],
+                /* ['name' => 'All', 'value' => ''], */
                 ['name' => 'Opening', 'value' => 'OP'],
                 ['name' => 'Ending', 'value' => 'ED'],
                 ['name' => 'Insert', 'value' => 'INS'],

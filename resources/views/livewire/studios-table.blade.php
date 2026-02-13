@@ -30,7 +30,8 @@
                         class="w-full bg-surface-darker border border-white/10 rounded-lg py-2.5 pl-4 pr-10 text-sm text-white focus:outline-none focus:border-primary/50 transition-all appearance-none cursor-pointer hover:bg-surface-darker/80">
                         <option value="name_asc">Name (A-Z)</option>
                         <option value="name_desc">Name (Z-A)</option>
-                        <option value="series_count">Most Series</option>
+                        <option value="most_series">Most Series</option>
+                        <option value="least_series">Least Series</option>
                     </select>
                     <span
                         class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none text-lg group-focus-within:text-primary transition-colors">expand_more</span>
@@ -96,21 +97,21 @@
     </div>
 
     {{-- Infinite Scroll Trigger --}}
-    @if($studios->hasMorePages())
+    @if ($studios->hasMorePages())
         <div x-data="{
-                                    observe() {
-                                        let observer = new IntersectionObserver((entries) => {
-                                            entries.forEach(entry => {
-                                                if (entry.isIntersecting) {
-                                                    @this.call('loadMore')
-                                                }
-                                            })
-                                        }, {
-                                            rootMargin: '200px',
-                                        })
-                                        observer.observe(this.$el)
-                                    }
-                                }" x-init="observe()" class="flex justify-center py-12">
+            observe() {
+                let observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            @this.call('loadMore')
+                        }
+                    })
+                }, {
+                    rootMargin: '200px',
+                })
+                observer.observe(this.$el)
+            }
+        }" x-init="observe()" class="flex justify-center py-12">
             <div class="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
         </div>
     @endif

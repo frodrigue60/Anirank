@@ -114,7 +114,7 @@
                             <div
                                 class="flex items-center gap-1 bg-surface-dark px-2 py-0.5 rounded text-yellow-400 text-xs font-bold">
                                 <span class="material-symbols-outlined filled text-[14px]">star</span>
-                                {{ number_format($song->ratings_avg_rating ?? ($song->averageRating ?? 0), 1) }}
+                                {{ number_format($song->averageRating ?? 0, 1) }}
                             </div>
                         </div>
                         <p class="text-sm text-primary font-medium truncate">{{ $song->post->title }}</p>

@@ -29,12 +29,14 @@
                             class="w-full bg-surface-dark border-white/10 rounded-xl text-sm text-white/80 focus:ring-primary focus:border-primary py-2.5 pl-4 pr-10 appearance-none cursor-pointer transition-all hover:bg-surface-dark/80 focus:bg-surface-darker">
                             <option value="A-Z">A - Z</option>
                             <option value="Z-A">Z - A</option>
+                            <option value="most_themes">Most Themes</option>
+                            <option value="least_themes">Least Themes</option>
                         </select>
                         <span
                             class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none text-xl group-focus-within:text-primary transition-colors">expand_more</span>
                     </div>
                 </div>
-                <div class="relative min-w-[200px] group">
+                {{-- <div class="relative min-w-[200px] group">
                     <label
                         class="block text-[10px] uppercase font-black text-white/40 mb-1.5 ml-1 tracking-widest group-hover:text-primary transition-colors">Sort
                         by
@@ -42,17 +44,17 @@
                     <div class="relative">
                         <select wire:model="sortByThemes"
                             class="w-full bg-surface-dark border-white/10 rounded-xl text-sm text-white/80 focus:ring-primary focus:border-primary py-2.5 pl-4 pr-10 appearance-none cursor-pointer transition-all hover:bg-surface-dark/80 focus:bg-surface-darker">
-                            <option value="Most Themes">Most Themes</option>
+                           <option value="Most Themes">Most Themes</option>
                             <option value="Least Themes">Least Themes</option>
                         </select>
                         <span
                             class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none text-xl group-focus-within:text-primary transition-colors">sort</span>
                     </div>
-                </div>
-                <button wire:click="clearFilters"
+                </div> --}}
+                {{-- <button wire:click="clearFilters"
                     class="self-end mb-0.5 bg-primary/10 hover:bg-primary/20 text-primary px-6 py-2.5 rounded-xl font-bold text-sm transition-all border border-primary/20">
                     Clear Filters
-                </button>
+                </button> --}}
             </div>
         </section>
 

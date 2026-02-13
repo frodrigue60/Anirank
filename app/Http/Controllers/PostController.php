@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Models\Year;
 use App\Models\Song;
+use App\Models\User;
 
 class PostController extends Controller
 {
@@ -51,14 +52,27 @@ class PostController extends Controller
             ->sortByDesc('views')
             ->take(25);
 
-        $weaklyRanking = Song::with(['post', 'artists'])
+        $openings = Song::with(['post', 'artists'])
             ->withAvg('ratings', 'rating')
+            ->where('type', 'OP')
             ->whereHas('post', function ($q) use ($status) {
                 $q->where('status', $status);
             })
             ->get()
             ->sortByDesc('ratings_avg_rating')
-            ->take(6);
+            ->take(3);
+
+        $endings = Song::with(['post', 'artists'])
+            ->withAvg('ratings', 'rating')
+            ->where('type', 'ED')
+            ->whereHas('post', function ($q) use ($status) {
+                $q->where('status', $status);
+            })
+            ->get()
+            ->sortByDesc('ratings_avg_rating')
+            ->take(3);
+
+        $weaklyRanking = $openings->concat($endings);
 
         $weaklyRanking = $this->setScoreSongs($weaklyRanking, $user);
 

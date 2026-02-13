@@ -47,8 +47,11 @@ class StudiosTable extends Component
             ->when($this->sort === 'name_desc', function ($query) {
                 $query->orderBy('name', 'desc');
             })
-            ->when($this->sort === 'series_count', function ($query) {
+            ->when($this->sort === 'most_series', function ($query) {
                 $query->orderBy('post_count', 'desc');
+            })
+            ->when($this->sort === 'least_series', function ($query) {
+                $query->orderBy('post_count', 'asc');
             })
             ->paginate($this->perPage);
 

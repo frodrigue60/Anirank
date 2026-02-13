@@ -58,40 +58,20 @@ class User extends Authenticatable
 
     public function isStaff()
     {
-        $user = Auth::user()->type;
-        if ($user == 'admin' || $user == 'editor' || $user == 'creator') {
-            return true;
-        } else {
-            return false;
-        }
+        return in_array($this->type, ['admin', 'editor', 'creator']);
     }
 
     public function isAdmin()
     {
-        $user = Auth::user()->type;
-        if ($user == 'admin') {
-            return true;
-        } else {
-            return false;
-        }
+        return $this->type === 'admin';
     }
     public function isEditor()
     {
-        $user = Auth::user()->type;
-        if ($user == 'editor') {
-            return true;
-        } else {
-            return false;
-        }
+        return $this->type === 'editor';
     }
     public function isCreator()
     {
-        $user = Auth::user()->type;
-        if ($user == 'creator') {
-            return true;
-        } else {
-            return false;
-        }
+        return $this->type === 'creator';
     }
 
     public function generateSlug()

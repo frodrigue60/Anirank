@@ -88,10 +88,15 @@
                     <img src="{{ $thumbnailUrl }}" alt="{{ $post->title }}" loading="lazy"
                         class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
 
-                    <div class="absolute top-3 right-3 flex flex-col gap-2">
+                    <div class="absolute top-3 right-3 flex items-end gap-1.5 z-20">
                         <span
-                            class="bg-primary/90 backdrop-blur-md text-white text-[9px] font-black px-2 py-1 rounded-md uppercase tracking-wider shadow-lg">
-                            {{ $post->format->name ?? 'TV' }}
+                            class="px-2 py-1 rounded bg-black/60 backdrop-blur-md border border-white/10 text-[10px] font-black uppercase tracking-widest text-white shadow-xl">
+                            {{ $post->format->name }}
+                        </span>
+                        <span
+                            class="px-2 py-1 rounded bg-primary/80 backdrop-blur-md border border-primary/20 text-[10px] font-black uppercase tracking-widest text-white shadow-lg flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[14px] leading-none">music_note</span>
+                            {{ $post->songs->count() }}
                         </span>
                     </div>
                     {{-- Hover Overlay --}}
@@ -114,21 +119,21 @@
     </div>
 
     {{-- Infinite Scroll Trigger --}}
-    @if($posts->hasMorePages())
+    @if ($posts->hasMorePages())
         <div x-data="{
-                                observe() {
-                                    let observer = new IntersectionObserver((entries) => {
-                                        entries.forEach(entry => {
-                                            if (entry.isIntersecting) {
-                                                @this.call('loadMore')
-                                            }
-                                        })
-                                    }, {
-                                        rootMargin: '200px',
-                                    })
-                                    observer.observe(this.$el)
-                                }
-                            }" x-init="observe()" class="flex justify-center py-12">
+            observe() {
+                let observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            @this.call('loadMore')
+                        }
+                    })
+                }, {
+                    rootMargin: '200px',
+                })
+                observer.observe(this.$el)
+            }
+        }" x-init="observe()" class="flex justify-center py-12">
             <div class="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
         </div>
     @endif

@@ -52,7 +52,7 @@
                                     class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent p-4 pt-10">
                                     <div class="flex items-center gap-1 text-yellow-400 font-bold text-lg">
                                         <span class="material-symbols-outlined filled text-[20px]">star</span>
-                                        <span>{{ number_format($song->ratings_avg_rating ?? 0, 1) }}</span>
+                                        <span>{{ number_format($featuredSong->averageRating ?? 0, 1) }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -83,12 +83,6 @@
                                     <span class="material-symbols-outlined filled">play_circle</span>
                                     <span>Play Now</span>
                                 </a>
-                                {{-- @auth
-                                    <button
-                                        class="bg-white/10 hover:bg-white/20 text-white h-12 w-12 rounded-full flex items-center justify-center transition-all backdrop-blur-md">
-                                        <span class="material-symbols-outlined">favorite</span>
-                                    </button>
-                                @endauth --}}
                             </div>
                         </div>
                     </div>
@@ -131,7 +125,7 @@
                                             <div
                                                 class="flex items-center gap-1 bg-surface-dark px-2 py-0.5 rounded text-yellow-400 text-xs font-bold">
                                                 <span class="material-symbols-outlined filled text-[14px]">star</span>
-                                                {{ number_format($song->ratings_avg_rating ?? 0, 1) }}
+                                                {{ number_format($song->averageRating ?? 0, 1) }}
                                             </div>
                                         </div>
                                         <p class="text-sm text-primary font-medium truncate">{{ $song->post->title }}</p>

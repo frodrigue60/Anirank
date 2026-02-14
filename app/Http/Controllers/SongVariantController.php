@@ -13,6 +13,7 @@ use App\Models\Reaction;
 use App\Models\Season;
 use App\Models\Year;
 use App\Models\Favorite;
+use App\Models\User;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -56,7 +57,107 @@ class SongVariantController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($animeSlug, $songSlug, $variantSlug)
+    public function show(SongVariant $songVariant)
+    {
+        $user = Auth::check() ? Auth::User() : null;
+
+        if (!$songVariant) {
+            return redirect(route('home'))->with('warning', 'Item no exist!');
+        }
+
+        if ($songVariant->song->post->status == 'stagged') {
+            return redirect(route('home'))->with('warning', 'Paused post!');
+        }
+
+        $comments = $songVariant->comments;
+        //dd($comments[0]->user);
+        $factor = 1;
+
+        $songVariant->score = round($songVariant->averageRating * $factor, 1);
+
+        #Is used by rating form
+        $userRating = null;
+
+        if ($user) {
+
+            $userRating = $this->getUserRating($songVariant, $user);
+
+            if ($userRating) {
+
+                switch ($user->score_format) {
+                    case 'POINT_100':
+                        $factor = 1;
+                        $userRating->formatRating = round($userRating->rating);
+                        break;
+
+                    case 'POINT_10_DECIMAL':
+                        $factor = 0.1;
+                        $userRating->formatRating = round($userRating->rating / 10, 1);
+                        break;
+
+                    case 'POINT_10':
+                        $factor = 1 / 10;
+                        $userRating->formatRating = round($userRating->rating / 10);
+                        break;
+
+                    case 'POINT_5':
+                        $factor = 1 / 20;
+                        //Divide the score in segments of [20, 40, 60, 80, 100]
+                        $userRating->formatRating = (int) max(20, min(100, ceil($userRating->rating / 20) * 20));
+                        break;
+
+                    default:
+                        $factor = 1;
+                        $userRating->formatRating = round($userRating->rating);
+                        break;
+                }
+            }
+        }
+
+        $songVariant = $this->setScoreOnlyOneVariant($songVariant, $user);
+
+        //dd($songVariant);
+
+        $songVariant->incrementViews();
+
+        return view('public.variants.show', compact('songVariant', 'comments', 'userRating'));
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function edit($id)
+    {
+        //
+    }
+
+    /**
+     * Update the specified resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function update(Request $request, $id)
+    {
+        //
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function destroy($id)
+    {
+        //
+    }
+
+    public function showVariant($animeSlug, $songSlug, $variantSlug)
     {
         $user = Auth::check() ? Auth::User() : null;
         $post = Post::where('slug', $animeSlug)->first();
@@ -147,46 +248,10 @@ class SongVariantController extends Controller
         return view('public.variants.show', compact('songVariant', 'comments', 'userRating'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function edit($id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy($id)
-    {
-        //
-    }
-
-    public function rate(Request $request, $variantId)
+    public function rate(Request $request, SongVariant $songVariant)
     {
         //dd($request->all());
         if (Auth::check()) {
-
-            $songVariant = SongVariant::find($variantId);
 
             $score_format = Auth::user()->score_format;
 
@@ -224,36 +289,34 @@ class SongVariantController extends Controller
         }
     }
 
-    public function getUserRating($songVariantId, $userId)
+    public function getUserRating(SongVariant $songVariant, User $user)
     {
         $userRating = DB::table('ratings')
             ->where('rateable_type', SongVariant::class)
-            ->where('rateable_id', $songVariantId)
-            ->where('user_id', $userId)
+            ->where('rateable_id', $songVariant->id)
+            ->where('user_id', $user->id)
             ->first(['rating']);
 
         return $userRating;
     }
 
-    public function like($songVariantId)
+    public function like(SongVariant $songVariant)
     {
-        $songVariant = SongVariant::find($songVariantId);
         $this->handleReaction($songVariant, 1); // 1 para like
         $songVariant->updateReactionCounters(); // Actualiza los contadores manualmente
         return redirect()->back(); // Redirige de vuelta a la página anterior
     }
 
     // Método para dislike
-    public function dislike($songVariantId)
+    public function dislike(SongVariant $songVariant)
     {
-        $songVariant = SongVariant::find($songVariantId);
         $this->handleReaction($songVariant, -1); // -1 para dislike
         $songVariant->updateReactionCounters(); // Actualiza los contadores manualmente
         return redirect()->back(); // Redirige de vuelta a la página anterior
     }
 
     // Método privado para manejar la reacción
-    private function handleReaction($songVariant, $type)
+    private function handleReaction(SongVariant $songVariant, int $type)
     {
         $user = Auth::user();
 
@@ -343,7 +406,7 @@ class SongVariantController extends Controller
     }
 
     #New
-    public function setScoreOnlyOneVariant($variant, $user = null)
+    public function setScoreOnlyOneVariant(SongVariant $variant, User $user)
     {
         $variant->userScore = null;
         $factor = 1;
@@ -372,7 +435,7 @@ class SongVariantController extends Controller
                     break;
             }
 
-            if ($userRating = $this->getUserRating($variant->id, $user->id)) {
+            if ($userRating = $this->getUserRating($variant, $user)) {
                 $variant->userScore = $isDecimalFormat
                     ? round($userRating->rating * $factor, 1)
                     : (int) round($userRating->rating * $factor);
@@ -394,14 +457,13 @@ class SongVariantController extends Controller
         return $variant;
     }
 
-    public function toggleFavorite($songVariantId)
+    public function toggleFavorite(SongVariant $songVariant)
     {
 
         if (!Auth::check()) {
             return redirect()->back()->with('warning', 'Please login');
         }
 
-        $songVariant = SongVariant::find($songVariantId);
         $user = Auth::user();
 
         // Verificar si el post ya está en favoritos

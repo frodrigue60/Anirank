@@ -44,7 +44,7 @@
             @if ($readyToLoad)
                 <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-8">
                     @foreach ($artists as $artist)
-                        <a wire:key="artist-{{ $artist->id }}" href="{{ route('artists.show', $artist->slug) }}"
+                        <a wire:key="artist-{{ $artist->id }}" href="{{ route('artists.show', $artist->id) }}"
                             class="group flex flex-col items-center gap-4 cursor-pointer">
                             <div
                                 class="relative w-full aspect-square rounded-full overflow-hidden card-shadow ring-4 ring-transparent group-hover:ring-primary/50 transition-all duration-300">

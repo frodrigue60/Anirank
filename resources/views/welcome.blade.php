@@ -63,7 +63,7 @@
             </article>
         </section>
         <div class="d-flex justify-content-center">
-            <a href="{{ route('/') }}" class="btn btn-ms color4">Let's Do it!</a>
+            <a href="{{ route('home') }}" class="btn btn-ms color4">Let's Do it!</a>
         </div>
     </div>
 @endsection

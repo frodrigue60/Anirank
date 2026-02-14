@@ -67,7 +67,7 @@
                                                 @endif
                                             </div>
                                             <div class="flex flex-col">
-                                                <a href="{{ $artist->url }}"
+                                                <a href="{{ route('artists.show', $artist->id) }}"
                                                     class="text-sm font-bold text-white hover:text-blue-400 transition-colors">
                                                     {{ $artist->name }}
                                                 </a>

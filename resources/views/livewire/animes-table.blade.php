@@ -124,12 +124,12 @@
                                 {{-- Hover Overlay --}}
                                 <div
                                     class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
-                                    <a href="{{ route('post.show', $post->slug) }}" class="absolute inset-0 z-10"></a>
+                                    <a href="{{ route('posts.show', $post->id) }}" class="absolute inset-0 z-10"></a>
                                 </div>
                             </div>
                             <h3
                                 class="mt-2 text-sm font-bold text-white leading-tight line-clamp-2 group-hover:text-primary transition-colors">
-                                <a href="{{ route('post.show', $post->slug) }}">{{ $post->title }}</a>
+                                <a href="{{ route('posts.show', $post->id) }}">{{ $post->title }}</a>
                             </h3>
                         </div>
                     @endforeach
@@ -142,7 +142,7 @@
 
                             {{-- COVER (Left) --}}
                             <div class="w-[120px] md:w-[180px] shrink-0 relative aspect-[2/3]">
-                                <a href="{{ route('post.show', $post->slug) }}" class="block w-full h-full">
+                                <a href="{{ route('posts.show', $post->id) }}" class="block w-full h-full">
                                     <img src="{{ Storage::url($post->thumbnail) }}" alt="{{ $post->title }}"
                                         loading="lazy" class="w-full h-full object-cover">
                                 </a>
@@ -209,7 +209,7 @@
                             <div class="flex-1 min-w-0">
                                 <h3
                                     class="text-sm font-bold text-white leading-tight truncate px-1 group-hover:text-primary transition-colors">
-                                    <a href="{{ route('post.show', $post->slug) }}">{{ $post->title }}</a>
+                                    <a href="{{ route('posts.show', $post->id) }}">{{ $post->title }}</a>
                                 </h3>
                                 <div class="flex items-center gap-3 text-xs text-white/40 mt-0.5 px-1">
                                     @if ($post->format)
@@ -228,7 +228,7 @@
 
                             {{-- Action --}}
                             <div class="ml-auto">
-                                <a href="{{ route('post.show', $post->slug) }}"
+                                <a href="{{ route('posts.show', $post->id) }}"
                                     class="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 text-white/40 hover:bg-primary hover:text-white transition-all">
                                     <span class="material-symbols-outlined text-lg">chevron_right</span>
                                 </a>

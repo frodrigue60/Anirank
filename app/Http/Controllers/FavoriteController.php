@@ -46,7 +46,7 @@ class FavoriteController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
+    public function show(Favorite $favorite)
     {
         //
     }
@@ -57,7 +57,7 @@ class FavoriteController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function edit($id)
+    public function edit(Favorite $favorite)
     {
         //
     }
@@ -69,7 +69,7 @@ class FavoriteController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, Favorite $favorite)
     {
         //
     }
@@ -80,19 +80,18 @@ class FavoriteController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+    public function destroy(Favorite $favorite)
     {
         //
     }
 
-    public function toggle($songVariantId)
+    public function toggle(SongVariant $songVariant)
     {
 
         if (!Auth::check()) {
             return redirect()->back()->with('warning', 'Please login');
         }
 
-        $songVariant = SongVariant::find($songVariantId);
         $user = Auth::user();
 
         // Verificar si el post ya está en favoritos

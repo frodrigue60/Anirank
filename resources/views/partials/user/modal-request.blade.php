@@ -21,7 +21,7 @@
 
             {{-- Body --}}
             <div class="p-6">
-                <form method="post" action="{{ route('request.store') }}" id="form-request" class="space-y-6">
+                <form method="post" action="{{ route('requests.store') }}" id="form-request" class="space-y-6">
                     @csrf
 
                     <div>

@@ -45,7 +45,7 @@
                 <div class="flex items-center gap-2 text-white/60 text-sm font-medium">
                     <span>by</span>
                     @foreach ($song->artists as $artist)
-                        <a href="{{ route('artists.show', $artist->slug) }}"
+                        <a href="{{ route('artists.show', $artist->id) }}"
                             class="text-primary hover:text-white transition-colors">
                             {{ $artist->name }}
                         </a>

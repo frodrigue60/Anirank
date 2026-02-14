@@ -134,7 +134,7 @@
                                     <span
                                         class="text-white font-bold text-lg">{{ number_format($song->averageRating ?? 0, 1) }}</span>
                                 </div>
-                                <a href="{{ route('songs.show', [$song->post->slug, $song->slug]) }}"
+                                <a href="{{ route('songs.show', $song->id) }}"
                                     class="mt-4 flex items-center justify-center h-10 w-10 rounded-full bg-white/10 hover:bg-primary transition-all text-white backdrop-blur-sm border border-white/10 group-hover:border-primary/50">
                                     <span class="material-symbols-outlined">play_arrow</span>
                                 </a>

@@ -27,44 +27,36 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-#POSTS
-//Route::resource('posts', apiPostController::class);
+// Posts
 Route::get('search/{q}', [apiPostController::class, 'search'])->name('api.posts.search');
 Route::get('animes', [apiPostController::class, 'animes'])->name('api.posts.animes');
 
-#SONGS
-//Route::resource('songs', apiSongController::class);
+// Songs
 Route::get('songs/seasonal', [apiSongController::class, 'seasonal'])->name('api.songs.seasonal');
 Route::get('songs/ranking', [apiSongController::class, 'ranking'])->name('api.songs.ranking');
-
-
-#SONG VARIANTS
-Route::get('variants/{variant}/get-videos', [apiSongVariantController::class, 'getVideos'])->name('api.variants.get-video');
-
-#ARTISTS
-//Route::resource('artists', apiArtistController::class);
-Route::get('artists/{artist}/filter', [apiArtistController::class, 'songsFilter'])->name('api.artists.songs.filter');
-
-#USERS
-Route::get('users/{id}/list', [apiUserController::class, 'userList'])->name('api.users.list');
-
-#COMMENTS
 Route::get('songs/{song}/comments', [apiSongController::class, 'comments'])->name('api.songs.comments');
 
-#STUDIOS
+// Song Variants
+Route::get('variants/{variant}/get-videos', [apiSongVariantController::class, 'getVideos'])->name('api.variants.get-video');
+
+// Artists
+Route::get('artists/{artist}/filter', [apiArtistController::class, 'songsFilter'])->name('api.artists.songs.filter');
+
+// Users
+Route::get('users/{id}/list', [apiUserController::class, 'userList'])->name('api.users.list');
+
+// Studios
 Route::get('studios/filter', [apiStudioController::class, 'filter'])->name('api.studios.filter');
 Route::get('studios/{studio}/songs', [apiStudioController::class, 'songsFilter'])->name('api.studios.songs');
 Route::get('studios/{studio}/animes', [apiStudioController::class, 'postsFilter'])->name('api.studios.posts');
 
-#AUTH ROUTES
+// Auth Routes
 Route::middleware(['auth:sanctum'])->group(function () {
-    #PLAYLISTS
+    // Playlists
     Route::resource('playlists', apiPlaylistController::class)->names('api.playlists')->only('index', 'store');
     Route::post('/playlists/{playlist}/toggle-song', [apiPlaylistController::class, 'toggleSong'])->name('api.playlists.toggle.song');
 
-    #VARIANTS
-
-    #SONGS
+    // Songs
     Route::post('songs/{song}/like', [apiSongController::class, 'like'])->name('api.songs.like');
     Route::post('songs/{song}/dislike', [apiSongController::class, 'dislike'])->name('api.songs.dislike');
     Route::post('songs/{song}/favorite', [apiSongController::class, 'toggleFavorite'])->name('api.songs.toggle.favorite');
@@ -72,17 +64,16 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('songs/comments', [apiSongController::class, 'storeComment'])->name('api.songs.store.comment');
     Route::post('songs/reports', [apiSongController::class, 'storeReport'])->name('api.songs.reports');
 
-    #COMMENTS
+    // Comments
     Route::post('comments/{id}/like', [apiCommentController::class, 'like'])->name('api.comments.like');
     Route::post('comments/{id}/dislike', [apiCommentController::class, 'dislike'])->name('api.comments.dislike');
-    Route::post('comments/{parentComment}/reply', [apiCommentController::class, 'reply'])->name('comments.reply');
-    Route::resource('comments', apiCommentController::class, ['as' => 'api']);
+    Route::post('comments/{parentComment}/reply', [apiCommentController::class, 'reply'])->name('api.comments.reply');
+    Route::resource('comments', apiCommentController::class, ['as' => 'api'])->only('store', 'update', 'destroy');
 
-    #USER REQUESTS
+    // User Requests
     Route::resource('requests', apiUserRequestController::class, ['as' => 'api'])->only('store');
 
-    #USER
-    //Route::resource('users', apiUserController::class, ['as' => 'api']);
+    // User
     Route::post('users/avatar', [apiUserController::class, 'uploadAvatar'])->name('api.users.upload.avatar');
     Route::post('users/banner', [apiUserController::class, 'uploadBanner'])->name('api.users.upload.banner');
     Route::post('users/score-format', [apiUserController::class, 'setScoreFormat'])->name('api.users.score.format');

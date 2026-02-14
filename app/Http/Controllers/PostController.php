@@ -116,17 +116,44 @@ class PostController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($slug)
+    public function show(Post $post)
     {
         $post = Post::with(['songs' => function ($q) {
             $q->with(['songVariants.video', 'artists:id,name', 'favorites', 'ratings']);
             $q->withAvg('ratings', 'rating');
-        }])->where('slug', $slug)->first();
+        }])->where('id', $post->id)->first();
 
         $user = Auth::user();
 
         if (!$post) {
-            return redirect(route('/'))->with('warning', 'Post not exist!');
+            return redirect(route('home'))->with('warning', 'Post not exist!');
+        }
+
+        if (!$post->status) {
+            if ($user && $user->isAdmin()) {
+                // Admin can view
+            } else {
+                return redirect('/')->with('danger', $user ? 'User not autorized!' : 'Post status: Private');
+            }
+        }
+
+        $openings = $post->songs->where('type', 'OP')->sortBy('theme_num');
+        $endings = $post->songs->where('type', 'ED')->sortBy('theme_num');
+
+        return view('public.posts.show', compact('post', 'openings', 'endings'));
+    }
+
+    public function showAnime($animeSlug)
+    {
+        $post = Post::with(['songs' => function ($q) {
+            $q->with(['songVariants.video', 'artists:id,name', 'favorites', 'ratings']);
+            $q->withAvg('ratings', 'rating');
+        }])->where('slug', $animeSlug)->first();
+
+        $user = Auth::user();
+
+        if (!$post) {
+            return redirect(route('home'))->with('warning', 'Post not exist!');
         }
 
         if (!$post->status) {
@@ -149,7 +176,7 @@ class PostController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id) {}
+    public function destroy(Post $post) {}
 
     public function themes(Request $request)
     {

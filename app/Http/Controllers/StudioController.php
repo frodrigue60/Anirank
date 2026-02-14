@@ -47,7 +47,7 @@ class StudioController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show(/* $id */$slug)
+    public function show(Studio $studio)
     {
         $years = Year::all()->sortBy('name', null, true);
         $seasons = Season::all();
@@ -55,7 +55,6 @@ class StudioController extends Controller
         $sortMethods = $this->filterTypesSortChar()['sortMethods'];
         $formats = Format::all();
 
-        $studio = Studio::where('slug', $slug)->first();
         return view('public.studios.show', compact('studio', 'seasons', 'years', 'sortMethods', 'formats'));
     }
 
@@ -65,7 +64,7 @@ class StudioController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function edit($id)
+    public function edit(Studio $studio)
     {
         //
     }
@@ -77,7 +76,7 @@ class StudioController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, Studio $studio)
     {
         //
     }
@@ -88,7 +87,7 @@ class StudioController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+    public function destroy(Studio $studio)
     {
         //
     }

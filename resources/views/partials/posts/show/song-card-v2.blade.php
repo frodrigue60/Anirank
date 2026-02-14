@@ -4,14 +4,13 @@
     </div>
     <div class="d-flex flex-column me-auto overflow-hidden">
         <div>
-            <a href="{{ $song->url }}" class="text-decoration-none ">{{ $song->name }}</a>
+            <a href="{{ route('songs.show', $song->id) }}" class="text-decoration-none ">{{ $song->name }}</a>
         </div>
         <div class="overflow-hidden text-nowrap text-truncate">
             @isset($song->artists)
 
                 @foreach ($song->artists as $index => $item)
-                    <a class=" text-decoration-none d-inline-block text"
-                        href="{{ $item->url }}">{{ $item->name }}</a>
+                    <a class=" text-decoration-none d-inline-block text" href="{{ $item->url }}">{{ $item->name }}</a>
                     @if ($index < count($song->artists) - 1)
                         ,
                     @endif
@@ -30,7 +29,7 @@
         </div> --}}
     </div>
     <div class="d-flex align-items-center">
-        <a href="{{ $song->url }}" class="btn btn-sm btn-primary rounded-pill text-nowrap">
+        <a href="{{ route('songs.show', $song->id) }}" class="btn btn-sm btn-primary rounded-pill text-nowrap">
             <i class="fa-solid fa-play"></i> {{ 'Play' }}
         </a>
     </div>

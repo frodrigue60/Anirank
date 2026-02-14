@@ -26,14 +26,12 @@ class ProducerController extends Controller
      * @param  string  $slug
      * @return \Illuminate\Http\Response
      */
-    public function show($slug)
+    public function show(Producer $producer)
     {
         $years = Year::all()->sortBy('name', null, true);
         $seasons = Season::all();
         $sortMethods = $this->filterTypesSortChar()['sortMethods'];
         $formats = Format::all();
-
-        $producer = Producer::where('slug', $slug)->firstOrFail();
 
         return view('public.producers.show', compact('producer', 'seasons', 'years', 'sortMethods', 'formats'));
     }

@@ -522,7 +522,7 @@ class SongController extends Controller
     public function setShowUrl($songs)
     {
         $songs->each(function ($song) {
-            $song->url = route('songs.show', [$song->post->slug, $song->slug]);
+            $song->url = route('songs.show', $song->id);
         });
         return $songs;
     }

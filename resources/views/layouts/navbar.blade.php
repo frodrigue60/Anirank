@@ -10,9 +10,9 @@
             </a>
             <nav class="hidden lg:flex items-center gap-6">
                 <a class="text-sm font-medium {{ Request::is('seasonal') ? 'text-primary' : 'text-white/60 hover:text-white' }} transition-colors"
-                    href="{{ route('seasonal') }}">Season</a>
+                    href="{{ route('songs.seasonal') }}">Season</a>
                 <a class="text-sm font-medium {{ Request::is('ranking') ? 'text-primary' : 'text-white/60 hover:text-white' }} transition-colors"
-                    href="{{ route('ranking') }}">Ranking</a>
+                    href="{{ route('songs.ranking') }}">Ranking</a>
 
                 {{-- Discover Dropdown --}}
                 <div class="relative">
@@ -23,7 +23,7 @@
 
                     <div id="discover-dropdown"
                         class="z-50 hidden absolute left-0 mt-3 w-48 glass-panel rounded-xl border border-white/10 shadow-2xl overflow-hidden py-1 bg-surface-darker">
-                        <a href="{{ route('animes') }}"
+                        <a href="{{ route('posts.animes') }}"
                             class="flex items-center gap-3 px-4 py-2 text-sm text-white/80 hover:bg-white/5 hover:text-primary transition-colors">
                             <span class="material-symbols-outlined text-[18px]">movie</span> Animes
                         </a>
@@ -31,7 +31,7 @@
                             class="flex items-center gap-3 px-4 py-2 text-sm text-white/80 hover:bg-white/5 hover:text-primary transition-colors">
                             <span class="material-symbols-outlined text-[18px]">person</span> Artists
                         </a>
-                        <a href="{{ route('themes') }}"
+                        <a href="{{ route('posts.themes') }}"
                             class="flex items-center gap-3 px-4 py-2 text-sm text-white/80 hover:bg-white/5 hover:text-primary transition-colors">
                             <span class="material-symbols-outlined text-[18px]">library_music</span> Themes
                         </a>
@@ -98,11 +98,11 @@
                                     <span class="material-symbols-outlined text-[18px]">dashboard</span> Dashboard
                                 </a>
                             @endif
-                            <a href="{{ route('profile') }}"
+                            <a href="{{ route('users.list', Auth::user()->slug) }}"
                                 class="flex items-center gap-3 px-4 py-2 text-sm text-white/80 hover:bg-white/5 hover:text-primary transition-colors">
                                 <span class="material-symbols-outlined text-[18px]">person</span> Profile
                             </a>
-                            <a href="{{ route('favorites') }}"
+                            <a href="{{ route('profile.favorites') }}"
                                 class="flex items-center gap-3 px-4 py-2 text-sm text-white/80 hover:bg-white/5 hover:text-primary transition-colors">
                                 <span class="material-symbols-outlined text-[18px]">favorite</span> Favorites
                             </a>
@@ -181,13 +181,13 @@
                     <span class="text-sm">Search</span>
                 </button>
             </div>
-            <a href="{{ route('seasonal') }}"
+            <a href="{{ route('songs.seasonal') }}"
                 class="flex items-center gap-3 px-4 py-3 rounded-xl text-white/60 hover:text-white hover:bg-white/5 transition-all {{ Request::is('seasonal') ? 'bg-primary/10 text-primary' : '' }}">
                 <span
                     class="material-symbols-outlined {{ Request::is('seasonal') ? 'filled' : '' }}">calendar_today</span>
                 <span class="font-medium text-sm">Season Charts</span>
             </a>
-            <a href="{{ route('ranking') }}"
+            <a href="{{ route('songs.ranking') }}"
                 class="flex items-center gap-3 px-4 py-3 rounded-xl text-white/60 hover:text-white hover:bg-white/5 transition-all {{ Request::is('ranking') ? 'bg-primary/10 text-primary' : '' }}">
                 <span
                     class="material-symbols-outlined {{ Request::is('ranking') ? 'filled' : '' }}">military_tech</span>
@@ -197,7 +197,7 @@
             <div class="h-[1px] bg-white/5 my-4"></div>
             <div class="px-4 mb-2 text-[10px] font-bold text-white/20 uppercase tracking-[0.2em]">Discover</div>
 
-            <a href="{{ route('animes') }}"
+            <a href="{{ route('posts.animes') }}"
                 class="flex items-center gap-3 px-4 py-3 rounded-xl text-white/60 hover:text-white hover:bg-white/5 transition-all">
                 <span class="material-symbols-outlined">movie</span>
                 <span class="font-medium text-sm">Series</span>
@@ -207,7 +207,7 @@
                 <span class="material-symbols-outlined">person</span>
                 <span class="font-medium text-sm">Artists</span>
             </a>
-            <a href="{{ route('themes') }}"
+            <a href="{{ route('posts.themes') }}"
                 class="flex items-center gap-3 px-4 py-3 rounded-xl text-white/60 hover:text-white hover:bg-white/5 transition-all">
                 <span class="material-symbols-outlined">library_music</span>
                 <span class="font-medium text-sm">Themes</span>

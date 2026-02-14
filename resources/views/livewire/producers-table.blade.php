@@ -48,7 +48,7 @@
                     @php
                         $featuredPost = $producer->posts->first();
                     @endphp
-                    <a wire:key="prod-{{ $producer->id }}" href="{{ route('producers.show', $producer->slug) }}"
+                    <a wire:key="prod-{{ $producer->id }}" href="{{ route('producers.show', $producer->id) }}"
                         class="group relative overflow-hidden rounded-xl bg-slate-800 aspect-[16/10] border border-transparent hover:border-primary/50 transition-all cursor-pointer shadow-lg shadow-black/20">
                         <div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
                             style="background-image: url('{{ Storage::url($featuredPost->banner) }}');filter: brightness(0.5);">

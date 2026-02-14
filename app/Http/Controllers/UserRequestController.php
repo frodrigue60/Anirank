@@ -17,9 +17,9 @@ class UserRequestController extends Controller
      */
     public function create()
     {
-        return view('public.requests.create');
+        //
     }
-    
+
     /**
      * Store a newly created resource in storage.
      *
@@ -38,15 +38,15 @@ class UserRequestController extends Controller
 
         if ($validator->fails()) {
             $messageBag = $validator->getMessageBag();
-            return redirect()
+            return redirect(route('requests.create'))
                 ->back()
                 ->with('error', $messageBag);
         }
-        
+
         if ($userRequest->save()) {
-            return redirect('/')->with('success','Thank for your request');
+            return redirect(route('home'))->with('success', 'Thank for your request');
         } else {
-            return redirect('/')->with('error','Something has been wrong');
+            return redirect(route('home'))->with('error', 'Something has been wrong');
         }
     }
 }

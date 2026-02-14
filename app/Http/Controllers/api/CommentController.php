@@ -11,77 +11,6 @@ use App\Models\Reaction;
 
 class CommentController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function index()
-    {
-        //
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function show($id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function edit($id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
     public function destroy($id)
     {
         $comment = Comment::findOrFail($id);
@@ -95,13 +24,11 @@ class CommentController extends Controller
             return response()->json([
                 'message' => 'Comment deleted successfully',
                 'success' => true,
-                /* 'comment' => $comment, */
             ]);
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Ah error has been occurred',
                 'success' => false,
-                /* 'comment' => $comment, */
                 'th' => $th
             ]);
         }
@@ -111,8 +38,8 @@ class CommentController extends Controller
     {
         try {
             $comment = Comment::findOrFail($comment_id);
-            $this->handleReaction($comment, 1); // 1 para like
-            $comment->updateReactionCounters(); // Actualiza los contadores manualmente
+            $this->handleReaction($comment, 1);
+            $comment->updateReactionCounters();
 
             return response()->json([
                 'success' => true,
@@ -121,7 +48,6 @@ class CommentController extends Controller
                 'dislikesCount' => $comment->dislikesCount
             ]);
         } catch (\Throwable $th) {
-            //throw $th;
             return response()->json(['success' => false, 'error' => $th]);
         }
     }
@@ -130,8 +56,8 @@ class CommentController extends Controller
     {
         try {
             $comment = Comment::findOrFail($comment_id);
-            $this->handleReaction($comment, -1); // 1 para like
-            $comment->updateReactionCounters(); // Actualiza los contadores manualmente
+            $this->handleReaction($comment, -1);
+            $comment->updateReactionCounters();
 
             return response()->json([
                 'success' => true,
@@ -140,7 +66,6 @@ class CommentController extends Controller
                 'dislikesCount' => $comment->dislikesCount
             ]);
         } catch (\Throwable $th) {
-            //throw $th;
             return response()->json(['success' => false, 'error' => $th]);
         }
     }
@@ -149,7 +74,6 @@ class CommentController extends Controller
     {
         $user = Auth::user();
 
-        // Buscar si ya existe una reacción del usuario para este post
         $reaction = Reaction::where('user_id', $user->id)
             ->where('reactable_id', $comment->id)
             ->where('reactable_type', Comment::class)
@@ -157,14 +81,11 @@ class CommentController extends Controller
 
         if ($reaction) {
             if ($reaction->type === $type) {
-                // Si la reacción es la misma, eliminarla (toggle)
                 $reaction->delete();
             } else {
-                // Si la reacción es diferente, actualizarla
                 $reaction->update(['type' => $type]);
             }
         } else {
-            // Si no existe una reacción, crear una nueva
             Reaction::create([
                 'user_id' => $user->id,
                 'reactable_id' => $comment->id,
@@ -182,11 +103,10 @@ class CommentController extends Controller
             $reply = new Comment();
             $reply->content = $request->content;
             $reply->user_id = Auth::User()->id;
-            $reply->parent_id = $parentComment->id; // Asignar el padre
-            $reply->commentable_type = $parentComment->commentable_type; // Heredar el tipo polimórfico
-            $reply->commentable_id = $parentComment->commentable_id; // Heredar el ID polimórfico
+            $reply->parent_id = $parentComment->id;
+            $reply->commentable_type = $parentComment->commentable_type;
+            $reply->commentable_id = $parentComment->commentable_id;
 
-            //dd($parentComment, $reply);
             $reply->save();
 
             return response()->json([

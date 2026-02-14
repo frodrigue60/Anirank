@@ -45,7 +45,7 @@
 
         <section class="my-2">
             @if (Request::routeIs('favorites'))
-                <form class="d-flex gap-3 flex-wrap" id="form-filter" action="{{ route('favorites') }}" method="get">
+                <form class="d-flex gap-3 flex-wrap" id="form-filter" action="{{ route('profile.favorites') }}" method="get">
             @endif
             @if (Request::routeIs('themes'))
                 <form class="d-flex gap-3 flex-wrap" id="form-filter" action="{{ route('themes') }}" method="get">

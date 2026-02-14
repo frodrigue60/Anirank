@@ -59,13 +59,13 @@
                     Discover
                 </h4>
                 <ul class="space-y-4">
-                    <li><a href="{{ route('animes') }}"
+                    <li><a href="{{ route('posts.animes') }}"
                             class="text-white/40 hover:text-primary transition-colors text-sm font-medium">Series</a>
                     </li>
                     <li><a href="{{ route('artists.index') }}"
                             class="text-white/40 hover:text-primary transition-colors text-sm font-medium">Artists</a>
                     </li>
-                    <li><a href="{{ route('themes') }}"
+                    <li><a href="{{ route('posts.themes') }}"
                             class="text-white/40 hover:text-primary transition-colors text-sm font-medium">Themes</a>
                     </li>
                 </ul>

@@ -49,8 +49,8 @@ class ReportController extends Controller
 
             if ($validator->fails()) {
                 return redirect($request->header('Referer'))
-                            ->withErrors($validator)
-                            ->withInput();
+                    ->withErrors($validator)
+                    ->withInput();
             }
 
             $report = new Report();
@@ -73,7 +73,7 @@ class ReportController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
+    public function show(Report $report)
     {
         //
     }
@@ -84,7 +84,7 @@ class ReportController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function edit($id)
+    public function edit(Report $report)
     {
         //
     }
@@ -96,7 +96,7 @@ class ReportController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, Report $report)
     {
         //
     }
@@ -107,7 +107,7 @@ class ReportController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+    public function destroy(Report $report)
     {
         //
     }

@@ -17,91 +17,30 @@ use App\Models\Song;
 
 class UserController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function index()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function show($id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy($id)
-    {
-        //
-    }
-
     public function uploadAvatar(Request $request)
     {
-        //return response()->json($request->all());
         $validated = $request->validate([
             'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:512',
         ]);
 
-        $user = Auth::user(); // O tu método para obtener el usuario
-
+        $user = Auth::user();
         $old_user_image = $user->image;
 
         try {
-            // Generar nombre del archivo
             $extension = $request->image->extension();
-            $file_name = $user->slug . '-' . time() . '.' . $extension; // Añadimos timestamp para evitar caché
+            $file_name = $user->slug . '-' . time() . '.' . $extension;
             $path = 'profile';
 
-            // Almacenar el archivo
             $storedPath = $request->file('image')->storeAs(
                 $path,
                 $file_name,
                 'public'
             );
 
-            // Verificación física del archivo
             if (!Storage::disk('public')->exists($storedPath)) {
                 throw new \Exception('El archivo no se pudo guardar en el almacenamiento');
             }
 
-            // Actualizar modelo de usuario si es necesario
             $user->image = $storedPath;
             $user->save();
 
@@ -113,7 +52,6 @@ class UserController extends Controller
                 'success' => true,
                 'message' => 'Avatar actualizado correctamente',
                 'avatar_url' => asset("storage/" . $storedPath),
-                /* 'file_path' => $storedPath // Para depuración */
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -126,34 +64,28 @@ class UserController extends Controller
 
     public function uploadBanner(Request $request)
     {
-        //return response()->json($request->all());
         $validated = $request->validate([
             'banner' => 'required|image|mimes:jpeg,png,jpg,webp|max:512',
         ]);
 
-        $user = Auth::user(); // O tu método para obtener el usuario
-
+        $user = Auth::user();
         $old_banner_image = $user->banner;
 
         try {
-            // Generar nombre del archivo
             $extension = $request->banner->extension();
             $file_name = $user->slug . '-' . time() . '.' . $extension;
             $path = 'banner';
 
-            // Almacenar el archivo
             $storedPath = $request->file('banner')->storeAs(
                 $path,
                 $file_name,
                 'public'
             );
 
-            // Verificación física del archivo
             if (!Storage::disk('public')->exists($storedPath)) {
                 throw new \Exception('El archivo no se pudo guardar en el almacenamiento');
             }
 
-            // Actualizar modelo de usuario si es necesario
             $user->banner = $storedPath;
             $user->save();
 
@@ -163,9 +95,8 @@ class UserController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Avatar actualizado correctamente',
+                'message' => 'Banner actualizado correctamente',
                 'banner_url' => asset("storage/" . $storedPath),
-                /* 'file_path' => $storedPath // Para depuración */
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -178,8 +109,6 @@ class UserController extends Controller
 
     public function setScoreFormat(Request $request)
     {
-
-        //return response()->json([$request->json()->all()]);
         try {
             $validator = Validator::make($request->all(), [
                 'score_format' => 'required|in:POINT_100,POINT_10_DECIMAL,POINT_10,POINT_5'
@@ -193,7 +122,6 @@ class UserController extends Controller
             }
 
             $user = Auth::check() ? Auth::User() : null;
-
             $user = User::find($user->id);
             $user->score_format = $request->score_format;
             $user->update();
@@ -201,26 +129,18 @@ class UserController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'User score format updated successfully',
-                /* 'user' => $user, */
-                /* 'request' => $request->all() */
             ]);
         } catch (\Throwable $th) {
             return response()->json([
                 'success' => false,
                 'message' => $th->getMessage(),
-                /* 'user' => $user, */
-                /* 'request' => $request->all() */
             ]);
         }
     }
 
     public function userList(Request $request, $id)
     {
-        //return response()->json(['request' => $request->all()]);
-
         $user = User::where('id', $id)->select('id', 'slug', 'score_format', 'image', 'banner', 'name')->first();
-
-        //return response()->json(['user' => $user]);
 
         $status = true;
         $perPage = 15;
@@ -232,11 +152,9 @@ class UserController extends Controller
         $name = $request->name;
 
         $songs = Song::with(['post'])
-            #SONG QUERY
             ->when($type, function ($query, $type) {
                 $query->where('type', $type);
             })
-            #POST QUERY
             ->whereHas('post', function ($query) use ($name, $season_id, $year_id, $status) {
                 $query->where('status', $status)
                     ->when($name, function ($query, $name) {
@@ -249,7 +167,6 @@ class UserController extends Controller
                         $query->where('year_id', $year_id);
                     });
             })
-            #SONG VARIANT QUERY
             ->favoritedBy($user->id)
             ->get();
 
@@ -260,14 +177,11 @@ class UserController extends Controller
         return response()->json([
             'html' => view('partials.songs.cards-v2', compact('songs'))->render(),
             'songs' => $songs,
-            /* 'request' => $request->all(), */
         ]);
     }
 
     public function favorites(Request $request)
     {
-        //return response()->json(['request' => $request->all()]);
-
         $user = Auth::check() ? Auth::user() : null;
 
         if (!$user) {
@@ -286,11 +200,9 @@ class UserController extends Controller
         $name = $request->name;
 
         $songs = Song::with(['post'])
-            #SONG QUERY
             ->when($type, function ($query, $type) {
                 $query->where('type', $type);
             })
-            #POST QUERY
             ->whereHas('post', function ($query) use ($name, $season_id, $year_id, $status) {
                 $query->where('status', $status)
                     ->when($name, function ($query, $name) {
@@ -303,7 +215,6 @@ class UserController extends Controller
                         $query->where('year_id', $year_id);
                     });
             })
-            #SONG VARIANT QUERY
             ->favoritedBy($user->id)
             ->get();
 
@@ -314,41 +225,7 @@ class UserController extends Controller
         return response()->json([
             'html' => view('partials.songs.cards-v2', compact('songs'))->render(),
             'songs' => $songs,
-            /* 'request' => $request->all(), */
         ]);
-    }
-
-    public function filterTypesSortChar()
-    {
-        $filters = [
-            ['name' => 'All', 'value' => 'all'],
-            ['name' => 'Only Rated', 'value' => 'rated']
-        ];
-
-        $types = [
-            ['name' => 'Opening', 'value' => 'OP'],
-            ['name' => 'Ending', 'value' => 'ED'],
-            ['name' => 'Insert', 'value' => 'INS'],
-            ['name' => 'Other', 'value' => 'OTH']
-        ];
-
-        $sortMethods = [
-            ['name' => 'Recent', 'value' => 'recent'],
-            ['name' => 'Title', 'value' => 'title'],
-            ['name' => 'Score', 'value' => 'averageRating'],
-            ['name' => 'Views', 'value' => 'view_count'],
-            ['name' => 'Popular', 'value' => 'likeCount']
-        ];
-
-        $characters = range('A', 'Z');
-
-        $data = [
-            'filters' => $filters,
-            'types' => $types,
-            'sortMethods' => $sortMethods,
-            'characters' => $characters
-        ];
-        return $data;
     }
 
     public function setScoreOnlyVariants($variants, $user = null)
@@ -357,7 +234,7 @@ class UserController extends Controller
             $variant->userScore = null;
             $factor = 1;
             $isDecimalFormat = false;
-            $denominator = 100; // Por defecto para POINT_100
+            $denominator = 100;
 
             if ($user) {
                 switch ($user->score_format) {
@@ -392,7 +269,6 @@ class UserController extends Controller
                 ? round($variant->averageRating * $factor, 1)
                 : (int) round($variant->averageRating * $factor);
 
-            // Agregar la propiedad scoreString formateada
             $variant->scoreString = $this->formatScoreString(
                 $variant->score,
                 $user->score_format ?? 'POINT_100',
@@ -405,7 +281,6 @@ class UserController extends Controller
 
     public function sortVariants($sort, $songVariants)
     {
-        //dd($song_variants);
         switch ($sort) {
             case 'title':
                 $songVariants = $songVariants->sortBy(function ($song_variant) {
@@ -446,18 +321,15 @@ class UserController extends Controller
     public function setScoreSongs($songs, $user = null)
     {
         $songs->each(function ($song) use ($user) {
-
-            #Inizialided attributes
             $song->formattedScore = null;
             $song->rawScore = null;
             $song->scoreString = null;
 
             $factor = 1;
             $isDecimalFormat = false;
-            $denominator = 100; // Por defecto para POINT_100
+            $denominator = 100;
 
             if ($user) {
-                #Inizialided attributes
                 $song->formattedUserScore = null;
                 $song->rawUserScore = null;
 
@@ -497,7 +369,6 @@ class UserController extends Controller
                 ? round($song->averageRating * $factor, 1)
                 : (int) round($song->averageRating * $factor);
 
-            // Agregar la propiedad scoreString formateada
             $song->scoreString = $this->formatScoreString(
                 $song->formattedScore,
                 $user->score_format ?? 'POINT_100',
@@ -521,7 +392,6 @@ class UserController extends Controller
     {
         switch ($sort) {
             case 'title':
-
                 $songs = $songs->sortBy(function ($song) {
                     return $song->post->title;
                 });
@@ -551,6 +421,7 @@ class UserController extends Controller
                 break;
         }
     }
+
     public function getUserRating($songId, $userId)
     {
         return DB::table('ratings')

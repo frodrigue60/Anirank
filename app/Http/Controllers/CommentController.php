@@ -115,10 +115,9 @@ class CommentController extends Controller
         return redirect()->back()->with('status', '¡Comentario eliminado con éxito!');
     }
 
-    public function like($comment_id)
+    public function like(Comment $comment)
     {
         if (Auth::check()) {
-            $comment = Comment::find($comment_id);
             $this->handleReaction($comment, 1); // 1 para like
             $comment->updateReactionCounters(); // Actualiza los contadores manualmente
             return redirect()->back(); // Redirige de vuelta a la página anterior
@@ -126,10 +125,9 @@ class CommentController extends Controller
         return redirect()->route('/')->with('warning', 'Please login');
     }
 
-    public function dislike($comment_id)
+    public function dislike(Comment $comment)
     {
         if (Auth::check()) {
-            $comment = Comment::find($comment_id);
             $this->handleReaction($comment, -1); // 1 para like
             $comment->updateReactionCounters(); // Actualiza los contadores manualmente
             return redirect()->back(); // Redirige de vuelta a la página anterior
@@ -137,7 +135,7 @@ class CommentController extends Controller
         return redirect()->route('/')->with('warning', 'Please login');
     }
 
-    private function handleReaction($comment, $type)
+    private function handleReaction(Comment $comment, int $type)
     {
         $user = Auth::user();
 
@@ -166,7 +164,7 @@ class CommentController extends Controller
         }
     }
 
-    public function reply(Request $request, Comment $parentComment)
+    public function reply(Request $request, Comment $comment)
     {
         try {
             $request->validate(['content' => 'required|string']);
@@ -174,9 +172,9 @@ class CommentController extends Controller
             $reply = new Comment();
             $reply->content = $request->content;
             $reply->user_id = Auth::User()->id;
-            $reply->parent_id = $parentComment->id; // Asignar el padre
-            $reply->commentable_type = $parentComment->commentable_type; // Heredar el tipo polimórfico
-            $reply->commentable_id = $parentComment->commentable_id; // Heredar el ID polimórfico
+            $reply->parent_id = $comment->id; // Asignar el padre
+            $reply->commentable_type = $comment->commentable_type; // Heredar el tipo polimórfico
+            $reply->commentable_id = $comment->commentable_id; // Heredar el ID polimórfico
 
             //dd($parentComment, $reply);
             $reply->save();

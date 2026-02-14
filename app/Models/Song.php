@@ -101,17 +101,6 @@ class Song extends Model
         return $this->song_romaji ?? $this->song_en ?? $this->song_jp ?? 'n/a';
     }
 
-    public function getUrlAttribute()
-    {
-        if (!$this->relationLoaded('post')) {
-            $this->load(['post']);
-        }
-        return route('songs.show', [
-            'anime-slug' => $this->post->slug,
-            'song-slug' => $this->slug
-        ]);
-    }
-
     public function getUrlFirstVariantAttribute()
     {
         // Cargar relaciones necesarias si no están ya cargadas
@@ -124,9 +113,9 @@ class Song extends Model
         })->sortBy('version_number')->first();
 
         return route('variants.show', [
-            'anime-slug' => $this->post->slug,
-            'song-slug' => $this->slug,
-            'variant-slug' => $smallestVariant->slug
+            'anime_slug' => $this->post->slug,
+            'song_slug' => $this->slug,
+            'variant_slug' => $smallestVariant->slug
         ]);
     }
 

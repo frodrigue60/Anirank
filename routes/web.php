@@ -42,38 +42,36 @@ use App\Http\Controllers\Admin\{
 */
 
 Route::controller(PostController::class)->group(function () {
-    Route::get('/', 'index')->name('/');
-    Route::get('/themes', 'themes')->name('themes');
-    Route::get('/anime/{slug}', 'show')->name('post.show');
-    Route::get('/animes', 'animes')->name('animes');
+    Route::get('/', 'index')->name('home');
+    Route::get('/themes', 'themes')->name('posts.themes');
+    Route::get('/animes', 'animes')->name('posts.animes');
 });
 
 Route::controller(UserController::class)->group(function () {
-    Route::get('/welcome', 'welcome')->name('welcome');
-    Route::get('/users/{slug}', 'userList')->name('user.list');
-    Route::get('/profile', 'index')->name('profile');
-    Route::post('/change-score-format', 'changeScoreFormat')->name('change.score.format');
-    Route::post('/upload-profile-pic', 'uploadProfilePic')->name('upload.profile.pic');
-    Route::post('/upload-banner-pic', 'uploadBannerPic')->name('upload.banner.pic');
-    Route::get('/favorites', 'favorites')->name('favorites');
+    Route::get('/welcome', 'welcome')->name('users.welcome');
+    Route::get('/users/{slug}', 'userList')->name('users.list');
 });
 
 Route::controller(SongController::class)->group(function () {
-    Route::get('/anime/{anime-slug}/{song-slug}', 'show')->name('songs.show');
-    Route::get('/seasonal', 'seasonal')->name('seasonal');
-    Route::get('/ranking', 'ranking')->name('ranking');
+    Route::get('/seasonal', 'seasonal')->name('songs.seasonal');
+    Route::get('/ranking', 'ranking')->name('songs.ranking');
 });
 
-Route::get('/offline', fn() => view('offline'));
+Route::get('/offline', fn() => view('offline'))->name('offline');
 
 // Resources
-Route::resource('artists', ArtistController::class)->only(['index', 'show']);
+Route::resource('posts', PostController::class);
+Route::resource('users', UserController::class);
+Route::resource('songs', SongController::class);
+Route::resource('artists', ArtistController::class);
 Route::resource('years', YearController::class);
 Route::resource('seasons', SeasonController::class);
 Route::resource('studios', StudioController::class);
 Route::resource('producers', ProducerController::class);
 Route::resource('playlists', PlaylistController::class);
 Route::resource('variants', SongVariantController::class);
+Route::resource('requests', UserRequestController::class);
+Route::resource('reports', ReportController::class);
 
 /*
 |--------------------------------------------------------------------------
@@ -101,7 +99,7 @@ Route::middleware('staff')->prefix('admin')->as('admin.')->group(function () {
     Route::resource('producers', AdminProducerController::class);
 
     // Reports
-    Route::get('/reports/{report}/toggle', [AdminReportController::class, 'toggleStatus'])->name('reports.toggle');
+    Route::post('/reports/{report}/toggle', [AdminReportController::class, 'toggleStatus'])->name('reports.toggle');
     Route::resource('reports', AdminReportController::class);
 
     // Posts
@@ -111,11 +109,11 @@ Route::middleware('staff')->prefix('admin')->as('admin.')->group(function () {
         Route::get('/{post}/songs/add', 'addSong')->name('songs.add');
         Route::get('/{post}/songs', 'songs')->name('songs');
         Route::post('/search-animes', 'searchInAnilist')->name('search.animes');
-        Route::get('/get-by-id/{id}', 'getById')->name('get.by.id');
-        Route::post('/get-seasonal-animes', 'getSeasonalAnimes')->name('get.seasonal.animes');
+        Route::get('/by-id/{id}', 'getById')->name('by-id');
+        Route::post('/seasonal-animes', 'getSeasonalAnimes')->name('seasonal.animes');
         Route::get('/{post}/force-update', 'forceUpdate')->name('force.update');
-        Route::get('/sync-all', 'syncAllFromAnilist')->name('sync.all');
-        Route::get('/wipe', 'wipePosts')->name('wipe');
+        Route::post('/sync-all', 'syncAllFromAnilist')->name('sync.all');
+        Route::delete('/wipe', 'wipePosts')->name('wipe');
     });
     Route::resource('posts', AdminPostController::class);
 
@@ -127,10 +125,10 @@ Route::middleware('staff')->prefix('admin')->as('admin.')->group(function () {
     Route::resource('users', AdminUserController::class);
 
     // Years & Seasons toggle
-    Route::get('years/{year}/toggle', [AdminYearController::class, 'toggle'])->name('years.toggle');
+    Route::post('years/{year}/toggle', [AdminYearController::class, 'toggle'])->name('years.toggle');
     Route::resource('years', AdminYearController::class);
 
-    Route::get('seasons/{season}/toggle', [AdminSeasonController::class, 'toggle'])->name('seasons.toggle');
+    Route::post('seasons/{season}/toggle', [AdminSeasonController::class, 'toggle'])->name('seasons.toggle');
     Route::resource('seasons', AdminSeasonController::class);
 });
 
@@ -142,27 +140,30 @@ Route::middleware('staff')->prefix('admin')->as('admin.')->group(function () {
 
 Auth::routes();
 
-// Comments Interactions
-Route::controller(CommentController::class)->prefix('comments')->as('comments.')->group(function () {
-    Route::post('/{comment}/like', 'like')->name('like');
-    Route::post('/{comment}/dislike', 'dislike')->name('dislike');
-    Route::post('/{parentComment}/reply', 'reply')->name('reply');
+// Authenticated Routes
+Route::middleware('auth')->group(function () {
+
+    // Profile Management
+    Route::controller(UserController::class)->group(function () {
+        Route::post('/profile/score-format', 'changeScoreFormat')->name('profile.score-format');
+        Route::post('/profile/avatar', 'uploadProfilePic')->name('profile.avatar');
+        Route::post('/profile/banner', 'uploadBannerPic')->name('profile.banner');
+        Route::get('/profile/favorites', 'favorites')->name('profile.favorites');
+    });
+
+    // Song Variants Interactions
+    Route::controller(SongVariantController::class)->prefix('variants')->as('variants.')->group(function () {
+        Route::post('/{variant}/rate', 'rate')->name('rate');
+        Route::post('/{variant}/like', 'like')->name('like');
+        Route::post('/{variant}/dislike', 'dislike')->name('dislike');
+        Route::post('/{variant}/favorite', 'toggleFavorite')->name('favorite');
+    });
+
+    // Comments
+    Route::controller(CommentController::class)->prefix('comments')->as('comments.')->group(function () {
+        Route::post('/{comment}/like', 'like')->name('like');
+        Route::post('/{comment}/dislike', 'dislike')->name('dislike');
+        Route::post('/{parentComment}/reply', 'reply')->name('reply');
+    });
+    Route::resource('comments', CommentController::class);
 });
-Route::resource('comments', CommentController::class);
-
-// Requests
-Route::resource('requests', UserRequestController::class)->only(['create', 'store'])->names([
-    'create' => 'request.create',
-    'store' => 'request.store'
-]);
-
-// Song Variant Interactions
-Route::controller(SongVariantController::class)->group(function () {
-    Route::post('/variant/{variant}/rate', 'rate')->name('variant.rate');
-    Route::post('variants/{variant}/like', 'like')->name('variants.like');
-    Route::post('variants/{variant}/dislike', 'dislike')->name('variants.dislike');
-    Route::post('variants/{variant}/favorite', 'toggleFavorite')->name('variants.toggle.favorite');
-});
-
-// Reports Store
-Route::post('reports/store', [ReportController::class, 'store'])->name('reports.store');

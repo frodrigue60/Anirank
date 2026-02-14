@@ -72,11 +72,11 @@
                                         src="{{ Storage::url($song->post->thumbnail) }}" />
                                 </div>
                                 <div class="min-w-0">
-                                    <a href="{{ route('songs.show', [$song->post->slug, $song->slug]) }}"
+                                    <a href="{{ route('songs.show', $song->id) }}"
                                         class="text-lg font-bold text-white truncate block leading-tight mb-1 hover:text-primary transition-colors">{{ $song->name }}
                                     </a>
                                     <div class="flex flex-col items-start gap-1 text-sm">
-                                        <a href="{{ route('post.show', $song->post->slug) }}"
+                                        <a href="{{ route('posts.show', $song->post->slug) }}"
                                             class="text-primary font-bold truncate hover:underline">{{ $song->post->title }}</a>
 
                                         <span class="text-white/60 truncate">

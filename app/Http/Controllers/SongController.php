@@ -48,13 +48,13 @@ class SongController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($animeSlug, $songSlug)
+    public function show(Song $song)
     {
-        $post = Post::with(['songs'])->where('slug', $animeSlug)->first();
+        $post = Post::with(['songs'])->where('slug', $song->post->slug)->first();
         $user = Auth::check() ? Auth::user() : null;
 
         if (!$post) {
-            return redirect(route('/'))->with('warning', 'Post not exist!');
+            return redirect(route('home'))->with('warning', 'Post not exist!');
         }
 
         if (!$post->status) {
@@ -66,7 +66,7 @@ class SongController extends Controller
         }
 
         $song = Song::with(['songVariants.video'])
-            ->where('slug', $songSlug)
+            ->where('slug', $song->slug)
             ->where('post_id', $post->id)
             ->first();
 
@@ -85,7 +85,7 @@ class SongController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function edit($id)
+    public function edit(Song $song)
     {
         //
     }
@@ -97,7 +97,7 @@ class SongController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, Song $song)
     {
         //
     }
@@ -108,7 +108,7 @@ class SongController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+    public function destroy(Song $song)
     {
         //
     }
@@ -126,5 +126,36 @@ class SongController extends Controller
     public function ranking()
     {
         return view('public.ranking');
+    }
+
+    public function showAnimeSong($anime_slug, $song_slug)
+    {
+        $post = Post::with(['songs'])->where('slug', $anime_slug)->first();
+        $user = Auth::check() ? Auth::user() : null;
+
+        if (!$post) {
+            return redirect(route('home'))->with('warning', 'Post not exist!');
+        }
+
+        if (!$post->status) {
+            if ($user && $user->isAdmin()) {
+                // Admin can view private posts
+            } else {
+                return redirect('/')->with('danger', $user ? 'User not autorized!' : 'Post status: Private');
+            }
+        }
+
+        $song = Song::with(['songVariants.video'])
+            ->where('slug', $song_slug)
+            ->where('post_id', $post->id)
+            ->first();
+
+        if (!$song) {
+            return redirect('/')->with('warning', 'Song not found!');
+        }
+
+        $song->incrementViews();
+
+        return view('public.songs.show', compact('song', 'post'));
     }
 }

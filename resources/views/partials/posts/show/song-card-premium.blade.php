@@ -24,7 +24,7 @@
         <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
             <p class="text-sm text-white/40 font-medium truncate">
                 @foreach ($song->artists as $artist)
-                    <a href="{{ route('artists.show', $artist->slug) }}"
+                    <a href="{{ route('artists.show', $artist->id) }}"
                         class="hover:text-primary transition-colors">{{ $artist->name }}</a>{{ !$loop->last ? ', ' : '' }}
                 @endforeach
             </p>
@@ -33,7 +33,7 @@
 
     {{-- Actions --}}
     <div class="flex items-center gap-3 shrink-0">
-        @if($song->averageRating)
+        @if ($song->averageRating)
             <div
                 class="hidden sm:flex items-center gap-1.5 bg-black/40 px-2.5 py-1 rounded-lg border border-white/5 text-yellow-400 text-xs font-black shadow-inner">
                 <span class="material-symbols-outlined filled text-[14px]">star</span>

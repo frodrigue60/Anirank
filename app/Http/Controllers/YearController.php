@@ -46,7 +46,7 @@ class YearController extends Controller
      */
     public function show(Year $year)
     {
-        dd($year->posts);
+        //
     }
 
     /**

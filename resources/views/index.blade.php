@@ -78,7 +78,7 @@
                                 </div>
                             </div>
                             <div class="flex items-center gap-4 mt-2 justify-center md:justify-start">
-                                <a href="{{ $featuredSong->getUrlAttribute() }}"
+                                <a href="{{ route('songs.show', $featuredSong->id) }}"
                                     class="bg-primary hover:bg-primary/80 text-white h-12 px-8 rounded-full font-bold flex items-center gap-2 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-primary/30">
                                     <span class="material-symbols-outlined filled">play_circle</span>
                                     <span>Play Now</span>
@@ -120,7 +120,7 @@
                                     </div>
                                     <div class="flex-1 min-w-0">
                                         <div class="flex items-center justify-between">
-                                            <a href="{{ $song->url }}"
+                                            <a href="{{ route('songs.show', $song->id) }}"
                                                 class="font-bold text-white truncate text-lg hover:text-primary transition-colors">{{ $song->name }}</a>
                                             <div
                                                 class="flex items-center gap-1 bg-surface-dark px-2 py-0.5 rounded text-yellow-400 text-xs font-bold">

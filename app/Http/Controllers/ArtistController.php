@@ -31,11 +31,10 @@ class ArtistController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  int  $id
-     * @param  mixed  $slug
+     * @param  \App\Models\Artist  $artist
      * @return \Illuminate\Http\Response
      */
-    public function show($slug)
+    public function show(Artist $artist)
     {
         $years = Year::all()->sortByDesc('name');
         $seasons = Season::all()->sortByDesc('name');
@@ -55,10 +54,8 @@ class ArtistController extends Controller
             ['name' => 'Popular', 'value' => 'likeCount']
         ];
 
-        $artist = Artist::with('songs')->where('slug', $slug)->first();
-        //$songs = $artist->songs;
+        $artist->load('songs');
 
-        //return view('public.artists.show', compact('artist', 'seasons', 'years', 'sortMethods', 'types', 'songs'));
         return view('public.artists.show', compact('artist', 'seasons', 'years', 'sortMethods', 'types'));
     }
 }

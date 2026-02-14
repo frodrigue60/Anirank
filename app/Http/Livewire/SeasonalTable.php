@@ -13,36 +13,50 @@ use Illuminate\Support\Facades\DB;
 class SeasonalTable extends Component
 {
     use WithPagination;
+    use Traits\HasRankingScore;
 
+    public $readyToLoad = false;
     public $currentSection = 'ALL'; // ALL, OP or ED
     public $perPage = 15;
     public $page = 1;
     public $hasMorePages = true;
+    public $seasonId;
+    public $yearId;
+    public $seasonName;
+    public $yearName;
 
     protected $listeners = ['loadMore'];
 
-    public function mount()
+    public function loadData()
     {
+        $this->readyToLoad = true;
+    }
+
+    public function mount($season, $year)
+    {
+        $this->seasonId = $season;
+        $this->yearId = $year;
+        $this->seasonName = Season::find($season)?->name;
+        $this->yearName = Year::find($year)?->name;
         $this->currentSection = 'ALL';
     }
 
     public function updatedCurrentSection()
     {
-        $this->resetPage();
+        $this->page = 1;
         $this->hasMorePages = true;
     }
 
     public function loadMore()
     {
-        if ($this->hasMorePages) {
-            $this->perPage += 15;
-        }
+        if (!$this->hasMorePages || !$this->readyToLoad) return;
+        $this->page++;
     }
 
     public function toggleFavorite($songId)
     {
         if (!Auth::check()) {
-            return $this->emit('showLoginModal');
+            return $this->dispatch('showLoginModal');
         }
 
         $song = Song::find($songId);
@@ -51,64 +65,40 @@ class SeasonalTable extends Component
         }
     }
 
-    public function render()
+    public function getSongsProperty()
     {
-        $currentSeason = Season::where('current', true)->first();
-        $currentYear = Year::where('current', true)->first();
-        $user = Auth::user();
+        if (!$this->readyToLoad) return collect();
 
-        $query = Song::with(['post', 'artists']);
+        $status = true;
+        $limit = 100;
+        $perPage = $this->perPage * $this->page;
+
+        $query = Song::query()
+            ->with(['post:id,title,slug,banner,thumbnail_src', 'artists:id,name'])
+            ->withAvg('ratings', 'rating')
+            ->whereHas('post', function ($query) use ($status) {
+                $query->where('status', $status)
+                    ->where('season_id', $this->seasonId)
+                    ->where('year_id', $this->yearId);
+            });
 
         if ($this->currentSection !== 'ALL') {
             $query->where('type', $this->currentSection);
         }
 
-        // Filter by Current Season and Year
-        if ($currentSeason && $currentYear) {
-            $query->whereHas('post', function ($q) use ($currentSeason, $currentYear) {
-                $q->where('status', true)
-                    ->where('season_id', $currentSeason->id)
-                    ->where('year_id', $currentYear->id);
-            });
-        } else {
-            // Fallback if no current season is set, reasonably shouldn't happen but good for safety
-            $query->where('id', 0);
-        }
+        $query->orderByDesc('ratings_avg_rating');
 
-        $songsCount = $query->count();
+        $songs = $query->take(min($perPage, $limit))->get();
 
-        // Sorting: Default to Average Rating for the leaderboard look, 
-        // or could be 'title' if we strictly follow the old controller. 
-        // Given the "Ranking" aesthetic, score makes sense, but let's stick to the RankingTable logic which sorts by score.
-        $songs = $query->get()
-            ->sortByDesc('averageRating')
-            ->values() // Reset keys for correct ranking numbers
-            ->take($this->perPage);
+        $this->hasMorePages = $songs->count() >= $perPage && $songs->count() < $limit;
 
-        if ($songs->count() >= $songsCount) {
-            $this->hasMorePages = false;
-        }
+        return $this->setScoreSongs($songs, Auth::user());
+    }
 
-        // Calculate User Scores
-        $songs->each(function ($song) use ($user) {
-            $song->userScore = null;
-            if ($user) {
-                $userRating = DB::table('ratings')
-                    ->where('rateable_type', Song::class)
-                    ->where('rateable_id', $song->id)
-                    ->where('user_id', $user->id)
-                    ->first(['rating']);
-
-                if ($userRating) {
-                    $song->userScore = round($userRating->rating);
-                }
-            }
-        });
-
+    public function render()
+    {
         return view('livewire.seasonal-table', [
-            'songs' => $songs,
-            'currentSeason' => $currentSeason,
-            'currentYear' => $currentYear
+            'songs' => $this->songs,
         ]);
     }
 }

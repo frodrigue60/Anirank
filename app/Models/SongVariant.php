@@ -58,4 +58,16 @@ class SongVariant extends Model
     {
         return $this->belongsTo(Season::class);
     }
+
+    public function favorites()
+    {
+        return $this->morphMany(Favorite::class, 'favoritable');
+    }
+
+    public function scopeFavoritedBy($query, $userId)
+    {
+        return $query->whereHas('favorites', function ($q) use ($userId) {
+            $q->where('user_id', $userId);
+        });
+    }
 }

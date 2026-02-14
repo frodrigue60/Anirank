@@ -21,7 +21,7 @@
             @if ($editingCommentId === $comment->id)
                 <div class="space-y-3 mt-2">
                     <div class="bg-surface-darker rounded-2xl p-1 border border-primary/30 shadow-lg shadow-primary/5">
-                        <textarea wire:model.defer="editingBody"
+                        <textarea wire:model="editingBody"
                             class="w-full bg-transparent border-none rounded-xl p-3 text-sm text-white placeholder:text-white/20 min-h-[80px] resize-none focus:ring-0"
                             placeholder="Edit your comment..."></textarea>
                         <div class="flex justify-end items-center px-2 pb-2 gap-2">
@@ -73,7 +73,7 @@
     @if ($replyingTo === $comment->id)
         <div class="ml-14 mt-4 space-y-3">
             <div class="bg-surface-darker rounded-2xl p-1 border border-primary/30 shadow-lg shadow-primary/5">
-                <textarea wire:model.defer="replyBody"
+                <textarea wire:model="replyBody"
                     class="w-full bg-transparent border-none rounded-xl p-3 text-sm text-white placeholder:text-white/20 min-h-[80px] resize-none focus:ring-0"
                     placeholder="Write your reply..."></textarea>
                 <div class="flex justify-end items-center px-2 pb-2 gap-2">

@@ -21,7 +21,8 @@ class AnimesTable extends Component
     public $viewMode = 'grid_small'; // grid_small, grid_large, list
     public $perPage = 15;
     public $page = 1;
-    public $hasMorePages = true;
+    public $hasMorePages = false;
+    public $readyToLoad = false;
 
     protected $queryString = [
         'name' => ['except' => ''],
@@ -32,6 +33,16 @@ class AnimesTable extends Component
     ];
 
     protected $listeners = ['loadMore'];
+
+    public function loadData()
+    {
+        $this->readyToLoad = true;
+    }
+
+    public function mount()
+    {
+        $this->viewMode = 'grid_small';
+    }
 
     public function updatedName()
     {
@@ -53,18 +64,26 @@ class AnimesTable extends Component
     public function setViewMode($mode)
     {
         $this->viewMode = $mode;
-        // Optionally adjust perPage based on mode if needed
     }
 
     public function loadMore()
     {
-        if ($this->hasMorePages) {
+        if ($this->hasMorePages && $this->readyToLoad) {
             $this->perPage += 15;
         }
     }
 
     public function render()
     {
+        if (!$this->readyToLoad) {
+            return view('livewire.animes-table', [
+                'posts' => collect(),
+                'years' => collect(),
+                'seasons' => collect(),
+                'formats' => collect(),
+            ]);
+        }
+
         $query = Post::where('status', true);
 
         if ($this->name) {
@@ -80,23 +99,19 @@ class AnimesTable extends Component
             $query->where('format_id', $this->format_id);
         }
 
-        $total = $query->count();
-
-        $posts = $query->with(['format', 'season', 'year', 'studios'])
+        $results = $query->with(['format:id,name', 'season:id,name', 'year:id,name', 'studios:id,name'])
+            ->withCount('songs')
             ->orderBy('title')
-            ->take($this->perPage)
+            ->take($this->perPage + 1)
             ->get();
 
-        if ($posts->count() >= $total) {
-            $this->hasMorePages = false;
-        } else {
-            $this->hasMorePages = true;
-        }
+        $this->hasMorePages = $results->count() > $this->perPage;
+        $posts = $results->take($this->perPage);
 
-        // Fetch filter options
-        $years = Year::orderBy('name', 'desc')->get();
-        $seasons = Season::all();
-        $formats = Format::all();
+        // Fetch filter options efficiently
+        $years = Year::orderBy('name', 'desc')->get(['id', 'name']);
+        $seasons = Season::all(['id', 'name']);
+        $formats = Format::all(['id', 'name']);
 
         return view('livewire.animes-table', [
             'posts' => $posts,

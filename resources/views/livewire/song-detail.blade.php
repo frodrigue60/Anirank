@@ -141,7 +141,7 @@
 
                     @auth
                         <div class="bg-surface-darker rounded-3xl p-1 border border-white/5 shadow-inner">
-                            <textarea wire:model.defer="commentBody"
+                            <textarea wire:model="commentBody"
                                 class="w-full bg-transparent border-none rounded-2xl p-4 text-sm text-white placeholder:text-white/20 min-h-[100px] resize-none focus:ring-0"
                                 placeholder="What do you think about this song?"></textarea>
                             <div class="flex justify-between items-center px-2 pb-2">
@@ -270,7 +270,7 @@
                     <label class="text-xs font-bold text-white/40 uppercase tracking-widest mb-2 block">Create
                         New</label>
                     <div class="flex gap-2">
-                        <input wire:model.defer="newPlaylistName" type="text"
+                        <input wire:model="newPlaylistName" type="text"
                             class="flex-1 bg-surface-darker border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:ring-1 focus:ring-primary focus:border-primary placeholder:text-white/20"
                             placeholder="My Awesome Playlist">
                         <button wire:click="createPlaylist"

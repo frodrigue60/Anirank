@@ -6,6 +6,7 @@ use App\Models\Producer;
 use App\Models\Studio;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Illuminate\Support\Facades\Auth;
 
 class StudiosTable extends Component
 {
@@ -14,11 +15,18 @@ class StudiosTable extends Component
     public $search = '';
     public $sort = 'name_asc';
     public $perPage = 18;
+    public $hasMorePages = false;
+    public $readyToLoad = false;
 
     protected $queryString = [
         'search' => ['except' => ''],
         'sort' => ['except' => 'name_asc'],
     ];
+
+    public function loadData()
+    {
+        $this->readyToLoad = true;
+    }
 
     public function updatingSearch()
     {
@@ -32,23 +40,36 @@ class StudiosTable extends Component
 
     public function loadMore()
     {
-        $this->perPage += 12;
+        if ($this->hasMorePages && $this->readyToLoad) {
+            $this->perPage += 12;
+        }
     }
 
     public function render()
     {
-        $studios = Studio::query()
+        if (!$this->readyToLoad) {
+            return view('livewire.studios-table', [
+                'studios' => collect(),
+            ]);
+        }
+
+        $studiosQuery = Studio::query()
             ->withCount(['posts' => function ($query) {
-                if (!auth()->check() || !auth()->user()->isStaff()) {
+                if (!\Auth::check() || !\Auth::user()->isStaff()) {
                     $query->where('status', true);
                 }
             }])
             ->whereHas('posts', function ($query) {
-                if (!auth()->check() || !auth()->user()->isStaff()) {
+                if (!\Auth::check() || !\Auth::user()->isStaff()) {
                     $query->where('status', true);
                 }
             })
-            ->with('posts')
+            ->with(['posts' => function ($query) {
+                if (!\Auth::check() || !\Auth::user()->isStaff()) {
+                    $query->where('status', true);
+                }
+                $query->select(['posts.id', 'posts.banner', 'posts.banner_src', 'posts.thumbnail', 'posts.thumbnail_src']);
+            }])
             ->when($this->search, function ($query) {
                 $query->where('name', 'like', '%' . $this->search . '%');
             })
@@ -63,8 +84,11 @@ class StudiosTable extends Component
             })
             ->when($this->sort === 'least_series', function ($query) {
                 $query->orderBy('posts_count', 'asc');
-            })
-            ->paginate($this->perPage);
+            });
+
+        $results = $studiosQuery->take($this->perPage + 1)->get();
+        $this->hasMorePages = $results->count() > $this->perPage;
+        $studios = $results->take($this->perPage);
 
         return view('livewire.studios-table', [
             'studios' => $studios,

@@ -57,7 +57,7 @@ class UserSettings extends Component
                     Storage::disk('public')->delete($old_image);
                 }
 
-                $this->emit('avatarUpdated', Storage::url($storedPath));
+                $this->dispatch('avatarUpdated', url: Storage::url($storedPath));
                 session()->flash('avatar_success', 'Avatar updated successfully!');
                 $this->reset('image');
             }
@@ -87,7 +87,7 @@ class UserSettings extends Component
                     Storage::disk('public')->delete($old_banner);
                 }
 
-                $this->emit('bannerUpdated', Storage::url($storedPath));
+                $this->dispatch('bannerUpdated', url: Storage::url($storedPath));
                 session()->flash('banner_success', 'Banner updated successfully!');
                 $this->reset('banner');
             }

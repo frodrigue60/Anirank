@@ -148,41 +148,9 @@ class UserController extends Controller
         $types = $this->filterTypesSortChar()['types'];
         $sortMethods = $this->filterTypesSortChar()['sortMethods'];
 
-        $song_variants = [];
+        $types = $this->filterTypesSortChar()['types'];
+        $sortMethods = $this->filterTypesSortChar()['sortMethods'];
 
-        $song_variants = SongVariant::with(['song.post'])
-            #SONG QUERY
-            ->whereHas('song', function ($query) use ($type) {
-                $query->when($type, function ($query, $type) {
-                    $query->where('type', $type);
-                });
-            })
-            #POST QUERY
-            ->whereHas('song.post', function ($query) use ($name, $season, $year, $status) {
-                $query->where('status', $status)
-                    ->when($name, function ($query, $name) {
-                        $query->where('title', 'LIKE', '%' . $name . '%');
-                    })
-                    ->when($season, function ($query, $season) {
-                        $query->where('season_id', $season->id);
-                    })
-                    ->when($year, function ($query, $year) {
-                        $query->where('year_id', $year->id);
-                    });
-            })
-            #SONG VARIANT QUERY
-            ->whereLikedBy($user->id)
-            ->get();
-
-        $song_variants = $this->setScoreOnlyVariants($song_variants, $user);
-        $song_variants = $this->sort_variants($sort, $song_variants);
-        $song_variants = $this->paginate($song_variants);
-
-        if ($request->ajax()) {
-            $view = view('partials.variants.cards', compact('song_variants'))->render();
-            return response()->json(['html' => $view, "lastPage" => $song_variants->lastPage()]);
-        }
-        //dd($songs);
         return view('public.users.favorites', compact('seasons', 'years', 'sortMethods', 'types', 'user'));
     }
 

@@ -190,8 +190,8 @@ class Song extends Model
         return $views;
     }
 
-    // Método para obtener los posts que un usuario ha dado like
-    public function scopeWhereLikedBy($query, $userId)
+    // Método para obtener los posts que un usuario ha marcado como favorito
+    public function scopeFavoritedBy($query, $userId)
     {
         return $query->whereHas('favorites', function ($q) use ($userId) {
             $q->where('user_id', $userId);

@@ -8,11 +8,10 @@ use App\Models\Season;
 use App\Models\Format;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Illuminate\Support\Facades\Auth;
 
 class StudioAnimesTable extends Component
 {
-    use WithPagination;
-
     public $studioId;
     public $studio;
     public $name = '';
@@ -21,6 +20,8 @@ class StudioAnimesTable extends Component
     public $format_id = '';
     public $perPage = 18;
     public $viewMode = 'grid_small'; // grid_small, grid_large, list
+    public $hasMorePages = false;
+    public $readyToLoad = false;
 
     protected $queryString = [
         'name' => ['except' => ''],
@@ -34,6 +35,11 @@ class StudioAnimesTable extends Component
     {
         $this->studioId = $studioId;
         $this->studio = \App\Models\Studio::findOrFail($studioId);
+    }
+
+    public function loadData()
+    {
+        $this->readyToLoad = true;
     }
 
     public function updatingName()
@@ -58,7 +64,9 @@ class StudioAnimesTable extends Component
 
     public function loadMore()
     {
-        $this->perPage += 12;
+        if ($this->readyToLoad) {
+            $this->perPage += 12;
+        }
     }
 
     public function setViewMode($mode)
@@ -68,8 +76,17 @@ class StudioAnimesTable extends Component
 
     public function render()
     {
+        if (!$this->readyToLoad) {
+            return view('livewire.studio-animes-table', [
+                'posts' => collect(),
+                'years' => collect(),
+                'seasons' => collect(),
+                'formats' => collect(),
+            ]);
+        }
+
         $posts = Post::query()
-            ->when(!auth()->check() || !auth()->user()->isStaff(), function ($query) {
+            ->when(!\Auth::check() || !\Auth::user()->isStaff(), function ($query) {
                 $query->where('status', true);
             })
             ->whereHas('studios', function ($query) {
@@ -87,15 +104,23 @@ class StudioAnimesTable extends Component
             ->when($this->format_id, function ($query) {
                 $query->where('format_id', $this->format_id);
             })
-            ->with(['format', 'season', 'year', 'studios', 'producers'])
+            ->with([
+                'format:id,name',
+                'season:id,name',
+                'year:id,name',
+                'studios:id,name',
+                'producers:id,name'
+            ])
             ->orderBy('title', 'asc')
             ->paginate($this->perPage);
 
+        $this->hasMorePages = $posts->hasMorePages();
+
         return view('livewire.studio-animes-table', [
             'posts' => $posts,
-            'years' => Year::orderBy('name', 'desc')->get(),
-            'seasons' => Season::all(),
-            'formats' => Format::all(),
+            'years' => Year::orderBy('name', 'desc')->get(['id', 'name']),
+            'seasons' => Season::all(['id', 'name']),
+            'formats' => Format::all(['id', 'name']),
         ]);
     }
 }

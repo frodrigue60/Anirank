@@ -5,6 +5,7 @@ namespace App\Http\Livewire;
 use App\Models\Producer;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Illuminate\Support\Facades\Auth;
 
 class ProducersTable extends Component
 {
@@ -13,11 +14,18 @@ class ProducersTable extends Component
     public $search = '';
     public $sort = 'name_asc';
     public $perPage = 18;
+    public $hasMorePages = false;
+    public $readyToLoad = false;
 
     protected $queryString = [
         'search' => ['except' => ''],
         'sort' => ['except' => 'name_asc'],
     ];
+
+    public function loadData()
+    {
+        $this->readyToLoad = true;
+    }
 
     public function updatingSearch()
     {
@@ -31,26 +39,35 @@ class ProducersTable extends Component
 
     public function loadMore()
     {
-        $this->perPage += 12;
+        if ($this->hasMorePages && $this->readyToLoad) {
+            $this->perPage += 12;
+        }
     }
 
     public function render()
     {
-        $producers = Producer::query()
+        if (!$this->readyToLoad) {
+            return view('livewire.producers-table', [
+                'producers' => collect(),
+            ]);
+        }
+
+        $producersQuery = Producer::query()
             ->withCount(['posts' => function ($query) {
-                if (!auth()->check() || !auth()->user()->isStaff()) {
+                if (!\Auth::check() || !\Auth::user()->isStaff()) {
                     $query->where('status', true);
                 }
             }])
             ->whereHas('posts', function ($query) {
-                if (!auth()->check() || !auth()->user()->isStaff()) {
+                if (!\Auth::check() || !\Auth::user()->isStaff()) {
                     $query->where('status', true);
                 }
             })
             ->with(['posts' => function ($query) {
-                if (!auth()->check() || !auth()->user()->isStaff()) {
+                if (!\Auth::check() || !\Auth::user()->isStaff()) {
                     $query->where('status', true);
                 }
+                $query->select(['posts.id', 'posts.banner', 'posts.banner_src', 'posts.thumbnail', 'posts.thumbnail_src']);
             }])
             ->when($this->search, function ($query) {
                 $query->where('name', 'like', '%' . $this->search . '%');
@@ -66,8 +83,11 @@ class ProducersTable extends Component
             })
             ->when($this->sort === 'least_series', function ($query) {
                 $query->orderBy('posts_count', 'asc');
-            })
-            ->paginate($this->perPage);
+            });
+
+        $results = $producersQuery->take($this->perPage + 1)->get();
+        $this->hasMorePages = $results->count() > $this->perPage;
+        $producers = $results->take($this->perPage);
 
         return view('livewire.producers-table', [
             'producers' => $producers,

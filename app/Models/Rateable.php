@@ -118,14 +118,17 @@ trait Rateable
 
     public function getAverageRatingAttribute()
     {
+        // If the query used ->withAvg('ratings', 'rating'), it's available as ratings_avg_rating
         if (array_key_exists('ratings_avg_rating', $this->attributes)) {
             return $this->attributes['ratings_avg_rating'];
         }
 
-        if (isset($this->ratings_avg_rating)) {
-            return $this->ratings_avg_rating;
+        // Check if it's already set or cached in the model instance
+        if (isset($this->attributes['averageRating'])) {
+            return $this->attributes['averageRating'];
         }
 
+        // Fallback to query (only if not pre-loaded)
         return $this->averageRating();
     }
 

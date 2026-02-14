@@ -22,6 +22,7 @@ class ThemesTable extends Component
 
     public $perPage = 18;
     public $hasMorePages = true;
+    public $readyToLoad = false;
 
     protected $queryString = [
         'name' => ['except' => ''],
@@ -30,6 +31,11 @@ class ThemesTable extends Component
         'season_id' => ['except' => ''],
         'sort' => ['except' => 'recent'],
     ];
+
+    public function loadData()
+    {
+        $this->readyToLoad = true;
+    }
 
     public function updatingName()
     {
@@ -68,20 +74,28 @@ class ThemesTable extends Component
 
     public function render()
     {
-        $query = Song::with(['post', 'artists'])
+        if (!$this->readyToLoad) {
+            return view('livewire.themes-table', [
+                'songs' => collect(),
+                'years' => collect(),
+                'seasons' => collect(),
+                'types' => [],
+                'sortMethods' => []
+            ]);
+        }
+
+        $query = Song::query()
+            ->with(['post:id,title,slug,banner,thumbnail_src', 'artists:id,name'])
             ->withAvg('ratings', 'rating')
             ->withCount('likes')
             ->whereHas('post', function ($q) {
                 $q->where('status', true);
-
                 if ($this->name) {
                     $q->where('title', 'LIKE', '%' . $this->name . '%');
                 }
-
                 if ($this->season_id) {
                     $q->where('season_id', $this->season_id);
                 }
-
                 if ($this->year_id) {
                     $q->where('year_id', $this->year_id);
                 }
@@ -95,7 +109,8 @@ class ThemesTable extends Component
         switch ($this->sort) {
             case 'title':
                 $query->join('posts', 'songs.post_id', '=', 'posts.id')
-                    ->orderBy('posts.title');
+                    ->orderBy('posts.title')
+                    ->select('songs.*');
                 break;
             case 'averageRating':
                 $query->orderByDesc('ratings_avg_rating');
@@ -108,47 +123,20 @@ class ThemesTable extends Component
                 break;
             case 'recent':
             default:
-                $query->orderByDesc('created_at');
+                $query->orderByDesc('songs.created_at');
                 break;
         }
 
-        // Select explicitly to avoid column conflicts with join
-        if ($this->sort === 'title') {
-            $query->select('songs.*');
-        }
-
-        // Get total count for infinite scroll check
-        // Cloning query before take() is not needed since we haven't applied take() yet
-        $total = $query->count();
-
+        $totalSelection = $query->count();
         $songs = $query->take($this->perPage)->get();
 
-        if ($songs->count() >= $total) {
-            $this->hasMorePages = false;
-        } else {
-            $this->hasMorePages = true;
-        }
-
-        // Processing thumbnails manually if needed or handling in blade
-        $songs->each(function ($song) {
-            $song->thumbnailUrl = $song->post->thumbnail_src;
-            if ($song->post->thumbnail && Storage::disk('public')->exists($song->post->thumbnail)) {
-                $song->thumbnailUrl = Storage::url($song->post->thumbnail);
-            }
-
-            // Generate URL
-            $song->url = route('songs.show', [$song->post->slug, $song->slug]);
-
-            // Score String (simplified logic from controller)
-            $song->scoreString = $song->averageRating ? round($song->averageRating, 1) . '/100' : null;
-        });
+        $this->hasMorePages = ($songs->count() < $totalSelection);
 
         return view('livewire.themes-table', [
             'songs' => $songs,
-            'years' => Year::orderBy('name', 'desc')->get(),
-            'seasons' => Season::all(),
+            'years' => Year::select('id', 'name')->orderBy('name', 'desc')->get(),
+            'seasons' => Season::select('id', 'name')->get(),
             'types' => [
-                /* ['name' => 'All', 'value' => 'all'], */
                 ['name' => 'Opening', 'value' => 'OP'],
                 ['name' => 'Ending', 'value' => 'ED'],
                 ['name' => 'Insert', 'value' => 'INS'],

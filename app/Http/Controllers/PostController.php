@@ -28,60 +28,69 @@ class PostController extends Controller
         $user = Auth::check() ? Auth::User() : null;
         $status = true;
 
-        $recently = Song::with(['post'])
+        $recently = Song::with(['post' => function ($q) {
+            $q->select('id', 'title', 'slug', 'banner', 'thumbnail_src');
+        }])
             ->whereHas('post', function ($query) use ($status) {
                 $query->where('status', $status);
             })
-            ->get()
-            ->sortByDesc('created_at')
-            ->take(25);
+            ->latest()
+            ->take(25)
+            ->get();
 
-        $popular = Song::with(['post'])
+        $popular = Song::with(['post' => function ($q) {
+            $q->select('id', 'title', 'slug', 'banner', 'thumbnail_src');
+        }])
+            ->withCount('likes')
             ->whereHas('post', function ($query) use ($status) {
                 $query->where('status', $status);
             })
-            ->get()
-            ->sortByDesc('likesCount')
-            ->take(25);
+            ->orderByDesc('likes_count')
+            ->take(25)
+            ->get();
 
-        $viewed = Song::with(['post'])
+        $viewed = Song::with(['post' => function ($q) {
+            $q->select('id', 'title', 'slug', 'banner', 'thumbnail_src');
+        }])
             ->whereHas('post', function ($query) use ($status) {
                 $query->where('status', $status);
             })
-            ->get()
-            ->sortByDesc('views')
-            ->take(25);
+            ->orderByDesc('views')
+            ->take(25)
+            ->get();
 
-        $openings = Song::with(['post', 'artists'])
+        $openings = Song::with(['post' => function ($q) {
+            $q->select('id', 'title', 'slug', 'banner', 'thumbnail_src');
+        }, 'artists:id,name'])
             ->withAvg('ratings', 'rating')
             ->where('type', 'OP')
             ->whereHas('post', function ($q) use ($status) {
                 $q->where('status', $status);
             })
-            ->get()
-            ->sortByDesc('ratings_avg_rating')
-            ->take(3);
+            ->orderByDesc('ratings_avg_rating')
+            ->take(3)
+            ->get();
 
-        $endings = Song::with(['post', 'artists'])
+        $endings = Song::with(['post' => function ($q) {
+            $q->select('id', 'title', 'slug', 'banner', 'thumbnail_src');
+        }, 'artists:id,name'])
             ->withAvg('ratings', 'rating')
             ->where('type', 'ED')
             ->whereHas('post', function ($q) use ($status) {
                 $q->where('status', $status);
             })
-            ->get()
-            ->sortByDesc('ratings_avg_rating')
-            ->take(3);
+            ->orderByDesc('ratings_avg_rating')
+            ->take(3)
+            ->get();
 
         $weaklyRanking = $openings->concat($endings);
-
         $weaklyRanking = $this->setScoreSongs($weaklyRanking, $user);
 
-        //dd($openings[0]);
+        $artists = Artist::select('id', 'name', 'slug', 'thumbnail')->latest()->take(20)->get();
 
-        $artists = Artist::all()->sortByDesc('created_at')->take(20);
-        //dd($artists);
-
-        $featuredSong = Song::with(['post', 'artists'])
+        $featuredSong = Song::with(['post' => function ($q) {
+            $q->select('id', 'title', 'slug', 'banner', 'thumbnail_src');
+        }, 'artists:id,name'])
             ->whereHas('post', function ($q) use ($status) {
                 $q->where('status', $status);
             })
@@ -109,30 +118,27 @@ class PostController extends Controller
      */
     public function show($slug)
     {
-        $post = Post::with('songs.songVariants')->where('slug', $slug)->first();
-        $user = Auth::check() ? Auth::User() : null;
+        $post = Post::with(['songs' => function ($q) {
+            $q->with(['songVariants.video', 'artists:id,name', 'favorites', 'ratings']);
+            $q->withAvg('ratings', 'rating');
+        }])->where('slug', $slug)->first();
+
+        $user = Auth::user();
 
         if (!$post) {
             return redirect(route('/'))->with('warning', 'Post not exist!');
         }
+
         if (!$post->status) {
-            if ($user) {
-                if (!$user->isAdmin()) {
-                    return redirect('/')->with('danger', 'User not autorized!');
-                }
+            if ($user && $user->isAdmin()) {
+                // Admin can view
             } else {
-                return redirect('/')->with('danger', 'Post status: Private');
+                return redirect('/')->with('danger', $user ? 'User not autorized!' : 'Post status: Private');
             }
         }
 
-
-        $openings = $post->songs->filter(function ($song) {
-            return $song->type === 'OP';
-        });
-
-        $endings = $post->songs->filter(function ($song) {
-            return $song->type === 'ED';
-        });
+        $openings = $post->songs->where('type', 'OP')->sortBy('theme_num');
+        $endings = $post->songs->where('type', 'ED')->sortBy('theme_num');
 
         return view('public.posts.show', compact('post', 'openings', 'endings'));
     }
@@ -147,9 +153,8 @@ class PostController extends Controller
 
     public function themes(Request $request)
     {
-
-        $years = Year::all()->sortBy('name', null, true);
-        $seasons = Season::all();
+        $years = Year::select('id', 'name')->orderBy('name', 'desc')->get();
+        $seasons = Season::select('id', 'name')->get();
         $types = $this->filterTypesSortChar()['types'];
         $sortMethods = $this->filterTypesSortChar()['sortMethods'];
 

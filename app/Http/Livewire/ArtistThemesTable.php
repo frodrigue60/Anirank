@@ -5,6 +5,7 @@ namespace App\Http\Livewire;
 use Livewire\Component;
 use Livewire\WithPagination;
 use App\Models\Song;
+use Illuminate\Support\Facades\Auth;
 use App\Models\Year;
 use App\Models\Season;
 use App\Models\Artist;
@@ -22,7 +23,7 @@ class ArtistThemesTable extends Component
     public $sort = 'recent';
 
     public $perPage = 18;
-    public $hasMorePages = true;
+    public $hasMorePages = false;
 
     protected $queryString = [
         'name' => ['except' => ''],
@@ -37,39 +38,43 @@ class ArtistThemesTable extends Component
         $this->artist = $artist;
     }
 
+    public $readyToLoad = false;
+
+    public function loadData()
+    {
+        $this->readyToLoad = true;
+    }
+
     public function updatingName()
     {
         $this->resetPage();
-        $this->perPage = 18;
     }
 
     public function updatingType()
     {
         $this->resetPage();
-        $this->perPage = 18;
     }
 
     public function updatingYearId()
     {
         $this->resetPage();
-        $this->perPage = 18;
     }
 
     public function updatingSeasonId()
     {
         $this->resetPage();
-        $this->perPage = 18;
     }
 
     public function updatingSort()
     {
         $this->resetPage();
-        $this->perPage = 18;
     }
 
     public function loadMore()
     {
-        $this->perPage += 18;
+        if ($this->readyToLoad) {
+            $this->perPage += 18;
+        }
     }
 
     public function clearFilters()
@@ -79,13 +84,26 @@ class ArtistThemesTable extends Component
 
     public function render()
     {
-        $query = Song::with(['post', 'artists'])
+        if (!$this->readyToLoad) {
+            return view('livewire.artist-themes-table', [
+                'songs' => collect(),
+                'years' => collect(),
+                'seasons' => collect(),
+                'types' => [],
+                'sortMethods' => []
+            ]);
+        }
+
+        $query = Song::query()
+            ->with(['post:id,title,slug,banner,banner_src,thumbnail,thumbnail_src', 'artists:id,name'])
             ->withAvg('ratings', 'rating')
             ->whereHas('artists', function ($q) {
                 $q->where('artists.id', $this->artist->id);
             })
             ->whereHas('post', function ($q) {
-                $q->where('status', true);
+                if (!Auth::check() || !Auth::user()->isStaff()) {
+                    $q->where('status', true);
+                }
 
                 if ($this->name) {
                     $q->where('title', 'LIKE', '%' . $this->name . '%');
@@ -111,7 +129,7 @@ class ArtistThemesTable extends Component
                     ->orderBy('posts.title');
                 break;
             case 'averageRating':
-                $query->orderByDesc('averageRating');
+                $query->orderByDesc('ratings_avg_rating');
                 break;
             case 'view_count':
                 $query->orderByDesc('view_count');
@@ -121,7 +139,7 @@ class ArtistThemesTable extends Component
                 break;
             case 'recent':
             default:
-                $query->orderByDesc('created_at');
+                $query->orderByDesc('songs.created_at');
                 break;
         }
 
@@ -129,29 +147,14 @@ class ArtistThemesTable extends Component
             $query->select('songs.*');
         }
 
-        $total = $query->count();
-        $songs = $query->take($this->perPage)->get();
-
-        if ($songs->count() >= $total) {
-            $this->hasMorePages = false;
-        } else {
-            $this->hasMorePages = true;
-        }
-
-        $songs->each(function ($song) {
-            $song->thumbnailUrl = $song->post->thumbnail_src;
-            if ($song->post->thumbnail && Storage::disk('public')->exists($song->post->thumbnail)) {
-                $song->thumbnailUrl = Storage::url($song->post->thumbnail);
-            }
-            $song->url = route('songs.show', [$song->post->slug, $song->slug]);
-        });
+        $songs = $query->paginate($this->perPage);
+        $this->hasMorePages = $songs->hasMorePages();
 
         return view('livewire.artist-themes-table', [
             'songs' => $songs,
-            'years' => Year::orderBy('name', 'desc')->get(),
-            'seasons' => Season::all(),
+            'years' => Year::orderBy('name', 'desc')->get(['id', 'name']),
+            'seasons' => Season::all(['id', 'name']),
             'types' => [
-                /* ['name' => 'All', 'value' => ''], */
                 ['name' => 'Opening', 'value' => 'OP'],
                 ['name' => 'Ending', 'value' => 'ED'],
                 ['name' => 'Insert', 'value' => 'INS'],

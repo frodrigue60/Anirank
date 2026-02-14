@@ -140,13 +140,15 @@
     <div id="hidden-player-container" class="hidden"></div>
 
     <script>
-        document.addEventListener('livewire:load', function() {
+        document.addEventListener('livewire:initialized', function() {
             console.log('GlobalBottomPlayer: Component initialized');
 
             // Global helper to trigger playback from anywhere
             window.playSongGlobal = function(songId) {
                 console.log('GlobalBottomPlayer: playSongGlobal called for ID', songId);
-                window.Livewire.emit('playSong', songId);
+                Livewire.dispatch('playSong', {
+                    songId: songId
+                });
             };
 
             Livewire.on('playSong', (songId) => {
@@ -170,6 +172,10 @@
                 const data = event.detail;
                 console.log('GlobalBottomPlayer: Song loaded event received', data);
                 const container = document.getElementById('mini-player-container');
+                if (!container) {
+                    console.error('GlobalBottomPlayer: mini-player-container not found');
+                    return;
+                }
                 container.innerHTML = '';
 
                 // Hide placeholder
@@ -188,12 +194,24 @@
                 currentType = data.type;
 
                 const playerEl = document.getElementById('global-bottom-player');
-                if (!playerEl) return;
+                if (!playerEl) {
+                    console.error('GlobalBottomPlayer: global-bottom-player element not found');
+                    return;
+                }
                 const alpine = window.Alpine ? Alpine.$data(playerEl) : null;
-                if (!alpine) return;
+                if (!alpine) {
+                    console.error('GlobalBottomPlayer: Alpine data not found on player element');
+                    return;
+                }
 
                 if (data.type === 'embed') {
                     const ytId = extractYTId(data.url);
+                    if (!ytId) {
+                        console.error('GlobalBottomPlayer: Could not extract YouTube ID from', data.url);
+                        return;
+                    }
+                    console.log('GlobalBottomPlayer: Creating YouTube player for ID', ytId);
+
                     const ytDiv = document.createElement('div');
                     ytDiv.id = 'yt-player-instance';
                     container.appendChild(ytDiv);
@@ -231,21 +249,56 @@
                     else window.onYouTubeIframeAPIReady = createYT;
 
                 } else {
+                    console.log('GlobalBottomPlayer: Creating local video player for', data.url);
                     const video = document.createElement('video');
-                    video.src = data.url;
-                    video.autoplay = true;
+                    video.preload = 'auto';
                     video.controls = false;
                     video.volume = 0.5;
                     container.appendChild(video);
                     player = video;
 
+                    video.addEventListener('error', (e) => {
+                        console.error('GlobalBottomPlayer: Video error', video.error?.code, video
+                            .error?.message, 'src:', video.src);
+                    });
+
                     video.addEventListener('loadedmetadata', () => {
+                        console.log('GlobalBottomPlayer: Video metadata loaded, duration:', video
+                            .duration);
                         alpine.duration = formatTime(video.duration);
                     });
 
+                    video.addEventListener('canplay', () => {
+                        console.log('GlobalBottomPlayer: Video can play, attempting playback');
+                        video.play().then(() => {
+                            console.log(
+                                'GlobalBottomPlayer: Playback started successfully');
+                        }).catch(err => {
+                            console.warn(
+                                'GlobalBottomPlayer: Autoplay blocked, trying muted',
+                                err);
+                            video.muted = true;
+                            video.play().then(() => {
+                                console.log(
+                                    'GlobalBottomPlayer: Playing muted (unmute from volume control)'
+                                );
+                                // Unmute after a short delay (user interaction context restored)
+                                setTimeout(() => {
+                                    video.muted = false;
+                                }, 500);
+                            }).catch(err2 => {
+                                console.error(
+                                    'GlobalBottomPlayer: Even muted play failed',
+                                    err2);
+                            });
+                        });
+                    });
+
                     video.addEventListener('timeupdate', () => {
-                        alpine.progress = (video.currentTime / video.duration) * 100;
-                        alpine.currentTime = formatTime(video.currentTime);
+                        if (video.duration > 0) {
+                            alpine.progress = (video.currentTime / video.duration) * 100;
+                            alpine.currentTime = formatTime(video.currentTime);
+                        }
                     });
 
                     video.addEventListener('ended', () => {
@@ -261,6 +314,9 @@
                         console.log('GlobalBottomPlayer: Video paused');
                         alpine.playing = false;
                     };
+
+                    // Set src AFTER all listeners are attached
+                    video.src = data.url;
                 }
             });
 
@@ -316,8 +372,6 @@
                 if (media.tagName === 'VIDEO') {
                     media.controls = isFullscreen;
                 }
-                // YouTube iframes (API) don't easily allow toggling controls post-init.
-                // We'll leave them as they were configured (controls: 0).
             };
 
             document.addEventListener('fullscreenchange', handleFullscreenChange);
@@ -338,6 +392,7 @@
             }
 
             function startYTTracking() {
+                if (ytInterval) clearInterval(ytInterval);
                 ytInterval = setInterval(() => {
                     if (ytPlayer && ytPlayer.getCurrentTime) {
                         const playerEl = document.getElementById('global-bottom-player');
@@ -353,7 +408,12 @@
             }
 
             function extractYTId(url) {
-                const match = url.match(/(?:v=|youtu\.be\/|embed\/)([^"&?/ ]{11})/);
+                if (!url) return null;
+                // Handle iframe/embed HTML tags — extract src attribute first
+                const iframeMatch = url.match(/(?:<iframe|<embed)[^>]+src=["']([^"']+)["']/i);
+                if (iframeMatch) url = iframeMatch[1];
+                // Standard YouTube URL patterns
+                const match = url.match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([^"&?\/ ]{11})/);
                 return match ? match[1] : null;
             }
 

@@ -1,11 +1,10 @@
 @foreach ($posts as $post)
     @php
-        if (Storage::disk('public')->exists($post->thumbnail)) {
-            $thumbnail_url = Storage::url($post->thumbnail);
-        } else {
-            $thumbnail_url = $post->thumbnail_src;
-        }
+        $thumbnail_url = $post->thumbnail_src;
 
+        if ($post->thumbnail && Storage::disk('public')->exists($post->thumbnail)) {
+            $thumbnail_url = Storage::url($post->thumbnail);
+        }
     @endphp
     <article class="tarjeta">
         <a class="no-deco" href="{{ $post->url }}" rel="nofollow noopener noreferrer">

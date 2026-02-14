@@ -5,6 +5,7 @@ namespace App\Http\Livewire;
 use Livewire\Component;
 use Livewire\WithPagination;
 use App\Models\Artist;
+use Illuminate\Support\Facades\Auth;
 
 class ArtistsTable extends Component
 {
@@ -12,15 +13,21 @@ class ArtistsTable extends Component
 
     public $name = '';
     public $perPage = 24;
-    public $hasMorePages = true;
+    public $hasMorePages = false;
     public $sortBy = 'A-Z';
     public $sortByThemes = 'Most Themes';
+    public $readyToLoad = false;
 
     protected $queryString = [
         'name' => ['except' => ''],
         'sortBy' => ['except' => 'A-Z'],
         'sortByThemes' => ['except' => 'Most Themes'],
     ];
+
+    public function loadData()
+    {
+        $this->readyToLoad = true;
+    }
 
     public function updatingName()
     {
@@ -39,7 +46,9 @@ class ArtistsTable extends Component
 
     public function loadMore()
     {
-        $this->perPage += 24;
+        if ($this->hasMorePages && $this->readyToLoad) {
+            $this->perPage += 24;
+        }
     }
 
     public function clearFilters()
@@ -49,7 +58,16 @@ class ArtistsTable extends Component
 
     public function render()
     {
-        $query = Artist::query()->withCount('songs');
+        if (!$this->readyToLoad) {
+            return view('livewire.artists-table', [
+                'artists' => collect(),
+                'total' => 0,
+            ]);
+        }
+
+        $query = Artist::query()
+            ->select(['id', 'name', 'slug', 'thumbnail', 'thumbnail_src'])
+            ->withCount('songs');
 
         if ($this->name) {
             $query->where('name', 'LIKE', '%' . $this->name . '%');
@@ -58,31 +76,20 @@ class ArtistsTable extends Component
         // Sorting logic
         if ($this->sortBy === 'A-Z') {
             $query->orderBy('name', 'asc');
-        }
-        if ($this->sortBy === 'Z-A') {
+        } elseif ($this->sortBy === 'Z-A') {
             $query->orderBy('name', 'desc');
-        }
-        if ($this->sortBy === 'most_themes') {
+        } elseif ($this->sortBy === 'most_themes') {
             $query->orderBy('songs_count', 'desc');
-        }
-        if ($this->sortBy === 'least_themes') {
+        } elseif ($this->sortBy === 'least_themes') {
             $query->orderBy('songs_count', 'asc');
         }
 
-        $total = $query->count();
-
-        $artists = $query->take($this->perPage)
-            ->get();
-
-        if ($artists->count() >= $total) {
-            $this->hasMorePages = false;
-        } else {
-            $this->hasMorePages = true;
-        }
+        $results = $query->take($this->perPage + 1)->get();
+        $this->hasMorePages = $results->count() > $this->perPage;
+        $artists = $results->take($this->perPage);
 
         return view('livewire.artists-table', [
             'artists' => $artists,
-            'total' => $total,
         ]);
     }
 }

@@ -6,6 +6,8 @@ use Livewire\Component;
 use App\Models\Song;
 use Illuminate\Support\Facades\Auth;
 
+use Livewire\Attributes\On;
+
 class SongInteractions extends Component
 {
     public $songId;
@@ -14,8 +16,6 @@ class SongInteractions extends Component
     public $showRatingModal = false;
     public $ratingValue = 0;
 
-    protected $listeners = ['songChanged' => 'handleSongChanged'];
-
     public function mount($songId, $mode = 'bar')
     {
         $this->songId = $songId;
@@ -23,6 +23,7 @@ class SongInteractions extends Component
         $this->loadSong();
     }
 
+    #[On('songChanged')]
     public function handleSongChanged($songId)
     {
         $this->songId = $songId;
@@ -99,17 +100,17 @@ class SongInteractions extends Component
         if ($existingReaction) {
             if ($existingReaction->type == $type) {
                 $existingReaction->delete();
-                $this->dispatchBrowserEvent('toast', ['type' => 'info', 'message' => "Removed $typeName"]);
+                $this->dispatch('toast', type: 'info', message: "Removed $typeName");
             } else {
                 $existingReaction->update(['type' => $type]);
-                $this->dispatchBrowserEvent('toast', ['type' => 'success', 'message' => ucfirst($typeName) . "d the song"]);
+                $this->dispatch('toast', type: 'success', message: ucfirst($typeName) . "d the song");
             }
         } else {
             $this->song->reactions()->create([
                 'user_id' => $userId,
                 'type' => $type
             ]);
-            $this->dispatchBrowserEvent('toast', ['type' => 'success', 'message' => ucfirst($typeName) . "d the song"]);
+            $this->dispatch('toast', type: 'success', message: ucfirst($typeName) . "d the song");
         }
 
         $this->loadSong();
@@ -126,12 +127,12 @@ class SongInteractions extends Component
 
         if ($existingFavorite) {
             $existingFavorite->delete();
-            $this->dispatchBrowserEvent('toast', ['type' => 'info', 'message' => 'Removed from favorites']);
+            $this->dispatch('toast', type: 'info', message: 'Removed from favorites');
         } else {
             $this->song->favorites()->create([
                 'user_id' => $userId
             ]);
-            $this->dispatchBrowserEvent('toast', ['type' => 'success', 'message' => 'Added to favorites!']);
+            $this->dispatch('toast', type: 'success', message: 'Added to favorites!');
         }
 
         $this->loadSong();
@@ -158,17 +159,19 @@ class SongInteractions extends Component
             $this->loadSong();
             $this->showRatingModal = false;
 
-            $this->dispatchBrowserEvent('toast', [
-                'type' => 'success',
-                'message' => 'Rating Saved!',
-                'description' => "You rated {$this->song->name} with {$value} points."
-            ]);
+            $this->dispatch(
+                'toast',
+                type: 'success',
+                message: 'Rating Saved!',
+                description: "You rated {$this->song->name} with {$value} points."
+            );
         } catch (\Exception $e) {
-            $this->dispatchBrowserEvent('toast', [
-                'type' => 'error',
-                'message' => 'Error saving rating',
-                'description' => $e->getMessage()
-            ]);
+            $this->dispatch(
+                'toast',
+                type: 'error',
+                message: 'Error saving rating',
+                description: $e->getMessage()
+            );
         }
     }
 

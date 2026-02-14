@@ -298,7 +298,9 @@
 
                 // Sync Livewire
                 if (window.Livewire) {
-                    Livewire.emit('songChanged', item.song_id);
+                    Livewire.dispatch('songChanged', {
+                        songId: item.song_id
+                    });
                 }
 
                 this.highlightCurrent();

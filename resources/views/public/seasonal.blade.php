@@ -48,5 +48,7 @@
     @endif
 @endsection
 @section('content')
-    <livewire:seasonal-table />
+    @if ($currentSeason && $currentYear)
+        <livewire:seasonal-table :season="$currentSeason->id" :year="$currentYear->id" />
+    @endif
 @endsection

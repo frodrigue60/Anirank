@@ -287,7 +287,7 @@ class UserController extends Controller
     {
         //return response()->json(['request' => $request->all()]);
 
-        $user = User::where('id', $id)->select('id','slug', 'score_format', 'image', 'banner', 'name')->first();
+        $user = User::where('id', $id)->select('id', 'slug', 'score_format', 'image', 'banner', 'name')->first();
 
         //return response()->json(['user' => $user]);
 
@@ -319,7 +319,7 @@ class UserController extends Controller
                     });
             })
             #SONG VARIANT QUERY
-            ->whereLikedBy($user->id)
+            ->favoritedBy($user->id)
             ->get();
 
         $songs = $this->setScoreSongs($songs, $user);
@@ -373,7 +373,7 @@ class UserController extends Controller
                     });
             })
             #SONG VARIANT QUERY
-            ->whereLikedBy($user->id)
+            ->favoritedBy($user->id)
             ->get();
 
         $songs = $this->setScoreSongs($songs, $user);

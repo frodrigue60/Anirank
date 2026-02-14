@@ -1,12 +1,9 @@
 @foreach ($posts as $post)
     @php
-        /* $thumb_url = file_exists(asset('/storage/thumbnails/' . $song->post->thumbnail)) ? asset('/storage/thumbnails/' . $song->post->thumbnail) : $song->post->thumbnail_src; */
-        $thumbnailUrl = '';
+        $thumbnailUrl = $post->thumbnail_src;
 
-        if (Storage::disk('public')->exists($post->thumbnail)) {
+        if ($post->thumbnail && Storage::disk('public')->exists($post->thumbnail)) {
             $thumbnailUrl = Storage::url($post->thumbnail);
-        } else {
-            $thumbnailUrl = $post->thumbnail_src;
         }
     @endphp
     {{-- <article class="tarjeta">

@@ -1,4 +1,4 @@
-<div class="flex flex-col gap-8">
+<div wire:init="loadData" x-data="{}" class="flex flex-col gap-8">
     {{-- Search Section --}}
     <div class="bg-surface-dark/30 p-4 rounded-xl border border-white/5 backdrop-blur-sm">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -13,7 +13,7 @@
                         class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-white/30 group-focus-within:text-primary transition-colors">
                         search
                     </span>
-                    <input wire:model.debounce.500ms="search" type="text" id="search"
+                    <input wire:model.live.debounce.500ms="search" type="text" id="search"
                         class="w-full bg-surface-darker border border-white/10 rounded-lg py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-primary/50 transition-all placeholder:text-white/20"
                         placeholder="Search studio...">
                 </div>
@@ -26,7 +26,7 @@
                     Sort By
                 </label>
                 <div class="relative">
-                    <select wire:model="sort" id="sort"
+                    <select wire:model.live="sort" id="sort"
                         class="w-full bg-surface-darker border border-white/10 rounded-lg py-2.5 pl-4 pr-10 text-sm text-white focus:outline-none focus:border-primary/50 transition-all appearance-none cursor-pointer hover:bg-surface-darker/80">
                         <option value="name_asc">Name (A-Z)</option>
                         <option value="name_desc">Name (Z-A)</option>
@@ -41,82 +41,74 @@
     </div>
 
     {{-- Grid Section --}}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        @forelse($studios as $studio)
-            @php
-                $featuredPost = $studio->posts->first();
-                $bgUrl = '';
-                if ($featuredPost) {
-                    if ($featuredPost->banner) {
-                        $bgUrl = asset('storage/' . $featuredPost->banner);
-                    } elseif ($featuredPost->banner_src) {
-                        $bgUrl = $featuredPost->banner_src;
-                    } elseif ($featuredPost->thumbnail) {
-                        $bgUrl = asset('storage/' . $featuredPost->thumbnail);
-                    } elseif ($featuredPost->thumbnail_src) {
-                        $bgUrl = $featuredPost->thumbnail_src;
-                    }
-                }
+    <div class="min-h-[400px]">
+        @if ($readyToLoad)
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                @foreach ($studios as $studio)
+                    @php
+                        $featuredPost = $studio->posts->first();
+                        $bgUrl =
+                            'https://static.vecteezy.com/system/resources/thumbnails/005/170/408/small/banner-abstract-geometric-white-and-gray-color-background-illustration-free-vector.jpg';
 
-                if (empty($bgUrl)) {
-                    $bgUrl =
-                        'https://static.vecteezy.com/system/resources/thumbnails/005/170/408/small/banner-abstract-geometric-white-and-gray-color-background-illustration-free-vector.jpg';
-                }
-            @endphp
-            <a href="{{ route('studios.show', $studio->slug) }}"
-                class="group relative overflow-hidden rounded-xl bg-slate-800 aspect-[16/10] border border-transparent hover:border-primary/50 transition-all cursor-pointer shadow-lg shadow-black/20">
-                <div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
-                    style="background-image: url('{{ $bgUrl }}');filter: brightness(0.5);"></div>
-                <div class="absolute inset-0 bg-gradient-to-t from-[#191022]/95 via-[#191022]/40 to-transparent"></div>
-                <div class="absolute bottom-0 left-0 right-0 p-6 flex flex-col gap-1">
-                    <div class="flex justify-between items-end">
-                        <div>
-                            <h3 class="text-2xl font-bold text-white group-hover:text-primary transition-colors">
-                                {{ $studio->name }}</h3>
-                            {{-- <p class="text-slate-300 text-sm font-medium">Featured: <span
-                                    class="text-white">{{ $featuredPost->title ?? 'N/A' }}</span></p> --}}
+                        if ($featuredPost) {
+                            $bgUrl =
+                                $featuredPost->banner_src ??
+                                ($featuredPost->banner
+                                    ? asset('storage/' . $featuredPost->banner)
+                                    : $featuredPost->thumbnail_src ??
+                                        ($featuredPost->thumbnail
+                                            ? asset('storage/' . $featuredPost->thumbnail)
+                                            : $bgUrl));
+                        }
+                    @endphp
+                    <a wire:key="studio-{{ $studio->id }}" href="{{ route('studios.show', $studio->slug) }}"
+                        class="group relative overflow-hidden rounded-xl bg-slate-800 aspect-[16/10] border border-transparent hover:border-primary/50 transition-all cursor-pointer shadow-lg shadow-black/20">
+                        <div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
+                            style="background-image: url('{{ $bgUrl }}');filter: brightness(0.5);"></div>
+                        <div
+                            class="absolute inset-0 bg-gradient-to-t from-[#191022]/95 via-[#191022]/40 to-transparent">
                         </div>
-                        {{-- <div
-                            class="bg-primary/90 px-3 py-1 rounded text-white text-xs font-bold flex items-center gap-1">
-                            <span class="material-symbols-outlined text-sm">star</span> 8.5
-                        </div> --}}
-                    </div>
-                    <div class="mt-4 flex items-center justify-between border-t border-white/10 pt-4">
-                        <div class="flex flex-col">
-                            <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Produced</span>
-                            <span class="text-white text-sm font-semibold">{{ $studio->posts_count }} Series</span>
+                        <div class="absolute bottom-0 left-0 right-0 p-6 flex flex-col gap-1">
+                            <div class="flex justify-between items-end">
+                                <div>
+                                    <h3
+                                        class="text-2xl font-bold text-white group-hover:text-primary transition-colors">
+                                        {{ $studio->name }}</h3>
+                                </div>
+                            </div>
+                            <div class="mt-4 flex items-center justify-between border-t border-white/10 pt-4">
+                                <div class="flex flex-col">
+                                    <span
+                                        class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Produced</span>
+                                    <span class="text-white text-sm font-semibold">{{ $studio->posts_count }}
+                                        Series</span>
+                                </div>
+                                <div class="flex flex-col items-end">
+                                    <span
+                                        class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Founded</span>
+                                    <span class="text-white text-sm font-semibold">N/A</span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="flex flex-col items-end">
-                            <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Founded</span>
-                            <span class="text-white text-sm font-semibold">N/A</span>
-                        </div>
-                    </div>
-                </div>
-            </a>
-        @empty
-            <div class="col-span-full flex flex-col items-center justify-center py-20 opacity-40">
-                <span class="material-symbols-outlined text-6xl mb-4">search_off</span>
-                <p class="text-xl font-bold">No studios found</p>
+                    </a>
+                @endforeach
             </div>
-        @endforelse
+
+            {{-- Empty State --}}
+            @if ($studios->isEmpty())
+                <div class="flex flex-col items-center justify-center py-20 opacity-40">
+                    <span class="material-symbols-outlined text-6xl mb-4">search_off</span>
+                    <p class="text-xl font-bold">No studios found</p>
+                </div>
+            @endif
+        @else
+            @include('livewire.skeletons.rectangle-skeleton')
+        @endif
     </div>
 
     {{-- Infinite Scroll Trigger --}}
-    @if ($studios->hasMorePages())
-        <div x-data="{
-            observe() {
-                let observer = new IntersectionObserver((entries) => {
-                    entries.forEach(entry => {
-                        if (entry.isIntersecting) {
-                            @this.call('loadMore')
-                        }
-                    })
-                }, {
-                    rootMargin: '200px',
-                })
-                observer.observe(this.$el)
-            }
-        }" x-init="observe()" class="flex justify-center py-12">
+    @if ($readyToLoad && $hasMorePages)
+        <div wire:intersect="loadMore" wire:key="intersect-studios" class="flex justify-center py-12">
             <div class="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
         </div>
     @endif

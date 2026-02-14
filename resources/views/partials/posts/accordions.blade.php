@@ -1,11 +1,10 @@
 @foreach ($posts as $post)
     @php
-        if (Storage::disk('public')->exists($post->thumbnail)) {
-            $thumbnailUrl = Storage::url($post->thumbnail);
-        } else {
-            $thumbnailUrl = $post->thumbnail_src;
-        }
+        $thumbnailUrl = $post->thumbnail_src;
 
+        if ($post->thumbnail && Storage::disk('public')->exists($post->thumbnail)) {
+            $thumbnailUrl = Storage::url($post->thumbnail);
+        }
     @endphp
     {{-- <article class="tarjeta">
         <a class="no-deco" href="{{ $post->url }}" rel="nofollow noopener noreferrer">
@@ -24,8 +23,8 @@
         </a>
     </article> --}}
     <div class="d-flex flex-column p-2 color1 rounded-1" {{-- style="border: solid 1px red;" --}}>
-        <a class="d-flex gap-3 no-deco " data-bs-toggle="collapse" href="#collapseExample{{ $post->id }}"
-            role="button" aria-expanded="false" aria-controls="collapseExample{{ $post->id }}">
+        <a class="d-flex gap-3 no-deco " data-bs-toggle="collapse" href="#collapseExample{{ $post->id }}" role="button"
+            aria-expanded="false" aria-controls="collapseExample{{ $post->id }}">
             <div class="d-flex">
                 <img class="rounded-1" src="{{ $thumbnailUrl }}" alt="" style="max-width: 80px;height:auto;">
             </div>
@@ -50,7 +49,7 @@
                         @foreach ($post->songs as $song)
                             @foreach ($song->songVariants as $variant)
                                 <tr>
-                                    <td>{{$variant->song->slug}} {{$variant->slug}}</td>
+                                    <td>{{ $variant->song->slug }} {{ $variant->slug }}</td>
                                     <td>
                                         <a href="{{ $variant->url }}">
                                             {{ $variant->song->name }} {{ $variant->slug }}

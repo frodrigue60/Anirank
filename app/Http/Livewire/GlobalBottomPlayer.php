@@ -7,6 +7,7 @@ use App\Models\Song;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Livewire\Attributes\On;
 
 class GlobalBottomPlayer extends Component
 {
@@ -18,8 +19,7 @@ class GlobalBottomPlayer extends Component
     public $duration = '0:00';
     public $hasVideoLoaded = false;
 
-    protected $listeners = ['playSong' => 'handlePlaySong'];
-
+    #[On('playSong')]
     public function handlePlaySong($songId)
     {
         Log::info("GlobalBottomPlayer: Requested song ID $songId");
@@ -40,28 +40,39 @@ class GlobalBottomPlayer extends Component
             ? $this->song->firstSongVariant->video
             : $this->song->videos()->first();
 
+        // Build thumbnail URL from the post's thumbnail
+        $thumbnailUrl = null;
+        if ($this->song->post->thumbnail && Storage::disk('public')->exists($this->song->post->thumbnail)) {
+            $thumbnailUrl = Storage::url($this->song->post->thumbnail);
+        } elseif ($this->song->post->thumbnail_src) {
+            $thumbnailUrl = $this->song->post->thumbnail_src;
+        }
+
         if ($video) {
             $videoUrl = $video->video_src;
             if ($video->isLocal()) {
-                if (Storage::disk('public')->exists($video->video_src)) {
-                    $videoUrl = Storage::url($video->video_src);
-                } else {
-                    $videoUrl = Storage::url($video->video_src); // Fallback
-                }
+                $videoUrl = Storage::url($video->video_src);
             } else if ($video->isEmbed()) {
-                $videoUrl = $video->video_src;
+                // video_src may contain raw <iframe> or <embed> HTML; extract the src URL
+                $raw = $video->video_src;
+                if (preg_match('/(?:src=["\'])([^"\']*)/', $raw, $matches)) {
+                    $videoUrl = $matches[1];
+                } else {
+                    $videoUrl = $raw; // Already a plain URL
+                }
             }
 
             Log::info("GlobalBottomPlayer: Loading video of type {$video->type} with URL: $videoUrl");
 
-            $this->dispatchBrowserEvent('song-loaded', [
-                'url' => $videoUrl,
-                'type' => $video->type, // 'file' or 'embed'
-                'title' => $this->song->name,
-                'anime' => $this->song->post->title,
-                'artists' => $this->song->artists->pluck('name')->join(', '),
-                'thumbnail' => $this->song->thumbnail_src
-            ]);
+            $this->dispatch(
+                'song-loaded',
+                url: $videoUrl,
+                type: $video->type, // 'file' or 'embed'
+                title: $this->song->name,
+                anime: $this->song->post->title,
+                artists: $this->song->artists->pluck('name')->join(', '),
+                thumbnail: $thumbnailUrl
+            );
         } else {
             Log::warning("GlobalBottomPlayer: No video found for song ID $songId");
         }
@@ -102,7 +113,7 @@ class GlobalBottomPlayer extends Component
     public function togglePlay()
     {
         $this->isPlaying = !$this->isPlaying;
-        $this->dispatchBrowserEvent('toggle-playback', ['playing' => $this->isPlaying]);
+        $this->dispatch('toggle-playback', ['playing' => $this->isPlaying]);
     }
 
     public function render()

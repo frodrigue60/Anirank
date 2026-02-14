@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\api;
+namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -55,7 +55,7 @@ class PlaylistController extends Controller
             return response()->json(['error' => 'song_id is required'], 400);
         }
 
-        $user = auth()->user();
+        $user = Auth::user();
 
         $playlists = $user->playlists()
             ->withCount('songs')
@@ -102,12 +102,12 @@ class PlaylistController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-             'description' => 'nullable|string|max:255',
+            'description' => 'nullable|string|max:255',
         ]);
 
         $playlist = Playlist::create([
             'name' => $request->name,
-             'description' => $request->description,
+            'description' => $request->description,
             'user_id' => Auth::id(),
         ]);
 

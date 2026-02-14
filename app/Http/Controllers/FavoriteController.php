@@ -85,14 +85,14 @@ class FavoriteController extends Controller
         //
     }
 
-    public function toggle($songVariant_id)
+    public function toggle($songVariantId)
     {
 
         if (!Auth::check()) {
             return redirect()->back()->with('warning', 'Please login');
         }
 
-        $songVariant = SongVariant::find($songVariant_id);
+        $songVariant = SongVariant::find($songVariantId);
         $user = Auth::user();
 
         // Verificar si el post ya está en favoritos

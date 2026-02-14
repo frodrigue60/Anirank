@@ -47,7 +47,7 @@ class SongVariantController extends Controller
 
         $newVersion = $latestVersion !== null ? $latestVersion + 1 : 1;
 
-        $slug ='v' . $newVersion;
+        $slug = 'v' . $newVersion;
 
         $songVariant = new SongVariant();
         $songVariant->song_id = $song->id;
@@ -130,7 +130,7 @@ class SongVariantController extends Controller
 
         $newVersion = $latestVersion !== null ? $latestVersion + 1 : 1;
 
-        $slug ='v' . $newVersion;
+        $slug = 'v' . $newVersion;
 
         $songVariant->song_id = $song->id;
         $songVariant->version_number = $newVersion;
@@ -163,13 +163,13 @@ class SongVariantController extends Controller
         }
     }
 
-    public function videos($variant_id)
+    public function videos($variantId)
     {
-        $song_variant = SongVariant::find($variant_id);
+        $songVariant = SongVariant::with('video', 'song', 'song.post')->find($variantId);
         //dd($song_variant);
-        $song = $song_variant->song;
+        $song = $songVariant->song;
         $post = $song->post;
-        $video = $song_variant->video;
+        $video = $songVariant->video;
 
         $breadcrumb = Breadcrumb::generate([
             [
@@ -193,11 +193,11 @@ class SongVariantController extends Controller
         return view("admin.videos.index", compact("song_variant", 'breadcrumb'));
     }
 
-    public function addVideos($variant_id)
+    public function addVideos($variantId)
     {
 
-        $song_variant = SongVariant::find($variant_id);
-        $song = $song_variant->song;
+        $songVariant = SongVariant::with('song', 'song.post')->find($variantId);
+        $song = $songVariant->song;
         $post = $song->post;
 
         $breadcrumb = Breadcrumb::generate([
@@ -214,11 +214,11 @@ class SongVariantController extends Controller
                 'url' => route('admin.songs.variants', $song->id),
             ],
             [
-                'name' => $song_variant->slug . ' - '. 'video',
+                'name' => $songVariant->slug . ' - ' . 'video',
                 'url' => '',
             ],
         ]);
 
-        return view('admin.videos.create', compact('song', 'song_variant', 'breadcrumb'));
+        return view('admin.videos.create', compact('song', 'songVariant', 'breadcrumb'));
     }
 }

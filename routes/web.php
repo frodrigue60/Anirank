@@ -30,7 +30,7 @@ use App\Http\Controllers\Admin\{
     SongVariantController as AdminSongVariantController,
     YearController as AdminYearController,
     SeasonController as AdminSeasonController,
-    CommentControlle as AdminCommentController,
+    CommentController as AdminCommentController,
     StudioController as AdminStudioController,
     ProducerController as AdminProducerController
 };
@@ -59,7 +59,7 @@ Route::controller(UserController::class)->group(function () {
 });
 
 Route::controller(SongController::class)->group(function () {
-    Route::get('/anime/{anime_slug}/{song_slug}', 'show')->name('songs.show');
+    Route::get('/anime/{anime-slug}/{song-slug}', 'show')->name('songs.show');
     Route::get('/seasonal', 'seasonal')->name('seasonal');
     Route::get('/ranking', 'ranking')->name('ranking');
 });
@@ -73,6 +73,7 @@ Route::resource('seasons', SeasonController::class);
 Route::resource('studios', StudioController::class);
 Route::resource('producers', ProducerController::class);
 Route::resource('playlists', PlaylistController::class);
+Route::resource('variants', SongVariantController::class);
 
 /*
 |--------------------------------------------------------------------------
@@ -112,8 +113,8 @@ Route::middleware('staff')->prefix('admin')->as('admin.')->group(function () {
         Route::post('/search-animes', 'searchInAnilist')->name('search.animes');
         Route::get('/get-by-id/{id}', 'getById')->name('get.by.id');
         Route::post('/get-seasonal-animes', 'getSeasonalAnimes')->name('get.seasonal.animes');
-        Route::get('/{id}/force-update', 'forceUpdate')->name('force.update');
-        Route::get('/sync-all', 'syncAllFromAnilist')->name('sync-all');
+        Route::get('/{post}/force-update', 'forceUpdate')->name('force.update');
+        Route::get('/sync-all', 'syncAllFromAnilist')->name('sync.all');
         Route::get('/wipe', 'wipePosts')->name('wipe');
     });
     Route::resource('posts', AdminPostController::class);

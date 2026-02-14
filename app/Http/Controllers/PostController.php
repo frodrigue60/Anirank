@@ -394,12 +394,12 @@ class PostController extends Controller
         return $data;
     }
 
-    public function getUserRating($song_id, $user_id)
+    public function getUserRating($songId, $userId)
     {
         return DB::table('ratings')
             ->where('rateable_type', Song::class)
-            ->where('rateable_id', $song_id)
-            ->where('user_id', $user_id)
+            ->where('rateable_id', $songId)
+            ->where('user_id', $userId)
             ->first(['rating']);
     }
 

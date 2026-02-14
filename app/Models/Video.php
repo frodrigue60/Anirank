@@ -9,6 +9,15 @@ use Illuminate\Support\Facades\Storage;
 
 class Video extends Model
 {
+
+    protected $fillable = [
+        'embed_code',
+        'video_src',
+        'type',
+        /* 'song_id', */
+        'song_variant_id',
+    ];
+
     use HasFactory;
 
     protected static function boot()
@@ -51,6 +60,6 @@ class Video extends Model
 
     public function getLocalUrlAttribute()
     {
-        return $this->isLocal() ? env('APP_URL') . Storage::url($this->video_src) : null;
+        return $this->isLocal() ? config('app.url') . Storage::url($this->video_src) : null;
     }
 }

@@ -353,11 +353,11 @@ Handles the homepage and anime detail pages.
 
 Handles song detail pages and seasonal/ranking views.
 
-| Method                          | Route                            | Description                              |
-| ------------------------------- | -------------------------------- | ---------------------------------------- |
-| `show($anime_slug, $song_slug)` | `GET /anime/{anime}/song/{song}` | Song detail page with variants list.     |
-| `seasonal()`                    | `GET /seasonal`                  | Browse songs by current/selected season. |
-| `ranking()`                     | `GET /ranking`                   | Top-rated songs overall.                 |
+| Method                        | Route                            | Description                              |
+| ----------------------------- | -------------------------------- | ---------------------------------------- |
+| `show($animeSlug, $songSlug)` | `GET /anime/{anime}/song/{song}` | Song detail page with variants list.     |
+| `seasonal()`                  | `GET /seasonal`                  | Browse songs by current/selected season. |
+| `ranking()`                   | `GET /ranking`                   | Top-rated songs overall.                 |
 
 **Key Helper Methods:**
 

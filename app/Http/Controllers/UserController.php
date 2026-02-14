@@ -11,7 +11,6 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
-use stdClass;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use App\Models\SongVariant;
@@ -440,49 +439,49 @@ class UserController extends Controller
         return $variants;
     }
 
-    public function sort_variants($sort, $song_variants)
+    public function sortVariants($sort, $songVariants)
     {
         //dd($song_variants);
         switch ($sort) {
             case 'title':
-                $song_variants = $song_variants->sortBy(function ($song_variant) {
+                $songVariants = $songVariants->sortBy(function ($song_variant) {
                     return $song_variant->song->post->title;
                 });
-                return $song_variants;
+                return $songVariants;
                 break;
 
             case 'averageRating':
-                $song_variants = $song_variants->sortByDesc('averageRating');
-                return $song_variants;
+                $songVariants = $songVariants->sortByDesc('averageRating');
+                return $songVariants;
                 break;
 
             case 'view_count':
-                $song_variants = $song_variants->sortByDesc('views');
-                return $song_variants;
+                $songVariants = $songVariants->sortByDesc('views');
+                return $songVariants;
                 break;
 
             case 'likeCount':
-                $song_variants = $song_variants->sortByDesc('likeCount');
-                return $song_variants;
+                $songVariants = $songVariants->sortByDesc('likeCount');
+                return $songVariants;
                 break;
 
             case 'recent':
-                $song_variants = $song_variants->sortByDesc('created_at');
-                return $song_variants;
+                $songVariants = $songVariants->sortByDesc('created_at');
+                return $songVariants;
                 break;
 
             default:
-                $song_variants = $song_variants->sortByDesc('created_at');
-                return $song_variants;
+                $songVariants = $songVariants->sortByDesc('created_at');
+                return $songVariants;
                 break;
         }
     }
-    public function getUserRating($song_variant_id, $user_id)
+    public function getUserRating($songVariantId, $userId)
     {
         $userRating = DB::table('ratings')
             ->where('rateable_type', SongVariant::class)
-            ->where('rateable_id', $song_variant_id)
-            ->where('user_id', $user_id)
+            ->where('rateable_id', $songVariantId)
+            ->where('user_id', $userId)
             ->first(['rating']);
 
         return $userRating;

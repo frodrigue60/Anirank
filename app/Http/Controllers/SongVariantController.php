@@ -56,11 +56,10 @@ class SongVariantController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($anime_slug, $song_slug, $variant_slug)
+    public function show($animeSlug, $songSlug, $variantSlug)
     {
-        //dd($anime_slug);
         $user = Auth::check() ? Auth::User() : null;
-        $post = Post::where('slug', $anime_slug)->first();
+        $post = Post::where('slug', $animeSlug)->first();
 
         if (!$post) {
             return redirect(route('/'))->with('warning', 'Post not exist!');
@@ -75,37 +74,37 @@ class SongVariantController extends Controller
             }
         }
 
-        $song = Song::where('slug', $song_slug)
+        $song = Song::where('slug', $songSlug)
             ->where('post_id', $post->id)
             ->firstOrFail();
 
-        $song_variant = SongVariant::where('slug', $variant_slug)
+        $songVariant = SongVariant::where('slug', $variantSlug)
             ->where('song_id', $song->id)
             ->with('reactionsCounter')
             ->firstOrFail();
 
-        //dd($song_variant);
+        //dd($songVariant);
 
-        if (!$song_variant) {
+        if (!$songVariant) {
             return redirect(route('/'))->with('warning', 'Item no exist!');
         }
 
-        if ($song_variant->song->post->status == 'stagged') {
+        if ($songVariant->song->post->status == 'stagged') {
             return redirect(route('/'))->with('warning', 'Paused post!');
         }
 
-        $comments = $song_variant->comments;
+        $comments = $songVariant->comments;
         //dd($comments[0]->user);
         $factor = 1;
 
-        $song_variant->score = round($song_variant->averageRating * $factor, 1);
+        $songVariant->score = round($songVariant->averageRating * $factor, 1);
 
         #Is used by rating form
         $userRating = null;
 
         if ($user) {
 
-            $userRating = $this->getUserRating($song_variant->id, $user->id);
+            $userRating = $this->getUserRating($songVariant->id, $user->id);
 
             if ($userRating) {
 
@@ -139,13 +138,13 @@ class SongVariantController extends Controller
             }
         }
 
-        $song_variant = $this->setScoreOnlyOneVariant($song_variant, $user);
+        $songVariant = $this->setScoreOnlyOneVariant($songVariant, $user);
 
-        //dd($song_variant);
+        //dd($songVariant);
 
-        $song_variant->incrementViews();
+        $songVariant->incrementViews();
 
-        return view('public.variants.show', compact('song_variant', 'comments', 'userRating'));
+        return view('public.variants.show', compact('songVariant', 'comments', 'userRating'));
     }
 
     /**
@@ -182,12 +181,12 @@ class SongVariantController extends Controller
         //
     }
 
-    public function rate(Request $request, $variant_id)
+    public function rate(Request $request, $variantId)
     {
         //dd($request->all());
         if (Auth::check()) {
 
-            $songVariant = SongVariant::find($variant_id);
+            $songVariant = SongVariant::find($variantId);
 
             $score_format = Auth::user()->score_format;
 
@@ -225,29 +224,29 @@ class SongVariantController extends Controller
         }
     }
 
-    public function getUserRating($song_variant_id, $user_id)
+    public function getUserRating($songVariantId, $userId)
     {
         $userRating = DB::table('ratings')
             ->where('rateable_type', SongVariant::class)
-            ->where('rateable_id', $song_variant_id)
-            ->where('user_id', $user_id)
+            ->where('rateable_id', $songVariantId)
+            ->where('user_id', $userId)
             ->first(['rating']);
 
         return $userRating;
     }
 
-    public function like($songVariant_id)
+    public function like($songVariantId)
     {
-        $songVariant = SongVariant::find($songVariant_id);
+        $songVariant = SongVariant::find($songVariantId);
         $this->handleReaction($songVariant, 1); // 1 para like
         $songVariant->updateReactionCounters(); // Actualiza los contadores manualmente
         return redirect()->back(); // Redirige de vuelta a la página anterior
     }
 
     // Método para dislike
-    public function dislike($songVariant_id)
+    public function dislike($songVariantId)
     {
-        $songVariant = SongVariant::find($songVariant_id);
+        $songVariant = SongVariant::find($songVariantId);
         $this->handleReaction($songVariant, -1); // -1 para dislike
         $songVariant->updateReactionCounters(); // Actualiza los contadores manualmente
         return redirect()->back(); // Redirige de vuelta a la página anterior
@@ -395,14 +394,14 @@ class SongVariantController extends Controller
         return $variant;
     }
 
-    public function toggleFavorite($songVariant_id)
+    public function toggleFavorite($songVariantId)
     {
 
         if (!Auth::check()) {
             return redirect()->back()->with('warning', 'Please login');
         }
 
-        $songVariant = SongVariant::find($songVariant_id);
+        $songVariant = SongVariant::find($songVariantId);
         $user = Auth::user();
 
         // Verificar si el post ya está en favoritos

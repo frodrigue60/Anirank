@@ -23,21 +23,7 @@ class PostController extends Controller
      */
     public function index()
     {
-        $featuredTheme = Song::with('post')->withAvg('ratings', 'rating')->orderBy('created_at', 'desc')->first();
-        $weaklyOpenings = Song::with('post')->withAvg('ratings', 'rating')->where('type', 'OP')->limit(6)->get();
-        $weaklyEndings = Song::with('post')->withAvg('ratings', 'rating')->where('type', 'ED')->limit(6)->get();
-        $newlyReleases = Song::with('post')->withAvg('ratings', 'rating')->orderBy('created_at', 'desc')->limit(10)->get();
-        //$topRatedSongs = Song::orderBy('rating', 'desc')->limit(10)->get();
-        //$mostPopularSongs = Song::orderBy('score', 'desc')->limit(10)->get();
-
-        return response()->json([
-            'featuredTheme' => $featuredTheme,
-            'weaklyOpenings' => $weaklyOpenings,
-            'weaklyEndings' => $weaklyEndings,
-            'newlyReleases' => $newlyReleases,
-            //'topRatedSongs' => $topRatedSongs,
-            //'mostPopularSongs' => $mostPopularSongs
-        ]);
+        //
     }
 
     /**

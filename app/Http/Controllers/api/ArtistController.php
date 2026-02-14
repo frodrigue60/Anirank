@@ -136,62 +136,42 @@ class ArtistController extends Controller
         ]);
     }
 
-    public function artistsFilter(Request $request)
-    {
-        $name = $request->name;
-        $artists = Artist::when($name, function ($query, $name) {
-            $query->where('name', 'LIKE', '%' . $name . '%');
-        })
-            ->get();
-
-        $artists = $artists->sortBy(function ($artist) {
-            return $artist->name;
-        });
-
-        $artists = $this->paginate($artists, 15);
-
-        return response()->json([
-            'artists' => $artists,
-            'html' => view('partials.artists.cards-v2', compact('artists'))->render(),
-        ]);
-    }
-
-    public function sort_variants($sort, $song_variants)
+    public function sortVariants($sort, $songVariants)
     {
         //dd($song_variants);
         switch ($sort) {
             case 'title':
-                $song_variants = $song_variants->sortBy(function ($song_variant) {
+                $songVariants = $songVariants->sortBy(function ($song_variant) {
                     return $song_variant->song->post->title;
                 });
-                return $song_variants;
+                return $songVariants;
                 break;
 
             case 'averageRating':
-                $song_variants = $song_variants->sortByDesc('averageRating');
-                return $song_variants;
+                $songVariants = $songVariants->sortByDesc('averageRating');
+                return $songVariants;
                 break;
 
             case 'view_count':
-                $song_variants = $song_variants->sortByDesc('views');
-                return $song_variants;
+                $songVariants = $songVariants->sortByDesc('views');
+                return $songVariants;
                 break;
 
             case 'likeCount':
-                $song_variants = $song_variants->sortByDesc('likeCount');
-                return $song_variants;
+                $songVariants = $songVariants->sortByDesc('likeCount');
+                return $songVariants;
                 break;
 
             case 'recent':
-                $song_variants = $song_variants->sortByDesc('created_at');
-                return $song_variants;
+                $songVariants = $songVariants->sortByDesc('created_at');
+                return $songVariants;
                 break;
 
             default:
-                $song_variants = $song_variants->sortBy(function ($song_variant) {
+                $songVariants = $songVariants->sortBy(function ($song_variant) {
                     return $song_variant->song->post->title;
                 });
-                return $song_variants;
+                return $songVariants;
                 break;
         }
     }

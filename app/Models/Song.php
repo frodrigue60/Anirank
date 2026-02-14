@@ -17,13 +17,15 @@ class Song extends Model
     use Rateable;
 
     protected $fillable = [
-        'id',
         'song_romaji',
         'song_jp',
         'song_en',
         'theme_num',
         'type',
         'slug',
+        'post_id',
+        'season_id',
+        'year_id',
         'views'
     ];
 
@@ -105,8 +107,8 @@ class Song extends Model
             $this->load(['post']);
         }
         return route('songs.show', [
-            'anime_slug' => $this->post->slug,
-            'song_slug' => $this->slug
+            'anime-slug' => $this->post->slug,
+            'song-slug' => $this->slug
         ]);
     }
 
@@ -122,9 +124,9 @@ class Song extends Model
         })->sortBy('version_number')->first();
 
         return route('variants.show', [
-            'anime_slug' => $this->post->slug,
-            'song_slug' => $this->slug,
-            'variant_slug' => $smallestVariant->slug
+            'anime-slug' => $this->post->slug,
+            'song-slug' => $this->slug,
+            'variant-slug' => $smallestVariant->slug
         ]);
     }
 

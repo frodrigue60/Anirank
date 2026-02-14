@@ -24,11 +24,7 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = User::all(['id', 'name']);
-        $users = $this->paginate($users, 5);
-        return response()->json([
-            'users' => $users,
-        ]);
+        //
     }
 
     /**
@@ -50,11 +46,7 @@ class UserController extends Controller
      */
     public function show($id)
     {
-        $user = User::where('id', $id)->first(['id', 'name']);
-
-        return response()->json([
-            'users' => $user,
-        ]);
+        //
     }
 
     /**
@@ -87,7 +79,7 @@ class UserController extends Controller
             'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:512',
         ]);
 
-        $user = auth()->user(); // O tu método para obtener el usuario
+        $user = Auth::user(); // O tu método para obtener el usuario
 
         $old_user_image = $user->image;
 
@@ -139,7 +131,7 @@ class UserController extends Controller
             'banner' => 'required|image|mimes:jpeg,png,jpg,webp|max:512',
         ]);
 
-        $user = auth()->user(); // O tu método para obtener el usuario
+        $user = Auth::user(); // O tu método para obtener el usuario
 
         $old_banner_image = $user->banner;
 
@@ -221,67 +213,6 @@ class UserController extends Controller
             ]);
         }
     }
-
-    /* public function userList(Request $request, $slug)
-    {
-        $user = User::where('slug', $slug)->select('id', 'score_format', 'image', 'banner', 'name')->first();
-
-        if (!$user) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Invalid user',
-            ]);
-        }
-
-        $status = true;
-
-        $filterBy = $request->filterBy;
-        $type = $request->type;
-        $sort = $request->sort;
-        $name = $request->name;
-
-        $season_id = $request->season_id;
-        $year_id = $request->year_id;
-
-        $types = $this->filterTypesSortChar()['types'];
-        $sortMethods = $this->filterTypesSortChar()['sortMethods'];
-
-        $song_variants = null;
-
-        $song_variants = SongVariant::with(['song.post'])
-            #SONG QUERY
-            ->whereHas('song', function ($query) use ($type) {
-                $query->when($type, function ($query, $type) {
-                    $query->where('type', $type);
-                });
-            })
-            #POST QUERY
-            ->whereHas('song.post', function ($query) use ($name, $season_id, $year_id, $status) {
-                $query->where('status', $status)
-                    ->when($season_id, function ($query, $season_id) {
-                        $query->where('season_id', $season_id);
-                    })
-                    ->when($year_id, function ($query, $year_id) {
-                        $query->where('year_id', $year_id);
-                    })
-                    ->when($name, function ($query, $name) {
-                        $query->where('title', 'LIKE', '%' . $name . '%');
-                    });
-            })
-            #SONG VARIANT QUERY
-            ->whereLikedBy($user->id)
-            ->get();
-
-        $song_variants = $this->setScoreOnlyVariants($song_variants, $user);
-        $song_variants = $this->sort_variants($sort, $song_variants);
-        $song_variants = $this->paginate($song_variants);
-
-        return response()->json([
-            'html' => view('partials.variants.cards', compact('song_variants'))->render(),
-            "lastPage" => $song_variants->lastPage(),
-            'request' => $request->all()
-        ]);
-    } */
 
     public function userList(Request $request, $id)
     {
@@ -472,42 +403,42 @@ class UserController extends Controller
         return $variants;
     }
 
-    public function sort_variants($sort, $song_variants)
+    public function sortVariants($sort, $songVariants)
     {
         //dd($song_variants);
         switch ($sort) {
             case 'title':
-                $song_variants = $song_variants->sortBy(function ($song_variant) {
+                $songVariants = $songVariants->sortBy(function ($song_variant) {
                     return $song_variant->song->post->title;
                 });
-                return $song_variants;
+                return $songVariants;
                 break;
 
             case 'averageRating':
-                $song_variants = $song_variants->sortByDesc('averageRating');
-                return $song_variants;
+                $songVariants = $songVariants->sortByDesc('averageRating');
+                return $songVariants;
                 break;
 
             case 'view_count':
-                $song_variants = $song_variants->sortByDesc('views');
-                return $song_variants;
+                $songVariants = $songVariants->sortByDesc('views');
+                return $songVariants;
                 break;
 
             case 'likeCount':
-                $song_variants = $song_variants->sortByDesc('likeCount');
-                return $song_variants;
+                $songVariants = $songVariants->sortByDesc('likeCount');
+                return $songVariants;
                 break;
 
             case 'recent':
-                $song_variants = $song_variants->sortByDesc('created_at');
-                return $song_variants;
+                $songVariants = $songVariants->sortByDesc('created_at');
+                return $songVariants;
                 break;
 
             default:
-                $song_variants = $song_variants->sortBy(function ($song_variant) {
+                $songVariants = $songVariants->sortBy(function ($song_variant) {
                     return $song_variant->song->post->title;
                 });
-                return $song_variants;
+                return $songVariants;
                 break;
         }
     }
@@ -620,12 +551,12 @@ class UserController extends Controller
                 break;
         }
     }
-    public function getUserRating($song_id, $user_id)
+    public function getUserRating($songId, $userId)
     {
         return DB::table('ratings')
             ->where('rateable_type', Song::class)
-            ->where('rateable_id', $song_id)
-            ->where('user_id', $user_id)
+            ->where('rateable_id', $songId)
+            ->where('user_id', $userId)
             ->first(['rating']);
     }
 

@@ -48,9 +48,9 @@ class SongController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($anime_slug, $song_slug)
+    public function show($animeSlug, $songSlug)
     {
-        $post = Post::with(['songs'])->where('slug', $anime_slug)->first();
+        $post = Post::with(['songs'])->where('slug', $animeSlug)->first();
         $user = Auth::check() ? Auth::user() : null;
 
         if (!$post) {
@@ -66,7 +66,7 @@ class SongController extends Controller
         }
 
         $song = Song::with(['songVariants.video'])
-            ->where('slug', $song_slug)
+            ->where('slug', $songSlug)
             ->where('post_id', $post->id)
             ->first();
 

@@ -14,13 +14,16 @@ class Post extends Model
     protected $fillable = [
         'title',
         'slug',
-        'type',
+        'description',
+        'anilist_id',
+        'status',
         'thumbnail',
         'thumbnail_src',
-        'status',
-        'format',
         'banner',
-        'banner_src'
+        'banner_src',
+        'year_id',
+        'season_id',
+        'format_id',
     ];
 
     protected static function boot()

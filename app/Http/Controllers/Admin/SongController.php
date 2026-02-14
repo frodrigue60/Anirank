@@ -174,10 +174,10 @@ class SongController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $song_id)
+    public function update(Request $request, $songId)
     {
         //dd($request->all());
-        $song = Song::with('post')->findOrFail($song_id);
+        $song = Song::with('post')->findOrFail($songId);
 
         $song->song_romaji = Str::of($request->song_romaji)->trim();
         $song->song_jp = Str::of($request->song_jp)->trim();
@@ -284,9 +284,9 @@ class SongController extends Controller
 
     public function variants($song_id)
     {
-        $song = Song::find($song_id);
+        $song = Song::with('songVariants', 'post')->find($song_id);
         $post = $song->post;
-        $song_variants = $song->songVariants;
+        $songVariants = $song->songVariants;
 
         $breadcrumb = Breadcrumb::generate([
             [
@@ -302,7 +302,7 @@ class SongController extends Controller
                 'url' => route('admin.songs.variants', $song->id),
             ],
         ]);
-        //dd($song_variants); 
-        return view('admin.variants.manage', compact('song_variants', 'song', 'breadcrumb'));
+        //dd($songVariants); 
+        return view('admin.variants.manage', compact('songVariants', 'song', 'breadcrumb'));
     }
 }

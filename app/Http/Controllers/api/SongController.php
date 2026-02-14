@@ -274,50 +274,6 @@ class SongController extends Controller
         ], 200);
     }
 
-    public function filter(Request $request)
-    {
-        $user = Auth::check() ? Auth::user() : null;
-        $type = $request->type;
-        $sort = $request->sort;
-        $name = $request->name;
-        $season_id = $request->season_id;
-        $year_id = $request->year_id;
-
-        $songs = null;
-        $status = true;
-        $perPage = 15;
-
-        $songs = Song::with(['post'])
-            #SONG QUERY
-            ->when($type, function ($query, $type) {
-                $query->where('type', $type);
-            })
-            #POST QUERY
-            ->whereHas('post', function ($query) use ($name, $season_id, $year_id, $status) {
-                $query->where('status', $status)
-                    ->when($name, function ($query, $name) {
-                        $query->where('title', 'LIKE', '%' . $name . '%');
-                    })
-                    ->when($season_id, function ($query, $season_id) {
-                        $query->where('season_id', $season_id);
-                    })
-                    ->when($year_id, function ($query, $year_id) {
-                        $query->where('year_id', $year_id);
-                    });
-            })
-            #SONG VARIANT QUERY
-            ->get();
-
-        //$songs = $this->setScoreOnlyVariants($songs, $user);
-        $songs = $this->sortSongs($sort, $songs);
-        $songs = $this->paginate($songs, $perPage);
-
-        return response()->json([
-            'html' => view('partials.songs.cards-v2', compact('songs'))->render(),
-            'songs' => $songs,
-        ]);
-    }
-
     public function seasonal(Request $request)
     {
         $status = true;

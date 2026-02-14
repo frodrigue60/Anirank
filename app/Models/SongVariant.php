@@ -13,7 +13,7 @@ class SongVariant extends Model
 
     protected $fillable = [
         'id',
-        'version',
+        'version_number',
         'song_id',
         'views',
         'spoiler',

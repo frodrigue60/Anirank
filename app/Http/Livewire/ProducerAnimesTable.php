@@ -86,7 +86,7 @@ class ProducerAnimesTable extends Component
         }
 
         $posts = Post::query()
-            ->when(!\Auth::check() || !\Auth::user()->isStaff(), function ($query) {
+            ->when(!Auth::check() || !Auth::user()->isStaff(), function ($query) {
                 $query->where('status', true);
             })
             ->whereHas('producers', function ($query) {

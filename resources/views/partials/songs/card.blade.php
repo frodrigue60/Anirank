@@ -1,13 +1,5 @@
 @php
     $url = route('song.show', [$song->id, $song->post->slug, $song->slug != null ? $song->slug : $song->type]);
-
-    $thumb_path = public_path('storage/thumbnails/' . $post->thumbnail);
-
-    if (file_exists($thumb_path)) {
-        $thumb_url = asset('storage/thumbnails/' . $post->thumbnail);
-    } else {
-        $thumb_url = $post->thumbnail_src;
-    }
 @endphp
 
 <article class="tarjeta">
@@ -19,8 +11,8 @@
             <span class="tag-content ">{{ $song->slug != null ? $song->slug : $song->type }}</span>
         </div>
         <a class="no-deco" href="{{ $url }}" rel="nofollow noopener noreferrer">
-            <img class="thumb" loading="lazy" src="{{ $thumb_url }}" alt="{{ $song->post->title }}"
-                title="{{ $song->post->title }}">
+            <img class="thumb" loading="lazy" src="{{ Storage::url($song->post->thumbnail) }}"
+                alt="{{ $song->post->title }}" title="{{ $song->post->title }}">
         </a>
         <div class="tarjeta-footer ">
             <span>{{ $song->likeCount }} <i class="fa fa-heart"></i></span>

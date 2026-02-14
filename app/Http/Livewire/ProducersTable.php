@@ -54,20 +54,20 @@ class ProducersTable extends Component
 
         $producersQuery = Producer::query()
             ->withCount(['posts' => function ($query) {
-                if (!\Auth::check() || !\Auth::user()->isStaff()) {
+                if (!Auth::check() || !Auth::user()->isStaff()) {
                     $query->where('status', true);
                 }
             }])
             ->whereHas('posts', function ($query) {
-                if (!\Auth::check() || !\Auth::user()->isStaff()) {
+                if (!Auth::check() || !Auth::user()->isStaff()) {
                     $query->where('status', true);
                 }
             })
             ->with(['posts' => function ($query) {
-                if (!\Auth::check() || !\Auth::user()->isStaff()) {
+                if (!Auth::check() || !Auth::user()->isStaff()) {
                     $query->where('status', true);
                 }
-                $query->select(['posts.id', 'posts.banner', 'posts.banner_src', 'posts.thumbnail', 'posts.thumbnail_src']);
+                $query->select(['posts.id', 'posts.banner', 'posts.thumbnail']);
             }])
             ->when($this->search, function ($query) {
                 $query->where('name', 'like', '%' . $this->search . '%');

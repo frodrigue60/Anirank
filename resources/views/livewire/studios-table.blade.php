@@ -47,24 +47,12 @@
                 @foreach ($studios as $studio)
                     @php
                         $featuredPost = $studio->posts->first();
-                        $bgUrl =
-                            'https://static.vecteezy.com/system/resources/thumbnails/005/170/408/small/banner-abstract-geometric-white-and-gray-color-background-illustration-free-vector.jpg';
-
-                        if ($featuredPost) {
-                            $bgUrl =
-                                $featuredPost->banner_src ??
-                                ($featuredPost->banner
-                                    ? asset('storage/' . $featuredPost->banner)
-                                    : $featuredPost->thumbnail_src ??
-                                        ($featuredPost->thumbnail
-                                            ? asset('storage/' . $featuredPost->thumbnail)
-                                            : $bgUrl));
-                        }
                     @endphp
                     <a wire:key="studio-{{ $studio->id }}" href="{{ route('studios.show', $studio->slug) }}"
                         class="group relative overflow-hidden rounded-xl bg-slate-800 aspect-[16/10] border border-transparent hover:border-primary/50 transition-all cursor-pointer shadow-lg shadow-black/20">
                         <div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
-                            style="background-image: url('{{ $bgUrl }}');filter: brightness(0.5);"></div>
+                            style="background-image: url('{{ Storage::url($featuredPost->banner) }}');filter: brightness(0.5);">
+                        </div>
                         <div
                             class="absolute inset-0 bg-gradient-to-t from-[#191022]/95 via-[#191022]/40 to-transparent">
                         </div>

@@ -9,6 +9,7 @@ use App\Models\Format;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Studio;
 
 class StudioAnimesTable extends Component
 {
@@ -34,7 +35,7 @@ class StudioAnimesTable extends Component
     public function mount($studioId)
     {
         $this->studioId = $studioId;
-        $this->studio = \App\Models\Studio::findOrFail($studioId);
+        $this->studio = Studio::findOrFail($studioId);
     }
 
     public function loadData()
@@ -86,7 +87,7 @@ class StudioAnimesTable extends Component
         }
 
         $posts = Post::query()
-            ->when(!\Auth::check() || !\Auth::user()->isStaff(), function ($query) {
+            ->when(!Auth::check() || !Auth::user()->isStaff(), function ($query) {
                 $query->where('status', true);
             })
             ->whereHas('studios', function ($query) {

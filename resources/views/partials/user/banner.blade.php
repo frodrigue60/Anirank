@@ -4,11 +4,11 @@
     $bannerUrl = asset('resources/images/default-banner.jpg');
 
     if ($user->image && Storage::disk('public')->exists($user->image)) {
-        $profileUrl = Storage::disk('public')->url($user->image);
+        $profileUrl = Storage::url($user->image);
     }
 
     if ($user->banner && Storage::disk('public')->exists($user->banner)) {
-        $bannerUrl = Storage::disk('public')->url($user->banner);
+        $bannerUrl = Storage::url($user->banner);
     }
 @endphp
 

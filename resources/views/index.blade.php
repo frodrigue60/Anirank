@@ -38,7 +38,7 @@
             @isset($featuredSong)
                 <section class="relative w-full rounded-2xl overflow-hidden bg-surface-dark group">
                     <div class="absolute inset-0 bg-cover bg-center opacity-60 mix-blend-overlay transition-transform duration-700 group-hover:scale-105"
-                        style="background-image: url('{{ $featuredSong->post->banner ? asset('storage/' . $featuredSong->post->banner) : '' }}');">
+                        style="background-image: url('{{ Storage::url($featuredSong->post->banner) }}');">
                     </div>
                     <div class="absolute inset-0 bg-gradient-to-r from-background-dark via-background-dark/80 to-transparent">
                     </div>
@@ -46,7 +46,7 @@
                         <div class="relative shrink-0 hero-glow">
                             <div
                                 class="w-48 h-48 md:w-64 md:h-64 rounded-xl shadow-2xl overflow-hidden relative border-2 border-white/10">
-                                <img src="{{ asset('storage/' . $featuredSong->post->thumbnail) }}" alt="Anime cover art"
+                                <img src="{{ Storage::url($featuredSong->post->thumbnail) }}" alt="Anime cover art"
                                     class="w-full h-full object-cover">
                                 <div
                                     class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent p-4 pt-10">
@@ -109,11 +109,10 @@
                                     {{ $loop->first ? 'Openings' : 'Endings' }}</span>
                             </div>
                             @foreach ($chunk as $song)
-                                <a href="{{ $song->url }}"
-                                    class="group relative bg-surface-darker p-4 rounded-xl hover:bg-surface-dark transition-colors cursor-pointer border border-white/5 flex gap-4 items-center">
+                                <div
+                                    class="group relative bg-surface-darker p-4 rounded-xl hover:bg-surface-dark transition-colors border border-white/5 flex gap-4 items-center">
                                     <div class="relative w-20 h-20 shrink-0 rounded-lg overflow-hidden">
-                                        <img src="{{ asset('storage/' . $song->post->thumbnail) }}"
-                                            alt="{{ $song->name }}"
+                                        <img src="{{ Storage::url($song->post->thumbnail) }}" alt="{{ $song->name }}"
                                             class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
                                         <div
                                             class="absolute top-1 left-1 {{ $loop->parent->first && $loop->first ? 'bg-primary' : 'bg-surface-dark' }} text-white text-xs font-bold px-1.5 py-0.5 rounded shadow border border-white/10">
@@ -121,7 +120,8 @@
                                     </div>
                                     <div class="flex-1 min-w-0">
                                         <div class="flex items-center justify-between">
-                                            <h3 class="font-bold text-white truncate text-lg">{{ $song->name }}</h3>
+                                            <a href="{{ $song->url }}"
+                                                class="font-bold text-white truncate text-lg hover:text-primary transition-colors">{{ $song->name }}</a>
                                             <div
                                                 class="flex items-center gap-1 bg-surface-dark px-2 py-0.5 rounded text-yellow-400 text-xs font-bold">
                                                 <span class="material-symbols-outlined filled text-[14px]">star</span>
@@ -135,7 +135,7 @@
                                             @endforeach
                                         </p>
                                     </div>
-                                </a>
+                                </div>
                             @endforeach
                         </div>
                     @endforeach
@@ -192,7 +192,7 @@
                                 <div
                                     class="w-12 h-12 rounded-full overflow-hidden border-2 border-transparent group-hover:border-primary transition-colors flex-shrink-0">
                                     @if ($artist->image)
-                                        <img src="{{ asset('storage/' . $artist->image) }}" alt="{{ $artist->name }}"
+                                        <img src="{{ Storage::url($artist->image) }}" alt="{{ $artist->name }}"
                                             class="w-full h-full object-cover">
                                     @else
                                         <div

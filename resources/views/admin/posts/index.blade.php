@@ -152,8 +152,8 @@
                                         <div class="flex items-center gap-3">
                                             <div
                                                 class="w-10 h-14 bg-zinc-800 rounded-md overflow-hidden flex-shrink-0 border border-zinc-700">
-                                                <img src="{{ asset('storage/' . $post->thumbnail ?? ($post->thumbnail_src ?? 'images/no-image.png')) }}"
-                                                    alt="" class="w-full h-full object-cover">
+                                                <img src="{{ Storage::url($post->thumbnail) }}" alt=""
+                                                    class="w-full h-full object-cover">
                                             </div>
                                             <a href="{{ $post->url }}"
                                                 class="text-sm font-semibold text-white hover:text-blue-400 transition-colors line-clamp-2 leading-snug">

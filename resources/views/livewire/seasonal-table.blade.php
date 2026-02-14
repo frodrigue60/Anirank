@@ -48,10 +48,6 @@
                 @foreach ($songs as $index => $song)
                     @isset($song->post)
                         @php
-                            $img_url = $song->post->thumbnail_src;
-                            if ($song->post->thumbnail && Storage::disk('public')->exists($song->post->thumbnail)) {
-                                $img_url = Storage::url($song->post->thumbnail);
-                            }
                             $rankNumber = $index + 1;
                             $formattedRank = str_pad($rankNumber, 2, '0', STR_PAD_LEFT);
                         @endphp
@@ -73,7 +69,7 @@
                                     class="w-16 h-16 rounded-lg overflow-hidden shrink-0 shadow-lg shadow-black/40 border border-white/10">
                                     <img alt="Cover for {{ $song->post->title }}"
                                         class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                                        src="{{ $img_url }}" />
+                                        src="{{ Storage::url($song->post->thumbnail) }}" />
                                 </div>
                                 <div class="min-w-0">
                                     <a href="{{ route('songs.show', [$song->post->slug, $song->slug]) }}"

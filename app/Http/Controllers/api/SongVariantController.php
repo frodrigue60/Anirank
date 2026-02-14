@@ -457,7 +457,7 @@ class SongVariantController extends Controller
             })
             #SONG VARIANT QUERY
             ->get();
-        
+
         $song_variants = $this->setScoreOnlyVariants($song_variants, $user);
         $song_variants = $this->sort_variants($sort, $song_variants);
         $song_variants = $this->paginate($song_variants);
@@ -592,11 +592,12 @@ class SongVariantController extends Controller
             ->first(['rating']);
     }
 
-    public function getVideos(SongVariant $variant){
+    public function getVideos(SongVariant $variant)
+    {
 
         $video = $variant->video;
-        $video->publicUrl = asset('storage/'.$video->video_src);
-        
+        $video->publicUrl = Storage::url($video->video_src);
+
         //$variants = $song->songVariants;
 
         return response()->json([

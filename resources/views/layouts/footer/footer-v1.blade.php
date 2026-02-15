@@ -65,7 +65,7 @@
                     <li><a href="{{ route('artists.index') }}"
                             class="text-white/40 hover:text-primary transition-colors text-sm font-medium">Artists</a>
                     </li>
-                    <li><a href="{{ route('posts.themes') }}"
+                    <li><a href="{{ route('songs.index') }}"
                             class="text-white/40 hover:text-primary transition-colors text-sm font-medium">Themes</a>
                     </li>
                 </ul>

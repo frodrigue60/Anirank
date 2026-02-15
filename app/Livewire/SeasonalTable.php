@@ -1,9 +1,10 @@
 <?php
 
-namespace App\Http\Livewire;
+namespace App\Livewire;
 
 use Livewire\Component;
 use Livewire\WithPagination;
+use Livewire\Attributes\On;
 use App\Models\Song;
 use App\Models\Season;
 use App\Models\Year;
@@ -16,7 +17,7 @@ class SeasonalTable extends Component
     use Traits\HasRankingScore;
 
     public $readyToLoad = false;
-    public $currentSection = 'ALL'; // ALL, OP or ED
+    public $currentSection = 'ALL';
     public $perPage = 15;
     public $page = 1;
     public $hasMorePages = true;
@@ -24,8 +25,6 @@ class SeasonalTable extends Component
     public $yearId;
     public $seasonName;
     public $yearName;
-
-    protected $listeners = ['loadMore'];
 
     public function loadData()
     {
@@ -47,6 +46,7 @@ class SeasonalTable extends Component
         $this->hasMorePages = true;
     }
 
+    #[On('loadMore')]
     public function loadMore()
     {
         if (!$this->hasMorePages || !$this->readyToLoad) return;

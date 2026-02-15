@@ -334,10 +334,6 @@ class UserController extends Controller
         }
     }
 
-    public function welcome()
-    {
-        return view('welcome');
-    }
     public function SeasonsYears($tags)
     {
         $tagNames = [];

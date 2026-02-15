@@ -94,7 +94,7 @@ class CommentController extends Controller
 
         $validatedData = $request->validate([
             'content' => 'required',
-            'user_id' => $user->id(),
+            'user_id' => $user->id,
         ]);
 
         $comment->update($validatedData);
@@ -169,15 +169,12 @@ class CommentController extends Controller
         try {
             $request->validate(['content' => 'required|string']);
 
-            $reply = new Comment();
-            $reply->content = $request->content;
-            $reply->user_id = Auth::User()->id;
-            $reply->parent_id = $comment->id; // Asignar el padre
-            $reply->commentable_type = $comment->commentable_type; // Heredar el tipo polimórfico
-            $reply->commentable_id = $comment->commentable_id; // Heredar el ID polimórfico
-
-            //dd($parentComment, $reply);
-            $reply->save();
+            $comment->replies()->create([
+                'content' => $request->content,
+                'user_id' => Auth::id(),
+                'commentable_type' => $comment->commentable_type,
+                'commentable_id' => $comment->commentable_id,
+            ]);
 
             return back()->with('success', 'Respuesta enviada.');
         } catch (\Throwable $th) {

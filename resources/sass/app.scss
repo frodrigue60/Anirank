@@ -1,50 +1,5 @@
-@tailwind base;
-@tailwind components;
-
 // Fonts
-@import url('https://fonts.bunny.net/css?family=Nunito');
-
-// Variables
-@import 'variables';
-
-
-@tailwind utilities;
-
-@layer base {
-    body {
-        background-color: #191022;
-        color: white;
-    }
-    ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-    }
-    ::-webkit-scrollbar-track {
-        background: #191022; 
-    }
-    ::-webkit-scrollbar-thumb {
-        background: #4a3b59; 
-        border-radius: 4px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-        background: #6b5680; 
-    }
-}
-
-@layer components {
-    .glass-panel {
-        background: rgba(42, 33, 54, 0.7);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    .hero-glow {
-        box-shadow: 0 0 120px -30px rgba(127, 19, 236, 0.4);
-    }
-    .filled {
-        font-variation-settings: 'FILL' 1;
-    }
-}
+@import url("https://fonts.bunny.net/css?family=Nunito");
 
 @keyframes spin-anim {
     0% {
@@ -1414,8 +1369,10 @@ img.card-2-bg {
 }
 
 /* GLOBAL INPUT FIX */
-input, select, textarea {
-    background-color: #22192e !important; 
+input,
+select,
+textarea {
+    background-color: #22192e !important;
     color: #ffffff !important;
     border-color: rgba(255, 255, 255, 0.1) !important;
 }

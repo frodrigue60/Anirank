@@ -1,5 +1,6 @@
 import API from "@api/index.js";
 import swal from "sweetalert";
+import "../css/app.css";
 
 function hideModal(id) {
     const modal = document.getElementById(id);

@@ -1,9 +1,10 @@
 <?php
 
-namespace App\Http\Livewire;
+namespace App\Livewire;
 
 use Livewire\Component;
 use Livewire\WithPagination;
+use Livewire\Attributes\Url;
 use App\Models\Song;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Year;
@@ -16,29 +17,30 @@ class ArtistThemesTable extends Component
     use WithPagination;
 
     public $artist;
+
+    #[Url(except: '')]
     public $name = '';
+    
+    #[Url(except: '')]
     public $type = '';
+    
+    #[Url(except: '')]
     public $year_id = '';
+    
+    #[Url(except: '')]
     public $season_id = '';
+    
+    #[Url(except: 'recent')]
     public $sort = 'recent';
 
     public $perPage = 18;
     public $hasMorePages = false;
-
-    protected $queryString = [
-        'name' => ['except' => ''],
-        'type' => ['except' => ''],
-        'year_id' => ['except' => ''],
-        'season_id' => ['except' => ''],
-        'sort' => ['except' => 'recent'],
-    ];
+    public $readyToLoad = false;
 
     public function mount(Artist $artist)
     {
         $this->artist = $artist;
     }
-
-    public $readyToLoad = false;
 
     public function loadData()
     {
@@ -122,7 +124,6 @@ class ArtistThemesTable extends Component
             $query->where('type', $this->type);
         }
 
-        // Sorting Logic
         switch ($this->sort) {
             case 'title':
                 $query->join('posts', 'songs.post_id', '=', 'posts.id')

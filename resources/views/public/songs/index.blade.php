@@ -9,5 +9,5 @@
 @endsection
 
 @section('content')
-    <livewire:themes-table />
+    <livewire:songs-table />
 @endsection

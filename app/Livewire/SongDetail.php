@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Livewire;
+namespace App\Livewire;
 
 use Livewire\Component;
+use Livewire\Attributes\Validate;
 use App\Models\Song;
 use App\Models\Post;
-use App\Models\SongVariant;
 use App\Models\Comment;
 use App\Models\Reaction;
 use App\Models\Favorite;
@@ -21,22 +21,24 @@ class SongDetail extends Component
     public $relatedSongs;
 
     // Comment Form
+    #[Validate('required|min:3|max:1000')]
     public $commentBody = '';
+
+    #[Validate('required|min:3|max:1000')]
     public $replyBody = '';
+    
     public $replyingTo = null;
     public $editingCommentId = null;
+
+    #[Validate('required|min:3|max:1000')]
     public $editingBody = '';
 
-    protected $rules = [
-        'commentBody' => 'required|min:3|max:1000',
-        'replyBody' => 'required|min:3|max:1000',
-        'newPlaylistName' => 'required|min:3|max:50',
-    ];
+    #[Validate('required|min:3|max:50')]
+    public $newPlaylistName = '';
 
     // Playlist State
     public $showPlaylistModal = false;
     public $userPlaylists = [];
-    public $newPlaylistName = '';
 
     // Rating State
     public $showRatingModal = false;
@@ -47,15 +49,9 @@ class SongDetail extends Component
         $this->song = $song;
         $this->post = $post;
 
-        // Load initial data
         $this->loadVariant();
         $this->loadComments();
         $this->loadRelated();
-        $this->calculateScore();
-    }
-
-    public function hydrate()
-    {
         $this->calculateScore();
     }
 
@@ -64,7 +60,6 @@ class SongDetail extends Component
         $user = Auth::check() ? Auth::user() : null;
         $song = $this->song;
 
-        // Default values
         $song->formattedScore = null;
         $song->rawScore = null;
         $song->scoreString = null;
@@ -102,14 +97,11 @@ class SongDetail extends Component
             ? round($song->averageRating * $factor, 1)
             : (int) round($song->averageRating * $factor);
 
-        // Simple string format for now, or replicate formatScoreString if complex
         $song->scoreString = $song->formattedScore . '/' . $denominator;
     }
 
     public function loadVariant()
     {
-        // Get the first variant (lowest version number) or the one specified via query/logic if we were doing that
-        // For now, default to the first one.
         $this->currentVariant = $this->song->songVariants->sortBy('version_number')->first();
     }
 
@@ -127,7 +119,6 @@ class SongDetail extends Component
 
     public function loadRelated()
     {
-        // Get other songs from the same post
         $this->relatedSongs = $this->post->songs()
             ->where('id', '!=', $this->song->id)
             ->with(['artists'])
@@ -137,7 +128,7 @@ class SongDetail extends Component
     public function switchVariant($variantId)
     {
         $this->currentVariant = $this->song->songVariants->find($variantId);
-        $this->dispatchBrowserEvent('video-changed', ['src' => $this->getVideoUrl()]);
+        $this->dispatch('video-changed', src: $this->getVideoUrl());
     }
 
     public function getVideoUrl()
@@ -177,17 +168,17 @@ class SongDetail extends Component
         if ($existingReaction) {
             if ($existingReaction->type == $type) {
                 $existingReaction->delete();
-                $this->dispatchBrowserEvent('toast', ['type' => 'info', 'message' => "Removed $typeName"]);
+                $this->dispatch('toast', type: 'info', message: "Removed $typeName");
             } else {
                 $existingReaction->update(['type' => $type]);
-                $this->dispatchBrowserEvent('toast', ['type' => 'success', 'message' => ucfirst($typeName) . "d the song"]);
+                $this->dispatch('toast', type: 'success', message: ucfirst($typeName) . "d the song");
             }
         } else {
             $this->song->reactions()->create([
                 'user_id' => $userId,
                 'type' => $type
             ]);
-            $this->dispatchBrowserEvent('toast', ['type' => 'success', 'message' => ucfirst($typeName) . "d the song"]);
+            $this->dispatch('toast', type: 'success', message: ucfirst($typeName) . "d the song");
         }
 
         $this->song->loadCount(['likes', 'dislikes']);
@@ -205,12 +196,12 @@ class SongDetail extends Component
 
         if ($existingFavorite) {
             $existingFavorite->delete();
-            $this->dispatchBrowserEvent('toast', ['type' => 'info', 'message' => 'Removed from favorites']);
+            $this->dispatch('toast', type: 'info', message: 'Removed from favorites');
         } else {
             $this->song->favorites()->create([
                 'user_id' => $userId
             ]);
-            $this->dispatchBrowserEvent('toast', ['type' => 'success', 'message' => 'Added to favorites!']);
+            $this->dispatch('toast', type: 'success', message: 'Added to favorites!');
         }
 
         $this->song->refresh();
@@ -234,7 +225,7 @@ class SongDetail extends Component
         if (!Auth::check()) return redirect()->route('login');
 
         if ($this->replyingTo) {
-            $this->validate(['replyBody' => 'required|min:3|max:1000']);
+            $this->validateOnly('replyBody');
 
             $this->song->comments()->create([
                 'user_id' => Auth::id(),
@@ -245,7 +236,7 @@ class SongDetail extends Component
             $this->replyBody = '';
             $this->replyingTo = null;
         } else {
-            $this->validate(['commentBody' => 'required|min:3|max:1000']);
+            $this->validateOnly('commentBody');
 
             $this->song->comments()->create([
                 'user_id' => Auth::id(),
@@ -256,8 +247,8 @@ class SongDetail extends Component
         }
 
         $this->loadComments();
-        $this->dispatchBrowserEvent('comment-posted');
-        $this->dispatchBrowserEvent('toast', ['type' => 'success', 'message' => 'Comment posted successfully!']);
+        $this->dispatch('comment-posted');
+        $this->dispatch('toast', type: 'success', message: 'Comment posted successfully!');
     }
 
     public function deleteComment($commentId)
@@ -267,11 +258,9 @@ class SongDetail extends Component
         $comment = Comment::find($commentId);
 
         if ($comment && ($comment->user_id === Auth::id() || Auth::user()->isAdmin())) {
-            // Delete the comment (Recursive deletion is usually handled by cascade in DB or manually if needed)
-            // If DB cascade is not set, we might need to delete replies first, but most systems use cascade.
             $comment->delete();
             $this->loadComments();
-            $this->dispatchBrowserEvent('toast', ['type' => 'success', 'message' => 'Comment deleted.']);
+            $this->dispatch('toast', type: 'success', message: 'Comment deleted.');
         }
     }
 
@@ -283,7 +272,7 @@ class SongDetail extends Component
         if ($comment && ($comment->user_id === Auth::id() || Auth::user()->isAdmin())) {
             $this->editingCommentId = $commentId;
             $this->editingBody = $comment->content;
-            $this->cancelReply(); // Close reply if open
+            $this->cancelReply();
         }
     }
 
@@ -299,18 +288,17 @@ class SongDetail extends Component
 
         $comment = Comment::find($this->editingCommentId);
         if ($comment && ($comment->user_id === Auth::id() || Auth::user()->isAdmin())) {
-            $this->validate(['editingBody' => 'required|min:3|max:1000']);
+            $this->validateOnly('editingBody');
 
             $comment->update(['content' => $this->editingBody]);
 
             $this->editingCommentId = null;
             $this->editingBody = '';
             $this->loadComments();
-            $this->dispatchBrowserEvent('toast', ['type' => 'success', 'message' => 'Comment updated!']);
+            $this->dispatch('toast', type: 'success', message: 'Comment updated!');
         }
     }
 
-    // Playlist Logic
     public function openPlaylistModal()
     {
         if (!Auth::check()) return redirect()->route('login');
@@ -324,7 +312,7 @@ class SongDetail extends Component
 
     public function createPlaylist()
     {
-        $this->validate(['newPlaylistName' => 'required|min:3|max:50']);
+        $this->validateOnly('newPlaylistName');
 
         $playlist = Auth::user()->playlists()->create([
             'name' => $this->newPlaylistName,
@@ -334,8 +322,8 @@ class SongDetail extends Component
         $playlist->songs()->attach($this->song->id, ['position' => 1]);
 
         $this->newPlaylistName = '';
-        $this->openPlaylistModal(); // Reload lists
-        $this->dispatchBrowserEvent('toast', ['type' => 'success', 'message' => 'Playlist created successfully!']);
+        $this->openPlaylistModal();
+        $this->dispatch('toast', type: 'success', message: 'Playlist created successfully!');
     }
 
     public function togglePlaylist($playlistId)
@@ -344,22 +332,20 @@ class SongDetail extends Component
 
         if ($playlist->songs()->where('song_id', $this->song->id)->exists()) {
             $playlist->songs()->detach($this->song->id);
-            $this->dispatchBrowserEvent('toast', ['type' => 'info', 'message' => 'Removed from playlist']);
+            $this->dispatch('toast', type: 'info', message: 'Removed from playlist');
         } else {
             $maxPos = $playlist->songs()->max('position') ?? 0;
             $playlist->songs()->attach($this->song->id, ['position' => $maxPos + 1]);
-            $this->dispatchBrowserEvent('toast', ['type' => 'success', 'message' => 'Added to playlist']);
+            $this->dispatch('toast', type: 'success', message: 'Added to playlist');
         }
 
-        $this->openPlaylistModal(); // Reload status
+        $this->openPlaylistModal();
     }
 
-    // Rating Logic
     public function openRatingModal()
     {
         if (!Auth::check()) return redirect()->route('login');
 
-        // Load current rating
         $rating = $this->song->ratings()->where('user_id', Auth::id())->first();
         $this->ratingValue = $rating ? $rating->rating : 0;
 
@@ -378,20 +364,20 @@ class SongDetail extends Component
             }
 
             $this->song->rateOnce($value, Auth::id());
-            $this->calculateScore(); // Update displayed score
+            $this->calculateScore();
             $this->showRatingModal = false;
 
-            $this->dispatchBrowserEvent('toast', [
-                'type' => 'success',
-                'message' => 'Rating Saved!',
-                'description' => "You rated {$this->song->name} with {$value} points."
-            ]);
+            $this->dispatch('toast',
+                type: 'success',
+                message: 'Rating Saved!',
+                description: "You rated {$this->song->name} with {$value} points."
+            );
         } catch (\Exception $e) {
-            $this->dispatchBrowserEvent('toast', [
-                'type' => 'error',
-                'message' => 'Error saving rating',
-                'description' => $e->getMessage()
-            ]);
+            $this->dispatch('toast',
+                type: 'error',
+                message: 'Error saving rating',
+                description: $e->getMessage()
+            );
         }
     }
 

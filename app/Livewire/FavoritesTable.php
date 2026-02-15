@@ -1,49 +1,43 @@
 <?php
 
-namespace App\Http\Livewire;
+namespace App\Livewire;
 
-use App\Models\User;
 use App\Models\Song;
 use App\Models\Year;
 use App\Models\Season;
-use App\Models\Format;
 use Livewire\Component;
 use Livewire\WithPagination;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
+use Livewire\Attributes\Url;
+use Illuminate\Support\Facades\Auth;
+use App\Livewire\Traits\HasRankingScore;
 
-class UserFavoritesTable extends Component
+class FavoritesTable extends Component
 {
     use WithPagination;
+    use HasRankingScore;
 
-    public $userId;
-    public $user;
+    #[Url(except: '')]
     public $name = '';
+    
+    #[Url(except: '')]
     public $type = '';
+    
+    #[Url(except: '')]
     public $year_id = '';
+    
+    #[Url(except: '')]
     public $season_id = '';
-    public $sort = '';
-    public $perPage = 18;
+    
+    #[Url(except: 'recent')]
+    public $sort = 'recent';
+    
+    public $perPage = 15;
     public $hasMorePages = true;
     public $readyToLoad = false;
-
-    protected $queryString = [
-        'name' => ['except' => ''],
-        'type' => ['except' => ''],
-        'year_id' => ['except' => ''],
-        'season_id' => ['except' => ''],
-        'sort' => ['except' => ''],
-    ];
 
     public function loadData()
     {
         $this->readyToLoad = true;
-    }
-
-    public function mount($userId)
-    {
-        $this->userId = $userId;
-        $this->user = User::findOrFail($userId);
     }
 
     public function updatingName()
@@ -78,11 +72,10 @@ class UserFavoritesTable extends Component
         }
     }
 
-
     public function render()
     {
         if (!$this->readyToLoad) {
-            return view('livewire.user-favorites-table', [
+            return view('livewire.favorites-table', [
                 'songs' => collect(),
                 'years' => collect(),
                 'seasons' => collect(),
@@ -91,15 +84,18 @@ class UserFavoritesTable extends Component
             ]);
         }
 
+        $user = Auth::user();
+        if (!$user) {
+            return view('livewire.favorites-table', ['songs' => collect()]);
+        }
+
         $query = Song::query()
             ->with(['post:id,title,slug,banner,thumbnail,thumbnail_src,season_id,year_id', 'post.season:id,name', 'post.year:id,name', 'artists:id,name'])
             ->withAvg('ratings', 'rating')
-            ->favoritedBy($this->userId)
-            #SONG QUERY
+            ->favoritedBy($user->id)
             ->when($this->type, function ($query) {
                 $query->where('type', $this->type);
             })
-            #POST QUERY
             ->whereHas('post', function ($query) {
                 $query->where('status', true)
                     ->when($this->name, function ($query) {
@@ -113,7 +109,6 @@ class UserFavoritesTable extends Component
                     });
             });
 
-        // Apply Sorting
         switch ($this->sort) {
             case 'title':
                 $query->join('posts', 'songs.post_id', '=', 'posts.id')
@@ -135,12 +130,13 @@ class UserFavoritesTable extends Component
         $songs = $query->paginate($this->perPage);
         $this->hasMorePages = $songs->hasMorePages();
 
-        return view('livewire.user-favorites-table', [
+        $this->setScoreSongs($songs, $user);
+
+        return view('livewire.favorites-table', [
             'songs' => $songs,
             'years' => Year::orderBy('name', 'desc')->get(['id', 'name']),
             'seasons' => Season::all(['id', 'name']),
             'sortMethods' => [
-                ['name' => 'Sort by', 'value' => ''],
                 ['name' => 'Recent', 'value' => 'recent'],
                 ['name' => 'Title', 'value' => 'title'],
                 ['name' => 'Score', 'value' => 'averageRating'],

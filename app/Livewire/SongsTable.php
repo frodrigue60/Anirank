@@ -1,36 +1,36 @@
 <?php
 
-namespace App\Http\Livewire;
+namespace App\Livewire;
 
 use Livewire\Component;
 use Livewire\WithPagination;
+use Livewire\Attributes\Url;
 use App\Models\Song;
 use App\Models\Year;
 use App\Models\Season;
-use App\Models\Format;
-use Illuminate\Support\Facades\Storage;
 
-class ThemesTable extends Component
+class SongsTable extends Component
 {
     use WithPagination;
 
+    #[Url(except: '')]
     public $name = '';
+    
+    #[Url(except: '')]
     public $type = '';
+    
+    #[Url(except: '')]
     public $year_id = '';
+    
+    #[Url(except: '')]
     public $season_id = '';
+    
+    #[Url(except: 'recent')]
     public $sort = 'recent';
 
     public $perPage = 18;
     public $hasMorePages = true;
     public $readyToLoad = false;
-
-    protected $queryString = [
-        'name' => ['except' => ''],
-        'type' => ['except' => ''],
-        'year_id' => ['except' => ''],
-        'season_id' => ['except' => ''],
-        'sort' => ['except' => 'recent'],
-    ];
 
     public function loadData()
     {
@@ -40,7 +40,7 @@ class ThemesTable extends Component
     public function updatingName()
     {
         $this->resetPage();
-        $this->perPage = 18; // Reset limit on filter change
+        $this->perPage = 18;
     }
 
     public function updatingType()
@@ -75,7 +75,7 @@ class ThemesTable extends Component
     public function render()
     {
         if (!$this->readyToLoad) {
-            return view('livewire.themes-table', [
+            return view('livewire.songs-table', [
                 'songs' => collect(),
                 'years' => collect(),
                 'seasons' => collect(),
@@ -105,7 +105,6 @@ class ThemesTable extends Component
             $query->where('type', $this->type);
         }
 
-        // Sorting Logic
         switch ($this->sort) {
             case 'title':
                 $query->join('posts', 'songs.post_id', '=', 'posts.id')
@@ -132,7 +131,7 @@ class ThemesTable extends Component
 
         $this->hasMorePages = ($songs->count() < $totalSelection);
 
-        return view('livewire.themes-table', [
+        return view('livewire.songs-table', [
             'songs' => $songs,
             'years' => Year::select('id', 'name')->orderBy('name', 'desc')->get(),
             'seasons' => Season::select('id', 'name')->get(),

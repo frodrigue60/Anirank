@@ -1,7 +1,7 @@
 <header class="sticky top-0 z-50 glass-panel border-b border-white/5 w-full">
     <div class="max-w-[1440px] mx-auto px-6 h-16 flex items-center justify-between gap-4">
         <div class="flex items-center gap-10">
-            <a class="flex items-center gap-2 group" href="{{ url('/') }}">
+            <a class="flex items-center gap-2 group" href="/">
                 <div
                     class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/40 group-hover:scale-105 transition-transform">
                     <span class="material-symbols-outlined text-[20px]">music_note</span>
@@ -9,9 +9,9 @@
                 <span class="text-xl font-bold tracking-tight text-white">Anirank</span>
             </a>
             <nav class="hidden lg:flex items-center gap-6">
-                <a class="text-sm font-medium {{ Request::is('seasonal') ? 'text-primary' : 'text-white/60 hover:text-white' }} transition-colors"
+                <a class="text-sm font-medium {{ Request::routeIs('songs.seasonal') ? 'text-primary' : 'text-white/60 hover:text-white' }} transition-colors"
                     href="{{ route('songs.seasonal') }}">Season</a>
-                <a class="text-sm font-medium {{ Request::is('ranking') ? 'text-primary' : 'text-white/60 hover:text-white' }} transition-colors"
+                <a class="text-sm font-medium {{ Request::routeIs('songs.ranking') ? 'text-primary' : 'text-white/60 hover:text-white' }} transition-colors"
                     href="{{ route('songs.ranking') }}">Ranking</a>
 
                 {{-- Discover Dropdown --}}
@@ -31,7 +31,7 @@
                             class="flex items-center gap-3 px-4 py-2 text-sm text-white/80 hover:bg-white/5 hover:text-primary transition-colors">
                             <span class="material-symbols-outlined text-[18px]">person</span> Artists
                         </a>
-                        <a href="{{ route('posts.themes') }}"
+                        <a href="{{ route('songs.index') }}"
                             class="flex items-center gap-3 px-4 py-2 text-sm text-white/80 hover:bg-white/5 hover:text-primary transition-colors">
                             <span class="material-symbols-outlined text-[18px]">library_music</span> Themes
                         </a>
@@ -160,7 +160,7 @@
     <div id="mobile-menu-content"
         class="absolute top-0 left-0 w-[280px] h-full glass-panel bg-surface-darker/95 border-r border-white/5 shadow-2xl transform -translate-x-full transition-transform duration-300 ease-out flex flex-col">
         <div class="px-6 h-16 flex items-center justify-between border-b border-white/5">
-            <a class="flex items-center gap-2" href="{{ url('/') }}">
+            <a class="flex items-center gap-2" href="/">
                 <div
                     class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/40">
                     <span class="material-symbols-outlined text-[18px]">music_note</span>
@@ -182,15 +182,15 @@
                 </button>
             </div>
             <a href="{{ route('songs.seasonal') }}"
-                class="flex items-center gap-3 px-4 py-3 rounded-xl text-white/60 hover:text-white hover:bg-white/5 transition-all {{ Request::is('seasonal') ? 'bg-primary/10 text-primary' : '' }}">
+                class="flex items-center gap-3 px-4 py-3 rounded-xl text-white/60 hover:text-white hover:bg-white/5 transition-all {{ Request::routeIs('songs.seasonal') ? 'bg-primary/10 text-primary' : '' }}">
                 <span
-                    class="material-symbols-outlined {{ Request::is('seasonal') ? 'filled' : '' }}">calendar_today</span>
+                    class="material-symbols-outlined {{ Request::routeIs('songs.seasonal') ? 'filled' : '' }}">calendar_today</span>
                 <span class="font-medium text-sm">Season Charts</span>
             </a>
             <a href="{{ route('songs.ranking') }}"
-                class="flex items-center gap-3 px-4 py-3 rounded-xl text-white/60 hover:text-white hover:bg-white/5 transition-all {{ Request::is('ranking') ? 'bg-primary/10 text-primary' : '' }}">
+                class="flex items-center gap-3 px-4 py-3 rounded-xl text-white/60 hover:text-white hover:bg-white/5 transition-all {{ Request::routeIs('songs.ranking') ? 'bg-primary/10 text-primary' : '' }}">
                 <span
-                    class="material-symbols-outlined {{ Request::is('ranking') ? 'filled' : '' }}">military_tech</span>
+                    class="material-symbols-outlined {{ Request::routeIs('songs.ranking') ? 'filled' : '' }}">military_tech</span>
                 <span class="font-medium text-sm">Rankings</span>
             </a>
 
@@ -207,7 +207,7 @@
                 <span class="material-symbols-outlined">person</span>
                 <span class="font-medium text-sm">Artists</span>
             </a>
-            <a href="{{ route('posts.themes') }}"
+            <a href="{{ route('songs.index') }}"
                 class="flex items-center gap-3 px-4 py-3 rounded-xl text-white/60 hover:text-white hover:bg-white/5 transition-all">
                 <span class="material-symbols-outlined">library_music</span>
                 <span class="font-medium text-sm">Themes</span>

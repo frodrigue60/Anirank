@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Http\Livewire;
+namespace App\Livewire;
 
 use Livewire\Component;
+use Livewire\Attributes\On;
 use App\Models\Song;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -17,8 +18,6 @@ class RankingTable extends Component
     public $page = 1;
     public $hasMorePages = true;
     public $readyToLoad = false;
-
-    protected $listeners = ['loadMore'];
 
     public function loadData()
     {
@@ -36,6 +35,7 @@ class RankingTable extends Component
         $this->hasMorePages = true;
     }
 
+    #[On('loadMore')]
     public function loadMore()
     {
         if (!$this->hasMorePages || !$this->readyToLoad) return;

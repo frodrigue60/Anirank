@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Livewire\Traits;
+namespace App\Livewire\Traits;
 
 use App\Models\Song;
 use Illuminate\Support\Facades\DB;

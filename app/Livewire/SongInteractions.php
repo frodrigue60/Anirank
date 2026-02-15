@@ -1,18 +1,17 @@
 <?php
 
-namespace App\Http\Livewire;
+namespace App\Livewire;
 
 use Livewire\Component;
 use App\Models\Song;
 use Illuminate\Support\Facades\Auth;
-
 use Livewire\Attributes\On;
 
 class SongInteractions extends Component
 {
     public $songId;
     public $song;
-    public $mode = 'bar'; // 'bar' or 'score'
+    public $mode = 'bar';
     public $showRatingModal = false;
     public $ratingValue = 0;
 

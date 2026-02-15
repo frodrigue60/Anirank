@@ -338,7 +338,6 @@ Handles the homepage and anime detail pages.
 | `index()`     | `GET /`             | Homepage: Top openings, top endings, recent songs. |
 | `show($slug)` | `GET /anime/{slug}` | Anime detail page with openings and endings list.  |
 | `animes()`    | `GET /animes`       | Filter/paginate anime series.                      |
-| `themes()`    | `GET /themes`       | Browse all openings and endings.                   |
 
 **Key Helper Methods:**
 
@@ -353,11 +352,10 @@ Handles the homepage and anime detail pages.
 
 Handles song detail pages and seasonal/ranking views.
 
-| Method                        | Route                            | Description                              |
-| ----------------------------- | -------------------------------- | ---------------------------------------- |
-| `show($animeSlug, $songSlug)` | `GET /anime/{anime}/song/{song}` | Song detail page with variants list.     |
-| `seasonal()`                  | `GET /seasonal`                  | Browse songs by current/selected season. |
-| `ranking()`                   | `GET /ranking`                   | Top-rated songs overall.                 |
+| `index()` | `GET /songs` | Browse all openings and endings. |
+| `show($animeSlug, $songSlug)` | `GET /anime/{anime}/song/{song}` | Song detail page with variants list. |
+| `seasonal()` | `GET /songs/seasonal` | Browse songs by current/selected season. |
+| `ranking()` | `GET /songs/ranking` | Top-rated songs overall. |
 
 **Key Helper Methods:**
 
@@ -1116,12 +1114,12 @@ Routes are defined in `routes/web.php` and `routes/api.php`.
 | Route                   | Method | Controller / Action        | Name              | Description               |
 | ----------------------- | ------ | -------------------------- | ----------------- | ------------------------- |
 | `/`                     | GET    | `PostController@index`     | `/`               | Homepage with top OPs/EDs |
-| `/themes`               | GET    | `PostController@themes`    | `themes`          | Browse all themes         |
+| `/songs`                | GET    | `SongController@index`     | `songs.index`     | Browse all themes         |
 | `/anime/{slug}`         | GET    | `PostController@show`      | `post.show`       | Anime detail page         |
 | `/animes`               | GET    | `PostController@animes`    | `animes`          | Browse all anime          |
 | `/anime/{anime}/{song}` | GET    | `SongController@show`      | `songs.show`      | Song detail page          |
-| `/seasonal`             | GET    | `SongController@seasonal`  | `seasonal`        | Seasonal songs view       |
-| `/ranking`              | GET    | `SongController@ranking`   | `ranking`         | Song rankings             |
+| `/songs/seasonal`       | GET    | `SongController@seasonal`  | `songs.seasonal`  | Seasonal songs view       |
+| `/songs/ranking`        | GET    | `SongController@ranking`   | `songs.ranking`   | Song rankings             |
 | `/welcome`              | GET    | `UserController@welcome`   | `welcome`         | Welcome/onboarding page   |
 | `/users/{slug}`         | GET    | `UserController@userList`  | `user.list`       | User's rated themes list  |
 | `/profile`              | GET    | `UserController@index`     | `profile`         | Current user's profile    |
@@ -1330,7 +1328,7 @@ The application heavily utilizes **Livewire** for reactive UI components, especi
 
 - **`RankingTable`**: Global and seasonal leaderboards for songs.
 - **`SeasonalTable`**: Browse themes by season with OP/ED toggles and infinite scroll.
-- **`ThemesTable`**: The primary discovery engine for all themes across the platform.
+- **`SongsTable`**: The primary discovery engine for all themes across the platform.
 
 ### Implementation Patterns
 

@@ -18,7 +18,12 @@ class SongController extends Controller
      */
     public function index()
     {
-        //
+        $years = Year::select('id', 'name')->orderBy('name', 'desc')->get();
+        $seasons = Season::select('id', 'name')->get();
+        $types = $this->filterTypesSortChar()['types'];
+        $sortMethods = $this->filterTypesSortChar()['sortMethods'];
+
+        return view('public.songs.index', compact('seasons', 'years', 'sortMethods', 'types'));
     }
 
     /**
@@ -157,5 +162,38 @@ class SongController extends Controller
         $song->incrementViews();
 
         return view('public.songs.show', compact('song', 'post'));
+    }
+
+    public function filterTypesSortChar()
+    {
+        $filters = [
+            ['name' => 'All', 'value' => 'all'],
+            ['name' => 'Only Rated', 'value' => 'rated']
+        ];
+
+        $types = [
+            ['name' => 'Opening', 'value' => 'OP'],
+            ['name' => 'Ending', 'value' => 'ED'],
+            ['name' => 'Insert', 'value' => 'INS'],
+            ['name' => 'Other', 'value' => 'OTH'],
+        ];
+
+        $sortMethods = [
+            ['name' => 'Recent', 'value' => 'recent'],
+            ['name' => 'Title', 'value' => 'title'],
+            ['name' => 'Score', 'value' => 'averageRating'],
+            ['name' => 'Views', 'value' => 'view_count'],
+            ['name' => 'Popular', 'value' => 'likeCount']
+        ];
+
+        $characters = range('A', 'Z');
+
+        $data = [
+            'filters' => $filters,
+            'types' => $types,
+            'sortMethods' => $sortMethods,
+            'characters' => $characters
+        ];
+        return $data;
     }
 }

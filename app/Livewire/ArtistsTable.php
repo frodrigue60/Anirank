@@ -1,9 +1,10 @@
 <?php
 
-namespace App\Http\Livewire;
+namespace App\Livewire;
 
 use Livewire\Component;
 use Livewire\WithPagination;
+use Livewire\Attributes\Url;
 use App\Models\Artist;
 use Illuminate\Support\Facades\Auth;
 
@@ -11,18 +12,18 @@ class ArtistsTable extends Component
 {
     use WithPagination;
 
+    #[Url(except: '')]
     public $name = '';
+    
+    #[Url(except: 'A-Z')]
+    public $sortBy = 'A-Z';
+    
+    #[Url(except: 'Most Themes')]
+    public $sortByThemes = 'Most Themes';
+    
     public $perPage = 24;
     public $hasMorePages = false;
-    public $sortBy = 'A-Z';
-    public $sortByThemes = 'Most Themes';
     public $readyToLoad = false;
-
-    protected $queryString = [
-        'name' => ['except' => ''],
-        'sortBy' => ['except' => 'A-Z'],
-        'sortByThemes' => ['except' => 'Most Themes'],
-    ];
 
     public function loadData()
     {
@@ -73,7 +74,6 @@ class ArtistsTable extends Component
             $query->where('name', 'LIKE', '%' . $this->name . '%');
         }
 
-        // Sorting logic
         if ($this->sortBy === 'A-Z') {
             $query->orderBy('name', 'asc');
         } elseif ($this->sortBy === 'Z-A') {

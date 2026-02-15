@@ -23,3 +23,5 @@ public/ngrok.exe
 public/.ngrok.exe.old
 /Stitch
 /error.txt
+/build_error.txt
+/full_build_log.txt

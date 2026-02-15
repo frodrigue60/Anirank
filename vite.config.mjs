@@ -1,9 +1,11 @@
 import { defineConfig } from "vite";
 import laravel from "laravel-vite-plugin";
+import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 
 export default defineConfig({
     plugins: [
+        tailwindcss(),
         laravel({
             input: [
                 "resources/js/app.js",
@@ -39,7 +41,7 @@ export default defineConfig({
                 "resources/js/make_request.js",
                 "resources/js/theme_switch.js",
                 "resources/css/app.css",
-                "resources/sass/app.scss",
+                /* "resources/sass/app.scss", */
                 "resources/css/userProfile.css",
                 "resources/css/post.css",
                 "resources/css/ranking.css",

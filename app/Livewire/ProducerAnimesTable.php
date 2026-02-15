@@ -1,41 +1,45 @@
 <?php
 
-namespace App\Http\Livewire;
+namespace App\Livewire;
 
 use App\Models\Post;
 use App\Models\Year;
 use App\Models\Season;
 use App\Models\Format;
+use App\Models\Producer;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Livewire\Attributes\Url;
 use Illuminate\Support\Facades\Auth;
-use App\Models\Studio;
 
-class StudioAnimesTable extends Component
+class ProducerAnimesTable extends Component
 {
-    public $studioId;
-    public $studio;
+    public $producerId;
+    public $producer;
+
+    #[Url(except: '')]
     public $name = '';
+    
+    #[Url(except: '')]
     public $year_id = '';
+    
+    #[Url(except: '')]
     public $season_id = '';
+    
+    #[Url(except: '')]
     public $format_id = '';
+    
+    #[Url(except: 'grid_small')]
+    public $viewMode = 'grid_small';
+    
     public $perPage = 18;
-    public $viewMode = 'grid_small'; // grid_small, grid_large, list
     public $hasMorePages = false;
     public $readyToLoad = false;
 
-    protected $queryString = [
-        'name' => ['except' => ''],
-        'year_id' => ['except' => ''],
-        'season_id' => ['except' => ''],
-        'format_id' => ['except' => ''],
-        'viewMode' => ['except' => 'grid_small'],
-    ];
-
-    public function mount($studioId)
+    public function mount($producerId)
     {
-        $this->studioId = $studioId;
-        $this->studio = Studio::findOrFail($studioId);
+        $this->producerId = $producerId;
+        $this->producer = Producer::findOrFail($producerId);
     }
 
     public function loadData()
@@ -78,7 +82,7 @@ class StudioAnimesTable extends Component
     public function render()
     {
         if (!$this->readyToLoad) {
-            return view('livewire.studio-animes-table', [
+            return view('livewire.producer-animes-table', [
                 'posts' => collect(),
                 'years' => collect(),
                 'seasons' => collect(),
@@ -90,8 +94,8 @@ class StudioAnimesTable extends Component
             ->when(!Auth::check() || !Auth::user()->isStaff(), function ($query) {
                 $query->where('status', true);
             })
-            ->whereHas('studios', function ($query) {
-                $query->where('studios.id', $this->studioId);
+            ->whereHas('producers', function ($query) {
+                $query->where('producers.id', $this->producerId);
             })
             ->when($this->name, function ($query) {
                 $query->where('title', 'like', '%' . $this->name . '%');
@@ -117,7 +121,7 @@ class StudioAnimesTable extends Component
 
         $this->hasMorePages = $posts->hasMorePages();
 
-        return view('livewire.studio-animes-table', [
+        return view('livewire.producer-animes-table', [
             'posts' => $posts,
             'years' => Year::orderBy('name', 'desc')->get(['id', 'name']),
             'seasons' => Season::all(['id', 'name']),

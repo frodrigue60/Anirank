@@ -1,9 +1,11 @@
 <?php
 
-namespace App\Http\Livewire;
+namespace App\Livewire;
 
 use Livewire\Component;
 use Livewire\WithPagination;
+use Livewire\Attributes\Url;
+use Livewire\Attributes\On;
 use App\Models\Post;
 use App\Models\Season;
 use App\Models\Year;
@@ -13,26 +15,25 @@ class AnimesTable extends Component
 {
     use WithPagination;
 
+    #[Url(except: '')]
     public $name = '';
+    
+    #[Url(except: '')]
     public $year_id = '';
+    
+    #[Url(except: '')]
     public $season_id = '';
+    
+    #[Url(except: '')]
     public $format_id = '';
 
-    public $viewMode = 'grid_small'; // grid_small, grid_large, list
+    #[Url(except: 'grid_small')]
+    public $viewMode = 'grid_small';
+    
     public $perPage = 15;
     public $page = 1;
     public $hasMorePages = false;
     public $readyToLoad = false;
-
-    protected $queryString = [
-        'name' => ['except' => ''],
-        'year_id' => ['except' => ''],
-        'season_id' => ['except' => ''],
-        'format_id' => ['except' => ''],
-        'viewMode' => ['except' => 'grid_small'],
-    ];
-
-    protected $listeners = ['loadMore'];
 
     public function loadData()
     {
@@ -48,14 +49,17 @@ class AnimesTable extends Component
     {
         $this->resetPage();
     }
+    
     public function updatedYearId()
     {
         $this->resetPage();
     }
+    
     public function updatedSeasonId()
     {
         $this->resetPage();
     }
+    
     public function updatedFormatId()
     {
         $this->resetPage();
@@ -66,6 +70,7 @@ class AnimesTable extends Component
         $this->viewMode = $mode;
     }
 
+    #[On('loadMore')]
     public function loadMore()
     {
         if ($this->hasMorePages && $this->readyToLoad) {
@@ -108,7 +113,6 @@ class AnimesTable extends Component
         $this->hasMorePages = $results->count() > $this->perPage;
         $posts = $results->take($this->perPage);
 
-        // Fetch filter options efficiently
         $years = Year::orderBy('name', 'desc')->get(['id', 'name']);
         $seasons = Season::all(['id', 'name']);
         $formats = Format::all(['id', 'name']);

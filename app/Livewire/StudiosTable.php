@@ -1,26 +1,26 @@
 <?php
 
-namespace App\Http\Livewire;
+namespace App\Livewire;
 
 use App\Models\Studio;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Livewire\Attributes\Url;
 use Illuminate\Support\Facades\Auth;
 
 class StudiosTable extends Component
 {
     use WithPagination;
 
+    #[Url(except: '')]
     public $search = '';
+    
+    #[Url(except: 'name_asc')]
     public $sort = 'name_asc';
+    
     public $perPage = 18;
     public $hasMorePages = false;
     public $readyToLoad = false;
-
-    protected $queryString = [
-        'search' => ['except' => ''],
-        'sort' => ['except' => 'name_asc'],
-    ];
 
     public function loadData()
     {

@@ -1,10 +1,11 @@
 <?php
 
-namespace App\Http\Livewire;
+namespace App\Livewire;
 
 use App\Models\User;
 use Livewire\Component;
 use Livewire\WithFileUploads;
+use Livewire\Attributes\Validate;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
@@ -13,16 +14,16 @@ class UserSettings extends Component
     use WithFileUploads;
 
     public $user;
-    public $image;
-    public $banner;
-    public $score_format;
     public $score_formats;
 
-    protected $rules = [
-        'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:512',
-        'banner' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:512',
-        'score_format' => 'required|in:POINT_100,POINT_10_DECIMAL,POINT_10,POINT_5',
-    ];
+    #[Validate('nullable|image|mimes:jpeg,png,jpg,webp|max:512')]
+    public $image;
+
+    #[Validate('nullable|image|mimes:jpeg,png,jpg,webp|max:512')]
+    public $banner;
+
+    #[Validate('required|in:POINT_100,POINT_10_DECIMAL,POINT_10,POINT_5')]
+    public $score_format;
 
     public function mount()
     {
@@ -38,9 +39,7 @@ class UserSettings extends Component
 
     public function saveAvatar()
     {
-        $this->validate([
-            'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:512',
-        ]);
+        $this->validateOnly('image');
 
         try {
             $old_image = $this->user->image;
@@ -68,9 +67,7 @@ class UserSettings extends Component
 
     public function saveBanner()
     {
-        $this->validate([
-            'banner' => 'required|image|mimes:jpeg,png,jpg,webp|max:512',
-        ]);
+        $this->validateOnly('banner');
 
         try {
             $old_banner = $this->user->banner;
@@ -98,9 +95,7 @@ class UserSettings extends Component
 
     public function saveScoreFormat()
     {
-        $this->validate([
-            'score_format' => 'required|in:POINT_100,POINT_10_DECIMAL,POINT_10,POINT_5',
-        ]);
+        $this->validateOnly('score_format');
 
         try {
             $this->user->update(['score_format' => $this->score_format]);

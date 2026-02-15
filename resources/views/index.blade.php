@@ -32,6 +32,47 @@
 @endpush
 
 @section('content')
+    {{-- @guest
+        <section class="relative h-screen flex items-center justify-center overflow-hidden">
+            <div class="absolute inset-0 z-0">
+                <div class="absolute inset-0 bg-gradient-to-t from-background-dark via-background-dark/60 to-transparent z-10">
+                </div>
+                <div
+                    class="absolute inset-0 bg-gradient-to-r from-background-dark/80 via-transparent to-background-dark/80 z-10">
+                </div>
+                <img class="w-full h-full object-cover scale-105" data-alt="Cinematic wide shot of anime cityscape at night"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuC4NKMsiVFSxKoMy0QJq1bdQInEoybDwBon5RstY0kyN604vExTI9pu8NcCmoEH1v6KITdZ4av_LtDghv2w-_XaKXQElk4leiUH9GVq1u0IyulYjmeCIqspuNtkNr8PCg2bZhyubZmFlVu3i7A2-Ug2FVNBcK4uF7HEtkwYOOHS-swOGUyTo14YgLkUPJsdetP6SpSqK0fw-RR74Zhd-zOxh-7r1ruGpFQDSftrvuYB_oXOcfl7wzCHPUY-joO8Cn9Nr-6SuEVYS6A" />
+            </div>
+            <div class="relative z-20 container mx-auto px-6 text-center max-w-4xl">
+                <h1
+                    class="text-5xl md:text-7xl font-black mb-6 tracking-tight leading-none text-transparent bg-clip-text bg-gradient-to-b from-white to-white/60">
+                    Your Anime Soundtrack Journey Starts Here
+                </h1>
+                <div class="flex flex-wrap justify-center gap-8 mb-10 text-lg">
+                    <div class="flex items-center gap-2 text-white/90">
+                        <span class="material-symbols-outlined text-primary">analytics</span>
+                        <span>Track favorites</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-white/90">
+                        <span class="material-symbols-outlined text-primary">stars</span>
+                        <span>Influence rankings</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-white/90">
+                        <span class="material-symbols-outlined text-primary">playlist_add_check</span>
+                        <span>Curate playlists</span>
+                    </div>
+                </div>
+                <a href="{{ route('songs.index') }}"
+                    class="group relative inline-flex items-center gap-3 bg-primary px-10 py-5 rounded-xl font-bold text-xl transition-all hover:scale-105 active:scale-95 neon-glow">
+                    <span>Start Exploring</span>
+                    <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                </a>
+            </div>
+            <div class="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 animate-bounce opacity-50">
+                <span class="material-symbols-outlined text-3xl">keyboard_double_arrow_down</span>
+            </div>
+        </section>
+    @endguest --}}
     <main class="flex-1 w-full max-w-[1440px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 px-6 py-8">
         <div class="lg:col-span-9 flex flex-col gap-10">
             {{-- FEATURED THEME --}}

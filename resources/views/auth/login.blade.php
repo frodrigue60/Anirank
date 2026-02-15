@@ -136,7 +136,7 @@
                         responseDiv.innerHTML =
                             '<div class="bg-green-500/10 border border-green-500/20 rounded-xl p-3 text-sm text-green-400 flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">check_circle</span>Success! Redirecting...</div>';
                         setTimeout(() => {
-                            window.location.href = data.redirect || '/profile';
+                            window.location.href = data.redirect || '/';
                         }, 500);
                     } else {
                         responseDiv.innerHTML =

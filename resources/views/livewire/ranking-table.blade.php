@@ -35,27 +35,6 @@
 
         {{-- Leaderboard Section --}}
         <div class="bg-surface-dark/30 border border-white/5 rounded-3xl overflow-hidden mb-12 group/table">
-            {{-- Table Controls --}}
-            <div
-                class="flex flex-row justify-between items-center gap-4 px-8 py-6 border-b border-white/5 bg-surface-darker/30">
-                <div class="flex items-center gap-3">
-                    <span class="material-symbols-outlined text-primary">analytics</span>
-                    <h2 class="text-xl font-bold text-white tracking-tight">Leaderboard</h2>
-                </div>
-
-                <div class="relative">
-                    <select wire:model.live="currentSection"
-                        class="appearance-none bg-background-dark/50 border border-white/5 rounded-xl px-4 py-2.5 hover:border-primary/50 transition-all min-w-[160px] text-sm font-bold text-white tracking-tight cursor-pointer focus:outline-none focus:border-primary/50">
-                        <option value="ALL">All Themes</option>
-                        <option value="OP">Openings</option>
-                        <option value="ED">Endings</option>
-                    </select>
-                    <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                        <span class="material-symbols-outlined text-white/20 text-lg">expand_more</span>
-                    </div>
-                </div>
-            </div>
-
             {{-- Table Header --}}
             <div
                 class="grid grid-cols-[60px_1fr_120px_140px] gap-4 px-8 py-4 border-b border-white/5 text-[10px] font-black uppercase tracking-widest text-white/30 bg-surface-darker/50">

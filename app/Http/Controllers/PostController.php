@@ -100,16 +100,6 @@ class PostController extends Controller
         return view('index', compact('weaklyRanking', 'recently', 'popular', 'viewed', 'artists', 'featuredSong'));
     }
 
-    public function animes(Request $request)
-    {
-        $seasons = Season::all();
-        $years = Year::all()->sortByDesc('name');
-        $formats = Format::all();
-
-        return view('public.posts.index', compact('seasons', 'years', 'formats'));
-    }
-
-
     /**
      * Display the specified resource.
      *
@@ -143,6 +133,23 @@ class PostController extends Controller
         return view('public.posts.show', compact('post', 'openings', 'endings'));
     }
 
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function destroy(Post $post) {}
+
+    public function animes(Request $request)
+    {
+        $seasons = Season::all();
+        $years = Year::all()->sortByDesc('name');
+        $formats = Format::all();
+
+        return view('public.posts.index', compact('seasons', 'years', 'formats'));
+    }
+
     public function showAnime($animeSlug)
     {
         $post = Post::with(['songs' => function ($q) {
@@ -168,24 +175,6 @@ class PostController extends Controller
         $endings = $post->songs->where('type', 'ED')->sortBy('theme_num');
 
         return view('public.posts.show', compact('post', 'openings', 'endings'));
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy(Post $post) {}
-
-    public function themes(Request $request)
-    {
-        $years = Year::select('id', 'name')->orderBy('name', 'desc')->get();
-        $seasons = Season::select('id', 'name')->get();
-        $types = $this->filterTypesSortChar()['types'];
-        $sortMethods = $this->filterTypesSortChar()['sortMethods'];
-
-        return view('public.themes.index', compact('seasons', 'years', 'sortMethods', 'types'));
     }
 
     public function setScoreOnlyVariants($variants, $user = null)
@@ -386,39 +375,6 @@ class PostController extends Controller
                 return $song_variants;
                 break;
         }
-    }
-
-    public function filterTypesSortChar()
-    {
-        $filters = [
-            ['name' => 'All', 'value' => 'all'],
-            ['name' => 'Only Rated', 'value' => 'rated']
-        ];
-
-        $types = [
-            ['name' => 'Opening', 'value' => 'OP'],
-            ['name' => 'Ending', 'value' => 'ED'],
-            ['name' => 'Insert', 'value' => 'INS'],
-            ['name' => 'Other', 'value' => 'OTH'],
-        ];
-
-        $sortMethods = [
-            ['name' => 'Recent', 'value' => 'recent'],
-            ['name' => 'Title', 'value' => 'title'],
-            ['name' => 'Score', 'value' => 'averageRating'],
-            ['name' => 'Views', 'value' => 'view_count'],
-            ['name' => 'Popular', 'value' => 'likeCount']
-        ];
-
-        $characters = range('A', 'Z');
-
-        $data = [
-            'filters' => $filters,
-            'types' => $types,
-            'sortMethods' => $sortMethods,
-            'characters' => $characters
-        ];
-        return $data;
     }
 
     public function getUserRating($songId, $userId)

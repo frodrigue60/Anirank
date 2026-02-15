@@ -43,18 +43,17 @@ use App\Http\Controllers\Admin\{
 
 Route::controller(PostController::class)->group(function () {
     Route::get('/', 'index')->name('home');
-    Route::get('/themes', 'themes')->name('posts.themes');
+
     Route::get('/animes', 'animes')->name('posts.animes');
 });
 
 Route::controller(UserController::class)->group(function () {
-    Route::get('/welcome', 'welcome')->name('users.welcome');
     Route::get('/users/{slug}', 'userList')->name('users.list');
 });
 
 Route::controller(SongController::class)->group(function () {
-    Route::get('/seasonal', 'seasonal')->name('songs.seasonal');
-    Route::get('/ranking', 'ranking')->name('songs.ranking');
+    Route::get('/songs/seasonal', 'seasonal')->name('songs.seasonal');
+    Route::get('/songs/ranking', 'ranking')->name('songs.ranking');
 });
 
 Route::get('/offline', fn() => view('offline'))->name('offline');
@@ -163,7 +162,7 @@ Route::middleware('auth')->group(function () {
     Route::controller(CommentController::class)->prefix('comments')->as('comments.')->group(function () {
         Route::post('/{comment}/like', 'like')->name('like');
         Route::post('/{comment}/dislike', 'dislike')->name('dislike');
-        Route::post('/{parentComment}/reply', 'reply')->name('reply');
+        Route::post('/{comment}/reply', 'reply')->name('reply');
     });
     Route::resource('comments', CommentController::class);
 });

@@ -91,7 +91,7 @@
                                     class="w-full h-full object-cover">
                                 <div class="absolute bottom-0 inset-x-0 bg-linear-to-t from-black/80 to-transparent p-4 pt-10">
                                     <div class="flex items-center gap-1 text-yellow-400 font-bold text-lg">
-                                        <span class="material-symbols-outlined filled !text-[1em]">star</span>
+                                        <span class="material-symbols-outlined filled">star</span>
                                         <span>{{ number_format($featuredSong->averageRating ?? 0, 1) }}</span>
                                     </div>
                                 </div>
@@ -163,8 +163,8 @@
                                             <a href="{{ route('songs.show', $song->id) }}"
                                                 class="font-bold text-white truncate text-lg hover:text-primary transition-colors">{{ $song->name }}</a>
                                             <div
-                                                class="flex items-center gap-1 bg-surface-dark px-2 py-0.5 rounded text-yellow-400 text-xs font-bold">
-                                                <span class="material-symbols-outlined filled !text-[1em]">star</span>
+                                                class="flex items-center gap-1 bg-surface-dark text-yellow-400 text-xs font-bold">
+                                                <span class="material-symbols-outlined filled">star</span>
                                                 <span>{{ number_format($song->averageRating ?? 0, 1) }}</span>
                                             </div>
                                         </div>
@@ -258,11 +258,11 @@
             </div>
 
             {{-- EVENT/COMMUNITY BOX --}}
-            <div class="relative rounded-2xl overflow-hidden aspect-[4/5] flex flex-col justify-end p-6 group">
+            <div class="relative rounded-2xl overflow-hidden aspect-4/5 flex flex-col justify-end p-6 group">
                 <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
                     style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAH_og0-9n8HCwoymOtvxCZ2iSwhi1s0A9GouQSn-K7NzkZ13nzTIqMOJ6cq1utUw0s-FL7CewN6C8VFcJizGXn7mHZASt9HtY3-Lhm7ktTQLi7ouj5QP8adxWImQ_5RxcUGZRHyujm7HGEcipxIes_YOw3FD7C2XnhIYlfxnYJ8zeWxbouotxhLpbP4NwK2OAuftUr0xAL6mD6jN8392YwYPYusIbgoJXxmVZ38rnjbBuYc5uaDeXAuuWdDfBjH2c72v2y7Btneg8');">
                 </div>
-                <div class="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent"></div>
+                <div class="absolute inset-0 bg-linear-to-t from-black via-black/50 to-transparent"></div>
                 <div class="relative z-10 text-white">
                     <span
                         class="bg-[#5865F2] text-white text-[10px] font-bold uppercase px-2 py-1 rounded mb-2 inline-block">Discord</span>

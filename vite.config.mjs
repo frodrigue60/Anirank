@@ -47,6 +47,7 @@ export default defineConfig({
                 "resources/css/ranking.css",
                 "resources/css/fivestars.css",
                 "resources/js/playlists.js",
+                "resources/css/fonts.css",
             ],
             refresh: true,
         }),

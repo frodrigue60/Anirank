@@ -81,7 +81,7 @@
                     <div class="absolute inset-0 bg-cover bg-center opacity-60 mix-blend-overlay transition-transform duration-700 group-hover:scale-105"
                         style="background-image: url('{{ Storage::url($featuredSong->post->banner) }}');">
                     </div>
-                    <div class="absolute inset-0 bg-gradient-to-r from-background-dark via-background-dark/80 to-transparent">
+                    <div class="absolute inset-0 bg-linear-to-r from-background-dark via-background-dark/80 to-transparent">
                     </div>
                     <div class="relative z-10 p-8 md:p-12 flex flex-col md:flex-row gap-8 items-center md:items-end">
                         <div class="relative shrink-0 hero-glow">
@@ -89,10 +89,9 @@
                                 class="w-48 h-48 md:w-64 md:h-64 rounded-xl shadow-2xl overflow-hidden relative border-2 border-white/10">
                                 <img src="{{ Storage::url($featuredSong->post->thumbnail) }}" alt="Anime cover art"
                                     class="w-full h-full object-cover">
-                                <div
-                                    class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent p-4 pt-10">
+                                <div class="absolute bottom-0 inset-x-0 bg-linear-to-t from-black/80 to-transparent p-4 pt-10">
                                     <div class="flex items-center gap-1 text-yellow-400 font-bold text-lg">
-                                        <span class="material-symbols-outlined filled text-[20px]">star</span>
+                                        <span class="material-symbols-outlined filled !text-[1em]">star</span>
                                         <span>{{ number_format($featuredSong->averageRating ?? 0, 1) }}</span>
                                     </div>
                                 </div>
@@ -165,8 +164,8 @@
                                                 class="font-bold text-white truncate text-lg hover:text-primary transition-colors">{{ $song->name }}</a>
                                             <div
                                                 class="flex items-center gap-1 bg-surface-dark px-2 py-0.5 rounded text-yellow-400 text-xs font-bold">
-                                                <span class="material-symbols-outlined filled text-[14px]">star</span>
-                                                {{ number_format($song->averageRating ?? 0, 1) }}
+                                                <span class="material-symbols-outlined filled !text-[1em]">star</span>
+                                                <span>{{ number_format($song->averageRating ?? 0, 1) }}</span>
                                             </div>
                                         </div>
                                         <p class="text-sm text-primary font-medium truncate">{{ $song->post->title }}</p>

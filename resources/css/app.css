@@ -1,3 +1,4 @@
+@import "./fonts.css";
 @import "tailwindcss";
 
 @source "../views/**/*.blade.php";
@@ -26,6 +27,12 @@
     --breakpoint-xl: 1280px;
     --breakpoint-2xl: 1536px;
 
+    --font-sans:
+        "Noto Sans", "Spline Sans", ui-sans-serif, system-ui, sans-serif;
+    --font-nunito: "Nunito", sans-serif;
+    --font-spline: "Spline Sans", sans-serif;
+    --font-noto: "Noto Sans", sans-serif;
+
     --dark-mode: class;
 }
 
@@ -33,6 +40,7 @@
     body {
         background-color: #191022;
         color: white;
+        font-family: var(--font-sans);
     }
     ::-webkit-scrollbar {
         width: 8px;

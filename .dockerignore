@@ -1,0 +1,14 @@
+# Ignore binaries
+backend/*.exe
+backend/bin/
+backend/tmp/
+
+# Ignore node modules
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+# Ignore git and local envs
+.git
+.env
+*.local

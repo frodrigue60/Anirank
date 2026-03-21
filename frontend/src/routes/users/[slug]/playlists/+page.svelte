@@ -1,0 +1,173 @@
+<script lang="ts">
+  import { fade } from "svelte/transition";
+  import { Search, Music } from "lucide-svelte";
+  import PlaylistCard from "$lib/components/PlaylistCard.svelte";
+  import { authState } from "$lib/state/auth.svelte";
+  import CreatePlaylistModal from "$lib/components/CreatePlaylistModal.svelte";
+  import EditPlaylistModal from "$lib/components/EditPlaylistModal.svelte";
+  import api from "$lib/api";
+
+  let { data } = $props();
+
+  // svelte-ignore state_referenced_locally
+  let playlists = $state<any[]>(data.playlists);
+  let searchQuery = $state("");
+  let showCreateModal = $state(false);
+  let isEditModalOpen = $state(false);
+  let playlistToEdit = $state<any>(null);
+
+  // Non-reactive guard for prop changes
+  // svelte-ignore state_referenced_locally
+  let _sourcePlaylists = data.playlists;
+
+  // Sync state if navigation happens or props change
+  $effect(() => {
+    if (_sourcePlaylists !== data.playlists) {
+      _sourcePlaylists = data.playlists;
+      playlists = data.playlists;
+    }
+  });
+
+  let isOwner = $derived(
+    authState.user && data.profile && authState.user.id === data.profile.id,
+  );
+
+  // Sync private playlists on the client if owner and data wasn't already loaded as private
+  let initializedOwnerFetch = $state(false);
+  $effect(() => {
+    if (isOwner && !initializedOwnerFetch && data.profile) {
+      initializedOwnerFetch = true;
+      api
+        .get(`/users/${data.profile.slug}/playlists`)
+        .then((res) => {
+          if (res.data.playlists) {
+            playlists = res.data.playlists;
+          }
+        })
+        .catch((err) =>
+          console.error("Could not fetch private playlists", err),
+        );
+    }
+  });
+
+  function openEditModal(playlist: any) {
+    playlistToEdit = playlist;
+    isEditModalOpen = true;
+  }
+
+  function onTogglePrivacy(id: number, is_public: boolean) {
+    playlists = playlists.map((p) => (p.id === id ? { ...p, is_public } : p));
+  }
+
+  async function handleDelete(id: number) {
+    if (!confirm("Are you sure you want to delete this playlist?")) return;
+    try {
+      await api.delete(`/playlists/${id}`);
+      playlists = playlists.filter((p) => p.id !== id);
+    } catch (e) {
+      console.error("Failed to delete playlist", e);
+    }
+  }
+
+  let filteredPlaylists = $derived(
+    playlists.filter(
+      (p: any) =>
+        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (p.description &&
+          p.description.toLowerCase().includes(searchQuery.toLowerCase())),
+    ),
+  );
+</script>
+
+<section in:fade={{ duration: 200 }}>
+  {#if data.profile}
+    <div
+      class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12"
+    >
+      <div>
+        <h3 class="text-3xl font-black text-white tracking-tight leading-tight">
+          {data.profile.name}'s
+          <span class="text-primary italic">Playlists</span>
+        </h3>
+        <p class="text-white/40 mt-2 font-medium">
+          Browse collections curated by {data.profile.name}.
+        </p>
+      </div>
+
+      <div
+        class="flex flex-col sm:flex-row items-center gap-4 w-full max-w-2xl"
+      >
+        <div class="relative flex-1 w-full">
+          <span class="absolute left-4 top-1/2 -translate-y-1/2 text-white/20">
+            <Search size={20} />
+          </span>
+          <input
+            type="text"
+            bind:value={searchQuery}
+            placeholder="Search playlists..."
+            class="w-full bg-surface-darker/50 border border-white/10 rounded-2xl py-4 pl-12 pr-6 text-white placeholder:text-white/20 focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all"
+          />
+        </div>
+
+        {#if isOwner}
+          <button
+            onclick={() => (showCreateModal = true)}
+            class="bg-primary hover:bg-primary/80 text-white px-6 py-4 rounded-2xl text-sm font-bold transition-all flex items-center gap-2 whitespace-nowrap"
+          >
+            <span class="material-symbols-outlined text-sm">add</span>
+            New Playlist
+          </button>
+        {/if}
+      </div>
+    </div>
+
+    {#if filteredPlaylists.length > 0}
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {#each filteredPlaylists as playlist (playlist.id)}
+          <PlaylistCard
+            {playlist}
+            profile={data.profile}
+            {openEditModal}
+            {handleDelete}
+            {onTogglePrivacy}
+          />
+        {/each}
+      </div>
+    {:else}
+      <div
+        class="py-20 flex flex-col items-center justify-center text-center opacity-40"
+      >
+        <Music size={80} strokeWidth={1} />
+        <h2 class="text-2xl font-bold mt-6">No playlists found</h2>
+        <p class="mt-2 text-sm">
+          This user hasn't made any public playlists yet.
+        </p>
+      </div>
+    {/if}
+  {/if}
+</section>
+
+{#if showCreateModal}
+  <CreatePlaylistModal
+    show={showCreateModal}
+    onClose={() => (showCreateModal = false)}
+    onCreated={(newPlaylist) => {
+      playlists = [newPlaylist, ...playlists];
+      showCreateModal = false;
+    }}
+  />
+{/if}
+
+{#if isEditModalOpen}
+  <EditPlaylistModal
+    show={isEditModalOpen}
+    playlist={playlistToEdit}
+    onClose={() => (isEditModalOpen = false)}
+    onUpdated={(updatedPlaylist) => {
+      playlists = playlists.map((p) =>
+        p.id === updatedPlaylist.id ? updatedPlaylist : p,
+      );
+      isEditModalOpen = false;
+    }}
+  />
+{/if}

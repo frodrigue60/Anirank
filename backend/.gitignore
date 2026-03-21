@@ -1,0 +1,31 @@
+# Binaries and executables
+anirank.exe
+api.exe
+main.exe
+main
+tmp_api.exe
+tmp_test.exe
+bin/
+*.exe
+*.test
+
+# Environment variables
+.env
+
+# Dependencies
+vendor/
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary and Build files
+tmp/
+build_err.txt
+*.log
+
+# Project specific
+init.json
+seasonal_ranking.json

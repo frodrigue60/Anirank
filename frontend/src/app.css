@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+@theme {
+  /* Old colors (kept temporarily for backwards compatibility of other components) */
+  --color-primary-500: #7f13ec;
+  --color-primary-600: #660fbd;
+  --color-dark-800: #2a2136;
+  --color-dark-900: #191022;
+
+  /* New Template Colors */
+  --color-primary: #7f13ec;
+  --color-background-light: #f7f6f8;
+  --color-background-dark: #191022;
+  --color-surface-dark: #2a2136;
+  --color-surface-darker: #22192e;
+}
+
+@layer base {
+  body {
+    @apply bg-background-light dark:bg-background-dark text-slate-900 dark:text-white antialiased selection:bg-primary selection:text-white;
+    overflow-x: hidden;
+  }
+
+  .material-symbols-outlined {
+    font-size: inherit !important; /* Adapt to parent text size automatically */
+    font-variation-settings:
+      "FILL" 0,
+      "wght" 400,
+      "GRAD" 0,
+      "opsz" inherit; /* Link optical size to font size */
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;
+    user-select: none;
+    speak: none;
+    width: 1em; /* Ensure square aspect ratio */
+    height: 1em;
+  }
+
+  .material-symbols-outlined.filled {
+    font-variation-settings: "FILL" 1;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #191022;
+}
+::-webkit-scrollbar-thumb {
+  background: #4a3b59;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #6b5680;
+}
+
+@utility glass-panel {
+  background: rgba(42, 33, 54, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+@utility hero-glow {
+  box-shadow: 0 0 120px -30px rgba(127, 19, 236, 0.4);
+}
+
+@utility truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}

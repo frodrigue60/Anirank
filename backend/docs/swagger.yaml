@@ -1,0 +1,2116 @@
+basePath: /api
+definitions:
+  domain.AppError:
+    properties:
+      code:
+        type: integer
+      err: {}
+      message:
+        type: string
+    type: object
+  domain.Artist:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      name_jp:
+        type: string
+      slug:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  domain.Badge:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  domain.Comment:
+    properties:
+      commentable_id:
+        type: integer
+      commentable_type:
+        type: string
+      content:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      parent_id:
+        type: integer
+      replies:
+        items:
+          $ref: '#/definitions/domain.Comment'
+        type: array
+      replies_count:
+        type: integer
+      updated_at:
+        type: string
+      user:
+        allOf:
+        - $ref: '#/definitions/domain.User'
+        description: Relational Output Data
+      user_id:
+        type: integer
+    type: object
+  domain.ExternalLink:
+    properties:
+      created_at:
+        type: string
+      icon:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      type:
+        type: string
+      updated_at:
+        type: string
+      url:
+        type: string
+    type: object
+  domain.Format:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      slug:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  domain.Genre:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      slug:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  domain.Playlist:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      is_public:
+        type: boolean
+      name:
+        type: string
+      songs:
+        items:
+          $ref: '#/definitions/domain.PlaylistSong'
+        type: array
+      updated_at:
+        type: string
+      user:
+        allOf:
+        - $ref: '#/definitions/domain.User'
+        description: Relationships
+      user_id:
+        type: integer
+    type: object
+  domain.PlaylistSong:
+    properties:
+      playlist_id:
+        type: integer
+      position:
+        type: integer
+      song:
+        allOf:
+        - $ref: '#/definitions/domain.Song'
+        description: Enriched
+      song_id:
+        type: integer
+    type: object
+  domain.Post:
+    properties:
+      anilist_id:
+        type: integer
+      banner:
+        type: string
+      banner_src:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      external_links:
+        items:
+          $ref: '#/definitions/domain.ExternalLink'
+        type: array
+      format:
+        $ref: '#/definitions/domain.Format'
+      format_id:
+        type: integer
+      genres:
+        items:
+          $ref: '#/definitions/domain.Genre'
+        type: array
+      id:
+        type: integer
+      producers:
+        items:
+          $ref: '#/definitions/domain.Producer'
+        type: array
+      season:
+        $ref: '#/definitions/domain.Season'
+      season_id:
+        type: integer
+      slug:
+        type: string
+      songs:
+        items:
+          $ref: '#/definitions/domain.Song'
+        type: array
+      status:
+        type: boolean
+      studios:
+        items:
+          $ref: '#/definitions/domain.Studio'
+        type: array
+      thumbnail:
+        type: string
+      thumbnail_src:
+        type: string
+      title:
+        type: string
+      updated_at:
+        type: string
+      year:
+        allOf:
+        - $ref: '#/definitions/domain.Year'
+        description: Relations
+      year_id:
+        type: integer
+    type: object
+  domain.Producer:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      slug:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  domain.Report:
+    properties:
+      content:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      song:
+        allOf:
+        - $ref: '#/definitions/domain.Song'
+        description: Relational
+      song_id:
+        type: integer
+      source:
+        description: E.g., 'web', 'app', 'ext'
+        type: string
+      status:
+        description: '''pending'', ''fixed'''
+        type: string
+      title:
+        type: string
+      updated_at:
+        type: string
+      user:
+        $ref: '#/definitions/domain.User'
+      user_id:
+        type: integer
+    type: object
+  domain.Role:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      slug:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  domain.Season:
+    properties:
+      created_at:
+        type: string
+      current:
+        type: boolean
+      id:
+        type: integer
+      name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  domain.Song:
+    properties:
+      anime_id:
+        type: integer
+      artists:
+        items:
+          $ref: '#/definitions/domain.Artist'
+        type: array
+      created_at:
+        type: string
+      id:
+        type: integer
+      post:
+        allOf:
+        - $ref: '#/definitions/domain.Post'
+        description: Relations
+      season:
+        $ref: '#/definitions/domain.Season'
+      season_id:
+        type: integer
+      slug:
+        type: string
+      song_en:
+        type: string
+      song_jp:
+        type: string
+      song_romaji:
+        type: string
+      theme_num:
+        type: string
+      type:
+        type: string
+      updated_at:
+        type: string
+      variants:
+        items:
+          $ref: '#/definitions/domain.SongVariant'
+        type: array
+      views:
+        type: integer
+      year:
+        $ref: '#/definitions/domain.Year'
+      year_id:
+        type: integer
+    type: object
+  domain.SongVariant:
+    properties:
+      created_at:
+        type: string
+      embed_code:
+        type: string
+      id:
+        type: integer
+      season:
+        $ref: '#/definitions/domain.Season'
+      season_id:
+        type: integer
+      slug:
+        type: string
+      song:
+        allOf:
+        - $ref: '#/definitions/domain.Song'
+        description: Relations
+      song_id:
+        type: integer
+      spoiler:
+        type: boolean
+      updated_at:
+        type: string
+      version_number:
+        type: integer
+      video_src:
+        description: Embedded Video Info to simulate 1:1 legacy relation without join
+          overhead
+        type: string
+      video_type:
+        description: file, embed
+        type: string
+      views:
+        type: integer
+      year:
+        $ref: '#/definitions/domain.Year'
+      year_id:
+        type: integer
+    type: object
+  domain.Studio:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      slug:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  domain.Tournament:
+    properties:
+      created_at:
+        type: string
+      current_round:
+        type: integer
+      description:
+        type: string
+      id:
+        type: integer
+      matchups:
+        description: Tree of matchups
+        items:
+          $ref: '#/definitions/domain.TournamentMatchup'
+        type: array
+      name:
+        type: string
+      slug:
+        type: string
+      status:
+        description: draft, active, completed
+        type: string
+      title:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  domain.TournamentMatchup:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      matchup_order:
+        type: integer
+      round:
+        type: integer
+      song_a:
+        allOf:
+        - $ref: '#/definitions/domain.Song'
+        description: Relations
+      song_a_id:
+        type: integer
+      song_b:
+        $ref: '#/definitions/domain.Song'
+      song_b_id:
+        description: Nulable if waiting or got a bye
+        type: integer
+      status:
+        description: pending, active, completed
+        type: string
+      tournament_id:
+        type: integer
+      updated_at:
+        type: string
+      winner:
+        $ref: '#/definitions/domain.Song'
+      winner_id:
+        type: integer
+    type: object
+  domain.User:
+    properties:
+      badges:
+        items:
+          $ref: '#/definitions/domain.Badge'
+        type: array
+      banner:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      email_verified_at:
+        type: string
+      id:
+        type: integer
+      image:
+        type: string
+      name:
+        type: string
+      roles:
+        description: RBAC Relations
+        items:
+          $ref: '#/definitions/domain.Role'
+        type: array
+      score_format:
+        type: string
+      slug:
+        type: string
+      type:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  domain.UserRequest:
+    properties:
+      attended_admin:
+        $ref: '#/definitions/domain.User'
+      attended_by:
+        description: nullable
+        type: integer
+      content:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      status:
+        description: '''pending'', ''attended'''
+        type: string
+      updated_at:
+        type: string
+      user:
+        allOf:
+        - $ref: '#/definitions/domain.User'
+        description: Relational
+      user_id:
+        type: integer
+    type: object
+  domain.Year:
+    properties:
+      created_at:
+        type: string
+      current:
+        type: boolean
+      id:
+        type: integer
+      name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: admin@anirank.com
+    name: Soporte API Anirank
+  description: API Rest interactiva y pública para el proyecto Anirank.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: Anirank API
+  version: "1.0"
+paths:
+  /admin/animes:
+    post:
+      consumes:
+      - application/json
+      description: Create a new Anime (Post) in the database.
+      parameters:
+      - description: Anime Data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Post'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            properties:
+              data:
+                $ref: '#/definitions/domain.Post'
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/domain.AppError'
+      security:
+      - BearerAuth: []
+      summary: Create Anime
+      tags:
+      - Admin Animes
+  /admin/animes/{id}:
+    delete:
+      description: Delete an existing Anime by ID.
+      parameters:
+      - description: Anime ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              message:
+                type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/domain.AppError'
+      security:
+      - BearerAuth: []
+      summary: Delete Anime
+      tags:
+      - Admin Animes
+    put:
+      consumes:
+      - application/json
+      description: Update an existing Anime by ID.
+      parameters:
+      - description: Anime ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Anime Data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Post'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              message:
+                type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/domain.AppError'
+      security:
+      - BearerAuth: []
+      summary: Update Anime
+      tags:
+      - Admin Animes
+  /admin/artists:
+    post:
+      consumes:
+      - application/json
+      description: Create a new Artist in the database.
+      parameters:
+      - description: Artist Data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Artist'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            properties:
+              data:
+                $ref: '#/definitions/domain.Artist'
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/domain.AppError'
+      security:
+      - BearerAuth: []
+      summary: Create Artist
+      tags:
+      - Admin Artists
+  /admin/artists/{id}:
+    delete:
+      description: Delete an existing Artist by ID.
+      parameters:
+      - description: Artist ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              message:
+                type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/domain.AppError'
+      security:
+      - BearerAuth: []
+      summary: Delete Artist
+      tags:
+      - Admin Artists
+    put:
+      consumes:
+      - application/json
+      description: Update an existing Artist by ID.
+      parameters:
+      - description: Artist ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Artist Data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Artist'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              message:
+                type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/domain.AppError'
+      security:
+      - BearerAuth: []
+      summary: Update Artist
+      tags:
+      - Admin Artists
+  /admin/reports:
+    get:
+      description: Admin endpoint to list all unresolved reports.
+      parameters:
+      - default: 20
+        description: Limit
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.Report'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List Pending Reports
+      tags:
+      - Admin Moderation
+  /admin/reports/{id}/resolve:
+    put:
+      description: Admin endpoint to mark a report as resolved.
+      parameters:
+      - description: Report ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              message:
+                type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/domain.AppError'
+      security:
+      - BearerAuth: []
+      summary: Resolve Report
+      tags:
+      - Admin Moderation
+  /admin/songs:
+    post:
+      consumes:
+      - application/json
+      description: Create a new Song in the database. Optionally sync Artist relationships.
+      parameters:
+      - description: Song Data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Song'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            properties:
+              data:
+                $ref: '#/definitions/domain.Song'
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/domain.AppError'
+      security:
+      - BearerAuth: []
+      summary: Create Song
+      tags:
+      - Admin Songs
+  /admin/songs/{id}:
+    delete:
+      description: Delete an existing Song by ID.
+      parameters:
+      - description: Song ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              message:
+                type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/domain.AppError'
+      security:
+      - BearerAuth: []
+      summary: Delete Song
+      tags:
+      - Admin Songs
+    put:
+      consumes:
+      - application/json
+      description: Update an existing Song by ID. Optionally sync Artist relationships.
+      parameters:
+      - description: Song ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Song Data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Song'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              message:
+                type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/domain.AppError'
+      security:
+      - BearerAuth: []
+      summary: Update Song
+      tags:
+      - Admin Songs
+  /admin/user-requests:
+    get:
+      description: Admin endpoint to list all unresolved user requests.
+      parameters:
+      - default: 20
+        description: Limit
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.UserRequest'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List Pending User Requests
+      tags:
+      - Admin Moderation
+  /admin/user-requests/{id}/resolve:
+    put:
+      description: Admin endpoint to mark a specific user request as resolved.
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              message:
+                type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.AppError'
+      security:
+      - BearerAuth: []
+      summary: Resolve User Request
+      tags:
+      - Admin Moderation
+  /admin/variants:
+    post:
+      consumes:
+      - application/json
+      description: Create a new Song Variant (video/audio link) in the database.
+      parameters:
+      - description: Variant Data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.SongVariant'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            properties:
+              data:
+                $ref: '#/definitions/domain.SongVariant'
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/domain.AppError'
+      security:
+      - BearerAuth: []
+      summary: Create Song Variant
+      tags:
+      - Admin Variants
+  /admin/variants/{id}:
+    put:
+      consumes:
+      - application/json
+      description: Update an existing Song Variant by ID.
+      parameters:
+      - description: Variant ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Variant Data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.SongVariant'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              message:
+                type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/domain.AppError'
+      security:
+      - BearerAuth: []
+      summary: Update Song Variant
+      tags:
+      - Admin Variants
+  /animes:
+    get:
+      description: Retrieve a paginated list of all Animes ordered by default index
+        rules.
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.Post'
+            type: array
+      summary: List Animes
+      tags:
+      - Anime
+  /animes/{slug}:
+    get:
+      description: Retrieves all data associated with an Anime, including related
+        songs and variants based on its slug.
+      parameters:
+      - description: Anime Slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              data:
+                $ref: '#/definitions/domain.Post'
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/domain.AppError'
+      summary: Get Anime details
+      tags:
+      - Anime
+  /comments:
+    get:
+      description: Fetch paginated root comments for a specific entity (e.g. Song).
+      parameters:
+      - description: Entity ID
+        in: query
+        name: entity_id
+        required: true
+        type: integer
+      - description: Entity Type (e.g. App\\Models\\Song)
+        in: query
+        name: entity_type
+        required: true
+        type: string
+      - default: 20
+        description: Limit
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.Comment'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.AppError'
+      summary: List Comments
+      tags:
+      - Comments
+    post:
+      consumes:
+      - application/json
+      description: Create a new comment or a reply to an existing comment.
+      parameters:
+      - description: Comment Data
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            content:
+              type: string
+            entity_id:
+              type: integer
+            entity_type:
+              type: string
+            parent_id:
+              type: integer
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            properties:
+              data:
+                $ref: '#/definitions/domain.Comment'
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.AppError'
+      security:
+      - BearerAuth: []
+      summary: Post Comment
+      tags:
+      - Comments
+  /comments/{id}:
+    delete:
+      description: Delete an existing comment by ID.
+      parameters:
+      - description: Comment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              message:
+                type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.AppError'
+      security:
+      - BearerAuth: []
+      summary: Delete Comment
+      tags:
+      - Comments
+  /comments/{id}/replies:
+    get:
+      description: Fetch paginated replies for a specific parent comment.
+      parameters:
+      - description: Parent Comment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - default: 20
+        description: Limit
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.Comment'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.AppError'
+      summary: List Comment Replies
+      tags:
+      - Comments
+  /init:
+    get:
+      description: Loads essential taxonomy and lookup arrays required for the SPA
+        context (Years, Seasons, Formats, etc).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              data:
+                additionalProperties: true
+                type: object
+            type: object
+      summary: Init Data
+      tags:
+      - Discovery
+  /interactions/favorites:
+    post:
+      consumes:
+      - application/json
+      description: Toggle the favorite status of a Song or Playlist for the authenticated
+        user.
+      parameters:
+      - description: Favorite Data
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            entity_id:
+              type: integer
+            entity_type:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              favorited:
+                type: boolean
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.AppError'
+      security:
+      - BearerAuth: []
+      summary: Toggle Favorite
+      tags:
+      - Interactions
+  /interactions/feed:
+    get:
+      description: Retrieve the latest ratings, reactions, and favorites across the
+        platform.
+      parameters:
+      - default: 20
+        description: Items limit
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.AppError'
+      summary: Global Activity Feed
+      tags:
+      - Interactions
+  /interactions/ratings:
+    post:
+      consumes:
+      - application/json
+      description: Submit a rating (1-10) for a specific Song.
+      parameters:
+      - description: Rating Data
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            score:
+              type: number
+            song_id:
+              type: integer
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              message:
+                type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.AppError'
+      security:
+      - BearerAuth: []
+      summary: Rate Song
+      tags:
+      - Interactions
+  /interactions/reactions:
+    post:
+      consumes:
+      - application/json
+      description: Submit a reaction (1 for like, -1 for dislike, 0 to clear) for
+        a SongVariant or Comment.
+      parameters:
+      - description: Reaction Data
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            entity_id:
+              type: integer
+            entity_type:
+              type: string
+            reaction:
+              type: integer
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              message:
+                type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.AppError'
+      security:
+      - BearerAuth: []
+      summary: React to Entity
+      tags:
+      - Interactions
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates a user with email and password, returning a JWT.
+      parameters:
+      - description: User Credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            email:
+              type: string
+            password:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Returns JWT token
+          schema:
+            properties:
+              data:
+                type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/domain.AppError'
+      summary: User Login
+      tags:
+      - Auth
+  /playlists:
+    post:
+      consumes:
+      - application/json
+      description: Create a new playlist for the authenticated user.
+      parameters:
+      - description: Playlist Data
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            description:
+              type: string
+            is_public:
+              type: boolean
+            name:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            properties:
+              data:
+                $ref: '#/definitions/domain.Playlist'
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.AppError'
+      security:
+      - BearerAuth: []
+      summary: Create Playlist
+      tags:
+      - Playlists
+  /playlists/{id}:
+    delete:
+      description: Delete an existing playlist by ID.
+      parameters:
+      - description: Playlist ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              message:
+                type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/domain.AppError'
+      security:
+      - BearerAuth: []
+      summary: Delete Playlist
+      tags:
+      - Playlists
+    get:
+      description: Fetch details of a playlist including attached songs.
+      parameters:
+      - description: Playlist ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              data:
+                $ref: '#/definitions/domain.Playlist'
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/domain.AppError'
+      summary: Get Playlist
+      tags:
+      - Playlists
+    put:
+      consumes:
+      - application/json
+      description: Update an existing playlist by ID.
+      parameters:
+      - description: Playlist ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Playlist Data
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            description:
+              type: string
+            is_public:
+              type: boolean
+            name:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              message:
+                type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/domain.AppError'
+      security:
+      - BearerAuth: []
+      summary: Update Playlist
+      tags:
+      - Playlists
+  /playlists/{id}/songs:
+    post:
+      consumes:
+      - application/json
+      description: Append or insert a song at a given position within a playlist.
+      parameters:
+      - description: Playlist ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Add Song Data
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            position:
+              type: integer
+            song_id:
+              type: integer
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            properties:
+              message:
+                type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.AppError'
+      security:
+      - BearerAuth: []
+      summary: Add Song to Playlist
+      tags:
+      - Playlists
+  /playlists/{id}/songs/{songID}:
+    delete:
+      description: Remove a specific song from a user's playlist.
+      parameters:
+      - description: Playlist ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Song ID
+        in: path
+        name: songID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              message:
+                type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.AppError'
+      security:
+      - BearerAuth: []
+      summary: Remove Song from Playlist
+      tags:
+      - Playlists
+  /playlists/{id}/songs/reorder:
+    put:
+      consumes:
+      - application/json
+      description: Update the sort order of songs within a custom playlist.
+      parameters:
+      - description: Playlist ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Reorder Data (song_id -> position)
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            positions:
+              type: object
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              message:
+                type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.AppError'
+      security:
+      - BearerAuth: []
+      summary: Reorder Playlist Songs
+      tags:
+      - Playlists
+  /playlists/users/{id}:
+    get:
+      description: Fetch paginated playlists for a user.
+      parameters:
+      - description: Target User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - default: 20
+        description: Limit
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.Playlist'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.AppError'
+      summary: List User Playlists
+      tags:
+      - Playlists
+  /profile:
+    get:
+      description: Retrieves the authenticated user's profile information.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              data:
+                $ref: '#/definitions/domain.User'
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.AppError'
+      security:
+      - BearerAuth: []
+      summary: Get User Profile
+      tags:
+      - Auth
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: Registers a new user with name, email, and password.
+      parameters:
+      - description: User Data
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            email:
+              type: string
+            name:
+              type: string
+            password:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Returns JWT token
+          schema:
+            properties:
+              data:
+                type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/domain.AppError'
+      summary: User Registration
+      tags:
+      - Auth
+  /reports:
+    post:
+      consumes:
+      - application/json
+      description: Submit a report for an entity (User, Song, Comment, etc) as a user.
+      parameters:
+      - description: Report Data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Report'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            properties:
+              message:
+                type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.AppError'
+      security:
+      - BearerAuth: []
+      summary: Create a Report
+      tags:
+      - Moderation
+  /search:
+    get:
+      description: Search across Animes, Songs, Artists, and Users using a single
+        query term.
+      parameters:
+      - description: Search Term
+        in: query
+        name: q
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              data:
+                type: object
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.AppError'
+      summary: Global Search
+      tags:
+      - Public
+  /tournaments/{slug}:
+    get:
+      description: Fetch a specific tournament's details and matchups by its slug.
+      parameters:
+      - description: Tournament Slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              data:
+                $ref: '#/definitions/domain.Tournament'
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "404":
+          description: Not Found
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      summary: Get Tournament by Slug
+      tags:
+      - Tournaments
+  /tournaments/active:
+    get:
+      description: Fetch the active tournament and its current matchups/bracket.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              data:
+                $ref: '#/definitions/domain.Tournament'
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      summary: Get Active Tournament
+      tags:
+      - Tournaments
+  /tournaments/matchups/{id}/vote:
+    post:
+      consumes:
+      - application/json
+      description: Submit a vote for a specific song in an ongoing tournament matchup.
+      parameters:
+      - description: Matchup ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Vote Data
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            song_id:
+              type: integer
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            properties:
+              message:
+                type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.AppError'
+      security:
+      - BearerAuth: []
+      summary: Submit Vote
+      tags:
+      - Tournaments
+  /user-requests:
+    post:
+      consumes:
+      - application/json
+      description: Submit a general support request (E.g request an Artist to be added).
+      parameters:
+      - description: User Request Data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.UserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            properties:
+              message:
+                type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.AppError'
+      security:
+      - BearerAuth: []
+      summary: Create a User Request
+      tags:
+      - Moderation
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

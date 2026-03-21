@@ -1,0 +1,231 @@
+<script lang="ts">
+  import api from "$lib/api";
+  import BadgeModal from "./BadgeModal.svelte";
+
+  let { data } = $props();
+  let badges = $state(data.badges || []);
+
+  $effect(() => {
+    badges = data.badges || [];
+  });
+
+  let loadingDelete = $state<number | null>(null);
+
+  // Modal State
+  let showModal = $state(false);
+  let editingBadge = $state<any>(null);
+
+  function openCreateModal() {
+    editingBadge = null;
+    showModal = true;
+  }
+
+  function openEditModal(badge: any) {
+    editingBadge = badge;
+    showModal = true;
+  }
+
+  async function deleteBadge(id: number) {
+    if (!confirm("Are you sure you want to delete this badge?")) return;
+
+    loadingDelete = id;
+    try {
+      await api.delete(`/admin/badges/${id}`);
+      badges = badges.filter((b: any) => b.id !== id);
+    } catch (err) {
+      console.error("Error deleting badge:", err);
+      alert("Failed to delete badge.");
+    } finally {
+      loadingDelete = null;
+    }
+  }
+
+  function handleSave(updatedBadge: any) {
+    if (editingBadge) {
+      badges = badges.map((b: any) =>
+        b.id === updatedBadge.id ? updatedBadge : b,
+      );
+    } else {
+      badges = [...badges, updatedBadge];
+    }
+    showModal = false;
+  }
+</script>
+
+<div class="space-y-6 animate-fade-in">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-white">Badges</h1>
+      <p class="text-gray-400 mt-1">Manage user badges and achievements</p>
+    </div>
+    <button
+      onclick={openCreateModal}
+      class="px-4 py-2 bg-anirank-primary hover:bg-anirank-primary/90 text-white font-medium rounded-xl transition-colors flex items-center gap-2"
+    >
+      <svg
+        class="w-5 h-5"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M12 4v16m8-8H4"
+        />
+      </svg>
+      Add Badge
+    </button>
+  </div>
+
+  <div
+    class="bg-anirank-card border border-white/5 rounded-2xl overflow-hidden"
+  >
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-sm text-gray-300">
+        <thead
+          class="bg-white/5 text-gray-400 text-xs uppercase tracking-wider"
+        >
+          <tr>
+            <th class="px-6 py-4 font-medium">Icon</th>
+            <th class="px-6 py-4 font-medium">Name</th>
+            <th class="px-6 py-4 font-medium hidden md:table-cell"
+              >Description</th
+            >
+            <th class="px-6 py-4 font-medium">Status</th>
+            <th class="px-6 py-4 font-medium text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-white/5">
+          {#each badges as badge (badge.id)}
+            <tr class="hover:bg-white/[0.02] transition-colors group">
+              <td class="px-6 py-4">
+                {#if badge.icon_url}
+                  <img
+                    src={badge.icon_url}
+                    alt={badge.name}
+                    class="w-10 h-10 object-contain rounded-md bg-black/20 p-1"
+                  />
+                {:else}
+                  <div
+                    class="w-10 h-10 rounded-md bg-white/10 flex items-center justify-center text-gray-500"
+                  >
+                    <svg
+                      class="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      ><path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      ></path></svg
+                    >
+                  </div>
+                {/if}
+              </td>
+              <td class="px-6 py-4 font-medium text-white">
+                {badge.name}
+              </td>
+              <td
+                class="px-6 py-4 hidden md:table-cell max-w-[200px] truncate text-gray-400"
+              >
+                {badge.description || "-"}
+              </td>
+              <td class="px-6 py-4">
+                <span
+                  class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium {badge.is_active
+                    ? 'bg-green-500/10 text-green-400'
+                    : 'bg-red-500/10 text-red-400'}"
+                >
+                  {badge.is_active ? "Active" : "Inactive"}
+                </span>
+              </td>
+              <td class="px-6 py-4 text-right">
+                <div
+                  class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <button
+                    onclick={() => openEditModal(badge)}
+                    class="p-2 hover:bg-white/10 text-gray-400 hover:text-white rounded-lg transition-colors"
+                    title="Edit"
+                  >
+                    <svg
+                      class="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      ><path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                      ></path></svg
+                    >
+                  </button>
+                  <button
+                    onclick={() => deleteBadge(badge.id)}
+                    disabled={loadingDelete === badge.id}
+                    class="p-2 hover:bg-red-500/20 text-gray-400 hover:text-red-400 rounded-lg transition-colors disabled:opacity-50"
+                    title="Delete"
+                  >
+                    {#if loadingDelete === badge.id}
+                      <svg
+                        class="w-4 h-4 animate-spin"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                      >
+                        <circle
+                          class="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          stroke-width="4"
+                        ></circle>
+                        <path
+                          class="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                    {:else}
+                      <svg
+                        class="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        ><path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        ></path></svg
+                      >
+                    {/if}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          {:else}
+            <tr>
+              <td colspan="5" class="px-6 py-12 text-center text-gray-500">
+                No badges found. Click "Add Badge" to create one.
+              </td>
+            </tr>
+          {/each}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{#if showModal}
+  <BadgeModal
+    badge={editingBadge}
+    onclose={() => (showModal = false)}
+    onsave={handleSave}
+  />
+{/if}

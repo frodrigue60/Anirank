@@ -1,0 +1,270 @@
+<script lang="ts">
+  import api from "$lib/api";
+  import { goto } from "$app/navigation";
+  import { toastState } from "$lib/state/toast.svelte";
+
+  let { data } = $props();
+  let report = $state(data.report);
+
+  $effect(() => {
+    report = data.report;
+  });
+
+  let isResolving = $state(false);
+  let isDeleting = $state(false);
+
+  async function resolveReport() {
+    if (!report) return;
+    isResolving = true;
+    try {
+      await api.put(`/admin/songs/reports/${report.id}/resolve`);
+      toastState.addToast("Report marked as resolved", "success");
+      report.status = "fixed";
+      goto("/admin/songs/reports");
+    } catch (err: any) {
+      console.error("Error resolving report:", err);
+      toastState.addToast(
+        err.response?.data?.message || "Failed to resolve report",
+        "error",
+      );
+    } finally {
+      isResolving = false;
+    }
+  }
+
+  async function deleteReport() {
+    if (!report) return;
+    if (!confirm("Are you sure you want to delete this report?")) return;
+
+    isDeleting = true;
+    try {
+      await api.delete(`/admin/songs/reports/${report.id}`);
+      toastState.addToast("Report deleted", "success");
+      goto("/admin/songs/reports");
+    } catch (err: any) {
+      console.error("Error deleting report:", err);
+      toastState.addToast("Failed to delete report", "error");
+    } finally {
+      isDeleting = false;
+    }
+  }
+
+  const statusColors: Record<string, string> = {
+    pending: "bg-amber-500/10 text-amber-500 border-amber-500/20",
+    fixed: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+  };
+</script>
+
+<svelte:head>
+  <title>Report #{report?.id || "..."} | Admin</title>
+</svelte:head>
+
+<div class="max-w-4xl mx-auto">
+  <!-- Header -->
+  <div
+    class="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
+  >
+    <div>
+      <div class="flex items-center gap-3 mb-2">
+        <a
+          href="/admin/songs/reports"
+          class="p-2 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 transition-colors"
+        >
+          <span class="material-symbols-outlined text-xl">arrow_back</span>
+        </a>
+        <h1 class="text-3xl font-bold tracking-tight text-white">
+          Report <span class="text-white/40">#{report?.id}</span>
+        </h1>
+      </div>
+      <p class="text-gray-400">Reviewing violation report submitted by user.</p>
+    </div>
+
+    {#if report?.status === "pending"}
+      <div class="flex gap-3 w-full sm:w-auto">
+        <button
+          onclick={deleteReport}
+          disabled={isDeleting || isResolving}
+          class="flex-1 sm:flex-none px-4 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-xl font-medium transition-all disabled:opacity-50"
+        >
+          {isDeleting ? "Deleting..." : "Delete Report"}
+        </button>
+        <button
+          onclick={resolveReport}
+          disabled={isResolving || isDeleting}
+          class="flex-1 sm:flex-none px-6 py-2 bg-emerald-500 text-white hover:bg-emerald-600 rounded-xl font-medium transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+        >
+          {isResolving ? "Resolving..." : "Mark as Fixed"}
+        </button>
+      </div>
+    {/if}
+  </div>
+
+  {#if !report}
+    <div
+      class="bg-anirank-card border border-white/5 rounded-2xl p-12 text-center text-gray-500"
+    >
+      <span class="material-symbols-outlined text-6xl mb-4 opacity-20"
+        >inventory_2</span
+      >
+      <p>Report not found or failed to load.</p>
+    </div>
+  {:else}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Main Content -->
+      <div class="lg:col-span-2 space-y-6">
+        <!-- Reason/Title -->
+        <div
+          class="bg-anirank-card border border-white/5 rounded-2xl overflow-hidden"
+        >
+          <div
+            class="p-4 border-b border-white/5 bg-white/5 flex justify-between items-center"
+          >
+            <h2 class="font-bold text-white flex items-center gap-2">
+              <span class="material-symbols-outlined text-rose-400">report</span
+              >
+              Report Content
+            </h2>
+            <span
+              class="px-2 py-0.5 rounded-full text-xs font-bold border capitalize {statusColors[
+                report.status
+              ] || ''}"
+            >
+              {report.status}
+            </span>
+          </div>
+          <div class="p-6">
+            <h3 class="text-xl font-bold text-white mb-4">{report.title}</h3>
+            <div
+              class="bg-black/20 rounded-xl p-5 text-gray-300 leading-relaxed border border-white/5 whitespace-pre-wrap"
+            >
+              {report.content}
+            </div>
+          </div>
+        </div>
+
+        <!-- Target Context -->
+        <div
+          class="bg-anirank-card border border-white/5 rounded-2xl overflow-hidden"
+        >
+          <div class="p-4 border-b border-white/5 bg-white/5">
+            <h2 class="font-bold text-white flex items-center gap-2">
+              <span class="material-symbols-outlined text-blue-400">target</span
+              >
+              Target Entity
+            </h2>
+          </div>
+          <div class="p-6">
+            {#if report.song}
+              <div
+                class="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/5"
+              >
+                <div
+                  class="w-16 h-16 bg-blue-500/20 rounded-xl flex items-center justify-center text-blue-400"
+                >
+                  <span class="material-symbols-outlined text-3xl"
+                    >music_note</span
+                  >
+                </div>
+                <div>
+                  <div
+                    class="text-xs text-blue-400 font-bold uppercase tracking-wider mb-1"
+                  >
+                    <a
+                      href="/songs/{report.song?.anime?.slug}/{report.song
+                        ?.slug}"
+                      target="_blank"
+                      class="text-lg font-bold text-white hover:text-blue-400 transition-colors"
+                    >
+                      {report.song?.song_romaji ||
+                        report.song?.song_en ||
+                        report.song?.song_jp ||
+                        "Unknown Song"}
+                    </a>
+                  </div>
+
+                  <div class="text-sm text-gray-500">
+                    ID: {report.song?.id} • Slug: {report.song?.slug}
+                  </div>
+                </div>
+                <a
+                  href="/songs/{report.song?.anime?.slug}/{report.song?.slug}"
+                  target="_blank"
+                  class="ml-auto p-2 hover:bg-white/10 rounded-lg text-gray-400"
+                >
+                  <span class="material-symbols-outlined">open_in_new</span>
+                </a>
+              </div>
+            {:else}
+              <div
+                class="p-4 bg-white/5 rounded-xl text-gray-500 text-center italic border border-white/5"
+              >
+                Target context information is unavailable or could not be
+                loaded.
+              </div>
+            {/if}
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="space-y-6">
+        <!-- Reporter Info -->
+        <div
+          class="bg-anirank-card border border-white/5 rounded-2xl overflow-hidden"
+        >
+          <div class="p-4 border-b border-white/5 bg-white/5">
+            <h2 class="font-bold text-white flex items-center gap-2">
+              <span class="material-symbols-outlined text-gray-400">person</span
+              >
+              Reporter
+            </h2>
+          </div>
+          <div class="p-6">
+            <div class="flex items-center gap-3 mb-4">
+              <div
+                class="w-12 h-12 rounded-full bg-linear-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-lg"
+              >
+                {report.user?.name?.[0].toUpperCase() || "?"}
+              </div>
+              <div>
+                <a
+                  href="/users/{report.user?.slug}"
+                  target="_blank"
+                  class="font-bold text-white hover:text-blue-400 hover:underline transition-all"
+                >
+                  {report.user?.name}
+                </a>
+                <div class="text-xs text-gray-500">#{report.user?.id}</div>
+              </div>
+            </div>
+            <div class="space-y-3 text-sm">
+              <div class="flex justify-between">
+                <span class="text-gray-500">Submitted</span>
+                <span class="text-gray-300"
+                  >{new Date(report.created_at).toLocaleDateString()}</span
+                >
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500">Source</span>
+                <span class="text-gray-300 capitalize">{report.source}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Guidelines Check -->
+        <div class="bg-amber-500/5 border border-amber-500/10 rounded-2xl p-6">
+          <div class="flex items-center gap-2 text-amber-500 font-bold mb-3">
+            <span class="material-symbols-outlined">gavel</span>
+            <span>Moderator Tip</span>
+          </div>
+          <p class="text-sm text-amber-500/80 leading-relaxed italic">
+            "Review the reported content carefully against our community
+            guidelines. If the report is valid, proceed with taking action on
+            the target content."
+          </p>
+        </div>
+      </div>
+    </div>
+  {/if}
+</div>

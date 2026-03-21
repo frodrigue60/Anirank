@@ -1,0 +1,198 @@
+<script lang="ts">
+  import { X, Flag, Send, CheckCircle2, Loader2 } from "lucide-svelte";
+  import api from "$lib/api";
+  import { fade, scale } from "svelte/transition";
+
+  interface Props {
+    show: boolean;
+    commentId: number;
+    onClose: () => void;
+  }
+
+  let { show, commentId, onClose }: Props = $props();
+
+  let title = $state("");
+  let content = $state("");
+  let isSubmitting = $state(false);
+  let isSuccess = $state(false);
+  let errorMessage = $state("");
+
+  const reportingReasons = [
+    "Spam or unwanted commercial content",
+    "Harassment or bullying",
+    "Hate speech or graphic violence",
+    "Spoilers without warning",
+    "Inappropriate content",
+    "Other",
+  ];
+
+  async function handleSubmit() {
+    if (!title) {
+      errorMessage = "Please select a reason for reporting.";
+      return;
+    }
+
+    isSubmitting = true;
+    errorMessage = "";
+    try {
+      const response = await api.post("/comments/reports", {
+        comment_id: commentId,
+        title: title,
+        content: content,
+        source: "web",
+      });
+
+      if (
+        response.data.success ||
+        response.status === 201 ||
+        response.status === 200
+      ) {
+        isSuccess = true;
+        setTimeout(() => {
+          handleClose();
+        }, 2000);
+      } else {
+        errorMessage = response.data.message || "Failed to submit report.";
+      }
+    } catch (e: any) {
+      errorMessage = e.response?.data?.message || "Failed to submit report.";
+    } finally {
+      isSubmitting = false;
+    }
+  }
+
+  function handleClose() {
+    isSuccess = false;
+    errorMessage = "";
+    title = "";
+    content = "";
+    onClose();
+  }
+</script>
+
+{#if show}
+  <!-- Backdrop -->
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div
+    class="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+    onclick={handleClose}
+    transition:fade={{ duration: 200 }}
+  >
+    <!-- Modal Content -->
+    <div
+      class="modal-glass w-full max-w-sm rounded-4xl overflow-hidden shadow-2xl p-8 flex flex-col items-center text-center relative"
+      onclick={(e) => e.stopPropagation()}
+      transition:scale={{ duration: 300, start: 0.95 }}
+    >
+      <!-- Header -->
+      <div class="w-full flex justify-between items-start mb-6">
+        <div class="text-left">
+          <div class="flex items-center gap-2 text-primary mb-1">
+            <Flag size={14} />
+            <p class="text-[10px] font-bold uppercase tracking-[0.2em]">
+              Report Comment
+            </p>
+          </div>
+          <h3 class="text-xl font-bold leading-tight tracking-tight">
+            Help keep our community safe
+          </h3>
+          <p class="text-xs text-white/50 mt-1">
+            Tell us why you are reporting this comment.
+          </p>
+        </div>
+        <button
+          onclick={handleClose}
+          class="w-8 h-8 rounded-full hover:bg-white/5 flex items-center justify-center transition-colors text-white/40 hover:text-white"
+        >
+          <X size={18} />
+        </button>
+      </div>
+
+      {#if isSuccess}
+        <div class="py-12 flex flex-col items-center space-y-4" in:scale>
+          <div
+            class="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center text-green-500 mb-2"
+          >
+            <CheckCircle2 size={36} />
+          </div>
+          <h4 class="text-lg font-bold">Report Received</h4>
+          <p class="text-xs text-white/50 leading-relaxed">
+            Thank you for your report. Our moderation team will review it.
+          </p>
+        </div>
+      {:else}
+        <div class="w-full space-y-4 text-left">
+          <!-- Reason Select -->
+          <div>
+            <label
+              for="report-title-comment"
+              class="block text-[10px] font-bold uppercase tracking-wider text-white/40 mb-2 px-1"
+              >Reason</label
+            >
+            <select
+              id="report-title-comment"
+              bind:value={title}
+              class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-primary/50 transition-all appearance-none cursor-pointer"
+            >
+              <option value="" disabled selected>Select a reason...</option>
+              {#each reportingReasons as reason}
+                <option value={reason}>{reason}</option>
+              {/each}
+            </select>
+          </div>
+
+          <!-- Content Textarea -->
+          <div>
+            <label
+              for="report-content-comment"
+              class="block text-[10px] font-bold uppercase tracking-wider text-white/40 mb-2 px-1"
+              >Details (Optional)</label
+            >
+            <textarea
+              id="report-content-comment"
+              bind:value={content}
+              placeholder="Please provide any additional context..."
+              class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-primary/50 transition-all min-h-[100px] resize-none"
+            ></textarea>
+          </div>
+
+          {#if errorMessage}
+            <p class="text-red-500 text-[10px] font-medium px-1 leading-tight">
+              {errorMessage}
+            </p>
+          {/if}
+
+          <!-- Actions -->
+          <button
+            onclick={handleSubmit}
+            disabled={isSubmitting}
+            class="w-full bg-primary hover:bg-primary/80 disabled:opacity-50 text-white py-4 rounded-xl font-bold text-sm transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 active:scale-95"
+          >
+            {#if isSubmitting}
+              <Loader2 class="animate-spin" size={18} />
+              Submitting...
+            {:else}
+              Send Report
+              <Send size={16} />
+            {/if}
+          </button>
+        </div>
+      {/if}
+    </div>
+  </div>
+{/if}
+
+<style lang="postcss">
+  .modal-glass {
+    background: rgba(25, 16, 34, 0.9);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  select option {
+    background: #191022;
+    color: white;
+  }
+</style>

@@ -1,0 +1,464 @@
+package anilist
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/url"
+	"strings"
+	"time"
+)
+
+const AnilistGraphQLEndpoint = "https://graphql.anilist.co"
+const AnilistTokenEndpoint = "https://anilist.co/api/v2/oauth/token"
+
+type Client struct {
+	httpClient *http.Client
+}
+
+type AnilistUser struct {
+	ID   uint64 `json:"id"`
+	Name string `json:"name"`
+}
+
+type TokenResponse struct {
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+	ExpiresIn    int    `json:"expires_in"`
+}
+
+func NewClient() *Client {
+	return &Client{
+		httpClient: &http.Client{
+			Timeout: 30 * time.Second,
+		},
+	}
+}
+
+// GraphQLQuery is the structure for the request body
+type GraphQLQuery struct {
+	Query     string                 `json:"query"`
+	Variables map[string]interface{} `json:"variables"`
+}
+
+// AnilistResponse represents the structure of the JSON response from Anilist
+type AnilistResponse struct {
+	Data struct {
+		Page struct {
+			PageInfo struct {
+				Total       int  `json:"total"`
+				PerPage     int  `json:"perPage"`
+				CurrentPage int  `json:"currentPage"`
+				LastPage    int  `json:"lastPage"`
+				HasNextPage bool `json:"hasNextPage"`
+			} `json:"pageInfo"`
+			Media []Media `json:"media"`
+		} `json:"Page"`
+	} `json:"data"`
+	Errors []struct {
+		Message string `json:"message"`
+	} `json:"errors"`
+}
+
+type Media struct {
+	ID          int    `json:"id"`
+	Title       Title  `json:"title"`
+	Description string `json:"description"`
+	Status      string `json:"status"`
+	CoverImage  struct {
+		ExtraLarge string `json:"extraLarge"`
+		Large      string `json:"large"`
+	} `json:"coverImage"`
+	BannerImage string   `json:"bannerImage"`
+	Season      string   `json:"season"`
+	SeasonYear  int      `json:"seasonYear"`
+	Format      string   `json:"format"`
+	Genres      []string `json:"genres"`
+	Studios     struct {
+		Edges []struct {
+			IsMain bool `json:"isMain"`
+			Node   struct {
+				Name string `json:"name"`
+			} `json:"node"`
+		} `json:"edges"`
+	} `json:"studios"`
+	ExternalLinks []struct {
+		Site string `json:"site"`
+		URL  string `json:"url"`
+	} `json:"externalLinks"`
+}
+
+type Title struct {
+	Romaji  string `json:"romaji"`
+	English string `json:"english"`
+	Native  string `json:"native"`
+}
+
+// the query to search animes by title
+const searchMediaQuery = `
+query ($page: Int, $perPage: Int, $search: String, $format: MediaFormat) {
+	Page(page: $page, perPage: $perPage) {
+		pageInfo {
+			total
+			perPage
+			currentPage
+			lastPage
+			hasNextPage
+		}
+		media(search: $search, type: ANIME, isAdult: false, format: $format, sort: SEARCH_MATCH) {
+			id
+			title {
+				romaji
+				english
+				native
+			}
+			description(asHtml: false)
+			status
+			coverImage {
+				extraLarge
+				large
+			}
+			bannerImage
+			season
+			seasonYear
+			format
+			genres
+			studios {
+				edges {
+					isMain
+					node {
+						name
+					}
+				}
+			}
+			externalLinks {
+				site
+				url
+			}
+		}
+	}
+}
+`
+
+// SearchAnimes searches animes on Anilist by title
+func (c *Client) SearchAnimes(ctx context.Context, search string, format string, page int) (*AnilistResponse, error) {
+	variables := map[string]interface{}{
+		"page":    page,
+		"perPage": 20,
+		"search":  search,
+	}
+
+	if format != "" {
+		variables["format"] = format
+	}
+
+	query := GraphQLQuery{
+		Query:     searchMediaQuery,
+		Variables: variables,
+	}
+
+	bodyBytes, err := json.Marshal(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal query: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", AnilistGraphQLEndpoint, bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("anilist api returned status: %d", resp.StatusCode)
+	}
+
+	var anilistResp AnilistResponse
+	if err := json.NewDecoder(resp.Body).Decode(&anilistResp); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	if len(anilistResp.Errors) > 0 {
+		return nil, fmt.Errorf("anilist api error: %s", anilistResp.Errors[0].Message)
+	}
+
+	return &anilistResp, nil
+}
+
+// multiMediaByIDQuery fetches multiple media items by their IDs
+const multiMediaByIDQuery = `
+query ($ids: [Int]) {
+	Page(page: 1, perPage: 50) {
+		media(id_in: $ids, type: ANIME, isAdult: false) {
+			id
+			title {
+				romaji
+				english
+				native
+			}
+			description(asHtml: false)
+			status
+			coverImage {
+				extraLarge
+				large
+			}
+			bannerImage
+			season
+			seasonYear
+			format
+			genres
+			studios {
+				edges {
+					isMain
+					node {
+						name
+					}
+				}
+			}
+			externalLinks {
+				site
+				url
+			}
+		}
+	}
+}
+`
+
+// GetMediaByIDs fetches multiple media items from Anilist by their IDs
+func (c *Client) GetMediaByIDs(ctx context.Context, ids []int) ([]Media, error) {
+	variables := map[string]interface{}{
+		"ids": ids,
+	}
+
+	query := GraphQLQuery{
+		Query:     multiMediaByIDQuery,
+		Variables: variables,
+	}
+
+	bodyBytes, err := json.Marshal(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal query: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", AnilistGraphQLEndpoint, bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("anilist api returned status: %d", resp.StatusCode)
+	}
+
+	var anilistResp AnilistResponse
+	if err := json.NewDecoder(resp.Body).Decode(&anilistResp); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	if len(anilistResp.Errors) > 0 {
+		return nil, fmt.Errorf("anilist api error: %s", anilistResp.Errors[0].Message)
+	}
+
+	return anilistResp.Data.Page.Media, nil
+}
+
+// the query to fetch season animes
+const seasonMediaQuery = `
+query ($page: Int, $perPage: Int, $season: MediaSeason, $seasonYear: Int, $format: MediaFormat) {
+	Page(page: $page, perPage: $perPage) {
+		pageInfo {
+			total
+			perPage
+			currentPage
+			lastPage
+			hasNextPage
+		}
+		media(season: $season, seasonYear: $seasonYear, format: $format, type: ANIME, isAdult: false, sort: POPULARITY_DESC) {
+			id
+			title {
+				romaji
+				english
+				native
+			}
+			description(asHtml: false)
+			status
+			coverImage {
+				extraLarge
+				large
+			}
+			bannerImage
+			season
+			seasonYear
+			format
+			genres
+			studios {
+				edges {
+					isMain
+					node {
+						name
+					}
+				}
+			}
+			externalLinks {
+				site
+				url
+			}
+		}
+	}
+}
+`
+
+// FetchAnimes fetches a page of animes from Anilist
+func (c *Client) FetchAnimes(ctx context.Context, page int, season string, seasonYear int, format string) (*AnilistResponse, error) {
+	variables := map[string]interface{}{
+		"page":       page,
+		"perPage":    50,
+		"season":     season,
+		"seasonYear": seasonYear,
+	}
+
+	if format != "" {
+		variables["format"] = format
+	}
+
+	query := GraphQLQuery{
+		Query:     seasonMediaQuery,
+		Variables: variables,
+	}
+
+	bodyBytes, err := json.Marshal(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal query: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", AnilistGraphQLEndpoint, bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("anilist api returned status: %d", resp.StatusCode)
+	}
+
+	var anilistResp AnilistResponse
+	if err := json.NewDecoder(resp.Body).Decode(&anilistResp); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	if len(anilistResp.Errors) > 0 {
+		return nil, fmt.Errorf("anilist api error: %s", anilistResp.Errors[0].Message)
+	}
+
+	return &anilistResp, nil
+}
+
+// ExchangeCode exchanges the authorization code for an access token
+func (c *Client) ExchangeCode(ctx context.Context, clientID, clientSecret, redirectURI, code string) (*TokenResponse, error) {
+	data := url.Values{}
+	data.Set("grant_type", "authorization_code")
+	data.Set("client_id", clientID)
+	data.Set("client_secret", clientSecret)
+	data.Set("redirect_uri", redirectURI)
+	data.Set("code", code)
+
+	req, err := http.NewRequestWithContext(ctx, "POST", AnilistTokenEndpoint, strings.NewReader(data.Encode()))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		var errResp struct {
+			Error            string `json:"error"`
+			Message          string `json:"message"`
+			ErrorDescription string `json:"error_description"`
+		}
+		_ = json.NewDecoder(resp.Body).Decode(&errResp)
+		if errResp.Message != "" {
+			return nil, fmt.Errorf("anilist oauth: %s (%s)", errResp.Error, errResp.Message)
+		}
+		if errResp.ErrorDescription != "" {
+			return nil, fmt.Errorf("anilist oauth: %s: %s", errResp.Error, errResp.ErrorDescription)
+		}
+		if errResp.Error != "" {
+			return nil, fmt.Errorf("anilist oauth: %s", errResp.Error)
+		}
+		return nil, fmt.Errorf("anilist token exchange failed with HTTP %d", resp.StatusCode)
+	}
+
+	var tokenResp TokenResponse
+	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
+		return nil, err
+	}
+
+	return &tokenResp, nil
+}
+
+// GetViewer fetches the authenticated user's profile info
+func (c *Client) GetViewer(ctx context.Context, accessToken string) (*AnilistUser, error) {
+	query := `query { Viewer { id name } }`
+	payload := GraphQLQuery{
+		Query: query,
+	}
+
+	bodyBytes, _ := json.Marshal(payload)
+	req, err := http.NewRequestWithContext(ctx, "POST", AnilistGraphQLEndpoint, bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var result struct {
+		Data struct {
+			Viewer AnilistUser `json:"Viewer"`
+		} `json:"data"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, err
+	}
+
+	return &result.Data.Viewer, nil
+}

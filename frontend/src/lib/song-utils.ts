@@ -6,10 +6,10 @@ export function getSongName(song: any): string {
 export function getSongArtistNames(
   artists: Array<{ name?: string; status?: boolean }> | undefined | null,
 ): string {
-  if (!artists || artists.length === 0) return "unavailable";
+  if (!artists || artists.length === 0) return "N/A";
 
   const names = artists.map((artist) =>
-    artist?.status === false ? "unavailable" : artist?.name || "unavailable",
+    artist?.status === false ? "N/A" : artist?.name || "N/A",
   );
   return names.join(", ");
 }

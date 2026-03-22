@@ -124,7 +124,7 @@ func (u *TournamentUsecase) enrichMatchups(ctx context.Context, matchups []domai
 			animeIDMap[s.AnimeID] = true
 		}
 
-		artists, _ := u.songRepo.GetArtistsBySongID(ctx, s.ID)
+		artists, _ := u.songRepo.GetArtistsBySongID(ctx, s.ID, false)
 		s.Artists = artists
 		variants, _ := u.songRepo.GetVariantsBySongID(ctx, s.ID)
 

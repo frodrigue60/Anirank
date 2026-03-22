@@ -45,7 +45,7 @@ func (u *AnimeUsecase) GetAnimeBySlug(ctx context.Context, slug string) (*domain
 			s.Name = *s.SongJP
 		}
 		// Load artists
-		artists, _ := u.songRepo.GetArtistsBySongID(ctx, s.ID)
+		artists, _ := u.songRepo.GetArtistsBySongID(ctx, s.ID, false)
 		s.Artists = artists
 	}
 

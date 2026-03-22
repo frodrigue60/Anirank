@@ -135,6 +135,8 @@ func (r *songRepository) GetPaginated(ctx context.Context, limit, offset int, fi
 		query += " ORDER BY s.average_score ASC, s.created_at DESC"
 	case "favorites":
 		query += " ORDER BY s.favorites_count DESC, s.created_at DESC"
+	case "views":
+		query += " ORDER BY s.views DESC, s.created_at DESC"
 	case "recently_added":
 		query += " ORDER BY s.created_at DESC, s.id DESC"
 	case "random":
@@ -324,7 +326,7 @@ func (r *songRepository) GetVariantsBySongID(ctx context.Context, songID uint64)
 	return variants, nil
 }
 
-func (r *songRepository) GetArtistsBySongID(ctx context.Context, songID uint64) ([]domain.Artist, error) {
+func (r *songRepository) GetArtistsBySongID(ctx context.Context, songID uint64, isAdmin bool) ([]domain.Artist, error) {
 	var artists []domain.Artist
 	query := `
 		SELECT a.* 
@@ -332,6 +334,10 @@ func (r *songRepository) GetArtistsBySongID(ctx context.Context, songID uint64) 
 		JOIN artist_song asong ON a.id = asong.artist_id
 		WHERE asong.song_id = $1
 	`
+	if !isAdmin {
+		query += " AND a.status = true"
+	}
+
 	err := r.db.SelectContext(ctx, &artists, query, songID)
 	if err != nil {
 		return nil, err

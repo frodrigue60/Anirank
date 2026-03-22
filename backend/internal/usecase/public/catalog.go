@@ -194,6 +194,10 @@ func (u *CatalogUsecase) GetSongsByArtistSlug(ctx context.Context, userID *uint6
 		return nil, nil, 0, domain.NewAppError(404, "Artist not found", err)
 	}
 
+	if !artist.Status {
+		return nil, nil, 0, domain.NewAppError(404, "Artist not found", nil)
+	}
+
 	u.enrichArtist(ctx, userID, artist)
 
 	songs, err := u.songRepo.GetByArtistID(ctx, artist.ID, limit, offset, filters)
@@ -504,7 +508,7 @@ func (u *CatalogUsecase) GetHomeData(ctx context.Context, userID *uint64) (*Home
 	data.MostPopular = popular
 
 	// Most Viewed
-	viewed, _ := u.songRepo.GetRanking(ctx, "global", "all", 10, 0)
+	viewed, _ := u.songRepo.GetPaginated(ctx, 10, 0, domain.SongFilters{Sort: "views"})
 	for i := range viewed {
 		u.enrichSong(ctx, userID, &viewed[i])
 	}
@@ -549,7 +553,7 @@ func (u *CatalogUsecase) enrichSong(ctx context.Context, userID *uint64, s *doma
 		s.Anime = anime
 	}
 	if len(s.Artists) == 0 {
-		artists, _ := u.songRepo.GetArtistsBySongID(ctx, s.ID)
+		artists, _ := u.songRepo.GetArtistsBySongID(ctx, s.ID, false)
 		for i := range artists {
 			artists[i].AvatarUrl = u.mediaService.Resolve(artists[i].Avatar)
 		}

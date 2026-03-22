@@ -17,7 +17,12 @@
     <div class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-12">
       <!-- Brand Section -->
       <div class="col-span-1 lg:col-span-2">
-        <a class="group mb-6 flex items-center gap-2" href="/" title="AniRank Home" aria-label="Go to AniRank Home">
+        <a
+          class="group mb-6 flex items-center gap-2"
+          href="/"
+          title="AniRank Home"
+          aria-label="Go to AniRank Home"
+        >
           <div
             class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/40 group-hover:scale-105 transition-transform"
           >
@@ -25,7 +30,7 @@
             >
           </div>
           <span class="text-2xl font-black tracking-tighter text-white"
-            >Anirank</span
+            >AniRank</span
           >
         </a>
         <p class="max-w-xs text-sm leading-relaxed text-white/40">
@@ -36,7 +41,6 @@
         <div class="mt-8 flex items-center gap-4">
           <a
             href="https://x.com"
-            target="_blank"
             class="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 text-white/40 transition-all hover:bg-primary hover:text-white"
             title="Follow us on X (Twitter)"
             aria-label="Follow us on X (Twitter)"
@@ -48,8 +52,7 @@
             >
           </a>
           <a
-            href="https://discord.gg/anirank"
-            target="_blank"
+            href="https://discord.gg/HBAxfsH4WZ"
             class="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 text-white/40 transition-all hover:bg-primary hover:text-white"
             title="Join our Discord community"
             aria-label="Join our Discord community"
@@ -78,40 +81,35 @@
             <a
               href="/"
               class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
-              title="Learn more about AniRank"
-              >About Us</a
+              title="Learn more about AniRank">About Us</a
             >
           </li>
           <li>
             <a
               href="/"
               class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
-              title="Read our Cookie Policy"
-              >Cookie Policy</a
+              title="Read our Cookie Policy">Cookie Policy</a
             >
           </li>
           <li>
             <a
               href="/"
               class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
-              title="Read our Privacy Policy"
-              >Privacy Policy</a
+              title="Read our Privacy Policy">Privacy Policy</a
             >
           </li>
           <li>
             <a
               href="/"
               class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
-              title="Read our Terms and Conditions"
-              >Terms and Conditions</a
+              title="Read our Terms and Conditions">Terms and Conditions</a
             >
           </li>
           <li>
             <a
               href="/"
               class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
-              title="Read our DMCA Disclaimer"
-              >DMCA Disclaimer</a
+              title="Read our DMCA Disclaimer">DMCA Disclaimer</a
             >
           </li>
         </ul>
@@ -131,40 +129,35 @@
             <a
               href="/animes"
               class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
-              title="Browse Anime Series"
-              >Series</a
+              title="Browse Anime Series">Series</a
             >
           </li>
           <li>
             <a
               href="/artists"
               class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
-              title="Browse Artists"
-              >Artists</a
+              title="Browse Artists">Artists</a
             >
           </li>
           <li>
             <a
               href="/songs"
               class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
-              title="Browse Themes and Songs"
-              >Themes</a
+              title="Browse Themes and Songs">Themes</a
             >
           </li>
           <li>
             <a
               href="/studios"
               class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
-              title="Browse Animation Studios"
-              >Studios</a
+              title="Browse Animation Studios">Studios</a
             >
           </li>
           <li>
             <a
               href="/producers"
               class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
-              title="Browse Music Producers"
-              >Producers</a
+              title="Browse Music Producers">Producers</a
             >
           </li>
         </ul>
@@ -184,32 +177,28 @@
             <a
               href="/"
               class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
-              title="Report an error"
-              >Report Error</a
+              title="Report an error">Report Error</a
             >
           </li>
           <li>
             <a
               href="/"
               class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
-              title="Report abuse"
-              >Abuse</a
+              title="Report abuse">Abuse</a
             >
           </li>
           <li>
             <a
               href="/"
               class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
-              title="Contact us"
-              >Contact Us</a
+              title="Contact us">Contact Us</a
             >
           </li>
           <li>
             <a
               href="/"
               class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
-              title="Get support"
-              >Support</a
+              title="Get support">Support</a
             >
           </li>
         </ul>
@@ -220,7 +209,7 @@
       class="mt-16 flex flex-col items-center justify-between gap-4 border-t border-white/5 pt-8 md:flex-row"
     >
       <p class="text-xs font-medium text-white/20">
-        &copy; {currentYear} Anirank. All rights reserved.
+        &copy; {currentYear} AniRank. All rights reserved.
       </p>
       <div class="flex items-center gap-6">
         <span class="flex items-center gap-1 text-xs font-medium text-white/20">

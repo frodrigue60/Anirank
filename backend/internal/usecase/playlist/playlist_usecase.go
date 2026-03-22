@@ -217,7 +217,7 @@ func (u *PlaylistUsecase) enrichPlaylistSong(ctx context.Context, s *domain.Song
 
 	// Load Artists
 	if len(s.Artists) == 0 {
-		artists, _ := u.songRepo.GetArtistsBySongID(ctx, s.ID)
+		artists, _ := u.songRepo.GetArtistsBySongID(ctx, s.ID, false)
 		for i := range artists {
 			if artists[i].Avatar != nil {
 				artists[i].AvatarUrl = u.mediaService.Resolve(artists[i].Avatar)

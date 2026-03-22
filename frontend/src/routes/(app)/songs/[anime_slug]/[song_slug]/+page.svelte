@@ -1,7 +1,11 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { authState } from "$lib/state/auth.svelte";
-  import { getSongArtistNames, getSongName, getFormattedScore } from "$lib/song-utils";
+  import {
+    getSongArtistNames,
+    getSongName,
+    getFormattedScore,
+  } from "$lib/song-utils";
   import { goto } from "$app/navigation";
   import { toastState } from "$lib/state/toast.svelte";
   import RatingModal from "$lib/components/RatingModal.svelte";
@@ -441,9 +445,13 @@
   });
 </script>
 
-<SEO 
+<SEO
   title="{getSongName(currentSong)} - {currentSong.anime?.title} - AniRank"
-  description="Listen to and rate '{getSongName(currentSong)}' ({currentSong.type}{currentSong.theme_num || ''}) by {getSongArtistNames(currentSong.artists)} from the anime {currentSong.anime?.title}."
+  description="Listen to and rate '{getSongName(
+    currentSong,
+  )}' ({currentSong.type}{currentSong.theme_num || ''}) by {getSongArtistNames(
+    currentSong.artists,
+  )} from the anime {currentSong.anime?.title}."
   image={`${page.url.origin}/api/og/song/${currentSong.id}`}
   type="music.song"
 />
@@ -546,20 +554,19 @@
             {#if artist?.status === false}
               <span
                 class="text-white/40 text-md font-bold uppercase tracking-wider"
-                >unavailable</span
+                >N/A</span
               >
             {:else}
               <a
                 href="/artists/{artist.slug}"
                 class="text-white/40 text-md font-bold uppercase tracking-wider"
-                title="View artist: {artist.name}"
-                >{artist.name}</a
+                title="View artist: {artist.name}">{artist.name}</a
               >
             {/if}
           {/each}
         {:else}
           <span class="text-white/40 text-md font-bold uppercase tracking-wider"
-            >unavailable</span
+            >Without artists</span
           >
         {/if}
       </div>
@@ -607,7 +614,9 @@
                   : 'text-white/80 hover:text-white'}"
                 onclick={toggleLike}
                 title={currentSong.is_liked ? "Remove like" : "Like this theme"}
-                aria-label={currentSong.is_liked ? "Unlike theme" : "Like theme"}
+                aria-label={currentSong.is_liked
+                  ? "Unlike theme"
+                  : "Like theme"}
               >
                 <span
                   class="material-symbols-outlined text-[14px] {currentSong.is_liked
@@ -624,8 +633,12 @@
                   ? 'text-red-500'
                   : 'text-white/80 hover:text-white'}"
                 onclick={toggleDislike}
-                title={currentSong.is_disliked ? "Remove dislike" : "Dislike this theme"}
-                aria-label={currentSong.is_disliked ? "Undislike theme" : "Dislike theme"}
+                title={currentSong.is_disliked
+                  ? "Remove dislike"
+                  : "Dislike this theme"}
+                aria-label={currentSong.is_disliked
+                  ? "Undislike theme"
+                  : "Dislike theme"}
               >
                 <span
                   class="material-symbols-outlined text-[14px] {currentSong.is_disliked
@@ -653,7 +666,10 @@
             >
             <div class="flex items-center gap-2">
               <span class="text-yellow-400 font-bold text-lg"
-                >{getFormattedScore(currentSong.average_rating, authState.user?.score_format)}</span
+                >{getFormattedScore(
+                  currentSong.average_rating,
+                  authState.user?.score_format,
+                )}</span
               >
               <span
                 class="material-symbols-outlined filled text-[16px] text-yellow-400 group-hover:rotate-12 transition-transform"
@@ -669,8 +685,12 @@
               ? 'text-pink-500'
               : 'text-white/60'}"
             onclick={toggleFavorite}
-            title={currentSong.is_favorited ? "Remove from favorites" : "Add to favorites"}
-            aria-label={currentSong.is_favorited ? "Remove from favorites" : "Add to favorites"}
+            title={currentSong.is_favorited
+              ? "Remove from favorites"
+              : "Add to favorites"}
+            aria-label={currentSong.is_favorited
+              ? "Remove from favorites"
+              : "Add to favorites"}
           >
             <span
               class="material-symbols-outlined text-[20px] {currentSong.is_favorited
@@ -695,7 +715,9 @@
             onclick={reportSong}
             disabled={currentSong.is_reported}
             title={currentSong.is_reported ? "Already reported" : "Report Song"}
-            aria-label={currentSong.is_reported ? "Already reported" : "Report this theme"}
+            aria-label={currentSong.is_reported
+              ? "Already reported"
+              : "Report this theme"}
           >
             <span
               class="material-symbols-outlined text-[20px] {currentSong.is_reported
@@ -809,8 +831,12 @@
                       class="flex items-center gap-1 transition-colors {comment.is_liked
                         ? 'text-primary'
                         : 'text-white/20 hover:text-white'}"
-                      title={comment.is_liked ? "Unlike comment" : "Like comment"}
-                      aria-label={comment.is_liked ? "Unlike comment" : "Like comment"}
+                      title={comment.is_liked
+                        ? "Unlike comment"
+                        : "Like comment"}
+                      aria-label={comment.is_liked
+                        ? "Unlike comment"
+                        : "Like comment"}
                     >
                       <span
                         class="material-symbols-outlined {comment.is_liked
@@ -824,8 +850,12 @@
                       class="flex items-center gap-1 transition-colors {comment.is_disliked
                         ? 'text-red-500'
                         : 'text-white/20 hover:text-white'}"
-                      title={comment.is_disliked ? "Undislike comment" : "Dislike comment"}
-                      aria-label={comment.is_disliked ? "Undislike comment" : "Dislike comment"}
+                      title={comment.is_disliked
+                        ? "Undislike comment"
+                        : "Dislike comment"}
+                      aria-label={comment.is_disliked
+                        ? "Undislike comment"
+                        : "Dislike comment"}
                     >
                       <span
                         class="material-symbols-outlined {comment.is_disliked
@@ -985,8 +1015,12 @@
                                 class="flex items-center gap-1 transition-colors {reply.is_liked
                                   ? 'text-primary'
                                   : 'text-white/20 hover:text-white'}"
-                                title={reply.is_liked ? "Unlike reply" : "Like reply"}
-                                aria-label={reply.is_liked ? "Unlike reply" : "Like reply"}
+                                title={reply.is_liked
+                                  ? "Unlike reply"
+                                  : "Like reply"}
+                                aria-label={reply.is_liked
+                                  ? "Unlike reply"
+                                  : "Like reply"}
                               >
                                 <span
                                   class="material-symbols-outlined text-[14px] {reply.is_liked
@@ -1078,7 +1112,10 @@
                   <span class="material-symbols-outlined filled text-[10px]"
                     >star</span
                   >
-                  {getFormattedScore(related.average_rating, authState.user?.score_format)}
+                  {getFormattedScore(
+                    related.average_rating,
+                    authState.user?.score_format,
+                  )}
                 </span>
               </div>
               <h4

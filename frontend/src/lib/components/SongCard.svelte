@@ -44,16 +44,29 @@
         <a
           href="/songs/{song.anime?.slug}/{song.slug}"
           class="hover:underline"
-          title="View song details: {getSongName(song)}"
-          >{getSongName(song)}</a
+          title="View song details: {getSongName(song)}">{getSongName(song)}</a
         >
       </h3>
       <p class="text-slate-300 text-sm font-medium line-clamp-1">
-        by {song.artists?.map((a: any) => a.name).join(", ") ||
-          "Unknown Artist"}
+        by
+        {#if song.artists && song.artists.length > 0}
+          {#each song.artists as artist, i}
+            {#if artist.status === true}
+              <span class="transition-colors">{artist.name}</span
+              >{#if i < song.artists.length - 1},
+              {/if}
+            {:else}
+              <span class="transition-colors text-slate-500">N/A</span
+              >{#if i < song.artists.length - 1},
+              {/if}
+            {/if}
+          {/each}
+        {:else}
+          Without artists
+        {/if}
       </p>
       <p class="text-slate-500 text-xs italic mt-2 line-clamp-1">
-        {song.anime?.title || "Unknown Anime"}
+        {song.anime?.title || "N/A"}
       </p>
     </div>
 
@@ -66,7 +79,10 @@
           >star</span
         >
         <span class="text-white font-bold text-lg"
-          >{getFormattedScore(song.average_rating, authState.user?.score_format)}</span
+          >{getFormattedScore(
+            song.average_rating,
+            authState.user?.score_format,
+          )}</span
         >
       </div>
 

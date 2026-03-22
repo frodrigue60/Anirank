@@ -65,13 +65,18 @@
     class="max-w-[1440px] mx-auto px-6 h-16 flex items-center justify-between gap-4"
   >
     <div class="flex items-center gap-10">
-      <a class="flex items-center gap-2 group" href="/" title="AniRank Home" aria-label="Go to AniRank Home">
+      <a
+        class="flex items-center gap-2 group"
+        href="/"
+        title="AniRank Home"
+        aria-label="Go to AniRank Home"
+      >
         <!-- <div
           class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/40 group-hover:scale-105 transition-transform"
         >
           <span class="material-symbols-outlined text-[20px]">music_note</span>
         </div> -->
-        <span class="text-xl font-bold tracking-tight text-white">Anirank</span>
+        <span class="text-xl font-bold tracking-tight text-white">AniRank</span>
       </a>
       <nav class="hidden md:flex items-center gap-6">
         <a
@@ -82,8 +87,7 @@
             : 'text-white/60 hover:text-white'}"
           href="/songs/seasonal"
           title="Seasonal Themes"
-          aria-label="View seasonal anime themes"
-          >Season</a
+          aria-label="View seasonal anime themes">Season</a
         >
         <a
           class="text-sm font-medium transition-colors {page.url.pathname.includes(
@@ -93,8 +97,7 @@
             : 'text-white/60 hover:text-white'}"
           href="/songs/ranking"
           title="Song Rankings"
-          aria-label="View top rated anime songs"
-          >Ranking</a
+          aria-label="View top rated anime songs">Ranking</a
         >
 
         <!-- Discover Dropdown -->

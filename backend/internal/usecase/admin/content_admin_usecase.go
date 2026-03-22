@@ -105,7 +105,7 @@ func (u *ContentAdminUsecase) GetAnime(ctx context.Context, id uint64) (*domain.
 
 	// Load artists for each song and resolve URLs
 	for i := range anime.Songs {
-		artists, err := u.songRepo.GetArtistsBySongID(ctx, anime.Songs[i].ID)
+		artists, err := u.songRepo.GetArtistsBySongID(ctx, anime.Songs[i].ID, true)
 		if err == nil {
 			for j := range artists {
 				u.ResolveArtistURLs(&artists[j])
@@ -800,7 +800,7 @@ func (u *ContentAdminUsecase) GetSong(ctx context.Context, id uint64) (*domain.S
 		song.Variants = variants
 	}
 
-	artists, err := u.songRepo.GetArtistsBySongID(ctx, id)
+	artists, err := u.songRepo.GetArtistsBySongID(ctx, id, true)
 	if err == nil {
 		song.Artists = artists
 	}

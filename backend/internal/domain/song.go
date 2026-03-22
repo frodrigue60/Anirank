@@ -153,6 +153,7 @@ type SongVariantRepository interface {
 	Create(ctx context.Context, variant *SongVariant) error
 	Update(ctx context.Context, variant *SongVariant) error
 	Delete(ctx context.Context, id uint64) error
+	ToggleStatus(ctx context.Context, id uint64) error
 }
 
 type ArtistRepository interface {

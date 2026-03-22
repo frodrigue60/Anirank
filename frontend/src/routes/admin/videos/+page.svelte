@@ -2,19 +2,43 @@
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
   import type { PageData } from "./$types";
+  import api from "$lib/api";
+  import { toastState } from "$lib/state/toast.svelte";
   import AutocompleteAnime from "$lib/components/admin/AutocompleteAnime.svelte";
+  import { getSongName } from "$lib/song-utils";
 
   let { data } = $props<{ data: PageData }>();
-  let videos = $derived(data.data);
+  let videos = $state<any[]>([]);
   let meta = $derived(data.meta);
 
   let animeIdInput = $state("");
   let statusFilter = $state("");
 
   $effect(() => {
+    videos = data.data;
     animeIdInput = meta?.anime || "";
     statusFilter = meta?.status !== undefined ? String(meta.status) : "";
   });
+
+  async function handleStatusChange(id: number, currentStatus: boolean) {
+    try {
+      await api.patch(`/admin/variants/${id}/status`);
+      // Update local state reactively
+      videos = videos.map((v: any) => {
+        if (v.id === id) {
+          return { ...v, status: !currentStatus };
+        }
+        return v;
+      });
+      toastState.addToast("Video status updated", "success");
+    } catch (err: any) {
+      console.error(err);
+      toastState.addToast(
+        `Failed to update status: ${err.message || err}`,
+        "error",
+      );
+    }
+  }
 
   function handleSearch(e?: Event) {
     if (e) e.preventDefault();
@@ -141,7 +165,9 @@
       <tbody class="divide-y divide-white/5 text-sm">
         {#each videos as variant (variant.id)}
           <tr class="hover:bg-white/2 transition-colors group">
+            <!-- ID -->
             <td class="py-4 px-6 text-gray-500">#{variant.id}</td>
+            <!-- Source -->
             <td class="py-4 px-6 whitespace-nowrap">
               <span
                 class="inline-flex items-center px-2 py-1 rounded text-[10px] font-bold uppercase tracking-tighter {variant
@@ -152,12 +178,14 @@
                 {getSourceType(variant)}
               </span>
             </td>
+            <!-- Type / Vers -->
             <td class="py-4 px-6 whitespace-nowrap">
               <div class="text-white font-medium">{variant.slug}</div>
               <div class="text-[11px] text-gray-500 uppercase tracking-widest">
                 Version {variant.version_number}
               </div>
             </td>
+            <!-- Anime / Song -->
             <td class="py-4 px-6">
               {#if variant.song?.anime}
                 <div
@@ -166,25 +194,34 @@
                   {variant.song.anime.title}
                 </div>
               {/if}
-              <div class="text-[11px] text-gray-400 truncate max-w-[200px]">
-                Song ID: #{variant.song_id}
+              <div
+                class="text-[11px] text-gray-400 truncate max-w-[200px] flex flex-col"
+              >
+                {getSongName(variant.song)}
+                {variant.song.anime.title}
               </div>
             </td>
+            <!-- Status -->
             <td class="py-4 px-6 whitespace-nowrap">
-              {#if variant.status}
-                <span class="text-green-500 flex items-center gap-1.5"
-                  ><div
-                    class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"
-                  ></div>
-                  Active</span
+              {#if variant.status === true || variant.status === 1}
+                <button
+                  onclick={() => handleStatusChange(variant.id, variant.status)}
+                  class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
                 >
+                  <span
+                    class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"
+                  ></span> Published
+                </button>
               {:else}
-                <span class="text-gray-500 flex items-center gap-1.5"
-                  ><div class="w-1.5 h-1.5 rounded-full bg-gray-500"></div>
-                  Inactive</span
+                <button
+                  onclick={() => handleStatusChange(variant.id, variant.status)}
+                  class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-orange-500/10 text-orange-400 border border-orange-500/20"
                 >
+                  <span class="w-1.5 h-1.5 rounded-full bg-orange-400"></span> Draft
+                </button>
               {/if}
             </td>
+            <!-- Actions -->
             <td class="py-4 px-6 whitespace-nowrap text-right">
               <a
                 href="/admin/variants/{variant.id}/edit"

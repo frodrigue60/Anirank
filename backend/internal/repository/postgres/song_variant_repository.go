@@ -242,3 +242,9 @@ func (r *songVariantRepository) Delete(ctx context.Context, id uint64) error {
 	}
 	return err
 }
+
+func (r *songVariantRepository) ToggleStatus(ctx context.Context, id uint64) error {
+	query := "UPDATE song_variants SET status = NOT status WHERE id = $1"
+	_, err := r.db.ExecContext(ctx, query, id)
+	return err
+}

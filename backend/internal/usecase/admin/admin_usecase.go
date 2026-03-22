@@ -231,6 +231,11 @@ func (u *AdminUsecase) DeleteVariant(ctx context.Context, id uint64, meta domain
 	return u.contentAdmin.DeleteVariant(ctx, id, meta)
 }
 
+func (u *AdminUsecase) ToggleVariantStatus(ctx context.Context, id uint64, meta domain.AuditMetadata) error {
+	return u.contentAdmin.ToggleVariantStatus(ctx, id, meta)
+}
+
+
 // ---- ARTISTS ----
 func (u *AdminUsecase) GetArtists(ctx context.Context, page, limit int, search string) ([]domain.Artist, int, error) {
 	return u.contentAdmin.GetArtists(ctx, page, limit, search)

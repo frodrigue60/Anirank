@@ -285,6 +285,7 @@ func SetupPublicRoutes(app *fiber.App,
 	adminOnly.Post("/variants", adminHandler.CreateVariant)
 	adminOnly.Put("/variants/:id", adminHandler.UpdateVariant)
 	adminOnly.Put("/variants/:id/video", adminHandler.UpdateVariantVideo)
+	adminOnly.Patch("/variants/:id/status", adminHandler.ToggleVariantStatus)
 	adminOnly.Delete("/variants/:id", adminHandler.DeleteVariant)
 
 	// Artist Operations

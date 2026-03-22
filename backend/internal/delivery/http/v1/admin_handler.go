@@ -579,6 +579,15 @@ func (h *AdminHandler) DeleteVariant(c *fiber.Ctx) error {
 	return c.SendStatus(204)
 }
 
+func (h *AdminHandler) ToggleVariantStatus(c *fiber.Ctx) error {
+	id, _ := strconv.ParseUint(c.Params("id"), 10, 64)
+	if err := h.usecase.ToggleVariantStatus(c.Context(), id, h.getAuditMetadata(c)); err != nil {
+		return err
+	}
+	return c.SendStatus(204)
+}
+
+
 // ARTISTS
 func (h *AdminHandler) GetArtists(c *fiber.Ctx) error {
 	page, _ := strconv.Atoi(c.Query("page", "1"))

@@ -32,7 +32,7 @@
       icon: "videocam",
       value: data.stats?.pending_videos.toLocaleString() || "0",
       color: "bg-amber-500/10 text-amber-400",
-      link: "/admin/variants?status=false", // Videos are part of variants
+      link: "/admin/videos?status=false",
     },
     {
       name: "Pending Artists",

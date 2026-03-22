@@ -1062,6 +1062,20 @@ func (u *ContentAdminUsecase) GetVariants(ctx context.Context, page, limit int, 
 		return nil, 0, err
 	}
 
+	// Resolve relations for admin display
+	for i := range variants {
+		song, err := u.songRepo.GetByID(ctx, variants[i].SongID)
+		if err == nil {
+			if song.AnimeID != 0 {
+				anime, err := u.animeRepo.GetByID(ctx, song.AnimeID)
+				if err == nil {
+					song.Anime = anime
+				}
+			}
+			variants[i].Song = song
+		}
+	}
+
 	total, err := u.variantRepo.Count(ctx, filters)
 	return variants, int(total), err
 }
@@ -1397,3 +1411,17 @@ func (u *ContentAdminUsecase) ToggleSongStatus(ctx context.Context, id uint64, m
 	_ = u.auditUsecase.LogActions(ctx, meta.ActorID, "status_toggled", id, "song", existing, newSong, &meta.URL, &meta.IPAddress, &meta.UserAgent)
 	return nil
 }
+
+func (u *ContentAdminUsecase) ToggleVariantStatus(ctx context.Context, id uint64, meta domain.AuditMetadata) error {
+	if meta.Role == "creator" {
+		return domain.NewAppError(403, "Creators cannot activate content directly", nil)
+	}
+	existing, _ := u.variantRepo.GetByID(ctx, id)
+	if err := u.variantRepo.ToggleStatus(ctx, id); err != nil {
+		return err
+	}
+	newVariant, _ := u.variantRepo.GetByID(ctx, id)
+	_ = u.auditUsecase.LogActions(ctx, meta.ActorID, "status_toggled", id, "variant", existing, newVariant, &meta.URL, &meta.IPAddress, &meta.UserAgent)
+	return nil
+}
+

@@ -10,6 +10,7 @@
   >
     <img
       alt={anime.title}
+      title={anime.title}
       class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
       src={anime.cover_url ||
         "https://placehold.co/400x600/2a2136/white?text=No+Image"}

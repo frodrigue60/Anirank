@@ -560,7 +560,7 @@
               <a
                 href="/artists/{artist.slug}"
                 class="text-white/40 text-md font-bold uppercase tracking-wider"
-                title="View artist: {artist.name}">{artist.name}</a
+                title="View artist profile: {artist.name}">{artist.name}</a
               >
             {/if}
           {/each}
@@ -744,7 +744,8 @@
                 src={authState.user.avatar_url ||
                   "https://api.dicebear.com/7.x/notionists/svg?seed=" +
                     authState.user.name}
-                alt="avatar"
+                alt="{authState.user.name}'s avatar"
+                title="{authState.user.name}'s avatar"
                 class="w-full h-full object-cover"
               />
             {:else}
@@ -791,6 +792,7 @@
                     "https://api.dicebear.com/7.x/notionists/svg?seed=" +
                       comment.user?.name}
                   alt={comment.user?.name}
+                  title={comment.user?.name}
                   class="w-full h-full object-cover"
                 />
               </div>
@@ -942,6 +944,7 @@
                               "https://api.dicebear.com/7.x/notionists/svg?seed=" +
                                 reply.user?.name}
                             alt={reply.user?.name}
+                            title={reply.user?.name}
                             class="w-full h-full object-cover"
                           />
                         </div>
@@ -1089,6 +1092,7 @@
           <a
             href="/songs/{currentSong.anime?.slug}/{related.slug}"
             class="flex gap-3 group bg-white/0 hover:bg-white/5 p-2 rounded-xl transition-all"
+            title="View theme: {getSongName(related)}"
           >
             <div
               class="w-32 aspect-video rounded-lg overflow-hidden shrink-0 border border-white/5"
@@ -1097,6 +1101,7 @@
                 src={currentSong.anime?.cover_url ||
                   "https://placehold.co/400x225/2a2136/white?text=No+Art"}
                 alt={getSongName(related)}
+                title={getSongName(related)}
                 class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
               />
             </div>

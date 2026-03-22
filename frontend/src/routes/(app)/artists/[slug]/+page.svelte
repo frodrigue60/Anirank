@@ -207,7 +207,8 @@
           <img
             src={artist.avatar_url ||
               "https://placehold.co/400x400/2a2136/white?text=Artist"}
-            alt={artist.name}
+            alt="Avatar for {artist.name}"
+            title="Avatar for {artist.name}"
             class="w-full h-full object-cover"
           />
         </div>
@@ -346,6 +347,7 @@
           onclick={() => goToPage(data.songs.current_page - 1)}
           disabled={data.songs.current_page === 1}
           class="w-10 h-10 rounded-xl bg-background-dark/50 border border-white/5 flex items-center justify-center text-white hover:bg-surface-dark transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          title="Go to previous page"
         >
           <span class="material-symbols-outlined">chevron_left</span>
         </button>
@@ -360,6 +362,7 @@
                 .songs.current_page === p
                 ? 'bg-primary text-white shadow-lg shadow-primary/30'
                 : 'bg-background-dark/50 border border-white/5 text-white/60 hover:text-white hover:bg-surface-dark'}"
+              title="Go to page {p}"
             >
               {p}
             </button>
@@ -370,6 +373,7 @@
           onclick={() => goToPage(data.songs.current_page + 1)}
           disabled={data.songs.current_page === data.songs.last_page}
           class="w-10 h-10 rounded-xl bg-background-dark/50 border border-white/5 flex items-center justify-center text-white hover:bg-surface-dark transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          title="Go to next page"
         >
           <span class="material-symbols-outlined">chevron_right</span>
         </button>

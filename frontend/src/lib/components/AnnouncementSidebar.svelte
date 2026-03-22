@@ -71,6 +71,7 @@
         this={item.url ? "a" : "div"}
         href={item.url}
         target={item.url?.startsWith("http") ? "_blank" : undefined}
+        title={item.content}
         class="relative rounded-2xl overflow-hidden min-h-[150px] flex flex-col justify-end p-5 group transition-all hover:scale-[1.02] active:scale-[0.98] border {typeConfig[
           item.type
         ]?.border || 'border-white/5'} {item.url ? 'cursor-pointer' : ''}"

@@ -26,7 +26,8 @@
     <!-- svelte-ignore a11y_missing_attribute -->
     <img
       class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-      data-alt={playlist.name}
+      alt={playlist.name}
+      title={playlist.name}
       src={playlist.banner_url ||
         "https://placehold.co/400x400/1e1e28/a855f7?text=Playlist"}
     />

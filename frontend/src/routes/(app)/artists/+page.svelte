@@ -175,9 +175,11 @@
               <a
                 href="/artists/{artist.slug}"
                 class="relative w-full aspect-square rounded-full overflow-hidden card-shadow ring-4 ring-transparent group-hover:ring-primary/50 transition-all duration-300"
+                title="View artist profile: {artist.name}"
               >
                 <img
-                  alt={artist.name}
+                  alt="Avatar for {artist.name}"
+                  title="Avatar for {artist.name}"
                   class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   src={artist.avatar_url ||
                     `https://ui-avatars.com/api/?name=${encodeURIComponent(artist.name)}&color=fff&background=random`}
@@ -190,6 +192,7 @@
                 <a
                   href="/artists/{artist.slug}"
                   class="font-bold text-white group-hover:text-primary transition-colors text-lg line-clamp-1"
+                  title="View artist profile: {artist.name}"
                   >{artist.name}</a
                 >
                 <div

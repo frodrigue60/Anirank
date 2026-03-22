@@ -30,7 +30,8 @@
         class="relative rounded-xl overflow-hidden shadow-2xl shadow-primary/10 border border-white/5 group"
       >
         <img
-          alt={anime.title}
+          alt="Cover art for {anime.title}"
+          title="Cover art for {anime.title}"
           class="w-full h-auto aspect-2/3 object-cover transition-transform duration-700 group-hover:scale-105"
           src={anime.cover_url}
         />
@@ -140,6 +141,7 @@
                 class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-surface-dark hover:bg-surface-darker border border-white/5 hover:border-primary/30 transition-all text-sm group"
                 href={link.url}
                 target="_blank"
+                title="Visit {link.name}"
               >
                 <span
                   class="material-symbols-outlined text-white/40 group-hover:text-primary transition-colors text-lg"

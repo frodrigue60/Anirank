@@ -94,6 +94,7 @@
             >
               <img
                 alt={getSongName(item)}
+                title={getSongName(item)}
                 class="w-full h-full object-cover"
                 src={item.anime?.cover_url ?? ""}
               />

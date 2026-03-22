@@ -100,6 +100,7 @@
               <img
                 src={activity.user.avatar_url}
                 alt="{activity.user.name}'s avatar"
+                title="{activity.user.name}'s avatar"
                 class="w-8 h-8 rounded-full object-cover border border-white/10"
               />
             {:else}

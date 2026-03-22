@@ -155,6 +155,7 @@
                         src={anime.cover_url ||
                           "https://placehold.co/100x150/1e1e24/7f13ec?text=Anime"}
                         alt={anime.title}
+                        title={anime.title}
                         class="w-10 h-14 object-cover rounded bg-surface-darker"
                       />
                       <div class="flex flex-col">
@@ -196,6 +197,7 @@
                           <img
                             src={artist.avatar_url}
                             alt={artist.name}
+                            title={artist.name}
                             class="w-full h-full object-cover"
                           />
                         {:else}
@@ -236,6 +238,7 @@
                           <img
                             src={user.avatar_url}
                             alt={user.name}
+                            title={user.name}
                             class="w-full h-full object-cover"
                           />
                         {:else}
@@ -317,6 +320,7 @@
                           <img
                             src={studio.logo_url}
                             alt={studio.name}
+                            title={studio.name}
                             class="w-full h-full object-contain"
                           />
                         {:else}

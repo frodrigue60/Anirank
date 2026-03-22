@@ -79,7 +79,8 @@
                 class="w-48 h-48 md:w-64 md:h-64 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden relative border border-white/10"
               >
                 <img
-                  alt={getSongName(homeData.featured_song)}
+                  alt="Cover art for {homeData.featured_song.anime?.title || 'featured theme'}"
+                  title="Cover art for {homeData.featured_song.anime?.title || 'featured theme'}"
                   class="w-full h-full object-cover"
                   src={homeData.featured_song.anime?.cover_url ?? ""}
                 />
@@ -194,6 +195,7 @@
                   >
                     <img
                       alt={getSongName(item)}
+                      title={getSongName(item)}
                       class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       src={item.anime?.cover_url ?? ""}
                     />
@@ -261,6 +263,7 @@
                   >
                     <img
                       alt={getSongName(item)}
+                      title={getSongName(item)}
                       class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       src={item.anime?.cover_url ?? ""}
                     />
@@ -373,12 +376,14 @@
               <a
                 href="/songs/{song.anime?.slug}/{song.slug}"
                 class="group cursor-pointer shrink-0 w-[140px] sm:w-[160px] md:w-[180px] snap-start"
+                title="View theme: {getSongName(song)}"
               >
                 <div
                   class="aspect-2/3 rounded-lg overflow-hidden mb-3 relative bg-surface-darker"
                 >
                   <img
                     alt={getSongName(song)}
+                    title={getSongName(song)}
                     class="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
                     src={song.anime?.cover_url ?? ""}
                   />
@@ -413,12 +418,14 @@
               <a
                 href="/songs/{song.anime?.slug}/{song.slug}"
                 class="group cursor-pointer shrink-0 w-[140px] sm:w-[160px] md:w-[180px] snap-start"
+                title="View theme: {getSongName(song)}"
               >
                 <div
                   class="aspect-2/3 rounded-lg overflow-hidden mb-3 relative bg-surface-darker"
                 >
                   <img
                     alt={getSongName(song)}
+                    title={getSongName(song)}
                     class="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
                     src={song.anime?.cover_url ?? ""}
                   />
@@ -455,12 +462,14 @@
               <a
                 href="/songs/{song.anime?.slug}/{song.slug}"
                 class="group cursor-pointer shrink-0 w-[140px] sm:w-[160px] md:w-[180px] snap-start"
+                title="View theme: {getSongName(song)}"
               >
                 <div
                   class="aspect-2/3 rounded-lg overflow-hidden mb-3 relative bg-surface-darker"
                 >
                   <img
                     alt={getSongName(song)}
+                    title={getSongName(song)}
                     class="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
                     src={song.anime?.cover_url ?? ""}
                   />
@@ -515,6 +524,7 @@
               <a
                 href="/artists/{artist.slug}"
                 class="flex items-center justify-between group"
+                title="View artist profile: {artist.name}"
               >
                 <div class="flex items-center gap-3">
                   <div
@@ -523,6 +533,7 @@
                     {#if artist.avatar_url}
                       <img
                         alt={artist.name}
+                        title={artist.name}
                         class="w-full h-full object-cover"
                         src={artist.avatar_url}
                       />

@@ -254,6 +254,7 @@
                   <img
                     src={authState.user.avatar_url}
                     alt="{authState.user.name}'s avatar"
+                    title="{authState.user.name}'s avatar"
                     class="h-full w-full object-cover"
                   />
                 {:else}
@@ -261,6 +262,7 @@
                     src="https://ui-avatars.com/api/?name={authState.user
                       .name}&background=7f13ec&color=fff"
                     alt="{authState.user.name}'s default avatar"
+                    title="{authState.user.name}'s default avatar"
                     class="h-full w-full object-cover"
                   />
                 {/if}

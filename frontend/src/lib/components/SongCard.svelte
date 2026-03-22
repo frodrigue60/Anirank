@@ -41,7 +41,10 @@
       <h3
         class="text-2xl font-bold text-white group-hover:text-primary transition-colors line-clamp-1 drop-shadow-md"
       >
-        <a href="/songs/{song.anime?.slug}/{song.slug}" class="hover:underline"
+        <a
+          href="/songs/{song.anime?.slug}/{song.slug}"
+          class="hover:underline"
+          title="View song details: {getSongName(song)}"
           >{getSongName(song)}</a
         >
       </h3>
@@ -72,7 +75,7 @@
         <a
           href="/songs/{song.anime?.slug}/{song.slug}"
           class="flex items-center justify-center h-12 w-12 rounded-full bg-white/10 hover:bg-primary transition-all text-white backdrop-blur-md border border-white/10 group-hover:border-primary/50 group-hover:scale-110 shadow-lg"
-          title="Play theme"
+          title="Play theme: {getSongName(song)}"
         >
           <span class="material-symbols-outlined text-2xl">play_arrow</span>
         </a>

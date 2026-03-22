@@ -5,10 +5,14 @@
 
     let { 
         value = $bindable(""), 
+        id = "anime-search",
+        showLabel = true,
         onselect = (id: string) => {},
         placeholder = "Search anime..." 
     } = $props<{
         value?: string;
+        id?: string;
+        showLabel?: boolean;
         onselect?: (id: string) => void;
         placeholder?: string;
     }>();
@@ -89,10 +93,12 @@
 </script>
 
 <div class="relative w-full z-30" bind:this={container}>
-    <label for="anime-search" class="block text-[10px] uppercase font-black text-white/40 mb-2 ml-1 tracking-widest">Anime</label>
+    {#if showLabel}
+    <label for={id} class="block text-[10px] uppercase font-black text-white/40 mb-2 ml-1 tracking-widest">Anime</label>
+    {/if}
     <div class="relative">
         <input
-            id="anime-search"
+            id={id}
             type="text"
             bind:value={search}
             oninput={handleInput}

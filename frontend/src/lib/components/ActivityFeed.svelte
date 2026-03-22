@@ -68,6 +68,8 @@
       <a
         href="/interactions"
         class="text-primary text-xs font-bold uppercase tracking-wider hover:underline"
+        title="View full activity feed"
+        aria-label="View all interaction activities"
         >View All</a
       >
     {/if}
@@ -97,7 +99,7 @@
             {#if activity.user?.avatar_url}
               <img
                 src={activity.user.avatar_url}
-                alt={activity.user.name}
+                alt="{activity.user.name}'s avatar"
                 class="w-8 h-8 rounded-full object-cover border border-white/10"
               />
             {:else}
@@ -134,6 +136,7 @@
                 <a
                   href="/songs/{activity.song.anime?.slug}/{activity.song.slug}"
                   class="text-primary hover:underline font-medium"
+                  title="View song: {activity.song.name}"
                 >
                   {activity.song.name}
                 </a>
@@ -144,6 +147,7 @@
                 <a
                   href="/artists/{activity.artist.slug}"
                   class="text-primary hover:underline font-medium"
+                  title="View artist: {activity.artist.name}"
                 >
                   {activity.artist.name}
                 </a>
@@ -167,6 +171,8 @@
           class="text-white/40 text-xs font-bold uppercase tracking-wider hover:underline disabled:text-white/20"
           onclick={() => goToPage(page - 1)}
           disabled={page <= 1 || loading}
+          title="Previous page"
+          aria-label="Go to previous page of activities"
         >
           Prev
         </button>
@@ -175,6 +181,8 @@
           class="text-primary text-xs font-bold uppercase tracking-wider hover:underline disabled:text-white/20"
           onclick={() => goToPage(page + 1)}
           disabled={!hasMore || loading}
+          title="Next page"
+          aria-label="Go to next page of activities"
         >
           Next
         </button>

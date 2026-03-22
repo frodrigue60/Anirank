@@ -16,8 +16,8 @@
 </script>
 
 <SEO 
-  title={anime.title}
-  description={anime.description || ""}
+  title="{anime.title} - AniRank"
+  description="Listen to and rate the openings and endings from {anime.title}. {anime.description || ''}"
   image={`${page.url.origin}/api/og/anime/${anime.slug}`}
   type="video.tv_show"
 />
@@ -64,6 +64,7 @@
               href="https://anilist.co/anime/{anime.anilist_id}"
               target="_blank"
               class="text-white/70 hover:text-white transition-colors"
+              title="View {anime.title} on Anilist"
               >View on Anilist</a
             >
           </div>
@@ -94,7 +95,9 @@
                 {#each anime.studios as studio, index}
                   <a
                     class="font-medium text-primary hover:underline"
-                    href="/studios/{studio.slug}">{studio.name}</a
+                    href="/studios/{studio.slug}"
+                    title="View details for studio: {studio.name}"
+                    >{studio.name}</a
                   >
                   {index < anime.studios.length - 1 ? ", " : ""}
                 {/each}
@@ -112,7 +115,9 @@
                 {#each anime.producers as producer, index}
                   <a
                     class="font-medium text-primary hover:underline"
-                    href="/producers/{producer.slug}">{producer.name}</a
+                    href="/producers/{producer.slug}"
+                    title="View details for producer: {producer.name}"
+                    >{producer.name}</a
                   >
                   {index < anime.producers.length - 1 ? ", " : ""}
                 {/each}
@@ -290,6 +295,7 @@
                     <a
                       href="/songs/{anime.slug}/{song.slug}"
                       class="w-8 h-8 rounded-full flex items-center justify-center text-white bg-primary hover:bg-primary/20 hover:text-white transition-colors"
+                      title="Play theme: {song.song_romaji || song.song_en}"
                     >
                       <span class="material-symbols-outlined text-lg"
                         >play_arrow</span

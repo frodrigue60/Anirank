@@ -2,6 +2,7 @@
   import api from "$lib/api";
 
   let { data } = $props();
+  // svelte-ignore state_referenced_locally
   let reports = $state(data.reports || []);
   let status = $state("pending");
   let isLoading = $state(false);
@@ -98,7 +99,7 @@
         </tr>
       {:else}
         {#each reports as rpt}
-          <tr class="hover:bg-white/[0.02] transition-colors">
+          <tr class="hover:bg-white/2 transition-colors">
             <td class="px-6 py-4">
               <div class="font-medium text-white mb-1">#{rpt.id}</div>
               <div

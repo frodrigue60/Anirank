@@ -2,6 +2,7 @@
   import api from "$lib/api";
 
   let { data } = $props();
+  // svelte-ignore state_referenced_locally
   let requests = $state(data.requests || []);
   let currentStatus = $state("pending");
   let loadingStatus = $state(false);
@@ -116,7 +117,7 @@
     </thead>
     <tbody class="divide-y divide-white/5">
       {#each requests as req}
-        <tr class="hover:bg-white/[0.02] transition-colors">
+        <tr class="hover:bg-white/2 transition-colors">
           <td class="px-6 py-4 font-medium text-gray-500">#{req.id}</td>
           <td class="px-6 py-4">
             <div class="flex items-center gap-2">

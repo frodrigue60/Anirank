@@ -8,6 +8,7 @@
   let artists = $derived(data.artists);
   let meta = $derived(data.meta);
 
+  // svelte-ignore state_referenced_locally
   let searchQuery = $state(data.meta.search || "");
 
   function getQueryString(page: number = 1) {

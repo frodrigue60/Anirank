@@ -4,6 +4,7 @@
   import type { PageData } from "./$types";
 
   let { data } = $props<{ data: PageData }>();
+  // svelte-ignore state_referenced_locally
   let req = $state(data.request);
 
   let loadingDelete = $state(false);

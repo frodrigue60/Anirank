@@ -1,5 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import api from "$lib/api";
+  import { toastState } from "$lib/state/toast.svelte";
   import StatusControl from "$lib/components/admin/StatusControl.svelte";
 
   let name = $state("");

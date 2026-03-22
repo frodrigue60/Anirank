@@ -192,14 +192,14 @@
         100% { transform: scale(0.95); opacity: 0.5; }
     }
 
-    pre::-webkit-scrollbar {
+    .whitespace-pre::-webkit-scrollbar {
         width: 4px;
         height: 4px;
     }
-    pre::-webkit-scrollbar-track {
+    .whitespace-pre::-webkit-scrollbar-track {
         background: transparent;
     }
-    pre::-webkit-scrollbar-thumb {
+    .whitespace-pre::-webkit-scrollbar-thumb {
         background: rgba(255, 255, 255, 0.1);
         border-radius: 10px;
     }

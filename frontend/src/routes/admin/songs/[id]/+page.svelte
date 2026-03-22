@@ -3,6 +3,7 @@
   import { getSongName } from "$lib/song-utils";
 
   let { data } = $props<{ data: PageData }>();
+  // svelte-ignore state_referenced_locally
   const song = data.song;
 
   // Helpers to structure URLs
@@ -25,6 +26,8 @@
   <div class="flex items-center gap-4">
     <a
       href="/admin/songs"
+      title="Back to Songs Catalog"
+      aria-label="Back to Songs Catalog"
       class="text-gray-400 hover:text-white transition-colors p-2 -ml-2 rounded-lg hover:bg-white/5"
     >
       <svg
@@ -89,6 +92,7 @@
       <div
         class="bg-black border border-white/5 rounded-2xl overflow-hidden shadow-xl aspect-video w-full flex items-center justify-center relative group"
       >
+        <!-- svelte-ignore a11y_media_has_caption -->
         <video controls class="w-full h-full object-contain" src={videoUrl}>
           Your browser does not support the video tag.
         </video>

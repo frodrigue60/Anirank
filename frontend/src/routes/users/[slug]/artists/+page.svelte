@@ -14,7 +14,7 @@
   let artistsLastPage = $state(data.artists?.last_page || 1);
   let loading = $state(false);
 
-  // Non-reactive guard for prop changes
+  // svelte-ignore state_referenced_locally
   let _sourceArtists = data.artists?.data;
 
   // Sync state if navigation happens

@@ -17,8 +17,11 @@
   let selectedType = $state("");
   let selectedSort = $state("");
 
+  // svelte-ignore state_referenced_locally
   let songs = $state(data.songs?.data || []);
+  // svelte-ignore state_referenced_locally
   let currentPage = $state(data.songs?.current_page || 1);
+  // svelte-ignore state_referenced_locally
   let lastPage = $state(data.songs?.last_page || 1);
   let loading = $state(false);
 

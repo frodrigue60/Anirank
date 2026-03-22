@@ -8,8 +8,11 @@
 
   let { data, children } = $props();
 
+  // svelte-ignore state_referenced_locally
   let isFollowing = $state(data.profile?.is_following || false);
+  // svelte-ignore state_referenced_locally
   let followersCount = $state(data.profile?.followers_count || 0);
+  // svelte-ignore state_referenced_locally
   let followingCount = $state(data.profile?.following_count || 0);
   let isProcessing = $state(false);
 

@@ -4,6 +4,7 @@
   import { toastState } from "$lib/state/toast.svelte";
 
   let { data } = $props();
+  // svelte-ignore state_referenced_locally
   let report = $state(data.report);
 
   $effect(() => {

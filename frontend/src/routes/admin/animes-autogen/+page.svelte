@@ -71,8 +71,9 @@
 
     <div class="flex flex-wrap gap-4 w-full">
       <div class="flex-1 min-w-[200px]">
-        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Year</label>
+        <label for="batchYear" class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Year</label>
         <select
+          id="batchYear"
           bind:value={batchYear}
           required
           class="w-full bg-black/50 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-anirank-primary transition-colors"
@@ -85,8 +86,9 @@
       </div>
 
       <div class="flex-1 min-w-[200px]">
-        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Season</label>
+        <label for="batchSeason" class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Season</label>
         <select
+          id="batchSeason"
           bind:value={batchSeason}
           required
           class="w-full bg-black/50 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-anirank-primary transition-colors"
@@ -100,8 +102,9 @@
       </div>
 
       <div class="flex-1 min-w-[200px]">
-        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Format</label>
+        <label for="batchFormat" class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Format</label>
         <select
+          id="batchFormat"
           bind:value={batchFormat}
           required
           class="w-full bg-black/50 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-anirank-primary transition-colors"
@@ -172,6 +175,7 @@
       type="text"
       bind:value={anilistQuery}
       placeholder="Search anime title on AniList..."
+      aria-label="Search anime title on AniList"
       class="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-anirank-primary transition-colors"
     />
     <button

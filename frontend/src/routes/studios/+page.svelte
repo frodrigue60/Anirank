@@ -8,8 +8,11 @@
 
   let { data }: { data: any } = $props();
 
+  // svelte-ignore state_referenced_locally
   let studios = $state(data.studios?.data || []);
+  // svelte-ignore state_referenced_locally
   let currentPage = $state(data.studios?.current_page || 1);
+  // svelte-ignore state_referenced_locally
   let lastPage = $state(data.studios?.last_page || 1);
   let loading = $state(false);
   let params = $state({ name: "", sort: "" });

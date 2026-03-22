@@ -10,8 +10,11 @@
   let songs = $derived(data.songs);
   let meta = $derived(data.meta);
 
+  // svelte-ignore state_referenced_locally
   let searchQuery = $state(data.meta.search || "");
+  // svelte-ignore state_referenced_locally
   let animeIdInput = $state(data.meta.anime || "");
+  // svelte-ignore state_referenced_locally
   let statusFilter = $state(data.meta.status || "");
 
   $effect(() => {
@@ -141,10 +144,13 @@
   <!-- Anime -->
   <div class="w-full sm:w-72">
     <label
+      for="anime-filter"
       class="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider"
       >Anime</label
     >
     <AutocompleteAnime
+      id="anime-filter"
+      showLabel={false}
       bind:value={animeIdInput}
       onselect={() => handleSearch()}
       placeholder="Filter by anime..."

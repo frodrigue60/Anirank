@@ -4,12 +4,14 @@
   import { toastState } from "$lib/state/toast.svelte";
   let { data } = $props();
 
+  // svelte-ignore state_referenced_locally
   let artist = $state(
     data.artist || { name: "", name_jp: "", slug: "", avatar_url: "" },
   );
   let isSubmitting = $state(false);
   let isGenerating = $state(false);
   let avatarFile = $state<File | null>(null);
+  // svelte-ignore state_referenced_locally
   let previewUrl = $state(artist.avatar_url);
 
   async function handleFileChange(e: Event) {

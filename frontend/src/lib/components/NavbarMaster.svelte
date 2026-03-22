@@ -65,7 +65,7 @@
     class="max-w-[1440px] mx-auto px-6 h-16 flex items-center justify-between gap-4"
   >
     <div class="flex items-center gap-10">
-      <a class="flex items-center gap-2 group" href="/">
+      <a class="flex items-center gap-2 group" href="/" title="AniRank Home" aria-label="Go to AniRank Home">
         <!-- <div
           class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/40 group-hover:scale-105 transition-transform"
         >
@@ -80,7 +80,10 @@
           )
             ? 'text-primary'
             : 'text-white/60 hover:text-white'}"
-          href="/songs/seasonal">Season</a
+          href="/songs/seasonal"
+          title="Seasonal Themes"
+          aria-label="View seasonal anime themes"
+          >Season</a
         >
         <a
           class="text-sm font-medium transition-colors {page.url.pathname.includes(
@@ -88,7 +91,10 @@
           )
             ? 'text-primary'
             : 'text-white/60 hover:text-white'}"
-          href="/songs/ranking">Ranking</a
+          href="/songs/ranking"
+          title="Song Rankings"
+          aria-label="View top rated anime songs"
+          >Ranking</a
         >
 
         <!-- Discover Dropdown -->
@@ -102,6 +108,8 @@
             class="flex items-center gap-1 text-sm font-medium transition-colors {showDiscoverDropdown
               ? 'text-primary'
               : 'text-white/60 hover:text-white'}"
+            title="Discover more content"
+            aria-label="Toggle discover dropdown menu"
           >
             Discover
             <span
@@ -118,18 +126,21 @@
               <a
                 href="/animes"
                 class="flex items-center gap-3 px-4 py-2 text-sm text-white/80 transition-colors hover:bg-white/5 hover:text-primary"
+                title="Browse Anime Series"
               >
                 <span class="material-symbols-outlined text-[18px]">tv</span> Animes
               </a>
               <a
                 href="/artists"
                 class="flex items-center gap-3 px-4 py-2 text-sm text-white/80 transition-colors hover:bg-white/5 hover:text-primary"
+                title="Browse Artists"
               >
                 <span class="material-symbols-outlined text-[18px]">group</span> Artists
               </a>
               <a
                 href="/songs"
                 class="flex items-center gap-3 px-4 py-2 text-sm text-white/80 transition-colors hover:bg-white/5 hover:text-primary"
+                title="Browse Themes and Songs"
               >
                 <span class="material-symbols-outlined text-[18px]"
                   >music_note</span
@@ -138,12 +149,14 @@
               <a
                 href="/studios"
                 class="flex items-center gap-3 px-4 py-2 text-sm text-white/80 transition-colors hover:bg-white/5 hover:text-primary"
+                title="Browse Animation Studios"
               >
                 <span class="material-symbols-outlined text-[18px]">movie</span> Studios
               </a>
               <a
                 href="/producers"
                 class="flex items-center gap-3 px-4 py-2 text-sm text-white/80 transition-colors hover:bg-white/5 hover:text-primary"
+                title="Browse Music Producers"
               >
                 <span class="material-symbols-outlined text-[18px]"
                   >theater_comedy</span
@@ -152,6 +165,7 @@
               <a
                 href="/playlists"
                 class="flex items-center gap-3 px-4 py-2 text-sm text-white/80 transition-colors hover:bg-white/5 hover:text-primary"
+                title="Browse Playlists"
               >
                 <span class="material-symbols-outlined text-[18px]"
                   >queue_music</span
@@ -160,6 +174,7 @@
               <a
                 href="/tournaments"
                 class="flex items-center gap-3 px-4 py-2 text-sm text-white/80 transition-colors hover:bg-white/5 hover:text-primary"
+                title="View Tournaments"
               >
                 <span class="material-symbols-outlined text-[18px]">trophy</span
                 > Tournaments
@@ -167,6 +182,7 @@
               <a
                 href="/users/ranking"
                 class="flex items-center gap-3 px-4 py-2 text-sm text-white/80 transition-colors hover:bg-white/5 hover:text-primary"
+                title="View User Rankings"
               >
                 <span class="material-symbols-outlined text-[18px]"
                   >leaderboard</span
@@ -183,6 +199,8 @@
       <button
         onclick={() => (showSearchModal = true)}
         class="relative hidden sm:flex items-center group h-10 w-10 rounded-full bg-white/5 hover:bg-white/10 text-white transition-colors justify-center"
+        title="Search (Ctrl + K)"
+        aria-label="Open search modal"
       >
         <span class="material-symbols-outlined text-[20px]">search</span>
       </button>
@@ -192,6 +210,8 @@
         <a
           href="/notifications"
           class="hidden sm:flex h-10 w-10 items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white transition-colors relative"
+          title="Notifications"
+          aria-label="View notifications"
         >
           <span class="material-symbols-outlined text-[20px]"
             >notifications</span
@@ -220,6 +240,8 @@
               showUserDropdown = !showUserDropdown;
             }}
             class="flex items-center gap-2 group"
+            title="User Menu"
+            aria-label="Toggle user dropdown menu"
           >
             <div
               class="w-9 h-9 overflow-hidden rounded-full border-2 border-transparent group-hover:border-primary transition-all bg-white/5 flex items-center justify-center text-white/40 group-hover:text-primary"
@@ -228,14 +250,14 @@
                 {#if authState.user.avatar_url}
                   <img
                     src={authState.user.avatar_url}
-                    alt={authState.user.name}
+                    alt="{authState.user.name}'s avatar"
                     class="h-full w-full object-cover"
                   />
                 {:else}
                   <img
                     src="https://ui-avatars.com/api/?name={authState.user
                       .name}&background=7f13ec&color=fff"
-                    alt={authState.user.name}
+                    alt="{authState.user.name}'s default avatar"
                     class="h-full w-full object-cover"
                   />
                 {/if}
@@ -315,6 +337,7 @@
                   <button
                     onclick={handleLogout}
                     class="flex w-full items-center gap-3 px-4 py-2 text-sm text-red-400 transition-colors hover:bg-red-400/10 hover:text-red-300"
+                    title="Sign Out"
                   >
                     <span class="material-symbols-outlined text-[18px]"
                       >logout</span
@@ -356,6 +379,8 @@
       <button
         onclick={() => (showMobileMenu = true)}
         class="flex h-10 w-10 items-center justify-center text-white/60 transition-colors hover:text-white md:hidden"
+        title="Open Mobile Menu"
+        aria-label="Open mobile menu"
       >
         <span class="material-symbols-outlined">menu</span>
       </button>

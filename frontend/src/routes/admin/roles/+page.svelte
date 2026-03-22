@@ -1,5 +1,6 @@
 <script lang="ts">
   let { data } = $props();
+  // svelte-ignore state_referenced_locally
   let roles = $state(data.roles);
 </script>
 

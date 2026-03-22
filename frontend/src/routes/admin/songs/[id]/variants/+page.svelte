@@ -5,7 +5,9 @@
   import { goto } from "$app/navigation";
 
   let { data } = $props();
+  // svelte-ignore state_referenced_locally
   let song = $state(data.song);
+  // svelte-ignore state_referenced_locally
   let variants = $state(data.song.song_variants || []);
 
   $effect(() => {

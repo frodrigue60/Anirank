@@ -12,8 +12,11 @@
   let searchQuery = $state("");
   let selectedSort = $state("");
 
+  // svelte-ignore state_referenced_locally
   let artists = $state(data.artists?.data || []);
+  // svelte-ignore state_referenced_locally
   let currentPage = $state(data.artists?.current_page || 1);
+  // svelte-ignore state_referenced_locally
   let lastPage = $state(data.artists?.last_page || 1);
   let loading = $state(false);
 

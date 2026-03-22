@@ -9,8 +9,11 @@
   import { toastState } from "$lib/state/toast.svelte";
 
   let { data } = $props();
+  // svelte-ignore state_referenced_locally
   let playlist = $state(data.playlist);
+  // svelte-ignore state_referenced_locally
   let songs = $state((playlist.songs || []) as Song[]);
+  // svelte-ignore state_referenced_locally
   let currentSong = $state(songs[0] || null);
   let openMenuId = $state<number | null>(null);
 

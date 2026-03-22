@@ -8,6 +8,7 @@
 
   let { data } = $props();
 
+  // svelte-ignore state_referenced_locally
   let ranking = $state(data.ranking);
   let activeSort = $derived(data.sort);
   let loading = $state(false);

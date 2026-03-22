@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import api from '$lib/api';
-  import { toastState } from '$lib/state/toast.svelte.ts';
+  import { toastState } from '$lib/state/toast.svelte';
   import type { Tournament } from '$lib/types/tournament';
   import type { Song } from '$lib/types/song';
 
@@ -331,13 +331,16 @@
                       {/if}
                     </div>
                     <button 
+                      type="button"
                       class="bg-white/10 hover:bg-white/20 p-2 rounded flex items-center justify-center w-10 h-10" 
                       on:click={() => previewSong = song}
-                      title="Preview"
+                      title="Preview song"
+                      aria-label="Preview song"
                     >
                       ▶️
                     </button>
                     <button 
+                      type="button"
                       class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg font-bold disabled:opacity-30 h-10 min-w-[80px]"
                       on:click={() => addSong(song)}
                       disabled={selectedSongs.find(s => s.id === song.id) !== undefined}
@@ -372,8 +375,11 @@
                     <div class="text-[10px] opacity-40 truncate">{song.anime?.title}</div>
                   </div>
                   <button 
+                    type="button"
                     class="opacity-0 group-hover:opacity-100 text-red-500 hover:scale-125 transition-all text-lg"
                     on:click={() => removeSong(song.id)}
+                    title="Remove song"
+                    aria-label="Remove song"
                   >
                     ×
                   </button>
@@ -388,12 +394,14 @@
 
             <div class="space-y-3">
               <button 
+                type="button"
                 class="w-full bg-white/10 hover:bg-white/20 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2"
                 on:click={saveProgress}
               >
                 💾 Save Progress
               </button>
               <button 
+                type="button"
                 class="w-full bg-primary py-4 rounded-xl font-bold text-lg disabled:opacity-40 disabled:cursor-not-allowed hover:scale-[1.02] transition-all"
                 disabled={selectedSongs.length < tournament.size}
                 on:click={nextStep}
@@ -413,8 +421,8 @@
             Method: <span class="text-primary font-bold">{method === 'random' ? 'Pure Random' : 'Filtered Discovery'}</span>
           </p>
           <div class="flex justify-center gap-4">
-            <button class="px-8 py-3 rounded-xl border border-white/10 hover:bg-white/5" on:click={prevStep}>Back</button>
-            <button class="px-8 py-3 rounded-xl bg-primary font-bold" on:click={nextStep}>Final Confirmation →</button>
+            <button type="button" class="px-8 py-3 rounded-xl border border-white/10 hover:bg-white/5" on:click={prevStep}>Back</button>
+            <button type="button" class="px-8 py-3 rounded-xl bg-primary font-bold" on:click={nextStep}>Final Confirmation →</button>
           </div>
         </div>
       {/if}
@@ -462,6 +470,7 @@
 
         <div class="flex items-center gap-4">
           <button 
+             type="button"
              class="flex-1 py-4 rounded-2xl border border-white/10 hover:bg-white/5 font-bold transition-all"
              on:click={prevStep}
              disabled={loading}
@@ -469,6 +478,7 @@
             ← Back
           </button>
           <button 
+             type="button"
              class="flex-2 py-4 rounded-2xl bg-primary text-white font-bold text-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
              on:click={finalizeSeeding}
              disabled={loading}
@@ -481,18 +491,32 @@
 
     <!-- Preview Modal -->
     {#if previewSong}
-      <div class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4" on:click|self={() => previewSong = null}>
+      <div 
+        class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4" 
+        on:click|self={() => previewSong = null}
+        on:keydown={(e) => e.key === 'Escape' && (previewSong = null)}
+        role="button"
+        tabindex="0"
+        aria-label="Close preview"
+      >
         <div class="bg-[#111] border border-white/10 rounded-3xl overflow-hidden max-w-2xl w-full shadow-2xl relative animate-in zoom-in-95 duration-300">
-          <button class="absolute right-6 top-6 text-2xl opacity-50 hover:opacity-100 z-10 w-10 h-10 flex items-center justify-center bg-black/40 rounded-full" on:click={() => previewSong = null}>×</button>
+          <button 
+            type="button"
+            class="absolute right-6 top-6 text-2xl opacity-50 hover:opacity-100 z-10 w-10 h-10 flex items-center justify-center bg-black/40 rounded-full" 
+            on:click={() => previewSong = null}
+            title="Close preview"
+            aria-label="Close preview"
+          >×</button>
           
           <div class="aspect-video w-full bg-black relative">
             {#if previewSong.song_variants && previewSong.song_variants.length > 0}
                {@const v = previewSong.song_variants[0].video}
                {#if v}
                  {#if v.type === 'file'}
+                   <!-- svelte-ignore a11y-media-has-caption -->
                    <video src={v.local_url} controls autoplay class="w-full h-full object-contain"></video>
                  {:else if v.type === 'embed'}
-                   <iframe src={v.embed_url} frameborder="0" allow="autoplay; encrypted-media" allowfullscreen class="w-full h-full"></iframe>
+                   <iframe src={v.embed_url} title="Video Preview" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen class="w-full h-full"></iframe>
                  {/if}
                {:else}
                  <div class="w-full h-full flex items-center justify-center opacity-40">No preview video available</div>
@@ -518,8 +542,8 @@
             </div>
             
             <div class="pt-4 border-t border-white/5 flex justify-center gap-4">
-              <button class="bg-white/10 hover:bg-white/20 text-white px-8 py-3 rounded-xl font-bold transition-all" on:click={() => previewSong = null}>Close</button>
-              <button class="bg-primary text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-[1.05] transition-all" on:click={() => { if(previewSong) addSong(previewSong); previewSong = null; }}>
+              <button type="button" class="bg-white/10 hover:bg-white/20 text-white px-8 py-3 rounded-xl font-bold transition-all" on:click={() => previewSong = null}>Close</button>
+              <button type="button" class="bg-primary text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-[1.05] transition-all" on:click={() => { if(previewSong) addSong(previewSong); previewSong = null; }}>
                 Add Theme to Selection
               </button>
             </div>

@@ -6,11 +6,15 @@
   let loading = $state(false);
   let error = $state("");
 
+  // svelte-ignore state_referenced_locally
   let name = $state(badge?.name || "");
+  // svelte-ignore state_referenced_locally
   let description = $state(badge?.description || "");
+  // svelte-ignore state_referenced_locally
   let isActive = $state(badge ? badge.is_active : true);
 
   let iconFile: File | null = $state(null);
+  // svelte-ignore state_referenced_locally
   let iconPreview = $state(badge?.icon_url || "");
 
   function handleFileChange(event: Event) {
@@ -66,10 +70,12 @@
 
 <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
   <!-- Backdrop -->
-  <div
-    class="absolute inset-0 bg-black/60 backdrop-blur-sm"
+  <button
+    type="button"
+    class="absolute inset-0 bg-black/60 backdrop-blur-sm w-full h-full border-none cursor-default"
     onclick={onclose}
-  ></div>
+    aria-label="Close modal"
+  ></button>
 
   <!-- Modal content -->
   <div
@@ -81,6 +87,8 @@
       </h2>
       <button
         onclick={onclose}
+        title="Close"
+        aria-label="Close modal"
         class="text-gray-400 hover:text-white transition-colors"
       >
         <svg
@@ -107,7 +115,7 @@
     <form onsubmit={handleSubmit} class="space-y-5">
       <!-- Icon Upload -->
       <div>
-        <label class="block text-sm font-medium text-gray-300 mb-2"
+        <label for="icon" class="block text-sm font-medium text-gray-300 mb-2"
           >Badge Icon (PNG/JPEG)</label
         >
         <div class="flex items-center gap-4">
@@ -137,6 +145,7 @@
           </div>
           <div class="flex-1">
             <input
+              id="icon"
               type="file"
               accept="image/png, image/jpeg, image/gif, image/webp"
               onchange={handleFileChange}

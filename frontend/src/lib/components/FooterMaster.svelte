@@ -17,7 +17,7 @@
     <div class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-12">
       <!-- Brand Section -->
       <div class="col-span-1 lg:col-span-2">
-        <a class="group mb-6 flex items-center gap-2" href="/">
+        <a class="group mb-6 flex items-center gap-2" href="/" title="AniRank Home" aria-label="Go to AniRank Home">
           <div
             class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/40 group-hover:scale-105 transition-transform"
           >
@@ -34,11 +34,12 @@
           enthusiasts.
         </p>
         <div class="mt-8 flex items-center gap-4">
-          <!-- svelte-ignore a11y_consider_explicit_label -->
           <a
             href="https://x.com"
             target="_blank"
             class="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 text-white/40 transition-all hover:bg-primary hover:text-white"
+            title="Follow us on X (Twitter)"
+            aria-label="Follow us on X (Twitter)"
           >
             <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"
               ><path
@@ -46,11 +47,12 @@
               ></path></svg
             >
           </a>
-          <!-- svelte-ignore a11y_consider_explicit_label -->
           <a
             href="https://discord.gg/anirank"
             target="_blank"
             class="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 text-white/40 transition-all hover:bg-primary hover:text-white"
+            title="Join our Discord community"
+            aria-label="Join our Discord community"
           >
             <svg class="h-5 w-5 fill-current" viewBox="0 0 24 24"
               ><path
@@ -76,6 +78,7 @@
             <a
               href="/"
               class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
+              title="Learn more about AniRank"
               >About Us</a
             >
           </li>
@@ -83,6 +86,7 @@
             <a
               href="/"
               class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
+              title="Read our Cookie Policy"
               >Cookie Policy</a
             >
           </li>
@@ -90,6 +94,7 @@
             <a
               href="/"
               class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
+              title="Read our Privacy Policy"
               >Privacy Policy</a
             >
           </li>
@@ -97,6 +102,7 @@
             <a
               href="/"
               class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
+              title="Read our Terms and Conditions"
               >Terms and Conditions</a
             >
           </li>
@@ -104,6 +110,7 @@
             <a
               href="/"
               class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
+              title="Read our DMCA Disclaimer"
               >DMCA Disclaimer</a
             >
           </li>
@@ -124,6 +131,7 @@
             <a
               href="/animes"
               class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
+              title="Browse Anime Series"
               >Series</a
             >
           </li>
@@ -131,6 +139,7 @@
             <a
               href="/artists"
               class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
+              title="Browse Artists"
               >Artists</a
             >
           </li>
@@ -138,6 +147,7 @@
             <a
               href="/songs"
               class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
+              title="Browse Themes and Songs"
               >Themes</a
             >
           </li>
@@ -145,6 +155,7 @@
             <a
               href="/studios"
               class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
+              title="Browse Animation Studios"
               >Studios</a
             >
           </li>
@@ -152,6 +163,7 @@
             <a
               href="/producers"
               class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
+              title="Browse Music Producers"
               >Producers</a
             >
           </li>
@@ -172,6 +184,7 @@
             <a
               href="/"
               class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
+              title="Report an error"
               >Report Error</a
             >
           </li>
@@ -179,6 +192,7 @@
             <a
               href="/"
               class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
+              title="Report abuse"
               >Abuse</a
             >
           </li>
@@ -186,6 +200,7 @@
             <a
               href="/"
               class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
+              title="Contact us"
               >Contact Us</a
             >
           </li>
@@ -193,6 +208,7 @@
             <a
               href="/"
               class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
+              title="Get support"
               >Support</a
             >
           </li>

@@ -36,7 +36,11 @@
   }
 </script>
 
-<SEO image="/og-image" />
+<SEO 
+  title="AniRank - Discover and Rate Anime Themes" 
+  description="Discover, rate, and explore the best anime openings and endings. Join our community of anime music enthusiasts and stay up-to-date with seasonal rankings."
+  image="/og-image" 
+/>
 
 <!-- {#if !authState.isAuthenticated && !authState.loading}
   <HeroIndex />
@@ -130,6 +134,8 @@
                   href="/songs/{homeData.featured_song.anime?.slug}/{homeData
                     .featured_song.slug}"
                   class="bg-primary hover:bg-primary-light text-white h-12 sm:h-14 px-8 sm:px-10 rounded-full font-bold flex items-center justify-center gap-2 transition-transform hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(127,19,236,0.3)]"
+                  title="Play featured theme: {getSongName(homeData.featured_song)}"
+                  aria-label="Play featured theme"
                 >
                   <span class="material-symbols-outlined filled text-[24px]"
                     >play_arrow</span
@@ -156,6 +162,8 @@
           <a
             class="text-primary text-md hover:text-white/80 flex items-center gap-1"
             href="/songs/ranking"
+            title="View full song rankings"
+            aria-label="View all rankings"
             >View All <span class="material-symbols-outlined text-md"
               >arrow_forward</span
             ></a
@@ -179,6 +187,7 @@
                 <a
                   href="/songs/{item.anime?.slug}/{item.slug}"
                   class="group relative bg-surface-darker p-4 rounded-xl hover:bg-surface-dark transition-colors border border-white/5 flex gap-4 items-center"
+                  title="View details for {getSongName(item)}"
                 >
                   <div
                     class="relative w-20 h-20 shrink-0 rounded-lg overflow-hidden"
@@ -245,6 +254,7 @@
                 <a
                   href="/songs/{item.anime?.slug}/{item.slug}"
                   class="group relative bg-surface-darker p-4 rounded-xl hover:bg-surface-dark transition-colors border border-white/5 flex gap-4 items-center"
+                  title="View details for {getSongName(item)}"
                 >
                   <div
                     class="relative w-20 h-20 shrink-0 rounded-lg overflow-hidden"
@@ -334,12 +344,16 @@
             <button
               onclick={scrollLeft}
               class="p-1 rounded-md border border-white/10 hover:bg-white/10 transition-colors flex items-center justify-center"
+              title="Scroll left"
+              aria-label="Scroll carousel to the left"
             >
               <span class="material-symbols-outlined text-md">arrow_back</span>
             </button>
             <button
               onclick={scrollRight}
               class="p-1 rounded-md border border-white/10 hover:bg-white/10 transition-colors flex items-center justify-center"
+              title="Scroll right"
+              aria-label="Scroll carousel to the right"
             >
               <span class="material-symbols-outlined text-md"
                 >arrow_forward</span
@@ -526,6 +540,8 @@
                 </div>
                 <button
                   class="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-primary transition-colors shrink-0"
+                  title="View artist profile"
+                  aria-label="Go to {artist.name}'s profile"
                 >
                   <span class="material-symbols-outlined text-[18px]"
                     >arrow_forward</span

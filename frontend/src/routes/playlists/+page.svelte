@@ -7,8 +7,11 @@
 
   let { data }: { data: any } = $props();
 
+  // svelte-ignore state_referenced_locally
   let playlists = $state(data.playlists?.data || []);
+  // svelte-ignore state_referenced_locally
   let currentPage = $state(data.playlists?.current_page || 1);
+  // svelte-ignore state_referenced_locally
   let lastPage = $state(data.playlists?.last_page || 1);
   let loading = $state(false);
   let params = $state({ name: "" });

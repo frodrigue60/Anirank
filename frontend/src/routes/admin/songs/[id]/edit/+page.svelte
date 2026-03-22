@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/state";
   import { goto } from "$app/navigation";
   import { configState as config } from "$lib/state/config.svelte";
   import { getSongName } from "$lib/song-utils";
@@ -8,6 +9,7 @@
   import StatusControl from "$lib/components/admin/StatusControl.svelte";
 
   let { data } = $props<{ data: PageData }>();
+  // svelte-ignore state_referenced_locally
   const song = data.song;
 
   // Form State
@@ -162,6 +164,8 @@
   <div class="flex items-center gap-4 mb-2">
     <a
       href="/admin/songs"
+      title="Back to Songs List"
+      aria-label="Back to Songs List"
       class="text-gray-400 hover:text-white transition-colors p-2 -ml-2 rounded-lg hover:bg-white/5"
     >
       <svg

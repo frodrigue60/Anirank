@@ -12,6 +12,7 @@
 
   // Reset ranking when data changes (e.g., when type changes)
   $effect(() => {
+    // svelte-ignore state_referenced_locally
     ranking = data.ranking?.songs;
   });
 

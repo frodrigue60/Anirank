@@ -37,7 +37,9 @@
     data: { song: Song; comments: any[]; related: Song[] };
   }>();
 
+  // svelte-ignore state_referenced_locally
   let currentSong: Song = $state(data.song);
+  // svelte-ignore state_referenced_locally
   let relatedSongs: Song[] = $state(data.related);
 
   let selectedVariantIndex = $state(0);
@@ -45,6 +47,7 @@
     currentSong.song_variants?.[selectedVariantIndex],
   );
 
+  // svelte-ignore state_referenced_locally
   let comments: Comment[] = $state(data.comments);
 
   $effect(() => {
@@ -98,8 +101,6 @@
     const separator = url.includes("?") ? "&" : "?";
     return `${url}${separator}autoplay=1&muted=1`;
   }
-
-
   let videoElement: HTMLVideoElement | undefined = $state();
 
   async function toggleLike() {
@@ -442,8 +443,8 @@
 
 <SEO 
   title="{getSongName(currentSong)} - {currentSong.anime?.title} - AniRank"
-  description="Listen and rank {getSongName(currentSong)} by {getSongArtistNames(currentSong.artists)} from {currentSong.anime?.title}."
-  image={`${page.url.origin}/api/og/song/${currentSong.anime?.slug}/${currentSong.slug}`}
+  description="Listen to and rate '{getSongName(currentSong)}' ({currentSong.type}{currentSong.theme_num || ''}) by {getSongArtistNames(currentSong.artists)} from the anime {currentSong.anime?.title}."
+  image={`${page.url.origin}/api/og/song/${currentSong.id}`}
   type="music.song"
 />
 
@@ -526,6 +527,8 @@
                     ? 'bg-primary text-white'
                     : 'hover:bg-white/10 text-white/60'}"
                   onclick={() => changeVariant(i)}
+                  title="Select version {variant.version_number}"
+                  aria-label="Select version {variant.version_number}"
                 >
                   V{variant.version_number}
                 </button>
@@ -549,6 +552,7 @@
               <a
                 href="/artists/{artist.slug}"
                 class="text-white/40 text-md font-bold uppercase tracking-wider"
+                title="View artist: {artist.name}"
                 >{artist.name}</a
               >
             {/if}
@@ -563,6 +567,7 @@
         <a
           href="/animes/{currentSong.anime?.slug}"
           class="text-white/40 hover:text-primary text-md font-medium transition-colors"
+          title="View anime: {currentSong.anime?.title}"
         >
           {currentSong.anime?.title}
         </a>
@@ -601,6 +606,8 @@
                   ? 'text-primary'
                   : 'text-white/80 hover:text-white'}"
                 onclick={toggleLike}
+                title={currentSong.is_liked ? "Remove like" : "Like this theme"}
+                aria-label={currentSong.is_liked ? "Unlike theme" : "Like theme"}
               >
                 <span
                   class="material-symbols-outlined text-[14px] {currentSong.is_liked
@@ -617,6 +624,8 @@
                   ? 'text-red-500'
                   : 'text-white/80 hover:text-white'}"
                 onclick={toggleDislike}
+                title={currentSong.is_disliked ? "Remove dislike" : "Dislike this theme"}
+                aria-label={currentSong.is_disliked ? "Undislike theme" : "Dislike theme"}
               >
                 <span
                   class="material-symbols-outlined text-[14px] {currentSong.is_disliked
@@ -635,6 +644,8 @@
           <button
             onclick={handleRatingClick}
             class="flex flex-col items-start hover:bg-white/5 px-3 py-1.5 rounded-xl transition-all group active:scale-95"
+            title="Rate this theme"
+            aria-label="Rate this theme"
           >
             <span
               class="text-white/40 text-[10px] font-bold uppercase tracking-wider group-hover:text-primary transition-colors"
@@ -658,6 +669,8 @@
               ? 'text-pink-500'
               : 'text-white/60'}"
             onclick={toggleFavorite}
+            title={currentSong.is_favorited ? "Remove from favorites" : "Add to favorites"}
+            aria-label={currentSong.is_favorited ? "Remove from favorites" : "Add to favorites"}
           >
             <span
               class="material-symbols-outlined text-[20px] {currentSong.is_favorited
@@ -669,6 +682,7 @@
             class="w-10 h-10 flex items-center justify-center bg-white/5 hover:bg-white/10 border border-white/5 rounded-full transition-colors text-white/60 hover:text-primary"
             onclick={handlePlaylistClick}
             title="Add to Playlist"
+            aria-label="Add this theme to a playlist"
           >
             <span class="material-symbols-outlined text-[20px]"
               >playlist_add</span
@@ -681,6 +695,7 @@
             onclick={reportSong}
             disabled={currentSong.is_reported}
             title={currentSong.is_reported ? "Already reported" : "Report Song"}
+            aria-label={currentSong.is_reported ? "Already reported" : "Report this theme"}
           >
             <span
               class="material-symbols-outlined text-[20px] {currentSong.is_reported
@@ -726,12 +741,15 @@
               class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-primary transition-colors resize-none disabled:opacity-50"
               rows="2"
               disabled={!authState.isAuthenticated}
+              aria-label="Add a new comment"
             ></textarea>
             <div class="flex justify-end">
               <button
                 onclick={postComment}
                 disabled={!newCommentText.trim() || !authState.isAuthenticated}
                 class="bg-primary hover:bg-primary/80 text-white font-bold text-xs px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                title="Post comment"
+                aria-label="Post comment"
               >
                 Comment
               </button>
@@ -791,6 +809,8 @@
                       class="flex items-center gap-1 transition-colors {comment.is_liked
                         ? 'text-primary'
                         : 'text-white/20 hover:text-white'}"
+                      title={comment.is_liked ? "Unlike comment" : "Like comment"}
+                      aria-label={comment.is_liked ? "Unlike comment" : "Like comment"}
                     >
                       <span
                         class="material-symbols-outlined {comment.is_liked
@@ -804,6 +824,8 @@
                       class="flex items-center gap-1 transition-colors {comment.is_disliked
                         ? 'text-red-500'
                         : 'text-white/20 hover:text-white'}"
+                      title={comment.is_disliked ? "Undislike comment" : "Dislike comment"}
+                      aria-label={comment.is_disliked ? "Undislike comment" : "Dislike comment"}
                     >
                       <span
                         class="material-symbols-outlined {comment.is_disliked
@@ -819,6 +841,8 @@
                         replyText = "";
                       }}
                       class="text-white/40 hover:text-white tracking-wider transition-colors"
+                      title="Reply to comment"
+                      aria-label="Reply to comment"
                       >Reply
                       <span class="material-symbols-outlined">reply</span>
                     </button>
@@ -829,6 +853,7 @@
                       onclick={() => openCommentReportModal(comment.id)}
                       class="shrink-0 p-1 hover:bg-white/10 text-white/40 hover:text-white transition-colors"
                       title="Report Comment"
+                      aria-label="Report comment"
                     >
                       <span class="material-symbols-outlined text-[16px]"
                         >flag</span
@@ -840,6 +865,7 @@
                         onclick={() => deleteComment(comment.id)}
                         class="text-white/20 hover:text-red-400 transition-colors"
                         title="Delete Comment"
+                        aria-label="Delete comment"
                       >
                         <span class="material-symbols-outlined text-[16px]"
                           >delete</span
@@ -858,11 +884,14 @@
                         placeholder="Write a reply..."
                         class="w-full bg-white/5 border border-white/10 rounded-xl p-2 text-sm text-white focus:outline-none focus:border-primary transition-colors resize-none"
                         rows="1"
+                        aria-label="Write a reply"
                       ></textarea>
                       <button
                         onclick={() => postReply(comment.id)}
                         disabled={!replyText.trim()}
                         class="bg-white/10 hover:bg-primary text-white font-bold text-xs px-3 py-2 rounded-lg transition-colors disabled:opacity-50 shrink-0"
+                        title="Send reply"
+                        aria-label="Send reply"
                       >
                         Send
                       </button>
@@ -922,6 +951,7 @@
                                       deleteComment(reply.id, comment.id)}
                                     class="text-white/20 hover:text-red-400 transition-colors"
                                     title="Delete Reply"
+                                    aria-label="Delete reply"
                                   >
                                     <span
                                       class="material-symbols-outlined text-[14px]"
@@ -934,6 +964,7 @@
                                     openCommentReportModal(reply.id)}
                                   class="text-white/20 hover:text-primary transition-colors"
                                   title="Report Reply"
+                                  aria-label="Report reply"
                                 >
                                   <span
                                     class="material-symbols-outlined text-[14px]"
@@ -954,6 +985,8 @@
                                 class="flex items-center gap-1 transition-colors {reply.is_liked
                                   ? 'text-primary'
                                   : 'text-white/20 hover:text-white'}"
+                                title={reply.is_liked ? "Unlike reply" : "Like reply"}
+                                aria-label={reply.is_liked ? "Unlike reply" : "Like reply"}
                               >
                                 <span
                                   class="material-symbols-outlined text-[14px] {reply.is_liked

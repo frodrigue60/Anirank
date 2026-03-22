@@ -6,6 +6,7 @@
   <a
     href="/animes/{anime.slug}"
     class="relative aspect-2/3 rounded-2xl overflow-hidden card-shadow group block"
+    title="View details for {anime.title}"
   >
     <img
       alt={anime.title}

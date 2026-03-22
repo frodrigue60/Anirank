@@ -3,6 +3,7 @@
   import BadgeModal from "./BadgeModal.svelte";
 
   let { data } = $props();
+  // svelte-ignore state_referenced_locally
   let badges = $state(data.badges || []);
 
   $effect(() => {
@@ -99,7 +100,7 @@
         </thead>
         <tbody class="divide-y divide-white/5">
           {#each badges as badge (badge.id)}
-            <tr class="hover:bg-white/[0.02] transition-colors group">
+            <tr class="hover:bg-white/2 transition-colors group">
               <td class="px-6 py-4">
                 {#if badge.icon_url}
                   <img

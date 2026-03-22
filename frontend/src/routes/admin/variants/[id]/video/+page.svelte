@@ -6,16 +6,20 @@
   import StatusControl from "$lib/components/admin/StatusControl.svelte";
 
   let { data } = $props();
+  // svelte-ignore state_referenced_locally
   let variant = $state(data.variant);
+  // svelte-ignore state_referenced_locally
   let song = $state(variant?.song || {});
 
   let loading = $state(false);
   let errorMsg = $state("");
   let successMsg = $state("");
 
+  // svelte-ignore state_referenced_locally
   let status = $state(variant?.status || false);
 
   let videoFile: File | null = $state(null);
+  // svelte-ignore state_referenced_locally
   let embedCode = $state(variant?.video?.embed_url || "");
 
   async function handleSave() {
@@ -79,6 +83,8 @@
   <div class="flex items-center gap-4 mb-2">
     <a
       href="/admin/songs/{song.id}/variants"
+      title="Back to Variant List"
+      aria-label="Back to Variant List"
       class="text-gray-400 hover:text-white transition-colors p-2 -ml-2 rounded-lg hover:bg-white/5"
     >
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"

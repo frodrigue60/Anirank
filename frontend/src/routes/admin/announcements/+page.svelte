@@ -80,6 +80,8 @@
               <td class="py-4">
                 <button 
                   onclick={() => toggleActive(a.id)}
+                  title={a.is_active ? 'Deactivate announcement' : 'Activate announcement'}
+                  aria-label={a.is_active ? 'Deactivate announcement' : 'Activate announcement'}
                   class="w-10 h-6 rounded-full relative transition-colors {a.is_active ? 'bg-primary' : 'bg-white/10'}"
                 >
                   <div class="absolute top-1 w-4 h-4 rounded-full bg-white transition-all {a.is_active ? 'right-1' : 'left-1'}"></div>
@@ -93,11 +95,18 @@
               <td class="py-4 text-sm opacity-60 font-mono">{new Date(a.created_at).toLocaleDateString()}</td>
               <td class="py-4">
                 <div class="flex gap-3">
-                  <a href="/admin/announcements/{a.id}/edit" class="text-white/50 hover:text-white transition-colors">
+                  <a 
+                    href="/admin/announcements/{a.id}/edit" 
+                    title="Edit announcement"
+                    aria-label="Edit announcement"
+                    class="text-white/50 hover:text-white transition-colors"
+                  >
                     <span class="material-symbols-outlined">edit</span>
                   </a>
                   <button 
                     onclick={() => handleDelete(a.id)}
+                    title="Delete announcement"
+                    aria-label="Delete announcement"
                     class="text-red-500/50 hover:text-red-500 transition-colors"
                   >
                     <span class="material-symbols-outlined">delete</span>

@@ -25,8 +25,11 @@
   let selectedType = $state("");
   let selectedSort = $state("");
 
+  // svelte-ignore state_referenced_locally
   let animes = $state(data.animes?.data || []);
+  // svelte-ignore state_referenced_locally
   let currentPage = $state(data.animes?.current_page || 1);
+  // svelte-ignore state_referenced_locally
   let lastPage = $state(data.animes?.last_page || 1);
   let loading = $state(false);
 

@@ -6,6 +6,7 @@
   import type { PageData } from "./$types";
 
   let { data } = $props<{ data: PageData }>();
+  // svelte-ignore state_referenced_locally
   const anime = data.anime;
 
   // Form State
@@ -112,6 +113,8 @@
   <div class="flex items-center gap-4 mb-2">
     <a
       href="/admin/animes"
+      title="Back to Animes List"
+      aria-label="Back to Animes List"
       class="text-gray-400 hover:text-white transition-colors p-2 -ml-2 rounded-lg hover:bg-white/5"
     >
       <svg
@@ -381,7 +384,7 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <!-- Cover -->
       <div>
-        <label class="block text-sm font-medium text-gray-300 mb-2"
+        <label for="cover" class="block text-sm font-medium text-gray-300 mb-2"
           >Cover Image</label
         >
         <div class="flex items-center justify-center w-full">
@@ -438,7 +441,7 @@
 
       <!-- Banner -->
       <div>
-        <label class="block text-sm font-medium text-gray-300 mb-2"
+        <label for="banner" class="block text-sm font-medium text-gray-300 mb-2"
           >Banner</label
         >
         <div class="flex items-center justify-center w-full">

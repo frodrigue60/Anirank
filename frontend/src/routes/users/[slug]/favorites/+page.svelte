@@ -15,7 +15,7 @@
   let songsLastPage = $state(data.songs?.last_page || 1);
   let loading = $state(false);
 
-  // Non-reactive guard for prop changes
+  // svelte-ignore state_referenced_locally
   let _sourceSongs = data.songs?.data;
 
   // Sync state if navigation happens

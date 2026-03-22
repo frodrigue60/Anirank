@@ -5,8 +5,11 @@
 
   let { data } = $props();
 
+  // svelte-ignore state_referenced_locally
   let followers = $state(data.followers || []);
+  // svelte-ignore state_referenced_locally
   let currentPage = $state(data.pagination?.current_page || 1);
+  // svelte-ignore state_referenced_locally
   let lastPage = $state(data.pagination?.last_page || 1);
   let loading = $state(false);
 

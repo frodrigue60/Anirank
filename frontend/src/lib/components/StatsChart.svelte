@@ -20,7 +20,7 @@
   const padding = { top: 20, right: 10, bottom: 20, left: 10 };
   const width = 1000; // Fixed internal coordinate system
 
-  let maxVal = $derived(Math.max(...data.map(d => d.count), 5));
+  let maxVal = $derived(Math.max(...data.map((d: StatPoint) => d.count), 5));
   let minVal = 0;
 
   // Scale functions
@@ -30,13 +30,13 @@
   // Generate path
   let path = $derived.by(() => {
     if (data.length < 2) return "";
-    return data.map((d, i) => `${i === 0 ? 'M' : 'L'} ${x(i)} ${y(d.count)}`).join(" ");
+    return data.map((d: StatPoint, i: number) => `${i === 0 ? 'M' : 'L'} ${x(i)} ${y(d.count)}`).join(" ");
   });
 
   // Generate area path (for gradient)
   let areaPath = $derived.by(() => {
     if (data.length < 2) return "";
-    const p = data.map((d, i) => `L ${x(i)} ${y(d.count)}`).join(" ");
+    const p = data.map((d: StatPoint, i: number) => `L ${x(i)} ${y(d.count)}`).join(" ");
     return `M ${x(0)} ${height - padding.bottom} ${p} L ${x(data.length - 1)} ${height - padding.bottom} Z`;
   });
 

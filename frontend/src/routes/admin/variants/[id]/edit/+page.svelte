@@ -34,8 +34,8 @@
         song_id,
         version_number: version_number ? parseInt(version_number) : 0,
         slug,
-        season_id: season_id > 0 ? season_id : null,
-        year_id: year_id > 0 ? year_id : null,
+        season_id: season_id && season_id > 0 ? season_id : 0,
+        year_id: year_id && year_id > 0 ? year_id : 0,
         spoiler,
         status,
       };
@@ -43,7 +43,7 @@
       const res = await api.put(`/admin/variants/${data.variant.id}`, payload);
 
       if (res.status === 200) {
-        goto("/admin/variants");
+        goto(`/admin/variants/${data.variant.id}`);
       }
     } catch (err: any) {
       console.error(err);
@@ -61,35 +61,10 @@
   <title>Edit Variant | Admin</title>
 </svelte:head>
 
-<div class="mb-8">
-  <div class="flex items-center gap-4 mb-2">
-    <a
-      href="/admin/variants"
-      aria-label="Back to Variants"
-      class="text-gray-400 hover:text-white transition-colors p-2 -ml-2 rounded-lg hover:bg-white/5"
-    >
-      <svg
-        class="w-5 h-5"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M10 19l-7-7m0 0l7-7m-7 7h18"
-        />
-      </svg>
-    </a>
-    <h1 class="text-3xl font-bold tracking-tight text-white">
-      Edit Song Variant
-    </h1>
-  </div>
-  <p class="text-gray-400 ml-10">
-    Updating: <span class="font-medium text-gray-200"
-      >Variant #{variant.id} (Song: {variant.song_id})</span
-    >
+<div class="mb-6">
+  <h2 class="text-xl font-bold text-white">Edit Variant Information</h2>
+  <p class="text-xs text-gray-500">
+    Update general details, slugs, and visibility settings.
   </p>
 </div>
 
@@ -134,7 +109,7 @@
 
     <div class="space-y-4">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
+        <!-- <div>
           <label
             for="song_id"
             class="block text-sm font-medium text-gray-300 mb-1"
@@ -149,7 +124,7 @@
             class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white placeholder-gray-500 focus:outline-none focus:border-anirank-primary transition-all"
             placeholder="e.g. 1"
           />
-        </div>
+        </div> -->
 
         <div class="pt-2 flex items-center">
           <label class="flex items-center gap-3 cursor-pointer">

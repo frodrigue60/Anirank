@@ -3,6 +3,7 @@
   import { page } from "$app/state";
   import { configState as config } from "$lib/state/config.svelte";
   import api from "$lib/api";
+  import { toastState } from "$lib/state/toast.svelte";
   import ArtistTagsInput from "$lib/components/admin/ArtistTagsInput.svelte";
   import StatusControl from "$lib/components/admin/StatusControl.svelte";
 
@@ -90,7 +91,9 @@
 
   // Pre-fill from URL params
   $effect(() => {
-    const urlAnimeId = page.url.searchParams.get("anime") || page.url.searchParams.get("anime_id");
+    const urlAnimeId =
+      page.url.searchParams.get("anime") ||
+      page.url.searchParams.get("anime_id");
     if (urlAnimeId && !anime_id) {
       const id = parseInt(urlAnimeId);
       if (!isNaN(id)) {
@@ -149,8 +152,8 @@
         song_romaji,
         song_en,
         song_jp,
-        season_id: season_id > 0 ? season_id : null,
-        year_id: year_id > 0 ? year_id : null,
+        season_id: season_id && season_id > 0 ? season_id : 0,
+        year_id: year_id && year_id > 0 ? year_id : 0,
         artists_string: artistsString, // Backend processes names
         status,
       };
@@ -158,7 +161,13 @@
       const res = await api.post("/admin/songs", payload);
 
       if (res.status === 201 || res.data.success) {
-        goto("/admin/songs");
+        toastState.addToast("Song created successfully", "success");
+        const urlAnimeId = page.url.searchParams.get("anime_id") || page.url.searchParams.get("anime");
+        if (urlAnimeId) {
+          goto(`/admin/animes/${urlAnimeId}/songs`);
+        } else {
+          goto("/admin/songs");
+        }
       }
     } catch (err: any) {
       console.error(err);
@@ -470,7 +479,19 @@
           placeholder="e.g. 紅蓮の弓矢"
         />
       </div>
-      <StatusControl bind:status={status} />
+      <div>
+        <label for="status" class="block text-sm font-medium text-gray-300 mb-1"
+          >Status</label
+        >
+        <select
+          id="status"
+          bind:value={status}
+          class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-anirank-primary transition-all [&>option]:bg-anirank-card"
+        >
+          <option value={true}>Active</option>
+          <option value={false}>Inactive</option>
+        </select>
+      </div>
     </div>
   </div>
 

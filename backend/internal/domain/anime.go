@@ -147,8 +147,8 @@ type AnimeRepository interface {
 	Delete(ctx context.Context, id uint64) error
 
 	// Relations Loaders
-	LoadRelations(ctx context.Context, anime *Anime) error
-	LoadManyRelations(ctx context.Context, animes []Anime) error
+	LoadRelations(ctx context.Context, anime *Anime, isAdmin bool) error
+	LoadManyRelations(ctx context.Context, animes []Anime, isAdmin bool) error
 
 	// Search implementation
 	Search(ctx context.Context, term string, limit int) ([]Anime, error)

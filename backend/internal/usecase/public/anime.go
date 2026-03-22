@@ -27,7 +27,7 @@ func (u *AnimeUsecase) GetAnimeBySlug(ctx context.Context, slug string) (*domain
 	}
 
 	// Load core relations like Studios, Producers, Genres, Songs, Images
-	if err := u.animeRepo.LoadRelations(ctx, anime); err != nil {
+	if err := u.animeRepo.LoadRelations(ctx, anime, false); err != nil {
 		return nil, domain.NewAppError(500, "Failed to load anime relations", err)
 	}
 
@@ -61,7 +61,7 @@ func (u *AnimeUsecase) GetPaginatedAnimes(ctx context.Context, limit, offset int
 	total, _ := u.animeRepo.Count(ctx, filters)
 
 	// Lightweight pagination eager load (only essential info for lists)
-	if err := u.animeRepo.LoadManyRelations(ctx, animes); err != nil {
+	if err := u.animeRepo.LoadManyRelations(ctx, animes, false); err != nil {
 		return nil, 0, domain.NewAppError(500, "Failed to load animes relations", err)
 	}
 

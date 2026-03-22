@@ -15,6 +15,11 @@
     variants = data.song.song_variants || [];
   });
 
+  let hasValidData = $derived(
+    (song?.season_id > 0 || (song?.anime?.season_id > 0)) &&
+    (song?.year_id > 0 || (song?.anime?.year_id > 0))
+  );
+
   let loading = $state(false);
   let status = $state(true);
   let errorMsg = $state("");
@@ -75,61 +80,51 @@
   }
 </script>
 
-<div class="space-y-8">
-  <div class="flex justify-between items-center gap-6">
+<div class="space-y-6">
+  <div class="flex items-center justify-between gap-4">
     <div>
-      <div class="flex items-center gap-4 mb-2">
-        <a
-          href="/admin/songs"
-          class="text-gray-400 hover:text-white transition-colors p-2 -ml-2 rounded-lg hover:bg-white/5"
-          aria-label="Back to Songs"
-        >
-          <svg
-            class="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            ><path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M10 19l-7-7m0 0l7-7m-7 7h18"
-            /></svg
-          >
-        </a>
-        <h1 class="text-3xl font-bold text-white tracking-tight">
-          Variants: {song.song_romaji || song.song_en || song.song_jp}
-        </h1>
-      </div>
-      <p
-        class="text-zinc-400 mt-1 uppercase text-[10px] font-black tracking-widest pl-10"
-      >
-        Version Control for {song.slug}
-      </p>
+      <h2 class="text-xl font-bold text-white">Song Variants</h2>
+      <p class="text-xs text-gray-500">Version control and video sources for this theme.</p>
     </div>
-
-    <div class="flex flex-wrap gap-3">
+    {#if !hasValidData}
+      <button
+        disabled
+        class="px-4 py-2 bg-zinc-800 text-zinc-500 border border-zinc-700 text-xs font-bold rounded-xl flex items-center gap-2 cursor-not-allowed"
+        title="Song or Anime must have Season and Year assigned"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        Add New Variant
+      </button>
+    {:else}
       <button
         onclick={createVariant}
         disabled={loading}
-        class="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white text-xs font-black rounded-xl transition-all shadow-lg shadow-blue-900/20 active:scale-95 uppercase tracking-widest hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+        class="px-4 py-2 bg-anirank-primary hover:bg-blue-600 text-white text-xs font-bold rounded-xl transition-all flex items-center gap-2"
       >
-        <svg
-          class="w-4 h-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          ><path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M12 4v16m8-8H4"
-          /></svg
-        >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
         Add New Variant
       </button>
-    </div>
+    {/if}
   </div>
+
+  {#if !hasValidData}
+    <div
+      transition:slide
+      class="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-amber-500 text-sm flex items-start gap-3"
+    >
+      <svg class="w-5 h-5 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+      </svg>
+      <div>
+        <h3 class="font-bold text-xs uppercase tracking-widest mb-1 text-amber-500">Missing Information</h3>
+        <p class="text-amber-500/80">This song (or its parent anime) must have a Season and Year assigned before you can create variants. Please edit the song or anime info first.</p>
+      </div>
+    </div>
+  {/if}
 
   {#if errorMsg}
     <div

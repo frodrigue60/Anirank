@@ -83,7 +83,7 @@ func (u *ContentAdminUsecase) GetAnimes(ctx context.Context, page, limit int, se
 	}
 
 	// Load relationships like Format and Year
-	_ = u.animeRepo.LoadManyRelations(ctx, animes)
+	_ = u.animeRepo.LoadManyRelations(ctx, animes, true)
 
 	u.ResolveAnimesURLs(animes)
 
@@ -96,7 +96,7 @@ func (u *ContentAdminUsecase) GetAnime(ctx context.Context, id uint64) (*domain.
 		return nil, err
 	}
 
-	err = u.animeRepo.LoadRelations(ctx, anime)
+	err = u.animeRepo.LoadRelations(ctx, anime, true)
 	if err != nil {
 		return nil, err
 	}
@@ -808,7 +808,7 @@ func (u *ContentAdminUsecase) GetSong(ctx context.Context, id uint64) (*domain.S
 	if song.AnimeID != 0 {
 		anime, err := u.animeRepo.GetByID(ctx, song.AnimeID)
 		if err == nil && anime != nil {
-			u.animeRepo.LoadRelations(ctx, anime)
+			u.animeRepo.LoadRelations(ctx, anime, true)
 			song.Anime = anime
 		}
 	}
@@ -827,6 +827,26 @@ func (u *ContentAdminUsecase) CreateSong(ctx context.Context, s *domain.Song, me
 	}
 
 	s.Slug = fmt.Sprintf("%s%s", s.Type, s.ThemeNum)
+
+	// Handle inheritance
+	if s.SeasonID == 0 || s.YearID == 0 {
+		anime, err := u.animeRepo.GetByID(ctx, s.AnimeID)
+		if err != nil {
+			return err
+		}
+		if s.SeasonID == 0 {
+			if anime.SeasonID == 0 {
+				return domain.NewAppError(400, "Cannot inherit season: parent anime has no season defined", nil)
+			}
+			s.SeasonID = anime.SeasonID
+		}
+		if s.YearID == 0 {
+			if anime.YearID == 0 {
+				return domain.NewAppError(400, "Cannot inherit year: parent anime has no year defined", nil)
+			}
+			s.YearID = anime.YearID
+		}
+	}
 
 	// Role-based status control
 	u.validateStatusPermissions(meta.Role, &s.Status, true)
@@ -862,6 +882,26 @@ func (u *ContentAdminUsecase) UpdateSong(ctx context.Context, s *domain.Song, me
 	existing, err := u.songRepo.GetByID(ctx, s.ID)
 	if err != nil {
 		return err
+	}
+
+	// Handle inheritance
+	if s.SeasonID == 0 || s.YearID == 0 {
+		anime, err := u.animeRepo.GetByID(ctx, s.AnimeID)
+		if err != nil {
+			return err
+		}
+		if s.SeasonID == 0 {
+			if anime.SeasonID == 0 {
+				return domain.NewAppError(400, "Cannot inherit season: parent anime has no season defined", nil)
+			}
+			s.SeasonID = anime.SeasonID
+		}
+		if s.YearID == 0 {
+			if anime.YearID == 0 {
+				return domain.NewAppError(400, "Cannot inherit year: parent anime has no year defined", nil)
+			}
+			s.YearID = anime.YearID
+		}
 	}
 
 	if s.ThemeNum == "" {
@@ -1081,7 +1121,18 @@ func (u *ContentAdminUsecase) GetVariants(ctx context.Context, page, limit int, 
 }
 
 func (u *ContentAdminUsecase) GetVariant(ctx context.Context, id uint64) (*domain.SongVariant, error) {
-	return u.variantRepo.GetByID(ctx, id)
+	v, err := u.variantRepo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Load the song relation so the frontend can have anime_id and other song details
+	s, err := u.songRepo.GetByID(ctx, v.SongID)
+	if err == nil {
+		v.Song = s
+	}
+
+	return v, nil
 }
 
 func (u *ContentAdminUsecase) CreateVariant(ctx context.Context, v *domain.SongVariant, meta domain.AuditMetadata) error {
@@ -1125,7 +1176,31 @@ func (u *ContentAdminUsecase) CreateVariant(ctx context.Context, v *domain.SongV
 }
 
 func (u *ContentAdminUsecase) UpdateVariant(ctx context.Context, v *domain.SongVariant, meta domain.AuditMetadata) error {
-	existing, _ := u.variantRepo.GetByID(ctx, v.ID)
+	existing, err := u.variantRepo.GetByID(ctx, v.ID)
+	if err != nil {
+		return err
+	}
+
+	// Handle inheritance
+	if v.SeasonID == 0 || v.YearID == 0 {
+		song, err := u.songRepo.GetByID(ctx, v.SongID)
+		if err != nil {
+			return err
+		}
+		if v.SeasonID == 0 {
+			if song.SeasonID == 0 {
+				return domain.NewAppError(400, "Cannot inherit season: parent song has no season defined", nil)
+			}
+			v.SeasonID = song.SeasonID
+		}
+		if v.YearID == 0 {
+			if song.YearID == 0 {
+				return domain.NewAppError(400, "Cannot inherit year: parent song has no year defined", nil)
+			}
+			v.YearID = song.YearID
+		}
+	}
+
 	// Role-based status control
 	if err := u.validateStatusPermissions(meta.Role, &v.Status, false); err != nil {
 		return err

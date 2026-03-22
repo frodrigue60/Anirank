@@ -279,7 +279,7 @@ func (r *animeRepository) BatchDelete(ctx context.Context, ids []uint64) error {
 }
 
 // Relationships loaders
-func (r *animeRepository) LoadRelations(ctx context.Context, anime *domain.Anime) error {
+func (r *animeRepository) LoadRelations(ctx context.Context, anime *domain.Anime, isAdmin bool) error {
 	// 1. Year & Season & Format
 	var year domain.Year
 	if err := r.db.GetContext(ctx, &year, "SELECT id, name FROM years WHERE id = $1", anime.YearID); err == nil {
@@ -311,7 +311,14 @@ func (r *animeRepository) LoadRelations(ctx context.Context, anime *domain.Anime
 	// 4. Songs belong to this anime
 	songsQuery := `SELECT id, song_romaji, song_jp, song_en, theme_num, type, slug, anime_id, season_id, year_id, views, created_at, updated_at, status,
 		(SELECT COALESCE(AVG(rating), 0) FROM song_ratings WHERE song_id = songs.id) as average_score
-		FROM songs WHERE anime_id = $1 AND status = true ORDER BY type, theme_num`
+		FROM songs WHERE anime_id = $1`
+	
+	if !isAdmin {
+		songsQuery += " AND status = true"
+	}
+	
+	songsQuery += " ORDER BY type, theme_num"
+
 	if err := r.db.SelectContext(ctx, &anime.Songs, songsQuery, anime.ID); err != nil {
 		return err
 	}
@@ -321,7 +328,7 @@ func (r *animeRepository) LoadRelations(ctx context.Context, anime *domain.Anime
 }
 
 
-func (r *animeRepository) LoadManyRelations(ctx context.Context, animes []domain.Anime) error {
+func (r *animeRepository) LoadManyRelations(ctx context.Context, animes []domain.Anime, isAdmin bool) error {
 	if len(animes) == 0 {
 		return nil
 	}
@@ -439,7 +446,12 @@ func (r *animeRepository) LoadManyRelations(ctx context.Context, animes []domain
 	}
 
 	// 3. Load Songs Count
-	songsCountQuery := `SELECT anime_id, COUNT(*) as count FROM songs WHERE anime_id IN (?) AND status = true GROUP BY anime_id`
+	songsCountQuery := `SELECT anime_id, COUNT(*) as count FROM songs WHERE anime_id IN (?)`
+	if !isAdmin {
+		songsCountQuery += " AND status = true"
+	}
+	songsCountQuery += " GROUP BY anime_id"
+
 	var countRows []struct {
 		AnimeID uint64 `db:"anime_id"`
 		Count   int    `db:"count"`

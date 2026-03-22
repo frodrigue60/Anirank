@@ -8,8 +8,7 @@
   let { data } = $props();
   // svelte-ignore state_referenced_locally
   let variant = $state(data.variant);
-  // svelte-ignore state_referenced_locally
-  let song = $state(variant?.song || {});
+  let song = $derived(variant?.song || {});
 
   let loading = $state(false);
   let errorMsg = $state("");
@@ -56,6 +55,16 @@
       variant = res.data.data;
       successMsg = "Video asset updated successfully!";
 
+      // Redirect back to Anime Hub -> Song detail after short delay for feedback
+      setTimeout(() => {
+        if (song.anime_id && song.id) {
+          goto(`/admin/animes/${song.anime_id}/songs/${song.id}`);
+        } else {
+          // Fallback if relation somehow missed
+          goto(`/admin/songs/${variant.song_id}`);
+        }
+      }, 1500);
+
       // Clear file selection after upload
       videoFile = null;
       const fileInput = document.getElementById(
@@ -79,33 +88,10 @@
   }
 </script>
 
-<div class="space-y-8">
-  <div class="flex items-center gap-4 mb-2">
-    <a
-      href="/admin/songs/{song.id}/variants"
-      title="Back to Variant List"
-      aria-label="Back to Variant List"
-      class="text-gray-400 hover:text-white transition-colors p-2 -ml-2 rounded-lg hover:bg-white/5"
-    >
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-        ><path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M10 19l-7-7m0 0l7-7m-7 7h18"
-        /></svg
-      >
-    </a>
-    <div>
-      <h1 class="text-3xl font-bold text-white tracking-tight">
-        Link Video Asset
-      </h1>
-      <p
-        class="text-zinc-400 mt-1 uppercase text-[10px] font-black tracking-widest pl-1"
-      >
-        {song.song_romaji || song.song_jp || song.song_en} - {variant.slug}
-      </p>
-    </div>
+<div class="space-y-6">
+  <div class="mb-6">
+    <h2 class="text-xl font-bold text-white">Video Source Management</h2>
+    <p class="text-xs text-gray-500">Configure the streaming URL and player settings for this version.</p>
   </div>
 
   {#if errorMsg}

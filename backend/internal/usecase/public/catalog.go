@@ -544,7 +544,7 @@ func (u *CatalogUsecase) enrichSong(ctx context.Context, userID *uint64, s *doma
 	if s.Anime == nil {
 		anime, _ := u.animeRepo.GetByID(ctx, s.AnimeID)
 		if anime != nil {
-			u.animeRepo.LoadRelations(ctx, anime)
+			u.animeRepo.LoadRelations(ctx, anime, false)
 		}
 		s.Anime = anime
 	}

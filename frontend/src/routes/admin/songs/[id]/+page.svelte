@@ -3,86 +3,14 @@
   import { getSongName } from "$lib/song-utils";
 
   let { data } = $props<{ data: PageData }>();
-  // svelte-ignore state_referenced_locally
-  const song = data.song;
+  let song = $derived(data.song);
 
-  // Helpers to structure URLs
-  const videoUrl =
+  const videoUrl = $derived(
     song.song_variants && song.song_variants.length > 0
       ? song.song_variants[0].video_url
-      : null;
+      : null
+  );
 </script>
-
-<svelte:head>
-  <title>
-    {getSongName(song)} | Admin
-    Songs
-  </title>
-</svelte:head>
-
-<div
-  class="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
->
-  <div class="flex items-center gap-4">
-    <a
-      href="/admin/songs"
-      title="Back to Songs Catalog"
-      aria-label="Back to Songs Catalog"
-      class="text-gray-400 hover:text-white transition-colors p-2 -ml-2 rounded-lg hover:bg-white/5"
-    >
-      <svg
-        class="w-5 h-5"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M10 19l-7-7m0 0l7-7m-7 7h18"
-        />
-      </svg>
-    </a>
-    <h1 class="text-3xl font-bold tracking-tight text-white line-clamp-1">
-      {getSongName(song)}
-    </h1>
-    <span
-      class="inline-flex items-center px-2.5 py-1 rounded-md text-sm font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20 ml-2"
-    >
-      {song.type}
-      {song.theme_num}
-    </span>
-  </div>
-
-  <div class="flex gap-2">
-    <a
-      href={`/admin/songs/${song.id}/edit`}
-      class="px-4 py-2 bg-white/5 hover:bg-white/10 text-white font-medium rounded-xl transition-colors border border-white/10 flex items-center gap-2"
-    >
-      <svg
-        class="w-4 h-4"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-        />
-      </svg>
-      Edit Song
-    </a>
-    <a
-      href={`/admin/songs/${song.id}/variants`}
-      class="px-4 py-2 bg-anirank-primary hover:bg-blue-600 text-white font-medium rounded-xl transition-colors shadow-lg shadow-anirank-primary/20 flex items-center gap-2"
-    >
-      Manage Variants
-    </a>
-  </div>
-</div>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
   <!-- Main Content -->
@@ -157,95 +85,10 @@
         </p>
       {/if}
     </div>
-
-    <!-- Variants List -->
-    <div
-      class="bg-anirank-card border border-white/5 rounded-2xl p-6 shadow-sm"
-    >
-      <h2
-        class="text-lg font-semibold text-white mb-4 border-b border-white/5 pb-2"
-      >
-        Video Variants
-      </h2>
-      {#if song.song_variants && song.song_variants.length > 0}
-        <div class="space-y-3">
-          {#each song.song_variants as variant}
-            <div
-              class="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5"
-            >
-              <div class="flex items-center gap-3">
-                <span
-                  class="w-10 h-10 rounded-lg bg-black/40 flex items-center justify-center text-gray-400"
-                >
-                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"
-                    ><path
-                      d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm12.553 1.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"
-                    ></path></svg
-                  >
-                </span>
-                <div>
-                  <p class="text-sm font-medium text-white">{variant.type}</p>
-                  <p class="text-xs text-gray-500">File attached</p>
-                </div>
-              </div>
-              <a
-                href={variant.video_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                class="text-xs bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/10 text-gray-300"
-              >
-                Open File
-              </a>
-            </div>
-          {/each}
-        </div>
-      {:else}
-        <p class="text-gray-500 text-sm italic">No video variants uploaded.</p>
-      {/if}
-    </div>
   </div>
 
   <!-- Sidebar Column -->
   <div class="space-y-6">
-    <!-- Anime Link -->
-    <div
-      class="bg-anirank-card border border-white/5 rounded-2xl p-6 shadow-sm"
-    >
-      <h3
-        class="text-sm font-semibold text-white uppercase tracking-wider mb-4 border-b border-white/10 pb-2"
-      >
-        Anime Series
-      </h3>
-      {#if song.anime}
-        <a href="/admin/animes/{song.anime.id}" class="group block">
-          <div
-            class="relative w-full aspect-[16/9] rounded-xl overflow-hidden mb-3 bg-zinc-900 border border-white/5"
-          >
-            {#if song.anime.banner_url || song.anime.cover_url}
-              <img
-                src={song.anime.banner_url || song.anime.cover_url}
-                alt={song.anime.title}
-                class="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity"
-              />
-            {:else}
-              <div
-                class="w-full h-full flex items-center justify-center text-zinc-700"
-              >
-                No Image
-              </div>
-            {/if}
-          </div>
-          <p
-            class="text-white font-medium group-hover:text-anirank-primary transition-colors line-clamp-2"
-          >
-            {song.anime.title}
-          </p>
-        </a>
-      {:else}
-        <p class="text-gray-500 text-sm italic">No anime linked.</p>
-      {/if}
-    </div>
-
     <!-- Metadata & Taxonomy -->
     <div
       class="bg-anirank-card border border-white/5 rounded-2xl p-6 shadow-sm"

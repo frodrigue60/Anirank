@@ -210,7 +210,7 @@ func (u *PlaylistUsecase) enrichPlaylistSong(ctx context.Context, s *domain.Song
 	if s.Anime == nil && s.AnimeID > 0 {
 		anime, _ := u.animeRepo.GetByID(ctx, s.AnimeID)
 		if anime != nil {
-			u.animeRepo.LoadRelations(ctx, anime)
+			u.animeRepo.LoadRelations(ctx, anime, false)
 		}
 		s.Anime = anime
 	}

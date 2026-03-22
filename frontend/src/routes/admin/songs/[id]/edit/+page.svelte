@@ -133,8 +133,8 @@
         song_romaji,
         song_en,
         song_jp,
-        season_id: season_id > 0 ? season_id : null,
-        year_id: year_id > 0 ? year_id : null,
+        season_id: season_id && season_id > 0 ? season_id : 0,
+        year_id: year_id && year_id > 0 ? year_id : 0,
         artists_string: artistsString,
         status,
       };
@@ -142,7 +142,7 @@
       const res = await api.put(`/admin/songs/${song.id}`, payload);
 
       if (res.status === 200) {
-        goto("/admin/songs");
+        goto(`/admin/songs/${song.id}`);
       }
     } catch (err: any) {
       console.error(err);
@@ -160,35 +160,9 @@
   <title>Edit Song | Admin</title>
 </svelte:head>
 
-<div class="mb-8">
-  <div class="flex items-center gap-4 mb-2">
-    <a
-      href="/admin/songs"
-      title="Back to Songs List"
-      aria-label="Back to Songs List"
-      class="text-gray-400 hover:text-white transition-colors p-2 -ml-2 rounded-lg hover:bg-white/5"
-    >
-      <svg
-        class="w-5 h-5"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M10 19l-7-7m0 0l7-7m-7 7h18"
-        />
-      </svg>
-    </a>
-    <h1 class="text-3xl font-bold tracking-tight text-white">Edit Song</h1>
-  </div>
-  <p class="text-gray-400 ml-10">
-    Updating: <span class="font-medium text-gray-200"
-      >{getSongName(song)}</span
-    >
-  </p>
+<div class="mb-6">
+  <h2 class="text-xl font-bold text-white">Edit Song Information</h2>
+  <p class="text-xs text-gray-500">Update titles, artists, and general classification.</p>
 </div>
 
 {#if errorMsg}

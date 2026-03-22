@@ -6,6 +6,7 @@
 
   let { data } = $props<{ data: PageData }>();
   let anime = $derived(data.anime);
+
   let isSyncing = $state(false);
 
   async function updateAnimeData() {
@@ -24,68 +25,15 @@
   }
 </script>
 
-<svelte:head>
-  <title>{anime.title} | Admin Animes</title>
-</svelte:head>
-
-<div class="mb-8">
-  <div class="flex items-center gap-4 mb-2">
-    <a
-      href="/admin/animes"
-      aria-label="Back to Animes"
-      class="text-gray-400 hover:text-white transition-colors p-2 -ml-2 rounded-lg hover:bg-white/5"
-    >
-      <svg
-        class="w-5 h-5"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M10 19l-7-7m0 0l7-7m-7 7h18"
-        />
-      </svg>
-    </a>
-    <h1 class="text-3xl font-bold tracking-tight text-white line-clamp-1">
-      {anime.title}
-    </h1>
-    {#if anime.anilist_id}
-      <a
-        href="https://anilist.co/anime/{anime.anilist_id}"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="p-2 ml-2 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors flex shrink-0"
-        title="View on AniList"
-      >
-        <svg
-          class="w-5 h-5"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-          <polyline points="15 3 21 3 21 9" />
-          <line x1="10" y1="14" x2="21" y2="3" />
-        </svg>
-      </a>
-    {/if}
-  </div>
-  <p class="text-gray-400 ml-10">Views details, assets and related songs.</p>
-</div>
-
 <!-- Hero Banner & Cover -->
 <div
-  class="relative w-full h-[300px] mb-20 rounded-3xl bg-zinc-900 border border-white/10 shadow-xl overflow-visible hidden md:block"
+  class="relative w-full h-[250px] mb-20 rounded-3xl bg-zinc-900 border border-white/10 shadow-xl overflow-visible hidden md:block"
 >
   <div class="absolute inset-0 overflow-hidden rounded-3xl bg-zinc-950">
     {#if anime.banner_url}
       <img
         src={anime.banner_url}
-        alt="Banner"
+        alt="{anime.title} banner"
         class="w-full h-full object-cover opacity-60"
       />
       <div
@@ -99,12 +47,12 @@
   >
     <!-- Cover -->
     <div
-      class="w-48 h-72 rounded-2xl border-4 border-zinc-950 shadow-2xl bg-zinc-900 overflow-hidden shrink-0 relative"
+      class="w-40 h-60 rounded-2xl border-4 border-zinc-950 shadow-2xl bg-zinc-900 overflow-hidden shrink-0 relative"
     >
       {#if anime.cover_url}
         <img
           src={anime.cover_url}
-          alt="Cover"
+          alt="{anime.title} cover"
           class="w-full h-full object-cover"
         />
       {:else}
@@ -116,7 +64,7 @@
       {/if}
       <div class="absolute top-3 right-3">
         <span
-          class="px-2 py-1 text-xs font-bold rounded-lg {anime.status
+          class="px-2 py-1 text-[10px] font-bold rounded-lg {anime.status
             ? 'bg-green-500 text-white'
             : 'bg-zinc-800 text-zinc-400'} shadow-lg backdrop-blur-md"
         >
@@ -124,46 +72,32 @@
         </span>
       </div>
     </div>
-  </div>
-</div>
 
-<!-- Mobile simple header -->
-<div class="flex md:hidden gap-6 mb-8">
-  <div
-    class="w-32 h-48 rounded-xl border-2 border-zinc-900 shadow-xl bg-zinc-900 overflow-hidden shrink-0 relative"
-  >
-    {#if anime.cover_url}
-      <img
-        src={anime.cover_url}
-        alt="Cover"
-        class="w-full h-full object-cover"
-      />
-    {:else}
-      <div class="w-full h-full flex items-center justify-center text-zinc-700">
-        No Cover
+    <!-- Hub Header Title (Overlay on banner space) -->
+    <div class="mb-4 flex-1">
+      <div class="flex items-center gap-3">
+        <h2 class="text-2xl font-bold text-white drop-shadow-lg">
+          {anime.title}
+        </h2>
+        <button
+          onclick={updateAnimeData}
+          disabled={isSyncing}
+          class="p-2 bg-white/10 hover:bg-white/20 border border-white/10 text-white rounded-lg transition-colors disabled:opacity-50"
+          title="Sync from AniList"
+        >
+          <span
+            class="material-symbols-outlined text-sm {isSyncing
+              ? 'animate-spin'
+              : ''}">refresh</span
+          >
+        </button>
       </div>
-    {/if}
-    <div class="absolute top-2 right-2">
-      <span
-        class="px-2 py-1 text-[10px] font-bold rounded-lg {anime.status
-          ? 'bg-green-500 text-white'
-          : 'bg-zinc-800 text-zinc-400'} shadow-md"
-      >
-        {anime.status ? "ACT" : "INA"}
-      </span>
+      <p class="text-gray-300 text-sm drop-shadow-md">
+        {anime.format?.name || "Unknown Format"} • {anime.season?.name || ""}
+        {anime.year?.name || ""}
+      </p>
     </div>
   </div>
-  {#if anime.banner_url}
-    <div
-      class="flex-1 rounded-xl overflow-hidden bg-zinc-900 opacity-50 relative border border-white/5 hidden sm:block"
-    >
-      <img
-        src={anime.banner_url}
-        alt="Banner"
-        class="w-full h-full object-cover"
-      />
-    </div>
-  {/if}
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -182,107 +116,10 @@
         {/if}
       </div>
     </div>
-
-    <!-- Related Songs -->
-    <div
-      class="bg-anirank-card border border-white/5 rounded-2xl overflow-hidden shadow-sm"
-    >
-      <div
-        class="p-6 border-b border-white/5 flex items-center justify-between"
-      >
-        <h2 class="text-xl font-semibold text-white">Featured Songs</h2>
-        <a
-          href="/admin/songs/create?anime_id={anime.id}"
-          class="text-sm px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-lg transition-colors"
-        >
-          Add Song
-        </a>
-      </div>
-      <div class="overflow-x-auto">
-        {#if anime.songs && anime.songs.length > 0}
-          <table class="w-full text-left text-sm text-gray-300">
-            <thead
-              class="text-xs text-gray-400 uppercase bg-black/20 border-b border-white/5"
-            >
-              <tr>
-                <th class="px-6 py-4 font-semibold">Type</th>
-                <th class="px-6 py-4 font-semibold">Title</th>
-                <th class="px-6 py-4 font-semibold hidden md:table-cell"
-                  >Artists</th
-                >
-                <th class="px-6 py-4 font-semibold text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-white/5">
-              {#each anime.songs as song}
-                <tr class="hover:bg-white/2 transition-colors">
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <span
-                      class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20"
-                    >
-                      {song.type}
-                      {song.theme_num}
-                    </span>
-                  </td>
-                  <td
-                    class="px-6 py-4 font-medium text-white max-w-[200px] truncate"
-                    title={song.song_romaji || song.song_jp || song.song_en}
-                  >
-                    <a
-                      href="/admin/songs/{song.id}/edit"
-                      class="hover:text-anirank-primary transition-colors"
-                    >
-                      {song.song_romaji || song.song_jp || song.song_en}
-                    </a>
-                  </td>
-                  <td
-                    class="px-6 py-4 text-xs text-gray-500 max-w-[150px] truncate hidden md:table-cell"
-                    title={song.artists
-                      ? song.artists.map((a: any) => a.name).join(", ")
-                      : ""}
-                  >
-                    {song.artists
-                      ? song.artists.map((a: any) => a.name).join(", ")
-                      : "-"}
-                  </td>
-                  <td class="px-6 py-4 text-right">
-                    <a
-                      href="/admin/songs/{song.id}/edit"
-                      class="text-gray-400 hover:text-white mr-3">Edit</a
-                    >
-                  </td>
-                </tr>
-              {/each}
-            </tbody>
-          </table>
-        {:else}
-          <div class="px-6 py-12 text-center text-gray-500">
-            No songs registered for this anime yet.
-          </div>
-        {/if}
-      </div>
-    </div>
   </div>
 
   <!-- Sidebar Column -->
   <div class="space-y-6">
-    <div class="flex">
-      <button
-        onclick={updateAnimeData}
-        disabled={isSyncing}
-        class="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-lg transition-colors w-full flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {#if isSyncing}
-          <div
-            class="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"
-          ></div>
-          Syncing...
-        {:else}
-          <span class="material-symbols-outlined text-sm">refresh</span>
-          Update data
-        {/if}
-      </button>
-    </div>
     <div
       class="bg-anirank-card border border-white/5 rounded-2xl p-6 shadow-sm"
     >

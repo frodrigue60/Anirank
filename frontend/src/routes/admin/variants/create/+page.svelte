@@ -30,8 +30,8 @@
         song_id,
         version_number: version_number ? parseInt(version_number) : 0,
         slug,
-        season_id: season_id > 0 ? season_id : null,
-        year_id: year_id > 0 ? year_id : null,
+        season_id: season_id && season_id > 0 ? season_id : 0,
+        year_id: year_id && year_id > 0 ? year_id : 0,
         spoiler,
         video: {
           type: video_type,

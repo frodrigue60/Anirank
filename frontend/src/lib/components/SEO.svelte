@@ -1,10 +1,12 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  //import logo from "$lib/assets/favicon.svg";
 
   let {
     title = "AniRank - The Ultimate Anime Music Ranking Platform",
     description = "Discover, rank, and listen to the best anime openings and endings. Create playlists, share with friends, and find your next favorite anime song.",
     image = "https://anirank.com/images/default-banner.png",
+    logo = "/favicon.png",
     url = $page.url.href,
     type = "website",
     author = "AniRank",
@@ -16,16 +18,20 @@
       .replace(/<[^>]*>?/gm, "") // Remove HTML tags
       .replace(/\s+/g, " ") // Normalize spaces
       .trim()
-      .substring(0, 160) + (description.length > 160 ? "..." : "")
+      .substring(0, 160) + (description.length > 160 ? "..." : ""),
   );
 
   let siteName = "AniRank";
   let fullTitle = $derived(
-    title.includes(siteName) ? title : `${title} - ${siteName}`
+    title.includes(siteName) ? title : `${title} - ${siteName}`,
   );
 
   let absoluteImage = $derived(
-    image.startsWith("http") ? image : `${$page.url.origin}${image}`
+    image.startsWith("http") ? image : `${$page.url.origin}${image}`,
+  );
+
+  let absoluteLogo = $derived(
+    logo.startsWith("http") ? logo : `${$page.url.origin}${logo}`,
   );
 </script>
 
@@ -43,6 +49,7 @@
   <meta property="og:title" content={fullTitle} />
   <meta property="og:description" content={cleanDescription} />
   <meta property="og:image" content={absoluteImage} />
+  <meta property="og:logo" content={absoluteLogo} />
   <meta property="og:site_name" content={siteName} />
 
   <!-- Twitter -->

@@ -42,7 +42,7 @@ func (h *ActivityHandler) Index(c *fiber.Ctx) error {
 // Recent handles GET /api/activities/recent.
 // It always returns the newest 20 activities (no pagination).
 func (h *ActivityHandler) Recent(c *fiber.Ctx) error {
-	limit := 20
+	limit := 10
 	activities, err := h.usecase.GetFeed(c.Context(), limit, 0)
 	if err != nil {
 		return err

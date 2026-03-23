@@ -4,12 +4,16 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"image"
+	"image/jpeg"
+	_ "image/png"
+	_ "golang.org/x/image/webp"
 	"io"
 	"os"
 	"strings"
 
+	"github.com/disintegration/gift"
 	"github.com/google/uuid"
-	"github.com/h2non/bimg"
 )
 
 type MediaService interface {
@@ -63,31 +67,34 @@ func (s *mediaService) GeneratePath(prefix string, id uint64, ext string) string
 }
 
 func (s *mediaService) UploadImage(ctx context.Context, prefix string, id uint64, file io.Reader, size int64, contentType string) (string, string, error) {
-	// Read the file into a buffer
-	buffer, err := io.ReadAll(file)
+	// 1. Decode Image (Supports JPEG, PNG, WebP decoding)
+	img, _, err := image.Decode(file)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to read file: %w", err)
+		return "", "", fmt.Errorf("failed to decode image: %w", err)
 	}
 
-	// Process image with bimg
-	// Convert to WebP, quality 80 for optimal size/quality ratio
-	options := bimg.Options{
-		Type:    bimg.WEBP,
-		Quality: 80,
-	}
+	// 2. Process image with GIFT
+	// For now, we just pass it through a neutral filter to normalize it, 
+	// but we could add resizing or other optimizations here.
+	gi := gift.New()
+	dst := image.NewRGBA(gi.Bounds(img.Bounds()))
+	gi.Draw(dst, img)
 
-	newImage, err := bimg.NewImage(buffer).Process(options)
+	// 3. Encode to JPEG (High compatibility substitute for WebP)
+	var buf bytes.Buffer
+	err = jpeg.Encode(&buf, dst, &jpeg.Options{Quality: 80})
 	if err != nil {
-		// If processing fails, fallback or return error
-		return "", "", fmt.Errorf("failed to process image with bimg: %w", err)
+		return "", "", fmt.Errorf("failed to encode image to jpeg: %w", err)
 	}
 
-	// Overwrite extension and content type
-	ext := "webp"
-	finalContentType := "image/webp"
+	processedData := buf.Bytes()
+
+	// 4. Overwrite extension and content type
+	ext := "jpg"
+	finalContentType := "image/jpeg"
 
 	filename := s.GeneratePath(prefix, id, ext)
-	_, err = s.storage.UploadFile(ctx, filename, bytes.NewReader(newImage), int64(len(newImage)), finalContentType)
+	_, err = s.storage.UploadFile(ctx, filename, bytes.NewReader(processedData), int64(len(processedData)), finalContentType)
 	if err != nil {
 		return "", "", err
 	}

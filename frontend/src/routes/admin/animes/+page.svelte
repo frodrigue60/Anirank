@@ -317,7 +317,7 @@
             </td>
             <td class="px-6 py-4">
               <img
-                src={anime.cover_url || "/placeholder.jpg"}
+                src={anime.cover_url || "/images/placeholders/anime-cover.png"}
                 alt="{anime.title} cover"
                 class="w-10 h-14 object-cover rounded shadow-sm"
               />

@@ -249,6 +249,33 @@ func (r *artistRepository) GetFavoritesByUserID(ctx context.Context, userID uint
 	return artists, err
 }
 
+func (r *artistRepository) GetFeatured(ctx context.Context, limit int) ([]domain.Artist, error) {
+	var artists []domain.Artist
+	query := `
+		SELECT 
+			id, name, name_jp, slug, created_at, updated_at, avatar, status,
+			(SELECT COUNT(*) FROM artist_user f WHERE f.artist_id = artists.id) as favorites_count,
+			(SELECT COUNT(*) FROM artist_song asong WHERE asong.artist_id = artists.id) as songs_count,
+			(SELECT ani.banner 
+			 FROM animes ani
+			 JOIN songs s ON s.anime_id = ani.id
+			 JOIN artist_song asong ON asong.song_id = s.id
+			 WHERE asong.artist_id = artists.id
+			 ORDER BY s.created_at DESC
+			 LIMIT 1) as banner
+		FROM artists
+		WHERE status = true
+		ORDER BY favorites_count DESC, songs_count DESC, name ASC
+		LIMIT $1
+	`
+
+	err := r.db.SelectContext(ctx, &artists, query, limit)
+	if artists == nil {
+		artists = []domain.Artist{}
+	}
+	return artists, err
+}
+
 func (r *artistRepository) Search(ctx context.Context, term string, limit int) ([]domain.Artist, error) {
 	var artists []domain.Artist
 	query := `

@@ -534,7 +534,10 @@ func (u *CatalogUsecase) GetHomeData(ctx context.Context, userID *uint64) (*Home
 	}
 
 	// Featured Artists
-	artists, _ := u.artistRepo.GetPaginated(ctx, 5, 0, domain.ArtistFilters{})
+	artists, err := u.artistRepo.GetFeatured(ctx, 5)
+	if err != nil {
+		fmt.Printf("[Catalog] Error fetching featured artists: %v\n", err)
+	}
 	for i := range artists {
 		artists[i].AvatarUrl = u.mediaService.Resolve(artists[i].Avatar)
 	}

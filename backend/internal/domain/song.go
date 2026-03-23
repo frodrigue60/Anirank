@@ -167,6 +167,7 @@ type ArtistRepository interface {
 	// Catalog queries
 	CountFavoritesByUserID(ctx context.Context, userID uint64) (int, error)
 	GetFavoritesByUserID(ctx context.Context, userID uint64, limit, offset int) ([]Artist, error)
+	GetFeatured(ctx context.Context, limit int) ([]Artist, error)
 
 	// Admin CRUD
 	Create(ctx context.Context, artist *Artist) error

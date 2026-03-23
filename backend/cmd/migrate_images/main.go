@@ -13,7 +13,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/h2non/bimg"
+	"github.com/disintegration/gift"
+	_ "golang.org/x/image/webp"
+	"image"
+	"image/jpeg"
+	_ "image/png"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 )
@@ -152,33 +156,41 @@ func main() {
 					continue
 				}
 
-				// Process Image with bimg
-				options := bimg.Options{
-					Type:    bimg.WEBP,
-					Quality: 80,
-				}
-
-				newImage, err := bimg.NewImage(buffer).Process(options)
+				// Process Image with gift
+				img, _, err := image.Decode(bytes.NewReader(buffer))
 				if err != nil {
-					log.Printf("[%s %d] Failed to convert image %s to webp: %v\n", t.Table, rec.ID, oldPath, err)
+					log.Printf("[%s %d] Failed to decode image %s: %v\n", t.Table, rec.ID, oldPath, err)
 					totalErrors++
 					continue
 				}
+
+				gi := gift.New()
+				dst := image.NewRGBA(gi.Bounds(img.Bounds()))
+				gi.Draw(dst, img)
+
+				var buf bytes.Buffer
+				err = jpeg.Encode(&buf, dst, &jpeg.Options{Quality: 80})
+				if err != nil {
+					log.Printf("[%s %d] Failed to encode image %s to jpeg: %v\n", t.Table, rec.ID, oldPath, err)
+					totalErrors++
+					continue
+				}
+				newImage := buf.Bytes()
 
 				// Upload New Image
 				lastIndex := strings.LastIndex(oldPath, ".")
 				var newPath string
 				if lastIndex == -1 {
-					newPath = oldPath + ".webp"
+					newPath = oldPath + ".jpg"
 				} else {
-					newPath = oldPath[:lastIndex] + ".webp"
+					newPath = oldPath[:lastIndex] + ".jpg"
 				}
 
 				_, err = s3Client.PutObject(ctx, &s3.PutObjectInput{
 					Bucket:      aws.String(bucketName),
 					Key:         aws.String(newPath),
 					Body:        bytes.NewReader(newImage),
-					ContentType: aws.String("image/webp"),
+					ContentType: aws.String("image/jpeg"),
 					ContentLength: aws.Int64(int64(len(newImage))),
 				})
 				if err != nil {

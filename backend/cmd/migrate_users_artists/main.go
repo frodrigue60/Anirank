@@ -14,7 +14,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/google/uuid"
-	"github.com/h2non/bimg"
+	"github.com/disintegration/gift"
+	"image"
+	"image/jpeg"
+	_ "image/png"
+	_ "golang.org/x/image/webp"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"net/http"
@@ -175,25 +179,32 @@ func processMigration(ctx context.Context, s3Client *s3.Client, bucket, oldPath,
 		}
 	}
 
-	// Optimize to WebP
-	options := bimg.Options{
-		Type:    bimg.WEBP,
-		Quality: 80,
-	}
-	newImage, err := bimg.NewImage(buffer).Process(options)
+	// Optimize to JPEG
+	img, _, err := image.Decode(bytes.NewReader(buffer))
 	if err != nil {
-		return oldPath, fmt.Errorf("WebP conversion failed: %w", err)
+		return oldPath, fmt.Errorf("image decode failed: %w", err)
 	}
 
+	gi := gift.New()
+	dst := image.NewRGBA(gi.Bounds(img.Bounds()))
+	gi.Draw(dst, img)
+
+	var b bytes.Buffer
+	err = jpeg.Encode(&b, dst, &jpeg.Options{Quality: 80})
+	if err != nil {
+		return oldPath, fmt.Errorf("jpeg encode failed: %w", err)
+	}
+	newImage := b.Bytes()
+
 	// Generate Clean Path
-	newPath := fmt.Sprintf("%s/%d_%s.webp", targetPrefix, id, uuid.New().String())
+	newPath := fmt.Sprintf("%s/%d_%s.jpg", targetPrefix, id, uuid.New().String())
 
 	// Upload
 	_, err = s3Client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket:        aws.String(bucket),
 		Key:           aws.String(newPath),
 		Body:          bytes.NewReader(newImage),
-		ContentType:   aws.String("image/webp"),
+		ContentType:   aws.String("image/jpeg"),
 		ContentLength: aws.Int64(int64(len(newImage))),
 	})
 	if err != nil {

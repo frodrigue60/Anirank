@@ -56,72 +56,110 @@
   });
 </script>
 
-<div
-  class="bg-surface-darker rounded-2xl p-6 border border-white/5 flex flex-col gap-6"
->
-  <div class="flex items-center justify-between">
-    <h3 class="font-bold text-white text-lg flex items-center gap-2">
-      <span class="material-symbols-outlined text-primary">history</span>
-      Recent Activity
-    </h3>
+<div class="flex flex-col gap-6">
+  <div class="flex items-center justify-between px-1">
+    <h2
+      class="text-xl font-bold tracking-tight flex items-center gap-2 text-white"
+    >
+      <span class="material-symbols-outlined text-primary">forum</span>
+      Community Activity
+    </h2>
     {#if recentOnly}
       <a
         href="/interactions"
-        class="text-primary text-xs font-bold uppercase tracking-wider hover:underline"
-        title="View full activity feed"
-        aria-label="View all interaction activities"
+        class="text-white/40 hover:text-white text-[10px] font-bold uppercase tracking-wider transition-colors"
         >View All</a
       >
     {/if}
   </div>
 
-  {#if loading}
-    <div class="flex flex-col gap-4">
-      {#each Array(3) as _}
-        <div class="flex gap-3 animate-pulse">
-          <div class="w-10 h-10 rounded-full bg-white/5"></div>
+  <div
+    class="bg-surface-darker/50 border border-white/5 rounded-2xl overflow-hidden divide-y divide-white/5"
+  >
+    {#if loading && activities.length === 0}
+      {#each Array(recentOnly ? 4 : 8) as _}
+        <div class="p-4 flex items-start gap-4 animate-pulse">
+          <div class="w-12 h-12 rounded-lg bg-white/5 shrink-0"></div>
           <div class="flex-1 flex flex-col gap-2">
-            <div class="h-3 w-3/4 bg-white/5 rounded"></div>
-            <div class="h-2 w-1/2 bg-white/5 rounded"></div>
+            <div class="h-3 w-1/2 bg-white/5 rounded"></div>
+            <div class="h-4 w-3/4 bg-white/5 rounded"></div>
           </div>
         </div>
       {/each}
-    </div>
-  {:else if activities.length === 0}
-    <div class="text-sm text-white/40 text-center py-4 italic">
-      No recent activity found.
-    </div>
-  {:else}
-    <div class="flex flex-col gap-5">
+    {:else if activities.length === 0}
+      <div class="p-8 text-center text-sm text-white/30 italic">
+        No recent activity.
+      </div>
+    {:else}
       {#each activities as activity}
-        <div class="flex gap-3 items-start group">
-          <div class="shrink-0 pt-1">
-            {#if activity.user?.avatar_url}
+        <div
+          class="p-4 flex items-start gap-4 hover:bg-white/5 transition-colors group cursor-pointer"
+        >
+          <div class="relative shrink-0">
+            <!-- Target Cover -->
+            {#if activity.target_type === "song" && activity.song}
               <img
-                src={activity.user.avatar_url}
-                alt="{activity.user.name}'s avatar"
-                title="{activity.user.name}'s avatar"
-                class="w-8 h-8 rounded-full object-cover border border-white/10"
+                src={activity.song.anime?.cover_url ||
+                  "/images/placeholders/default.jpg"}
+                alt={activity.song.anime?.title}
+                class="w-12 h-18 rounded-lg object-cover border border-white/10"
+              />
+            {:else if activity.target_type === "artist" && activity.artist}
+              <img
+                src={activity.artist.avatar_url ||
+                  "/images/placeholders/default.jpg"}
+                alt={activity.artist.name}
+                class="w-12 h-12 rounded-lg object-cover border border-white/10"
+              />
+            {:else if activity.target_type === "user" && activity.user_target}
+              <img
+                src={activity.user_target.avatar_url ||
+                  "/images/placeholders/default.jpg"}
+                alt={activity.user_target.name}
+                class="w-12 h-12 rounded-lg object-cover border border-white/10"
               />
             {:else}
               <div
-                class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xs font-bold border border-primary/20"
+                class="w-12 h-12 rounded-lg bg-surface-light flex items-center justify-center border border-white/10"
               >
-                {activity.user?.name?.charAt(0) || "U"}
+                <span class="material-symbols-outlined text-white/20"
+                  >interests</span
+                >
               </div>
             {/if}
+
+            <!-- User Avatar (Overlapping) -->
+            <div
+              class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-[#0a0a0c] overflow-hidden bg-surface-darker"
+            >
+              {#if activity.user?.avatar_url}
+                <img
+                  src={activity.user.avatar_url}
+                  alt={activity.user.name}
+                  class="w-full h-full object-cover"
+                />
+              {:else}
+                <div
+                  class="w-full h-full flex items-center justify-center bg-primary/20 text-[10px] font-bold text-primary"
+                >
+                  {activity.user?.name?.charAt(0) || "U"}
+                </div>
+              {/if}
+            </div>
           </div>
+
           <div class="flex-1 min-w-0">
-            <p class="text-xs text-white/90 leading-relaxed">
+            <div class="flex flex-col">
               <span
-                class="font-bold text-white uppercase text-[10px] tracking-wider"
-                >{activity.user?.name}</span
+                class="text-[11px] text-white/50 uppercase font-bold tracking-wider"
               >
-              <span class="text-white/60">
-                {#if activity.action === "favorite"}
-                  added to favorites
-                {:else if activity.action === "rate"}
-                  rated {#if activity.action_value} <span class="text-white font-bold">{activity.action_value}</span> {/if}
+                {activity.user?.name}
+                {#if activity.action === "rate"}
+                  rated <span class="text-yellow-400"
+                    >{activity.action_value}</span
+                  >
+                {:else if activity.action === "favorite"}
+                  added favorite
                 {:else if activity.action === "comment"}
                   commented on
                 {:else if activity.action === "reply"}
@@ -129,65 +167,69 @@
                 {:else if activity.action === "follow"}
                   started following
                 {:else}
-                  interacted with
+                  interacted
                 {/if}
               </span>
 
               {#if activity.target_type === "song" && activity.song}
                 <a
                   href="/songs/{activity.song.anime?.slug}/{activity.song.slug}"
-                  class="text-primary hover:underline font-medium"
-                  title="View song: {activity.song.name}"
+                  class="text-base font-bold text-white group-hover:text-primary transition-colors truncate flex flex-col"
                 >
-                  {activity.song.name}
+                  <span class="text-primary"
+                    >{activity.song.anime?.title} {activity.song.slug}</span
+                  >
+                  <span class="italic text-white/60 font-normal"
+                    >{activity.song.name}</span
+                  >
                 </a>
-                <span class="text-white/40 text-[10px] block mt-0.5"
-                  >{activity.song.anime?.title}</span
-                >
               {:else if activity.target_type === "artist" && activity.artist}
                 <a
                   href="/artists/{activity.artist.slug}"
-                  class="text-primary hover:underline font-medium"
-                  title="View artist: {activity.artist.name}"
+                  class="text-base font-bold text-white group-hover:text-primary transition-colors truncate"
                 >
-                  {activity.artist.name}
+                  <span class="text-primary">{activity.artist.name}</span>
+                </a>
+              {:else if activity.target_type === "user" && activity.user_target}
+                <a
+                  href="/profile/{activity.user_target.slug}"
+                  class="text-base font-bold text-white group-hover:text-primary transition-colors truncate"
+                >
+                  <span class="text-primary">{activity.user_target.name}</span>
                 </a>
               {:else}
-                <span class="text-white/40">something</span>
+                <span class="text-white/40">Item Deleted</span>
               {/if}
-            </p>
-            <span
-              class="text-[9px] font-bold text-white/20 uppercase tracking-widest mt-1 block"
+            </div>
+            <span class="text-[10px] text-white/30 mt-0.5 block"
+              >{getTimeAgo(activity.created_at)}</span
             >
-              {getTimeAgo(activity.created_at)}
-            </span>
           </div>
         </div>
       {/each}
-    </div>
-
-    {#if !recentOnly && activities.length > 0}
-      <div class="flex items-center justify-between gap-4 pt-2">
-        <button
-          class="text-white/40 text-xs font-bold uppercase tracking-wider hover:underline disabled:text-white/20"
-          onclick={() => goToPage(page - 1)}
-          disabled={page <= 1 || loading}
-          title="Previous page"
-          aria-label="Go to previous page of activities"
-        >
-          Prev
-        </button>
-        <span class="text-white/40 text-xs">Page {page}</span>
-        <button
-          class="text-primary text-xs font-bold uppercase tracking-wider hover:underline disabled:text-white/20"
-          onclick={() => goToPage(page + 1)}
-          disabled={!hasMore || loading}
-          title="Next page"
-          aria-label="Go to next page of activities"
-        >
-          Next
-        </button>
-      </div>
     {/if}
+  </div>
+
+  {#if !recentOnly && activities.length > 0}
+    <div class="flex items-center justify-between gap-4 pt-2">
+      <button
+        class="text-white/40 text-xs font-bold uppercase tracking-wider hover:underline disabled:text-white/20 transition-colors"
+        onclick={() => goToPage(page - 1)}
+        disabled={page <= 1 || loading}
+      >
+        Prev
+      </button>
+      <span
+        class="text-white/40 text-[10px] font-bold uppercase tracking-widest"
+        >Page {page}</span
+      >
+      <button
+        class="text-primary text-xs font-bold uppercase tracking-wider hover:underline disabled:text-white/20 transition-colors"
+        onclick={() => goToPage(page + 1)}
+        disabled={!hasMore || loading}
+      >
+        Next
+      </button>
+    </div>
   {/if}
 </div>

@@ -23,8 +23,9 @@ type Activity struct {
 	Target interface{} `db:"-" json:"target,omitempty"`
 
 	// Virtual fields for frontend (populated if type matches)
-	Song   *Song   `db:"-" json:"song,omitempty"`
-	Artist *Artist `db:"-" json:"artist,omitempty"`
+	Song       *Song   `db:"-" json:"song,omitempty"`
+	Artist     *Artist `db:"-" json:"artist,omitempty"`
+	UserTarget *User   `db:"-" json:"user_target,omitempty"`
 }
 
 type ActivityRepository interface {

@@ -116,7 +116,7 @@
           alt="Cover Image"
           class="w-full h-full object-cover"
           data-alt="User banner image"
-          src="/images/default-banner.png"
+          src="/images/placeholders/default-banner.jpg"
         />
       {/if}
       <div
@@ -136,7 +136,7 @@
                 alt="Profile"
                 class="w-full h-full object-cover"
                 data-alt="User avatar image"
-                src="/images/default-avatar.png"
+                src="/images/placeholders/default.png"
               />
             {/if}
           </div>

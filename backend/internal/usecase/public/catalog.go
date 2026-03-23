@@ -467,6 +467,7 @@ func (u *CatalogUsecase) enrichUserProfile(ctx context.Context, user *domain.Use
 
 func (u *CatalogUsecase) enrichArtist(ctx context.Context, userID *uint64, artist *domain.Artist) {
 	artist.AvatarUrl = u.mediaService.Resolve(artist.Avatar)
+	artist.LatestBannerUrl = u.mediaService.Resolve(artist.LatestBanner)
 
 	if userID != nil && u.interactionRepo != nil {
 		isFav, _ := u.interactionRepo.IsFavoritedByUser(ctx, *userID, artist.ID, "artist")
@@ -561,12 +562,14 @@ func (u *CatalogUsecase) enrichSong(ctx context.Context, userID *uint64, s *doma
 	}
 
 	// Set computed fields
-	if s.SongRomaji != nil {
+	if s.SongRomaji != nil && *s.SongRomaji != "" {
 		s.Name = *s.SongRomaji
-	} else if s.SongEN != nil {
+	} else if s.SongEN != nil && *s.SongEN != "" {
 		s.Name = *s.SongEN
-	} else if s.SongJP != nil {
+	} else if s.SongJP != nil && *s.SongJP != "" {
 		s.Name = *s.SongJP
+	} else {
+		s.Name = "N/A"
 	}
 
 	switch s.Type {

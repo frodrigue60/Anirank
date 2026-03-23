@@ -8,6 +8,9 @@
   import type { Song } from "$lib/types/song";
   import { toastState } from "$lib/state/toast.svelte";
 
+  import SEO from "$lib/components/SEO.svelte";
+  const PUBLIC_API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+
   let { data } = $props();
   // svelte-ignore state_referenced_locally
   let playlist = $state(data.playlist);
@@ -320,6 +323,12 @@
     }
   }
 </script>
+
+<SEO 
+  title={`${playlist.name} - Playlist by ${playlist.user?.name || 'User'} - AniRank`}
+  description={`Listen to the "${playlist.name}" playlist curated by ${playlist.user?.name || 'User'} on AniRank. Featuring ${songs.length} anime theme songs.`}
+  image={`${PUBLIC_API_URL}/og/playlist/${playlist.id}`}
+/>
 
 <svelte:window onclick={closeMenu} />
 

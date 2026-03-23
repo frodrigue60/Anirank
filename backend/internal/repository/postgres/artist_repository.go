@@ -23,10 +23,17 @@ func (r *artistRepository) GetByID(ctx context.Context, id uint64) (*domain.Arti
 	var a domain.Artist
 	query := `
 		SELECT 
-			a.*, 
-			(SELECT COUNT(*) FROM artist_song asong WHERE asong.artist_id = a.id) as songs_count
-		FROM artists a
-		WHERE a.id = $1
+			id, name, name_jp, slug, created_at, updated_at, avatar, status, favorites_count,
+			(SELECT COUNT(*) FROM artist_song asong WHERE asong.artist_id = artists.id) as songs_count,
+			(SELECT ani.banner 
+			 FROM animes ani
+			 JOIN songs s ON s.anime_id = ani.id
+			 JOIN artist_song asong ON asong.song_id = s.id
+			 WHERE asong.artist_id = artists.id
+			 ORDER BY s.created_at DESC
+			 LIMIT 1) as banner
+		FROM artists
+		WHERE id = $1
 	`
 	err := r.db.GetContext(ctx, &a, query, id)
 	if err != nil {
@@ -42,10 +49,17 @@ func (r *artistRepository) GetBySlug(ctx context.Context, slug string) (*domain.
 	var a domain.Artist
 	query := `
 		SELECT 
-			a.*, 
-			(SELECT COUNT(*) FROM artist_song asong WHERE asong.artist_id = a.id) as songs_count
-		FROM artists a
-		WHERE a.slug = $1
+			id, name, name_jp, slug, created_at, updated_at, avatar, status, favorites_count,
+			(SELECT COUNT(*) FROM artist_song asong WHERE asong.artist_id = artists.id) as songs_count,
+			(SELECT ani.banner 
+			 FROM animes ani
+			 JOIN songs s ON s.anime_id = ani.id
+			 JOIN artist_song asong ON asong.song_id = s.id
+			 WHERE asong.artist_id = artists.id
+			 ORDER BY s.created_at DESC
+			 LIMIT 1) as banner
+		FROM artists
+		WHERE slug = $1
 	`
 	err := r.db.GetContext(ctx, &a, query, slug)
 	if err != nil {
@@ -173,7 +187,7 @@ func (r *artistRepository) GetPaginated(ctx context.Context, limit, offset int, 
 	case "name_asc":
 		query += " ORDER BY a.name ASC"
 	default:
-		query += " ORDER BY a.name ASC"
+		query += " ORDER BY a.created_at DESC, a.id DESC"
 	}
 
 	query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", i, i+1)
@@ -208,7 +222,8 @@ func (r *artistRepository) CountFavoritesByUserID(ctx context.Context, userID ui
 	var count int
 	query := `
 		SELECT COUNT(*) FROM artist_user f
-		WHERE f.user_id = $1
+		JOIN artists a ON a.id = f.artist_id
+		WHERE f.user_id = $1 AND a.status = true
 	`
 	err := r.db.GetContext(ctx, &count, query, userID)
 	return count, err
@@ -221,8 +236,8 @@ func (r *artistRepository) GetFavoritesByUserID(ctx context.Context, userID uint
 		       (SELECT COUNT(*) FROM artist_song asong WHERE asong.artist_id = a.id) as songs_count
 		FROM artists a
 		JOIN artist_user f ON a.id = f.artist_id
-		WHERE f.user_id = $1
-		GROUP BY a.id
+		WHERE f.user_id = $1 AND a.status = true
+		GROUP BY a.id, f.created_at
 		ORDER BY f.created_at DESC
 		LIMIT $2 OFFSET $3
 	`

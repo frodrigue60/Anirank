@@ -34,12 +34,14 @@
   function formatScore(score: string | number | undefined | null) {
     return getFormattedScore(score as any, authState.user?.score_format);
   }
+
+  const PUBLIC_API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
 </script>
 
 <SEO 
   title="AniRank - Discover and Rate Anime Themes" 
   description="Discover, rate, and explore the best anime openings and endings. Join our community of anime music enthusiasts and stay up-to-date with seasonal rankings."
-  image="/og-image" 
+  image={`${PUBLIC_API_URL}/og/home`} 
 />
 
 <!-- {#if !authState.isAuthenticated && !authState.loading}

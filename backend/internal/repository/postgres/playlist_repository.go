@@ -26,7 +26,17 @@ func (r *playlistRepository) GetByID(ctx context.Context, id uint64) (*domain.Pl
 		SELECT p.*,
 		       u.id as "user.id",
 		       u.name as "user.name",
-		       u.slug as "user.slug"
+		       u.slug as "user.slug",
+		       (SELECT COUNT(*) FROM playlist_song WHERE playlist_id = p.id) as song_count,
+		       (
+				SELECT a.banner 
+				FROM playlist_song ps
+				JOIN songs s ON ps.song_id = s.id
+				JOIN animes a ON s.anime_id = a.id
+				WHERE ps.playlist_id = p.id
+				ORDER BY ps.id DESC
+				LIMIT 1
+			) as latest_banner
 		FROM playlists p
 		JOIN users u ON p.user_id = u.id
 		WHERE p.id = $1

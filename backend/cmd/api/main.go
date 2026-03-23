@@ -7,10 +7,12 @@ import (
 
 	"anirank/api/internal/delivery/http"
 	"anirank/api/internal/delivery/http/middleware"
+	v1 "anirank/api/internal/delivery/http/v1"
 	"anirank/api/internal/domain"
 	"anirank/api/internal/infrastructure"
 	"anirank/api/internal/infrastructure/anilist"
 	"anirank/api/internal/infrastructure/google"
+	"anirank/api/internal/infrastructure/og"
 	"anirank/api/internal/jobs"
 	"anirank/api/internal/repository/postgres"
 	"anirank/api/internal/usecase"
@@ -100,8 +102,6 @@ func main() {
 	adminRepo := postgres.NewAdminRepository(db)
 	xpRepo := postgres.NewXPRepository(db)
 
-
-
 	// Setup S3 Storage
 	s3Access := os.Getenv("S3_ACCESS_KEY")
 	s3Secret := os.Getenv("S3_SECRET_KEY")
@@ -160,6 +160,9 @@ func main() {
 	contentAdminUsecase := admin.NewContentAdminUsecase(animeRepo, songRepo, variantRepo, artistRepo, taxonomyRepo, anilistClient, mediaService, auditUsecase)
 	adminUsecase := admin.NewAdminUsecase(userAdminUsecase, contentAdminUsecase, adminRepo, moderationRepo, jobsRepo)
 
+	ogGenerator := og.NewGenerator(s3PublicUrl, s3Endpoint)
+	shareHandler := v1.NewShareHandler(animeUsecase, catalogUsecase, playlistUsecase)
+
 	moderationUsecase := moderation.NewModerationUsecase(moderationRepo, notificationRepo)
 	tournamentUsecase := tournament.NewTournamentUsecase(tournamentRepo, songRepo, animeRepo, storageService)
 
@@ -191,7 +194,7 @@ func main() {
 	statsUsecase := public.NewStatsUsecase(statsRepo, appCache)
 
 	// 4. Register Routes
-	http.SetupPublicRoutes(app, db, discoveryUsecase, animeUsecase, searchUsecase, catalogUsecase, authUsecase, interactionUsecase, playlistUsecase, adminUsecase, moderationUsecase, tournamentUsecase, auditUsecase, jwtService, storageService, mediaService, xpUsecase, activityUsecase, statsUsecase)
+	http.SetupPublicRoutes(app, db, discoveryUsecase, animeUsecase, searchUsecase, catalogUsecase, authUsecase, interactionUsecase, playlistUsecase, adminUsecase, moderationUsecase, tournamentUsecase, auditUsecase, jwtService, storageService, mediaService, xpUsecase, activityUsecase, statsUsecase, ogGenerator, shareHandler)
 
 	// Run Server
 	log.Printf("Starting server on port %s...", appPort)

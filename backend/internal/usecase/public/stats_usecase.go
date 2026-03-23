@@ -2,8 +2,10 @@ package public
 
 import (
 	"context"
-	"anirank/api/internal/domain"
+	"fmt"
 	"time"
+
+	"anirank/api/internal/domain"
 )
 
 type statsUsecase struct {
@@ -29,31 +31,37 @@ func (u *statsUsecase) GetSiteStats(ctx context.Context) (*domain.SiteStats, err
 
 	totals, err := u.statsRepo.GetTotals(ctx)
 	if err != nil {
+		fmt.Printf("[STATS-ERROR] GetTotals failed: %v\n", err)
 		return nil, err
 	}
 
 	userGrowth, err := u.statsRepo.GetUserGrowth(ctx, 30)
 	if err != nil {
+		fmt.Printf("[STATS-ERROR] GetUserGrowth failed: %v\n", err)
 		return nil, err
 	}
 
 	ratingGrowth, err := u.statsRepo.GetRatingGrowth(ctx, 30)
 	if err != nil {
+		fmt.Printf("[STATS-ERROR] GetRatingGrowth failed: %v\n", err)
 		return nil, err
 	}
 
 	songGrowth, err := u.statsRepo.GetSongGrowth(ctx, 30)
 	if err != nil {
+		fmt.Printf("[STATS-ERROR] GetSongGrowth failed: %v\n", err)
 		return nil, err
 	}
 
 	levelDist, err := u.statsRepo.GetLevelDistribution(ctx)
 	if err != nil {
+		fmt.Printf("[STATS-ERROR] GetLevelDistribution failed: %v\n", err)
 		return nil, err
 	}
 
 	scoreDist, err := u.statsRepo.GetScoreDistribution(ctx)
 	if err != nil {
+		fmt.Printf("[STATS-ERROR] GetScoreDistribution failed: %v\n", err)
 		return nil, err
 	}
 

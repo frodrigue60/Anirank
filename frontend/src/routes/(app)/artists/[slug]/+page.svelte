@@ -15,6 +15,7 @@
   import api from "$lib/api";
   import { toastState } from "$lib/state/toast.svelte";
   import SEO from "$lib/components/SEO.svelte";
+  const PUBLIC_API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
 
   let { data }: { data: any } = $props();
 
@@ -181,9 +182,9 @@
 
 {#if artist}
   <SEO 
-    title="{artist.name} Themes"
-    description="Explore the theme songs by {artist.name} on AniRank."
-    image={artist.avatar_url}
+    title={`${artist.name} - Artist on AniRank`}
+    description={`Explore all theme songs by ${artist.name} on AniRank. Discover their work, ratings, and rankings.`}
+    image={`${PUBLIC_API_URL}/og/artist/${artist.slug}`}
     type="profile"
   />
 {:else}

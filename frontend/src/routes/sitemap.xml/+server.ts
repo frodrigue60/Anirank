@@ -3,7 +3,7 @@ import type { RequestHandler } from './$types';
 export const GET: RequestHandler = async ({ fetch }) => {
   try {
     // PUBLIC_API_URL should be available in SvelteKit
-    const apiBase = import.meta.env?.PUBLIC_API_URL || 'http://localhost:8080/api';
+    const apiBase = import.meta.env?.VITE_API_URL || import.meta.env?.PUBLIC_API_URL || 'http://localhost:8080/api';
     const siteUrl = import.meta.env?.APP_URL || 'https://anirank.work';
 
     const response = await fetch(`${apiBase}/catalog/sitemap`);

@@ -12,6 +12,7 @@ import (
 	"anirank/api/internal/usecase/moderation"
 	"anirank/api/internal/usecase/playlist"
 	"anirank/api/internal/usecase/public"
+	"anirank/api/internal/infrastructure/og"
 	"anirank/api/internal/usecase/tournament"
 	"anirank/api/internal/usecase/announcement"
 	"anirank/api/internal/usecase/notification"
@@ -40,7 +41,9 @@ func SetupPublicRoutes(app *fiber.App,
 	mediaService infrastructure.MediaService,
 	xpUsecase domain.XPUsecase,
 	activityUsecase domain.ActivityUsecase,
-	statsUsecase domain.StatsUsecase) {
+	statsUsecase domain.StatsUsecase,
+	ogGenerator *og.Generator,
+	shareHandler *v1.ShareHandler) {
 
 	// HTTP Handlers
 	discoveryHandler := v1.NewDiscoveryHandler(discoveryUsecase)
@@ -69,6 +72,7 @@ func SetupPublicRoutes(app *fiber.App,
 	notificationHandler := v1.NewNotificationHandler(notificationUsecase)
 
 	statsHandler := v1.NewStatsHandler(statsUsecase)
+	ogHandler := v1.NewOGHandler(ogGenerator, animeUsecase, catalogUsecase, playlistUsecase, statsUsecase)
 
 	// API V1 Group
 	api := app.Group("/api")
@@ -145,6 +149,21 @@ func SetupPublicRoutes(app *fiber.App,
 
 	// Public Interactions (e.g Feed)
 	api.Get("/interactions/feed", interactionHandler.Feed)
+
+	// Shared Proxy / Share Routes (Bot Proxy)
+	api.Get("/share/anime/:slug", shareHandler.AnimeShare)
+	api.Get("/share/song/:anime_slug/:song_slug", shareHandler.SongShare)
+	api.Get("/share/artist/:slug", shareHandler.ArtistShare)
+	api.Get("/share/playlist/:id", shareHandler.PlaylistShare)
+	api.Get("/share/user/:slug", shareHandler.UserShare)
+
+	// OG Images
+	api.Get("/og/anime/:slug", ogHandler.AnimeOG)
+	api.Get("/og/song/:anime_slug/:song_slug", ogHandler.SongOG)
+	api.Get("/og/artist/:slug", ogHandler.ArtistOG)
+	api.Get("/og/playlist/:pid", ogHandler.PlaylistOG)
+	api.Get("/og/user/:slug", ogHandler.UserOG)
+	api.Get("/og/home", ogHandler.HomeOG)
 	
 
 

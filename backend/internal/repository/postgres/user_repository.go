@@ -86,7 +86,8 @@ func (r *userRepository) GetBySlug(ctx context.Context, slug string) (*domain.Us
 	query := `
 		SELECT u.*, sf.slug AS score_format,
 		       (SELECT COUNT(*) FROM follows WHERE followed_id = u.id) as followers_count,
-		       (SELECT COUNT(*) FROM follows WHERE follower_id = u.id) as following_count
+		       (SELECT COUNT(*) FROM follows WHERE follower_id = u.id) as following_count,
+		       (SELECT COUNT(*) FROM song_ratings WHERE user_id = u.id) as ratings_count
 		FROM users u
 		LEFT JOIN score_formats sf ON u.score_format_id = sf.id
 		WHERE u.slug = $1

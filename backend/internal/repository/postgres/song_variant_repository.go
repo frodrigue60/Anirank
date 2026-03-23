@@ -100,7 +100,7 @@ func (r *songVariantRepository) GetPaginated(ctx context.Context, limit, offset 
 		argCount++
 	}
 
-	query += " ORDER BY sv.id DESC"
+	query += " ORDER BY sv.created_at DESC, sv.id DESC"
 	query += " LIMIT $1 OFFSET $2"
 	err := r.db.SelectContext(ctx, &variants, query, args...)
 	return variants, err

@@ -112,7 +112,7 @@ func (r *animeRepository) GetPaginated(ctx context.Context, limit, offset int, f
 	case "title":
 		query += " ORDER BY title ASC"
 	case "latest":
-		query += " ORDER BY created_at DESC"
+		query += " ORDER BY created_at DESC, id DESC"
 	case "most_themes":
 		query += " ORDER BY songs_count DESC"
 	case "least_themes":

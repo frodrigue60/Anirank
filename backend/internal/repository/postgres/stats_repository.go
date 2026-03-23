@@ -18,8 +18,9 @@ func (r *statsRepository) GetTotals(ctx context.Context) (*domain.StaffDashboard
 	query := `
 		SELECT 
 			(SELECT COUNT(*) FROM users) as total_users,
-			(SELECT COUNT(*) FROM animes) as total_animes,
-			(SELECT COUNT(*) FROM songs) as total_songs,
+			(SELECT COUNT(*) FROM animes WHERE status = true) as total_animes,
+			(SELECT COUNT(*) FROM songs WHERE status = true) as total_songs,
+			(SELECT COUNT(*) FROM artists WHERE status = true) as total_artists,
 			(SELECT COUNT(*) FROM song_ratings) as total_ratings,
 			(SELECT COUNT(*) FROM comments) as total_comments
 	`
@@ -33,10 +34,10 @@ func (r *statsRepository) GetTotals(ctx context.Context) (*domain.StaffDashboard
 
 func (r *statsRepository) GetUserGrowth(ctx context.Context, days int) ([]domain.StatPoint, error) {
 	query := `
-		SELECT created_at::date as date, COUNT(*) as count 
+		SELECT TO_CHAR(created_at, 'YYYY-MM-DD') as date, COUNT(*) as count 
 		FROM users 
 		WHERE created_at >= CURRENT_DATE - (INTERVAL '1 day' * $1)
-		GROUP BY created_at::date
+		GROUP BY 1
 		ORDER BY date ASC
 	`
 	
@@ -47,10 +48,10 @@ func (r *statsRepository) GetUserGrowth(ctx context.Context, days int) ([]domain
 
 func (r *statsRepository) GetRatingGrowth(ctx context.Context, days int) ([]domain.StatPoint, error) {
 	query := `
-		SELECT created_at::date as date, COUNT(*) as count 
+		SELECT TO_CHAR(created_at, 'YYYY-MM-DD') as date, COUNT(*) as count 
 		FROM song_ratings 
 		WHERE created_at >= CURRENT_DATE - (INTERVAL '1 day' * $1)
-		GROUP BY created_at::date
+		GROUP BY 1
 		ORDER BY date ASC
 	`
 	
@@ -61,10 +62,10 @@ func (r *statsRepository) GetRatingGrowth(ctx context.Context, days int) ([]doma
 
 func (r *statsRepository) GetSongGrowth(ctx context.Context, days int) ([]domain.StatPoint, error) {
 	query := `
-		SELECT created_at::date as date, COUNT(*) as count 
+		SELECT TO_CHAR(created_at, 'YYYY-MM-DD') as date, COUNT(*) as count 
 		FROM songs 
 		WHERE created_at >= CURRENT_DATE - (INTERVAL '1 day' * $1)
-		GROUP BY created_at::date
+		GROUP BY 1
 		ORDER BY date ASC
 	`
 	
@@ -90,8 +91,8 @@ func (r *statsRepository) GetLevelDistribution(ctx context.Context) ([]domain.Us
 			END as label,
 			COUNT(*) as value
 		FROM users
-		GROUP BY label
-		ORDER BY label::integer ASC
+		GROUP BY 1
+		ORDER BY 1::integer ASC
 	`
 	var dist []domain.UserDistribution
 	err := r.db.SelectContext(ctx, &dist, query)
@@ -115,8 +116,8 @@ func (r *statsRepository) GetScoreDistribution(ctx context.Context) ([]domain.Us
 			END as label,
 			COUNT(*) as value
 		FROM song_ratings
-		GROUP BY label
-		ORDER BY label::integer ASC
+		GROUP BY 1
+		ORDER BY 1::integer ASC
 	`
 	var dist []domain.UserDistribution
 	err := r.db.SelectContext(ctx, &dist, query)

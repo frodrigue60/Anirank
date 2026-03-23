@@ -11,6 +11,7 @@ type StaffDashboardStats struct {
 	TotalUsers    int `json:"total_users" db:"total_users"`
 	TotalAnimes   int `json:"total_animes" db:"total_animes"`
 	TotalSongs    int `json:"total_songs" db:"total_songs"`
+	TotalArtists  int `json:"total_artists" db:"total_artists"`
 	TotalRatings  int `json:"total_ratings" db:"total_ratings"`
 	TotalComments int `json:"total_comments" db:"total_comments"`
 }

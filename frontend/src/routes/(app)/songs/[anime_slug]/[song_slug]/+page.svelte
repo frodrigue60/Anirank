@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { authState } from "$lib/state/auth.svelte";
+  const PUBLIC_API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
   import {
     getSongArtistNames,
     getSongName,
@@ -452,7 +453,7 @@
   )}' ({currentSong.type}{currentSong.theme_num || ''}) by {getSongArtistNames(
     currentSong.artists,
   )} from the anime {currentSong.anime?.title}."
-  image={`${page.url.origin}/api/og/song/${currentSong.id}`}
+  image={`${PUBLIC_API_URL}/og/song/${currentSong.anime?.slug}/${currentSong.slug}`}
   type="music.song"
 />
 

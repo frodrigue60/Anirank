@@ -2,6 +2,7 @@
   import SongCard from "$lib/components/SongCard.svelte";
   import SEO from "$lib/components/SEO.svelte";
   import { page } from "$app/state";
+  const PUBLIC_API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
 
   let { data } = $props();
 </script>
@@ -9,7 +10,7 @@
 <SEO 
   title={`${data.profile.name}'s Profile`}
   description={`Check out ${data.profile.name}'s anime theme song favorites and stats on AniRank.`}
-  image={`${page.url.origin}/api/og/user/${data.profile.slug}`}
+  image={`${PUBLIC_API_URL}/og/user/${data.profile.slug}`}
   type="profile"
 />
 

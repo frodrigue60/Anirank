@@ -1,0 +1,598 @@
+package og
+
+import (
+	"fmt"
+	"image"
+	"image/color"
+	_ "image/jpeg"
+	_ "image/png"
+	_ "golang.org/x/image/webp"
+	"net/http"
+	"os"
+	"path/filepath"
+	"runtime"
+	"strings"
+
+	"github.com/disintegration/gift"
+	"github.com/fogleman/gg"
+)
+
+type Generator struct {
+	fontBlackPath string
+	fontBoldPath  string
+	fontMediPath  string
+	fontReguPath  string
+	cacheDir      string
+	s3PublicURL   string
+	s3Endpoint    string
+}
+
+func NewGenerator(s3PublicURL, s3Endpoint string) *Generator {
+	_, b, _, _ := runtime.Caller(0)
+	basePath := filepath.Dir(b)
+
+	// Initialize font paths
+	fontAssetsPath := filepath.Join(basePath, "assets/fonts")
+
+	// Create cache directory if it doesn't exist
+	cacheDir := filepath.Join(basePath, "storage/og_cache")
+	if _, err := os.Stat(cacheDir); os.IsNotExist(err) {
+		os.MkdirAll(cacheDir, 0755)
+	}
+
+	return &Generator{
+		fontBlackPath: filepath.Join(fontAssetsPath, "Inter-Black.ttf"),
+		fontBoldPath:  filepath.Join(fontAssetsPath, "Inter-Bold.ttf"),
+		fontMediPath:  filepath.Join(fontAssetsPath, "Inter-Medium.ttf"),
+		fontReguPath:  filepath.Join(fontAssetsPath, "Inter-Regular.ttf"),
+		cacheDir:      cacheDir,
+		s3PublicURL:   s3PublicURL,
+		s3Endpoint:    s3Endpoint,
+	}
+}
+
+func (g *Generator) GetCache(key string) ([]byte, bool) {
+	path := filepath.Join(g.cacheDir, key+".png")
+	if _, err := os.Stat(path); err == nil {
+		data, err := os.ReadFile(path)
+		if err == nil {
+			return data, true
+		}
+	}
+	return nil, false
+}
+
+func (g *Generator) SaveCache(key string, data []byte) error {
+	path := filepath.Join(g.cacheDir, key+".png")
+	return os.WriteFile(path, data, 0644)
+}
+
+func (g *Generator) GenerateSongOG(title, artists, animeTitle, songType string, score float64, bgUrl string) (image.Image, error) {
+	const (
+		W = 1200
+		H = 630
+	)
+
+	dc := gg.NewContext(W, H)
+
+	// 1. Background
+	if bgUrl != "" {
+		if err := g.drawBlurredBackground(dc, bgUrl, W, H); err != nil {
+			fmt.Printf("[OG] Error drawing blurred background: %v\n", err)
+			drawGradientBackground(dc, W, H)
+		}
+	} else {
+		drawGradientBackground(dc, W, H)
+	}
+
+	// 2. Artistic accents (optional)
+	dc.SetRGBA(127.0/255.0, 19.0/255.0, 236.0/255.0, 0.1) // Primary color accent
+	dc.DrawCircle(W, 0, 400)
+	dc.Fill()
+
+	// 3. Branding
+	if err := dc.LoadFontFace(g.fontBlackPath, 42); err == nil {
+		dc.SetRGBA(1, 1, 1, 0.9)
+		dc.DrawStringAnchored("ANIRANK", W-80, 60, 1, 0.5)
+	}
+
+	// 4. Song Type Badge
+	if err := dc.LoadFontFace(g.fontBlackPath, 32); err == nil {
+		dc.SetHexColor("#ff4e50")
+		dc.DrawStringAnchored(strings.ToUpper(songType), 80, 110, 0, 0.5)
+	}
+
+	// 5. Song Title
+	title = g.truncate(title, 55)
+	if err := dc.LoadFontFace(g.fontBlackPath, 90); err == nil {
+		dc.SetRGB(1, 1, 1)
+		dc.DrawStringWrapped(title, 80, 160, 0, 0, 1000, 1.1, gg.AlignLeft)
+	}
+
+	// 6. Artist
+	if artists != "" {
+		artists = g.truncate(artists, 70)
+		if err := dc.LoadFontFace(g.fontBoldPath, 36); err == nil {
+			dc.SetRGBA(1, 1, 1, 0.7)
+			dc.DrawStringAnchored(artists, 80, 380, 0, 0.5)
+		}
+	}
+
+	// 7. Info Bar (Bottom)
+	if animeTitle != "" {
+		animeTitle = g.truncate(animeTitle, 60)
+		if err := dc.LoadFontFace(g.fontBoldPath, 20); err == nil {
+			dc.SetRGBA(1, 1, 1, 0.5)
+			dc.DrawStringAnchored("FEATURED IN", 80, 500, 0, 0.5)
+		}
+		if err := dc.LoadFontFace(g.fontBlackPath, 42); err == nil {
+			dc.SetRGB(1, 1, 1)
+			dc.DrawStringAnchored(animeTitle, 80, 550, 0, 0.5)
+		}
+	}
+
+	// Score
+	if score > 0 {
+		if err := dc.LoadFontFace(g.fontBoldPath, 20); err == nil {
+			dc.SetRGBA(1, 1, 1, 0.5)
+			dc.DrawStringAnchored("COMMUNITY SCORE", W-80, 500, 1, 0.5)
+		}
+		if err := dc.LoadFontFace(g.fontBlackPath, 64); err == nil {
+			dc.SetHexColor("#FFD700")
+			dc.DrawStringAnchored(fmt.Sprintf("★ %.1f%%", score), W-80, 550, 1, 0.5)
+		}
+	}
+
+	return dc.Image(), nil
+}
+
+func (g *Generator) GenerateArtistOG(name string, songCount int, favoriteCount int, avatarUrl, bannerUrl string) (image.Image, error) {
+	const (
+		W = 1200
+		H = 630
+	)
+
+	dc := gg.NewContext(W, H)
+
+	// 1. Background (Blurred banner or avatar)
+	bgUrl := bannerUrl
+	if bgUrl == "" {
+		bgUrl = avatarUrl
+	}
+
+	if bgUrl != "" {
+		if err := g.drawBlurredBackground(dc, bgUrl, W, H); err != nil {
+			drawGradientBackground(dc, W, H)
+		}
+	} else {
+		drawGradientBackground(dc, W, H)
+	}
+
+	// 2. Artistic accents
+	dc.SetRGBA(127.0/255.0, 19.0/255.0, 236.0/255.0, 0.15)
+	dc.DrawCircle(W, 0, 400)
+	dc.Fill()
+
+	// 3. Branding
+	if err := dc.LoadFontFace(g.fontBlackPath, 42); err == nil {
+		dc.SetRGBA(1, 1, 1, 0.9)
+		dc.DrawStringAnchored("ANIRANK", W-80, 60, 1, 0.5)
+	}
+
+	// 4. Centered Avatar Circle
+	if avatarUrl != "" {
+		img, err := g.fetchImage(avatarUrl)
+		if err == nil {
+			radius := 140.0
+			avatarX := W / 2.0
+			avatarY := H/2.0 - 80.0
+
+			// Image
+			dc.DrawCircle(avatarX, avatarY, radius)
+			dc.Clip()
+			dc.DrawImageAnchored(img, int(avatarX), int(avatarY), 0.5, 0.5)
+			dc.ResetClip()
+		}
+	}
+
+	// 5. Name
+	name = g.truncate(name, 40)
+	if err := dc.LoadFontFace(g.fontBlackPath, 84); err == nil {
+		dc.SetRGB(1, 1, 1)
+		dc.DrawStringAnchored(name, W/2, H-200, 0.5, 0.5)
+	}
+
+	// 6. Stats
+	if err := dc.LoadFontFace(g.fontBoldPath, 34); err == nil {
+		dc.SetRGBA(1, 1, 1, 0.4)
+		statsText := fmt.Sprintf("%d SONGS • %d FAVORITES", songCount, favoriteCount)
+		dc.DrawStringAnchored(statsText, W/2, H-120, 0.5, 0.5)
+	}
+
+	// Branding URL
+	if err := dc.LoadFontFace(g.fontBoldPath, 18); err == nil {
+		dc.SetRGBA(1, 1, 1, 0.3)
+		dc.DrawStringAnchored("ANIRANK.WORK", W/2, H-40, 0.5, 0.5)
+	}
+
+	return dc.Image(), nil
+}
+
+func (g *Generator) GeneratePlaylistOG(name, creator string, songCount int, bannerUrl string) (image.Image, error) {
+	const (
+		W = 1200
+		H = 630
+	)
+
+	dc := gg.NewContext(W, H)
+
+	// 1. Background (Blurred banner)
+	if bannerUrl != "" {
+		if err := g.drawBlurredBackground(dc, bannerUrl, W, H); err != nil {
+			drawGradientBackground(dc, W, H)
+		}
+	} else {
+		drawGradientBackground(dc, W, H)
+	}
+
+	// 2. Artistic accents
+	dc.SetRGBA(127.0/255.0, 19.0/255.0, 236.0/255.0, 0.2)
+	dc.DrawCircle(0, 0, 400)
+	dc.Fill()
+
+	// 3. Branding
+	if err := dc.LoadFontFace(g.fontBlackPath, 42); err == nil {
+		dc.SetRGBA(1, 1, 1, 0.9)
+		dc.DrawStringAnchored("ANIRANK", W-80, 60, 1, 0.5)
+	}
+
+	// 4. Playlist Icon Badge
+	if err := dc.LoadFontFace(g.fontBlackPath, 32); err == nil {
+		dc.SetHexColor("#7f13ec")
+		dc.DrawStringAnchored("PLAYLIST", W/2, H/2-180, 0.5, 0.5)
+	}
+
+	// 5. Name
+	name = g.truncate(name, 50)
+	if err := dc.LoadFontFace(g.fontBlackPath, 90); err == nil {
+		dc.SetRGB(1, 1, 1)
+		dc.DrawStringAnchored(name, W/2, H/2-80, 0.5, 0.5)
+	}
+
+	// 6. Creator
+	creatorText := "Featured Playlist"
+	if creator != "" {
+		creatorText = fmt.Sprintf("Curated by %s", creator)
+	}
+	if err := dc.LoadFontFace(g.fontBoldPath, 36); err == nil {
+		dc.SetRGBA(1, 1, 1, 0.7)
+		dc.DrawStringAnchored(creatorText, W/2, H/2+20, 0.5, 0.5)
+	}
+
+	// 7. Stats
+	if err := dc.LoadFontFace(g.fontBoldPath, 34); err == nil {
+		dc.SetRGBA(1, 1, 1, 0.5)
+		dc.DrawStringAnchored(fmt.Sprintf("%d SONGS", songCount), W/2, H/2+120, 0.5, 0.5)
+	}
+
+	// Branding URL
+	if err := dc.LoadFontFace(g.fontBoldPath, 18); err == nil {
+		dc.SetRGBA(1, 1, 1, 0.3)
+		dc.DrawStringAnchored("ANIRANK.WORK", W/2, H-40, 0.5, 0.5)
+	}
+
+	return dc.Image(), nil
+}
+
+func (g *Generator) GenerateUserOG(name string, level int, xp int, followers, ratings int, avatarUrl, bannerUrl string) (image.Image, error) {
+	const (
+		W = 1200
+		H = 630
+	)
+
+	dc := gg.NewContext(W, H)
+
+	// 1. Background (Banner or blurred avatar)
+	bgUrl := bannerUrl
+	if bgUrl == "" {
+		bgUrl = avatarUrl
+	}
+
+	if bgUrl != "" {
+		if err := g.drawBlurredBackground(dc, bgUrl, W, H); err != nil {
+			drawGradientBackground(dc, W, H)
+		}
+	} else {
+		drawGradientBackground(dc, W, H)
+	}
+
+	// 2. Stats Bar Bottom (Anilist Style)
+	barHeight := 180.0
+	dc.SetRGBA(15.0/255.0, 23.0/255.0, 42.0/255.0, 0.85) // Dark Navy overlay
+	dc.DrawRectangle(0, H-barHeight, W, barHeight)
+	dc.Fill()
+
+	// 3. Branding
+	if err := dc.LoadFontFace(g.fontBlackPath, 42); err == nil {
+		dc.SetRGBA(1, 1, 1, 0.9)
+		dc.DrawStringAnchored("ANIRANK", W-80, 60, 1, 0.5)
+	}
+
+	// 4. User Avatar (Overlapping)
+	if avatarUrl != "" {
+		img, err := g.fetchImage(avatarUrl)
+		if err == nil {
+			radius := 140.0
+			avatarX := 200.0
+			avatarY := H - barHeight
+
+			// Border
+			dc.SetHexColor("#7f13ec")
+			dc.DrawCircle(avatarX, avatarY, radius+8)
+			dc.Fill()
+
+			// Image
+			dc.DrawCircle(avatarX, avatarY, radius)
+			dc.Clip()
+			dc.DrawImageAnchored(img, int(avatarX), int(avatarY), 0.5, 0.5)
+			dc.ResetClip()
+		}
+	}
+
+	// 5. Name
+	name = g.truncate(name, 30)
+	if err := dc.LoadFontFace(g.fontBlackPath, 80); err == nil {
+		dc.SetRGB(1, 1, 1)
+		dc.DrawStringAnchored(name, 380, H-barHeight-40, 0, 0.5)
+	}
+
+	// 6. Stats Row
+	statsY := H - (barHeight / 2)
+	statsStartX := 400.0
+	spacing := 280.0
+
+	drawStat := func(x float64, label string, value string) {
+		dc.LoadFontFace(g.fontBlackPath, 64)
+		dc.SetHexColor("#7f13ec")
+		dc.DrawStringAnchored(value, x, statsY-10, 0.5, 0.5)
+
+		dc.LoadFontFace(g.fontBoldPath, 24)
+		dc.SetRGBA(1, 1, 1, 0.6)
+		dc.DrawStringAnchored(strings.ToUpper(label), x, statsY+40, 0.5, 0.5)
+	}
+
+	drawStat(statsStartX, "Level", fmt.Sprintf("%d", level))
+	drawStat(statsStartX+spacing, "Followers", fmt.Sprintf("%d", followers))
+	drawStat(statsStartX+spacing*2, "Ratings", fmt.Sprintf("%d", ratings))
+
+	return dc.Image(), nil
+}
+
+func (g *Generator) GenerateAnimeOG(title, studios string, songCount int, score float64, bgUrl string) (image.Image, error) {
+	const (
+		W = 1200
+		H = 630
+	)
+
+	dc := gg.NewContext(W, H)
+	drawGradientBackground(dc, W, H)
+
+	if bgUrl != "" {
+		if err := g.drawBlurredBackground(dc, bgUrl, W, H); err != nil {
+			fmt.Printf("[OG] Error drawing blurred background: %v\n", err)
+			drawGradientBackground(dc, W, H)
+		}
+	} else {
+		drawGradientBackground(dc, W, H)
+	}
+
+	// Branding
+	if err := dc.LoadFontFace(g.fontBlackPath, 42); err == nil {
+		dc.SetRGBA(1, 1, 1, 0.9)
+		dc.DrawStringAnchored("ANIRANK", W-80, 60, 1, 0.5)
+	}
+
+	// Title
+	title = g.truncate(title, 60)
+	if err := dc.LoadFontFace(g.fontBlackPath, 80); err == nil {
+		dc.SetRGB(1, 1, 1)
+		// Start higher and align top
+		dc.DrawStringWrapped(title, 80, 130, 0, 0, 1000, 1.1, gg.AlignLeft)
+	}
+
+	// Studios
+	if studios != "" {
+		studios = g.truncate(studios, 80)
+		if err := dc.LoadFontFace(g.fontBoldPath, 34); err == nil {
+			dc.SetRGBA(1, 1, 1, 0.7)
+			// Positioned much lower to avoid overlap with 3-line title
+			dc.DrawStringAnchored(strings.ToUpper(studios), 80, 440, 0, 0.5)
+		}
+	}
+
+	// Score
+	if score > 0 {
+		if err := dc.LoadFontFace(g.fontBlackPath, 64); err == nil {
+			dc.SetHexColor("#FFD700")
+			dc.DrawStringAnchored(fmt.Sprintf("★ %.1f", score), 80, 510, 0, 0.5)
+		}
+	}
+
+	// Bottom Text (Song Count)
+	bottomText := "Discover • Rate • Rank"
+	if songCount > 0 {
+		bottomText = fmt.Sprintf("%d Songs Available", songCount)
+	}
+
+	if err := dc.LoadFontFace(g.fontBoldPath, 28); err == nil {
+		dc.SetRGBA(1, 1, 1, 0.4)
+		dc.DrawStringAnchored(bottomText, 80, 580, 0, 0.5)
+	}
+
+	return dc.Image(), nil
+}
+
+func (g *Generator) GenerateHomeOG(totalSongs, totalUsers, totalAnimes, totalArtists int) (image.Image, error) {
+	const (
+		W = 1200
+		H = 630
+	)
+
+	dc := gg.NewContext(W, H)
+	drawGradientBackground(dc, W, H)
+
+	// Artistic accents
+	dc.SetRGBA(127.0/255.0, 19.0/255.0, 236.0/255.0, 0.2)
+	dc.DrawCircle(0, 0, 500)
+	dc.Fill()
+	dc.DrawCircle(W, H, 400)
+	dc.Fill()
+
+	// Title
+	if err := dc.LoadFontFace(g.fontBlackPath, 130); err == nil {
+		dc.SetRGB(1, 1, 1)
+		dc.DrawStringAnchored("ANIRANK", W/2, H/2-250, 0.5, 0.5)
+	}
+
+	// Tagline
+	if err := dc.LoadFontFace(g.fontBoldPath, 34); err == nil {
+		dc.SetRGBA(1, 1, 1, 0.9)
+		dc.DrawStringAnchored("The Ultimate Anime Music Ranking Platform", W/2, H/2-170, 0.5, 0.5)
+	}
+
+	// Stats 2x2 Grid
+	statsY := H/2 - 50.0
+	col1X := W/2 - 180.0
+	col2X := W/2 + 180.0
+	rowHeight := 100.0
+
+	drawStatItem := func(x, y float64, label string, value int) {
+		// Value
+		if err := dc.LoadFontFace(g.fontBlackPath, 54); err == nil {
+			dc.SetRGB(1, 1, 1)
+			dc.DrawStringAnchored(fmt.Sprintf("%d", value), x, y, 0.5, 0.5)
+		}
+		// Label
+		if err := dc.LoadFontFace(g.fontBoldPath, 22); err == nil {
+			dc.SetRGBA(1, 1, 1, 0.6)
+			dc.DrawStringAnchored(strings.ToUpper(label), x, y+40, 0.5, 0.5)
+		}
+	}
+
+	drawStatItem(col1X, statsY, "Animes", totalAnimes)
+	drawStatItem(col2X, statsY, "Songs", totalSongs)
+	drawStatItem(col1X, statsY+rowHeight, "Artists", totalArtists)
+	drawStatItem(col2X, statsY+rowHeight, "Users", totalUsers)
+
+	// Sub-tagline
+	if err := dc.LoadFontFace(g.fontBoldPath, 24); err == nil {
+		dc.SetRGBA(1, 1, 1, 0.4)
+		dc.DrawStringAnchored("Discover • Rate • Share", W/2, H-100, 0.5, 0.5)
+	}
+
+	// Branding URL
+	if err := dc.LoadFontFace(g.fontBoldPath, 18); err == nil {
+		dc.SetRGBA(1, 1, 1, 0.3)
+		dc.DrawStringAnchored("ANIRANK.WORK", W/2, H-40, 0.5, 0.5)
+	}
+
+	return dc.Image(), nil
+}
+
+func (g *Generator) drawBlurredBackground(dc *gg.Context, url string, w, h float64) error {
+	img, err := g.fetchImage(url)
+	if err != nil {
+		return err
+	}
+
+	// 1. Process image with GIFT
+	gi := gift.New(
+		gift.ResizeToFill(int(w), int(h), gift.LanczosResampling, gift.CenterAnchor),
+		gift.GaussianBlur(8),
+	)
+	
+	dst := image.NewRGBA(gi.Bounds(img.Bounds()))
+	gi.Draw(dst, img)
+
+	// 2. Draw to GG
+	dc.DrawImage(dst, 0, 0)
+
+	// 3. Overlay dark mask for readability
+	dc.SetRGBA(0, 0, 0, 0.7)
+	dc.DrawRectangle(0, 0, w, h)
+	dc.Fill()
+
+	return nil
+}
+
+func drawGradientBackground(dc *gg.Context, w, h float64) {
+	grad := gg.NewLinearGradient(0, 0, w, h)
+	grad.AddColorStop(0, color.RGBA{15, 23, 42, 255})    // Slate 900
+	grad.AddColorStop(0.5, color.RGBA{30, 27, 75, 255})  // Indigo 950
+	grad.AddColorStop(1, color.RGBA{88, 28, 135, 255})   // Purple 900
+	dc.SetFillStyle(grad)
+	dc.DrawRectangle(0, 0, w, h)
+	dc.Fill()
+}
+
+func (g *Generator) fetchImage(urlStr string) (image.Image, error) {
+	// If the URL is our public S3 URL, swap it for the internal endpoint
+	if g.s3PublicURL != "" && g.s3Endpoint != "" && strings.HasPrefix(urlStr, g.s3PublicURL) {
+		oldUrl := urlStr
+
+		// Extract host from public URL (e.g., https://s3.anirank.work/anirank -> s3.anirank.work)
+		pHost := g.s3PublicURL
+		pHost = strings.TrimPrefix(pHost, "http://")
+		pHost = strings.TrimPrefix(pHost, "https://")
+		if idx := strings.Index(pHost, "/"); idx != -1 {
+			pHost = pHost[:idx]
+		}
+
+		// Extract host from internal endpoint (e.g., http://minio:9000 -> minio:9000)
+		iHost := g.s3Endpoint
+		iHost = strings.TrimPrefix(iHost, "http://")
+		iHost = strings.TrimPrefix(iHost, "https://")
+
+		// Replace only the host part
+		urlStr = strings.Replace(urlStr, pHost, iHost, 1)
+
+		// Ensure it uses http internally if it was https
+		urlStr = strings.Replace(urlStr, "https://", "http://", 1)
+
+		fmt.Printf("[OG] Internal redirect: %s -> %s\n", oldUrl, urlStr)
+	}
+
+	fmt.Printf("[OG] Fetching image: %s\n", urlStr)
+	
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", urlStr, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %v", err)
+	}
+	
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch image: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to fetch image: status %d", resp.StatusCode)
+	}
+
+	img, _, err := image.Decode(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode image: %v", err)
+	}
+	return img, nil
+}
+
+func (g *Generator) truncate(s string, maxLen int) string {
+	runes := []rune(s)
+	if len(runes) <= maxLen {
+		return s
+	}
+	return string(runes[:maxLen-3]) + "..."
+}

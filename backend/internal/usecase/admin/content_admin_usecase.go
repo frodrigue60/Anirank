@@ -817,6 +817,8 @@ func (u *ContentAdminUsecase) GetSong(ctx context.Context, id uint64) (*domain.S
 }
 
 func (u *ContentAdminUsecase) CreateSong(ctx context.Context, s *domain.Song, meta domain.AuditMetadata) error {
+	u.nullifyEmptySongFields(s)
+
 	if s.Type == "" || s.AnimeID == 0 {
 		return domain.NewAppError(400, "Missing required fields for Song", nil)
 	}
@@ -879,6 +881,8 @@ func (u *ContentAdminUsecase) GetNextSongNumber(ctx context.Context, animeID uin
 }
 
 func (u *ContentAdminUsecase) UpdateSong(ctx context.Context, s *domain.Song, meta domain.AuditMetadata) error {
+	u.nullifyEmptySongFields(s)
+
 	existing, err := u.songRepo.GetByID(ctx, s.ID)
 	if err != nil {
 		return err
@@ -934,6 +938,18 @@ func (u *ContentAdminUsecase) DeleteSong(ctx context.Context, id uint64, meta do
 
 func (u *ContentAdminUsecase) SyncSongArtists(ctx context.Context, songID uint64, artistIDs []uint64) error {
 	return u.songRepo.SyncArtists(ctx, songID, artistIDs)
+}
+
+func (u *ContentAdminUsecase) nullifyEmptySongFields(s *domain.Song) {
+	if s.SongRomaji != nil && *s.SongRomaji == "" {
+		s.SongRomaji = nil
+	}
+	if s.SongEN != nil && *s.SongEN == "" {
+		s.SongEN = nil
+	}
+	if s.SongJP != nil && *s.SongJP == "" {
+		s.SongJP = nil
+	}
 }
 
 

@@ -6,7 +6,7 @@
 
   let { data } = $props();
 
-  let ranking = $state<{ data: any[]; next_page_url?: string } | null>(null);
+  let ranking = $state<{ data: any[]; next_page_url?: string; current_page: number; per_page: number } | null>(null);
   let activeType = $derived(data.type);
   let loading = $state(false);
 
@@ -97,6 +97,6 @@
     {loading}
     hasMore={!!ranking?.next_page_url}
     onLoadMore={loadMore}
-    startIndex={0}
+    startIndex={ranking ? (ranking.current_page - 1) * ranking.per_page : 0}
   />
 </main>

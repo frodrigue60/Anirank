@@ -119,3 +119,29 @@ func (r *jobsRepository) SnapshotRankingPositions(ctx context.Context) error {
 
 	return tx.Commit()
 }
+
+func (r *jobsRepository) SynchronizeDailySiteMetrics(ctx context.Context) error {
+	query := `
+		INSERT INTO daily_metrics (
+			date, song_id, new_users_count, new_ratings_count, new_songs_count, views_count, created_at, updated_at
+		)
+		SELECT 
+			CURRENT_DATE,
+			NULL,
+			(SELECT COUNT(*) FROM users WHERE created_at::date = CURRENT_DATE),
+			(SELECT COUNT(*) FROM song_ratings WHERE created_at::date = CURRENT_DATE),
+			(SELECT COUNT(*) FROM songs WHERE created_at::date = CURRENT_DATE),
+			(SELECT COALESCE(SUM(views_count), 0) FROM daily_metrics WHERE date = CURRENT_DATE AND song_id IS NOT NULL),
+			CURRENT_TIMESTAMP,
+			CURRENT_TIMESTAMP
+		ON CONFLICT (date) WHERE song_id IS NULL
+		DO UPDATE SET 
+			new_users_count = EXCLUDED.new_users_count,
+			new_ratings_count = EXCLUDED.new_ratings_count,
+			new_songs_count = EXCLUDED.new_songs_count,
+			views_count = EXCLUDED.views_count,
+			updated_at = CURRENT_TIMESTAMP;
+	`
+	_, err := r.db.ExecContext(ctx, query)
+	return err
+}

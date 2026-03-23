@@ -34,10 +34,9 @@ func (r *statsRepository) GetTotals(ctx context.Context) (*domain.StaffDashboard
 
 func (r *statsRepository) GetUserGrowth(ctx context.Context, days int) ([]domain.StatPoint, error) {
 	query := `
-		SELECT TO_CHAR(created_at, 'YYYY-MM-DD') as date, COUNT(*) as count 
-		FROM users 
-		WHERE created_at >= CURRENT_DATE - (INTERVAL '1 day' * $1)
-		GROUP BY 1
+		SELECT TO_CHAR(date, 'YYYY-MM-DD') as date, new_users_count as count 
+		FROM daily_metrics 
+		WHERE song_id IS NULL AND date >= CURRENT_DATE - (INTERVAL '1 day' * $1)
 		ORDER BY date ASC
 	`
 	
@@ -48,10 +47,9 @@ func (r *statsRepository) GetUserGrowth(ctx context.Context, days int) ([]domain
 
 func (r *statsRepository) GetRatingGrowth(ctx context.Context, days int) ([]domain.StatPoint, error) {
 	query := `
-		SELECT TO_CHAR(created_at, 'YYYY-MM-DD') as date, COUNT(*) as count 
-		FROM song_ratings 
-		WHERE created_at >= CURRENT_DATE - (INTERVAL '1 day' * $1)
-		GROUP BY 1
+		SELECT TO_CHAR(date, 'YYYY-MM-DD') as date, new_ratings_count as count 
+		FROM daily_metrics 
+		WHERE song_id IS NULL AND date >= CURRENT_DATE - (INTERVAL '1 day' * $1)
 		ORDER BY date ASC
 	`
 	
@@ -62,10 +60,9 @@ func (r *statsRepository) GetRatingGrowth(ctx context.Context, days int) ([]doma
 
 func (r *statsRepository) GetSongGrowth(ctx context.Context, days int) ([]domain.StatPoint, error) {
 	query := `
-		SELECT TO_CHAR(created_at, 'YYYY-MM-DD') as date, COUNT(*) as count 
-		FROM songs 
-		WHERE created_at >= CURRENT_DATE - (INTERVAL '1 day' * $1)
-		GROUP BY 1
+		SELECT TO_CHAR(date, 'YYYY-MM-DD') as date, new_songs_count as count 
+		FROM daily_metrics 
+		WHERE song_id IS NULL AND date >= CURRENT_DATE - (INTERVAL '1 day' * $1)
 		ORDER BY date ASC
 	`
 	

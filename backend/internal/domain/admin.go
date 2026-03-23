@@ -35,8 +35,11 @@ type DashboardStats struct {
 }
 
 type DailyMetric struct {
-	Date       time.Time `json:"date"`
-	ViewsCount int       `json:"views_count"`
+	Date            time.Time `json:"date"`
+	ViewsCount      int       `json:"views_count" db:"views_count"`
+	NewUsersCount   int       `json:"new_users_count" db:"new_users_count"`
+	NewRatingsCount int       `json:"new_ratings_count" db:"new_ratings_count"`
+	NewSongsCount   int       `json:"new_songs_count" db:"new_songs_count"`
 }
 
 type AdminRepository interface {

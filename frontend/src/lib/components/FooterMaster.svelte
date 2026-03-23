@@ -63,6 +63,15 @@
               ></path></svg
             >
           </a>
+          <!-- site stats -->
+          <a
+            href="/stats"
+            class="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 text-white/40 transition-all hover:bg-primary hover:text-white"
+            title="View site statistics"
+            aria-label="View site statistics"
+          >
+            <span class="material-symbols-outlined text-[18px]">analytics</span>
+          </a>
         </div>
       </div>
 

@@ -65,6 +65,23 @@ func StartCronScheduler(repo domain.JobsRepository, tournamentUsecase *tournamen
 		log.Fatalf("Error registering ranking snapshot cron job: %v", err)
 	}
 
+	// Register SynchronizeDailySiteMetrics every midnight UTC
+	_, err = c.AddFunc("0 0 * * *", func() {
+		log.Println("[CRON] Starting SynchronizeDailySiteMetrics job...")
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+		defer cancel()
+
+		if err := repo.SynchronizeDailySiteMetrics(ctx); err != nil {
+			log.Printf("[CRON-ERR] SynchronizeDailySiteMetrics failed: %v", err)
+		} else {
+			log.Println("[CRON] Successfully completed SynchronizeDailySiteMetrics job.")
+		}
+	})
+
+	if err != nil {
+		log.Fatalf("Error registering daily metrics cron job: %v", err)
+	}
+
 	log.Println("Starting background cron scheduler...")
 	c.Start()
 

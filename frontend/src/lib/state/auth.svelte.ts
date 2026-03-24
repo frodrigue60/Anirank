@@ -15,6 +15,8 @@ export interface User {
     anilist_username?: string | null;
     google_id?: string | null;
     google_email?: string | null;
+    profile_color?: string;
+    about?: string;
 }
 
 export const authState = $state<{

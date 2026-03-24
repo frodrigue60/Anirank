@@ -16,7 +16,7 @@ type animeRepository struct {
 }
 
 func NewAnimeRepository(db *sqlx.DB) domain.AnimeRepository {
-	return &animeRepository{db: db}
+	return &animeRepository{db: db.Unsafe()}
 }
 
 func (r *animeRepository) GetByID(ctx context.Context, id uint64) (*domain.Anime, error) {

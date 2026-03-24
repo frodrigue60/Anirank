@@ -35,13 +35,14 @@
     return getFormattedScore(score as any, authState.user?.score_format);
   }
 
-  const PUBLIC_API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+  const PUBLIC_API_URL =
+    import.meta.env.VITE_API_URL || "http://localhost:8080/api";
 </script>
 
-<SEO 
-  title="AniRank - Discover and Rate Anime Themes" 
+<SEO
+  title="AniRank - Discover and Rate Anime Themes"
   description="Discover, rate, and explore the best anime openings and endings. Join our community of anime music enthusiasts and stay up-to-date with seasonal rankings."
-  image={`${PUBLIC_API_URL}/og/home`} 
+  image={`${PUBLIC_API_URL}/og/home`}
 />
 
 <!-- {#if !authState.isAuthenticated && !authState.loading}
@@ -81,8 +82,10 @@
                 class="w-48 h-48 md:w-64 md:h-64 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden relative border border-white/10"
               >
                 <img
-                  alt="Cover art for {homeData.featured_song.anime?.title || 'featured theme'}"
-                  title="Cover art for {homeData.featured_song.anime?.title || 'featured theme'}"
+                  alt="Cover art for {homeData.featured_song.anime?.title ||
+                    'featured theme'}"
+                  title="Cover art for {homeData.featured_song.anime?.title ||
+                    'featured theme'}"
                   class="w-full h-full object-cover"
                   src={homeData.featured_song.anime?.cover_url ?? ""}
                 />
@@ -137,7 +140,9 @@
                   href="/songs/{homeData.featured_song.anime?.slug}/{homeData
                     .featured_song.slug}"
                   class="bg-primary hover:bg-primary-light text-white h-12 sm:h-14 px-8 sm:px-10 rounded-full font-bold flex items-center justify-center gap-2 transition-transform hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(127,19,236,0.3)]"
-                  title="Play featured theme: {getSongName(homeData.featured_song)}"
+                  title="Play featured theme: {getSongName(
+                    homeData.featured_song,
+                  )}"
                   aria-label="Play featured theme"
                 >
                   <span class="material-symbols-outlined filled text-[24px]"
@@ -180,10 +185,6 @@
                 class="text-white/50 text-xs font-bold uppercase tracking-wider"
                 >Top Openings</span
               >
-              <!-- <a
-                                class="text-primary text-xs hover:underline"
-                                href="/songs/ranking">View All</a
-                            > -->
             </div>
             {#if homeData.weakly_ranking?.op?.length > 0}
               {#each homeData.weakly_ranking.op.slice(0, 3) as item, index}
@@ -248,10 +249,6 @@
                 class="text-white/50 text-xs font-bold uppercase tracking-wider"
                 >Top Endings</span
               >
-              <!-- <a
-                                class="text-primary text-xs hover:underline"
-                                href="/songs/ranking">View All</a
-                            > -->
             </div>
             {#if homeData.weakly_ranking?.ed?.length > 0}
               {#each homeData.weakly_ranking.ed.slice(0, 3) as item, index}

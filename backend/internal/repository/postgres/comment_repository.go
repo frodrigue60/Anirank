@@ -16,7 +16,7 @@ type commentRepository struct {
 }
 
 func NewCommentRepository(db *sqlx.DB) domain.CommentRepository {
-	return &commentRepository{db: db}
+	return &commentRepository{db: db.Unsafe()}
 }
 
 func (r *commentRepository) GetByEntity(ctx context.Context, userID *uint64, entityID uint64, entityType string, limit, offset int) ([]domain.Comment, error) {

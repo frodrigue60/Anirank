@@ -16,7 +16,7 @@ type interactionRepository struct {
 }
 
 func NewInteractionRepository(db *sqlx.DB) domain.InteractionRepository {
-	return &interactionRepository{db: db}
+	return &interactionRepository{db: db.Unsafe()}
 }
 
 // Ratings

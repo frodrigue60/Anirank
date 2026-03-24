@@ -5,6 +5,18 @@
   const PUBLIC_API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
 
   let { data } = $props();
+
+  const accentColor = $derived(data.profile?.profile_color || "#3db4f2");
+
+  function renderMarkdown(text: string) {
+    if (!text) return "";
+    // Very simple markdown replacement
+    return text
+      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+      .replace(/\*(.*?)\*/g, "<em>$1</em>")
+      .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" class="text-primary hover:underline" target="_blank">$1</a>')
+      .replace(/\n/g, "<br>");
+  }
 </script>
 
 <SEO 
@@ -14,17 +26,35 @@
   type="profile"
 />
 
+<!-- Bio / About Section -->
+{#if data.profile.about}
+  <section class="mb-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div class="bg-surface-dark border border-white/5 rounded-3xl p-8 shadow-2xl relative overflow-hidden group">
+      <div class="absolute top-0 left-0 w-1 h-full" style="background-color: {accentColor}"></div>
+      <h3 class="text-sm font-black uppercase tracking-widest mb-4 flex items-center gap-2" style="color: {accentColor}">
+        <span class="material-symbols-outlined text-sm">person</span>
+        About Me
+      </h3>
+      <div class="text-white/70 leading-relaxed text-sm font-medium">
+        {@html renderMarkdown(data.profile.about)}
+      </div>
+    </div>
+  </section>
+{/if}
+
 {#if data.initialSongs && data.initialSongs.length > 0}
   <!-- Favorite Themes Section (Horizontal Cards) -->
   <section class="mb-12">
     <div class="flex items-center justify-between mb-6">
       <h3 class="text-2xl font-bold text-slate-100 flex items-center gap-2">
-        <span class="material-symbols-outlined text-primary">favorite</span>
+        <span class="material-symbols-outlined" style="color: {accentColor}">favorite</span>
         Favorite Themes
       </h3>
       <a
         href={`/users/${data.profile.slug}/favorites`}
-        class="text-primary font-semibold hover:underline text-sm">View All</a
+        class="font-semibold hover:underline text-sm"
+        style="color: {accentColor}"
+        >View All</a
       >
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -40,12 +70,14 @@
   <section class="mb-12">
     <div class="flex items-center justify-between mb-6">
       <h3 class="text-2xl font-bold text-slate-100 flex items-center gap-2">
-        <span class="material-symbols-outlined text-primary">artist</span>
+        <span class="material-symbols-outlined" style="color: {accentColor}">artist</span>
         Top Artists
       </h3>
       <a
         href={`/users/${data.profile.slug}/artists`}
-        class="text-primary font-semibold hover:underline text-sm">View All</a
+        class="font-semibold hover:underline text-sm"
+        style="color: {accentColor}"
+        >View All</a
       >
     </div>
     <div class="flex-wrap gap-8 px-4 flex">
@@ -55,7 +87,11 @@
           class="flex flex-col items-center group cursor-pointer"
         >
           <div
-            class="size-24 sm:size-28 rounded-full border-2 border-primary/30 p-1 group-hover:border-primary transition-all mb-3 bg-surface-darker/50"
+            class="size-24 sm:size-28 rounded-full border-2 p-1 transition-all mb-3 bg-surface-darker/50"
+            style="border-color: {accentColor}4D; --hover-border: {accentColor}"
+            role="presentation"
+            onmouseenter={(e) => e.currentTarget.style.borderColor = accentColor}
+            onmouseleave={(e) => e.currentTarget.style.borderColor = accentColor + "4D"}
           >
             <!-- svelte-ignore a11y_missing_attribute -->
             <img

@@ -242,6 +242,22 @@ func (u *AuthUsecase) UpdateScoreFormat(ctx context.Context, userID uint64, form
 	return u.userRepo.UpdateScoreFormat(ctx, userID, format)
 }
 
+func (u *AuthUsecase) UpdateProfile(ctx context.Context, userID uint64, about, profileColor *string) error {
+	user, err := u.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+
+	if about != nil {
+		user.About = about
+	}
+	if profileColor != nil {
+		user.ProfileColor = profileColor
+	}
+
+	return u.userRepo.Update(ctx, user)
+}
+
 func (u *AuthUsecase) generateUniqueUserSlug(ctx context.Context, name string) string {
 	return utils.GenerateUniqueSlug(name, func(slug string) bool {
 		existing, err := u.userRepo.GetBySlug(ctx, slug)

@@ -17,6 +17,10 @@ export interface User {
     anilist_username?: string | null;
     google_id?: string | null;
     google_email?: string | null;
+    profile_color?: string;
+    about?: string;
+    score_format_id?: number;
+    score_format?: string;
 }
 
 export interface RankingUser extends User {

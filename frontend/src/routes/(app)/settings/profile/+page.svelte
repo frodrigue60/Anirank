@@ -2,17 +2,16 @@
   import { authState, setUser } from "$lib/state/auth.svelte";
   import api from "$lib/api";
   import { toastState } from "$lib/state/toast.svelte";
-  import {
-    Camera,
-    Image as ImageIcon,
-    Save,
-    Loader2,
-  } from "lucide-svelte";
+  import { Camera, Image as ImageIcon, Save, Loader2 } from "lucide-svelte";
 
   let scoreFormat = $state(authState.user?.score_format_id || 1);
+  let profileColor = $state(authState.user?.profile_color || "#3db4f2");
+  let about = $state(authState.user?.about || "");
+  let theme = $state("dark");
   let isUploadingAvatar = $state(false);
   let isUploadingBanner = $state(false);
   let isSavingSettings = $state(false);
+  let isSavingProfile = $state(false);
 
   const scoreFormats = [
     { id: 1, slug: "POINT_100", name: "100 Point Scale (0-100)" },
@@ -24,8 +23,60 @@
   $effect(() => {
     if (authState.user) {
       scoreFormat = authState.user.score_format_id || 1;
+      profileColor = authState.user.profile_color || "#3db4f2";
+      about = authState.user.about || "";
     }
   });
+
+  $effect(() => {
+    const savedTheme = localStorage.getItem("site-theme") || "dark";
+    theme = savedTheme;
+    applyTheme(savedTheme);
+  });
+
+  function applyTheme(t: string) {
+    document.documentElement.classList.remove("light", "dark", "contrast");
+    document.documentElement.classList.add(t);
+  }
+
+  function handleThemeChange(newTheme: string) {
+    theme = newTheme;
+    localStorage.setItem("site-theme", newTheme);
+    applyTheme(newTheme);
+    toastState.addToast(`Theme changed to ${newTheme}`, "success");
+  }
+
+  async function updateProfile() {
+    isSavingProfile = true;
+    try {
+      const response = await api.patch("/users/profile", {
+        about: about,
+        profile_color: profileColor,
+      });
+      if (response.data.success) {
+        if (authState.user) {
+          setUser({
+            ...authState.user,
+            about: about,
+            profile_color: profileColor,
+          });
+        }
+        toastState.addToast("Profile updated successfully!", "success");
+      }
+    } catch (err: any) {
+      toastState.addToast(
+        err.response?.data?.message || "Failed to update profile.",
+        "error",
+      );
+    } finally {
+      isSavingProfile = false;
+    }
+  }
+
+  async function handleColorSelect(color: string) {
+    profileColor = color;
+    await updateProfile();
+  }
 
   async function handleAvatarUpload(e: Event) {
     const target = e.target as HTMLInputElement;
@@ -137,24 +188,32 @@
       class="px-8 py-6 border-b border-white/5 bg-white/2 flex justify-between items-center"
     >
       <h2 class="text-lg font-bold text-white tracking-tight">Profile Color</h2>
-      <div
-        class="px-3 py-1 bg-white/5 rounded-full text-[10px] font-black uppercase tracking-widest text-white/20 border border-white/5"
-      >
-        Coming Soon
-      </div>
+      {#if isSavingProfile}
+        <div
+          class="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary animate-pulse"
+        >
+          <Loader2 size={12} class="animate-spin" />
+          Syncing...
+        </div>
+      {/if}
     </div>
     <div class="p-8">
       <div class="flex flex-wrap gap-4">
         {#each ["#3db4f2", "#c063ff", "#4cca51", "#ef881a", "#e13333", "#fc9dd4", "#677b94"] as color}
           <button
-            class="w-12 h-12 rounded-xl border-2 border-transparent hover:border-white/20 transition-all hover:scale-110 shadow-lg"
+            class="w-12 h-12 rounded-xl border-2 transition-all hover:scale-110 shadow-lg {profileColor ===
+            color
+              ? 'border-white scale-110 ring-4 ring-white/10'
+              : 'border-transparent hover:border-white/20'}"
             style="background-color: {color}"
             aria-label="Select profile color {color}"
+            onclick={() => handleColorSelect(color)}
           ></button>
         {/each}
         <button
           class="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/20 hover:text-white/40 group transition-all"
           aria-label="Custom color locked"
+          title="Custom colors available for supporters soon"
         >
           <span
             class="material-symbols-outlined text-2xl group-hover:scale-110 transition-transform"
@@ -162,6 +221,9 @@
           >
         </button>
       </div>
+      <p class="text-[10px] text-white/20 mt-4 px-1 font-medium italic">
+        This color will be used as your accent color on your public profile.
+      </p>
     </div>
   </section>
 
@@ -172,32 +234,77 @@
     <div
       class="px-8 py-6 border-b border-white/5 bg-white/2 flex justify-between items-center"
     >
-      <h2 class="text-lg font-bold text-white tracking-tight">Site Theme</h2>
-      <div
-        class="px-3 py-1 bg-white/5 rounded-full text-[10px] font-black uppercase tracking-widest text-white/20 border border-white/5"
-      >
-        WIP
-      </div>
+      <h2 class="text-lg font-bold text-white tracking-tight">
+        Site Theme (WIP)
+      </h2>
     </div>
     <div class="p-8">
-      <div class="flex gap-4">
+      <div class="flex gap-6">
         <button
-          class="w-12 h-12 rounded-xl bg-white border-2 border-primary flex items-center justify-center text-background-dark font-black text-xl shadow-xl"
-          aria-label="Select Light Theme">A</button
+          class="group flex flex-col items-center gap-3"
+          onclick={() => handleThemeChange("light")}
         >
-        <button
-          class="w-12 h-12 rounded-xl bg-background-dark border border-white/10 flex items-center justify-center text-white/40 font-black text-xl hover:bg-white/5 transition-colors cursor-pointer"
-          aria-label="Select Dark Theme">A</button
-        >
-        <button
-          class="w-12 h-12 rounded-xl bg-white border border-white/10 flex flex-col items-center justify-center text-background-dark font-black text-xl hover:bg-white/90 transition-colors cursor-pointer relative overflow-hidden"
-          aria-label="Select Contrast Theme"
-        >
-          <div class="absolute inset-0 bg-white"></div>
           <div
-            class="absolute bottom-0 right-0 w-0 h-0 border-t-12 border-t-transparent border-r-12 border-r-background-dark"
-          ></div>
-          <span class="relative z-10">A</span>
+            class="w-16 h-16 rounded-2xl bg-white border-2 flex items-center justify-center text-background-dark font-black text-2xl shadow-xl transition-all group-hover:scale-105 {theme ===
+            'light'
+              ? 'border-primary ring-4 ring-primary/20'
+              : 'border-transparent'}"
+            aria-label="Select Light Theme"
+          >
+            A
+          </div>
+          <span
+            class="text-[10px] font-black uppercase tracking-widest {theme ===
+            'light'
+              ? 'text-primary'
+              : 'text-white/20'}">Light</span
+          >
+        </button>
+
+        <button
+          class="group flex flex-col items-center gap-3"
+          onclick={() => handleThemeChange("dark")}
+        >
+          <div
+            class="w-16 h-16 rounded-2xl bg-background-dark border-2 flex items-center justify-center text-white font-black text-2xl shadow-xl transition-all group-hover:scale-105 {theme ===
+            'dark'
+              ? 'border-primary ring-4 ring-primary/20'
+              : 'border-white/10'}"
+            aria-label="Select Dark Theme"
+          >
+            A
+          </div>
+          <span
+            class="text-[10px] font-black uppercase tracking-widest {theme ===
+            'dark'
+              ? 'text-primary'
+              : 'text-white/20'}">Dark</span
+          >
+        </button>
+
+        <button
+          class="group flex flex-col items-center gap-3"
+          onclick={() => handleThemeChange("contrast")}
+        >
+          <div
+            class="w-16 h-16 rounded-2xl bg-black border-2 flex flex-col items-center justify-center text-white font-black text-2xl shadow-xl transition-all group-hover:scale-105 relative overflow-hidden {theme ===
+            'contrast'
+              ? 'border-primary ring-4 ring-primary/20'
+              : 'border-white/10'}"
+            aria-label="Select Contrast Theme"
+          >
+            <div class="absolute inset-0 bg-black"></div>
+            <div
+              class="absolute bottom-0 right-0 w-0 h-0 border-t-16 border-t-transparent border-r-16 border-r-white"
+            ></div>
+            <span class="relative z-10">A</span>
+          </div>
+          <span
+            class="text-[10px] font-black uppercase tracking-widest {theme ===
+            'contrast'
+              ? 'text-primary'
+              : 'text-white/20'}">Contrast</span
+          >
         </button>
       </div>
     </div>
@@ -207,45 +314,62 @@
   <section
     class="bg-surface-dark border border-white/5 rounded-3xl overflow-hidden shadow-2xl transition-all duration-500 animate-in fade-in slide-in-from-bottom-6"
   >
-    <div class="px-8 py-6 border-b border-white/5 bg-white/2">
+    <div
+      class="px-8 py-6 border-b border-white/5 bg-white/2 flex justify-between items-center"
+    >
       <h2 class="text-lg font-bold text-white tracking-tight">About</h2>
+      {#if isSavingProfile}
+        <div
+          class="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary animate-pulse"
+        >
+          <Loader2 size={12} class="animate-spin" />
+          Saving...
+        </div>
+      {/if}
     </div>
     <div class="p-8 space-y-4">
       <div
-        class="w-full rounded-2xl bg-background-dark border border-white/5 p-4 min-h-[160px] flex flex-col"
+        class="w-full rounded-2xl bg-background-dark border border-white/5 p-4 min-h-[200px] flex flex-col focus-within:border-primary/30 transition-all shadow-inner"
       >
-        <div
-          class="flex gap-4 mb-4 pb-4 border-b border-white/5 text-white/20"
-        >
+        <div class="flex gap-4 mb-4 pb-4 border-b border-white/5 text-white/20">
           <span
             class="material-symbols-outlined text-xl hover:text-white cursor-pointer transition-colors"
-            >format_bold</span
+            title="Bold">format_bold</span
           >
           <span
             class="material-symbols-outlined text-xl hover:text-white cursor-pointer transition-colors"
-            >format_italic</span
+            title="Italic">format_italic</span
           >
           <span
             class="material-symbols-outlined text-xl hover:text-white cursor-pointer transition-colors"
-            >link</span
+            title="Link">link</span
           >
           <span
             class="material-symbols-outlined text-xl hover:text-white cursor-pointer transition-colors"
-            >image</span
+            title="Image">image</span
           >
           <span
             class="material-symbols-outlined text-xl hover:text-white cursor-pointer transition-colors"
-            >format_list_bulleted</span
+            title="List">format_list_bulleted</span
           >
         </div>
         <textarea
           placeholder="A little about yourself..."
           class="bg-transparent border-none outline-none text-white/80 text-sm resize-none flex-1 font-medium placeholder:text-white/10"
+          bind:value={about}
+          onblur={updateProfile}
         ></textarea>
       </div>
-      <p class="text-[10px] text-white/20 px-2 font-medium italic">
-        Supports Markdown formatting.
-      </p>
+      <div class="flex justify-between items-center px-2">
+        <p class="text-[10px] text-white/20 font-medium italic">
+          Supports Markdown formatting. Changes are saved automatically.
+        </p>
+        <span
+          class="text-[10px] text-white/10 font-bold uppercase tracking-widest"
+        >
+          {about.length} characters
+        </span>
+      </div>
     </div>
   </section>
 

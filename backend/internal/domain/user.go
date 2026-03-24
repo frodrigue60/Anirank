@@ -48,6 +48,10 @@ type User struct {
 	GoogleAccessToken    *string    `db:"google_access_token" json:"-"`
 	GoogleRefreshToken   *string    `db:"google_refresh_token" json:"-"`
 	GoogleTokenExpiresAt *time.Time `db:"google_token_expires_at" json:"-"`
+	
+	// Profile customization
+	About        *string `db:"about" json:"about,omitempty"`
+	ProfileColor *string `db:"profile_color" json:"profile_color,omitempty"`
 }
 
 type RankingUser struct {

@@ -17,7 +17,7 @@ type songRepository struct {
 }
 
 func NewSongRepository(db *sqlx.DB) domain.SongRepository {
-	return &songRepository{db: db}
+	return &songRepository{db: db.Unsafe()}
 }
 
 func (r *songRepository) GetByID(ctx context.Context, id uint64) (*domain.Song, error) {

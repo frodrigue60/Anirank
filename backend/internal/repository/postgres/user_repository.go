@@ -16,7 +16,7 @@ type userRepository struct {
 }
 
 func NewUserRepository(db *sqlx.DB) domain.UserRepository {
-	return &userRepository{db: db}
+	return &userRepository{db: db.Unsafe()}
 }
 
 func (r *userRepository) GetByID(ctx context.Context, id uint64) (*domain.User, error) {
@@ -100,8 +100,8 @@ func (r *userRepository) GetBySlug(ctx context.Context, slug string) (*domain.Us
 }
 
 func (r *userRepository) Create(ctx context.Context, user *domain.User) error {
-	query := `INSERT INTO users (name, slug, email, password, score_format_id, avatar, banner, anilist_id, anilist_username, anilist_access_token, anilist_refresh_token, anilist_token_expires_at, google_id, google_email, google_access_token, google_refresh_token, google_token_expires_at, created_at, updated_at) 
-			  VALUES (:name, :slug, :email, :password, (SELECT id FROM score_formats WHERE slug = :score_format), :avatar, :banner, :anilist_id, :anilist_username, :anilist_access_token, :anilist_refresh_token, :anilist_token_expires_at, :google_id, :google_email, :google_access_token, :google_refresh_token, :google_token_expires_at, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+	query := `INSERT INTO users (name, slug, email, password, score_format_id, avatar, banner, anilist_id, anilist_username, anilist_access_token, anilist_refresh_token, anilist_token_expires_at, google_id, google_email, google_access_token, google_refresh_token, google_token_expires_at, about, profile_color, created_at, updated_at) 
+			  VALUES (:name, :slug, :email, :password, (SELECT id FROM score_formats WHERE slug = :score_format), :avatar, :banner, :anilist_id, :anilist_username, :anilist_access_token, :anilist_refresh_token, :anilist_token_expires_at, :google_id, :google_email, :google_access_token, :google_refresh_token, :google_token_expires_at, :about, :profile_color, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 			  RETURNING id`
 
 	rows, err := r.db.NamedQueryContext(ctx, query, user)
@@ -117,7 +117,7 @@ func (r *userRepository) Create(ctx context.Context, user *domain.User) error {
 }
 
 func (r *userRepository) Update(ctx context.Context, user *domain.User) error {
-	query := `UPDATE users SET name=:name, slug=:slug, email=:email, score_format_id=(SELECT id FROM score_formats WHERE slug = :score_format), avatar=:avatar, banner=:banner, anilist_id=:anilist_id, anilist_username=:anilist_username, anilist_access_token=:anilist_access_token, anilist_refresh_token=:anilist_refresh_token, anilist_token_expires_at=:anilist_token_expires_at, google_id=:google_id, google_email=:google_email, google_access_token=:google_access_token, google_refresh_token=:google_refresh_token, google_token_expires_at=:google_token_expires_at, updated_at=CURRENT_TIMESTAMP WHERE id=:id`
+	query := `UPDATE users SET name=:name, slug=:slug, email=:email, score_format_id=(SELECT id FROM score_formats WHERE slug = :score_format), avatar=:avatar, banner=:banner, anilist_id=:anilist_id, anilist_username=:anilist_username, anilist_access_token=:anilist_access_token, anilist_refresh_token=:anilist_refresh_token, anilist_token_expires_at=:anilist_token_expires_at, google_id=:google_id, google_email=:google_email, google_access_token=:google_access_token, google_refresh_token=:google_refresh_token, google_token_expires_at=:google_token_expires_at, about=:about, profile_color=:profile_color, updated_at=CURRENT_TIMESTAMP WHERE id=:id`
 	_, err := r.db.NamedExecContext(ctx, query, user)
 	return err
 }

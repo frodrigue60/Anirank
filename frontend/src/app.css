@@ -13,6 +13,17 @@
   --color-background-dark: #191022;
   --color-surface-dark: #2a2136;
   --color-surface-darker: #22192e;
+
+  /* Contrast Theme */
+  --color-contrast-bg: #000000;
+  --color-contrast-surface: #111111;
+  --color-contrast-text: #ffffff;
+}
+
+.contrast {
+  --color-background-dark: var(--color-contrast-bg);
+  --color-surface-dark: var(--color-contrast-surface);
+  --color-surface-darker: #000000;
 }
 
 @layer base {

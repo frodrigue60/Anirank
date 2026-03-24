@@ -281,6 +281,40 @@ func (h *AuthHandler) UpdateScoreFormat(c *fiber.Ctx) error {
 	})
 }
 
+// UpdateProfile
+// @Summary Update User Profile Settings
+// @Description Updates the user's about text and profile color.
+// @Tags Auth
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body object{about=string,profile_color=string} true "Profile Data"
+// @Success 200 {object} object{success=bool}
+// @Router /users/profile [patch]
+func (h *AuthHandler) UpdateProfile(c *fiber.Ctx) error {
+	userID, ok := c.Locals("user_id").(uint64)
+	if !ok {
+		return domain.NewAppError(401, "Corrupted token payload context", nil)
+	}
+
+	type reqBody struct {
+		About        *string `json:"about"`
+		ProfileColor *string `json:"profile_color"`
+	}
+	var req reqBody
+	if err := c.BodyParser(&req); err != nil {
+		return domain.NewAppError(400, "Invalid payload", err)
+	}
+
+	if err := h.usecase.UpdateProfile(c.Context(), userID, req.About, req.ProfileColor); err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{
+		"success": true,
+	})
+}
+
 // AnilistLink redirects to the Anilist authorization page
 // @Summary Redirect to Anilist Auth
 // @Description Generates the Anilist OAuth2 authorization URL and redirects the user.

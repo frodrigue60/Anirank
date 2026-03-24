@@ -144,6 +144,50 @@
     const height = 150;
     return `${path} L ${width - 20},${height - 20} L 20,${height - 20} Z`;
   });
+
+  // --- Hover Logic ---
+  let hoverIndex = $state(-1);
+  let svgElement: SVGSVGElement | null = $state(null);
+
+  function handleMouseMove(e: MouseEvent) {
+    if (!svgElement || chartData.length < 2) return;
+    const rect = svgElement.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 800;
+    
+    const padding = 20;
+    const innerWidth = 800 - padding * 2;
+    const index = Math.round(((x - padding) / innerWidth) * (chartData.length - 1));
+    
+    if (index >= 0 && index < chartData.length) {
+      hoverIndex = index;
+    } else {
+      hoverIndex = -1;
+    }
+  }
+
+  function handleMouseLeave() {
+    hoverIndex = -1;
+  }
+
+  let hoverPoint = $derived(() => {
+    if (hoverIndex === -1 || chartData.length === 0) return null;
+    const m = chartData[hoverIndex];
+    const width = 800;
+    const height = 150;
+    const padding = 20;
+    const innerWidth = width - padding * 2;
+    const innerHeight = height - padding * 2;
+
+    const x = padding + hoverIndex * (innerWidth / (chartData.length - 1));
+    const y = height - padding - (m.views_count / maxViews) * innerHeight;
+
+    return {
+      x,
+      y,
+      date: new Date(m.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+      value: m.views_count.toLocaleString()
+    };
+  });
 </script>
 
 <svelte:head>
@@ -165,7 +209,7 @@
     {#each displayStats as stat}
       <a
         href={stat.link || "#"}
-        class="bg-anirank-card border border-white/5 rounded-xl p-4 relative overflow-hidden group transition-all hover:border-white/10 hover:bg-white/[0.03]"
+        class="bg-anirank-card border border-white/5 rounded-xl p-4 relative overflow-hidden group transition-all hover:border-white/10 hover:bg-white/3"
       >
         <div
           class="absolute top-2 right-2 transition-transform duration-500 group-hover:scale-110"
@@ -211,11 +255,16 @@
     </div>
 
     {#if chartData.length > 0}
-      <div class="relative h-[150px] w-full">
+      <div class="relative h-[150px] w-full group/chart">
         <svg
+          bind:this={svgElement}
+          onmousemove={handleMouseMove}
+          onmouseleave={handleMouseLeave}
           viewBox="0 0 800 150"
-          class="w-full h-full preserve-3d"
+          class="w-full h-full preserve-3d cursor-crosshair"
           preserveAspectRatio="none"
+          role="img"
+          aria-label="Historical traffic chart"
         >
           <defs>
             <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
@@ -265,7 +314,45 @@
             stroke-linejoin="round"
             class="drop-shadow-[0_0_8px_rgba(59,130,246,0.4)]"
           />
+
+          {#if hoverPoint()}
+            <!-- Vertical Indicator -->
+            <line
+              x1={hoverPoint()!.x}
+              y1="20"
+              x2={hoverPoint()!.x}
+              y2="130"
+              stroke="white"
+              stroke-opacity="0.2"
+              stroke-dasharray="4"
+            />
+
+            <!-- Hover Dot -->
+            <circle
+              cx={hoverPoint()!.x}
+              cy={hoverPoint()!.y}
+              r="6"
+              fill="#3b82f6"
+              stroke="white"
+              stroke-width="2"
+              class="drop-shadow-[0_0_8px_rgba(59,130,246,0.8)]"
+            />
+          {/if}
         </svg>
+
+        <!-- Tooltip -->
+        {#if hoverPoint()}
+          <div 
+            class="absolute pointer-events-none bg-anirank-card border border-white/10 rounded-lg p-2 shadow-2xl z-50 transition-all duration-75"
+            style="left: {hoverPoint()!.x > 400 ? 'auto' : (hoverPoint()!.x / 800 * 100) + '%'}; 
+                   right: {hoverPoint()!.x > 400 ? (100 - (hoverPoint()!.x / 800 * 100)) + '%' : 'auto'}; 
+                   top: {hoverPoint()!.y - 60}px;
+                   transform: translateX({hoverPoint()!.x > 400 ? '10px' : '-10px'});"
+          >
+            <p class="text-[10px] font-bold text-gray-400 uppercase leading-none mb-1">{hoverPoint()!.date}</p>
+            <p class="text-xs font-black text-white leading-none">{hoverPoint()!.value} <span class="text-[10px] font-normal text-gray-500 uppercase">Views</span></p>
+          </div>
+        {/if}
       </div>
       <div class="flex justify-between mt-4 px-5">
         <span class="text-[10px] text-gray-500 font-bold uppercase"
@@ -490,7 +577,8 @@
                 ></path>
               </svg>
             {:else}
-              <span class="material-symbols-outlined text-xl">delete_sweep</span>
+              <span class="material-symbols-outlined text-xl">delete_sweep</span
+              >
             {/if}
           </div>
           <span class="font-medium text-sm text-gray-200"

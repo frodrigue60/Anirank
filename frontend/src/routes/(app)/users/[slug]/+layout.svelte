@@ -87,6 +87,9 @@
   const profileLevel = $derived(
     isOwnProfile ? (authState.user?.level ?? 1) : (data.profile?.level ?? 1),
   );
+  const accentColor = $derived(
+    (isOwnProfile ? authState.user?.profile_color : data.profile?.profile_color) || "#3db4f2",
+  );
 
   const currentLevelMinXP = $derived(
     ((profileLevel * (profileLevel - 1)) / 2) * 1000,
@@ -169,6 +172,7 @@
               level={profileLevel}
               {nextLevelXP}
               {currentLevelMinXP}
+              {accentColor}
             />
           </div>
 
@@ -203,7 +207,8 @@
               disabled={isProcessing}
               class="flex items-center justify-center gap-2 px-8 h-11 rounded-xl font-bold text-sm transition-all shadow-lg {isFollowing
                 ? 'bg-white/10 text-white hover:bg-white/20'
-                : 'bg-primary text-white hover:bg-primary/80 shadow-primary/20'}"
+                : 'text-white hover:opacity-90 shadow-lg'}"
+              style={!isFollowing ? `background-color: ${accentColor}; box-shadow: 0 10px 20px ${accentColor}33` : ""}
             >
               {#if isProcessing}
                 <span class="animate-spin material-symbols-outlined text-sm"
@@ -232,42 +237,32 @@
         <div class="flex gap-8 overflow-x-auto no-scrollbar">
           <a
             href={`/users/${data.profile.slug}`}
-            class="pb-4 font-bold transition-all border-b-2 {page.url
-              .pathname === `/users/${data.profile.slug}`
-              ? 'border-primary text-primary'
-              : 'border-transparent text-slate-400 hover:text-slate-200'}"
+            class="pb-4 font-bold transition-all border-b-2 {page.url.pathname === `/users/${data.profile.slug}` ? '' : 'border-transparent text-slate-400 hover:text-slate-200'}"
+            style={page.url.pathname === `/users/${data.profile.slug}` ? `border-color: ${accentColor}; color: ${accentColor}` : ""}
             >Overview</a
           >
           <a
             href={`/users/${data.profile.slug}/playlists`}
-            class="pb-4 font-bold transition-all border-b-2 {page.url
-              .pathname === `/users/${data.profile.slug}/playlists`
-              ? 'border-primary text-primary'
-              : 'border-transparent text-slate-400 hover:text-slate-200'}"
+            class="pb-4 font-bold transition-all border-b-2 {page.url.pathname === `/users/${data.profile.slug}/playlists` ? '' : 'border-transparent text-slate-400 hover:text-slate-200'}"
+            style={page.url.pathname === `/users/${data.profile.slug}/playlists` ? `border-color: ${accentColor}; color: ${accentColor}` : ""}
             >Playlists</a
           >
           <a
             href={`/users/${data.profile.slug}/favorites`}
-            class="pb-4 font-bold transition-all border-b-2 {page.url
-              .pathname === `/users/${data.profile.slug}/favorites`
-              ? 'border-primary text-primary'
-              : 'border-transparent text-slate-400 hover:text-slate-200'}"
+            class="pb-4 font-bold transition-all border-b-2 {page.url.pathname === `/users/${data.profile.slug}/favorites` ? '' : 'border-transparent text-slate-400 hover:text-slate-200'}"
+            style={page.url.pathname === `/users/${data.profile.slug}/favorites` ? `border-color: ${accentColor}; color: ${accentColor}` : ""}
             >Favorites</a
           >
           <a
             href={`/users/${data.profile.slug}/artists`}
-            class="pb-4 font-bold transition-all border-b-2 {page.url
-              .pathname === `/users/${data.profile.slug}/artists`
-              ? 'border-primary text-primary'
-              : 'border-transparent text-slate-400 hover:text-slate-200'}"
+            class="pb-4 font-bold transition-all border-b-2 {page.url.pathname === `/users/${data.profile.slug}/artists` ? '' : 'border-transparent text-slate-400 hover:text-slate-200'}"
+            style={page.url.pathname === `/users/${data.profile.slug}/artists` ? `border-color: ${accentColor}; color: ${accentColor}` : ""}
             >Artists</a
           >
           <a
             href={`/users/${data.profile.slug}/followers`}
-            class="pb-4 font-bold transition-all border-b-2 {page.url
-              .pathname === `/users/${data.profile.slug}/followers`
-              ? 'border-primary text-primary'
-              : 'border-transparent text-slate-400 hover:text-slate-200'} flex gap-2 items-center"
+            class="pb-4 font-bold transition-all border-b-2 {page.url.pathname === `/users/${data.profile.slug}/followers` ? '' : 'border-transparent text-slate-400 hover:text-slate-200'} flex gap-2 items-center"
+            style={page.url.pathname === `/users/${data.profile.slug}/followers` ? `border-color: ${accentColor}; color: ${accentColor}` : ""}
           >
             Followers
             <span
@@ -277,10 +272,8 @@
           </a>
           <a
             href={`/users/${data.profile.slug}/following`}
-            class="pb-4 font-bold transition-all border-b-2 {page.url
-              .pathname === `/users/${data.profile.slug}/following`
-              ? 'border-primary text-primary'
-              : 'border-transparent text-slate-400 hover:text-slate-200'} flex gap-2 items-center"
+            class="pb-4 font-bold transition-all border-b-2 {page.url.pathname === `/users/${data.profile.slug}/following` ? '' : 'border-transparent text-slate-400 hover:text-slate-200'} flex gap-2 items-center"
+            style={page.url.pathname === `/users/${data.profile.slug}/following` ? `border-color: ${accentColor}; color: ${accentColor}` : ""}
           >
             Following
             <span

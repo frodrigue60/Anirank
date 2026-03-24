@@ -1,0 +1,36 @@
+# Docker Compose for Development
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: anirank_backend_dev
+    command: go run cmd/api/main.go
+    volumes:
+      - ./backend:/app
+      - go_cache:/root/.cache/go-build
+      - go_mod_cache:/go/pkg/mod
+    environment:
+      - APP_ENV=development
+    ports:
+      - "8080:8080"
+
+  frontend:
+    image: oven/bun:1.1-alpine
+    container_name: anirank_frontend_dev
+    working_dir: /app
+    command: bun dev --host 0.0.0.0
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+      - "80:5173" # Map 80 to 5173 so old links work
+    environment:
+      - VITE_API_URL=http://localhost:8080/api
+
+volumes:
+  go_cache:
+  go_mod_cache:

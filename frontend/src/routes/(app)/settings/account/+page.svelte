@@ -134,7 +134,7 @@
           <div
             class="w-12 h-12 rounded-xl bg-[#02a9ff]/10 flex items-center justify-center border border-[#02a9ff]/20"
           >
-            <img src="/anilist_icon.svg" alt="Anilist" class="w-6 h-6" />
+            <img src="/images/anilist_icon.svg" alt="Anilist" class="w-6 h-6" />
           </div>
           <div>
             <h3 class="text-sm font-bold text-white">Anilist</h3>

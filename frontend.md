@@ -97,10 +97,10 @@ Todo flujo en la app debe arrancar pidiendo la base al nuevo endpoint que hemos 
 ## 💅 5. Herramientas y Framework de Diseño Recomendado
 
 - **Framework**: `Svelte 5` con `SvelteKit`.
+- **Runtime**: `Bun` (reemplazando a Node.js).
 - **Styling**: `Tailwind CSS v4`.
-- **State Management**: `Svelte Runes` (el nuevo estándar para stores más rápidos y ligeros en lugar de context API obsoleto).
-- **Motion**: `svelte/transition` para microinteracciones y page-transitions o un plugin ligero como `framer-motion` / `Motion`.
-- **HTTP Client**: `axios` con interceptores predeterminados o `ky`.
+- **State Management**: `Svelte Runes`.
+- **HTTP Client**: `axios` con interceptores.
 - **Iconografía**: `Phosphor Icons` o `Material Symbols` (para unificar con el rediseño anterior del Admin backend Laravel).
 
 ---

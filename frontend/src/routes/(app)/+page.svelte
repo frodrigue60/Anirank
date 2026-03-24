@@ -69,7 +69,7 @@
           <div
             class="absolute inset-0 bg-cover bg-center opacity-40 transition-transform duration-700 group-hover:scale-105 group-hover:opacity-50"
             style="background-image: url('{homeData.featured_song.anime
-              ?.banner_url ?? ''}');"
+              ?.banner_url ?? '/images/placeholders/default-banner.jpg'}');"
           ></div>
           <div
             class="absolute inset-0 bg-linear-to-t from-background-dark via-background-dark/80 to-transparent sm:bg-linear-to-r"
@@ -87,7 +87,8 @@
                   title="Cover art for {homeData.featured_song.anime?.title ||
                     'featured theme'}"
                   class="w-full h-full object-cover"
-                  src={homeData.featured_song.anime?.cover_url ?? ""}
+                  src={homeData.featured_song.anime?.thumbnail_url ??
+                    "/images/placeholders/default.jpg"}
                 />
                 <div
                   class="absolute bottom-0 inset-x-0 bg-linear-to-t from-black/90 via-black/40 to-transparent p-4 pt-12"
@@ -200,7 +201,8 @@
                       alt={getSongName(item)}
                       title={getSongName(item)}
                       class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      src={item.anime?.cover_url ?? ""}
+                      src={item.anime?.thumbnail_url ??
+                        "/images/placeholders/default.jpg"}
                     />
                     <div
                       class="absolute top-1 left-1 bg-primary text-white text-xs font-bold px-1.5 py-0.5 rounded shadow"
@@ -264,7 +266,8 @@
                       alt={getSongName(item)}
                       title={getSongName(item)}
                       class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      src={item.anime?.cover_url ?? ""}
+                      src={item.anime?.thumbnail_url ??
+                        "/images/placeholders/default.jpg"}
                     />
                     <div
                       class="absolute top-1 left-1 bg-surface-dark text-white text-xs font-bold px-1.5 py-0.5 rounded shadow border border-white/10"
@@ -384,12 +387,13 @@
                     alt={getSongName(song)}
                     title={getSongName(song)}
                     class="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
-                    src={song.anime?.cover_url ?? ""}
+                    src={song.anime?.thumbnail_url ??
+                      "/images/placeholders/default.jpg"}
                   />
                   <div
                     class="absolute top-2 right-2 bg-black/70 backdrop-blur-sm px-1.5 py-0.5 rounded text-[10px] font-bold text-white border border-white/10 uppercase"
                   >
-                    {song.type_name ?? "OP"}
+                    {song.type ?? "type n/a"}
                   </div>
                   <div
                     class="absolute bottom-2 left-2 bg-black/70 px-1.5 py-0.5 rounded text-xs font-bold text-yellow-400 flex items-center gap-0.5"
@@ -426,12 +430,13 @@
                     alt={getSongName(song)}
                     title={getSongName(song)}
                     class="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
-                    src={song.anime?.cover_url ?? ""}
+                    src={song.anime?.thumbnail_url ??
+                      "/images/placeholders/default.jpg"}
                   />
                   <div
                     class="absolute top-2 right-2 bg-black/70 backdrop-blur-sm px-1.5 py-0.5 rounded text-[10px] font-bold text-white border border-white/10 uppercase"
                   >
-                    {song.type_name ?? "OP"}
+                    {song.type ?? "type n/a"}
                   </div>
                   <div
                     class="absolute bottom-2 left-2 bg-black/70 px-1.5 py-0.5 rounded text-xs font-bold text-red-400 flex items-center gap-0.5"
@@ -470,12 +475,13 @@
                     alt={getSongName(song)}
                     title={getSongName(song)}
                     class="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
-                    src={song.anime?.cover_url ?? ""}
+                    src={song.anime?.thumbnail_url ??
+                      "/images/placeholders/default.jpg"}
                   />
                   <div
                     class="absolute top-2 right-2 bg-black/70 backdrop-blur-sm px-1.5 py-0.5 rounded text-[10px] font-bold text-white border border-white/10 uppercase"
                   >
-                    {song.type_name ?? "OP"}
+                    {song.type ?? "type n/a"}
                   </div>
                   <div
                     class="absolute bottom-2 left-2 bg-black/70 px-1.5 py-0.5 rounded text-xs font-bold text-blue-400 flex items-center gap-0.5"

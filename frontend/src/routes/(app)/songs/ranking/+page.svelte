@@ -98,5 +98,6 @@
     hasMore={!!ranking?.next_page_url}
     onLoadMore={loadMore}
     startIndex={ranking ? (ranking.current_page - 1) * ranking.per_page : 0}
+    rankingType="main"
   />
 </main>

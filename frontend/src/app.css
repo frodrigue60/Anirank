@@ -45,7 +45,7 @@
     justify-content: center;
     vertical-align: middle;
     user-select: none;
-    speak: none;
+    speak-as: none;
     width: 1em; /* Ensure square aspect ratio */
     height: 1em;
   }

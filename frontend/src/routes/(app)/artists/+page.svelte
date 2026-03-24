@@ -59,8 +59,8 @@
       const response = await api.get("/artists", {
         params: {
           ...data.params,
-          page: nextPage
-        }
+          page: nextPage,
+        },
       });
 
       if (response.data.data) {
@@ -100,9 +100,9 @@
   ];
 </script>
 
-<SEO 
-  title="Browse Artists" 
-  description="Discover artists and performers of your favorite anime theme songs on AniRank." 
+<SEO
+  title="Browse Artists"
+  description="Discover artists and performers of your favorite anime theme songs on AniRank."
 />
 
 <main class="flex-1 w-full max-w-[1440px] mx-auto px-6 py-12">
@@ -181,8 +181,7 @@
                   alt="Avatar for {artist.name}"
                   title="Avatar for {artist.name}"
                   class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  src={artist.avatar_url ||
-                    `https://ui-avatars.com/api/?name=${encodeURIComponent(artist.name)}&color=fff&background=random`}
+                  src={artist.avatar_url || "/images/placeholders/default.jpg"}
                 />
                 <div
                   class="absolute inset-0 bg-linear-to-t from-primary/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"
@@ -192,8 +191,7 @@
                 <a
                   href="/artists/{artist.slug}"
                   class="font-bold text-white group-hover:text-primary transition-colors text-lg line-clamp-1"
-                  title="View artist profile: {artist.name}"
-                  >{artist.name}</a
+                  title="View artist profile: {artist.name}">{artist.name}</a
                 >
                 <div
                   class="mt-1.5 inline-flex items-center px-3 py-1 rounded-full bg-primary/20 text-primary text-[11px] font-bold border border-primary/20"

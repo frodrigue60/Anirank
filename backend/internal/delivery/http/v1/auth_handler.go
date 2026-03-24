@@ -2,6 +2,7 @@ package v1
 
 import (
 	"anirank/api/internal/domain"
+	"anirank/api/internal/dto"
 	"anirank/api/internal/usecase/auth"
 	"fmt"
 	"os"
@@ -53,7 +54,7 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"data": res,
+		"data": dto.ToAuthResponseDTO(res),
 	})
 }
 
@@ -94,7 +95,7 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 	}
 
 	return c.Status(201).JSON(fiber.Map{
-		"data": res,
+		"data": dto.ToAuthResponseDTO(res),
 	})
 }
 
@@ -419,7 +420,7 @@ func (h *AuthHandler) GoogleLoginCallback(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"data": res,
+		"data": dto.ToAuthResponseDTO(res),
 	})
 }
 
@@ -445,7 +446,7 @@ func (h *AuthHandler) AnilistLoginCallback(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"data": res,
+		"data": dto.ToAuthResponseDTO(res),
 	})
 }
 

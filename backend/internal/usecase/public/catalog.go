@@ -104,17 +104,7 @@ func (u *CatalogUsecase) GetSongByAnimeSongSlug(ctx context.Context, userID *uin
 		}
 	}
 
-	song.Variants, _ = u.songRepo.GetVariantsBySongID(ctx, song.ID)
-
-	// Clean up iframe tags to get just the URL
-	for i := range song.Variants {
-		if song.Variants[i].Video != nil && song.Variants[i].Video.EmbedUrl != nil {
-			matches := iframeSrcRegex.FindStringSubmatch(*song.Variants[i].Video.EmbedUrl)
-			if len(matches) > 1 {
-				song.Variants[i].Video.EmbedUrl = &matches[1]
-			}
-		}
-	}
+	// enrichment now handles variants and iframe cleanup
 
 	related, _ := u.songRepo.GetByAnimeID(ctx, anime.ID)
 	var filtered []domain.Song
@@ -562,6 +552,21 @@ func (u *CatalogUsecase) enrichSong(ctx context.Context, userID *uint64, s *doma
 			artists[i].AvatarUrl = u.mediaService.Resolve(artists[i].Avatar)
 		}
 		s.Artists = artists
+	}
+
+	// Load variants to populate thumbnail_url in DTOs
+	if len(s.Variants) == 0 {
+		variants, _ := u.songRepo.GetVariantsBySongID(ctx, s.ID)
+		// Clean up iframe tags to get just the URL for each variant
+		for i := range variants {
+			if variants[i].Video != nil && variants[i].Video.EmbedUrl != nil {
+				matches := iframeSrcRegex.FindStringSubmatch(*variants[i].Video.EmbedUrl)
+				if len(matches) > 1 {
+					variants[i].Video.EmbedUrl = &matches[1]
+				}
+			}
+		}
+		s.Variants = variants
 	}
 
 	// Set computed fields

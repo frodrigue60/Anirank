@@ -12,7 +12,7 @@
   <div
     class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
     style="background-image: url('{song.anime?.banner_url ||
-      song.anime?.cover_url ||
+      song.anime?.thumbnail_url ||
       'https://placehold.co/800x400/2a2136/white?text=No+Art'}'); filter: brightness(0.5);"
   ></div>
   <!-- Gradient Overlay -->

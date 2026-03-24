@@ -10,6 +10,7 @@
     hasMore = false,
     onLoadMore = () => {},
     startIndex = 0,
+    rankingType = "main",
   } = $props();
 
   function formatScore(score: string | number | undefined | null) {
@@ -41,7 +42,11 @@
     {#if songs.length > 0}
       {#each songs as item, index}
         {@const rank = startIndex + index + 1}
-        {@const movement = getMovement(rank, item.prev_rank)}
+        {@const previousRank =
+          rankingType === "seasonal"
+            ? item.prev_seasonal_rank
+            : item.prev_main_rank}
+        {@const movement = getMovement(rank, previousRank)}
         <div
           class="ranking-row grid grid-cols-[80px_1fr_120px_140px] gap-4 px-8 py-5 items-center transition-colors border-b border-white/5 last:border-0 hover:bg-white/5"
         >
@@ -55,25 +60,25 @@
             {#if movement === "up"}
               <div
                 class="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-green-500/10 text-green-400"
-                title={`Previous rank: ${item.prev_rank}`}
+                title={`Previous rank: ${previousRank}`}
               >
                 <span class="material-symbols-outlined text-[12px] font-black"
                   >arrow_drop_up</span
                 >
                 <span class="text-[9px] font-black"
-                  >{item.prev_rank! - rank}</span
+                  >{previousRank! - rank}</span
                 >
               </div>
             {:else if movement === "down"}
               <div
                 class="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-red-500/10 text-red-400"
-                title={`Previous rank: ${item.prev_rank}`}
+                title={`Previous rank: ${previousRank}`}
               >
                 <span class="material-symbols-outlined text-[12px] font-black"
                   >arrow_drop_down</span
                 >
                 <span class="text-[9px] font-black"
-                  >{rank - item.prev_rank!}</span
+                  >{rank - previousRank!}</span
                 >
               </div>
             {:else if movement === "stable"}
@@ -96,7 +101,8 @@
                 alt={getSongName(item)}
                 title={getSongName(item)}
                 class="w-full h-full object-cover"
-                src={item.anime?.cover_url ?? ""}
+                src={item.anime?.thumbnail_url ??
+                  "/images/placeholders/default.jpg"}
               />
             </div>
             <div class="min-w-0 flex flex-col">

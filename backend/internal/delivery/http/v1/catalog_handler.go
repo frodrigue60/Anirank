@@ -2,12 +2,11 @@ package v1
 
 import (
 	"context"
-	"fmt"
 	"math"
-	"os"
 	"strconv"
 
 	"anirank/api/internal/domain"
+	"anirank/api/internal/dto"
 	"anirank/api/internal/usecase/public"
 
 	"github.com/gofiber/fiber/v2"
@@ -20,7 +19,6 @@ type CatalogHandler struct {
 }
 
 func NewCatalogHandler(u *public.CatalogUsecase) *CatalogHandler {
-	os.Stderr.WriteString("[DEBUG] CatalogHandler Initialized\n")
 	return &CatalogHandler{usecase: u}
 }
 
@@ -65,12 +63,6 @@ func paginatedResponse(items interface{}, total int, page, perPage int) fiber.Ma
 // ─── Songs ───
 
 // SongIndex handles GET /api/songs
-// @Summary List Songs
-// @Tags Songs
-// @Produce json
-// @Param page query int false "Page number" default(1)
-// @Success 200 {object} object
-// @Router /songs [get]
 func (h *CatalogHandler) SongIndex(c *fiber.Ctx) error {
 	limit, offset := parsePagination(c, 24)
 	page, _ := strconv.Atoi(c.Query("page", "1"))
@@ -94,17 +86,16 @@ func (h *CatalogHandler) SongIndex(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	return c.JSON(paginatedResponse(songs, total, page, limit))
+
+	songDTOs := make([]dto.SongMinimalDTO, len(songs))
+	for i, s := range songs {
+		songDTOs[i] = dto.ToSongMinimalDTO(&s)
+	}
+
+	return c.JSON(paginatedResponse(songDTOs, total, page, limit))
 }
 
 // SongShow handles GET /api/songs/:anime_slug/:song_slug
-// @Summary Get Song details
-// @Tags Songs
-// @Produce json
-// @Param anime_slug path string true "Anime Slug"
-// @Param song_slug path string true "Song Slug"
-// @Success 200 {object} object{song=domain.Song,related=[]domain.Song}
-// @Router /songs/{anime_slug}/{song_slug} [get]
 func (h *CatalogHandler) SongShow(c *fiber.Ctx) error {
 	userID := h.getUserID(c)
 
@@ -113,17 +104,20 @@ func (h *CatalogHandler) SongShow(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	return c.JSON(fiber.Map{"success": true, "song": song, "related": related})
+
+	relatedDTOs := make([]dto.SongMinimalDTO, len(related))
+	for i, r := range related {
+		relatedDTOs[i] = dto.ToSongMinimalDTO(&r)
+	}
+
+	return c.JSON(fiber.Map{
+		"success": true,
+		"song":    dto.ToSongDTO(song),
+		"related": relatedDTOs,
+	})
 }
 
 // SongRanking handles GET /api/songs/ranking/:type
-// @Summary Song Rankings
-// @Tags Songs
-// @Produce json
-// @Param type path string true "Ranking type (global or seasonal)"
-// @Param page query int false "Page number" default(1)
-// @Success 200 {object} object{data=[]domain.Song}
-// @Router /songs/ranking/{type} [get]
 func (h *CatalogHandler) SongRanking(c *fiber.Ctx) error {
 	limit, offset := parsePagination(c, 50)
 	page, _ := strconv.Atoi(c.Query("page", "1"))
@@ -139,8 +133,13 @@ func (h *CatalogHandler) SongRanking(c *fiber.Ctx) error {
 		return err
 	}
 
+	songDTOs := make([]dto.SongMinimalDTO, len(ranking.Songs))
+	for i, s := range ranking.Songs {
+		songDTOs[i] = dto.ToSongMinimalDTO(&s)
+	}
+
 	return c.JSON(fiber.Map{
-		"songs":          paginatedResponse(ranking.Songs, ranking.Total, page, limit),
+		"songs":          paginatedResponse(songDTOs, ranking.Total, page, limit),
 		"current_season": ranking.CurrentSeason,
 		"current_year":   ranking.CurrentYear,
 	})
@@ -149,13 +148,6 @@ func (h *CatalogHandler) SongRanking(c *fiber.Ctx) error {
 // ─── Artists ───
 
 // ArtistIndex handles GET /api/artists
-// @Summary List Artists
-// @Tags Artists
-// @Produce json
-// @Param page query int false "Page number" default(1)
-// @Param name query string false "Search by name"
-// @Success 200 {object} object
-// @Router /artists [get]
 func (h *CatalogHandler) ArtistIndex(c *fiber.Ctx) error {
 	limit, offset := parsePagination(c, 48)
 	page, _ := strconv.Atoi(c.Query("page", "1"))
@@ -171,7 +163,13 @@ func (h *CatalogHandler) ArtistIndex(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	return c.JSON(fiber.Map{"artists": paginatedResponse(artists, total, page, limit)})
+
+	artistDTOs := make([]dto.ArtistDTO, len(artists))
+	for i, a := range artists {
+		artistDTOs[i] = dto.ToArtistDTO(&a)
+	}
+
+	return c.JSON(fiber.Map{"artists": paginatedResponse(artistDTOs, total, page, limit)})
 }
 
 func (h *CatalogHandler) ArtistShow(c *fiber.Ctx) error {
@@ -192,37 +190,27 @@ func (h *CatalogHandler) ArtistShow(c *fiber.Ctx) error {
 		Sort:     c.Query("sort", ""),
 	}
 
-	var userID *uint64
-	val := c.Locals("user_id")
-	if id, ok := val.(uint64); ok {
-		userID = &id
-	} else if f, ok := val.(float64); ok {
-		id := uint64(f)
-		userID = &id
-	}
-
+	userID := h.getUserID(c)
 	artist, songs, total, err := h.usecase.GetSongsByArtistSlug(c.Context(), userID, c.Params("slug"), limit, offset, filters)
 	if err != nil {
 		return err
 	}
 
+	songDTOs := make([]dto.SongMinimalDTO, len(songs))
+	for i, s := range songs {
+		songDTOs[i] = dto.ToSongMinimalDTO(&s)
+	}
+
 	return c.JSON(fiber.Map{
 		"success": true,
-		"artist":  artist,
-		"songs":   paginatedResponse(songs, total, page, limit),
+		"artist":  dto.ToArtistDTO(artist),
+		"songs":   paginatedResponse(songDTOs, total, page, limit),
 	})
 }
 
 // ─── Studios ───
 
 // StudioIndex handles GET /api/studios
-// @Summary List Studios
-// @Tags Studios
-// @Produce json
-// @Param page query int false "Page number"
-// @Param search query string false "Search by name"
-// @Success 200 {object} object
-// @Router /studios [get]
 func (h *CatalogHandler) StudioIndex(c *fiber.Ctx) error {
 	limit, offset := parsePagination(c, 48)
 	page, _ := strconv.Atoi(c.Query("page", "1"))
@@ -238,47 +226,43 @@ func (h *CatalogHandler) StudioIndex(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	return c.JSON(fiber.Map{"studios": paginatedResponse(studios, total, page, limit)})
+
+	studioDTOs := make([]dto.StudioDTO, len(studios))
+	for i, s := range studios {
+		studioDTOs[i] = dto.StudioDTO{ID: s.ID, Name: s.Name, Slug: s.Slug}
+	}
+
+	return c.JSON(fiber.Map{"studios": paginatedResponse(studioDTOs, total, page, limit)})
 }
 
 // StudioShow handles GET /api/studios/:slug
-// @Summary Get Studio details and animes
-// @Tags Studios
-// @Produce json
-// @Param slug path string true "Studio Slug"
-// @Success 200 {object} object{studio=domain.Studio,animes=[]domain.Anime}
-// @Router /studios/{slug} [get]
 func (h *CatalogHandler) StudioShow(c *fiber.Ctx) error {
 	limit, offset := parsePagination(c, 24)
 	page, _ := strconv.Atoi(c.Query("page", "1"))
 	if page < 1 {
 		page = 1
 	}
-	os.Stderr.WriteString(fmt.Sprintf("[DEBUG] StudioShow Request - Slug: %s\n", c.Params("slug")))
 
 	studio, animes, total, err := h.usecase.GetAnimesByStudioSlug(c.Context(), c.Params("slug"), limit, offset)
 	if err != nil {
-		os.Stderr.WriteString(fmt.Sprintf("[DEBUG] StudioShow Error: %v\n", err))
 		return err
 	}
-	os.Stderr.WriteString(fmt.Sprintf("[DEBUG] StudioShow Success - Studio: %s\n", studio.Name))
+
+	animeDTOs := make([]dto.AnimeMinimalDTO, len(animes))
+	for i, a := range animes {
+		animeDTOs[i] = dto.ToAnimeMinimalDTO(&a)
+	}
+
 	return c.JSON(fiber.Map{
 		"success": true,
-		"studio":  studio,
-		"animes":  paginatedResponse(animes, total, page, limit),
+		"studio":  dto.StudioDTO{ID: studio.ID, Name: studio.Name, Slug: studio.Slug},
+		"animes":  paginatedResponse(animeDTOs, total, page, limit),
 	})
 }
 
 // ─── Producers ───
 
 // ProducerIndex handles GET /api/producers
-// @Summary List Producers
-// @Tags Producers
-// @Produce json
-// @Param page query int false "Page number"
-// @Param search query string false "Search by name"
-// @Success 200 {object} object
-// @Router /producers [get]
 func (h *CatalogHandler) ProducerIndex(c *fiber.Ctx) error {
 	limit, offset := parsePagination(c, 48)
 	page, _ := strconv.Atoi(c.Query("page", "1"))
@@ -295,16 +279,16 @@ func (h *CatalogHandler) ProducerIndex(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	return c.JSON(fiber.Map{"producers": paginatedResponse(producers, total, page, limit)})
+
+	producerDTOs := make([]dto.ProducerDTO, len(producers))
+	for i, p := range producers {
+		producerDTOs[i] = dto.ProducerDTO{ID: p.ID, Name: p.Name, Slug: p.Slug}
+	}
+
+	return c.JSON(fiber.Map{"producers": paginatedResponse(producerDTOs, total, page, limit)})
 }
 
 // ProducerShow handles GET /api/producers/:slug
-// @Summary Get Producer details and animes
-// @Tags Producers
-// @Produce json
-// @Param slug path string true "Producer Slug"
-// @Success 200 {object} object{producer=domain.Producer,animes=[]domain.Anime}
-// @Router /producers/{slug} [get]
 func (h *CatalogHandler) ProducerShow(c *fiber.Ctx) error {
 	limit, offset := parsePagination(c, 24)
 	page, _ := strconv.Atoi(c.Query("page", "1"))
@@ -316,23 +300,22 @@ func (h *CatalogHandler) ProducerShow(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+
+	animeDTOs := make([]dto.AnimeMinimalDTO, len(animes))
+	for i, a := range animes {
+		animeDTOs[i] = dto.ToAnimeMinimalDTO(&a)
+	}
+
 	return c.JSON(fiber.Map{
 		"success":  true,
-		"producer": producer,
-		"animes":   paginatedResponse(animes, total, page, limit),
+		"producer": dto.ProducerDTO{ID: producer.ID, Name: producer.Name, Slug: producer.Slug},
+		"animes":   paginatedResponse(animeDTOs, total, page, limit),
 	})
 }
 
 // ─── Playlists ───
 
 // PlaylistIndex handles GET /api/playlists
-// @Summary List Public Playlists
-// @Tags Playlists
-// @Produce json
-// @Param page query int false "Page number"
-// @Param name query string false "Search by name"
-// @Success 200 {object} object
-// @Router /playlists [get]
 func (h *CatalogHandler) PlaylistIndex(c *fiber.Ctx) error {
 	limit, offset := parsePagination(c, 24)
 	page, _ := strconv.Atoi(c.Query("page", "1"))
@@ -348,52 +331,25 @@ func (h *CatalogHandler) PlaylistIndex(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+	// For now we return playlists as is since we didn't define a PlaylistDTO yet
 	return c.JSON(fiber.Map{"playlists": paginatedResponse(playlists, total, page, limit)})
 }
 
 // ─── Users ───
 
 // UserProfile handles GET /api/users/:slug
-// @Summary Get User Profile
-// @Tags Users
-// @Produce json
-// @Param slug path string true "User Slug"
-// @Success 200 {object} object{user=domain.User}
-// @Router /users/{slug} [get]
 func (h *CatalogHandler) UserProfile(c *fiber.Ctx) error {
-	var requestingUserID *uint64
-	val := c.Locals("user_id")
-	if id, ok := val.(uint64); ok {
-		requestingUserID = &id
-	} else if f, ok := val.(float64); ok {
-		id := uint64(f)
-		requestingUserID = &id
-	}
-
+	requestingUserID := h.getUserID(c)
 	user, err := h.usecase.GetUserBySlug(c.Context(), requestingUserID, c.Params("slug"))
 	if err != nil {
 		return err
 	}
-	return c.JSON(fiber.Map{"success": true, "user": user})
+	return c.JSON(fiber.Map{"success": true, "user": dto.ToUserDTO(user)})
 }
 
 // UserPlaylists handles GET /api/users/:slug/playlists
-// @Summary Get User Playlists
-// @Tags Users
-// @Produce json
-// @Param slug path string true "User Slug"
-// @Success 200 {object} object{playlists=[]domain.Playlist}
-// @Router /users/{slug}/playlists [get]
 func (h *CatalogHandler) UserPlaylists(c *fiber.Ctx) error {
-	var requestingUserID *uint64
-	val := c.Locals("user_id")
-	if id, ok := val.(uint64); ok {
-		requestingUserID = &id
-	} else if f, ok := val.(float64); ok {
-		id := uint64(f)
-		requestingUserID = &id
-	}
-
+	requestingUserID := h.getUserID(c)
 	playlists, err := h.usecase.GetUserPlaylists(c.Context(), requestingUserID, c.Params("slug"))
 	if err != nil {
 		return err
@@ -407,77 +363,66 @@ type userFavoritesReq struct {
 }
 
 // UserFavorites handles POST /api/users/favorites
-// @Summary Get User Favorite Songs
-// @Tags Users
-// @Produce json
-// @Accept json
-// @Param request body object{user_id=int,page=int} true "Favorites query"
-// @Success 200 {object} object{songs=object}
-// @Router /users/favorites [post]
 func (h *CatalogHandler) UserFavorites(c *fiber.Ctx) error {
 	var req userFavoritesReq
 	if err := c.BodyParser(&req); err != nil {
 		return domain.NewAppError(400, "Invalid request payload", err)
 	}
 
-	limit := 24
+	limit, offset := parsePagination(c, 24)
 	page := req.Page
 	if page < 1 {
 		page = 1
 	}
-	offset := (page - 1) * limit
+	offset = (page - 1) * limit
 
 	songs, total, err := h.usecase.GetUserFavorites(c.Context(), req.UserID, limit, offset)
 	if err != nil {
 		return err
 	}
 
+	songDTOs := make([]dto.SongMinimalDTO, len(songs))
+	for i, s := range songs {
+		songDTOs[i] = dto.ToSongMinimalDTO(&s)
+	}
+
 	return c.JSON(fiber.Map{
 		"success": true,
-		"songs":   paginatedResponse(songs, total, page, limit),
+		"songs":   paginatedResponse(songDTOs, total, page, limit),
 	})
 }
 
 // UserArtistFavorites handles POST /api/users/artists/favorites
-// @Summary Get User Favorite Artists
-// @Tags Users
-// @Produce json
-// @Accept json
-// @Param request body object{user_id=int,page=int} true "Favorites query"
-// @Success 200 {object} object{artists=object}
-// @Router /users/artists/favorites [post]
 func (h *CatalogHandler) UserArtistFavorites(c *fiber.Ctx) error {
 	var req userFavoritesReq
 	if err := c.BodyParser(&req); err != nil {
 		return domain.NewAppError(400, "Invalid request payload", err)
 	}
 
-	limit := 24
+	limit, offset := parsePagination(c, 24)
 	page := req.Page
 	if page < 1 {
 		page = 1
 	}
-	offset := (page - 1) * limit
+	offset = (page - 1) * limit
 
 	artists, total, err := h.usecase.GetUserFavoriteArtists(c.Context(), req.UserID, limit, offset)
 	if err != nil {
 		return err
 	}
 
+	artistDTOs := make([]dto.ArtistDTO, len(artists))
+	for i, a := range artists {
+		artistDTOs[i] = dto.ToArtistDTO(&a)
+	}
+
 	return c.JSON(fiber.Map{
 		"success": true,
-		"artists": paginatedResponse(artists, total, page, limit),
+		"artists": paginatedResponse(artistDTOs, total, page, limit),
 	})
 }
 
 // UserFollowers handles GET /api/users/:slug/followers
-// @Summary Get User Followers
-// @Tags Users
-// @Produce json
-// @Param slug path string true "User Slug"
-// @Param page query int false "Page number" default(1)
-// @Success 200 {object} object
-// @Router /users/{slug}/followers [get]
 func (h *CatalogHandler) UserFollowers(c *fiber.Ctx) error {
 	limit, offset := parsePagination(c, 48)
 	page, _ := strconv.Atoi(c.Query("page", "1"))
@@ -490,17 +435,15 @@ func (h *CatalogHandler) UserFollowers(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(paginatedResponse(users, total, page, limit))
+	userDTOs := make([]dto.UserMinimalDTO, len(users))
+	for i, u := range users {
+		userDTOs[i] = dto.ToUserMinimalDTO(&u)
+	}
+
+	return c.JSON(paginatedResponse(userDTOs, total, page, limit))
 }
 
 // UserFollowing handles GET /api/users/:slug/following
-// @Summary Get User Following
-// @Tags Users
-// @Produce json
-// @Param slug path string true "User Slug"
-// @Param page query int false "Page number" default(1)
-// @Success 200 {object} object
-// @Router /users/{slug}/following [get]
 func (h *CatalogHandler) UserFollowing(c *fiber.Ctx) error {
 	limit, offset := parsePagination(c, 48)
 	page, _ := strconv.Atoi(c.Query("page", "1"))
@@ -513,34 +456,27 @@ func (h *CatalogHandler) UserFollowing(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(paginatedResponse(users, total, page, limit))
+	userDTOs := make([]dto.UserMinimalDTO, len(users))
+	for i, u := range users {
+		userDTOs[i] = dto.ToUserMinimalDTO(&u)
+	}
+
+	return c.JSON(paginatedResponse(userDTOs, total, page, limit))
 }
 
 // ─── Home ───
 
 // Home handles GET /api/home
-// @Summary Homepage Data
-// @Tags Home
-// @Produce json
-// @Success 200 {object} public.HomeData
-// @Router /home [get]
 func (h *CatalogHandler) Home(c *fiber.Ctx) error {
 	userID := h.getUserID(c)
 	data, err := h.usecase.GetHomeData(c.Context(), userID)
 	if err != nil {
 		return err
 	}
-	return c.JSON(fiber.Map{"success": true, "data": data})
+	return c.JSON(fiber.Map{"success": true, "data": dto.ToHomeDTO(data)})
 }
 
 // UserRanking handles GET /api/users/ranking
-// @Summary User Ranking
-// @Tags Users
-// @Produce json
-// @Param sort query string false "Sort by (xp, ratings, comments)" default(xp)
-// @Param page query int false "Page number" default(1)
-// @Success 200 {object} object
-// @Router /users/ranking [get]
 func (h *CatalogHandler) UserRanking(c *fiber.Ctx) error {
 	limit, offset := parsePagination(c, 50)
 	page, _ := strconv.Atoi(c.Query("page", "1"))
@@ -554,15 +490,16 @@ func (h *CatalogHandler) UserRanking(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(paginatedResponse(users, total, page, limit))
+	// RankingUser embeds User
+	userDTOs := make([]dto.UserMinimalDTO, len(users))
+	for i, u := range users {
+		userDTOs[i] = dto.ToUserMinimalDTO(&u.User)
+	}
+
+	return c.JSON(paginatedResponse(userDTOs, total, page, limit))
 }
 
 // GetSitemap handles GET /api/v1/catalog/sitemap
-// @Summary Get Sitemap Data
-// @Tags Catalog
-// @Produce json
-// @Success 200 {object} object{data=[]domain.SitemapItem}
-// @Router /catalog/sitemap [get]
 func (h *CatalogHandler) GetSitemap(c *fiber.Ctx) error {
 	data, err := h.usecase.GetSitemapData(c.Context())
 	if err != nil {

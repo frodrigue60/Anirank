@@ -1,0 +1,16 @@
+.git
+.gitignore
+.vscode
+.dockerignore
+node_modules
+.svelte-kit
+build
+.env*
+Dockerfile
+README.md
+backend
+docker-compose*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store

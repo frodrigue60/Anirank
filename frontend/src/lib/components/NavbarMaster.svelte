@@ -286,10 +286,6 @@
                   <p class="truncate text-sm font-bold text-white">
                     {authState.user.name}
                   </p>
-                  <p class="truncate text-xs text-white/40">
-                    {authState.user.email} <br />
-                    <!-- {JSON.stringify(authState.user.roles)} -->
-                  </p>
                 </div>
                 <div class="py-1">
                   {#if authState.isStaff}

@@ -15,7 +15,8 @@
   import api from "$lib/api";
   import { toastState } from "$lib/state/toast.svelte";
   import SEO from "$lib/components/SEO.svelte";
-  const PUBLIC_API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+  const PUBLIC_API_URL =
+    import.meta.env.VITE_API_URL || "http://localhost:8080/api";
 
   let { data }: { data: any } = $props();
 
@@ -181,7 +182,7 @@
 </script>
 
 {#if artist}
-  <SEO 
+  <SEO
     title={`${artist.name} - Artist on AniRank`}
     description={`Explore all theme songs by ${artist.name} on AniRank. Discover their work, ratings, and rankings.`}
     image={`${PUBLIC_API_URL}/og/artist/${artist.slug}`}
@@ -206,8 +207,7 @@
           class="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-4 border-surface shadow-2xl relative z-10 group-hover:border-primary/50 transition-colors"
         >
           <img
-            src={artist.avatar_url ||
-              "https://placehold.co/400x400/2a2136/white?text=Artist"}
+            src={artist.avatar_url || "/images/placeholders/default.jpg"}
             alt="Avatar for {artist.name}"
             title="Avatar for {artist.name}"
             class="w-full h-full object-cover"

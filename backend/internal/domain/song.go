@@ -91,6 +91,8 @@ type Artist struct {
 
 	// Computed
 	SongsCount     int    `db:"songs_count" json:"songs_count"`
+	EnabledSongs   int    `db:"enabled_songs" json:"enabled_songs"`
+	DisabledSongs  int    `db:"disabled_songs" json:"disabled_songs"`
 	FavoritesCount uint64 `db:"favorites_count" json:"favorites_count"`
 	IsFavorited    bool   `db:"-" json:"is_favorited"`
 }

@@ -43,7 +43,8 @@ func SetupPublicRoutes(app *fiber.App,
 	activityUsecase domain.ActivityUsecase,
 	statsUsecase domain.StatsUsecase,
 	ogGenerator *og.Generator,
-	shareHandler *v1.ShareHandler) {
+	shareHandler *v1.ShareHandler,
+	seoHandler *v1.SEOHandler) {
 
 	// HTTP Handlers
 	discoveryHandler := v1.NewDiscoveryHandler(discoveryUsecase)
@@ -165,7 +166,8 @@ func SetupPublicRoutes(app *fiber.App,
 	api.Get("/og/user/:slug", ogHandler.UserOG)
 	api.Get("/og/home", ogHandler.HomeOG)
 	
-
+	// SEO Bot Proxy route
+	app.Get("/seo-bot/*", seoHandler.GetMetadata)
 
 
 	// Comments Public

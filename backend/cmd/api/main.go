@@ -163,6 +163,9 @@ func main() {
 	ogGenerator := og.NewGenerator(s3PublicUrl, s3Endpoint)
 	shareHandler := v1.NewShareHandler(animeUsecase, catalogUsecase, playlistUsecase)
 
+	seoUsecase := public.NewSEOUsecase(animeRepo, songRepo, artistRepo)
+	seoHandler := v1.NewSEOHandler(seoUsecase)
+
 	moderationUsecase := moderation.NewModerationUsecase(moderationRepo, notificationRepo)
 	tournamentUsecase := tournament.NewTournamentUsecase(tournamentRepo, songRepo, animeRepo, storageService)
 
@@ -194,7 +197,7 @@ func main() {
 	statsUsecase := public.NewStatsUsecase(statsRepo, appCache)
 
 	// 4. Register Routes
-	http.SetupPublicRoutes(app, db, discoveryUsecase, animeUsecase, searchUsecase, catalogUsecase, authUsecase, interactionUsecase, playlistUsecase, adminUsecase, moderationUsecase, tournamentUsecase, auditUsecase, jwtService, storageService, mediaService, xpUsecase, activityUsecase, statsUsecase, ogGenerator, shareHandler)
+	http.SetupPublicRoutes(app, db, discoveryUsecase, animeUsecase, searchUsecase, catalogUsecase, authUsecase, interactionUsecase, playlistUsecase, adminUsecase, moderationUsecase, tournamentUsecase, auditUsecase, jwtService, storageService, mediaService, xpUsecase, activityUsecase, statsUsecase, ogGenerator, shareHandler, seoHandler)
 
 	// Run Server
 	log.Printf("Starting server on port %s...", appPort)

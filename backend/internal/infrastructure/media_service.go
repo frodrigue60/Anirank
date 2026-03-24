@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"image"
 	"image/jpeg"
-	_ "image/png"
-	_ "golang.org/x/image/webp"
 	"io"
 	"os"
 	"strings"
+
+	"anirank/api/internal/pkg/imageutil"
 
 	"github.com/disintegration/gift"
 	"github.com/google/uuid"
@@ -67,8 +67,8 @@ func (s *mediaService) GeneratePath(prefix string, id uint64, ext string) string
 }
 
 func (s *mediaService) UploadImage(ctx context.Context, prefix string, id uint64, file io.Reader, size int64, contentType string) (string, string, error) {
-	// 1. Decode Image (Supports JPEG, PNG, WebP decoding)
-	img, _, err := image.Decode(file)
+	// 1. Decode Image (Supports JPEG, PNG, WebP decoding with CLI fallbacks)
+	img, _, err := imageutil.Decode(file)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to decode image: %w", err)
 	}

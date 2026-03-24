@@ -22,7 +22,7 @@ FROM alpine:latest
 WORKDIR /app
 
 # Install runtime dependencies (like CA certificates for TLS)
-RUN apk add --no-cache ca-certificates vips
+RUN apk add --no-cache ca-certificates vips vips-tools libavif-apps libwebp-tools
 
 # Copy the binary
 COPY --from=builder /app/main .

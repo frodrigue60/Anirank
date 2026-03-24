@@ -78,6 +78,7 @@
   ]);
 
   let isUpdating = $state(false);
+  let isFlushing = $state(false);
 
   async function handleSnapshot() {
     isUpdating = true;
@@ -92,6 +93,22 @@
       );
     } finally {
       isUpdating = false;
+    }
+  }
+
+  async function handleFlushOG() {
+    isFlushing = true;
+    try {
+      await api.post("/admin/og/flush");
+      toastState.addToast("OG Image Cache flushed successfully", "success");
+    } catch (err: any) {
+      console.error(err);
+      toastState.addToast(
+        `Failed to flush OG cache: ${err.message || err}`,
+        "error",
+      );
+    } finally {
+      isFlushing = false;
     }
   }
 
@@ -445,6 +462,39 @@
           </div>
           <span class="font-medium text-sm text-gray-200"
             >{isUpdating ? "Updating..." : "Update Ranking Snapshot"}</span
+          >
+        </button>
+
+        <button
+          onclick={handleFlushOG}
+          disabled={isFlushing}
+          class="w-full flex items-center gap-3 p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors border border-transparent hover:border-white/10 text-left disabled:opacity-50 disabled:cursor-wait"
+        >
+          <div
+            class="w-8 h-8 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center"
+          >
+            {#if isFlushing}
+              <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                <circle
+                  class="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  stroke-width="4"
+                ></circle>
+                <path
+                  class="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+            {:else}
+              <span class="material-symbols-outlined text-xl">delete_sweep</span>
+            {/if}
+          </div>
+          <span class="font-medium text-sm text-gray-200"
+            >{isFlushing ? "Flushing..." : "Flush OG Image Cache"}</span
           >
         </button>
       </div>

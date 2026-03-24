@@ -163,7 +163,7 @@ func main() {
 	ogGenerator := og.NewGenerator(s3PublicUrl, s3Endpoint)
 	shareHandler := v1.NewShareHandler(animeUsecase, catalogUsecase, playlistUsecase)
 
-	seoUsecase := public.NewSEOUsecase(animeRepo, songRepo, artistRepo)
+	seoUsecase := public.NewSEOUsecase(animeRepo, songRepo, artistRepo, userRepo, playlistRepo, ogGenerator.GetVersion)
 	seoHandler := v1.NewSEOHandler(seoUsecase)
 
 	moderationUsecase := moderation.NewModerationUsecase(moderationRepo, notificationRepo)

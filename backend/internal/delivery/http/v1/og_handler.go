@@ -35,7 +35,7 @@ func NewOGHandler(g *og.Generator, a *public.AnimeUsecase, c *public.CatalogUsec
 func (h *OGHandler) SongOG(c *fiber.Ctx) error {
 	animeSlug := c.Params("anime_slug")
 	songSlug := c.Params("song_slug")
-	cacheKey := "song_v2_" + animeSlug + "_" + songSlug
+	cacheKey := fmt.Sprintf("song_v2_%s_%s_v%d", animeSlug, songSlug, h.generator.GetVersion())
 	nocache := c.Query("nocache") == "true"
 
 	// Check cache
@@ -96,7 +96,7 @@ func (h *OGHandler) SongOG(c *fiber.Ctx) error {
 
 func (h *OGHandler) AnimeOG(c *fiber.Ctx) error {
 	slug := c.Params("slug")
-	cacheKey := "anime_v1_" + slug
+	cacheKey := fmt.Sprintf("anime_v1_%s_v%d", slug, h.generator.GetVersion())
 	nocache := c.Query("nocache") == "true"
 
 	// Check cache
@@ -152,7 +152,7 @@ func (h *OGHandler) AnimeOG(c *fiber.Ctx) error {
 
 func (h *OGHandler) ArtistOG(c *fiber.Ctx) error {
 	slug := c.Params("slug")
-	cacheKey := "artist_v2_" + slug
+	cacheKey := fmt.Sprintf("artist_v2_%s_v%d", slug, h.generator.GetVersion())
 	nocache := c.Query("nocache") == "true"
 
 	// Check cache
@@ -203,7 +203,7 @@ func (h *OGHandler) ArtistOG(c *fiber.Ctx) error {
 
 func (h *OGHandler) UserOG(c *fiber.Ctx) error {
 	slug := c.Params("slug")
-	cacheKey := "user_v1_" + slug
+	cacheKey := fmt.Sprintf("user_v2_%s_v%d", slug, h.generator.GetVersion())
 	nocache := c.Query("nocache") == "true"
 
 	// Check cache
@@ -229,6 +229,8 @@ func (h *OGHandler) UserOG(c *fiber.Ctx) error {
 		bannerUrl = *user.BannerUrl
 	}
 
+	fmt.Printf("[OG User] slug=%s avatar_raw=%v banner_raw=%v avatarUrl=%s bannerUrl=%s\n", slug, user.Avatar, user.Banner, avatarUrl, bannerUrl)
+
 	img, err := h.generator.GenerateUserOG(user.Name, int(user.Level), int(user.XP), user.FollowersCount, user.RatingsCount, avatarUrl, bannerUrl)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).SendString(err.Error())
@@ -252,7 +254,7 @@ func (h *OGHandler) UserOG(c *fiber.Ctx) error {
 }
 
 func (h *OGHandler) HomeOG(c *fiber.Ctx) error {
-	cacheKey := "home_v6"
+	cacheKey := fmt.Sprintf("home_v6_v%d", h.generator.GetVersion())
 
 	nocache := c.Query("nocache") == "true"
 
@@ -303,7 +305,7 @@ func (h *OGHandler) PlaylistOG(c *fiber.Ctx) error {
 	var id uint64
 	fmt.Sscanf(idStr, "%d", &id)
 
-	cacheKey := "playlist_v1_" + idStr
+	cacheKey := fmt.Sprintf("playlist_v1_%s_v%d", idStr, h.generator.GetVersion())
 	nocache := c.Query("nocache") == "true"
 
 	// Check cache
@@ -351,4 +353,16 @@ func (h *OGHandler) PlaylistOG(c *fiber.Ctx) error {
 
 	c.Set("Content-Type", "image/png")
 	return c.Send(buffer.Bytes())
+}
+
+func (h *OGHandler) FlushOGCache(c *fiber.Ctx) error {
+	if err := h.generator.FlushCache(); err != nil {
+		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{
+			"error": fmt.Sprintf("failed to flush OG cache: %v", err),
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "OG cache flushed successfully",
+	})
 }

@@ -14,10 +14,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/disintegration/gift"
-	_ "golang.org/x/image/webp"
 	"image"
 	"image/jpeg"
-	_ "image/png"
+
+	"anirank/api/internal/pkg/imageutil"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 )
@@ -156,8 +156,8 @@ func main() {
 					continue
 				}
 
-				// Process Image with gift
-				img, _, err := image.Decode(bytes.NewReader(buffer))
+				// Process Image with gift (Supports AVIF/modern formats via fallback)
+				img, _, err := imageutil.Decode(bytes.NewReader(buffer))
 				if err != nil {
 					log.Printf("[%s %d] Failed to decode image %s: %v\n", t.Table, rec.ID, oldPath, err)
 					totalErrors++

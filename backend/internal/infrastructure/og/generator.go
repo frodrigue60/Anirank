@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"image"
 	"image/color"
-	_ "image/jpeg"
-	_ "image/png"
-	_ "golang.org/x/image/webp"
 	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"anirank/api/internal/pkg/imageutil"
 
 	"github.com/disintegration/gift"
 	"github.com/fogleman/gg"
@@ -22,6 +21,7 @@ type Generator struct {
 	fontBoldPath  string
 	fontMediPath  string
 	fontReguPath  string
+	version       int
 	cacheDir      string
 	s3PublicURL   string
 	s3Endpoint    string
@@ -40,15 +40,27 @@ func NewGenerator(s3PublicURL, s3Endpoint string) *Generator {
 		os.MkdirAll(cacheDir, 0755)
 	}
 
+	// Load version from file
+	version := 1
+	versionPath := filepath.Join(cacheDir, "version.txt")
+	if data, err := os.ReadFile(versionPath); err == nil {
+		fmt.Sscanf(string(data), "%d", &version)
+	}
+
 	return &Generator{
 		fontBlackPath: filepath.Join(fontAssetsPath, "Inter-Black.ttf"),
 		fontBoldPath:  filepath.Join(fontAssetsPath, "Inter-Bold.ttf"),
 		fontMediPath:  filepath.Join(fontAssetsPath, "Inter-Medium.ttf"),
 		fontReguPath:  filepath.Join(fontAssetsPath, "Inter-Regular.ttf"),
+		version:       version,
 		cacheDir:      cacheDir,
 		s3PublicURL:   s3PublicURL,
 		s3Endpoint:    s3Endpoint,
 	}
+}
+
+func (g *Generator) GetVersion() int {
+	return g.version
 }
 
 func (g *Generator) GetCache(key string) ([]byte, bool) {
@@ -65,6 +77,30 @@ func (g *Generator) GetCache(key string) ([]byte, bool) {
 func (g *Generator) SaveCache(key string, data []byte) error {
 	path := filepath.Join(g.cacheDir, key+".png")
 	return os.WriteFile(path, data, 0644)
+}
+
+func (g *Generator) FlushCache() error {
+	entries, err := os.ReadDir(g.cacheDir)
+	if err != nil {
+		return err
+	}
+
+	for _, entry := range entries {
+		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".png") {
+			path := filepath.Join(g.cacheDir, entry.Name())
+			if err := os.Remove(path); err != nil {
+				fmt.Printf("[OG] Failed to remove cache file %s: %v\n", path, err)
+			}
+		}
+	}
+
+	// Increment version and save
+	g.version++
+	versionPath := filepath.Join(g.cacheDir, "version.txt")
+	os.WriteFile(versionPath, []byte(fmt.Sprintf("%d", g.version)), 0644)
+	fmt.Printf("[OG] Cache flushed. New version: %d\n", g.version)
+
+	return nil
 }
 
 func (g *Generator) GenerateSongOG(title, artists, animeTitle, songType string, score float64, bgUrl string) (image.Image, error) {
@@ -186,11 +222,19 @@ func (g *Generator) GenerateArtistOG(name string, songCount int, favoriteCount i
 			radius := 140.0
 			avatarX := W / 2.0
 			avatarY := H/2.0 - 80.0
+			diameter := int(radius * 2)
+
+			// Resize avatar to fit circle
+			resizer := gift.New(
+				gift.ResizeToFill(diameter, diameter, gift.LanczosResampling, gift.CenterAnchor),
+			)
+			resized := image.NewRGBA(resizer.Bounds(img.Bounds()))
+			resizer.Draw(resized, img)
 
 			// Image
 			dc.DrawCircle(avatarX, avatarY, radius)
 			dc.Clip()
-			dc.DrawImageAnchored(img, int(avatarX), int(avatarY), 0.5, 0.5)
+			dc.DrawImageAnchored(resized, int(avatarX), int(avatarY), 0.5, 0.5)
 			dc.ResetClip()
 		}
 	}
@@ -325,6 +369,14 @@ func (g *Generator) GenerateUserOG(name string, level int, xp int, followers, ra
 			radius := 140.0
 			avatarX := 200.0
 			avatarY := H - barHeight
+			diameter := int(radius * 2)
+
+			// Resize avatar to fit circle
+			resizer := gift.New(
+				gift.ResizeToFill(diameter, diameter, gift.LanczosResampling, gift.CenterAnchor),
+			)
+			resized := image.NewRGBA(resizer.Bounds(img.Bounds()))
+			resizer.Draw(resized, img)
 
 			// Border
 			dc.SetHexColor("#7f13ec")
@@ -334,7 +386,7 @@ func (g *Generator) GenerateUserOG(name string, level int, xp int, followers, ra
 			// Image
 			dc.DrawCircle(avatarX, avatarY, radius)
 			dc.Clip()
-			dc.DrawImageAnchored(img, int(avatarX), int(avatarY), 0.5, 0.5)
+			dc.DrawImageAnchored(resized, int(avatarX), int(avatarY), 0.5, 0.5)
 			dc.ResetClip()
 		}
 	}
@@ -582,12 +634,10 @@ func (g *Generator) fetchImage(urlStr string) (image.Image, error) {
 		return nil, fmt.Errorf("failed to fetch image: status %d", resp.StatusCode)
 	}
 
-	img, _, err := image.Decode(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode image: %v", err)
-	}
-	return img, nil
+	img, _, err := imageutil.Decode(resp.Body)
+	return img, err
 }
+
 
 func (g *Generator) truncate(s string, maxLen int) string {
 	runes := []rune(s)

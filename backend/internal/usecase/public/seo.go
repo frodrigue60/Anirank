@@ -11,23 +11,31 @@ import (
 )
 
 type seoUsecase struct {
-	animeRepo  domain.AnimeRepository
-	songRepo   domain.SongRepository
-	artistRepo domain.ArtistRepository
+	animeRepo    domain.AnimeRepository
+	songRepo     domain.SongRepository
+	artistRepo   domain.ArtistRepository
+	userRepo     domain.UserRepository
+	playlistRepo domain.PlaylistRepository
+	ogVersion    func() int
 }
 
-func NewSEOUsecase(ar domain.AnimeRepository, sr domain.SongRepository, artistR domain.ArtistRepository) domain.SEOUsecase {
+func NewSEOUsecase(ar domain.AnimeRepository, sr domain.SongRepository, artistR domain.ArtistRepository, ur domain.UserRepository, pr domain.PlaylistRepository, ogv func() int) domain.SEOUsecase {
 	return &seoUsecase{
-		animeRepo:  ar,
-		songRepo:   sr,
-		artistRepo: artistR,
+		animeRepo:    ar,
+		songRepo:     sr,
+		artistRepo:   artistR,
+		userRepo:     ur,
+		playlistRepo: pr,
+		ogVersion:    ogv,
 	}
 }
 
 var (
-	songRegex   = regexp.MustCompile(`^/songs/([^/]+)/([^/]+)$`)
-	artistRegex = regexp.MustCompile(`^/artists/([^/]+)$`)
-	animeRegex  = regexp.MustCompile(`^/animes/([^/]+)$`)
+	songRegex     = regexp.MustCompile(`^/songs/([^/]+)/([^/]+)$`)
+	artistRegex   = regexp.MustCompile(`^/artists/([^/]+)$`)
+	animeRegex    = regexp.MustCompile(`^/animes/([^/]+)$`)
+	userRegex     = regexp.MustCompile(`^/users/([^/]+)$`)
+	playlistRegex = regexp.MustCompile(`^/playlists/([^/]+)$`)
 )
 
 func (u *seoUsecase) getAPIURL() string {
@@ -49,14 +57,16 @@ func (u *seoUsecase) GetMetadata(path string) (*domain.SEOData, error) {
 	siteName := "AniRank"
 	defaultTitle := "AniRank - The Ultimate Anime Music Ranking Platform"
 	defaultDesc := "Discover, rank, and listen to the best anime openings and endings. Create playlists, share with friends, and find your next favorite anime song."
-	defaultImage := fmt.Sprintf("%s/og/home", apiURL)
+	
+	version := u.ogVersion()
+	defaultImage := fmt.Sprintf("%s/og/home?v=%d", apiURL, version)
 
 	// 1. Home
 	if path == "/" || path == "" {
 		return &domain.SEOData{
 			Title:       defaultTitle,
 			Description: defaultDesc,
-			Image:       fmt.Sprintf("%s/og/home", apiURL),
+			Image:       defaultImage,
 			URL:         appURL,
 			Type:        "website",
 			SiteName:    siteName,
@@ -94,7 +104,7 @@ func (u *seoUsecase) GetMetadata(path string) (*domain.SEOData, error) {
 				desc := fmt.Sprintf("Listen to %s by %s, from the anime %s. Rank it and join the AniRank community.", songName, artistsStr, anime.Title)
 				
 				// Use dynamic OG image generator
-				image := fmt.Sprintf("%s/og/song/%s/%s", apiURL, animeSlug, songSlug)
+				image := fmt.Sprintf("%s/og/song/%s/%s?v=%d", apiURL, animeSlug, songSlug, version)
 
 				return &domain.SEOData{
 					Title:       title,
@@ -117,7 +127,7 @@ func (u *seoUsecase) GetMetadata(path string) (*domain.SEOData, error) {
 			desc := fmt.Sprintf("Explore all anime openings and endings by %s. See their rankings and discography on AniRank.", artist.Name)
 			
 			// Use dynamic OG image generator
-			image := fmt.Sprintf("%s/og/artist/%s", apiURL, slug)
+			image := fmt.Sprintf("%s/og/artist/%s?v=%d", apiURL, slug, version)
 
 			return &domain.SEOData{
 				Title:       title,
@@ -139,7 +149,7 @@ func (u *seoUsecase) GetMetadata(path string) (*domain.SEOData, error) {
 			desc := fmt.Sprintf("Discover and rank all the themes from %s. Find the best songs and artists for this anime on AniRank.", anime.Title)
 			
 			// Use dynamic OG image generator
-			image := fmt.Sprintf("%s/og/anime/%s", apiURL, slug)
+			image := fmt.Sprintf("%s/og/anime/%s?v=%d", apiURL, slug, version)
 
 			return &domain.SEOData{
 				Title:       title,
@@ -150,6 +160,43 @@ func (u *seoUsecase) GetMetadata(path string) (*domain.SEOData, error) {
 				SiteName:    siteName,
 			}, nil
 		}
+	}
+
+	// 5. Users
+	if matches := userRegex.FindStringSubmatch(path); len(matches) > 1 {
+		slug := matches[1]
+		user, err := u.userRepo.GetBySlug(ctx, slug)
+		if err == nil {
+			title := fmt.Sprintf("%s's Profile | %s", user.Name, siteName)
+			desc := fmt.Sprintf("Check out %s's anime theme song favorites, ratings, and stats on AniRank.", user.Name)
+			image := fmt.Sprintf("%s/og/user/%s?v=%d", apiURL, slug, version)
+
+			return &domain.SEOData{
+				Title:       title,
+				Description: desc,
+				Image:       image,
+				URL:         appURL + path,
+				Type:        "profile",
+				SiteName:    siteName,
+			}, nil
+		}
+	}
+
+	// 6. Playlists
+	if matches := playlistRegex.FindStringSubmatch(path); len(matches) > 1 {
+		id := matches[1]
+		title := fmt.Sprintf("Playlist | %s", siteName)
+		desc := "Check out this curated anime theme song playlist on AniRank."
+		image := fmt.Sprintf("%s/og/playlist/%s?v=%d", apiURL, id, version)
+
+		return &domain.SEOData{
+			Title:       title,
+			Description: desc,
+			Image:       image,
+			URL:         appURL + path,
+			Type:        "music.playlist",
+			SiteName:    siteName,
+		}, nil
 	}
 
 	// Default fallback

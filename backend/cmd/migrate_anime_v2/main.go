@@ -18,8 +18,8 @@ import (
 	"github.com/disintegration/gift"
 	"image"
 	"image/jpeg"
-	_ "image/png"
-	_ "golang.org/x/image/webp"
+
+	"anirank/api/internal/pkg/imageutil"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"net/http"
@@ -186,8 +186,8 @@ func processMirrorAndClean(ctx context.Context, s3Client *s3.Client, bucket, old
 		}
 	}
 
-	// Optimize to JPEG
-	img, _, err := image.Decode(bytes.NewReader(buffer))
+	// Optimize to JPEG (Supports AVIF/modern formats via fallback)
+	img, _, err := imageutil.Decode(bytes.NewReader(buffer))
 	if err != nil {
 		return oldPath, fmt.Errorf("image decode failed for %s: %w", oldPath, err)
 	}

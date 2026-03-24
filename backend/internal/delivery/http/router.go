@@ -240,6 +240,7 @@ func SetupPublicRoutes(app *fiber.App,
 
 	// Dashboard & System
 	adminOnly.Get("/dashboard", adminHandler.GetDashboard)
+	adminOnly.Post("/og/flush", ogHandler.FlushOGCache)
 
 	// Admin Moderation Tickets Review
 	adminOnly.Get("/songs/reports", moderationHandler.GetSongReports)

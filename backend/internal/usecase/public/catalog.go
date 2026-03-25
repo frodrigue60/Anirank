@@ -663,7 +663,7 @@ func (u *CatalogUsecase) enrichPlaylist(p *domain.Playlist) {
 }
 
 func (u *CatalogUsecase) GetSitemapData(ctx context.Context) ([]domain.SitemapItem, error) {
-	var allItems []domain.SitemapItem
+	allItems := []domain.SitemapItem{}
 
 	// 1. Animes (High Priority)
 	animes, err := u.animeRepo.GetPublicSlugs(ctx)

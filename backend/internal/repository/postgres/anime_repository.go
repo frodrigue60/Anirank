@@ -295,13 +295,13 @@ func (r *animeRepository) LoadRelations(ctx context.Context, anime *domain.Anime
 	}
 
 	// 2. Many-To-Many Joins
-	studiosQuery := `SELECT s.id, s.name, s.slug FROM studios s JOIN anime_studio ast ON s.id = ast.studio_id WHERE ast.anime_id = $1`
+	studiosQuery := `SELECT s.id, s.name, s.slug, s.logo, s.anime_count FROM studios s JOIN anime_studio ast ON s.id = ast.studio_id WHERE ast.anime_id = $1`
 	_ = r.db.SelectContext(ctx, &anime.Studios, studiosQuery, anime.ID)
 
 	genresQuery := `SELECT g.id, g.name, g.slug FROM genres g JOIN anime_genre ag ON g.id = ag.genre_id WHERE ag.anime_id = $1`
 	_ = r.db.SelectContext(ctx, &anime.Genres, genresQuery, anime.ID)
 
-	producersQuery := `SELECT p.id, p.name, p.slug FROM producers p JOIN anime_producer ap ON p.id = ap.producer_id WHERE ap.anime_id = $1`
+	producersQuery := `SELECT p.id, p.name, p.slug, p.logo, p.anime_count FROM producers p JOIN anime_producer ap ON p.id = ap.producer_id WHERE ap.anime_id = $1`
 	_ = r.db.SelectContext(ctx, &anime.Producers, producersQuery, anime.ID)
 
 	// 3. External Links
@@ -429,7 +429,7 @@ func (r *animeRepository) LoadManyRelations(ctx context.Context, animes []domain
 		}
 	}
 
-	studiosQuery := `SELECT s.id, s.name, s.slug, ast.anime_id FROM studios s JOIN anime_studio ast ON s.id = ast.studio_id WHERE ast.anime_id IN (?)`
+	studiosQuery := `SELECT s.id, s.name, s.slug, s.logo, s.anime_count, ast.anime_id FROM studios s JOIN anime_studio ast ON s.id = ast.studio_id WHERE ast.anime_id IN (?)`
 	var studioRows []struct {
 		domain.Studio
 		AnimeID uint64 `db:"anime_id"`

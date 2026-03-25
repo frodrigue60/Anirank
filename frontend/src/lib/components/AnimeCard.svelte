@@ -12,8 +12,7 @@
       alt={anime.title}
       title={anime.title}
       class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-      src={anime.cover_url ||
-        "https://placehold.co/400x600/2a2136/white?text=No+Image"}
+      src={anime.cover_url ?? "/images/placeholders/default.jpg"}
     />
     <div
       class="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent opacity-100 transition-opacity"

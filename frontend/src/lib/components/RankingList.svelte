@@ -65,8 +65,7 @@
                 <span class="material-symbols-outlined text-[12px] font-black"
                   >arrow_drop_up</span
                 >
-                <span class="text-[9px] font-black"
-                  >{previousRank! - rank}</span
+                <span class="text-[9px] font-black">{previousRank! - rank}</span
                 >
               </div>
             {:else if movement === "down"}
@@ -77,8 +76,7 @@
                 <span class="material-symbols-outlined text-[12px] font-black"
                   >arrow_drop_down</span
                 >
-                <span class="text-[9px] font-black"
-                  >{rank - previousRank!}</span
+                <span class="text-[9px] font-black">{rank - previousRank!}</span
                 >
               </div>
             {:else if movement === "stable"}
@@ -101,7 +99,7 @@
                 alt={getSongName(item)}
                 title={getSongName(item)}
                 class="w-full h-full object-cover"
-                src={item.anime?.thumbnail_url ??
+                src={item.anime?.cover_url ??
                   "/images/placeholders/default.jpg"}
               />
             </div>

@@ -89,15 +89,15 @@ func ToSongMinimalDTO(s *domain.Song) SongMinimalDTO {
 
 	var anime *SongAnimeDTO
 	if s.Anime != nil {
-		thumbnailUrl := ""
+		coverUrl := ""
 		if s.Anime.CoverUrl != nil {
-			thumbnailUrl = *s.Anime.CoverUrl
+			coverUrl = *s.Anime.CoverUrl
 		}
 		anime = &SongAnimeDTO{
-			Title:        s.Anime.Title,
-			Slug:         s.Anime.Slug,
-			ThumbnailUrl: thumbnailUrl,
-			BannerUrl:    s.Anime.BannerUrl,
+			Title:     s.Anime.Title,
+			Slug:      s.Anime.Slug,
+			CoverUrl:  coverUrl,
+			BannerUrl: s.Anime.BannerUrl,
 		}
 	}
 
@@ -179,10 +179,8 @@ func ToArtistMinimalDTO(a *domain.Artist) ArtistMinimalDTO {
 		NameJP:        a.NameJP,
 		Slug:          a.Slug,
 		AvatarUrl:     a.AvatarUrl,
-		SongsCount:    a.SongsCount,
 		EnabledSongs:  a.EnabledSongs,
 		DisabledSongs: a.DisabledSongs,
-		Status:        a.Status,
 	}
 }
 
@@ -259,27 +257,29 @@ func ToAnimeMinimalDTO(a *domain.Anime) AnimeMinimalDTO {
 		return AnimeMinimalDTO{}
 	}
 
-	var season, year, format *string
+	var season *SeasonDTO
 	if a.Season != nil {
-		season = &a.Season.Name
+		season = &SeasonDTO{Name: a.Season.Name}
 	}
+	var year *YearDTO
 	if a.Year != nil {
-		year = &a.Year.Name
+		year = &YearDTO{Name: a.Year.Name}
 	}
+	var format *FormatDTO
 	if a.Format != nil {
-		format = &a.Format.Name
+		format = &FormatDTO{Name: a.Format.Name}
 	}
 
 	return AnimeMinimalDTO{
-		ID:           a.ID,
-		Title:        a.Title,
-		Slug:         a.Slug,
-		ThumbnailUrl: a.CoverUrl,
-		BannerUrl:    a.BannerUrl,
-		SongsCount:   a.SongsCount,
-		Season:       season,
-		Year:         year,
-		Format:       format,
+		ID:         a.ID,
+		Title:      a.Title,
+		Slug:       a.Slug,
+		CoverUrl:   a.CoverUrl,
+		BannerUrl:  a.BannerUrl,
+		SongsCount: a.SongsCount,
+		Season:     season,
+		Year:       year,
+		Format:     format,
 	}
 }
 
@@ -290,17 +290,17 @@ func ToAnimeDTO(a *domain.Anime) AnimeDTO {
 
 	studios := make([]StudioDTO, 0)
 	for _, s := range a.Studios {
-		studios = append(studios, StudioDTO{ID: s.ID, Name: s.Name, Slug: s.Slug})
+		studios = append(studios, ToStudioDTO(&s))
 	}
 
 	producers := make([]ProducerDTO, 0)
 	for _, p := range a.Producers {
-		producers = append(producers, ProducerDTO{ID: p.ID, Name: p.Name, Slug: p.Slug})
+		producers = append(producers, ToProducerDTO(&p))
 	}
 
 	genres := make([]GenreDTO, 0)
 	for _, g := range a.Genres {
-		genres = append(genres, GenreDTO{ID: g.ID, Name: g.Name, Slug: g.Slug})
+		genres = append(genres, ToGenreDTO(&g))
 	}
 
 	links := make([]ExternalLinkDTO, 0)
@@ -315,5 +315,44 @@ func ToAnimeDTO(a *domain.Anime) AnimeDTO {
 		Producers:       producers,
 		Genres:          genres,
 		ExternalLinks:   links,
+	}
+}
+
+func ToStudioDTO(s *domain.Studio) StudioDTO {
+	if s == nil {
+		return StudioDTO{}
+	}
+	return StudioDTO{
+		ID:         s.ID,
+		Name:       s.Name,
+		Slug:       s.Slug,
+		LogoUrl:    s.LogoUrl,
+		BannerUrl:  s.BannerUrl,
+		AnimeCount: s.AnimeCount,
+	}
+}
+
+func ToProducerDTO(p *domain.Producer) ProducerDTO {
+	if p == nil {
+		return ProducerDTO{}
+	}
+	return ProducerDTO{
+		ID:         p.ID,
+		Name:       p.Name,
+		Slug:       p.Slug,
+		LogoUrl:    p.LogoUrl,
+		BannerUrl:  p.BannerUrl,
+		AnimeCount: p.AnimeCount,
+	}
+}
+
+func ToGenreDTO(g *domain.Genre) GenreDTO {
+	if g == nil {
+		return GenreDTO{}
+	}
+	return GenreDTO{
+		ID:   g.ID,
+		Name: g.Name,
+		Slug: g.Slug,
 	}
 }

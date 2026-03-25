@@ -246,6 +246,7 @@ func (u *CatalogUsecase) GetAnimesByStudioSlug(ctx context.Context, slug string,
 		u.enrichAnime(ctx, &animes[i])
 	}
 
+	u.enrichStudio(studio)
 	return studio, animes, total, nil
 }
 
@@ -282,6 +283,7 @@ func (u *CatalogUsecase) GetAnimesByProducerSlug(ctx context.Context, slug strin
 		u.enrichAnime(ctx, &animes[i])
 	}
 
+	u.enrichProducer(producer)
 	return producer, animes, total, nil
 }
 
@@ -629,6 +631,13 @@ func (u *CatalogUsecase) enrichSong(ctx context.Context, userID *uint64, s *doma
 func (u *CatalogUsecase) enrichAnime(ctx context.Context, anime *domain.Anime) {
 	anime.CoverUrl = u.mediaService.Resolve(anime.Cover)
 	anime.BannerUrl = u.mediaService.Resolve(anime.Banner)
+
+	for i := range anime.Studios {
+		u.enrichStudio(&anime.Studios[i])
+	}
+	for i := range anime.Producers {
+		u.enrichProducer(&anime.Producers[i])
+	}
 }
 
 func (u *CatalogUsecase) enrichStudio(s *domain.Studio) {

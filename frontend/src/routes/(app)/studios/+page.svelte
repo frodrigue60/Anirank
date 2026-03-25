@@ -55,8 +55,8 @@
       const response = await api.get("/studios", {
         params: {
           ...data.params,
-          page: nextPage
-        }
+          page: nextPage,
+        },
       });
 
       if (response.data.data) {
@@ -150,16 +150,13 @@
           class="group relative overflow-hidden rounded-xl bg-slate-800 aspect-video border border-transparent hover:border-primary/50 transition-all cursor-pointer shadow-lg shadow-black/20"
         >
           <!-- Background Image (Banner) -->
-          {#if studio.banner_url}
-            <div
-              class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
-              style="background-image: url('{studio.banner_url}'); filter:brightness(0.5)"
-            ></div>
-          {:else}
-            <div
-              class="absolute inset-0 bg-slate-700 transition-transform duration-500 group-hover:scale-105"
-            ></div>
-          {/if}
+
+          <div
+            class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
+            style="background-image: url('{studio.banner_url ??
+              '/images/placeholders/default-banner.jpg'}'); filter:brightness(0.5)"
+          ></div>
+
           <div
             class="absolute inset-0 bg-linear-to-t from-background-dark/95 via-background-dark/40 to-transparent"
           ></div>

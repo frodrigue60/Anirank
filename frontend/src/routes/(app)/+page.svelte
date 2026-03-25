@@ -87,7 +87,7 @@
                   title="Cover art for {homeData.featured_song.anime?.title ||
                     'featured theme'}"
                   class="w-full h-full object-cover"
-                  src={homeData.featured_song.anime?.thumbnail_url ??
+                  src={homeData.featured_song.anime?.cover_url ??
                     "/images/placeholders/default.jpg"}
                 />
                 <div
@@ -201,7 +201,7 @@
                       alt={getSongName(item)}
                       title={getSongName(item)}
                       class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      src={item.anime?.thumbnail_url ??
+                      src={item.anime?.cover_url ??
                         "/images/placeholders/default.jpg"}
                     />
                     <div
@@ -266,7 +266,7 @@
                       alt={getSongName(item)}
                       title={getSongName(item)}
                       class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      src={item.anime?.thumbnail_url ??
+                      src={item.anime?.cover_url ??
                         "/images/placeholders/default.jpg"}
                     />
                     <div
@@ -387,7 +387,7 @@
                     alt={getSongName(song)}
                     title={getSongName(song)}
                     class="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
-                    src={song.anime?.thumbnail_url ??
+                    src={song.anime?.cover_url ??
                       "/images/placeholders/default.jpg"}
                   />
                   <div
@@ -430,7 +430,7 @@
                     alt={getSongName(song)}
                     title={getSongName(song)}
                     class="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
-                    src={song.anime?.thumbnail_url ??
+                    src={song.anime?.cover_url ??
                       "/images/placeholders/default.jpg"}
                   />
                   <div
@@ -475,7 +475,7 @@
                     alt={getSongName(song)}
                     title={getSongName(song)}
                     class="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
-                    src={song.anime?.thumbnail_url ??
+                    src={song.anime?.cover_url ??
                       "/images/placeholders/default.jpg"}
                   />
                   <div

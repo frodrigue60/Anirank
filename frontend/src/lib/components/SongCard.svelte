@@ -12,8 +12,8 @@
   <div
     class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
     style="background-image: url('{song.anime?.banner_url ||
-      song.anime?.thumbnail_url ||
-      'https://placehold.co/800x400/2a2136/white?text=No+Art'}'); filter: brightness(0.5);"
+      song.anime?.cover_url ||
+      '/images/placeholders/default-banner.jpg'}'); filter: brightness(0.5);"
   ></div>
   <!-- Gradient Overlay -->
   <div
@@ -51,14 +51,9 @@
         by
         {#if song.artists && song.artists.length > 0}
           {#each song.artists as artist, i}
-            {#if artist.status === true}
-              <span class="transition-colors">{artist.name}</span
-              >{#if i < song.artists.length - 1},
-              {/if}
-            {:else}
-              <span class="transition-colors text-slate-500">N/A</span
-              >{#if i < song.artists.length - 1},
-              {/if}
+            <span class="transition-colors"
+              >{artist.name ?? artist.name_jp ?? "N/A"}</span
+            >{#if i < song.artists.length - 1},
             {/if}
           {/each}
         {:else}

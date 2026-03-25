@@ -142,9 +142,11 @@ func main() {
 
 		// Upsert Season
 		var seasonID uint64
-		err = tx.QueryRow(ctx, "SELECT id FROM seasons WHERE name = $1", a.Season).Scan(&seasonID)
+		// Normalize season name to Title Case (e.g., "winter" -> "Winter")
+		normalizedSeason := strings.Title(strings.ToLower(a.Season))
+		err = tx.QueryRow(ctx, "SELECT id FROM seasons WHERE name = $1", normalizedSeason).Scan(&seasonID)
 		if err != nil {
-			err = tx.QueryRow(ctx, "INSERT INTO seasons (name, current, created_at, updated_at) VALUES ($1, false, NOW(), NOW()) RETURNING id", a.Season).Scan(&seasonID)
+			err = tx.QueryRow(ctx, "INSERT INTO seasons (name, current, created_at, updated_at) VALUES ($1, false, NOW(), NOW()) RETURNING id", normalizedSeason).Scan(&seasonID)
 			if err != nil {
 				tx.Rollback(ctx)
 				log.Printf("Season Error: %v\n", err)
@@ -166,14 +168,6 @@ func main() {
 				log.Printf("Format Error: %v\n", err)
 			}
 		}
-
-		// Flush existing data for this anime if it exists
-		// We delete songs and their variants to ensure a clean re-hydration
-		_, _ = tx.Exec(ctx, "DELETE FROM song_variants WHERE song_id IN (SELECT id FROM songs WHERE anime_id IN (SELECT id FROM animes WHERE slug = $1))", a.Slug)
-		_, _ = tx.Exec(ctx, "DELETE FROM artist_song WHERE song_id IN (SELECT id FROM songs WHERE anime_id IN (SELECT id FROM animes WHERE slug = $1))", a.Slug)
-		_, _ = tx.Exec(ctx, "DELETE FROM songs WHERE anime_id IN (SELECT id FROM animes WHERE slug = $1)", a.Slug)
-		_, _ = tx.Exec(ctx, "DELETE FROM anime_studio WHERE anime_id IN (SELECT id FROM animes WHERE slug = $1)", a.Slug)
-
 		// Find Image
 		coverUrl := ""
 		for _, img := range a.Images {
@@ -195,16 +189,47 @@ func main() {
 			}
 		}
 
-		// Upsert Anime
+		// Enforce hyphenated slug for anime
+		animeSlug := slugify(a.Slug)
+
+		// Find existing Anime by AniList ID first, then by slug
 		var animeID uint64
-		err = tx.QueryRow(ctx, "SELECT id FROM animes WHERE slug = $1", a.Slug).Scan(&animeID)
-		if err == nil {
-			_, err = tx.Exec(ctx, "UPDATE animes SET title = $1, cover = $2, description = $3, format_id = $4, anilist_id = $5, updated_at = NOW() WHERE id = $6", a.Name, coverUrl, a.Synopsis, formatID, anilistID, animeID)
+		found := false
+		var errLookup error
+
+		if anilistID > 0 {
+			errLookup = tx.QueryRow(ctx, "SELECT id FROM animes WHERE anilist_id = $1", anilistID).Scan(&animeID)
+			if errLookup == nil {
+				found = true
+			}
+		}
+
+		if !found {
+			errLookup = tx.QueryRow(ctx, "SELECT id FROM animes WHERE slug = $1", animeSlug).Scan(&animeID)
+			if errLookup == nil {
+				found = true
+			}
+		}
+
+		// Flush existing data for this anime if found
+		if found {
+			// We delete songs and their variants to ensure a clean re-hydration
+			_, _ = tx.Exec(ctx, "DELETE FROM song_variants WHERE song_id IN (SELECT id FROM songs WHERE anime_id = $1)", animeID)
+			_, _ = tx.Exec(ctx, "DELETE FROM artist_song WHERE song_id IN (SELECT id FROM songs WHERE anime_id = $1)", animeID)
+			_, _ = tx.Exec(ctx, "DELETE FROM songs WHERE anime_id = $1", animeID)
+			_, _ = tx.Exec(ctx, "DELETE FROM anime_studio WHERE anime_id = $1", animeID)
+
+			// Update the anime itself (enforcing new slug and metadata)
+			_, err = tx.Exec(ctx, `
+				UPDATE animes 
+				SET title = $1, slug = $2, cover = $3, description = $4, format_id = $5, anilist_id = $6, season_id = $7, year_id = $8, updated_at = NOW() 
+				WHERE id = $9`, a.Name, animeSlug, coverUrl, a.Synopsis, formatID, anilistID, seasonID, yearID, animeID)
 		} else {
+			// Not found at all, insert new
 			err = tx.QueryRow(ctx, `
 				INSERT INTO animes (title, slug, cover, description, format_id, anilist_id, season_id, year_id, status, created_at, updated_at) 
 				VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true, NOW(), NOW()) 
-				RETURNING id`, a.Name, a.Slug, coverUrl, a.Synopsis, formatID, anilistID, seasonID, yearID).Scan(&animeID)
+				RETURNING id`, a.Name, animeSlug, coverUrl, a.Synopsis, formatID, anilistID, seasonID, yearID).Scan(&animeID)
 		}
 		if err != nil {
 			tx.Rollback(ctx)
@@ -215,9 +240,10 @@ func main() {
 		// Process Studios
 		for _, s := range a.Studios {
 			var studioID uint64
-			err = tx.QueryRow(ctx, "SELECT id FROM studios WHERE slug = $1", s.Slug).Scan(&studioID)
+			sSlug := slugify(s.Name)
+			err = tx.QueryRow(ctx, "SELECT id FROM studios WHERE slug = $1", sSlug).Scan(&studioID)
 			if err != nil {
-				err = tx.QueryRow(ctx, "INSERT INTO studios (name, slug, created_at, updated_at) VALUES ($1, $2, NOW(), NOW()) RETURNING id", s.Name, s.Slug).Scan(&studioID)
+				err = tx.QueryRow(ctx, "INSERT INTO studios (name, slug, created_at, updated_at) VALUES ($1, $2, NOW(), NOW()) RETURNING id", s.Name, sSlug).Scan(&studioID)
 			}
 			if err == nil {
 				_, _ = tx.Exec(ctx, "INSERT INTO anime_studio (anime_id, studio_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", animeID, studioID)
@@ -240,7 +266,7 @@ func main() {
 			var songID uint64
 			err = tx.QueryRow(ctx, "SELECT id FROM songs WHERE slug = $1 AND anime_id = $2", songSlug, animeID).Scan(&songID)
 			if err == nil {
-				_, err = tx.Exec(ctx, "UPDATE songs SET song_romaji = $1, updated_at = NOW() WHERE id = $2", t.Song.Title, songID)
+				_, err = tx.Exec(ctx, "UPDATE songs SET song_romaji = $1, season_id = $2, year_id = $3, updated_at = NOW() WHERE id = $4", t.Song.Title, seasonID, yearID, songID)
 			} else {
 				err = tx.QueryRow(ctx, `
 					INSERT INTO songs (song_romaji, song_jp, song_en, slug, type, theme_num, anime_id, season_id, year_id, status, created_at, updated_at)
@@ -277,14 +303,15 @@ func main() {
 			// Process Artists
 			for _, art := range t.Song.Artists {
 				var artistID uint64
-				err = tx.QueryRow(ctx, "SELECT id FROM artists WHERE slug = $1", art.Slug).Scan(&artistID)
+				aSlug := slugify(art.Name)
+				err = tx.QueryRow(ctx, "SELECT id FROM artists WHERE slug = $1", aSlug).Scan(&artistID)
 				if err == nil {
 					_, err = tx.Exec(ctx, "UPDATE artists SET name = $1, updated_at = NOW() WHERE id = $2", art.Name, artistID)
 				} else {
 					err = tx.QueryRow(ctx, `
 						INSERT INTO artists (name, slug, status, created_at, updated_at)
 						VALUES ($1, $2, true, NOW(), NOW())
-						RETURNING id`, art.Name, art.Slug).Scan(&artistID)
+						RETURNING id`, art.Name, aSlug).Scan(&artistID)
 				}
 
 				if err != nil {
@@ -313,4 +340,27 @@ func main() {
 	}
 
 	fmt.Println("Hydration Complete!")
+}
+
+func slugify(s string) string {
+	s = strings.ToLower(s)
+	// Replace underscores and spaces with hyphens
+	s = strings.ReplaceAll(s, "_", "-")
+	s = strings.ReplaceAll(s, " ", "-")
+
+	// Remove non-alphanumeric (except hyphen)
+	var result strings.Builder
+	for _, r := range s {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' {
+			result.WriteRune(r)
+		}
+	}
+	s = result.String()
+
+	// Remove duplicate hyphens
+	for strings.Contains(s, "--") {
+		s = strings.ReplaceAll(s, "--", "-")
+	}
+
+	return strings.Trim(s, "-")
 }

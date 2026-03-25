@@ -2,10 +2,11 @@ package postgres
 
 import (
 	"context"
+	"fmt"
+	"log"
 	"strings"
 
 	"anirank/api/internal/domain"
-	"fmt"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -15,7 +16,7 @@ type taxonomyRepository struct {
 }
 
 func NewTaxonomyRepository(db *sqlx.DB) domain.TaxonomyRepository {
-	return &taxonomyRepository{db: db}
+	return &taxonomyRepository{db: db.Unsafe()}
 }
 
 func (r *taxonomyRepository) GetAllYears(ctx context.Context) ([]domain.Year, error) {
@@ -86,11 +87,10 @@ func (r *taxonomyRepository) SearchGenres(ctx context.Context, term string, limi
 func (r *taxonomyRepository) GetPaginatedStudios(ctx context.Context, limit, offset int, filters domain.StudioFilters) ([]domain.Studio, error) {
 	var studios []domain.Studio
 
-	// Subqueries for count and latest banner
-	countSubquery := "(SELECT COUNT(*) FROM anime_studio asu JOIN animes a ON asu.anime_id = a.id WHERE asu.studio_id = s.id AND a.status = true)"
+	// Subquery for latest banner
 	bannerSubquery := "(SELECT a.banner FROM animes a JOIN anime_studio asu ON a.id = asu.anime_id WHERE asu.studio_id = s.id AND a.status = true ORDER BY a.year_id DESC, a.season_id DESC LIMIT 1)"
 
-	query := "SELECT * FROM (SELECT s.*, " + countSubquery + " as anime_count, " + bannerSubquery + " as latest_banner FROM studios s) as t WHERE anime_count > 0"
+	query := "SELECT id, name, slug, logo, anime_count, " + bannerSubquery + " as latest_banner FROM studios s WHERE anime_count > 0"
 	var args []interface{}
 
 	if filters.Search != "" {
@@ -120,6 +120,10 @@ func (r *taxonomyRepository) GetPaginatedStudios(ctx context.Context, limit, off
 		return nil, err
 	}
 
+	if len(studios) > 0 {
+		log.Printf("[DEBUG-Repo] First Studio: %s, AnimeCount: %d\n", studios[0].Name, studios[0].AnimeCount)
+	}
+
 	if studios == nil {
 		studios = []domain.Studio{}
 	}
@@ -129,7 +133,7 @@ func (r *taxonomyRepository) GetPaginatedStudios(ctx context.Context, limit, off
 
 func (r *taxonomyRepository) GetStudioBySlug(ctx context.Context, slug string) (*domain.Studio, error) {
 	var s domain.Studio
-	query := "SELECT id, name, slug, logo as logo, created_at, updated_at FROM studios WHERE slug = $1"
+	query := "SELECT id, name, slug, logo, anime_count, created_at, updated_at FROM studios WHERE slug = $1"
 	err := r.db.GetContext(ctx, &s, query, slug)
 	if err != nil {
 		fmt.Printf("[CRITICAL-DEBUG] GetStudioBySlug failed for slug %s: %v\n", slug, err)
@@ -145,10 +149,11 @@ func (r *taxonomyRepository) GetAnimesByStudioID(ctx context.Context, studioID u
 			a.id, a.title, a.slug, a.description, a.anilist_id, a.status, a.cover, a.banner, a.year_id, a.season_id, a.format_id, a.created_at, a.updated_at,
 			f.id as "format.id", f.name as "format.name",
 			y.id as "year.id", y.name as "year.name",
-			y.id as "year.id", y.name as "year.name"
+			s.id as "season.id", s.name as "season.name"
 		FROM animes a
 		LEFT JOIN formats f ON a.format_id = f.id
 		LEFT JOIN years y ON a.year_id = y.id
+		LEFT JOIN seasons s ON a.season_id = s.id
 		JOIN anime_studio asu ON a.id = asu.anime_id
 		WHERE asu.studio_id = $1 AND a.status = true
 		ORDER BY a.year_id DESC, a.season_id DESC
@@ -175,11 +180,10 @@ func (r *taxonomyRepository) CountAnimesByStudioID(ctx context.Context, studioID
 func (r *taxonomyRepository) GetPaginatedProducers(ctx context.Context, limit, offset int, filters domain.ProducerFilters) ([]domain.Producer, error) {
 	var producers []domain.Producer
 
-	// Subqueries for count and latest banner (matching Studios pattern)
-	countSubquery := "(SELECT COUNT(*) FROM anime_producer apu JOIN animes a ON apu.anime_id = a.id WHERE apu.producer_id = p.id AND a.status = true)"
+	// Subquery for latest banner (matching Studios pattern)
 	bannerSubquery := "(SELECT a.banner FROM animes a JOIN anime_producer apu ON a.id = apu.anime_id WHERE apu.producer_id = p.id AND a.status = true ORDER BY a.year_id DESC, a.season_id DESC LIMIT 1)"
 
-	query := "SELECT * FROM (SELECT p.*, " + countSubquery + " as anime_count, " + bannerSubquery + " as latest_banner FROM producers p) as t WHERE anime_count > 0"
+	query := "SELECT id, name, slug, logo, anime_count, " + bannerSubquery + " as latest_banner FROM producers p WHERE anime_count > 0"
 	var args []interface{}
 
 	if filters.Search != "" {
@@ -212,7 +216,7 @@ func (r *taxonomyRepository) GetPaginatedProducers(ctx context.Context, limit, o
 
 func (r *taxonomyRepository) GetProducerBySlug(ctx context.Context, slug string) (*domain.Producer, error) {
 	var p domain.Producer
-	query := "SELECT id, name, slug, logo as logo, created_at, updated_at FROM producers WHERE slug = $1"
+	query := "SELECT id, name, slug, logo, anime_count, created_at, updated_at FROM producers WHERE slug = $1"
 	err := r.db.GetContext(ctx, &p, query, slug)
 	if err != nil {
 		fmt.Printf("[CRITICAL-DEBUG] GetProducerBySlug failed for slug %s: %v\n", slug, err)
@@ -228,10 +232,11 @@ func (r *taxonomyRepository) GetAnimesByProducerID(ctx context.Context, producer
 			a.id, a.title, a.slug, a.description, a.anilist_id, a.status, a.cover, a.banner, a.year_id, a.season_id, a.format_id, a.created_at, a.updated_at,
 			f.id as "format.id", f.name as "format.name",
 			y.id as "year.id", y.name as "year.name",
-			y.id as "year.id", y.name as "year.name"
+			s.id as "season.id", s.name as "season.name"
 		FROM animes a
 		LEFT JOIN formats f ON a.format_id = f.id
 		LEFT JOIN years y ON a.year_id = y.id
+		LEFT JOIN seasons s ON a.season_id = s.id
 		JOIN anime_producer apu ON a.id = apu.anime_id
 		WHERE apu.producer_id = $1 AND a.status = true
 		ORDER BY a.year_id DESC, a.season_id DESC
@@ -326,6 +331,7 @@ func (r *taxonomyRepository) GetOrCreateYear(ctx context.Context, name string) (
 }
 
 func (r *taxonomyRepository) GetOrCreateSeason(ctx context.Context, name string) (*domain.Season, error) {
+	name = strings.Title(strings.ToLower(name))
 	var s domain.Season
 	err := r.db.GetContext(ctx, &s, "SELECT id, name, current, created_at, updated_at FROM seasons WHERE name = $1 LIMIT 1", name)
 	if err == nil {

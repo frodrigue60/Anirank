@@ -196,7 +196,7 @@
                 <div
                   class="mt-1.5 inline-flex items-center px-3 py-1 rounded-full bg-primary/20 text-primary text-[11px] font-bold border border-primary/20"
                 >
-                  {artist.songs_count || 0} Themes
+                  {artist.enabled_songs || 0} Themes
                 </div>
               </div>
             </div>

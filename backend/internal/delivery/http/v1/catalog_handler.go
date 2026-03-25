@@ -229,7 +229,7 @@ func (h *CatalogHandler) StudioIndex(c *fiber.Ctx) error {
 
 	studioDTOs := make([]dto.StudioDTO, len(studios))
 	for i, s := range studios {
-		studioDTOs[i] = dto.StudioDTO{ID: s.ID, Name: s.Name, Slug: s.Slug}
+		studioDTOs[i] = dto.ToStudioDTO(&s)
 	}
 
 	return c.JSON(fiber.Map{"studios": paginatedResponse(studioDTOs, total, page, limit)})
@@ -255,7 +255,7 @@ func (h *CatalogHandler) StudioShow(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"success": true,
-		"studio":  dto.StudioDTO{ID: studio.ID, Name: studio.Name, Slug: studio.Slug},
+		"studio":  dto.ToStudioDTO(studio),
 		"animes":  paginatedResponse(animeDTOs, total, page, limit),
 	})
 }
@@ -282,7 +282,7 @@ func (h *CatalogHandler) ProducerIndex(c *fiber.Ctx) error {
 
 	producerDTOs := make([]dto.ProducerDTO, len(producers))
 	for i, p := range producers {
-		producerDTOs[i] = dto.ProducerDTO{ID: p.ID, Name: p.Name, Slug: p.Slug}
+		producerDTOs[i] = dto.ToProducerDTO(&p)
 	}
 
 	return c.JSON(fiber.Map{"producers": paginatedResponse(producerDTOs, total, page, limit)})
@@ -308,7 +308,7 @@ func (h *CatalogHandler) ProducerShow(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"success":  true,
-		"producer": dto.ProducerDTO{ID: producer.ID, Name: producer.Name, Slug: producer.Slug},
+		"producer": dto.ToProducerDTO(producer),
 		"animes":   paginatedResponse(animeDTOs, total, page, limit),
 	})
 }

@@ -303,19 +303,24 @@ func main() {
 			// Process Artists
 			for _, art := range t.Song.Artists {
 				var artistID uint64
-				aSlug := slugify(art.Name)
-				err = tx.QueryRow(ctx, "SELECT id FROM artists WHERE slug = $1", aSlug).Scan(&artistID)
+				cleanName := strings.TrimSpace(art.Name)
+				aSlug := slugify(cleanName)
+
+				// Find existing Artist by name (case-insensitive) OR slug
+				err = tx.QueryRow(ctx, "SELECT id FROM artists WHERE LOWER(name) = LOWER($1) OR slug = $2 LIMIT 1", cleanName, aSlug).Scan(&artistID)
 				if err == nil {
-					_, err = tx.Exec(ctx, "UPDATE artists SET name = $1, updated_at = NOW() WHERE id = $2", art.Name, artistID)
+					// Update existing to ensure name matches Exactly (case-sensitive update) and slug matches
+					_, err = tx.Exec(ctx, "UPDATE artists SET name = $1, slug = $2, updated_at = NOW() WHERE id = $3", cleanName, aSlug, artistID)
 				} else {
+					// Not found, insert new
 					err = tx.QueryRow(ctx, `
 						INSERT INTO artists (name, slug, status, created_at, updated_at)
 						VALUES ($1, $2, true, NOW(), NOW())
-						RETURNING id`, art.Name, aSlug).Scan(&artistID)
+						RETURNING id`, cleanName, aSlug).Scan(&artistID)
 				}
 
 				if err != nil {
-					log.Printf("Artist Error (%s): %v\n", art.Slug, err)
+					log.Printf("Artist Error (%s): %v\n", cleanName, err)
 					continue
 				}
 
@@ -337,6 +342,36 @@ func main() {
 		} else {
 			fmt.Printf("Successfully hydrated: %s\n", a.Name)
 		}
+	}
+
+	// Post-hydration: Recalculate all artist song counts from ground truth
+	fmt.Println("Recalculating artist song counts...")
+	_, err = pool.Exec(ctx, `
+		UPDATE artists SET enabled_songs = sub.cnt
+		FROM (
+			SELECT a.id, COALESCE(COUNT(s.id), 0) AS cnt
+			FROM artists a
+			LEFT JOIN artist_song asng ON asng.artist_id = a.id
+			LEFT JOIN songs s ON s.id = asng.song_id AND s.status = true
+			GROUP BY a.id
+		) sub
+		WHERE artists.id = sub.id`)
+	if err != nil {
+		log.Printf("Error recalculating enabled_songs: %v\n", err)
+	}
+
+	_, err = pool.Exec(ctx, `
+		UPDATE artists SET disabled_songs = sub.cnt
+		FROM (
+			SELECT a.id, COALESCE(COUNT(s.id), 0) AS cnt
+			FROM artists a
+			LEFT JOIN artist_song asng ON asng.artist_id = a.id
+			LEFT JOIN songs s ON s.id = asng.song_id AND s.status = false
+			GROUP BY a.id
+		) sub
+		WHERE artists.id = sub.id`)
+	if err != nil {
+		log.Printf("Error recalculating disabled_songs: %v\n", err)
 	}
 
 	fmt.Println("Hydration Complete!")

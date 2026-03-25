@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"anirank/api/internal/domain"
+	"anirank/api/internal/dto"
 	"anirank/api/internal/usecase/public"
 
 	"github.com/gofiber/fiber/v2"
@@ -64,8 +65,13 @@ func (h *AnimeHandler) Index(c *fiber.Ctx) error {
 		lastPage = 1
 	}
 
+	animeDTOs := make([]dto.AnimeMinimalDTO, len(animes))
+	for i, a := range animes {
+		animeDTOs[i] = dto.ToAnimeMinimalDTO(&a)
+	}
+
 	return c.JSON(fiber.Map{
-		"data":         animes,
+		"data":         animeDTOs,
 		"current_page": page,
 		"last_page":    lastPage,
 		"per_page":     limit,
@@ -90,5 +96,8 @@ func (h *AnimeHandler) Show(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(anime)
+	return c.JSON(fiber.Map{
+		"success": true,
+		"data":    dto.ToAnimeDTO(anime),
+	})
 }

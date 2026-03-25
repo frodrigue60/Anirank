@@ -2,21 +2,22 @@ package public
 
 import (
 	"context"
-	"os"
-	"strings"
 
 	"anirank/api/internal/domain"
+	"anirank/api/internal/infrastructure"
 )
 
 type AnimeUsecase struct {
-	animeRepo domain.AnimeRepository
-	songRepo  domain.SongRepository
+	animeRepo    domain.AnimeRepository
+	songRepo     domain.SongRepository
+	mediaService infrastructure.MediaService
 }
 
-func NewAnimeUsecase(ar domain.AnimeRepository, sr domain.SongRepository) *AnimeUsecase {
+func NewAnimeUsecase(ar domain.AnimeRepository, sr domain.SongRepository, media infrastructure.MediaService) *AnimeUsecase {
 	return &AnimeUsecase{
-		animeRepo: ar,
-		songRepo:  sr,
+		animeRepo:    ar,
+		songRepo:     sr,
+		mediaService: media,
 	}
 }
 
@@ -73,23 +74,6 @@ func (u *AnimeUsecase) GetPaginatedAnimes(ctx context.Context, limit, offset int
 }
 
 func (u *AnimeUsecase) enrichAnime(ctx context.Context, anime *domain.Anime) {
-	// Compute image URLs from path columns
-	storageBase := os.Getenv("S3_PUBLIC_URL") + "/"
-
-	if anime.Cover != nil && anime.CoverUrl == nil {
-		if strings.HasPrefix(*anime.Cover, "http") {
-			anime.CoverUrl = anime.Cover
-		} else {
-			url := storageBase + *anime.Cover
-			anime.CoverUrl = &url
-		}
-	}
-	if anime.Banner != nil && anime.BannerUrl == nil {
-		if strings.HasPrefix(*anime.Banner, "http") {
-			anime.BannerUrl = anime.Banner
-		} else {
-			url := storageBase + *anime.Banner
-			anime.BannerUrl = &url
-		}
-	}
+	anime.CoverUrl = u.mediaService.Resolve(anime.Cover)
+	anime.BannerUrl = u.mediaService.Resolve(anime.Banner)
 }

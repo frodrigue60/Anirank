@@ -146,7 +146,7 @@ func main() {
 	googleClient := google.NewClient()
 
 	discoveryUsecase := public.NewDiscoveryUsecase(taxonomyRepo)
-	animeUsecase := public.NewAnimeUsecase(animeRepo, songRepo)
+	animeUsecase := public.NewAnimeUsecase(animeRepo, songRepo, mediaService)
 	searchUsecase := public.NewSearchUsecase(animeRepo, songRepo, artistRepo, taxonomyRepo, userRepo, storageService)
 	catalogUsecase := public.NewCatalogUsecase(animeRepo, songRepo, artistRepo, taxonomyRepo, userRepo, playlistRepo, interactionRepo, moderationRepo, mediaService, appCache)
 	xpUsecase := usecase.NewXPUsecase(xpRepo, userRepo)

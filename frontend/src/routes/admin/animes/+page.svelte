@@ -8,7 +8,8 @@
   let { data } = $props();
 
   let animes = $derived(data.animes);
-  let meta = $derived(data.meta);
+  let pagination = $derived(data.pagination);
+  let filters = $derived(data.filters);
   let years = $derived(data.years);
   let seasons = $derived(data.seasons);
   let formats = $derived(data.formats);
@@ -42,11 +43,11 @@
   });
 
   $effect(() => {
-    searchQuery = data.meta.search || "";
-    selectedYear = data.meta.year || "";
-    selectedSeason = data.meta.season || "";
-    selectedFormat = data.meta.format || "";
-    selectedStatus = data.meta.status || "";
+    searchQuery = data.filters.search || "";
+    selectedYear = data.filters.year || "";
+    selectedSeason = data.filters.season || "";
+    selectedFormat = data.filters.format || "";
+    selectedStatus = data.filters.status || "";
   });
 
   function getQueryString(page: number = 1) {
@@ -65,7 +66,7 @@
   }
 
   function changePage(newPage: number) {
-    if (newPage >= 1 && newPage <= meta.total_pages) {
+    if (newPage >= 1 && newPage <= pagination.last_page) {
       goto(`/admin/animes?${getQueryString(newPage)}`);
     }
   }
@@ -412,7 +413,7 @@
   </div>
 
   <!-- Pagination -->
-  {#if meta?.total_pages > 1}
+  {#if pagination?.last_page > 1}
     <div
       class="px-6 py-4 border-t border-white/5 flex items-center justify-between"
     >
@@ -421,8 +422,8 @@
       </div>
       <div class="flex items-center gap-2">
         <button
-          disabled={meta.current_page === 1}
-          onclick={() => changePage(meta.current_page - 1)}
+          disabled={pagination.current_page === 1}
+          onclick={() => changePage(pagination.current_page - 1)}
           aria-label="Previous Page"
           class="p-2 rounded-lg border border-white/10 text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/5 transition-colors"
         >
@@ -440,11 +441,11 @@
           >
         </button>
         <span class="text-sm text-gray-300 font-medium px-2"
-          >Page {meta.current_page} of {meta.total_pages}</span
+          >Page {pagination.current_page} of {pagination.last_page}</span
         >
         <button
-          disabled={meta.current_page === meta.total_pages}
-          onclick={() => changePage(meta.current_page + 1)}
+          disabled={pagination.current_page === pagination.last_page}
+          onclick={() => changePage(pagination.current_page + 1)}
           aria-label="Next Page"
           class="p-2 rounded-lg border border-white/10 text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/5 transition-colors"
         >

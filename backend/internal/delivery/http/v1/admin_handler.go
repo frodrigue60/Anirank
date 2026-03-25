@@ -18,20 +18,58 @@ func NewAdminHandler(usecase *admin.AdminUsecase) *AdminHandler {
 	return &AdminHandler{usecase: usecase}
 }
 
-func (h *AdminHandler) paginatedResponse(items interface{}, total int, page, perPage int) fiber.Map {
+func (h *AdminHandler) paginatedResponse(c *fiber.Ctx, items interface{}, total int, page, perPage int) fiber.Map {
 	totalPages := int(math.Ceil(float64(total) / float64(perPage)))
 	if totalPages < 1 {
 		totalPages = 1
 	}
-	return fiber.Map{
+
+	path := c.Path()
+	queryParams := c.Queries()
+
+	// Strip /api prefix if present to avoid doubling with frontend baseURL
+	cleanPath := strings.TrimPrefix(path, "/api")
+
+	buildURL := func(p int) string {
+		q := make(map[string]string)
+		for k, v := range queryParams {
+			q[k] = v
+		}
+		q["page"] = strconv.Itoa(p)
+		u := cleanPath + "?"
+		for k, v := range q {
+			u += k + "=" + v + "&"
+		}
+		return u[:len(u)-1]
+	}
+
+	response := fiber.Map{
 		"data": items,
-		"meta": fiber.Map{
-			"current_page": page,
-			"total_pages":  totalPages,
-			"per_page":     perPage,
+		"pagination": fiber.Map{
 			"total":        total,
+			"per_page":     perPage,
+			"current_page": page,
+			"last_page":    totalPages,
+			"has_more":     page < totalPages,
+		},
+		"links": fiber.Map{
+			"self": buildURL(page),
 		},
 	}
+
+	if page < totalPages {
+		response["links"].(fiber.Map)["next"] = buildURL(page + 1)
+	} else {
+		response["links"].(fiber.Map)["next"] = nil
+	}
+
+	if page > 1 {
+		response["links"].(fiber.Map)["prev"] = buildURL(page - 1)
+	} else {
+		response["links"].(fiber.Map)["prev"] = nil
+	}
+
+	return response
 }
 
 func (h *AdminHandler) getAuditMetadata(c *fiber.Ctx) domain.AuditMetadata {
@@ -75,7 +113,7 @@ func (h *AdminHandler) GetUsers(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(h.paginatedResponse(users, total, page, limit))
+	return c.JSON(h.paginatedResponse(c, users, total, page, limit))
 }
 
 func (h *AdminHandler) GetRoles(c *fiber.Ctx) error {
@@ -192,7 +230,7 @@ func (h *AdminHandler) GetAnimes(c *fiber.Ctx) error {
 	}
 	h.usecase.ResolveAnimesURLs(animes)
 
-	return c.JSON(h.paginatedResponse(animes, total, page, limit))
+	return c.JSON(h.paginatedResponse(c, animes, total, page, limit))
 }
 
 func (h *AdminHandler) GetAnime(c *fiber.Ctx) error {
@@ -382,7 +420,7 @@ func (h *AdminHandler) GetSongs(c *fiber.Ctx) error {
 	}
 	h.usecase.ResolveSongsURLs(songs)
 
-	return c.JSON(h.paginatedResponse(songs, total, page, limit))
+	return c.JSON(h.paginatedResponse(c, songs, total, page, limit))
 }
 
 func (h *AdminHandler) GetLatestSongNumber(c *fiber.Ctx) error {
@@ -527,7 +565,7 @@ func (h *AdminHandler) getVariantsInternal(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(h.paginatedResponse(variants, total, page, limit))
+	return c.JSON(h.paginatedResponse(c, variants, total, page, limit))
 }
 
 func (h *AdminHandler) CreateVariant(c *fiber.Ctx) error {
@@ -600,7 +638,7 @@ func (h *AdminHandler) GetArtists(c *fiber.Ctx) error {
 	}
 	h.usecase.ResolveArtistsURLs(artists)
 
-	return c.JSON(h.paginatedResponse(artists, total, page, limit))
+	return c.JSON(h.paginatedResponse(c, artists, total, page, limit))
 }
 
 func (h *AdminHandler) GetArtist(c *fiber.Ctx) error {
@@ -926,7 +964,7 @@ func (h *AdminHandler) GetAuditLogs(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(h.paginatedResponse(logs, total, page, limit))
+	return c.JSON(h.paginatedResponse(c, logs, total, page, limit))
 }
 
 func (h *AdminHandler) GetAuditLog(c *fiber.Ctx) error {

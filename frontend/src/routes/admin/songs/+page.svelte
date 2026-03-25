@@ -8,19 +8,20 @@
   let { data } = $props();
 
   let songs = $derived(data.songs);
-  let meta = $derived(data.meta);
+  let pagination = $derived(data.pagination);
+  let filters = $derived(data.filters);
 
   // svelte-ignore state_referenced_locally
-  let searchQuery = $state(data.meta.search || "");
+  let searchQuery = $state(data.filters.search || "");
   // svelte-ignore state_referenced_locally
-  let animeIdInput = $state(data.meta.anime || "");
+  let animeIdInput = $state(data.filters.anime || "");
   // svelte-ignore state_referenced_locally
-  let statusFilter = $state(data.meta.status || "");
+  let statusFilter = $state(data.filters.status || "");
 
   $effect(() => {
-    searchQuery = data.meta.search || "";
-    animeIdInput = data.meta.anime || "";
-    statusFilter = data.meta.status || "";
+    searchQuery = data.filters.search || "";
+    animeIdInput = data.filters.anime || "";
+    statusFilter = data.filters.status || "";
   });
 
   function handleSearch() {
@@ -28,7 +29,7 @@
   }
 
   function changePage(newPage: number) {
-    if (newPage >= 1 && newPage <= meta.total_pages) {
+    if (newPage >= 1 && newPage <= pagination.last_page) {
       goto(`/admin/songs?search=${searchQuery}&anime=${animeIdInput}&status=${statusFilter}&page=${newPage}`);
     }
   }
@@ -345,7 +346,7 @@
   </div>
 
   <!-- Pagination -->
-  {#if meta?.total_pages > 1}
+  {#if pagination?.last_page > 1}
     <div
       class="px-6 py-4 border-t border-white/5 flex items-center justify-between"
     >
@@ -354,8 +355,8 @@
       </div>
       <div class="flex items-center gap-2">
         <button
-          disabled={meta.current_page === 1}
-          onclick={() => changePage(meta.current_page - 1)}
+          disabled={pagination.current_page === 1}
+          onclick={() => changePage(pagination.current_page - 1)}
           aria-label="Previous Page"
           class="p-2 rounded-lg border border-white/10 text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/5 transition-colors"
         >
@@ -373,11 +374,11 @@
           >
         </button>
         <span class="text-sm text-gray-300 font-medium px-2"
-          >Page {meta.current_page} of {meta.total_pages}</span
+          >Page {pagination.current_page} of {pagination.last_page}</span
         >
         <button
-          disabled={meta.current_page === meta.total_pages}
-          onclick={() => changePage(meta.current_page + 1)}
+          disabled={pagination.current_page === pagination.last_page}
+          onclick={() => changePage(pagination.current_page + 1)}
           aria-label="Next Page"
           class="p-2 rounded-lg border border-white/10 text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/5 transition-colors"
         >

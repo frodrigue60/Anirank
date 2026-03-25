@@ -5,28 +5,28 @@
   import InfiniteScroll from "$lib/components/InfiniteScroll.svelte";
   import api from "$lib/api";
   import { Search, SortDesc } from "lucide-svelte";
+  import SEO from "$lib/components/SEO.svelte";
 
   let { data }: { data: any } = $props();
+
+  let searchQuery = $state("");
+  let selectedSort = $state("");
 
   // svelte-ignore state_referenced_locally
   let producers = $state(data.producers?.data || []);
   // svelte-ignore state_referenced_locally
-  let currentPage = $state(data.producers?.current_page || 1);
-  // svelte-ignore state_referenced_locally
-  let lastPage = $state(data.producers?.last_page || 1);
+  let paginationMeta = $state(data.producers || { current_page: 1, last_page: 1 });
   let loading = $state(false);
-  // svelte-ignore state_referenced_locally
-  let params = $state({ name: "", sort: "" });
 
+  // Sync state with URL params
   $effect(() => {
-    params.name = data.params.name || "";
-    params.sort = data.params.sort || "";
+    searchQuery = data.params.name || "";
+    selectedSort = data.params.sort || "";
 
     // Reset infinite scroll on data change (filters)
-    if (data.producers && data.producers.current_page === 1) {
+    if (data.producers && (data.producers.pagination?.current_page === 1 || data.producers.current_page === 1)) {
       producers = data.producers.data;
-      currentPage = data.producers.current_page;
-      lastPage = data.producers.last_page;
+      paginationMeta = data.producers;
     }
   });
 
@@ -38,32 +38,29 @@
       else url.searchParams.delete(key);
     };
 
-    if (params.name) url.searchParams.set("name", params.name);
+    if (searchQuery) url.searchParams.set("name", searchQuery);
     else url.searchParams.delete("name");
 
-    setParam("sort", params.sort);
+    setParam("sort", selectedSort);
 
     url.searchParams.set("page", "1");
-    goto(url.toString(), { keepFocus: true });
+    goto(url.toString(), { keepFocus: true, noScroll: true });
   }
 
   async function loadMore() {
-    if (loading || currentPage >= lastPage) return;
+    const nextUrl = paginationMeta.links?.next || (paginationMeta.pagination?.has_more ? `/producers?page=${(paginationMeta.pagination?.current_page || 1) + 1}` : null);
+    if (loading || !nextUrl) return;
 
     loading = true;
     try {
-      const nextPage = currentPage + 1;
-      const response = await api.get("/producers", {
-        params: {
-          ...data.params,
-          page: nextPage,
-        },
-      });
-
-      if (response.data.data) {
-        producers = [...producers, ...response.data.data];
-        currentPage = response.data.current_page;
-        lastPage = response.data.last_page;
+      const response = await api.get(nextUrl);
+      
+      // The backend now returns the paginated object directly in response.data
+      const newProducersData = response.data;
+      
+      if (newProducersData?.data) {
+        producers = [...producers, ...newProducersData.data];
+        paginationMeta = newProducersData;
       }
     } catch (e) {
       console.error("Error loading more producers", e);
@@ -76,7 +73,7 @@
   function handleInput() {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
-      if (params.name.length === 0 || params.name.length >= 2) {
+      if (searchQuery.length === 0 || searchQuery.length >= 2) {
         updateFilters();
       }
     }, 300);
@@ -95,6 +92,11 @@
     { value: "least_series", label: "Total Series (Least)" },
   ];
 </script>
+
+<SEO 
+  title="Anime Producers" 
+  description="Discover the companies involved in anime production and explore their series catalog on AniRank." 
+/>
 
 <main class="flex-1 w-full max-w-[1440px] mx-auto px-6 py-12">
   <!-- Filter Row -->
@@ -119,7 +121,7 @@
           <input
             id="producer-search"
             type="text"
-            bind:value={params.name}
+            bind:value={searchQuery}
             oninput={handleInput}
             onkeydown={handleKeydown}
             class="w-full h-12 bg-surface-darker/50 border border-white/10 rounded-xl pl-12 pr-6 text-sm text-white focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 placeholder:text-white/20 transition-all"
@@ -132,7 +134,7 @@
       <div class="lg:col-span-4">
         <CustomSelect
           label="Sort"
-          bind:value={params.sort}
+          bind:value={selectedSort}
           options={sortOptions}
           placeholder="Any"
           icon={SortDesc}
@@ -141,6 +143,19 @@
       </div>
     </div>
   </section>
+
+  <!-- Title and Count -->
+  <div class="flex items-center justify-between mb-8">
+    <h2 class="text-2xl font-bold flex items-center gap-3">
+      <span class="w-2 h-8 bg-primary rounded-full"></span>
+      Producers
+      {#if (paginationMeta.pagination?.total || paginationMeta.total) > 0}
+        <span class="text-white/30 font-normal text-lg ml-2"
+          >({(paginationMeta.pagination?.total || paginationMeta.total).toLocaleString()})</span
+        >
+      {/if}
+    </h2>
+  </div>
 
   <!-- Producer Grid (3 Columns) -->
   {#if producers.length > 0}
@@ -153,9 +168,9 @@
           <!-- Background Image (Banner) -->
           <div
             class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
-            style="background-image: url('{producer.banner_url ??
-              '/images/placeholders/default-banner.jpg'}'); filter:brightness(0.5)"
+            style="background-image: url('{producer.banner_url || '/images/placeholders/default-banner.jpg'}'); filter:brightness(0.5)"
           ></div>
+
           <div
             class="absolute inset-0 bg-linear-to-t from-background-dark/95 via-background-dark/40 to-transparent"
           ></div>
@@ -185,14 +200,20 @@
     </div>
 
     <InfiniteScroll
-      hasMore={currentPage < lastPage}
+      hasMore={paginationMeta.links?.next || paginationMeta.pagination?.has_more || (paginationMeta.current_page < paginationMeta.last_page)}
       {loading}
       onLoadMore={loadMore}
     />
   {:else}
-    <div class="text-center py-20">
-      <Search size={48} class="text-white/10 mx-auto mb-4" />
-      <p class="text-white/40">No producers found matching your criteria.</p>
+    <div
+      class="text-center py-20 bg-surface-darker/30 rounded-3xl border-2 border-dashed border-white/5"
+    >
+      <span
+        class="material-symbols-outlined text-6xl text-white/10 mb-4 block"
+        >search_off</span
+      >
+      <h3 class="text-xl font-bold text-white/40">No producers found</h3>
+      <p class="text-white/20 mt-2">Try adjusting your search or filters</p>
     </div>
   {/if}
 </main>

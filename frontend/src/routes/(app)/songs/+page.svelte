@@ -20,9 +20,7 @@
   // svelte-ignore state_referenced_locally
   let songs = $state(data.songs?.data || []);
   // svelte-ignore state_referenced_locally
-  let currentPage = $state(data.songs?.current_page || 1);
-  // svelte-ignore state_referenced_locally
-  let lastPage = $state(data.songs?.last_page || 1);
+  let paginationMeta = $state(data.songs || { current_page: 1, last_page: 1 });
   let loading = $state(false);
 
   // Sync state with URL params
@@ -34,10 +32,9 @@
     selectedSort = data.params.sort || "";
 
     // Reset infinite scroll on data change (filters)
-    if (data.songs && data.songs.current_page === 1) {
+    if (data.songs && (data.songs.pagination?.current_page === 1 || data.songs.current_page === 1)) {
       songs = data.songs.data;
-      currentPage = data.songs.current_page;
-      lastPage = data.songs.last_page;
+      paginationMeta = data.songs;
     }
   });
 
@@ -62,22 +59,20 @@
   }
 
   async function loadMore() {
-    if (loading || currentPage >= lastPage) return;
+    const nextUrl = paginationMeta.links?.next || (paginationMeta.pagination?.has_more ? `/songs?page=${(paginationMeta.pagination?.current_page || 1) + 1}` : null);
+    if (loading || !nextUrl) return;
 
     loading = true;
     try {
-      const nextPage = currentPage + 1;
-      const response = await api.get("/songs", {
-        params: {
-          ...data.params,
-          page: nextPage
-        }
-      });
-
-      if (response.data.data) {
-        songs = [...songs, ...response.data.data];
-        currentPage = response.data.current_page;
-        lastPage = response.data.last_page;
+      const response = await api.get(nextUrl);
+      
+      // The backend returns { "songs": { "data": [...], "pagination": {...}, "links": {...} } }
+      // but the .ts loader passed response.data directly
+      const newSongsData = response.data.songs || response.data;
+      
+      if (newSongsData?.data) {
+        songs = [...songs, ...newSongsData.data];
+        paginationMeta = newSongsData;
       }
     } catch (e) {
       console.error("Error loading more songs", e);
@@ -135,17 +130,6 @@
 />
 
 <main class="max-w-[1440px] mx-auto px-6 py-10">
-  <!-- Hero Section -->
-  <!-- <div class="mb-10">
-    <h2 class="text-4xl font-bold text-white mb-2 tracking-tight">
-      Discover Themes
-    </h2>
-    <p class="text-slate-400 max-w-2xl">
-      Explore thousands of high-quality anime openings and endings. Filter by
-      season, year, or search for your favorite tracks.
-    </p>
-  </div> -->
-
   <!-- Filter Bar -->
   <section
     class="relative z-40 bg-surface-dark/30 p-4 rounded-3xl border border-white/5 backdrop-blur-md shadow-2xl mb-12"
@@ -217,11 +201,11 @@
   </section>
 
   <!-- Results count -->
-  {#if data.songs?.total > 0}
+  {#if (paginationMeta.pagination?.total || paginationMeta.total) > 0}
     <div class="mb-8 flex items-center justify-between">
       <h3 class="text-xl font-bold flex items-center gap-3 text-white">
         <span class="w-2 h-6 bg-primary rounded-full"></span>
-        Results ({data.songs.total.toLocaleString()})
+        Results ({(paginationMeta.pagination?.total || paginationMeta.total).toLocaleString()})
       </h3>
     </div>
   {/if}
@@ -249,7 +233,7 @@
   </div>
 
   <InfiniteScroll
-    hasMore={currentPage < lastPage}
+    hasMore={paginationMeta.links?.next || paginationMeta.pagination?.has_more || (paginationMeta.current_page < paginationMeta.last_page)}
     {loading}
     onLoadMore={loadMore}
   />

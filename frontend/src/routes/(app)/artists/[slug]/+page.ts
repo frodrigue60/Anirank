@@ -22,7 +22,7 @@ export const load: PageLoad = async ({ params, url }) => {
 
         return {
             artist: response.data.artist,
-            songs: response.data.songs,
+            songs: response.data.data,
             params: queryParams
         };
     } catch (e) {

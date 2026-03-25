@@ -11,7 +11,7 @@ export const load: PageLoad = async ({ url }) => {
     const response = await api.get('/studios', { params });
 
     return {
-        studios: response.data.studios,
+        studios: response.data,
         params
     };
 };

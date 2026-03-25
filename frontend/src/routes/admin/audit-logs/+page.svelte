@@ -15,7 +15,7 @@
   }
 
   function changePage(newPage: number) {
-    if (newPage >= 1 && newPage <= data.meta.total_pages) {
+    if (newPage >= 1 && newPage <= data.pagination.last_page) {
       let query = `page=${newPage}`;
       if (eventFilter) query += `&event=${eventFilter}`;
       if (typeFilter) query += `&resource=${typeFilter}`;
@@ -285,7 +285,7 @@
     </div>
 
     <!-- Pagination -->
-    {#if data.meta?.total_pages > 1}
+    {#if data.pagination?.last_page > 1}
       <div
         class="px-6 py-4 border-t border-white/5 flex items-center justify-between"
       >
@@ -294,8 +294,8 @@
         </div>
         <div class="flex items-center gap-2">
           <button
-            disabled={data.meta.current_page === 1}
-            onclick={() => changePage(data.meta.current_page - 1)}
+            disabled={data.pagination.current_page === 1}
+            onclick={() => changePage(data.pagination.current_page - 1)}
             aria-label="Página anterior"
             class="p-2 rounded-lg border border-white/10 text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/5 transition-colors"
           >
@@ -313,11 +313,11 @@
             >
           </button>
           <span class="text-sm text-gray-300 font-medium px-2"
-            >Page {data.meta.current_page} of {data.meta.total_pages}</span
+            >Page {data.pagination.current_page} of {data.pagination.last_page}</span
           >
           <button
-            disabled={data.meta.current_page === data.meta.total_pages}
-            onclick={() => changePage(data.meta.current_page + 1)}
+            disabled={data.pagination.current_page === data.pagination.last_page}
+            onclick={() => changePage(data.pagination.current_page + 1)}
             aria-label="Página siguiente"
             class="p-2 rounded-lg border border-white/10 text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/5 transition-colors"
           >

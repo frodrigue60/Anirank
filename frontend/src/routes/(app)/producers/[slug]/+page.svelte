@@ -4,19 +4,33 @@
   import { page } from "$app/state";
   import AnimeCard from "$lib/components/AnimeCard.svelte";
   import CustomSelect from "$lib/components/CustomSelect.svelte";
+  import InfiniteScroll from "$lib/components/InfiniteScroll.svelte";
+  import api from "$lib/api";
   import { Search, SortDesc } from "lucide-svelte";
   import SEO from "$lib/components/SEO.svelte";
 
   let { data }: { data: PageData } = $props();
   let producer = $derived(data.producer);
-  let animes = $derived(data.animes);
 
   let searchTerm = $state("");
   let selectedSort = $state("");
 
+  // svelte-ignore state_referenced_locally
+  let animes = $state(data.animes?.data || []);
+  // svelte-ignore state_referenced_locally
+  let paginationMeta = $state(data.animes || { current_page: 1, last_page: 1 });
+  let loading = $state(false);
+
+  // Sync state with URL params
   $effect(() => {
     searchTerm = data.params?.name || "";
     selectedSort = data.params?.sort || "";
+
+    // Reset infinite scroll on data change (filters)
+    if (data.animes && (data.animes.pagination?.current_page === 1 || data.animes.current_page === 1)) {
+        animes = data.animes.data;
+        paginationMeta = data.animes;
+    }
   });
 
   function updateFilters() {
@@ -34,6 +48,28 @@
 
     url.searchParams.set("page", "1");
     goto(url.toString(), { keepFocus: true, noScroll: true });
+  }
+
+  async function loadMore() {
+    const nextUrl = paginationMeta.links?.next || (paginationMeta.pagination?.has_more ? `/producers/${data.producer.slug}?page=${(paginationMeta.pagination?.current_page || 1) + 1}` : null);
+    if (loading || !nextUrl) return;
+
+    loading = true;
+    try {
+      const response = await api.get(nextUrl);
+      
+      // The backend now returns the flattened paginated object with "data" key
+      const newAnimesData = response.data.data;
+      
+      if (newAnimesData?.data) {
+        animes = [...animes, ...newAnimesData.data];
+        paginationMeta = newAnimesData;
+      }
+    } catch (e) {
+      console.error("Error loading more animes", e);
+    } finally {
+      loading = false;
+    }
   }
 
   let searchTimeout: any;
@@ -58,14 +94,6 @@
     { value: "most_themes", label: "Most Themes" },
     { value: "least_themes", label: "Least Themes" },
   ];
-
-  let queryString = $derived(
-    new URLSearchParams(
-      Object.fromEntries(
-        Object.entries(data.params || {}).filter(([k, v]) => k !== "page" && v),
-      ) as Record<string, string>,
-    ).toString(),
-  );
 </script>
 
 <SEO 
@@ -129,35 +157,20 @@
     </div>
   </section>
 
-  {#if animes.data && animes.data.length > 0}
+  {#if animes.length > 0}
     <div
       class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6"
     >
-      {#each animes.data as anime}
+      {#each animes as anime}
         <AnimeCard {anime} />
       {/each}
     </div>
 
-    <div class="mt-12 flex justify-center gap-2">
-      {#if animes.prev_page_url}
-        <a
-          href="?page={animes.current_page - 1}{queryString
-            ? `&${queryString}`
-            : ''}"
-          class="px-4 py-2 bg-surface-dark text-white rounded-lg hover:bg-primary transition-colors font-bold text-sm border border-white/5"
-          >Previous</a
-        >
-      {/if}
-      {#if animes.next_page_url}
-        <a
-          href="?page={animes.current_page + 1}{queryString
-            ? `&${queryString}`
-            : ''}"
-          class="px-4 py-2 bg-surface-dark text-white rounded-lg hover:bg-primary transition-colors font-bold text-sm border border-white/5"
-          >Next</a
-        >
-      {/if}
-    </div>
+    <InfiniteScroll
+      hasMore={paginationMeta.links?.next || paginationMeta.pagination?.has_more || (paginationMeta.current_page < paginationMeta.last_page)}
+      {loading}
+      onLoadMore={loadMore}
+    />
   {:else}
     <div
       class="text-center py-20 bg-surface-dark rounded-2xl border border-white/5"

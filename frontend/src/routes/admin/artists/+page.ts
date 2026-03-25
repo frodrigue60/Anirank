@@ -10,13 +10,13 @@ export const load: PageLoad = async ({ url }) => {
 		
 		return {
 			artists: res.data.data || [],
-			meta: res.data.meta || { current_page: 1, total_pages: 1 }
+			pagination: res.data.pagination || { current_page: 1, last_page: 1 }
 		};
 	} catch (error) {
 		console.error("Error loading admin artists:", error);
 		return {
 			artists: [],
-			meta: { current_page: 1, total_pages: 1 }
+			pagination: { current_page: 1, last_page: 1 }
 		};
 	}
 };

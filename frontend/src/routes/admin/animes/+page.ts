@@ -19,8 +19,8 @@ export const load: PageLoad = async ({ url }) => {
 
 		return {
 			animes: res.data.data || [],
-			meta: {
-				...res.data.meta || {},
+			pagination: res.data.pagination || { current_page: 1, last_page: 1 },
+			filters: {
 				search,
 				year,
 				season,
@@ -35,7 +35,8 @@ export const load: PageLoad = async ({ url }) => {
 		console.error("Error loading admin animes:", e);
 		return {
 			animes: [],
-			meta: { current_page: 1, total_pages: 1 },
+			pagination: { current_page: 1, last_page: 1 },
+			filters: { search: '', year: '', season: '', format: '', status: '' },
 			years: [],
 			seasons: [],
 			formats: []

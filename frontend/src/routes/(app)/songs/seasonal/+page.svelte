@@ -6,15 +6,27 @@
 
   let { data } = $props();
 
-  let ranking = $state<{ data: any[]; next_page_url?: string; current_page: number; per_page: number } | null>(null);
+  let allSongs = $state<any[]>([]);
+  let paginationMeta = $state<{ next?: string | null; current_page: number; per_page: number } | null>(null);
   let currentSeason = $derived(data.ranking?.current_season);
   let currentYear = $derived(data.ranking?.current_year);
   let activeType = $derived(data.type);
   let loading = $state(false);
 
-  // Reset ranking when data changes (e.g., when type changes)
+  // Reset when data changes (e.g., type filter changed via SvelteKit navigation)
   $effect(() => {
-    ranking = data.ranking?.songs;
+    const songs = data.ranking?.songs;
+    if (songs) {
+      allSongs = songs.data || [];
+      paginationMeta = {
+        next: songs.links?.next,
+        current_page: songs.pagination?.current_page || 1,
+        per_page: songs.pagination?.per_page || 24,
+      };
+    } else {
+      allSongs = [];
+      paginationMeta = null;
+    }
   });
 
   async function changeType(type: string) {
@@ -25,17 +37,20 @@
   }
 
   async function loadMore() {
-    if (loading || !ranking?.next_page_url) return;
+    if (loading || !paginationMeta?.next) return;
 
     loading = true;
     try {
-      const response = await axios.get(ranking.next_page_url);
-      const newData = response.data;
-
-      ranking = {
-        ...newData,
-        data: [...ranking.data, ...newData.data],
-      };
+      const response = await axios.get(paginationMeta.next);
+      const newSongs = response.data?.songs;
+      if (newSongs?.data) {
+        allSongs = [...allSongs, ...newSongs.data];
+        paginationMeta = {
+          next: newSongs.links?.next,
+          current_page: newSongs.pagination?.current_page || (paginationMeta?.current_page || 1) + 1,
+          per_page: newSongs.pagination?.per_page || 24,
+        };
+      }
     } catch (error) {
       console.error("Error loading more songs:", error);
     } finally {
@@ -97,11 +112,11 @@
   </div>
 
   <RankingList
-    songs={ranking?.data ?? []}
+    songs={allSongs}
     {loading}
-    hasMore={!!ranking?.next_page_url}
+    hasMore={!!paginationMeta?.next}
     onLoadMore={loadMore}
-    startIndex={ranking ? (ranking.current_page - 1) * ranking.per_page : 0}
+    startIndex={0}
     rankingType="seasonal"
   />
 </main>

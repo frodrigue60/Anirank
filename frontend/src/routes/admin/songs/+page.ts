@@ -12,17 +12,19 @@ export const load: PageLoad = async ({ url }) => {
 		const res = await api.get(`/admin/songs?page=${page}&limit=20&search=${search}&anime=${anime}&status=${status}`);
 		return {
 			songs: res.data.data || [],
-			meta: {
-				...(res.data.meta || { current_page: 1, total_pages: 1 }),
+			pagination: res.data.pagination || { current_page: 1, last_page: 1 },
+			filters: {
 				anime,
-				status
+				status,
+				search
 			}
 		};
 	} catch (error) {
 		console.error("Error loading admin songs:", error);
 		return {
 			songs: [],
-			meta: { current_page: 1, total_pages: 1 }
+			pagination: { current_page: 1, last_page: 1 },
+			filters: { anime: '', status: '', search: '' }
 		};
 	}
 };

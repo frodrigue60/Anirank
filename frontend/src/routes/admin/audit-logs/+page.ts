@@ -19,22 +19,22 @@ export const load: PageLoad = async ({ url }) => {
 
         return {
             logs: data.data || [],
-            meta: data.meta || {
+            pagination: data.pagination || {
                 total: 0,
                 current_page: 1,
                 per_page: 20,
-                total_pages: 0
+                last_page: 0
             }
         };
     } catch (err: any) {
         console.error("Error loading audit logs:", err);
         return {
             logs: [],
-            meta: {
+            pagination: {
                 total: 0,
                 current_page: 1,
                 per_page: 20,
-                total_pages: 0
+                last_page: 0
             },
             error: err.response?.data?.message || "Error al cargar los logs de auditoría"
         };

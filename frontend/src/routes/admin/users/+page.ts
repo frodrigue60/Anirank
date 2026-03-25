@@ -10,13 +10,13 @@ export const load: PageLoad = async ({ url }) => {
 		const res = await api.get(`/admin/users?page=${page}&limit=20&search=${search}`);
 		return {
 			users: res.data.data || [],
-			meta: res.data.meta || { current_page: 1, total_pages: 1 }
+			pagination: res.data.pagination || { current_page: 1, last_page: 1 }
 		};
 	} catch (error) {
 		console.error("Error loading admin users:", error);
 		return {
 			users: [],
-			meta: { current_page: 1, total_pages: 1 }
+			pagination: { current_page: 1, last_page: 1 }
 		};
 	}
 };

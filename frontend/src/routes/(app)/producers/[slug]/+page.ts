@@ -18,7 +18,7 @@ export const load: PageLoad = async ({ params, url }) => {
         });
         return {
             producer: response.data.producer,
-            animes: response.data.animes,
+            animes: response.data.data,
             params: queryParams
         };
     } catch (err: any) {

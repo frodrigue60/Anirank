@@ -11,7 +11,7 @@ export const load: PageLoad = async ({ url }) => {
     const response = await api.get('/producers', { params });
 
     return {
-        producers: response.data.producers,
+        producers: response.data,
         params
     };
 };

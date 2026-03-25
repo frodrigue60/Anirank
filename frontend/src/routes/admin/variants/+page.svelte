@@ -9,15 +9,16 @@
 
   let { data } = $props<{ data: PageData }>();
   let variants = $state<any[]>([]);
-  let meta = $derived(data.meta);
+  let pagination = $derived(data.pagination);
+  let filters = $derived(data.filters);
 
   let animeIdInput = $state("");
   let statusFilter = $state("");
 
   $effect(() => {
     variants = data.data;
-    animeIdInput = meta?.anime || "";
-    statusFilter = meta?.status !== undefined ? String(meta.status) : "";
+    animeIdInput = filters?.anime || "";
+    statusFilter = filters?.status !== undefined ? String(filters.status) : "";
   });
 
   async function handleStatusChange(id: number, currentStatus: boolean) {
@@ -67,7 +68,7 @@
   }
 
   function changePage(newPage: number) {
-    if (newPage < 1 || newPage > (meta?.total_pages || 1)) return;
+    if (newPage < 1 || newPage > (pagination?.last_page || 1)) return;
     const url = new URL($page.url);
     url.searchParams.set("page", newPage.toString());
     goto(url.toString());
@@ -262,37 +263,37 @@
   </div>
 
   <!-- Pagination -->
-  {#if meta && meta.total_pages > 1}
+  {#if pagination && pagination.last_page > 1}
     <div
       class="border-t border-white/5 px-6 py-4 flex items-center justify-between"
     >
       <p class="text-sm text-gray-400">
         Showing page <span class="font-medium text-white"
-          >{meta.current_page}</span
+          >{pagination.current_page}</span
         >
-        of <span class="font-medium text-white">{meta.total_pages}</span>
-        ({meta.total_items} total)
+        of <span class="font-medium text-white">{pagination.last_page}</span>
+        ({pagination.total} total)
       </p>
       <div class="flex items-center gap-2">
         <button
-          onclick={() => changePage(meta.current_page - 1)}
-          disabled={meta.current_page === 1}
+          onclick={() => changePage(pagination.current_page - 1)}
+          disabled={pagination.current_page === 1}
           class="px-3 py-1.5 rounded-lg text-sm font-medium bg-white/5 text-gray-300 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           Previous
         </button>
 
         <div class="flex items-center gap-1 px-2">
-          {#each Array.from( { length: Math.min(5, meta.total_pages) }, (_, i) => {
+          {#each Array.from( { length: Math.min(5, pagination.last_page) }, (_, i) => {
               // Simple logic for < 5 pages. For more, center around current_page
-              let start = Math.max(1, meta.current_page - 2);
-              if (start + 4 > meta.total_pages) start = Math.max(1, meta.total_pages - 4);
+              let start = Math.max(1, pagination.current_page - 2);
+              if (start + 4 > pagination.last_page) start = Math.max(1, pagination.last_page - 4);
               return start + i;
             }, ) as pageNum}
             <button
               onclick={() => changePage(pageNum)}
               class="w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition-colors {pageNum ===
-              meta.current_page
+              pagination.current_page
                 ? 'bg-anirank-primary text-white'
                 : 'text-gray-400 hover:bg-white/10 hover:text-white'}"
             >
@@ -302,8 +303,8 @@
         </div>
 
         <button
-          onclick={() => changePage(meta.current_page + 1)}
-          disabled={meta.current_page === meta.total_pages}
+          onclick={() => changePage(pagination.current_page + 1)}
+          disabled={pagination.current_page === pagination.last_page}
           class="px-3 py-1.5 rounded-lg text-sm font-medium bg-white/5 text-gray-300 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           Next

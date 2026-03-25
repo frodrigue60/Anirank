@@ -14,10 +14,7 @@
 
   // svelte-ignore state_referenced_locally
   let artists = $state(data.artists?.data || []);
-  // svelte-ignore state_referenced_locally
-  let currentPage = $state(data.artists?.current_page || 1);
-  // svelte-ignore state_referenced_locally
-  let lastPage = $state(data.artists?.last_page || 1);
+  let paginationMeta = $state(data.artists || { current_page: 1, last_page: 1 });
   let loading = $state(false);
 
   // Sync state with URL params
@@ -26,10 +23,9 @@
     selectedSort = data.params.sort || "";
 
     // Reset infinite scroll on data change (filters)
-    if (data.artists && data.artists.current_page === 1) {
+    if (data.artists && (data.artists.pagination?.current_page === 1 || data.artists.current_page === 1)) {
       artists = data.artists.data;
-      currentPage = data.artists.current_page;
-      lastPage = data.artists.last_page;
+      paginationMeta = data.artists;
     }
   });
 
@@ -51,22 +47,19 @@
   }
 
   async function loadMore() {
-    if (loading || currentPage >= lastPage) return;
+    const nextUrl = paginationMeta.links?.next || (paginationMeta.pagination?.has_more ? `/artists?page=${(paginationMeta.pagination?.current_page || 1) + 1}` : null);
+    if (loading || !nextUrl) return;
 
     loading = true;
     try {
-      const nextPage = currentPage + 1;
-      const response = await api.get("/artists", {
-        params: {
-          ...data.params,
-          page: nextPage,
-        },
-      });
-
-      if (response.data.data) {
-        artists = [...artists, ...response.data.data];
-        currentPage = response.data.current_page;
-        lastPage = response.data.last_page;
+      const response = await api.get(nextUrl);
+      
+      // The backend now returns the paginated object directly in response.data
+      const newArtistsData = response.data;
+      
+      if (newArtistsData?.data) {
+        artists = [...artists, ...newArtistsData.data];
+        paginationMeta = newArtistsData;
       }
     } catch (e) {
       console.error("Error loading more artists", e);
@@ -158,9 +151,9 @@
         <h2 class="text-2xl font-bold flex items-center gap-3">
           <span class="w-2 h-8 bg-primary rounded-full"></span>
           Artists
-          {#if data.artists.total > 0}
+          {#if (paginationMeta.pagination?.total || paginationMeta.total) > 0}
             <span class="text-white/30 font-normal text-lg ml-2"
-              >({data.artists.total.toLocaleString()})</span
+              >({(paginationMeta.pagination?.total || paginationMeta.total).toLocaleString()})</span
             >
           {/if}
         </h2>
@@ -204,7 +197,7 @@
         </div>
 
         <InfiniteScroll
-          hasMore={currentPage < lastPage}
+          hasMore={paginationMeta.links?.next || paginationMeta.pagination?.has_more || (paginationMeta.current_page < paginationMeta.last_page)}
           {loading}
           onLoadMore={loadMore}
         />

@@ -16,11 +16,11 @@ export const load: PageLoad = async ({ url }) => {
         if (res.status === 200) {
             return {
                 data: res.data.data,
-                meta: {
-                    ...res.data.meta,
-                    anime: anime,
-                    status: status,
-                    search: search
+                pagination: res.data.pagination || { current_page: 1, last_page: 1 },
+                filters: {
+                    anime,
+                    status,
+                    search
                 }
             };
         }
@@ -30,6 +30,7 @@ export const load: PageLoad = async ({ url }) => {
     
     return {
         data: [],
-        meta: { current_page: 1, total_pages: 1, total_items: 0, search: search, anime: anime, status: status }
+        pagination: { current_page: 1, last_page: 1, total: 0 },
+        filters: { anime: anime, status: status, search: search }
     };
 };

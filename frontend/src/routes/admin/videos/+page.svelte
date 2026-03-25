@@ -9,15 +9,16 @@
 
   let { data } = $props<{ data: PageData }>();
   let videos = $state<any[]>([]);
-  let meta = $derived(data.meta);
+  let pagination = $derived(data.pagination);
+  let filters = $derived(data.filters);
 
   let animeIdInput = $state("");
   let statusFilter = $state("");
 
   $effect(() => {
     videos = data.data;
-    animeIdInput = meta?.anime || "";
-    statusFilter = meta?.status !== undefined ? String(meta.status) : "";
+    animeIdInput = filters?.anime || "";
+    statusFilter = filters?.status !== undefined ? String(filters.status) : "";
   });
 
   async function handleStatusChange(id: number, currentStatus: boolean) {
@@ -64,7 +65,7 @@
   }
 
   function changePage(newPage: number) {
-    if (newPage < 1 || newPage > (meta?.total_pages || 1)) return;
+    if (newPage < 1 || newPage > (pagination?.last_page || 1)) return;
     const url = new URL($page.url);
     url.searchParams.set("page", newPage.toString());
     goto(url.toString());
@@ -263,17 +264,17 @@
   </div>
 
   <!-- Pagination -->
-  {#if meta && meta.total_pages > 1}
+  {#if pagination && pagination.last_page > 1}
     <div
       class="border-t border-white/5 px-6 py-4 flex items-center justify-between bg-white/1"
     >
       <div class="text-xs text-gray-500 font-medium">
-        Page <span class="text-white">{meta.current_page}</span> of {meta.total_pages}
+        Page <span class="text-white">{pagination.current_page}</span> of {pagination.last_page}
       </div>
       <div class="flex items-center gap-2">
         <button
-          onclick={() => changePage(meta.current_page - 1)}
-          disabled={meta.current_page === 1}
+          onclick={() => changePage(pagination.current_page - 1)}
+          disabled={pagination.current_page === 1}
           aria-label="Previous Page"
           class="p-2 rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white disabled:opacity-30 transition-all"
         >
@@ -291,8 +292,8 @@
           >
         </button>
         <button
-          onclick={() => changePage(meta.current_page + 1)}
-          disabled={meta.current_page === meta.total_pages}
+          onclick={() => changePage(pagination.current_page + 1)}
+          disabled={pagination.current_page === pagination.last_page}
           aria-label="Next Page"
           class="p-2 rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white disabled:opacity-30 transition-all"
         >

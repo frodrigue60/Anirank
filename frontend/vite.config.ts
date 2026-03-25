@@ -9,5 +9,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // Load repo-root .env (APP_URL, API_URL, PUBLIC_API_URL, etc.)
 export default defineConfig({
 	envDir: path.resolve(__dirname, '..'),
-	plugins: [tailwindcss(), sveltekit()]
+	plugins: [tailwindcss(), sveltekit()],
+	server: {
+		port: 3000,
+		host: true
+	}
 });

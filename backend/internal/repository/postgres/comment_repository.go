@@ -34,8 +34,10 @@ func (r *commentRepository) GetByEntity(ctx context.Context, userID *uint64, ent
 		Content    string    `db:"content"`
 		Created_At time.Time `db:"created_at"`
 		Updated_At time.Time `db:"updated_at"`
+		UUID       string    `db:"uuid"`
 		// User fields
 		UID          uint64  `db:"uid"`
+		UUUID        string  `db:"uuuid"`
 		UName        string  `db:"uname"`
 		USlug        *string `db:"uslug"`
 		UScore       *string `db:"uscore"`
@@ -52,8 +54,8 @@ func (r *commentRepository) GetByEntity(ctx context.Context, userID *uint64, ent
 	if userID != nil {
 		querySafe = `
 			SELECT 
-				c.id, c.parent_id, c.song_id, c.user_id, c.content, c.likes_count, c.dislikes_count, c.created_at, c.updated_at,
-				u.id as uid, u.name as uname, u.slug as uslug, u.avatar as uavatar, sf.slug as uscore,
+				c.id, c.uuid, c.parent_id, c.song_id, c.user_id, c.content, c.likes_count, c.dislikes_count, c.created_at, c.updated_at,
+				u.id as uid, u.uuid as uuuid, u.name as uname, u.slug as uslug, u.avatar as uavatar, sf.slug as uscore,
 				(SELECT COUNT(*) FROM comments WHERE parent_id = c.id) as rcount,
 				COALESCE(cr.type, 0) as user_reaction
 			FROM comments c
@@ -68,8 +70,8 @@ func (r *commentRepository) GetByEntity(ctx context.Context, userID *uint64, ent
 	} else {
 		querySafe = `
 			SELECT 
-				c.id, c.parent_id, c.song_id, c.user_id, c.content, c.likes_count, c.dislikes_count, c.created_at, c.updated_at,
-				u.id as uid, u.name as uname, u.slug as uslug, u.avatar as uavatar, sf.slug as uscore,
+				c.id, c.uuid, c.parent_id, c.song_id, c.user_id, c.content, c.likes_count, c.dislikes_count, c.created_at, c.updated_at,
+				u.id as uid, u.uuid as uuuid, u.name as uname, u.slug as uslug, u.avatar as uavatar, sf.slug as uscore,
 				(SELECT COUNT(*) FROM comments WHERE parent_id = c.id) as rcount,
 				0 as user_reaction
 			FROM comments c
@@ -91,6 +93,7 @@ func (r *commentRepository) GetByEntity(ctx context.Context, userID *uint64, ent
 	for _, row := range rows {
 		c := domain.Comment{
 			ID:            row.ID,
+			UUID:          row.UUID,
 			ParentID:      row.ParentID,
 			SongID:        row.SongID,
 			UserID:        row.UserID,
@@ -106,6 +109,7 @@ func (r *commentRepository) GetByEntity(ctx context.Context, userID *uint64, ent
 
 		c.User = &domain.User{
 			ID:          row.UID,
+			UUID:        row.UUUID,
 			Name:        row.UName,
 			Slug:        row.USlug,
 			Avatar:      row.UAvatar,
@@ -130,6 +134,7 @@ func (r *commentRepository) GetReplies(ctx context.Context, userID *uint64, pare
 		UserSlug      *string `db:"uslug"`
 		UserAvatar    *string `db:"uavatar"`
 		UserScoreFmt  *string `db:"uscore"`
+		UserUUID      string  `db:"uuuid"`
 		UserReaction  int8    `db:"user_reaction"`
 	}
 
@@ -139,10 +144,10 @@ func (r *commentRepository) GetReplies(ctx context.Context, userID *uint64, pare
 	if userID != nil {
 		querySafe = `
 			SELECT 
-				c.*,
+				c.id, c.uuid, c.parent_id, c.song_id, c.user_id, c.content, c.likes_count, c.dislikes_count, c.created_at, c.updated_at,
 				c.likes_count,
 				c.dislikes_count,
-				u.id as uid, u.name as uname, u.slug as uslug, u.avatar as uavatar, sf.slug as uscore,
+				u.id as uid, u.uuid as uuuid, u.name as uname, u.slug as uslug, u.avatar as uavatar, sf.slug as uscore,
 				COALESCE(cr.type, 0) as user_reaction
 			FROM comments c
 			JOIN users u ON c.user_id = u.id
@@ -156,10 +161,10 @@ func (r *commentRepository) GetReplies(ctx context.Context, userID *uint64, pare
 	} else {
 		querySafe = `
 			SELECT 
-				c.*,
+				c.id, c.uuid, c.parent_id, c.song_id, c.user_id, c.content, c.likes_count, c.dislikes_count, c.created_at, c.updated_at,
 				c.likes_count,
 				c.dislikes_count,
-				u.id as uid, u.name as uname, u.slug as uslug, u.avatar as uavatar, sf.slug as uscore,
+				u.id as uid, u.uuid as uuuid, u.name as uname, u.slug as uslug, u.avatar as uavatar, sf.slug as uscore,
 				0 as user_reaction
 			FROM comments c
 			JOIN users u ON c.user_id = u.id
@@ -182,6 +187,7 @@ func (r *commentRepository) GetReplies(ctx context.Context, userID *uint64, pare
 
 		c.User = &domain.User{
 			ID:          row.UserID,
+			UUID:        row.UserUUID,
 			Name:        row.UserName,
 			Slug:        row.UserSlug,
 			Avatar:      row.UserAvatar,
@@ -189,6 +195,7 @@ func (r *commentRepository) GetReplies(ctx context.Context, userID *uint64, pare
 		}
 
 		// Map timestamps and counters explicitly
+		c.UUID = row.UUID
 		c.Created_At = row.Comment.Created_At
 		c.Updated_At = row.Comment.Updated_At
 		c.LikesCount = row.LikesCount
@@ -204,15 +211,17 @@ func (r *commentRepository) GetReplies(ctx context.Context, userID *uint64, pare
 
 func (r *commentRepository) Create(ctx context.Context, comment *domain.Comment) error {
 	query := `
-		INSERT INTO comments (parent_id, song_id, user_id, content, created_at, updated_at)
-		VALUES (:parent_id, :song_id, :user_id, :content, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-		RETURNING id, created_at, updated_at
+		INSERT INTO comments (uuid, parent_id, song_id, user_id, content, created_at, updated_at)
+		VALUES (COALESCE(NULLIF($1, '')::uuid, gen_random_uuid()), $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		RETURNING id, uuid, created_at, updated_at
 	`
-	stmt, err := r.db.PrepareNamedContext(ctx, query)
-	if err != nil {
-		return err
-	}
-	err = stmt.QueryRowContext(ctx, comment).Scan(&comment.ID, &comment.Created_At, &comment.Updated_At)
+	err := r.db.QueryRowContext(ctx, query,
+		comment.UUID,
+		comment.ParentID,
+		comment.SongID,
+		comment.UserID,
+		comment.Content,
+	).Scan(&comment.ID, &comment.UUID, &comment.Created_At, &comment.Updated_At)
 	return err
 }
 
@@ -244,9 +253,39 @@ func (r *commentRepository) GetByID(ctx context.Context, id uint64) (*domain.Com
 	return &c, nil
 }
 
+func (r *commentRepository) GetByUUID(ctx context.Context, uuid string) (*domain.Comment, error) {
+	var c domain.Comment
+	query := "SELECT * FROM comments WHERE uuid = $1"
+	err := r.db.GetContext(ctx, &c, query, uuid)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, domain.ErrNotFound
+		}
+		return nil, err
+	}
+	return &c, nil
+}
+
 func (r *commentRepository) GetCount(ctx context.Context, songID uint64) (int, error) {
+	return r.GetCountByEntity(ctx, songID, "song")
+}
+
+func (r *commentRepository) GetCountByEntity(ctx context.Context, entityID uint64, entityType string) (int, error) {
 	var count int
-	query := "SELECT COUNT(*) FROM comments WHERE song_id = $1 AND parent_id IS NULL"
-	err := r.db.GetContext(ctx, &count, query, songID)
+	var query string
+	if entityType == "song" || entityType == "App\\Models\\Song" {
+		query = "SELECT COUNT(*) FROM comments WHERE song_id = $1 AND parent_id IS NULL"
+	} else {
+		return 0, errors.New("unsupported entity type for comments")
+	}
+
+	err := r.db.GetContext(ctx, &count, query, entityID)
+	return count, err
+}
+
+func (r *commentRepository) GetRepliesCount(ctx context.Context, parentID uint64) (int, error) {
+	var count int
+	query := "SELECT COUNT(*) FROM comments WHERE parent_id = $1"
+	err := r.db.GetContext(ctx, &count, query, parentID)
 	return count, err
 }

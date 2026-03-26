@@ -29,6 +29,16 @@ func (r *animeRepository) GetByID(ctx context.Context, id uint64) (*domain.Anime
 	return &anime, err
 }
 
+func (r *animeRepository) GetByUUID(ctx context.Context, uuid string) (*domain.Anime, error) {
+	var anime domain.Anime
+	query := "SELECT * FROM animes WHERE uuid = $1"
+	err := r.db.GetContext(ctx, &anime, query, uuid)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, domain.ErrNotFound
+	}
+	return &anime, err
+}
+
 func (r *animeRepository) GetMany(ctx context.Context, ids []uint64) ([]domain.Anime, error) {
 	if len(ids) == 0 {
 		return []domain.Anime{}, nil
@@ -175,8 +185,8 @@ func (r *animeRepository) Count(ctx context.Context, filters domain.AnimeFilters
 // Write Operations
 func (r *animeRepository) Create(ctx context.Context, anime *domain.Anime) error {
 	query := `
-		INSERT INTO animes (title, slug, description, anilist_id, status, year_id, season_id, format_id, cover, banner, created_at, updated_at) 
-		VALUES (:title, :slug, :description, :anilist_id, :status, :year_id, :season_id, :format_id, :cover, :banner, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		INSERT INTO animes (uuid, title, slug, description, anilist_id, status, year_id, season_id, format_id, cover, banner, created_at, updated_at) 
+		VALUES (:uuid, :title, :slug, :description, :anilist_id, :status, :year_id, :season_id, :format_id, :cover, :banner, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 		RETURNING id
 	`
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
@@ -309,7 +319,7 @@ func (r *animeRepository) LoadRelations(ctx context.Context, anime *domain.Anime
 	_ = r.db.SelectContext(ctx, &anime.ExternalLinks, externalLinksQuery, anime.ID)
 
 	// 4. Songs belong to this anime
-	songsQuery := `SELECT id, song_romaji, song_jp, song_en, theme_num, type, slug, anime_id, season_id, year_id, views, created_at, updated_at, status,
+	songsQuery := `SELECT id, uuid, song_romaji, song_jp, song_en, theme_num, type, slug, anime_id, season_id, year_id, views, created_at, updated_at, status,
 		(SELECT COALESCE(AVG(rating), 0) FROM song_ratings WHERE song_id = songs.id) as average_score
 		FROM songs WHERE anime_id = $1`
 	
@@ -473,7 +483,7 @@ func (r *animeRepository) LoadManyRelations(ctx context.Context, animes []domain
 func (r *animeRepository) Search(ctx context.Context, term string, limit int) ([]domain.Anime, error) {
 	var animes []domain.Anime
 	query := `
-		SELECT id, title, slug, cover, banner, year_id, season_id, format_id 
+		SELECT id, uuid, title, slug, cover, banner, year_id, season_id, format_id 
 		FROM animes 
 		WHERE status = true AND title ILIKE $1
 		ORDER BY year_id DESC, season_id DESC 

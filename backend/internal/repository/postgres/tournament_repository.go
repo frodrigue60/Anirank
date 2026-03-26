@@ -40,12 +40,9 @@ func (r *tournamentRepository) WithTransaction(ctx context.Context, fn func(repo
 }
 
 func (r *tournamentRepository) Create(ctx context.Context, t *domain.Tournament) error {
-	if t.Status == "" {
-		t.Status = "draft"
-	}
 	query := `
-		INSERT INTO tournaments (name, slug, description, size, type_filter, status, current_round, winner_song_id, started_at, completed_at, created_at, updated_at)
-		VALUES (:name, :slug, :description, :size, :type_filter, :status, :current_round, :winner_song_id, :started_at, :completed_at, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		INSERT INTO tournaments (uuid, name, slug, description, size, type_filter, status, current_round, winner_song_id, started_at, completed_at, created_at, updated_at)
+		VALUES (:uuid, :name, :slug, :description, :size, :type_filter, :status, :current_round, :winner_song_id, :started_at, :completed_at, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 		RETURNING id
 	`
 	boundQuery, args, err := sqlx.BindNamed(sqlx.DOLLAR, query, t)
@@ -58,10 +55,10 @@ func (r *tournamentRepository) Create(ctx context.Context, t *domain.Tournament)
 
 func (r *tournamentRepository) Update(ctx context.Context, t *domain.Tournament) error {
 	query := `
-		UPDATE tournaments SET 
-			name = :name, slug = :slug, description = :description, size = :size, 
-			type_filter = :type_filter, status = :status, current_round = :current_round, 
-			winner_song_id = :winner_song_id, started_at = :started_at, completed_at = :completed_at, 
+		UPDATE tournaments SET
+			name = :name, slug = :slug, description = :description, size = :size,
+			type_filter = :type_filter, status = :status, current_round = :current_round,
+			winner_song_id = :winner_song_id, started_at = :started_at, completed_at = :completed_at,
 			updated_at = CURRENT_TIMESTAMP
 		WHERE id = :id
 	`
@@ -277,9 +274,9 @@ func (r *tournamentRepository) fetchMatchups(ctx context.Context, whereClause st
 	query := `
 		SELECT 
 			tm.*,
-			s1.id as "song1.id", s1.song_romaji as "song1.song_romaji", s1.slug as "song1.slug",
-			s2.id as "song2.id", s2.song_romaji as "song2.song_romaji", s2.slug as "song2.slug",
-			w.id as "winner.id", w.song_romaji as "winner.song_romaji", w.slug as "winner.slug"
+			s1.id as "song1.id", s1.uuid as "song1.uuid", s1.song_romaji as "song1.song_romaji", s1.slug as "song1.slug",
+			s2.id as "song2.id", s2.uuid as "song2.uuid", s2.song_romaji as "song2.song_romaji", s2.slug as "song2.slug",
+			w.id as "winner.id", w.uuid as "winner.uuid", w.song_romaji as "winner.song_romaji", w.slug as "winner.slug"
 		FROM tournament_matchups tm
 		LEFT JOIN songs s1 ON tm.song1_id = s1.id
 		LEFT JOIN songs s2 ON tm.song2_id = s2.id
@@ -291,12 +288,15 @@ func (r *tournamentRepository) fetchMatchups(ctx context.Context, whereClause st
 	type MatchupRow struct {
 		domain.TournamentMatchup
 		S1ID      *uint64 `db:"song1.id"`
+		S1UUID    *string `db:"song1.uuid"`
 		S1Romaji  *string `db:"song1.song_romaji"`
 		S1Slug    *string `db:"song1.slug"`
 		S2ID      *uint64 `db:"song2.id"`
+		S2UUID    *string `db:"song2.uuid"`
 		S2Romaji  *string `db:"song2.song_romaji"`
 		S2Slug    *string `db:"song2.slug"`
 		WID       *uint64 `db:"winner.id"`
+		WUUID     *string `db:"winner.uuid"`
 		WRomaji   *string `db:"winner.song_romaji"`
 		WSlug     *string `db:"winner.slug"`
 	}
@@ -311,13 +311,13 @@ func (r *tournamentRepository) fetchMatchups(ctx context.Context, whereClause st
 	for i, row := range rows {
 		m := row.TournamentMatchup
 		if row.S1ID != nil {
-			m.Song1 = &domain.Song{ID: *row.S1ID, SongRomaji: row.S1Romaji, Slug: *row.S1Slug}
+			m.Song1 = &domain.Song{ID: *row.S1ID, UUID: *row.S1UUID, SongRomaji: row.S1Romaji, Slug: *row.S1Slug}
 		}
 		if row.S2ID != nil {
-			m.Song2 = &domain.Song{ID: *row.S2ID, SongRomaji: row.S2Romaji, Slug: *row.S2Slug}
+			m.Song2 = &domain.Song{ID: *row.S2ID, UUID: *row.S2UUID, SongRomaji: row.S2Romaji, Slug: *row.S2Slug}
 		}
 		if row.WID != nil {
-			m.Winner = &domain.Song{ID: *row.WID, SongRomaji: row.WRomaji, Slug: *row.WSlug}
+			m.Winner = &domain.Song{ID: *row.WID, UUID: *row.WUUID, SongRomaji: row.WRomaji, Slug: *row.WSlug}
 		}
 		matchups[i] = m
 	}

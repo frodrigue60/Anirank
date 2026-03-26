@@ -10,9 +10,9 @@
   // svelte-ignore state_referenced_locally
   let songs = $state<any[]>(data.songs?.data || []);
   // svelte-ignore state_referenced_locally
-  let songsPage = $state(data.songs?.current_page || 1);
+  let songsPage = $state(data.songs?.pagination?.current_page || 1);
   // svelte-ignore state_referenced_locally
-  let songsLastPage = $state(data.songs?.last_page || 1);
+  let songsLastPage = $state(data.songs?.pagination?.last_page || 1);
   let loading = $state(false);
 
   // svelte-ignore state_referenced_locally
@@ -20,11 +20,11 @@
 
   // Sync state if navigation happens
   $effect(() => {
-    if (_sourceSongs !== data.songs?.data && data.songs?.current_page === 1) {
+    if (_sourceSongs !== data.songs?.data && data.songs?.pagination?.current_page === 1) {
       _sourceSongs = data.songs?.data;
       songs = data.songs?.data || [];
-      songsPage = data.songs?.current_page || 1;
-      songsLastPage = data.songs?.last_page || 1;
+      songsPage = data.songs?.pagination?.current_page || 1;
+      songsLastPage = data.songs?.pagination?.last_page || 1;
     }
   });
 
@@ -34,15 +34,16 @@
     loading = true;
     try {
       const nextPage = songsPage + 1;
-      const response = await api.post(`/users/favorites`, {
-        user_id: data.profile.id,
+      const response = await api.post(`/users/favorites/themes`, {
+        user_uuid: data.profile.uuid,
         page: nextPage,
       });
 
-      if (response.data.songs) {
-        songs = [...songs, ...response.data.songs.data];
-        songsPage = response.data.songs.current_page;
-        songsLastPage = response.data.songs.last_page;
+      const songsData = response.data.songs || response.data;
+      if (songsData?.data) {
+        songs = [...songs, ...songsData.data];
+        songsPage = songsData.pagination?.current_page || songsData.current_page;
+        songsLastPage = songsData.pagination?.last_page || songsLastPage;
       }
     } catch (e) {
       console.error("Error loading more songs", e);

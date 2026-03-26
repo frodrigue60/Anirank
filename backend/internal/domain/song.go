@@ -7,6 +7,7 @@ import (
 
 type Song struct {
 	ID            uint64    `db:"id" json:"id"`
+	UUID          string    `db:"uuid" json:"uuid"`
 	SongRomaji    *string   `db:"song_romaji" json:"song_romaji"`
 	SongJP        *string   `db:"song_jp" json:"song_jp"`
 	SongEN        *string   `db:"song_en" json:"song_en"`
@@ -21,8 +22,8 @@ type Song struct {
 	DislikesCount uint64    `db:"dislikes_count" json:"dislikes_count"`
 	FavoritesCount uint64    `db:"favorites_count" json:"favorites_count"`
 	CreatedAt     time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt     time.Time `db:"updated_at" json:"updated_at"`
 	Status        bool      `db:"status" json:"status"`
+	AnimeThemesID *uint64   `db:"animethemes_id" json:"animethemes_id,omitempty"`
 
 	// Computed for frontend
 	Name          string  `db:"-" json:"name"`
@@ -48,6 +49,7 @@ type Song struct {
 
 type SongVariant struct {
 	ID            uint64    `db:"id" json:"id"`
+	UUID          string    `db:"uuid" json:"uuid"`
 	VersionNumber uint64    `db:"version_number" json:"version_number"`
 	SongID        uint64    `db:"song_id" json:"song_id"`
 	Slug          string    `db:"slug" json:"slug"`
@@ -55,9 +57,8 @@ type SongVariant struct {
 	SeasonID      uint64    `db:"season_id" json:"season_id"`
 	YearID        uint64    `db:"year_id" json:"year_id"`
 	Spoiler       bool      `db:"spoiler" json:"spoiler"`
-	CreatedAt     time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt     time.Time `db:"updated_at" json:"updated_at"`
 	Status        bool      `db:"status" json:"status"`
+	AnimeThemesID *uint64   `db:"animethemes_id" json:"animethemes_id,omitempty"`
 
 	// Computed for frontend
 	Video *SongVariantVideo `db:"-" json:"video,omitempty"`
@@ -76,6 +77,7 @@ type SongVariantVideo struct {
 
 type Artist struct {
 	ID        uint64    `db:"id" json:"id"`
+	UUID      string    `db:"uuid" json:"uuid"`
 	Name      string    `db:"name" json:"name"`
 	NameJP    *string   `db:"name_jp" json:"name_jp"`
 	Slug      string    `db:"slug" json:"slug"`
@@ -95,6 +97,7 @@ type Artist struct {
 	DisabledSongs  int    `db:"disabled_songs" json:"disabled_songs"`
 	FavoritesCount uint64 `db:"favorites_count" json:"favorites_count"`
 	IsFavorited    bool   `db:"-" json:"is_favorited"`
+	AnimeThemesID  *uint64 `db:"animethemes_id" json:"animethemes_id,omitempty"`
 }
 
 type ArtistFilters struct {
@@ -118,6 +121,7 @@ type SongFilters struct {
 // Repositories
 type SongRepository interface {
 	GetByID(ctx context.Context, id uint64) (*Song, error)
+	GetByUUID(ctx context.Context, uuid string) (*Song, error)
 	GetBySlug(ctx context.Context, slug string) (*Song, error)
 	GetByAnimeIDAndSlug(ctx context.Context, animeID uint64, slug string) (*Song, error)
 	GetPaginated(ctx context.Context, limit, offset int, filters SongFilters) ([]Song, error)
@@ -162,7 +166,9 @@ type SongVariantRepository interface {
 
 type ArtistRepository interface {
 	GetByID(ctx context.Context, id uint64) (*Artist, error)
+	GetByUUID(ctx context.Context, uuid string) (*Artist, error)
 	GetBySlug(ctx context.Context, slug string) (*Artist, error)
+	GetByAnimeThemesID(ctx context.Context, id uint64) (*Artist, error)
 	GetPaginated(ctx context.Context, limit, offset int, filters ArtistFilters) ([]Artist, error)
 	Count(ctx context.Context, filters ArtistFilters) (int, error)
 

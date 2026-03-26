@@ -15,7 +15,9 @@
   // svelte-ignore state_referenced_locally
   let producers = $state(data.producers?.data || []);
   // svelte-ignore state_referenced_locally
-  let paginationMeta = $state(data.producers || { current_page: 1, last_page: 1 });
+  let currentPage = $state(data.producers?.pagination?.current_page || 1);
+  // svelte-ignore state_referenced_locally
+  let lastPage = $state(data.producers?.pagination?.last_page || 1);
   let loading = $state(false);
 
   // Sync state with URL params
@@ -26,7 +28,8 @@
     // Reset infinite scroll on data change (filters)
     if (data.producers && (data.producers.pagination?.current_page === 1 || data.producers.current_page === 1)) {
       producers = data.producers.data;
-      paginationMeta = data.producers;
+      currentPage = Number(data.producers.pagination.current_page);
+      lastPage = Number(data.producers.pagination.last_page);
     }
   });
 
@@ -48,19 +51,22 @@
   }
 
   async function loadMore() {
-    const nextUrl = paginationMeta.links?.next || (paginationMeta.pagination?.has_more ? `/producers?page=${(paginationMeta.pagination?.current_page || 1) + 1}` : null);
-    if (loading || !nextUrl) return;
+    if (loading || currentPage >= lastPage) return;
 
     loading = true;
     try {
-      const response = await api.get(nextUrl);
+      const nextPage = currentPage + 1;
+      const response = await api.get("/producers", {
+        params: {
+          ...data.params,
+          page: nextPage
+        }
+      });
       
-      // The backend now returns the paginated object directly in response.data
-      const newProducersData = response.data;
-      
-      if (newProducersData?.data) {
-        producers = [...producers, ...newProducersData.data];
-        paginationMeta = newProducersData;
+      if (response.data.data) {
+        producers = [...producers, ...response.data.data];
+        currentPage = Number(response.data.pagination.current_page);
+        lastPage = Number(response.data.pagination.last_page);
       }
     } catch (e) {
       console.error("Error loading more producers", e);
@@ -149,9 +155,9 @@
     <h2 class="text-2xl font-bold flex items-center gap-3">
       <span class="w-2 h-8 bg-primary rounded-full"></span>
       Producers
-      {#if (paginationMeta.pagination?.total || paginationMeta.total) > 0}
+      {#if data.producers?.pagination?.total > 0}
         <span class="text-white/30 font-normal text-lg ml-2"
-          >({(paginationMeta.pagination?.total || paginationMeta.total).toLocaleString()})</span
+          >({data.producers.pagination.total.toLocaleString()})</span
         >
       {/if}
     </h2>
@@ -200,7 +206,7 @@
     </div>
 
     <InfiniteScroll
-      hasMore={paginationMeta.links?.next || paginationMeta.pagination?.has_more || (paginationMeta.current_page < paginationMeta.last_page)}
+      hasMore={currentPage < lastPage}
       {loading}
       onLoadMore={loadMore}
     />

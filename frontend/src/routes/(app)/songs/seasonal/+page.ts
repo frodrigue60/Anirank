@@ -7,7 +7,7 @@ export const load = async ({ url }) => {
     try {
         const response = await api.get(`/songs/ranking/seasonal?type=${type}&page=${page}`);
         return {
-            ranking: response.data,
+            songsData: response.data,
             type
         };
     } catch (e) {

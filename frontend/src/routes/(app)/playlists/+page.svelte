@@ -10,9 +10,9 @@
   // svelte-ignore state_referenced_locally
   let playlists = $state(data.playlists?.data || []);
   // svelte-ignore state_referenced_locally
-  let currentPage = $state(data.playlists?.current_page || 1);
+  let currentPage = $state(data.playlists?.pagination?.current_page || 1);
   // svelte-ignore state_referenced_locally
-  let lastPage = $state(data.playlists?.last_page || 1);
+  let lastPage = $state(data.playlists?.pagination?.last_page || 1);
   let loading = $state(false);
   let params = $state({ name: "" });
 
@@ -20,10 +20,10 @@
     params.name = data.params.name || "";
 
     // Reset infinite scroll on data change (filters)
-    if (data.playlists && data.playlists.current_page === 1) {
+    if (data.playlists && data.playlists.pagination?.current_page === 1) {
       playlists = data.playlists.data;
-      currentPage = data.playlists.current_page;
-      lastPage = data.playlists.last_page;
+      currentPage = data.playlists.pagination.current_page;
+      lastPage = data.playlists.pagination.last_page;
     }
   });
 
@@ -52,8 +52,8 @@
 
       if (response.data.data) {
         playlists = [...playlists, ...response.data.data];
-        currentPage = response.data.current_page;
-        lastPage = response.data.last_page;
+        currentPage = response.data.pagination.current_page;
+        lastPage = response.data.pagination.last_page;
       }
     } catch (e) {
       console.error("Error loading more playlists", e);

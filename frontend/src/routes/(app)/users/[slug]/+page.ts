@@ -15,14 +15,14 @@ export const load = async ({ params, parent }: { params: { slug: string }, paren
     try {
         // Fetch only a small preview of data for the Overview tab
         const [songsData, artistsData] = await Promise.all([
-            api.post(`/users/favorites/themes`, { user_id: user.id, page: 1 })
-                .then(res => res.data.songs?.data || [])
+            api.post(`/users/favorites/themes`, { user_uuid: user.uuid, page: 1 })
+                .then(res => res.data.data || [])
                 .catch(e => {
                     console.warn("Failed to load favorite songs preview. It may require authentication.", e.message);
                     return [];
                 }),
-            api.post(`/users/favorites/artists`, { user_id: user.id, page: 1 })
-                .then(res => res.data.artists?.data || [])
+            api.post(`/users/favorites/artists`, { user_uuid: user.uuid, page: 1 })
+                .then(res => res.data.data || [])
                 .catch(e => {
                     console.warn("Failed to load favorite artists preview. It may require authentication.", e.message);
                     return [];

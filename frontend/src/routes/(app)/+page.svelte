@@ -166,17 +166,13 @@
             <span class="material-symbols-outlined text-primary"
               >leaderboard</span
             >
-            Weekly Rankings
+            <a
+              class="text-white/80 text-md hover:text-primary transition-colors"
+              href="/songs/ranking"
+              title="View full song rankings"
+              aria-label="View all rankings">Weekly Anime Songs Ranking</a
+            >
           </h2>
-          <a
-            class="text-primary text-md hover:text-white/80 flex items-center gap-1"
-            href="/songs/ranking"
-            title="View full song rankings"
-            aria-label="View all rankings"
-            >View All <span class="material-symbols-outlined text-md"
-              >arrow_forward</span
-            ></a
-          >
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <!-- Top Openings -->
@@ -205,7 +201,7 @@
                         "/images/placeholders/default.jpg"}
                     />
                     <div
-                      class="absolute top-1 left-1 bg-primary text-white text-xs font-bold px-1.5 py-0.5 rounded shadow"
+                      class="absolute top-1 left-1 bg-surface-darker text-white text-xs font-bold px-1.5 py-0.5 rounded shadow"
                     >
                       #{index + 1}
                     </div>
@@ -535,16 +531,13 @@
                   <div
                     class="w-12 h-12 rounded-full overflow-hidden border-2 border-transparent group-hover:border-primary transition-colors flex items-center justify-center bg-primary/20 text-primary"
                   >
-                    {#if artist.avatar_url}
-                      <img
-                        alt={artist.name}
-                        title={artist.name}
-                        class="w-full h-full object-cover"
-                        src={artist.avatar_url}
-                      />
-                    {:else}
-                      <span class="material-symbols-outlined">person</span>
-                    {/if}
+                    <img
+                      alt={artist.name}
+                      title={artist.name}
+                      class="w-full h-full object-cover"
+                      src={artist.avatar_url ||
+                        "/images/placeholders/default.jpg"}
+                    />
                   </div>
                   <div>
                     <h4

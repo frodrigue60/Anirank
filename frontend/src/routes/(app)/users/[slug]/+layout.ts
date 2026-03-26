@@ -7,7 +7,7 @@ export const load = async ({ params }: { params: { slug: string } }) => {
 
     try {
         const userResponse = await api.get(`/users/${slug}`);
-        const user = userResponse.data.user;
+        const user = userResponse.data.data;
 
         if (!user) {
             return {

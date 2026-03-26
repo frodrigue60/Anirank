@@ -5,7 +5,7 @@
 
   interface Props {
     show: boolean;
-    commentId: number;
+    commentId: string;
     onClose: () => void;
   }
 
@@ -150,6 +150,7 @@
               >Details (Optional)</label
             >
             <textarea
+              required
               id="report-content-comment"
               bind:value={content}
               placeholder="Please provide any additional context..."

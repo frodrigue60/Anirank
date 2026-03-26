@@ -7,6 +7,7 @@ import (
 
 type User struct {
 	ID              uint64     `db:"id" json:"id"`
+	UUID            string     `db:"uuid" json:"uuid"`
 	Name            string     `db:"name" json:"name"`
 	Slug            *string    `db:"slug" json:"slug"`
 	Email           string     `db:"email" json:"email"`
@@ -93,6 +94,7 @@ type UserRepository interface {
 	GetByGoogleID(ctx context.Context, googleID string) (*User, error)
 	GetByAnilistID(ctx context.Context, anilistID uint64) (*User, error)
 	GetBySlug(ctx context.Context, slug string) (*User, error)
+	GetByUUID(ctx context.Context, uuid string) (*User, error)
 	Create(ctx context.Context, user *User) error
 	Update(ctx context.Context, user *User) error
 	Delete(ctx context.Context, id uint64) error

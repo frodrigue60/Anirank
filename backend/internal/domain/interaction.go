@@ -74,6 +74,7 @@ type ActivityItem struct {
 
 type Comment struct {
 	ID         uint64    `db:"id" json:"id"`
+	UUID       string    `db:"uuid" json:"uuid"`
 	ParentID   *uint64   `db:"parent_id" json:"parent_id"`
 	SongID     *uint64   `db:"song_id" json:"song_id,omitempty"`
 	UserID     uint64    `db:"user_id" json:"user_id"`
@@ -117,6 +118,9 @@ type CommentRepository interface {
 	GetByEntity(ctx context.Context, userID *uint64, entityID uint64, entityType string, limit, offset int) ([]Comment, error)
 	GetReplies(ctx context.Context, userID *uint64, parentID uint64, limit, offset int) ([]Comment, error)
 	GetByID(ctx context.Context, id uint64) (*Comment, error)
+	GetByUUID(ctx context.Context, uuid string) (*Comment, error)
+	GetCountByEntity(ctx context.Context, entityID uint64, entityType string) (int, error)
+	GetRepliesCount(ctx context.Context, parentID uint64) (int, error)
 	GetCount(ctx context.Context, songID uint64) (int, error)
 	Create(ctx context.Context, comment *Comment) error
 	Delete(ctx context.Context, id, userID uint64) error // Authorization baked in via userID verification

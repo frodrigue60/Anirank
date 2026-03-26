@@ -120,7 +120,7 @@ func (h *AuthHandler) Profile(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"data": profile,
+		"data": dto.ToUserDTO(profile),
 	})
 }
 
@@ -157,8 +157,10 @@ func (h *AuthHandler) UpdateAvatar(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"success":    true,
-		"avatar_url": url,
+		"success": true,
+		"data": fiber.Map{
+			"avatar_url": url,
+		},
 	})
 }
 
@@ -195,8 +197,10 @@ func (h *AuthHandler) UpdateBanner(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"success":    true,
-		"banner_url": url,
+		"success": true,
+		"data": fiber.Map{
+			"banner_url": url,
+		},
 	})
 }
 
@@ -328,7 +332,9 @@ func (h *AuthHandler) AnilistLink(c *fiber.Ctx) error {
 		return domain.NewAppError(500, "AniList OAuth: "+err.Error(), nil)
 	}
 	return c.JSON(fiber.Map{
-		"url": authURL,
+		"data": fiber.Map{
+			"url": authURL,
+		},
 	})
 }
 
@@ -362,8 +368,9 @@ func (h *AuthHandler) AnilistCallback(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"success": true,
-		"message": "Anilist account linked successfully",
+		"data": fiber.Map{
+			"message": "Anilist account linked successfully",
+		},
 	})
 }
 
@@ -391,7 +398,11 @@ func (h *AuthHandler) GoogleCallback(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(fiber.Map{"message": "Google account linked successfully"})
+	return c.JSON(fiber.Map{
+		"data": fiber.Map{
+			"message": "Google account linked successfully",
+		},
+	})
 }
 
 func (h *AuthHandler) GoogleLogin(c *fiber.Ctx) error {
@@ -429,7 +440,11 @@ func (h *AuthHandler) AnilistLogin(c *fiber.Ctx) error {
 	if err != nil {
 		return domain.NewAppError(500, "AniList OAuth: "+err.Error(), nil)
 	}
-	return c.JSON(fiber.Map{"url": authURL})
+	return c.JSON(fiber.Map{
+		"data": fiber.Map{
+			"url": authURL,
+		},
+	})
 }
 
 func (h *AuthHandler) AnilistLoginCallback(c *fiber.Ctx) error {

@@ -9,7 +9,7 @@ export const load = async ({ params, parent }: { params: { slug: string }, paren
     try {
         const res = await api.get(`/users/${params.slug}/playlists`);
         return {
-            playlists: res.data.playlists || []
+            playlists: res.data.data || []
         };
     } catch (e: any) {
         console.error("Failed to load user playlists", e);

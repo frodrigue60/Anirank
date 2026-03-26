@@ -322,10 +322,10 @@ func (u *CatalogUsecase) GetUserBySlug(ctx context.Context, requestingUserID *ui
 	return user, nil
 }
 
-func (u *CatalogUsecase) GetUserPlaylists(ctx context.Context, requestingUserID *uint64, slug string) ([]domain.Playlist, error) {
+func (u *CatalogUsecase) GetUserPlaylists(ctx context.Context, requestingUserID *uint64, slug string, limit, offset int) ([]domain.Playlist, int, error) {
 	user, err := u.userRepo.GetBySlug(ctx, slug)
 	if err != nil {
-		return nil, domain.NewAppError(404, "User not found", err)
+		return nil, 0, domain.NewAppError(404, "User not found", err)
 	}
 
 	includePrivate := false
@@ -335,20 +335,28 @@ func (u *CatalogUsecase) GetUserPlaylists(ctx context.Context, requestingUserID 
 		}
 	}
 
-	playlists, err := u.playlistRepo.GetByUserID(ctx, user.ID, includePrivate, 50, 0)
+	playlists, err := u.playlistRepo.GetByUserID(ctx, user.ID, includePrivate, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
+
+	total, _ := u.playlistRepo.CountByUserID(ctx, user.ID, includePrivate)
 
 	for i := range playlists {
 		u.enrichPlaylist(&playlists[i])
 	}
 
-	return playlists, nil
+	return playlists, total, nil
 }
 
-func (u *CatalogUsecase) GetUserFavorites(ctx context.Context, userID uint64, limit, offset int) ([]domain.Song, int, error) {
-	total, err := u.songRepo.CountFavoritesByUserID(ctx, userID)
+func (u *CatalogUsecase) GetUserFavorites(ctx context.Context, userID string, limit, offset int) ([]domain.Song, int, error) {
+	user, err := u.userRepo.GetByUUID(ctx, userID)
+	if err != nil {
+		return nil, 0, err
+	}
+	internalID := user.ID
+
+	total, err := u.songRepo.CountFavoritesByUserID(ctx, internalID)
 	if err != nil {
 		return nil, 0, domain.NewAppError(500, "Could not count user favorites", err)
 	}
@@ -357,21 +365,26 @@ func (u *CatalogUsecase) GetUserFavorites(ctx context.Context, userID uint64, li
 		return []domain.Song{}, 0, nil
 	}
 
-	songs, err := u.songRepo.GetFavoritesByUserID(ctx, userID, limit, offset)
+	songs, err := u.songRepo.GetFavoritesByUserID(ctx, internalID, limit, offset)
 	if err != nil {
 		return nil, 0, domain.NewAppError(500, "Could not load user favorites", err)
 	}
 
-	uid := userID
+	uid := &internalID
 	for i := range songs {
-		u.enrichSong(ctx, &uid, &songs[i])
+		u.enrichSong(ctx, uid, &songs[i])
 	}
 
 	return songs, total, nil
 }
 
-func (u *CatalogUsecase) GetUserFavoriteArtists(ctx context.Context, userID uint64, limit, offset int) ([]domain.Artist, int, error) {
-	total, err := u.artistRepo.CountFavoritesByUserID(ctx, userID)
+func (u *CatalogUsecase) GetUserFavoriteArtists(ctx context.Context, userID string, limit, offset int) ([]domain.Artist, int, error) {
+	user, err := u.userRepo.GetByUUID(ctx, userID)
+	if err != nil {
+		return nil, 0, err
+	}
+	internalID := user.ID
+	total, err := u.artistRepo.CountFavoritesByUserID(ctx, internalID)
 	if err != nil {
 		return nil, 0, domain.NewAppError(500, "Could not count user favorite artists", err)
 	}
@@ -380,7 +393,7 @@ func (u *CatalogUsecase) GetUserFavoriteArtists(ctx context.Context, userID uint
 		return []domain.Artist{}, 0, nil
 	}
 
-	artists, err := u.artistRepo.GetFavoritesByUserID(ctx, userID, limit, offset)
+	artists, err := u.artistRepo.GetFavoritesByUserID(ctx, internalID, limit, offset)
 	if err != nil {
 		return nil, 0, domain.NewAppError(500, "Could not load user favorite artists", err)
 	}

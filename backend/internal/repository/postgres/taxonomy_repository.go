@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"anirank/api/internal/domain"
-
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -49,28 +49,28 @@ func (r *taxonomyRepository) GetAllGenres(ctx context.Context) ([]domain.Genre, 
 
 func (r *taxonomyRepository) GetAllStudios(ctx context.Context) ([]domain.Studio, error) {
 	var studios []domain.Studio
-	query := "SELECT id, name, slug, created_at, updated_at FROM studios ORDER BY name ASC" // Needs limits/search for large dataset
+	query := "SELECT id, uuid, name, slug, created_at, updated_at FROM studios ORDER BY name ASC" // Needs limits/search for large dataset
 	err := r.db.SelectContext(ctx, &studios, query)
 	return studios, err
 }
 
 func (r *taxonomyRepository) GetAllProducers(ctx context.Context) ([]domain.Producer, error) {
 	var producers []domain.Producer
-	query := "SELECT id, name, slug, created_at, updated_at FROM producers ORDER BY name ASC"
+	query := "SELECT id, uuid, name, slug, created_at, updated_at FROM producers ORDER BY name ASC"
 	err := r.db.SelectContext(ctx, &producers, query)
 	return producers, err
 }
 
 func (r *taxonomyRepository) SearchStudios(ctx context.Context, term string, limit int) ([]domain.Studio, error) {
 	var studios []domain.Studio
-	query := "SELECT id, name, slug, created_at, updated_at FROM studios WHERE name ILIKE $1 ORDER BY name ASC LIMIT $2"
+	query := "SELECT id, uuid, name, slug, created_at, updated_at FROM studios WHERE name ILIKE $1 ORDER BY name ASC LIMIT $2"
 	err := r.db.SelectContext(ctx, &studios, query, "%"+term+"%", limit)
 	return studios, err
 }
 
 func (r *taxonomyRepository) SearchProducers(ctx context.Context, term string, limit int) ([]domain.Producer, error) {
 	var producers []domain.Producer
-	query := "SELECT id, name, slug, created_at, updated_at FROM producers WHERE name ILIKE $1 ORDER BY name ASC LIMIT $2"
+	query := "SELECT id, uuid, name, slug, created_at, updated_at FROM producers WHERE name ILIKE $1 ORDER BY name ASC LIMIT $2"
 	err := r.db.SelectContext(ctx, &producers, query, "%"+term+"%", limit)
 	return producers, err
 }
@@ -90,7 +90,7 @@ func (r *taxonomyRepository) GetPaginatedStudios(ctx context.Context, limit, off
 	// Subquery for latest banner
 	bannerSubquery := "(SELECT a.banner FROM animes a JOIN anime_studio asu ON a.id = asu.anime_id WHERE asu.studio_id = s.id AND a.status = true ORDER BY a.year_id DESC, a.season_id DESC LIMIT 1)"
 
-	query := "SELECT id, name, slug, logo, anime_count, " + bannerSubquery + " as latest_banner FROM studios s WHERE anime_count > 0"
+	query := "SELECT id, uuid, name, slug, logo, anime_count, " + bannerSubquery + " as latest_banner FROM studios s WHERE anime_count > 0"
 	var args []interface{}
 
 	if filters.Search != "" {
@@ -133,7 +133,7 @@ func (r *taxonomyRepository) GetPaginatedStudios(ctx context.Context, limit, off
 
 func (r *taxonomyRepository) GetStudioBySlug(ctx context.Context, slug string) (*domain.Studio, error) {
 	var s domain.Studio
-	query := "SELECT id, name, slug, logo, anime_count, created_at, updated_at FROM studios WHERE slug = $1"
+	query := "SELECT id, uuid, name, slug, logo, anime_count, created_at, updated_at FROM studios WHERE slug = $1"
 	err := r.db.GetContext(ctx, &s, query, slug)
 	if err != nil {
 		fmt.Printf("[CRITICAL-DEBUG] GetStudioBySlug failed for slug %s: %v\n", slug, err)
@@ -146,7 +146,7 @@ func (r *taxonomyRepository) GetAnimesByStudioID(ctx context.Context, studioID u
 	var animes []domain.Anime
 	query := `
 		SELECT 
-			a.id, a.title, a.slug, a.description, a.anilist_id, a.status, a.cover, a.banner, a.year_id, a.season_id, a.format_id, a.created_at, a.updated_at,
+			a.id, a.uuid, a.title, a.slug, a.description, a.anilist_id, a.status, a.cover, a.banner, a.year_id, a.season_id, a.format_id, a.created_at, a.updated_at,
 			f.id as "format.id", f.name as "format.name",
 			y.id as "year.id", y.name as "year.name",
 			s.id as "season.id", s.name as "season.name"
@@ -183,7 +183,7 @@ func (r *taxonomyRepository) GetPaginatedProducers(ctx context.Context, limit, o
 	// Subquery for latest banner (matching Studios pattern)
 	bannerSubquery := "(SELECT a.banner FROM animes a JOIN anime_producer apu ON a.id = apu.anime_id WHERE apu.producer_id = p.id AND a.status = true ORDER BY a.year_id DESC, a.season_id DESC LIMIT 1)"
 
-	query := "SELECT id, name, slug, logo, anime_count, " + bannerSubquery + " as latest_banner FROM producers p WHERE anime_count > 0"
+	query := "SELECT id, uuid, name, slug, logo, anime_count, " + bannerSubquery + " as latest_banner FROM producers p WHERE anime_count > 0"
 	var args []interface{}
 
 	if filters.Search != "" {
@@ -216,7 +216,7 @@ func (r *taxonomyRepository) GetPaginatedProducers(ctx context.Context, limit, o
 
 func (r *taxonomyRepository) GetProducerBySlug(ctx context.Context, slug string) (*domain.Producer, error) {
 	var p domain.Producer
-	query := "SELECT id, name, slug, logo, anime_count, created_at, updated_at FROM producers WHERE slug = $1"
+	query := "SELECT id, uuid, name, slug, logo, anime_count, created_at, updated_at FROM producers WHERE slug = $1"
 	err := r.db.GetContext(ctx, &p, query, slug)
 	if err != nil {
 		fmt.Printf("[CRITICAL-DEBUG] GetProducerBySlug failed for slug %s: %v\n", slug, err)
@@ -229,7 +229,7 @@ func (r *taxonomyRepository) GetAnimesByProducerID(ctx context.Context, producer
 	var animes []domain.Anime
 	query := `
 		SELECT 
-			a.id, a.title, a.slug, a.description, a.anilist_id, a.status, a.cover, a.banner, a.year_id, a.season_id, a.format_id, a.created_at, a.updated_at,
+			a.id, a.uuid, a.title, a.slug, a.description, a.anilist_id, a.status, a.cover, a.banner, a.year_id, a.season_id, a.format_id, a.created_at, a.updated_at,
 			f.id as "format.id", f.name as "format.name",
 			y.id as "year.id", y.name as "year.name",
 			s.id as "season.id", s.name as "season.name"
@@ -385,17 +385,19 @@ func (r *taxonomyRepository) GetOrCreateGenre(ctx context.Context, name string) 
 
 func (r *taxonomyRepository) GetOrCreateStudio(ctx context.Context, name string) (*domain.Studio, error) {
 	var s domain.Studio
-	err := r.db.GetContext(ctx, &s, "SELECT id, name, slug, created_at, updated_at FROM studios WHERE name = $1 LIMIT 1", name)
+	err := r.db.GetContext(ctx, &s, "SELECT id, uuid, name, slug, created_at, updated_at FROM studios WHERE name = $1 LIMIT 1", name)
 	if err == nil {
 		return &s, nil
 	}
 
 	slug := makeSlug(name)
-	query := "INSERT INTO studios (name, slug, created_at, updated_at) VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id"
-	err = r.db.QueryRowContext(ctx, query, name, slug).Scan(&s.ID)
+	uid := uuid.New().String()
+	query := "INSERT INTO studios (uuid, name, slug, created_at, updated_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id"
+	err = r.db.QueryRowContext(ctx, query, uid, name, slug).Scan(&s.ID)
 	if err != nil {
 		return nil, err
 	}
+	s.UUID = uid
 	s.Name = name
 	s.Slug = slug
 	return &s, nil
@@ -403,17 +405,19 @@ func (r *taxonomyRepository) GetOrCreateStudio(ctx context.Context, name string)
 
 func (r *taxonomyRepository) GetOrCreateProducer(ctx context.Context, name string) (*domain.Producer, error) {
 	var p domain.Producer
-	err := r.db.GetContext(ctx, &p, "SELECT id, name, slug, created_at, updated_at FROM producers WHERE name = $1 LIMIT 1", name)
+	err := r.db.GetContext(ctx, &p, "SELECT id, uuid, name, slug, created_at, updated_at FROM producers WHERE name = $1 LIMIT 1", name)
 	if err == nil {
 		return &p, nil
 	}
 
 	slug := makeSlug(name)
-	query := "INSERT INTO producers (name, slug, created_at, updated_at) VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id"
-	err = r.db.QueryRowContext(ctx, query, name, slug).Scan(&p.ID)
+	uid := uuid.New().String()
+	query := "INSERT INTO producers (uuid, name, slug, created_at, updated_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id"
+	err = r.db.QueryRowContext(ctx, query, uid, name, slug).Scan(&p.ID)
 	if err != nil {
 		return nil, err
 	}
+	p.UUID = uid
 	p.Name = name
 	p.Slug = slug
 	return &p, nil

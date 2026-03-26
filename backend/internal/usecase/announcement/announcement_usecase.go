@@ -40,8 +40,8 @@ func (u *AnnouncementUsecase) GetPublicAnnouncements(ctx context.Context) ([]dom
 	return announcements, nil
 }
 
-func (u *AnnouncementUsecase) GetAllAnnouncements(ctx context.Context, filters domain.AnnouncementFilters) ([]domain.Announcement, error) {
-	announcements, err := u.repo.GetAll(ctx, filters)
+func (u *AnnouncementUsecase) GetAllAnnouncements(ctx context.Context, filters domain.AnnouncementFilters, limit, offset int) ([]domain.Announcement, error) {
+	announcements, err := u.repo.GetAll(ctx, filters, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -49,6 +49,10 @@ func (u *AnnouncementUsecase) GetAllAnnouncements(ctx context.Context, filters d
 		u.enrichAnnouncement(&announcements[i])
 	}
 	return announcements, nil
+}
+
+func (u *AnnouncementUsecase) GetCount(ctx context.Context, filters domain.AnnouncementFilters) (int, error) {
+	return u.repo.Count(ctx, filters)
 }
 
 func (u *AnnouncementUsecase) Create(ctx context.Context, a *domain.Announcement) error {

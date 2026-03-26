@@ -6,7 +6,7 @@ export const load: PageLoad = async ({ params }) => {
     try {
         const response = await api.get(`/animes/${params.slug}`);
         return {
-            anime: response.data
+            data: response.data.data
         };
     } catch (err: any) {
         console.error('Error loading anime:', err);

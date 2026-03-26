@@ -2,6 +2,7 @@ package v1
 
 import (
 	"anirank/api/internal/domain"
+	"anirank/api/internal/dto"
 	"anirank/api/internal/usecase/playlist"
 	"strconv"
 
@@ -9,11 +10,24 @@ import (
 )
 
 type PlaylistHandler struct {
-	usecase *playlist.PlaylistUsecase
+	usecase      *playlist.PlaylistUsecase
+	playlistRepo domain.PlaylistRepository
+	songRepo     domain.SongRepository
+	userRepo     domain.UserRepository
 }
 
-func NewPlaylistHandler(usecase *playlist.PlaylistUsecase) *PlaylistHandler {
-	return &PlaylistHandler{usecase: usecase}
+func NewPlaylistHandler(
+	usecase *playlist.PlaylistUsecase,
+	playlistRepo domain.PlaylistRepository,
+	songRepo domain.SongRepository,
+	userRepo domain.UserRepository,
+) *PlaylistHandler {
+	return &PlaylistHandler{
+		usecase:      usecase,
+		playlistRepo: playlistRepo,
+		songRepo:     songRepo,
+		userRepo:     userRepo,
+	}
 }
 
 func (h *PlaylistHandler) getUserID(c *fiber.Ctx) *uint64 {
@@ -40,11 +54,7 @@ func (h *PlaylistHandler) getUserID(c *fiber.Ctx) *uint64 {
 // @Failure 400 {object} domain.AppError
 // @Router /playlists/users/{id} [get]
 func (h *PlaylistHandler) GetUserPlaylists(c *fiber.Ctx) error {
-	targetUserIDParam := c.Params("id")
-	targetUserID, err := strconv.ParseUint(targetUserIDParam, 10, 64)
-	if err != nil {
-		return domain.NewAppError(400, "Invalid user ID", err)
-	}
+	targetUserID := c.Params("id")
 
 	limit := c.QueryInt("limit", 20)
 	offset := c.QueryInt("offset", 0)
@@ -56,7 +66,12 @@ func (h *PlaylistHandler) GetUserPlaylists(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(fiber.Map{"data": playlists})
+	dtoPlaylists := make([]dto.PlaylistMinimalDTO, len(playlists))
+	for i, p := range playlists {
+		dtoPlaylists[i] = dto.ToPlaylistMinimalDTO(&p)
+	}
+
+	return c.JSON(fiber.Map{"data": dtoPlaylists})
 }
 
 func (h *PlaylistHandler) GetMyPlaylists(c *fiber.Ctx) error {
@@ -66,7 +81,16 @@ func (h *PlaylistHandler) GetMyPlaylists(c *fiber.Ctx) error {
 	}
 	userID := *uid
 
-	songID, _ := strconv.ParseUint(c.Query("song_id", "0"), 10, 64)
+	songIDParam := c.Query("song_id", "0")
+	songID, err := strconv.ParseUint(songIDParam, 10, 64)
+	if err != nil && songIDParam != "0" {
+		// Try UUID resolution
+		s, err := h.songRepo.GetByUUID(c.Context(), songIDParam)
+		if err == nil {
+			songID = s.ID
+		}
+	}
+
 	limit := c.QueryInt("limit", 50)
 	offset := c.QueryInt("offset", 0)
 
@@ -75,7 +99,12 @@ func (h *PlaylistHandler) GetMyPlaylists(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(fiber.Map{"playlists": playlists})
+	dtoPlaylists := make([]dto.PlaylistMinimalDTO, len(playlists))
+	for i, p := range playlists {
+		dtoPlaylists[i] = dto.ToPlaylistMinimalDTO(&p)
+	}
+
+	return c.JSON(fiber.Map{"data": dtoPlaylists})
 }
 
 // GetPlaylist retrieves a specific playlist and its songs.
@@ -93,7 +122,11 @@ func (h *PlaylistHandler) GetPlaylist(c *fiber.Ctx) error {
 	playlistIDParam := c.Params("id")
 	playlistID, err := strconv.ParseUint(playlistIDParam, 10, 64)
 	if err != nil {
-		return domain.NewAppError(400, "Invalid playlist ID", err)
+		p, err := h.playlistRepo.GetByUUID(c.Context(), playlistIDParam)
+		if err != nil {
+			return domain.NewAppError(404, "Playlist not found", err)
+		}
+		playlistID = p.ID
 	}
 
 	requestingUserID := h.getUserID(c)
@@ -106,34 +139,22 @@ func (h *PlaylistHandler) GetPlaylist(c *fiber.Ctx) error {
 	playlistSongs, err := h.usecase.GetPlaylistSongs(c.Context(), playlistID, requestingUserID)
 	if err == nil {
 		// Flatten PlaylistSong wrappers to Song objects for the frontend
-		var songs []domain.Song
+		var songs []dto.SongMinimalDTO
 		for _, ps := range playlistSongs {
 			if ps.Song != nil {
-				songs = append(songs, *ps.Song)
+				songs = append(songs, dto.ToSongMinimalDTO(ps.Song))
 			}
 		}
 		if songs == nil {
-			songs = []domain.Song{}
+			songs = []dto.SongMinimalDTO{}
 		}
-		playlist.Songs = nil // clear PlaylistSong slice
-
-		// Return playlist with songs as flat array
-		return c.JSON(fiber.Map{
-			"playlist": fiber.Map{
-				"id":          playlist.ID,
-				"name":        playlist.Name,
-				"description": playlist.Description,
-				"user_id":     playlist.UserID,
-				"is_public":   playlist.IsPublic,
-				"created_at":  playlist.CreatedAt,
-				"updated_at":  playlist.UpdatedAt,
-				"user":        playlist.User,
-				"songs":       songs,
-			},
-		})
+		
+		d := dto.ToPlaylistDTO(playlist)
+		d.Songs = songs
+		return c.JSON(fiber.Map{"data": d})
 	}
 
-	return c.JSON(fiber.Map{"playlist": playlist})
+	return c.JSON(fiber.Map{"data": dto.ToPlaylistDTO(playlist)})
 }
 
 // POST /api/playlists
@@ -172,7 +193,7 @@ func (h *PlaylistHandler) Create(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.Status(201).JSON(fiber.Map{"data": playlist})
+	return c.Status(201).JSON(fiber.Map{"data": dto.ToPlaylistDTO(playlist)})
 }
 
 // Update an existing playlist
@@ -197,9 +218,14 @@ func (h *PlaylistHandler) Update(c *fiber.Ctx) error {
 	}
 	userID := *uid
 
-	playlistID, err := strconv.ParseUint(c.Params("id"), 10, 64)
+	playlistIDParam := c.Params("id")
+	playlistID, err := strconv.ParseUint(playlistIDParam, 10, 64)
 	if err != nil {
-		return domain.NewAppError(400, "Invalid ID", nil)
+		p, err := h.playlistRepo.GetByUUID(c.Context(), playlistIDParam)
+		if err != nil {
+			return domain.NewAppError(404, "Playlist not found", err)
+		}
+		playlistID = p.ID
 	}
 
 	var req createPlaylistReq
@@ -234,9 +260,14 @@ func (h *PlaylistHandler) Delete(c *fiber.Ctx) error {
 	}
 	userID := *uid
 
-	playlistID, err := strconv.ParseUint(c.Params("id"), 10, 64)
+	playlistIDParam := c.Params("id")
+	playlistID, err := strconv.ParseUint(playlistIDParam, 10, 64)
 	if err != nil {
-		return domain.NewAppError(400, "Invalid ID", nil)
+		p, err := h.playlistRepo.GetByUUID(c.Context(), playlistIDParam)
+		if err != nil {
+			return domain.NewAppError(404, "Playlist not found", err)
+		}
+		playlistID = p.ID
 	}
 
 	if err := h.usecase.DeletePlaylist(c.Context(), userID, playlistID); err != nil {
@@ -248,7 +279,7 @@ func (h *PlaylistHandler) Delete(c *fiber.Ctx) error {
 
 // POST /api/playlists/:id/songs
 type addSongReq struct {
-	SongID   uint64 `json:"song_id"`
+	SongID   string `json:"song_id"`
 	Position int    `json:"position"`
 }
 
@@ -272,9 +303,14 @@ func (h *PlaylistHandler) AddSong(c *fiber.Ctx) error {
 	}
 	userID := *uid
 
-	playlistID, err := strconv.ParseUint(c.Params("id"), 10, 64)
+	playlistIDParam := c.Params("id")
+	playlistID, err := strconv.ParseUint(playlistIDParam, 10, 64)
 	if err != nil {
-		return domain.NewAppError(400, "Invalid ID", nil)
+		p, err := h.playlistRepo.GetByUUID(c.Context(), playlistIDParam)
+		if err != nil {
+			return domain.NewAppError(404, "Playlist not found", err)
+		}
+		playlistID = p.ID
 	}
 
 	var req addSongReq
@@ -282,7 +318,16 @@ func (h *PlaylistHandler) AddSong(c *fiber.Ctx) error {
 		return domain.NewAppError(400, "Invalid payload", err)
 	}
 
-	if err := h.usecase.AddSongToPlaylist(c.Context(), userID, playlistID, req.SongID, req.Position); err != nil {
+	songID, err := strconv.ParseUint(req.SongID, 10, 64)
+	if err != nil {
+		song, err := h.songRepo.GetByUUID(c.Context(), req.SongID)
+		if err != nil {
+			return domain.NewAppError(404, "Song not found", err)
+		}
+		songID = song.ID
+	}
+
+	if err := h.usecase.AddSongToPlaylist(c.Context(), userID, playlistID, songID, req.Position); err != nil {
 		return err
 	}
 
@@ -308,14 +353,24 @@ func (h *PlaylistHandler) RemoveSong(c *fiber.Ctx) error {
 	}
 	userID := *uid
 
-	playlistID, err := strconv.ParseUint(c.Params("id"), 10, 64)
+	playlistIDParam := c.Params("id")
+	playlistID, err := strconv.ParseUint(playlistIDParam, 10, 64)
 	if err != nil {
-		return domain.NewAppError(400, "Invalid playlist ID", nil)
+		p, err := h.playlistRepo.GetByUUID(c.Context(), playlistIDParam)
+		if err != nil {
+			return domain.NewAppError(404, "Playlist not found", err)
+		}
+		playlistID = p.ID
 	}
 
-	songID, err := strconv.ParseUint(c.Params("songID"), 10, 64)
+	songIDParam := c.Params("songID")
+	songID, err := strconv.ParseUint(songIDParam, 10, 64)
 	if err != nil {
-		return domain.NewAppError(400, "Invalid song ID", nil)
+		song, err := h.songRepo.GetByUUID(c.Context(), songIDParam)
+		if err != nil {
+			return domain.NewAppError(404, "Song not found", err)
+		}
+		songID = song.ID
 	}
 
 	if err := h.usecase.RemoveSongFromPlaylist(c.Context(), userID, playlistID, songID); err != nil {
@@ -350,9 +405,14 @@ func (h *PlaylistHandler) ReorderSongs(c *fiber.Ctx) error {
 	}
 	userID := *uid
 
-	playlistID, err := strconv.ParseUint(c.Params("id"), 10, 64)
+	playlistIDParam := c.Params("id")
+	playlistID, err := strconv.ParseUint(playlistIDParam, 10, 64)
 	if err != nil {
-		return domain.NewAppError(400, "Invalid playlist ID", nil)
+		p, err := h.playlistRepo.GetByUUID(c.Context(), playlistIDParam)
+		if err != nil {
+			return domain.NewAppError(404, "Playlist not found", err)
+		}
+		playlistID = p.ID
 	}
 
 	var req reorderReq

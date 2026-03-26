@@ -8,6 +8,7 @@ import (
 // Playlist represents a user collection of songs
 type Playlist struct {
 	ID          uint64    `db:"id" json:"id"`
+	UUID        string    `db:"uuid" json:"uuid"`
 	Name        string    `db:"name" json:"name"`
 	Description *string   `db:"description" json:"description"`
 	UserID      uint64    `db:"user_id" json:"user_id"`
@@ -46,8 +47,10 @@ type PlaylistSong struct {
 type PlaylistRepository interface {
 	// CRUD
 	GetByID(ctx context.Context, id uint64) (*Playlist, error)
+	GetByUUID(ctx context.Context, uuid string) (*Playlist, error)
 	GetByUserID(ctx context.Context, userID uint64, includePrivate bool, limit, offset int) ([]Playlist, error)
 	GetByUserIDWithSongCheck(ctx context.Context, userID, songID uint64, includePrivate bool, limit, offset int) ([]Playlist, error)
+	CountByUserID(ctx context.Context, userID uint64, includePrivate bool) (int, error)
 	Create(ctx context.Context, playlist *Playlist) error
 	Update(ctx context.Context, playlist *Playlist) error
 	Delete(ctx context.Context, id, userID uint64) error

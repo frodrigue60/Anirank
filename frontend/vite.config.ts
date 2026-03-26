@@ -11,7 +11,7 @@ export default defineConfig({
 	envDir: path.resolve(__dirname, '..'),
 	plugins: [tailwindcss(), sveltekit()],
 	server: {
-		port: 3000,
+		port: 5173,
 		host: true
 	}
 });

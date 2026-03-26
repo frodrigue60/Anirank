@@ -13,7 +13,7 @@
   import CreatePlaylistModal from "./CreatePlaylistModal.svelte";
 
   interface Playlist {
-    id: number;
+    id: string;
     name: string;
     description: string | null;
     song_count: number;
@@ -40,7 +40,7 @@
     errorMessage = "";
     try {
       const response = await api.get(`/me/playlists?song_id=${song.id}`);
-      playlists = response.data.playlists;
+      playlists = response.data.data;
     } catch (e: any) {
       errorMessage = "Failed to load playlists.";
       console.error(e);

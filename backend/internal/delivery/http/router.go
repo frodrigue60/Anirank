@@ -46,16 +46,27 @@ func SetupPublicRoutes(app *fiber.App,
 	shareHandler *v1.ShareHandler,
 	seoHandler *v1.SEOHandler) {
 
+	// Core Repositories
+	songRepo := postgres.NewSongRepository(db)
+	userRepo := postgres.NewUserRepository(db)
+	animeRepo := postgres.NewAnimeRepository(db)
+	artistRepo := postgres.NewArtistRepository(db)
+	playlistRepo := postgres.NewPlaylistRepository(db)
+	commentRepo := postgres.NewCommentRepository(db)
+	interactionRepo := postgres.NewInteractionRepository(db)
+	notificationRepo := postgres.NewNotificationRepository(db)
+
 	// HTTP Handlers
 	discoveryHandler := v1.NewDiscoveryHandler(discoveryUsecase)
 	animeHandler := v1.NewAnimeHandler(animeUsecase)
 	searchHandler := v1.NewSearchHandler(searchUsecase)
 	catalogHandler := v1.NewCatalogHandler(catalogUsecase)
 	authHandler := v1.NewAuthHandler(authUsecase)
-	interactionHandler := v1.NewInteractionHandler(interactionUsecase)
-	playlistHandler := v1.NewPlaylistHandler(playlistUsecase)
-	adminHandler := v1.NewAdminHandler(adminUsecase)
-	moderationHandler := v1.NewModerationHandler(moderationUsecase)
+	interactionUsecase = interaction.NewInteractionUsecase(interactionRepo, commentRepo, userRepo, notificationRepo, songRepo, animeRepo, mediaService, xpUsecase, activityUsecase)
+	interactionHandler := v1.NewInteractionHandler(interactionUsecase, activityUsecase, songRepo, userRepo, animeRepo, artistRepo, commentRepo)
+	playlistHandler := v1.NewPlaylistHandler(playlistUsecase, playlistRepo, songRepo, userRepo)
+	adminHandler := v1.NewAdminHandler(adminUsecase, songRepo, userRepo, animeRepo, artistRepo, playlistRepo)
+	moderationHandler := v1.NewModerationHandler(moderationUsecase, songRepo, commentRepo)
 	tournamentHandler := v1.NewTournamentHandler(tournamentUsecase)
 
 	announcementRepo := postgres.NewAnnouncementRepository(db)
@@ -68,7 +79,6 @@ func SetupPublicRoutes(app *fiber.App,
 
 	activityHandler := v1.NewActivityHandler(activityUsecase)
 
-	notificationRepo := postgres.NewNotificationRepository(db)
 	notificationUsecase := notification.NewNotificationUsecase(notificationRepo)
 	notificationHandler := v1.NewNotificationHandler(notificationUsecase)
 
@@ -107,7 +117,7 @@ func SetupPublicRoutes(app *fiber.App,
 	// Catalog: Songs
 	api.Get("/songs", middleware.OptionalAuthMiddleware(jwtService), catalogHandler.SongIndex)
 	api.Get("/songs/ranking/:type", middleware.OptionalAuthMiddleware(jwtService), catalogHandler.SongRanking)
-	api.Get("/songs/:id<int>/comments", middleware.OptionalAuthMiddleware(jwtService), interactionHandler.GetSongComments)
+	api.Get("/songs/:uuid/comments", middleware.OptionalAuthMiddleware(jwtService), interactionHandler.GetSongComments)
 	api.Get("/songs/:anime_slug/:song_slug", middleware.OptionalAuthMiddleware(jwtService), catalogHandler.SongShow)
 	api.Get("/animes/:anime_slug/songs/:song_slug", middleware.OptionalAuthMiddleware(jwtService), catalogHandler.SongShow)
 
@@ -135,6 +145,7 @@ func SetupPublicRoutes(app *fiber.App,
 
 	// Sitemap
 	api.Get("/catalog/sitemap", catalogHandler.GetSitemap)
+	api.Get("/catalog/sitemap.xml", catalogHandler.GetSitemapXML)
 
 	// Activity Feed
 	api.Get("/activities", activityHandler.Index)
@@ -286,6 +297,7 @@ func SetupPublicRoutes(app *fiber.App,
 	adminOnly.Get("/animes/:id", adminHandler.GetAnime)
 	adminOnly.Post("/animes", adminHandler.CreateAnime)
 	adminOnly.Post("/animes/batch", adminHandler.BatchFetchAnimes)
+	adminOnly.Post("/animes/hydrate", adminHandler.HydrateAnimeSeason)
 	adminOnly.Put("/animes/:id", adminHandler.UpdateAnime)
 	adminOnly.Patch("/animes/:id/status", adminHandler.ToggleAnimeStatus)
 	adminOnly.Post("/animes/:id/sync", adminHandler.SyncAnime)
@@ -295,11 +307,11 @@ func SetupPublicRoutes(app *fiber.App,
 	// Songs Group
 	adminOnly.Get("/songs", adminHandler.GetSongs)
 	adminOnly.Get("/songs/latest-number", adminHandler.GetLatestSongNumber)
-	adminOnly.Get("/songs/:id<int>", adminHandler.GetSong)
+	adminOnly.Get("/songs/:id", adminHandler.GetSong)
 	adminOnly.Post("/songs", adminHandler.CreateSong)
-	adminOnly.Put("/songs/:id<int>", adminHandler.UpdateSong)
-	adminOnly.Delete("/songs/:id<int>", adminHandler.DeleteSong)
-	adminOnly.Patch("/songs/:id<int>/status", adminHandler.ToggleSongStatus)
+	adminOnly.Put("/songs/:id", adminHandler.UpdateSong)
+	adminOnly.Delete("/songs/:id", adminHandler.DeleteSong)
+	adminOnly.Patch("/songs/:id/status", adminHandler.ToggleSongStatus)
 
 	// SongVariant Operations
 	adminOnly.Get("/variants", adminHandler.GetVariants)
@@ -313,12 +325,12 @@ func SetupPublicRoutes(app *fiber.App,
 
 	// Artist Operations
 	adminOnly.Get("/artists", adminHandler.GetArtists)
-	adminOnly.Get("/artists/:id<int>", adminHandler.GetArtist)
-	adminOnly.Patch("/artists/:id<int>/status", adminHandler.ToggleArtistStatus)
+	adminOnly.Get("/artists/:id", adminHandler.GetArtist)
+	adminOnly.Patch("/artists/:id/status", adminHandler.ToggleArtistStatus)
 	adminOnly.Post("/artists", adminHandler.CreateArtist)
-	adminOnly.Put("/artists/:id<int>", adminHandler.UpdateArtist)
-	adminOnly.Post("/artists/:id<int>/avatar/generate", adminHandler.GenerateArtistAvatar)
-	adminOnly.Delete("/artists/:id<int>", adminHandler.DeleteArtist)
+	adminOnly.Put("/artists/:id", adminHandler.UpdateArtist)
+	adminOnly.Post("/artists/:id/avatar/generate", adminHandler.GenerateArtistAvatar)
+	adminOnly.Delete("/artists/:id", adminHandler.DeleteArtist)
 
 	// Taxonomy Operations
 	adminOnly.Get("/years", adminHandler.GetYears)

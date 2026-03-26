@@ -7,6 +7,7 @@ import (
 
 type Tournament struct {
 	ID           uint64     `db:"id" json:"id"`
+	UUID         string     `db:"uuid" json:"uuid"`
 	Name         string     `db:"name" json:"name"`
 	Slug         string     `db:"slug" json:"slug"`
 	Description  *string    `db:"description" json:"description"`
@@ -27,6 +28,7 @@ type Tournament struct {
 
 type TournamentMatchup struct {
 	ID           uint64     `db:"id" json:"id"`
+	UUID         string     `db:"uuid" json:"uuid"`
 	TournamentID uint64     `db:"tournament_id" json:"tournament_id"`
 	Round        int        `db:"round" json:"round"`
 	Position     int        `db:"position" json:"position"`

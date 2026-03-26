@@ -167,7 +167,7 @@
         entity_id: artist.id,
         entity_type: "artist",
       });
-      isFavorited = response.data.favorited;
+      isFavorited = response.data.data.favorited;
       toastState.addToast(
         isFavorited ? "Added to favorites" : "Removed from favorites",
         "success",
@@ -232,7 +232,7 @@
         <button
           onclick={toggleFavorite}
           class="flex items-center gap-2 px-4 py-2 rounded-xl border border-white/10 transition-all active:scale-95 {isFavorited
-            ? 'bg-red-500/20 border-red-500/50 text-red-500 shadow-lg shadow-red-500/20'
+            ? 'bg-red-500/20 border-red-500/50 text-red-500'
             : 'text-white hover:bg-white/5'}"
         >
           <span

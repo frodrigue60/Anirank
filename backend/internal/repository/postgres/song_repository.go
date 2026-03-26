@@ -23,12 +23,30 @@ func NewSongRepository(db *sqlx.DB) domain.SongRepository {
 func (r *songRepository) GetByID(ctx context.Context, id uint64) (*domain.Song, error) {
 	var s domain.Song
 	query := `
-		SELECT s.*, a.id AS "anime.id", a.title AS "anime.title", a.slug AS "anime.slug", a.cover AS "anime.cover"
+		SELECT s.*, a.id AS "anime.id", a.uuid AS "anime.uuid", a.title AS "anime.title", a.slug AS "anime.slug", a.cover AS "anime.cover"
 		FROM songs s 
 		LEFT JOIN animes a ON s.anime_id = a.id
 		WHERE s.id = $1
 	`
 	err := r.db.GetContext(ctx, &s, query, id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, domain.ErrNotFound
+		}
+		return nil, err
+	}
+	return &s, nil
+}
+
+func (r *songRepository) GetByUUID(ctx context.Context, uuid string) (*domain.Song, error) {
+	var s domain.Song
+	query := `
+		SELECT s.*, a.id AS "anime.id", a.uuid AS "anime.uuid", a.title AS "anime.title", a.slug AS "anime.slug", a.cover AS "anime.cover"
+		FROM songs s 
+		LEFT JOIN animes a ON s.anime_id = a.id
+		WHERE s.uuid = $1
+	`
+	err := r.db.GetContext(ctx, &s, query, uuid)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, domain.ErrNotFound
@@ -233,8 +251,8 @@ func (r *songRepository) Count(ctx context.Context, filters domain.SongFilters) 
 
 func (r *songRepository) Create(ctx context.Context, song *domain.Song) error {
 	query := `
-		INSERT INTO songs (song_romaji, song_jp, song_en, theme_num, type, slug, anime_id, season_id, year_id, views, status, created_at, updated_at) 
-		VALUES (:song_romaji, :song_jp, :song_en, :theme_num, :type, :slug, :anime_id, :season_id, :year_id, :views, :status, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		INSERT INTO songs (song_romaji, song_jp, song_en, uuid, theme_num, type, slug, anime_id, season_id, year_id, views, status, animethemes_id, created_at, updated_at) 
+		VALUES (:song_romaji, :song_jp, :song_en, :uuid, :theme_num, :type, :slug, :anime_id, :season_id, :year_id, :views, :status, :animethemes_id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 		RETURNING id
 	`
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
@@ -250,7 +268,8 @@ func (r *songRepository) Update(ctx context.Context, song *domain.Song) error {
 		UPDATE songs 
 		SET song_romaji = :song_romaji, song_jp = :song_jp, song_en = :song_en, 
 		    theme_num = :theme_num, type = :type, slug = :slug, anime_id = :anime_id, 
-		    season_id = :season_id, year_id = :year_id, views = :views, status = :status, updated_at = CURRENT_TIMESTAMP
+		    season_id = :season_id, year_id = :year_id, views = :views, status = :status, 
+		    animethemes_id = :animethemes_id, updated_at = CURRENT_TIMESTAMP
 		WHERE id = :id
 	`
 	res, err := r.db.NamedExecContext(ctx, query, song)
@@ -282,7 +301,7 @@ func (r *songRepository) Delete(ctx context.Context, id uint64) error {
 func (r *songRepository) GetVariantsBySongID(ctx context.Context, songID uint64) ([]domain.SongVariant, error) {
 	query := `
 		SELECT 
-			sv.id, sv.version_number, sv.song_id, sv.slug, sv.views, sv.season_id, sv.year_id, sv.spoiler, sv.status, sv.created_at, sv.updated_at,
+			sv.id, sv.uuid, sv.version_number, sv.song_id, sv.slug, sv.views, sv.season_id, sv.year_id, sv.spoiler, sv.status, sv.created_at, sv.updated_at,
 			v.video_src, v.embed_code
 		FROM song_variants sv
 		LEFT JOIN videos v ON sv.id = v.song_variant_id
@@ -642,8 +661,8 @@ func (r *songRepository) Search(ctx context.Context, term string, limit int) ([]
 	var songs []domain.Song
 	query := `
 		SELECT 
-			s.id, s.song_romaji, s.song_jp, s.song_en, s.slug, s.type, s.theme_num,
-			a.id AS "anime.id", a.title AS "anime.title", a.slug AS "anime.slug"
+			s.id, s.uuid, s.song_romaji, s.song_jp, s.song_en, s.slug, s.type, s.theme_num,
+			a.id AS "anime.id", a.uuid AS "anime.uuid", a.title AS "anime.title", a.slug AS "anime.slug"
 		FROM songs s
 		JOIN animes a ON s.anime_id = a.id
 		WHERE (s.song_romaji ILIKE $1 OR s.song_jp ILIKE $2 OR s.song_en ILIKE $3) AND a.status = true AND s.status = true
@@ -682,7 +701,7 @@ func (r *songRepository) GetPublicSlugs(ctx context.Context) ([]domain.SitemapIt
 	var items []domain.SitemapItem
 	// Filter by both song status AND anime status
 	query := `
-		SELECT s.slug as loc, s.updated_at as lastmod 
+		SELECT a.slug || '/' || s.slug as loc, s.updated_at as lastmod 
 		FROM songs s
 		JOIN animes a ON s.anime_id = a.id
 		WHERE s.status = true AND a.status = true

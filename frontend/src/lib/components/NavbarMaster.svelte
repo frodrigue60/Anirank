@@ -259,8 +259,7 @@
                   />
                 {:else}
                   <img
-                    src="https://ui-avatars.com/api/?name={authState.user
-                      .name}&background=7f13ec&color=fff"
+                    src="/images/placeholders/default.jpg"
                     alt="{authState.user.name}'s default avatar"
                     title="{authState.user.name}'s default avatar"
                     class="h-full w-full object-cover"

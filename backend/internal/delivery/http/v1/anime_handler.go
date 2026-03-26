@@ -70,13 +70,7 @@ func (h *AnimeHandler) Index(c *fiber.Ctx) error {
 		animeDTOs[i] = dto.ToAnimeMinimalDTO(&a)
 	}
 
-	return c.JSON(fiber.Map{
-		"data":         animeDTOs,
-		"current_page": page,
-		"last_page":    lastPage,
-		"per_page":     limit,
-		"total":        total,
-	})
+	return c.JSON(paginatedResponse(c, animeDTOs, total, page, limit))
 }
 
 // Show returns the details of a specific Anime by its slug.
@@ -97,7 +91,6 @@ func (h *AnimeHandler) Show(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"success": true,
-		"data":    dto.ToAnimeDTO(anime),
+		"data": dto.ToAnimeDTO(anime),
 	})
 }

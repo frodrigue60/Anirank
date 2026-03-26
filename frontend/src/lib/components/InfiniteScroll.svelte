@@ -10,19 +10,24 @@
   let observer: IntersectionObserver;
   let element: HTMLElement;
 
+  let isIntersecting = $state(false);
+
   onMount(() => {
     observer = new IntersectionObserver(
       (entries) => {
-        const first = entries[0];
-        if (first.isIntersecting && hasMore && !loading) {
-          onLoadMore();
-        }
+        isIntersecting = entries[0].isIntersecting;
       },
       { threshold: 0.1, rootMargin: "200px" }
     );
 
     if (element) {
       observer.observe(element);
+    }
+  });
+
+  $effect(() => {
+    if (isIntersecting && hasMore && !loading) {
+      onLoadMore();
     }
   });
 

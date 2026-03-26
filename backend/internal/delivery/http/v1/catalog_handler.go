@@ -2,9 +2,10 @@ package v1
 
 import (
 	"context"
-	"math"
+	"fmt"
+	"os"
 	"strconv"
-	"strings"
+	"time"
 
 	"anirank/api/internal/domain"
 	"anirank/api/internal/dto"
@@ -33,76 +34,6 @@ func (h *CatalogHandler) getUserID(c *fiber.Ctx) *uint64 {
 		return &id
 	}
 	return nil
-}
-
-func parsePagination(c *fiber.Ctx, defaultLimit int) (int, int) {
-	page, _ := strconv.Atoi(c.Query("page", "1"))
-	if page < 1 {
-		page = 1
-	}
-	limit := defaultLimit
-	offset := (page - 1) * limit
-	return limit, offset
-}
-
-// paginatedResponse builds a Laravel-compatible paginated JSON envelope
-// that the SvelteKit frontend expects: { data, current_page, last_page, total, per_page, next_page_url, prev_page_url }
-func paginatedResponse(c *fiber.Ctx, items interface{}, total int, page, perPage int) fiber.Map {
-	lastPage := int(math.Ceil(float64(total) / float64(perPage)))
-	if lastPage < 1 {
-		lastPage = 1
-	}
-
-	path := c.Path()
-	queryParams := c.Queries()
-
-	// Strip /api prefix if present to avoid doubling with frontend baseURL
-	cleanPath := strings.TrimPrefix(path, "/api")
-
-	buildURL := func(p int) string {
-		q := make(map[string]string)
-		for k, v := range queryParams {
-			q[k] = v
-		}
-		q["page"] = strconv.Itoa(p)
-		
-		// Return full URL to ensure axios doesn't prepend baseURL redundantly,
-		// but keep the path relative to API root if that's preferred.
-		// Actually, using the absolute domain path without /api is best for the current frontend api client.
-		u := cleanPath + "?"
-		for k, v := range q {
-			u += k + "=" + v + "&"
-		}
-		return u[:len(u)-1]
-	}
-
-	response := fiber.Map{
-		"data": items,
-		"pagination": fiber.Map{
-			"total":        total,
-			"per_page":     perPage,
-			"current_page": page,
-			"last_page":    lastPage,
-			"has_more":     page < lastPage,
-		},
-		"links": fiber.Map{
-			"self": buildURL(page),
-		},
-	}
-
-	if page < lastPage {
-		response["links"].(fiber.Map)["next"] = buildURL(page + 1)
-	} else {
-		response["links"].(fiber.Map)["next"] = nil
-	}
-
-	if page > 1 {
-		response["links"].(fiber.Map)["prev"] = buildURL(page - 1)
-	} else {
-		response["links"].(fiber.Map)["prev"] = nil
-	}
-
-	return response
 }
 
 // ─── Songs ───
@@ -156,8 +87,7 @@ func (h *CatalogHandler) SongShow(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"success": true,
-		"song":    dto.ToSongDTO(song),
+		"data":    dto.ToSongDTO(song),
 		"related": relatedDTOs,
 	})
 }
@@ -243,9 +173,8 @@ func (h *CatalogHandler) ArtistShow(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"success": true,
-		"artist":  dto.ToArtistDTO(artist),
-		"data":    paginatedResponse(c, songDTOs, total, page, limit),
+		"artist": dto.ToArtistDTO(artist),
+		"data":   paginatedResponse(c, songDTOs, total, page, limit),
 	})
 }
 
@@ -295,9 +224,8 @@ func (h *CatalogHandler) StudioShow(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"success": true,
-		"studio":  dto.ToStudioDTO(studio),
-		"data":    paginatedResponse(c, animeDTOs, total, page, limit),
+		"studio": dto.ToStudioDTO(studio),
+		"data":   paginatedResponse(c, animeDTOs, total, page, limit),
 	})
 }
 
@@ -348,7 +276,6 @@ func (h *CatalogHandler) ProducerShow(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"success":  true,
 		"producer": dto.ToProducerDTO(producer),
 		"data":     paginatedResponse(c, animeDTOs, total, page, limit),
 	})
@@ -372,8 +299,13 @@ func (h *CatalogHandler) PlaylistIndex(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	// For now we return playlists as is since we didn't define a PlaylistDTO yet
-	return c.JSON(paginatedResponse(c, playlists, total, page, limit))
+
+	dtoPlaylists := make([]dto.PlaylistMinimalDTO, len(playlists))
+	for i, p := range playlists {
+		dtoPlaylists[i] = dto.ToPlaylistMinimalDTO(&p)
+	}
+
+	return c.JSON(paginatedResponse(c, dtoPlaylists, total, page, limit))
 }
 
 // ─── Users ───
@@ -385,22 +317,35 @@ func (h *CatalogHandler) UserProfile(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	return c.JSON(fiber.Map{"success": true, "user": dto.ToUserDTO(user)})
+	return c.JSON(fiber.Map{"data": dto.ToUserDTO(user)})
 }
 
 // UserPlaylists handles GET /api/users/:slug/playlists
 func (h *CatalogHandler) UserPlaylists(c *fiber.Ctx) error {
+	limit, offset := parsePagination(c, 24)
+	page, _ := strconv.Atoi(c.Query("page", "1"))
+	if page < 1 {
+		page = 1
+	}
+
 	requestingUserID := h.getUserID(c)
-	playlists, err := h.usecase.GetUserPlaylists(c.Context(), requestingUserID, c.Params("slug"))
+	playlists, total, err := h.usecase.GetUserPlaylists(c.Context(), requestingUserID, c.Params("slug"), limit, offset)
 	if err != nil {
 		return err
 	}
-	return c.JSON(fiber.Map{"success": true, "playlists": playlists})
+
+	dtoPlaylists := make([]dto.PlaylistMinimalDTO, len(playlists))
+	for i, p := range playlists {
+		dtoPlaylists[i] = dto.ToPlaylistMinimalDTO(&p)
+	}
+
+	return c.JSON(paginatedResponse(c, dtoPlaylists, total, page, limit))
 }
 
 type userFavoritesReq struct {
-	UserID uint64 `json:"user_id"`
-	Page   int    `json:"page"`
+	UserID   string `json:"user_id"`
+	UserUUID string `json:"user_uuid"`
+	Page     int    `json:"page"`
 }
 
 // UserFavorites handles POST /api/users/favorites
@@ -417,7 +362,12 @@ func (h *CatalogHandler) UserFavorites(c *fiber.Ctx) error {
 	}
 	offset = (page - 1) * limit
 
-	songs, total, err := h.usecase.GetUserFavorites(c.Context(), req.UserID, limit, offset)
+	userID := req.UserID
+	if userID == "" {
+		userID = req.UserUUID
+	}
+
+	songs, total, err := h.usecase.GetUserFavorites(c.Context(), userID, limit, offset)
 	if err != nil {
 		return err
 	}
@@ -427,10 +377,7 @@ func (h *CatalogHandler) UserFavorites(c *fiber.Ctx) error {
 		songDTOs[i] = dto.ToSongMinimalDTO(&s)
 	}
 
-	return c.JSON(fiber.Map{
-		"success": true,
-		"data":    paginatedResponse(c, songDTOs, total, page, limit),
-	})
+	return c.JSON(paginatedResponse(c, songDTOs, total, page, limit))
 }
 
 // UserArtistFavorites handles POST /api/users/artists/favorites
@@ -447,7 +394,12 @@ func (h *CatalogHandler) UserArtistFavorites(c *fiber.Ctx) error {
 	}
 	offset = (page - 1) * limit
 
-	artists, total, err := h.usecase.GetUserFavoriteArtists(c.Context(), req.UserID, limit, offset)
+	userID := req.UserID
+	if userID == "" {
+		userID = req.UserUUID
+	}
+
+	artists, total, err := h.usecase.GetUserFavoriteArtists(c.Context(), userID, limit, offset)
 	if err != nil {
 		return err
 	}
@@ -457,10 +409,7 @@ func (h *CatalogHandler) UserArtistFavorites(c *fiber.Ctx) error {
 		artistDTOs[i] = dto.ToArtistDTO(&a)
 	}
 
-	return c.JSON(fiber.Map{
-		"success": true,
-		"data":    paginatedResponse(c, artistDTOs, total, page, limit),
-	})
+	return c.JSON(paginatedResponse(c, artistDTOs, total, page, limit))
 }
 
 // UserFollowers handles GET /api/users/:slug/followers
@@ -514,7 +463,7 @@ func (h *CatalogHandler) Home(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	return c.JSON(fiber.Map{"success": true, "data": dto.ToHomeDTO(data)})
+	return c.JSON(fiber.Map{"data": dto.ToHomeDTO(data)})
 }
 
 // UserRanking handles GET /api/users/ranking
@@ -546,5 +495,58 @@ func (h *CatalogHandler) GetSitemap(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	return c.JSON(fiber.Map{"success": true, "data": data})
+	return c.JSON(fiber.Map{"data": data})
+}
+
+// GetSitemapXML handles GET /api/v1/catalog/sitemap.xml
+func (h *CatalogHandler) GetSitemapXML(c *fiber.Ctx) error {
+	data, err := h.usecase.GetSitemapData(c.Context())
+	if err != nil {
+		return err
+	}
+
+	siteURL := os.Getenv("APP_URL")
+	if siteURL == "" {
+		siteURL = "https://anirank.work"
+	}
+
+	// Manual XML construction to match the frontend template
+	xml := `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>` + siteURL + `/</loc>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>` + siteURL + `/animes</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>` + siteURL + `/songs</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>` + siteURL + `/artists</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>`
+
+	for _, item := range data {
+		xml += `
+  <url>
+    <loc>` + siteURL + item.Loc + `</loc>
+    <lastmod>` + item.LastMod.Format(time.RFC3339) + `</lastmod>
+    <changefreq>` + item.ChangeFreq + `</changefreq>
+    <priority>` + fmt.Sprintf("%.1f", item.Priority) + `</priority>
+  </url>`
+	}
+
+	xml += `
+</urlset>`
+
+	c.Set("Content-Type", "application/xml")
+	return c.SendString(xml)
 }

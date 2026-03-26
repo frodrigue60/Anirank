@@ -1,12 +1,12 @@
 export interface User {
-    id: number;
+    uuid: string;
     name: string;
     slug: string | null;
     email: string;
     score_format?: string;
     score_format_id?: number;
     last_login_at?: string;
-    roles?: { id: number; name: string }[];
+    roles?: string[];
     avatar_url?: string;
     banner_url?: string;
     xp?: number;
@@ -40,14 +40,13 @@ export function setUser(user: User | null) {
     
     // Evaluate roles
     if (user && user.roles) {
-        authState.isAdmin = user.roles.some((r: any) => 
-            (r.name && r.name.toLowerCase() === 'admin') || 
-            (r.slug && r.slug.toLowerCase() === 'admin')
+        authState.isAdmin = user.roles.some((r: string) => 
+            r && r.toLowerCase() === 'admin'
         );
-        authState.isStaff = user.roles.some((r: any) => {
-            const n = r.name?.toLowerCase();
-            const s = r.slug?.toLowerCase();
-            return ['admin', 'editor', 'creator'].includes(n) || ['admin', 'editor', 'creator'].includes(s);
+        authState.isStaff = user.roles.some((r: string) => {
+            if (!r) return false;
+            const role = r.toLowerCase();
+            return ['admin', 'editor', 'creator'].includes(role);
         });
     } else {
         authState.isAdmin = false;

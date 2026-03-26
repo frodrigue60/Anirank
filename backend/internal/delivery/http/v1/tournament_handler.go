@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"anirank/api/internal/domain"
+	"anirank/api/internal/dto"
 	"anirank/api/internal/usecase/tournament"
 
 	"github.com/gofiber/fiber/v2"
@@ -36,7 +37,7 @@ func (h *TournamentHandler) GetActiveTournament(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(fiber.Map{"data": t})
+	return c.JSON(fiber.Map{"data": dto.ToTournamentDTO(t)})
 }
 
 // ListTournamentsPublic lists active and completed tournaments for the public.
@@ -50,7 +51,13 @@ func (h *TournamentHandler) ListTournamentsPublic(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	return c.JSON(fiber.Map{"data": tt})
+
+	dtoTournaments := make([]dto.TournamentMinimalDTO, len(tt))
+	for i, t := range tt {
+		dtoTournaments[i] = dto.ToTournamentMinimalDTO(&t)
+	}
+
+	return c.JSON(fiber.Map{"data": dtoTournaments})
 }
 
 // GetTournamentBySlug retrieves any tournament by its slug identifier.
@@ -82,7 +89,7 @@ func (h *TournamentHandler) GetTournamentBySlug(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(fiber.Map{"data": t})
+	return c.JSON(fiber.Map{"data": dto.ToTournamentDTO(t)})
 }
 
 // ==== USER FACING ENDPOINTS ====
@@ -153,7 +160,7 @@ func (h *TournamentHandler) CreateTournament(c *fiber.Ctx) error {
 
 	return c.Status(201).JSON(fiber.Map{
 		"message": "Tournament created successfully",
-		"data":    t,
+		"data":    dto.ToTournamentDTO(&t),
 	})
 }
 
@@ -218,7 +225,7 @@ func (h *TournamentHandler) GetTournament(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	return c.JSON(fiber.Map{"data": t})
+	return c.JSON(fiber.Map{"data": dto.ToTournamentDTO(t)})
 }
 
 // ListTournaments lists all tournaments for the admin panel.
@@ -233,7 +240,13 @@ func (h *TournamentHandler) ListTournaments(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	return c.JSON(fiber.Map{"data": tt})
+
+	dtoTournaments := make([]dto.TournamentMinimalDTO, len(tt))
+	for i, t := range tt {
+		dtoTournaments[i] = dto.ToTournamentMinimalDTO(&t)
+	}
+
+	return c.JSON(fiber.Map{"data": dtoTournaments})
 }
 
 // DeleteTournament deletes a tournament.

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 )
@@ -71,6 +73,91 @@ type ATArtist struct {
 	Slug string `json:"slug"`
 }
 
+// AniList Structs
+type AniListResponse struct {
+	Data struct {
+		Media struct {
+			ID          int    `json:"id"`
+			Title       struct {
+				Romaji  string `json:"romaji"`
+				English string `json:"english"`
+				Native  string `json:"native"`
+			} `json:"title"`
+			Description string `json:"description"`
+			CoverImage  struct {
+				ExtraLarge string `json:"extraLarge"`
+			} `json:"coverImage"`
+			BannerImage string   `json:"bannerImage"`
+			Genres      []string `json:"genres"`
+			Studios     struct {
+				Edges []struct {
+					IsMain bool `json:"isMain"`
+					Node   struct {
+						Name string `json:"name"`
+					} `json:"node"`
+				} `json:"edges"`
+			} `json:"studios"`
+			ExternalLinks []struct {
+				Site string `json:"site"`
+				URL  string `json:"url"`
+			} `json:"externalLinks"`
+		} `json:"Media"`
+	} `json:"data"`
+}
+
+const anilistMediaQuery = `
+query ($id: Int) {
+  Media(id: $id, type: ANIME) {
+    id
+    title { romaji english native }
+    description(asHtml: false)
+    coverImage { extraLarge }
+    bannerImage
+    genres
+    studios {
+      edges {
+        isMain
+        node { name }
+      }
+    }
+    externalLinks { site url }
+  }
+}
+`
+
+func fetchFromAniList(ctx context.Context, client *http.Client, id int64) (*AniListResponse, error) {
+	payload := struct {
+		Query     string                 `json:"query"`
+		Variables map[string]interface{} `json:"variables"`
+	}{
+		Query:     anilistMediaQuery,
+		Variables: map[string]interface{}{"id": id},
+	}
+
+	body, _ := json.Marshal(payload)
+	req, err := http.NewRequestWithContext(ctx, "POST", "https://graphql.anilist.co", bytes.NewBuffer(body))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("AniList API returns %d", resp.StatusCode)
+	}
+
+	var alResp AniListResponse
+	if err := json.NewDecoder(resp.Body).Decode(&alResp); err != nil {
+		return nil, err
+	}
+	return &alResp, nil
+}
+
 func main() {
 	if err := godotenv.Load(".env"); err != nil {
 		log.Println("No .env file found.")
@@ -91,7 +178,7 @@ func main() {
 	}
 	defer pool.Close()
 
-	year := 2026
+	year := 2025
 	seasonName := "Winter"
 
 	fmt.Printf("Starting Hydration for %s %d...\n", seasonName, year)
@@ -192,6 +279,29 @@ func main() {
 		// Enforce hyphenated slug for anime
 		animeSlug := slugify(a.Slug)
 
+		// 1.5 Fetch from AniList if available
+		var alData *AniListResponse
+		if anilistID > 0 {
+			fmt.Printf("  Fetching AniList data for ID %d...\n", anilistID)
+			alData, err = fetchFromAniList(ctx, client, anilistID)
+			if err != nil {
+				log.Printf("  AniList Error for %d: %v\n", anilistID, err)
+			} else {
+				// Override AnimeThemes data with AniList data
+				if alData.Data.Media.Title.Romaji != "" {
+					a.Name = alData.Data.Media.Title.Romaji
+				}
+				if alData.Data.Media.Description != "" {
+					a.Synopsis = alData.Data.Media.Description
+				}
+				if alData.Data.Media.CoverImage.ExtraLarge != "" {
+					coverUrl = alData.Data.Media.CoverImage.ExtraLarge
+				}
+			}
+			// Rate Limit: 10 r/s (100ms)
+			time.Sleep(100 * time.Millisecond)
+		}
+
 		// Find existing Anime by AniList ID first, then by slug
 		var animeID uint64
 		found := false
@@ -211,25 +321,36 @@ func main() {
 			}
 		}
 
-		// Flush existing data for this anime if found
+		// Flush existing association data for this anime if found
 		if found {
-			// We delete songs and their variants to ensure a clean re-hydration
-			_, _ = tx.Exec(ctx, "DELETE FROM song_variants WHERE song_id IN (SELECT id FROM songs WHERE anime_id = $1)", animeID)
-			_, _ = tx.Exec(ctx, "DELETE FROM artist_song WHERE song_id IN (SELECT id FROM songs WHERE anime_id = $1)", animeID)
-			_, _ = tx.Exec(ctx, "DELETE FROM songs WHERE anime_id = $1", animeID)
+			// We keep songs and their variants to update them instead of deleting
+			// but we clean up pivot tables for taxonomies to ensure a clean refresh of associations
 			_, _ = tx.Exec(ctx, "DELETE FROM anime_studio WHERE anime_id = $1", animeID)
+			_, _ = tx.Exec(ctx, "DELETE FROM anime_producer WHERE anime_id = $1", animeID)
+			_, _ = tx.Exec(ctx, "DELETE FROM anime_genre WHERE anime_id = $1", animeID)
+			_, _ = tx.Exec(ctx, "DELETE FROM anime_external_link WHERE anime_id = $1", animeID)
 
 			// Update the anime itself (enforcing new slug and metadata)
+			bannerUrl := ""
+			if alData != nil {
+				bannerUrl = alData.Data.Media.BannerImage
+			}
+
 			_, err = tx.Exec(ctx, `
 				UPDATE animes 
-				SET title = $1, slug = $2, cover = $3, description = $4, format_id = $5, anilist_id = $6, season_id = $7, year_id = $8, updated_at = NOW() 
-				WHERE id = $9`, a.Name, animeSlug, coverUrl, a.Synopsis, formatID, anilistID, seasonID, yearID, animeID)
+				SET title = $1, slug = $2, cover = $3, banner = $4, description = $5, format_id = $6, anilist_id = $7, season_id = $8, year_id = $9, updated_at = NOW() 
+				WHERE id = $10`, a.Name, animeSlug, coverUrl, bannerUrl, a.Synopsis, formatID, anilistID, seasonID, yearID, animeID)
 		} else {
+			bannerUrl := ""
+			if alData != nil {
+				bannerUrl = alData.Data.Media.BannerImage
+			}
 			// Not found at all, insert new
+			animeUUID := uuid.New().String()
 			err = tx.QueryRow(ctx, `
-				INSERT INTO animes (title, slug, cover, description, format_id, anilist_id, season_id, year_id, status, created_at, updated_at) 
-				VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true, NOW(), NOW()) 
-				RETURNING id`, a.Name, animeSlug, coverUrl, a.Synopsis, formatID, anilistID, seasonID, yearID).Scan(&animeID)
+				INSERT INTO animes (uuid, title, slug, cover, banner, description, format_id, anilist_id, season_id, year_id, status, created_at, updated_at) 
+				VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, true, NOW(), NOW()) 
+				RETURNING id`, animeUUID, a.Name, animeSlug, coverUrl, bannerUrl, a.Synopsis, formatID, anilistID, seasonID, yearID).Scan(&animeID)
 		}
 		if err != nil {
 			tx.Rollback(ctx)
@@ -237,16 +358,72 @@ func main() {
 			continue
 		}
 
-		// Process Studios
-		for _, s := range a.Studios {
-			var studioID uint64
-			sSlug := slugify(s.Name)
-			err = tx.QueryRow(ctx, "SELECT id FROM studios WHERE slug = $1", sSlug).Scan(&studioID)
-			if err != nil {
-				err = tx.QueryRow(ctx, "INSERT INTO studios (name, slug, created_at, updated_at) VALUES ($1, $2, NOW(), NOW()) RETURNING id", s.Name, sSlug).Scan(&studioID)
+		// Process Studios & Producers (from AniList if available, otherwise AT)
+		if alData != nil {
+			for _, edge := range alData.Data.Media.Studios.Edges {
+				var targetID uint64
+				sSlug := slugify(edge.Node.Name)
+				if edge.IsMain {
+					err = tx.QueryRow(ctx, "SELECT id FROM studios WHERE slug = $1", sSlug).Scan(&targetID)
+					if err != nil {
+						err = tx.QueryRow(ctx, "INSERT INTO studios (name, slug, created_at, updated_at) VALUES ($1, $2, NOW(), NOW()) RETURNING id", edge.Node.Name, sSlug).Scan(&targetID)
+					}
+					if err == nil {
+						_, _ = tx.Exec(ctx, "INSERT INTO anime_studio (anime_id, studio_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", animeID, targetID)
+					}
+				} else {
+					err = tx.QueryRow(ctx, "SELECT id FROM producers WHERE slug = $1", sSlug).Scan(&targetID)
+					if err != nil {
+						err = tx.QueryRow(ctx, "INSERT INTO producers (name, slug, created_at, updated_at) VALUES ($1, $2, NOW(), NOW()) RETURNING id", edge.Node.Name, sSlug).Scan(&targetID)
+					}
+					if err == nil {
+						_, _ = tx.Exec(ctx, "INSERT INTO anime_producer (anime_id, producer_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", animeID, targetID)
+					}
+				}
 			}
-			if err == nil {
-				_, _ = tx.Exec(ctx, "INSERT INTO anime_studio (anime_id, studio_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", animeID, studioID)
+
+			// Process Genres (AniList only)
+			for _, gName := range alData.Data.Media.Genres {
+				var genreID uint64
+				gSlug := slugify(gName)
+				err = tx.QueryRow(ctx, "SELECT id FROM genres WHERE slug = $1", gSlug).Scan(&genreID)
+				if err != nil {
+					err = tx.QueryRow(ctx, "INSERT INTO genres (name, slug, created_at, updated_at) VALUES ($1, $2, NOW(), NOW()) RETURNING id", gName, gSlug).Scan(&genreID)
+				}
+				if err == nil {
+					_, _ = tx.Exec(ctx, "INSERT INTO anime_genre (anime_id, genre_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", animeID, genreID)
+				}
+			}
+
+			// Process External Links (AniList only)
+			for _, l := range alData.Data.Media.ExternalLinks {
+				var linkID uint64
+				// Check if link with same URL already exists
+				err = tx.QueryRow(ctx, "SELECT id FROM external_links WHERE url = $1 LIMIT 1", l.URL).Scan(&linkID)
+				if err != nil {
+					// Not found, create new
+					err = tx.QueryRow(ctx, "INSERT INTO external_links (name, url, type, created_at, updated_at) VALUES ($1, $2, 'info', NOW(), NOW()) RETURNING id", l.Site, l.URL).Scan(&linkID)
+				} else {
+					// Update name just in case it changed
+					_, _ = tx.Exec(ctx, "UPDATE external_links SET name = $1, updated_at = NOW() WHERE id = $2", l.Site, linkID)
+				}
+
+				if err == nil {
+					_, _ = tx.Exec(ctx, "INSERT INTO anime_external_link (anime_id, external_link_id, created_at, updated_at) VALUES ($1, $2, NOW(), NOW()) ON CONFLICT DO NOTHING", animeID, linkID)
+				}
+			}
+		} else {
+			// Fallback to AT Studios
+			for _, s := range a.Studios {
+				var studioID uint64
+				sSlug := slugify(s.Name)
+				err = tx.QueryRow(ctx, "SELECT id FROM studios WHERE slug = $1", sSlug).Scan(&studioID)
+				if err != nil {
+					err = tx.QueryRow(ctx, "INSERT INTO studios (name, slug, created_at, updated_at) VALUES ($1, $2, NOW(), NOW()) RETURNING id", s.Name, sSlug).Scan(&studioID)
+				}
+				if err == nil {
+					_, _ = tx.Exec(ctx, "INSERT INTO anime_studio (anime_id, studio_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", animeID, studioID)
+				}
 			}
 		}
 

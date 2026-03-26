@@ -52,3 +52,9 @@ func (r *activityRepository) Exists(ctx context.Context, userID uint64, actionTy
 	err := r.db.GetContext(ctx, &exists, query, userID, actionType, targetID, targetType)
 	return exists, err
 }
+func (r *activityRepository) Count(ctx context.Context) (int, error) {
+	var count int
+	query := `SELECT COUNT(*) FROM activities`
+	err := r.db.GetContext(ctx, &count, query)
+	return count, err
+}

@@ -7,15 +7,11 @@ export const load: PageLoad = async ({ params }) => {
     
     try {
         const response = await api.get(`/animes/${anime_slug}/songs/${song_slug}`);
-        const data = response.data;
-
-        if (!data.success) {
-            throw error(404, "Song not found");
-        }
+        const result = response.data;
 
         return {
-            song: data.song,
-            related: data.related
+            song: result.data,
+            related: result.related
         };
     } catch (err: any) {
         console.error("Error loading song detail:", err);

@@ -145,6 +145,10 @@ func (u *AdminUsecase) ResolveArtistsURLs(artists []domain.Artist) {
 	u.contentAdmin.ResolveArtistsURLs(artists)
 }
 
+func (u *AdminUsecase) HydrateAnimeSeason(ctx context.Context, year int, season string, meta domain.AuditMetadata, progress chan<- string) error {
+	return u.contentAdmin.HydrateSeason(ctx, year, season, meta, progress)
+}
+
 func (u *AdminUsecase) ResolveSongsURLs(songs []domain.Song) {
 	u.contentAdmin.ResolveSongsURLs(songs)
 }

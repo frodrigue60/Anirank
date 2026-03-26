@@ -56,7 +56,7 @@
     isResetting = true;
     newPassword = null;
     try {
-      const res = await api.post(`/admin/users/${data.user.id}/reset-password`);
+      const res = await api.post(`/admin/users/${data.user.uuid}/reset-password`);
       newPassword = res.data.password;
     } catch (err) {
       console.error("Failed to reset password", err);
@@ -71,7 +71,7 @@
     isSaving = true;
 
     try {
-      await api.put(`/admin/users/${data.user.id}`, {
+      await api.put(`/admin/users/${data.user.uuid}`, {
         name,
         email,
         role_ids: selectedRoleIds,

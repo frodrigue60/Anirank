@@ -7,14 +7,18 @@
   let { data } = $props();
 
   let allSongs = $state<any[]>([]);
-  let paginationMeta = $state<{ next?: string | null; current_page: number; per_page: number } | null>(null);
+  let paginationMeta = $state<{
+    next?: string | null;
+    current_page: number;
+    per_page: number;
+  } | null>(null);
   let activeType = $derived(data.type);
   let loading = $state(false);
 
   // Reset when data changes (e.g., type filter changed via SvelteKit navigation)
   $effect(() => {
     // svelte-ignore state_referenced_locally
-    const songs = data.ranking?.songs;
+    const songs = data.songsData;
     if (songs) {
       allSongs = songs.data || [];
       paginationMeta = {
@@ -42,12 +46,14 @@
     loading = true;
     try {
       const response = await axios.get(paginationMeta.next);
-      const newSongs = response.data?.songs;
+      const newSongs = response.data;
       if (newSongs?.data) {
         allSongs = [...allSongs, ...newSongs.data];
         paginationMeta = {
           next: newSongs.links?.next,
-          current_page: newSongs.pagination?.current_page || (paginationMeta?.current_page || 1) + 1,
+          current_page:
+            newSongs.pagination?.current_page ||
+            (paginationMeta?.current_page || 1) + 1,
           per_page: newSongs.pagination?.per_page || 24,
         };
       }

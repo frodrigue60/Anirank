@@ -29,7 +29,7 @@
   });
 
   let isOwner = $derived(
-    authState.user && data.profile && authState.user.id === data.profile.id,
+    authState.user && data.profile && authState.user.uuid === data.profile.uuid,
   );
 
   // Sync private playlists on the client if owner and data wasn't already loaded as private

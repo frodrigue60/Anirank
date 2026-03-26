@@ -23,7 +23,7 @@ func (r *artistRepository) GetByID(ctx context.Context, id uint64) (*domain.Arti
 	var a domain.Artist
 	query := `
 		SELECT 
-			id, name, name_jp, slug, created_at, updated_at, avatar, status, favorites_count,
+			id, uuid, name, name_jp, slug, created_at, updated_at, avatar, status, favorites_count, animethemes_id,
 			(SELECT COUNT(*) FROM artist_song asong WHERE asong.artist_id = artists.id) as songs_count,
 			(SELECT ani.banner 
 			 FROM animes ani
@@ -45,11 +45,37 @@ func (r *artistRepository) GetByID(ctx context.Context, id uint64) (*domain.Arti
 	return &a, nil
 }
 
+func (r *artistRepository) GetByUUID(ctx context.Context, uuid string) (*domain.Artist, error) {
+	var a domain.Artist
+	query := `
+		SELECT 
+			id, uuid, name, name_jp, slug, created_at, updated_at, avatar, status, favorites_count, animethemes_id,
+			(SELECT COUNT(*) FROM artist_song asong WHERE asong.artist_id = artists.id) as songs_count,
+			(SELECT ani.banner 
+			 FROM animes ani
+			 JOIN songs s ON s.anime_id = ani.id
+			 JOIN artist_song asong ON asong.song_id = s.id
+			 WHERE asong.artist_id = artists.id
+			 ORDER BY s.created_at DESC
+			 LIMIT 1) as banner
+		FROM artists
+		WHERE uuid = $1
+	`
+	err := r.db.GetContext(ctx, &a, query, uuid)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, domain.ErrNotFound
+		}
+		return nil, err
+	}
+	return &a, nil
+}
+
 func (r *artistRepository) GetBySlug(ctx context.Context, slug string) (*domain.Artist, error) {
 	var a domain.Artist
 	query := `
 		SELECT 
-			id, name, name_jp, slug, created_at, updated_at, avatar, status, favorites_count,
+			id, uuid, name, name_jp, slug, created_at, updated_at, avatar, status, favorites_count, animethemes_id,
 			(SELECT COUNT(*) FROM artist_song asong WHERE asong.artist_id = artists.id) as songs_count,
 			(SELECT ani.banner 
 			 FROM animes ani
@@ -71,12 +97,38 @@ func (r *artistRepository) GetBySlug(ctx context.Context, slug string) (*domain.
 	return &a, nil
 }
 
+func (r *artistRepository) GetByAnimeThemesID(ctx context.Context, id uint64) (*domain.Artist, error) {
+	var a domain.Artist
+	query := `
+		SELECT 
+			id, uuid, name, name_jp, slug, created_at, updated_at, avatar, status, favorites_count, animethemes_id,
+			(SELECT COUNT(*) FROM artist_song asong WHERE asong.artist_id = artists.id) as songs_count,
+			(SELECT ani.banner 
+			 FROM animes ani
+			 JOIN songs s ON s.anime_id = ani.id
+			 JOIN artist_song asong ON asong.song_id = s.id
+			 WHERE asong.artist_id = artists.id
+			 ORDER BY s.created_at DESC
+			 LIMIT 1) as banner
+		FROM artists
+		WHERE animethemes_id = $1
+	`
+	err := r.db.GetContext(ctx, &a, query, id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, domain.ErrNotFound
+		}
+		return nil, err
+	}
+	return &a, nil
+}
+
 // ---- Admin CRUD ----
 
 func (r *artistRepository) Create(ctx context.Context, artist *domain.Artist) error {
 	query := `
-		INSERT INTO artists (name, name_jp, slug, avatar, status, created_at, updated_at) 
-		VALUES (:name, :name_jp, :slug, :avatar, :status, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		INSERT INTO artists (uuid, name, name_jp, slug, avatar, status, animethemes_id, created_at, updated_at) 
+		VALUES (:uuid, :name, :name_jp, :slug, :avatar, :status, :animethemes_id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 		RETURNING id
 	`
 	rows, err := r.db.NamedQueryContext(ctx, query, artist)
@@ -94,7 +146,8 @@ func (r *artistRepository) Create(ctx context.Context, artist *domain.Artist) er
 func (r *artistRepository) Update(ctx context.Context, artist *domain.Artist) error {
 	query := `
 		UPDATE artists 
-		SET name = :name, name_jp = :name_jp, slug = :slug, avatar = :avatar, status = :status, updated_at = CURRENT_TIMESTAMP
+		SET name = :name, name_jp = :name_jp, slug = :slug, avatar = :avatar, status = :status, 
+		    animethemes_id = :animethemes_id, updated_at = CURRENT_TIMESTAMP
 		WHERE id = :id
 	`
 	res, err := r.db.NamedExecContext(ctx, query, artist)
@@ -253,7 +306,7 @@ func (r *artistRepository) GetFeatured(ctx context.Context, limit int) ([]domain
 	var artists []domain.Artist
 	query := `
 		SELECT 
-			id, name, name_jp, slug, created_at, updated_at, avatar, status,
+			id, uuid, name, name_jp, slug, created_at, updated_at, avatar, status,
 			(SELECT COUNT(*) FROM artist_user f WHERE f.artist_id = artists.id) as favorites_count,
 			(SELECT COUNT(*) FROM artist_song asong WHERE asong.artist_id = artists.id) as songs_count,
 			(SELECT ani.banner 
@@ -279,7 +332,7 @@ func (r *artistRepository) GetFeatured(ctx context.Context, limit int) ([]domain
 func (r *artistRepository) Search(ctx context.Context, term string, limit int) ([]domain.Artist, error) {
 	var artists []domain.Artist
 	query := `
-		SELECT id, name, slug, avatar 
+		SELECT id, uuid, name, slug, avatar 
 		FROM artists 
 		WHERE name ILIKE $1 AND status = true
 		ORDER BY name ASC 

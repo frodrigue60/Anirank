@@ -11,11 +11,30 @@ import (
 )
 
 type AdminHandler struct {
-	usecase *admin.AdminUsecase
+	usecase      *admin.AdminUsecase
+	songRepo     domain.SongRepository
+	userRepo     domain.UserRepository
+	animeRepo    domain.AnimeRepository
+	artistRepo   domain.ArtistRepository
+	playlistRepo domain.PlaylistRepository
 }
 
-func NewAdminHandler(usecase *admin.AdminUsecase) *AdminHandler {
-	return &AdminHandler{usecase: usecase}
+func NewAdminHandler(
+	usecase *admin.AdminUsecase,
+	songRepo domain.SongRepository,
+	userRepo domain.UserRepository,
+	animeRepo domain.AnimeRepository,
+	artistRepo domain.ArtistRepository,
+	playlistRepo domain.PlaylistRepository,
+) *AdminHandler {
+	return &AdminHandler{
+		usecase:      usecase,
+		songRepo:     songRepo,
+		userRepo:     userRepo,
+		animeRepo:    animeRepo,
+		artistRepo:   artistRepo,
+		playlistRepo: playlistRepo,
+	}
 }
 
 func (h *AdminHandler) paginatedResponse(c *fiber.Ctx, items interface{}, total int, page, perPage int) fiber.Map {
@@ -83,6 +102,49 @@ func (h *AdminHandler) getAuditMetadata(c *fiber.Ctx) domain.AuditMetadata {
 	}
 }
 
+func (h *AdminHandler) resolveID(c *fiber.Ctx, entityType string) (uint64, error) {
+	paramID := c.Params("id")
+	if paramID == "" {
+		return 0, domain.NewAppError(400, "Missing ID parameter", nil)
+	}
+
+	id, err := strconv.ParseUint(paramID, 10, 64)
+	if err == nil {
+		return id, nil
+	}
+
+	// Try UUID resolution
+	switch entityType {
+	case "user":
+		user, err := h.userRepo.GetByUUID(c.Context(), paramID)
+		if err == nil {
+			return user.ID, nil
+		}
+	case "song":
+		song, err := h.songRepo.GetByUUID(c.Context(), paramID)
+		if err == nil {
+			return song.ID, nil
+		}
+	case "anime":
+		anime, err := h.animeRepo.GetByUUID(c.Context(), paramID)
+		if err == nil {
+			return anime.ID, nil
+		}
+	case "artist":
+		artist, err := h.artistRepo.GetByUUID(c.Context(), paramID)
+		if err == nil {
+			return artist.ID, nil
+		}
+	case "playlist":
+		playlist, err := h.playlistRepo.GetByUUID(c.Context(), paramID)
+		if err == nil {
+			return playlist.ID, nil
+		}
+	}
+
+	return 0, domain.NewAppError(404, "Entity not found with provided ID or UUID", nil)
+}
+
 func (h *AdminHandler) GetDashboard(c *fiber.Ctx) error {
 	stats, metrics, err := h.usecase.GetDashboardData(c.Context())
 	if err != nil {
@@ -125,7 +187,10 @@ func (h *AdminHandler) GetRoles(c *fiber.Ctx) error {
 }
 
 func (h *AdminHandler) GetUser(c *fiber.Ctx) error {
-	id, _ := strconv.ParseUint(c.Params("id"), 10, 64)
+	id, err := h.resolveID(c, "user")
+	if err != nil {
+		return err
+	}
 	user, err := h.usecase.GetUser(c.Context(), id)
 	if err != nil {
 		return err
@@ -151,7 +216,10 @@ func (h *AdminHandler) CreateUser(c *fiber.Ctx) error {
 }
 
 func (h *AdminHandler) UpdateUser(c *fiber.Ctx) error {
-	id, _ := strconv.ParseUint(c.Params("id"), 10, 64)
+	id, err := h.resolveID(c, "user")
+	if err != nil {
+		return err
+	}
 	var req struct {
 		domain.User
 		RoleIDs  []uint64 `json:"role_ids"`
@@ -170,7 +238,10 @@ func (h *AdminHandler) UpdateUser(c *fiber.Ctx) error {
 }
 
 func (h *AdminHandler) DeleteUser(c *fiber.Ctx) error {
-	id, _ := strconv.ParseUint(c.Params("id"), 10, 64)
+	id, err := h.resolveID(c, "user")
+	if err != nil {
+		return err
+	}
 	if err := h.usecase.DeleteUser(c.Context(), id, h.getAuditMetadata(c)); err != nil {
 		return err
 	}
@@ -178,7 +249,10 @@ func (h *AdminHandler) DeleteUser(c *fiber.Ctx) error {
 }
 
 func (h *AdminHandler) ResetPassword(c *fiber.Ctx) error {
-	id, _ := strconv.ParseUint(c.Params("id"), 10, 64)
+	id, err := h.resolveID(c, "user")
+	if err != nil {
+		return err
+	}
 	newPassword, err := h.usecase.ResetPassword(c.Context(), id)
 	if err != nil {
 		return err
@@ -234,7 +308,10 @@ func (h *AdminHandler) GetAnimes(c *fiber.Ctx) error {
 }
 
 func (h *AdminHandler) GetAnime(c *fiber.Ctx) error {
-	id, _ := strconv.ParseUint(c.Params("id"), 10, 64)
+	id, err := h.resolveID(c, "anime")
+	if err != nil {
+		return err
+	}
 	anime, err := h.usecase.GetAnime(c.Context(), id)
 	if err != nil {
 		return err
@@ -244,7 +321,10 @@ func (h *AdminHandler) GetAnime(c *fiber.Ctx) error {
 }
 
 func (h *AdminHandler) ToggleAnimeStatus(c *fiber.Ctx) error {
-	id, _ := strconv.ParseUint(c.Params("id"), 10, 64)
+	id, err := h.resolveID(c, "anime")
+	if err != nil {
+		return err
+	}
 	if err := h.usecase.ToggleAnimeStatus(c.Context(), id, h.getAuditMetadata(c)); err != nil {
 		return err
 	}
@@ -267,7 +347,10 @@ func (h *AdminHandler) CreateAnime(c *fiber.Ctx) error {
 }
 
 func (h *AdminHandler) UpdateAnime(c *fiber.Ctx) error {
-	id, _ := strconv.ParseUint(c.Params("id"), 10, 64)
+	id, err := h.resolveID(c, "anime")
+	if err != nil {
+		return err
+	}
 	var anime domain.Anime
 	if err := c.BodyParser(&anime); err != nil {
 		return domain.NewAppError(400, "Invalid payload", err)
@@ -283,7 +366,10 @@ func (h *AdminHandler) UpdateAnime(c *fiber.Ctx) error {
 }
 
 func (h *AdminHandler) DeleteAnime(c *fiber.Ctx) error {
-	id, _ := strconv.ParseUint(c.Params("id"), 10, 64)
+	id, err := h.resolveID(c, "anime")
+	if err != nil {
+		return err
+	}
 	if err := h.usecase.DeleteAnime(c.Context(), id, h.getAuditMetadata(c)); err != nil {
 		return err
 	}
@@ -376,7 +462,10 @@ func (h *AdminHandler) BatchFetchAnimes(c *fiber.Ctx) error {
 }
 
 func (h *AdminHandler) SyncAnime(c *fiber.Ctx) error {
-	id, _ := strconv.ParseUint(c.Params("id"), 10, 64)
+	id, err := h.resolveID(c, "anime")
+	if err != nil {
+		return err
+	}
 	if err := h.usecase.SyncAnime(c.Context(), id, h.getAuditMetadata(c)); err != nil {
 		return err
 	}
@@ -439,7 +528,10 @@ func (h *AdminHandler) GetLatestSongNumber(c *fiber.Ctx) error {
 }
 
 func (h *AdminHandler) GetSong(c *fiber.Ctx) error {
-	id, _ := strconv.ParseUint(c.Params("id"), 10, 64)
+	id, err := h.resolveID(c, "song")
+	if err != nil {
+		return err
+	}
 	song, err := h.usecase.GetSong(c.Context(), id)
 	if err != nil {
 		return err
@@ -473,7 +565,10 @@ func (h *AdminHandler) CreateSong(c *fiber.Ctx) error {
 }
 
 func (h *AdminHandler) UpdateSong(c *fiber.Ctx) error {
-	id, _ := strconv.ParseUint(c.Params("id"), 10, 64)
+	id, err := h.resolveID(c, "song")
+	if err != nil {
+		return err
+	}
 	var req struct {
 		domain.Song
 		ArtistIDs  []uint64 `json:"artist_ids"`
@@ -499,7 +594,10 @@ func (h *AdminHandler) UpdateSong(c *fiber.Ctx) error {
 }
 
 func (h *AdminHandler) DeleteSong(c *fiber.Ctx) error {
-	id, _ := strconv.ParseUint(c.Params("id"), 10, 64)
+	id, err := h.resolveID(c, "song")
+	if err != nil {
+		return err
+	}
 	if err := h.usecase.DeleteSong(c.Context(), id, h.getAuditMetadata(c)); err != nil {
 		return err
 	}
@@ -507,7 +605,10 @@ func (h *AdminHandler) DeleteSong(c *fiber.Ctx) error {
 }
 
 func (h *AdminHandler) ToggleSongStatus(c *fiber.Ctx) error {
-	id, _ := strconv.ParseUint(c.Params("id"), 10, 64)
+	id, err := h.resolveID(c, "song")
+	if err != nil {
+		return err
+	}
 	if err := h.usecase.ToggleSongStatus(c.Context(), id, h.getAuditMetadata(c)); err != nil {
 		return err
 	}
@@ -642,7 +743,10 @@ func (h *AdminHandler) GetArtists(c *fiber.Ctx) error {
 }
 
 func (h *AdminHandler) GetArtist(c *fiber.Ctx) error {
-	id, _ := strconv.ParseUint(c.Params("id"), 10, 64)
+	id, err := h.resolveID(c, "artist")
+	if err != nil {
+		return err
+	}
 	artist, err := h.usecase.GetArtist(c.Context(), id)
 	if err != nil {
 		return err
@@ -652,7 +756,10 @@ func (h *AdminHandler) GetArtist(c *fiber.Ctx) error {
 }
 
 func (h *AdminHandler) ToggleArtistStatus(c *fiber.Ctx) error {
-	id, _ := strconv.ParseUint(c.Params("id"), 10, 64)
+	id, err := h.resolveID(c, "artist")
+	if err != nil {
+		return err
+	}
 	if err := h.usecase.ToggleArtistStatus(c.Context(), id, h.getAuditMetadata(c)); err != nil {
 		return err
 	}
@@ -680,7 +787,10 @@ func (h *AdminHandler) CreateArtist(c *fiber.Ctx) error {
 }
 
 func (h *AdminHandler) GenerateArtistAvatar(c *fiber.Ctx) error {
-	id, _ := strconv.ParseUint(c.Params("id"), 10, 64)
+	id, err := h.resolveID(c, "artist")
+	if err != nil {
+		return err
+	}
 	if err := h.usecase.GenerateArtistAvatar(c.Context(), id); err != nil {
 		return err
 	}
@@ -688,7 +798,10 @@ func (h *AdminHandler) GenerateArtistAvatar(c *fiber.Ctx) error {
 }
 
 func (h *AdminHandler) UpdateArtist(c *fiber.Ctx) error {
-	id, _ := strconv.ParseUint(c.Params("id"), 10, 64)
+	id, err := h.resolveID(c, "artist")
+	if err != nil {
+		return err
+	}
 	var a domain.Artist
 	if err := c.BodyParser(&a); err != nil {
 		return domain.NewAppError(400, "Invalid payload", err)
@@ -710,7 +823,10 @@ func (h *AdminHandler) UpdateArtist(c *fiber.Ctx) error {
 }
 
 func (h *AdminHandler) DeleteArtist(c *fiber.Ctx) error {
-	id, _ := strconv.ParseUint(c.Params("id"), 10, 64)
+	id, err := h.resolveID(c, "artist")
+	if err != nil {
+		return err
+	}
 	if err := h.usecase.DeleteArtist(c.Context(), id, h.getAuditMetadata(c)); err != nil {
 		return err
 	}

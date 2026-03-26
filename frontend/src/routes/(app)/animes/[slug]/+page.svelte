@@ -4,10 +4,11 @@
   import SEO from "$lib/components/SEO.svelte";
   import { authState } from "$lib/state/auth.svelte";
   import { page } from "$app/state";
-  const PUBLIC_API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+  const PUBLIC_API_URL =
+    import.meta.env.VITE_API_URL || "http://localhost:8080/api";
 
   let { data }: { data: PageData } = $props();
-  let anime = $derived(data.anime);
+  let anime = $derived(data.data);
 
   function formatScore(score: number | string | null | undefined) {
     return getFormattedScore(score as any, authState.user?.score_format);
@@ -16,9 +17,10 @@
   let isExpanded = $state(false);
 </script>
 
-<SEO 
+<SEO
   title="{anime.title} - AniRank"
-  description="Listen to and rate the openings and endings from {anime.title}. {anime.description || ''}"
+  description="Listen to and rate the openings and endings from {anime.title}. {anime.description ||
+    ''}"
   image={`${PUBLIC_API_URL}/og/anime/${anime.slug}`}
   type="video.tv_show"
 />
@@ -66,8 +68,7 @@
               href="https://anilist.co/anime/{anime.anilist_id}"
               target="_blank"
               class="text-white/70 hover:text-white transition-colors"
-              title="View {anime.title} on Anilist"
-              >View on Anilist</a
+              title="View {anime.title} on Anilist">View on Anilist</a
             >
           </div>
           <div

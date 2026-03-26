@@ -93,7 +93,7 @@
           </div>
           <div class="flex items-center gap-6 min-w-0">
             <div
-              class="w-16 h-16 rounded-lg overflow-hidden shrink-0 shadow-lg shadow-black/40 border border-white/10"
+              class="w-16 h-auto aspect-12/18 rounded-lg overflow-hidden shrink-0 shadow-lg shadow-black/40 border border-white/10 relative"
             >
               <img
                 alt={getSongName(item)}
@@ -102,6 +102,11 @@
                 src={item.anime?.cover_url ??
                   "/images/placeholders/default.jpg"}
               />
+              <!-- <div
+                class="absolute bottom-0 left-0 bg-black/80 px-1 py-0.1 rounded-tr-lg"
+              >
+                <span class="text-white/60 text-xs">{item.type}</span>
+              </div> -->
             </div>
             <div class="min-w-0 flex flex-col">
               {#if true}
@@ -113,6 +118,7 @@
                   title={songName}
                 >
                   {songName}
+                  <!-- <span class="text-white/60 text-xs">({item.type})</span> -->
                 </h3>
                 <span class="text-white/60 truncate" title={artistNames}>
                   {artistNames}

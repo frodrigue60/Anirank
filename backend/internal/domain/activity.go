@@ -30,6 +30,7 @@ type Activity struct {
 
 type ActivityRepository interface {
 	GetPaginated(ctx context.Context, limit, offset int) ([]Activity, error)
+	Count(ctx context.Context) (int, error)
 	Create(ctx context.Context, activity *Activity) error
 	DeleteByTarget(ctx context.Context, userID uint64, actionType string, targetID uint64, targetType string) error
 	Exists(ctx context.Context, userID uint64, actionType string, targetID uint64, targetType string) (bool, error)
@@ -37,5 +38,6 @@ type ActivityRepository interface {
 
 type ActivityUsecase interface {
 	GetFeed(ctx context.Context, limit, offset int) ([]Activity, error)
+	GetCount(ctx context.Context) (int, error)
 	LogActivity(ctx context.Context, userID uint64, actionType string, targetID uint64, targetType string, value *string) error
 }

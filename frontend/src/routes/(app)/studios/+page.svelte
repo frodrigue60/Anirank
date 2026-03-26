@@ -15,7 +15,9 @@
   // svelte-ignore state_referenced_locally
   let studios = $state(data.studios?.data || []);
   // svelte-ignore state_referenced_locally
-  let paginationMeta = $state(data.studios || { current_page: 1, last_page: 1 });
+  let currentPage = $state(data.studios?.pagination?.current_page || 1);
+  // svelte-ignore state_referenced_locally
+  let lastPage = $state(data.studios?.pagination?.last_page || 1);
   let loading = $state(false);
 
   // Sync state with URL params
@@ -26,7 +28,8 @@
     // Reset infinite scroll on data change (filters)
     if (data.studios && (data.studios.pagination?.current_page === 1 || data.studios.current_page === 1)) {
       studios = data.studios.data;
-      paginationMeta = data.studios;
+      currentPage = Number(data.studios.pagination.current_page);
+      lastPage = Number(data.studios.pagination.last_page);
     }
   });
 
@@ -48,19 +51,22 @@
   }
 
   async function loadMore() {
-    const nextUrl = paginationMeta.links?.next || (paginationMeta.pagination?.has_more ? `/studios?page=${(paginationMeta.pagination?.current_page || 1) + 1}` : null);
-    if (loading || !nextUrl) return;
+    if (loading || currentPage >= lastPage) return;
 
     loading = true;
     try {
-      const response = await api.get(nextUrl);
+      const nextPage = currentPage + 1;
+      const response = await api.get("/studios", {
+        params: {
+          ...data.params,
+          page: nextPage
+        }
+      });
       
-      // The backend now returns the paginated object directly in response.data
-      const newStudiosData = response.data;
-      
-      if (newStudiosData?.data) {
-        studios = [...studios, ...newStudiosData.data];
-        paginationMeta = newStudiosData;
+      if (response.data.data) {
+        studios = [...studios, ...response.data.data];
+        currentPage = Number(response.data.pagination.current_page);
+        lastPage = Number(response.data.pagination.last_page);
       }
     } catch (e) {
       console.error("Error loading more studios", e);
@@ -149,9 +155,9 @@
     <h2 class="text-2xl font-bold flex items-center gap-3">
       <span class="w-2 h-8 bg-primary rounded-full"></span>
       Studios
-      {#if (paginationMeta.pagination?.total || paginationMeta.total) > 0}
+      {#if data.studios?.pagination?.total > 0}
         <span class="text-white/30 font-normal text-lg ml-2"
-          >({(paginationMeta.pagination?.total || paginationMeta.total).toLocaleString()})</span
+          >({data.studios.pagination.total.toLocaleString()})</span
         >
       {/if}
     </h2>
@@ -200,7 +206,7 @@
     </div>
 
     <InfiniteScroll
-      hasMore={paginationMeta.links?.next || paginationMeta.pagination?.has_more || (paginationMeta.current_page < paginationMeta.last_page)}
+      hasMore={currentPage < lastPage}
       {loading}
       onLoadMore={loadMore}
     />

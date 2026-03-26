@@ -20,7 +20,9 @@
   // svelte-ignore state_referenced_locally
   let songs = $state(data.songs?.data || []);
   // svelte-ignore state_referenced_locally
-  let paginationMeta = $state(data.songs || { current_page: 1, last_page: 1 });
+  let currentPage = $state(data.songs?.pagination?.current_page || 1);
+  // svelte-ignore state_referenced_locally
+  let lastPage = $state(data.songs?.pagination?.last_page || 1);
   let loading = $state(false);
 
   // Sync state with URL params
@@ -34,7 +36,8 @@
     // Reset infinite scroll on data change (filters)
     if (data.songs && (data.songs.pagination?.current_page === 1 || data.songs.current_page === 1)) {
       songs = data.songs.data;
-      paginationMeta = data.songs;
+      currentPage = Number(data.songs.pagination.current_page);
+      lastPage = Number(data.songs.pagination.last_page);
     }
   });
 
@@ -59,20 +62,22 @@
   }
 
   async function loadMore() {
-    const nextUrl = paginationMeta.links?.next || (paginationMeta.pagination?.has_more ? `/songs?page=${(paginationMeta.pagination?.current_page || 1) + 1}` : null);
-    if (loading || !nextUrl) return;
+    if (loading || currentPage >= lastPage) return;
 
     loading = true;
     try {
-      const response = await api.get(nextUrl);
+      const nextPage = currentPage + 1;
+      const response = await api.get("/songs", {
+        params: {
+          ...data.params,
+          page: nextPage
+        }
+      });
       
-      // The backend returns { "songs": { "data": [...], "pagination": {...}, "links": {...} } }
-      // but the .ts loader passed response.data directly
-      const newSongsData = response.data.songs || response.data;
-      
-      if (newSongsData?.data) {
-        songs = [...songs, ...newSongsData.data];
-        paginationMeta = newSongsData;
+      if (response.data.data) {
+        songs = [...songs, ...response.data.data];
+        currentPage = Number(response.data.pagination.current_page);
+        lastPage = Number(response.data.pagination.last_page);
       }
     } catch (e) {
       console.error("Error loading more songs", e);
@@ -201,11 +206,11 @@
   </section>
 
   <!-- Results count -->
-  {#if (paginationMeta.pagination?.total || paginationMeta.total) > 0}
+  {#if data.songs?.pagination?.total > 0}
     <div class="mb-8 flex items-center justify-between">
       <h3 class="text-xl font-bold flex items-center gap-3 text-white">
         <span class="w-2 h-6 bg-primary rounded-full"></span>
-        Results ({(paginationMeta.pagination?.total || paginationMeta.total).toLocaleString()})
+        Results ({data.songs.pagination.total.toLocaleString()})
       </h3>
     </div>
   {/if}
@@ -233,7 +238,7 @@
   </div>
 
   <InfiniteScroll
-    hasMore={paginationMeta.links?.next || paginationMeta.pagination?.has_more || (paginationMeta.current_page < paginationMeta.last_page)}
+    hasMore={currentPage < lastPage}
     {loading}
     onLoadMore={loadMore}
   />

@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+
 	"anirank/api/internal/domain"
 	"anirank/api/internal/infrastructure"
 )
@@ -192,6 +194,7 @@ func (u *TournamentUsecase) CreateTournament(ctx context.Context, t *domain.Tour
 
 	// Always start as draft
 	t.Status = "draft"
+	t.UUID = uuid.New().String()
 
 	// Basic slug generation if not provided
 	if t.Slug == "" {

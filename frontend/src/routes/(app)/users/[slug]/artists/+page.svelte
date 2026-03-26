@@ -9,9 +9,9 @@
   // svelte-ignore state_referenced_locally
   let artists = $state<any[]>(data.artists?.data || []);
   // svelte-ignore state_referenced_locally
-  let artistsPage = $state(data.artists?.current_page || 1);
+  let artistsPage = $state(data.artists?.pagination?.current_page || 1);
   // svelte-ignore state_referenced_locally
-  let artistsLastPage = $state(data.artists?.last_page || 1);
+  let artistsLastPage = $state(data.artists?.pagination?.last_page || 1);
   let loading = $state(false);
 
   // svelte-ignore state_referenced_locally
@@ -21,12 +21,12 @@
   $effect(() => {
     if (
       _sourceArtists !== data.artists?.data &&
-      data.artists?.current_page === 1
+      data.artists?.pagination?.current_page === 1
     ) {
       _sourceArtists = data.artists?.data;
       artists = data.artists?.data || [];
-      artistsPage = data.artists?.current_page || 1;
-      artistsLastPage = data.artists?.last_page || 1;
+      artistsPage = data.artists?.pagination?.current_page || 1;
+      artistsLastPage = data.artists?.pagination?.last_page || 1;
     }
   });
 
@@ -36,15 +36,16 @@
     loading = true;
     try {
       const nextPage = artistsPage + 1;
-      const response = await api.post(`/users/artists/favorites`, {
-        user_id: data.profile.id,
+      const response = await api.post(`/users/favorites/artists`, {
+        user_uuid: data.profile.uuid,
         page: nextPage,
       });
 
-      if (response.data.artists) {
-        artists = [...artists, ...response.data.artists.data];
-        artistsPage = response.data.artists.current_page;
-        artistsLastPage = response.data.artists.last_page;
+      const producersData = response.data.artists || response.data;
+      if (producersData?.data) {
+        artists = [...artists, ...producersData.data];
+        artistsPage = producersData.pagination?.current_page || producersData.current_page;
+        artistsLastPage = producersData.pagination?.last_page || artistsLastPage;
       }
     } catch (e) {
       console.error("Error loading more artists", e);

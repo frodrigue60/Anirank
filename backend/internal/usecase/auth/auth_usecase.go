@@ -123,6 +123,7 @@ func (u *AuthUsecase) Register(ctx context.Context, name, email, password string
 	sFormat := "POINT_10"
 
 	newUser := &domain.User{
+		UUID:        uuid.New().String(),
 		Name:        name,
 		Email:       email,
 		Password:    string(hash),

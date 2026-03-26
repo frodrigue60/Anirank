@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"anirank/api/internal/domain"
+	"anirank/api/internal/dto"
 	"anirank/api/internal/usecase/announcement"
 
 	"github.com/gofiber/fiber/v2"
@@ -20,23 +21,55 @@ func NewAnnouncementHandler(usecase *announcement.AnnouncementUsecase) *Announce
 
 // GetPublicAnnouncements lists active announcements for the public sidebar.
 func (h *AnnouncementHandler) GetPublicAnnouncements(c *fiber.Ctx) error {
-	announcements, err := h.usecase.GetPublicAnnouncements(c.Context())
+	limit, offset := parsePagination(c, 5) // Fewer by default for public sidebar
+	page, _ := strconv.Atoi(c.Query("page", "1"))
+
+	filters := domain.AnnouncementFilters{
+		ActiveOnly: true,
+	}
+
+	announcements, err := h.usecase.GetAllAnnouncements(c.Context(), filters, limit, offset)
 	if err != nil {
 		return err
 	}
-	return c.JSON(fiber.Map{"data": announcements})
+
+	total, err := h.usecase.GetCount(c.Context(), filters)
+	if err != nil {
+		total = len(announcements)
+	}
+
+	dtoAnnouncements := make([]dto.AnnouncementDTO, len(announcements))
+	for i, a := range announcements {
+		dtoAnnouncements[i] = dto.ToAnnouncementDTO(a)
+	}
+
+	return c.JSON(paginatedResponse(c, dtoAnnouncements, total, page, limit))
 }
 
 // GetAllAnnouncements lists all announcements for admin management.
 func (h *AnnouncementHandler) GetAllAnnouncements(c *fiber.Ctx) error {
+	limit, offset := parsePagination(c, 20)
+	page, _ := strconv.Atoi(c.Query("page", "1"))
+
 	filters := domain.AnnouncementFilters{
 		Search: c.Query("search"),
 	}
-	announcements, err := h.usecase.GetAllAnnouncements(c.Context(), filters)
+	announcements, err := h.usecase.GetAllAnnouncements(c.Context(), filters, limit, offset)
 	if err != nil {
 		return err
 	}
-	return c.JSON(fiber.Map{"data": announcements})
+
+	total, err := h.usecase.GetCount(c.Context(), filters)
+	if err != nil {
+		total = len(announcements)
+	}
+
+	dtoAnnouncements := make([]dto.AnnouncementDTO, len(announcements))
+	for i, a := range announcements {
+		dtoAnnouncements[i] = dto.ToAnnouncementDTO(a)
+	}
+
+	return c.JSON(paginatedResponse(c, dtoAnnouncements, total, page, limit))
 }
 
 // GetAnnouncementByID retrieves a single announcement.
@@ -46,7 +79,7 @@ func (h *AnnouncementHandler) GetAnnouncementByID(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	return c.JSON(fiber.Map{"data": a})
+	return c.JSON(fiber.Map{"data": dto.ToAnnouncementDTO(*a)})
 }
 
 // CreateAnnouncement handles the creation of a new announcement.
@@ -74,7 +107,7 @@ func (h *AnnouncementHandler) CreateAnnouncement(c *fiber.Ctx) error {
 	if err := h.usecase.Create(c.Context(), &a); err != nil {
 		return err
 	}
-	return c.Status(201).JSON(fiber.Map{"data": a})
+	return c.Status(201).JSON(fiber.Map{"data": dto.ToAnnouncementDTO(a)})
 }
 
 // UpdateAnnouncement handles updating an existing announcement.
@@ -103,7 +136,7 @@ func (h *AnnouncementHandler) UpdateAnnouncement(c *fiber.Ctx) error {
 	if err := h.usecase.Update(c.Context(), &a); err != nil {
 		return err
 	}
-	return c.JSON(fiber.Map{"data": a})
+	return c.JSON(fiber.Map{"data": dto.ToAnnouncementDTO(a)})
 }
 
 func parseOptionalTime(val string) *time.Time {

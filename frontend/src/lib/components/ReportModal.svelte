@@ -152,6 +152,7 @@
               >Details (Optional)</label
             >
             <textarea
+              required
               id="report-content"
               bind:value={content}
               placeholder="Please provide more information..."

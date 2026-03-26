@@ -11,6 +11,7 @@ type Notification struct {
 	UserID      uint64          `db:"user_id" json:"user_id"`
 	Type        string          `db:"type" json:"type"`
 	SubjectID   *uint64         `db:"subject_id" json:"subject_id,omitempty"`
+	SubjectUUID *string         `db:"subject_uuid" json:"subject_uuid,omitempty"`
 	SubjectType *string         `db:"subject_type" json:"subject_type,omitempty"`
 	Data        json.RawMessage `db:"data" json:"data"`
 	ReadAt      *time.Time      `db:"read_at" json:"read_at,omitempty"`

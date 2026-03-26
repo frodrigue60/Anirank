@@ -1,11 +1,12 @@
 package dto
 
 type AnimeMinimalDTO struct {
-	ID         uint64     `json:"id"`
+	ID         string     `json:"id"`
+	AnilistID  *int64     `json:"anilist_id"`
 	Title      string     `json:"title"`
 	Slug       string     `json:"slug"`
-	CoverUrl   *string    `json:"cover_url,omitempty"`
-	BannerUrl  *string    `json:"banner_url,omitempty"`
+	CoverUrl   *string    `json:"cover_url"`
+	BannerUrl  *string    `json:"banner_url"`
 	SongsCount int        `json:"songs_count"`
 	Season     *SeasonDTO `json:"season,omitempty"`
 	Year       *YearDTO   `json:"year,omitempty"`
@@ -28,7 +29,8 @@ type SongAnimeDTO struct {
 	Title     string  `json:"title"`
 	Slug      string  `json:"slug"`
 	CoverUrl  string  `json:"cover_url"`
-	BannerUrl *string `json:"banner_url,omitempty"`
+	BannerUrl *string `json:"banner_url"`
+	AnilistID *int64  `json:"anilist_id"`
 }
 
 type AnimeDTO struct {
@@ -37,6 +39,7 @@ type AnimeDTO struct {
 	Studios       []StudioDTO       `json:"studios,omitempty"`
 	Producers     []ProducerDTO     `json:"producers,omitempty"`
 	Genres        []GenreDTO        `json:"genres,omitempty"`
+	Songs         []SongMinimalDTO  `json:"songs,omitempty"`
 	ExternalLinks []ExternalLinkDTO `json:"external_links,omitempty"`
 }
 

@@ -23,8 +23,9 @@ func NewPlaylistRepository(db *sqlx.DB) domain.PlaylistRepository {
 
 func (r *playlistRepository) GetByID(ctx context.Context, id uint64) (*domain.Playlist, error) {
 	query := `
-		SELECT p.*,
+		SELECT p.id, p.uuid, p.name, p.description, p.user_id, p.is_public, p.created_at, p.updated_at,
 		       u.id as "user.id",
+		       u.uuid as "user.uuid",
 		       u.name as "user.name",
 		       u.slug as "user.slug",
 		       (SELECT COUNT(*) FROM playlist_song WHERE playlist_id = p.id) as song_count,
@@ -45,6 +46,7 @@ func (r *playlistRepository) GetByID(ctx context.Context, id uint64) (*domain.Pl
 	type resStruct struct {
 		domain.Playlist
 		UID   uint64  `db:"user.id"`
+		UUID  string  `db:"user.uuid"`
 		UName string  `db:"user.name"`
 		USlug *string `db:"user.slug"`
 	}
@@ -56,15 +58,59 @@ func (r *playlistRepository) GetByID(ctx context.Context, id uint64) (*domain.Pl
 		}
 		return nil, err
 	}
-
-	playlist := res.Playlist
-	playlist.User = &domain.User{
+	res.Playlist.User = &domain.User{
 		ID:   res.UID,
+		UUID: res.UUID,
 		Name: res.UName,
 		Slug: res.USlug,
 	}
+	return &res.Playlist, nil
+}
 
-	return &playlist, nil
+func (r *playlistRepository) GetByUUID(ctx context.Context, uuid string) (*domain.Playlist, error) {
+	query := `
+		SELECT p.id, p.uuid, p.name, p.description, p.user_id, p.is_public, p.created_at, p.updated_at,
+		       u.id as "user.id",
+		       u.uuid as "user.uuid",
+		       u.name as "user.name",
+		       u.slug as "user.slug",
+		       (SELECT COUNT(*) FROM playlist_song WHERE playlist_id = p.id) as song_count,
+		       (
+				SELECT a.banner 
+				FROM playlist_song ps
+				JOIN songs s ON ps.song_id = s.id
+				JOIN animes a ON s.anime_id = a.id
+				WHERE ps.playlist_id = p.id
+				ORDER BY ps.id DESC
+				LIMIT 1
+			) as latest_banner
+		FROM playlists p
+		JOIN users u ON p.user_id = u.id
+		WHERE p.uuid = $1
+	`
+	// Simple mapping for nested struct
+	type resStruct struct {
+		domain.Playlist
+		UID   uint64  `db:"user.id"`
+		UUID  string  `db:"user.uuid"`
+		UName string  `db:"user.name"`
+		USlug *string `db:"user.slug"`
+	}
+	var res resStruct
+	err := r.db.GetContext(ctx, &res, query, uuid)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, domain.ErrNotFound
+		}
+		return nil, err
+	}
+	res.Playlist.User = &domain.User{
+		ID:   res.UID,
+		UUID: res.UUID,
+		Name: res.UName,
+		Slug: res.USlug,
+	}
+	return &res.Playlist, nil
 }
 
 func (r *playlistRepository) GetByUserID(ctx context.Context, userID uint64, includePrivate bool, limit, offset int) ([]domain.Playlist, error) {
@@ -76,7 +122,7 @@ func (r *playlistRepository) GetByUserIDWithSongCheck(ctx context.Context, userI
 
 	query := `
 		SELECT 
-			p.*,
+			p.id, p.uuid, p.name, p.description, p.user_id, p.is_public, p.created_at, p.updated_at,
 			(SELECT COUNT(*) FROM playlist_song WHERE playlist_id = p.id) as song_count,
 			(SELECT EXISTS(SELECT 1 FROM playlist_song WHERE playlist_id = p.id AND song_id = $1)) as contains_song,
 			(
@@ -110,10 +156,20 @@ func (r *playlistRepository) GetByUserIDWithSongCheck(ctx context.Context, userI
 	return playlists, nil
 }
 
+func (r *playlistRepository) CountByUserID(ctx context.Context, userID uint64, includePrivate bool) (int, error) {
+	var count int
+	query := "SELECT COUNT(*) FROM playlists WHERE user_id = $1"
+	if !includePrivate {
+		query += " AND is_public = true"
+	}
+	err := r.db.GetContext(ctx, &count, query, userID)
+	return count, err
+}
+
 func (r *playlistRepository) Create(ctx context.Context, playlist *domain.Playlist) error {
 	query := `
-		INSERT INTO playlists (name, description, user_id, is_public, created_at, updated_at) 
-		VALUES (:name, :description, :user_id, :is_public, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		INSERT INTO playlists (uuid, name, description, user_id, is_public, created_at, updated_at) 
+		VALUES (:uuid, :name, :description, :user_id, :is_public, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 		RETURNING id
 	`
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
@@ -196,6 +252,7 @@ func (r *playlistRepository) GetSongs(ctx context.Context, playlistID uint64) ([
 		SELECT 
 			ps.playlist_id, ps.song_id, ps.position,
 			s.id as "song.id",
+			s.uuid as "song.uuid",
 			s.song_romaji as "song.song_romaji",
 			s.song_jp as "song.song_jp",
 			s.song_en as "song.song_en",
@@ -216,6 +273,7 @@ func (r *playlistRepository) GetSongs(ctx context.Context, playlistID uint64) ([
 		Position   int    `db:"position"`
 
 		S_ID      uint64  `db:"song.id"`
+		S_UUID    string  `db:"song.uuid"`
 		S_Romaji  *string `db:"song.song_romaji"`
 		S_Jp      *string `db:"song.song_jp"`
 		S_En      *string `db:"song.song_en"`
@@ -239,6 +297,7 @@ func (r *playlistRepository) GetSongs(ctx context.Context, playlistID uint64) ([
 			Position:   row.Position,
 			Song: &domain.Song{
 				ID:         row.S_ID,
+				UUID:       row.S_UUID,
 				SongRomaji: row.S_Romaji,
 				SongJP:     row.S_Jp,
 				SongEN:     row.S_En,
@@ -264,8 +323,9 @@ func (r *playlistRepository) GetPaginatedPublicPlaylists(ctx context.Context, li
 
 	query := `
 		SELECT 
-			p.*,
+			p.id, p.uuid, p.name, p.description, p.user_id, p.is_public, p.created_at, p.updated_at,
 			u.id as "user.id",
+			u.uuid as "user.uuid",
 			u.name as "user.name",
 			u.slug as "user.slug",
 			(SELECT COUNT(*) FROM playlist_song WHERE playlist_id = p.id) as song_count,
@@ -298,6 +358,7 @@ func (r *playlistRepository) GetPaginatedPublicPlaylists(ctx context.Context, li
 	type resStruct struct {
 		domain.Playlist
 		UID   uint64  `db:"user.id"`
+		UUID  string  `db:"user.uuid"`
 		UName string  `db:"user.name"`
 		USlug *string `db:"user.slug"`
 	}
@@ -312,6 +373,7 @@ func (r *playlistRepository) GetPaginatedPublicPlaylists(ctx context.Context, li
 		p := row.Playlist
 		p.User = &domain.User{
 			ID:   row.UID,
+			UUID: row.UUID,
 			Name: row.UName,
 			Slug: row.USlug,
 		}

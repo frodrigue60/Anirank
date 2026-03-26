@@ -7,11 +7,7 @@ export const load = async ({ params }) => {
         const response = await api.get(`/users/${slug}/following`);
         return {
             following: response.data.data,
-            pagination: {
-                current_page: response.data.current_page,
-                last_page: response.data.last_page,
-                total: response.data.total
-            }
+            pagination: response.data.pagination
         };
     } catch (e) {
         console.error("Failed to load following users", e);

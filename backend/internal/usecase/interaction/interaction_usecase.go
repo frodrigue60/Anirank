@@ -2,6 +2,7 @@ package interaction
 
 import (
 	"anirank/api/internal/domain"
+	"anirank/api/internal/infrastructure"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -15,6 +16,9 @@ type InteractionUsecase struct {
 	commentRepo      domain.CommentRepository
 	userRepo         domain.UserRepository
 	notificationRepo domain.NotificationRepository
+	songRepo         domain.SongRepository
+	animeRepo        domain.AnimeRepository
+	mediaService     infrastructure.MediaService
 	xpUsecase        domain.XPUsecase
 	activityUsecase  domain.ActivityUsecase
 }
@@ -24,6 +28,9 @@ func NewInteractionUsecase(
 	cr domain.CommentRepository,
 	ur domain.UserRepository,
 	nr domain.NotificationRepository,
+	sr domain.SongRepository,
+	ar domain.AnimeRepository,
+	ms infrastructure.MediaService,
 	xu domain.XPUsecase,
 	au domain.ActivityUsecase,
 ) *InteractionUsecase {
@@ -32,6 +39,9 @@ func NewInteractionUsecase(
 		commentRepo:      cr,
 		userRepo:         ur,
 		notificationRepo: nr,
+		songRepo:         sr,
+		animeRepo:        ar,
+		mediaService:     ms,
 		xpUsecase:        xu,
 		activityUsecase:  au,
 	}
@@ -137,11 +147,13 @@ func (u *InteractionUsecase) CheckIsFavorited(ctx context.Context, userID, entit
 
 // ---- COMMENTS ----
 
-func (u *InteractionUsecase) GetCommentsByEntity(ctx context.Context, userID *uint64, entityID uint64, entityType string, limit, offset int) ([]domain.Comment, error) {
+func (u *InteractionUsecase) GetCommentsByEntity(ctx context.Context, userID *uint64, entityID uint64, entityType string, limit, offset int) ([]domain.Comment, int, error) {
 	comments, err := u.commentRepo.GetByEntity(ctx, userID, entityID, entityType, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
+
+	total, _ := u.commentRepo.GetCountByEntity(ctx, entityID, entityType)
 
 	// Fetch replies for each root comment
 	for i := range comments {
@@ -152,16 +164,17 @@ func (u *InteractionUsecase) GetCommentsByEntity(ctx context.Context, userID *ui
 	}
 
 	u.enrichComments(ctx, comments)
-	return comments, nil
+	return comments, total, nil
 }
 
-func (u *InteractionUsecase) GetCommentReplies(ctx context.Context, userID *uint64, parentID uint64, limit, offset int) ([]domain.Comment, error) {
+func (u *InteractionUsecase) GetCommentReplies(ctx context.Context, userID *uint64, parentID uint64, limit, offset int) ([]domain.Comment, int, error) {
 	comments, err := u.commentRepo.GetReplies(ctx, userID, parentID, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
+	total, _ := u.commentRepo.GetRepliesCount(ctx, parentID)
 	u.enrichComments(ctx, comments)
-	return comments, nil
+	return comments, total, nil
 }
 
 func (u *InteractionUsecase) SongComment(ctx context.Context, userID, entityID uint64, entityType, content string, parentID *uint64) (*domain.Comment, error) {
@@ -199,9 +212,45 @@ func (u *InteractionUsecase) SongComment(ctx context.Context, userID, entityID u
 		parentComment, err := u.commentRepo.GetByID(ctx, *parentID)
 		if err == nil && parentComment != nil && parentComment.UserID != userID {
 			subjectType := "comment"
+			publicURL := os.Getenv("S3_PUBLIC_URL")
+			var avatarUrl, bannerUrl *string
+			if user.Avatar != nil {
+				if strings.HasPrefix(*user.Avatar, "http") {
+					avatarUrl = user.Avatar
+				} else {
+					u := publicURL + "/" + *user.Avatar
+					avatarUrl = &u
+				}
+			}
+			if user.Banner != nil {
+				if strings.HasPrefix(*user.Banner, "http") {
+					bannerUrl = user.Banner
+				} else {
+					u := publicURL + "/" + *user.Banner
+					bannerUrl = &u
+				}
+			}
+
 			dataObj := map[string]interface{}{
-				"replied_by_name": user.Name,
-				"comment_id":      comment.ID,
+				"replied_by_name":   user.Name,
+				"replied_by_avatar": avatarUrl,
+				"replied_by_banner": bannerUrl,
+				"comment_id":        comment.UUID,
+			}
+
+			// Add Entity Data (Anime/Song)
+			if parentComment.SongID != nil {
+				song, _ := u.songRepo.GetByID(ctx, *parentComment.SongID)
+				if song != nil {
+					anime, _ := u.animeRepo.GetByID(ctx, song.AnimeID)
+					if anime != nil {
+						dataObj["anime_name"] = anime.Title
+						dataObj["anime_slug"] = anime.Slug
+						dataObj["anime_cover"] = u.mediaService.Resolve(anime.Cover)
+					}
+					dataObj["song_name"] = song.SongRomaji
+					dataObj["song_slug"] = song.Slug
+				}
 			}
 			dataJSON, _ := json.Marshal(dataObj)
 
@@ -209,6 +258,7 @@ func (u *InteractionUsecase) SongComment(ctx context.Context, userID, entityID u
 				UserID:      parentComment.UserID,
 				Type:        "comment_reply",
 				SubjectID:   &comment.ID,
+				SubjectUUID: &comment.UUID,
 				SubjectType: &subjectType,
 				Data:        dataJSON,
 			}
@@ -292,7 +342,18 @@ func (u *InteractionUsecase) GetGlobalActivity(ctx context.Context, limit int) (
 
 // ---- FOLLOWS ----
 
-func (u *InteractionUsecase) FollowUser(ctx context.Context, followerID, followedID uint64) error {
+func (u *InteractionUsecase) FollowUser(ctx context.Context, followerID uint64, followedTarget string) error {
+	// Resolve target (UUID or Slug) to ID
+	followedUser, err := u.userRepo.GetByUUID(ctx, followedTarget)
+	if err != nil {
+		followedUser, err = u.userRepo.GetBySlug(ctx, followedTarget)
+		if err != nil {
+			return domain.NewAppError(404, "User not found", err)
+		}
+	}
+
+	followedID := followedUser.ID
+
 	if followerID == followedID {
 		return domain.NewAppError(400, "You cannot follow yourself", nil)
 	}
@@ -309,11 +370,13 @@ func (u *InteractionUsecase) FollowUser(ctx context.Context, followerID, followe
 		if follower.Slug != nil {
 			followerSlug = *follower.Slug
 		}
-
+		
 		// Prepare notification data
 		dataObj := map[string]interface{}{
-			"follower_name": follower.Name,
-			"follower_slug": followerSlug,
+			"follower_name":   follower.Name,
+			"follower_slug":   followerSlug,
+			"follower_avatar": u.mediaService.Resolve(follower.Avatar),
+			"follower_banner": u.mediaService.Resolve(follower.Banner),
 		}
 		dataJSON, _ := json.Marshal(dataObj)
 
@@ -321,6 +384,7 @@ func (u *InteractionUsecase) FollowUser(ctx context.Context, followerID, followe
 			UserID:      followedID,
 			Type:        "follow",
 			SubjectID:   &followerID,
+			SubjectUUID: &follower.UUID,
 			SubjectType: &subjectType,
 			Data:        dataJSON,
 		}
@@ -335,10 +399,24 @@ func (u *InteractionUsecase) FollowUser(ctx context.Context, followerID, followe
 	return nil
 }
 
-func (u *InteractionUsecase) UnfollowUser(ctx context.Context, followerID, followedID uint64) error {
-	return u.userRepo.Unfollow(ctx, followerID, followedID)
+func (u *InteractionUsecase) UnfollowUser(ctx context.Context, followerID uint64, followedTarget string) error {
+	followedUser, err := u.userRepo.GetByUUID(ctx, followedTarget)
+	if err != nil {
+		followedUser, err = u.userRepo.GetBySlug(ctx, followedTarget)
+		if err != nil {
+			return domain.NewAppError(404, "User not found", err)
+		}
+	}
+	return u.userRepo.Unfollow(ctx, followerID, followedUser.ID)
 }
 
-func (u *InteractionUsecase) IsFollowing(ctx context.Context, followerID, followedID uint64) (bool, error) {
-	return u.userRepo.IsFollowing(ctx, followerID, followedID)
+func (u *InteractionUsecase) IsFollowing(ctx context.Context, followerID uint64, followedTarget string) (bool, error) {
+	followedUser, err := u.userRepo.GetByUUID(ctx, followedTarget)
+	if err != nil {
+		followedUser, err = u.userRepo.GetBySlug(ctx, followedTarget)
+		if err != nil {
+			return false, nil // Consider not found as not following
+		}
+	}
+	return u.userRepo.IsFollowing(ctx, followerID, followedUser.ID)
 }

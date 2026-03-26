@@ -4,6 +4,8 @@ import (
 	"anirank/api/internal/domain"
 	"anirank/api/internal/usecase/auth"
 	"anirank/api/internal/usecase/public"
+	"strconv"
+	"time"
 )
 
 // ─── User Mappers ───
@@ -13,12 +15,14 @@ func ToUserMinimalDTO(u *domain.User) UserMinimalDTO {
 		return UserMinimalDTO{}
 	}
 	return UserMinimalDTO{
-		ID:        u.ID,
+		ID:        u.UUID,
+		UUID:      u.UUID,
 		Name:      u.Name,
 		Slug:      u.Slug,
 		AvatarUrl: u.AvatarUrl,
 		XP:        u.XP,
 		Level:     u.Level,
+		BannerUrl: u.BannerUrl,
 	}
 }
 
@@ -37,15 +41,20 @@ func ToUserDTO(u *domain.User) UserDTO {
 		})
 	}
 
+	roles := make([]string, 0)
+	for _, r := range u.Roles {
+		roles = append(roles, r.Slug)
+	}
+
 	return UserDTO{
 		UserMinimalDTO: ToUserMinimalDTO(u),
-		BannerUrl:      u.BannerUrl,
 		About:          u.About,
 		ProfileColor:   u.ProfileColor,
 		FollowersCount: u.FollowersCount,
 		FollowingCount: u.FollowingCount,
 		RatingsCount:   u.RatingsCount,
 		IsFollowing:    u.IsFollowing,
+		Roles:          roles,
 		Badges:         badges,
 		CreatedAt:      u.CreatedAt,
 	}
@@ -56,17 +65,11 @@ func ToAuthUserDTO(u *domain.User) AuthUserDTO {
 		return AuthUserDTO{}
 	}
 
-	roles := make([]string, 0)
-	for _, r := range u.Roles {
-		roles = append(roles, r.Slug)
-	}
-
 	return AuthUserDTO{
 		UserDTO:       ToUserDTO(u),
 		Email:         u.Email,
 		ScoreFormatID: u.ScoreFormatID,
 		ScoreFormat:   u.ScoreFormat,
-		Roles:         roles,
 	}
 }
 
@@ -98,6 +101,7 @@ func ToSongMinimalDTO(s *domain.Song) SongMinimalDTO {
 			Slug:      s.Anime.Slug,
 			CoverUrl:  coverUrl,
 			BannerUrl: s.Anime.BannerUrl,
+			AnilistID: s.Anime.AnilistID,
 		}
 	}
 
@@ -107,7 +111,7 @@ func ToSongMinimalDTO(s *domain.Song) SongMinimalDTO {
 	}
 
 	res := SongMinimalDTO{
-		ID:             s.ID,
+		ID:             s.UUID,
 		SongRomaji:     s.SongRomaji,
 		SongEN:         s.SongEN,
 		SongJP:         s.SongJP,
@@ -149,7 +153,7 @@ func ToSongDTO(s *domain.Song) SongDTO {
 			}
 		}
 		variants = append(variants, SongVariantDTO{
-			ID:            v.ID,
+			ID:            v.UUID,
 			VersionNumber: v.VersionNumber,
 			Slug:          v.Slug,
 			VideoUrl:      videoUrl,
@@ -174,7 +178,7 @@ func ToArtistMinimalDTO(a *domain.Artist) ArtistMinimalDTO {
 	}
 
 	return ArtistMinimalDTO{
-		ID:            a.ID,
+		ID:            a.UUID,
 		Name:          a.Name,
 		NameJP:        a.NameJP,
 		Slug:          a.Slug,
@@ -271,7 +275,8 @@ func ToAnimeMinimalDTO(a *domain.Anime) AnimeMinimalDTO {
 	}
 
 	return AnimeMinimalDTO{
-		ID:         a.ID,
+		ID:         a.UUID,
+		AnilistID:  a.AnilistID,
 		Title:      a.Title,
 		Slug:       a.Slug,
 		CoverUrl:   a.CoverUrl,
@@ -303,6 +308,11 @@ func ToAnimeDTO(a *domain.Anime) AnimeDTO {
 		genres = append(genres, ToGenreDTO(&g))
 	}
 
+	songs := make([]SongMinimalDTO, 0)
+	for _, s := range a.Songs {
+		songs = append(songs, ToSongMinimalDTO(&s))
+	}
+
 	links := make([]ExternalLinkDTO, 0)
 	for _, l := range a.ExternalLinks {
 		links = append(links, ExternalLinkDTO{Name: l.Name, Type: l.Type, URL: l.URL, Icon: l.Icon})
@@ -314,6 +324,7 @@ func ToAnimeDTO(a *domain.Anime) AnimeDTO {
 		Studios:         studios,
 		Producers:       producers,
 		Genres:          genres,
+		Songs:           songs,
 		ExternalLinks:   links,
 	}
 }
@@ -323,7 +334,7 @@ func ToStudioDTO(s *domain.Studio) StudioDTO {
 		return StudioDTO{}
 	}
 	return StudioDTO{
-		ID:         s.ID,
+		ID:         s.UUID,
 		Name:       s.Name,
 		Slug:       s.Slug,
 		LogoUrl:    s.LogoUrl,
@@ -337,7 +348,7 @@ func ToProducerDTO(p *domain.Producer) ProducerDTO {
 		return ProducerDTO{}
 	}
 	return ProducerDTO{
-		ID:         p.ID,
+		ID:         p.UUID,
 		Name:       p.Name,
 		Slug:       p.Slug,
 		LogoUrl:    p.LogoUrl,
@@ -354,5 +365,258 @@ func ToGenreDTO(g *domain.Genre) GenreDTO {
 		ID:   g.ID,
 		Name: g.Name,
 		Slug: g.Slug,
+	}
+}
+
+// ─── Playlist Mappers ───
+
+func ToPlaylistMinimalDTO(p *domain.Playlist) PlaylistMinimalDTO {
+	if p == nil {
+		return PlaylistMinimalDTO{}
+	}
+	return PlaylistMinimalDTO{
+		ID:           p.UUID,
+		Name:         p.Name,
+		Slug:         p.Name,
+		BannerUrl:    p.BannerUrl,
+		SongCount:    p.SongCount,
+		IsPublic:     p.IsPublic,
+		ContainsSong: p.ContainsSong,
+	}
+}
+
+func ToPlaylistDTO(p *domain.Playlist) PlaylistDTO {
+	if p == nil {
+		return PlaylistDTO{}
+	}
+	return PlaylistDTO{
+		PlaylistMinimalDTO: ToPlaylistMinimalDTO(p),
+		Description:        p.Description,
+		User:               ToUserMinimalDTO(p.User),
+		CreatedAt:          p.CreatedAt,
+		UpdatedAt:          p.UpdatedAt,
+	}
+}
+
+func ToPlaylistSongDTO(ps *domain.PlaylistSong) SongMinimalDTO {
+	if ps == nil || ps.Song == nil {
+		return SongMinimalDTO{}
+	}
+	return ToSongMinimalDTO(ps.Song)
+}
+
+// ─── Comment Mappers ───
+
+func ToCommentDTO(c *domain.Comment) CommentDTO {
+	if c == nil {
+		return CommentDTO{}
+	}
+
+	replies := make([]CommentDTO, 0)
+	for _, r := range c.Replies {
+		replies = append(replies, ToCommentDTO(&r))
+	}
+
+	return CommentDTO{
+		ID:            c.UUID,
+		Content:       c.Content,
+		LikesCount:    c.LikesCount,
+		DislikesCount: c.DislikesCount,
+		RepliesCount:  c.RepliesCount,
+		CreatedAt:     c.Created_At,
+		UpdatedAt:     c.Updated_At,
+		IsLiked:       c.IsLiked,
+		IsDisliked:    c.IsDisliked,
+		User:          ToUserMinimalDTO(c.User),
+		Replies:       replies,
+	}
+}
+
+func ToActivityItemDTO(item domain.ActivityItem) ActivityItemDTO {
+	targetID := ""
+	var target interface{}
+
+	// Handle polymorphism to extract UUID or map to DTO
+	switch t := item.Target.(type) {
+	case *domain.Song:
+		if t != nil {
+			targetID = t.UUID
+			target = ToSongMinimalDTO(t)
+		}
+	case domain.Song:
+		targetID = t.UUID
+		target = ToSongMinimalDTO(&t)
+	case *domain.Anime:
+		if t != nil {
+			targetID = t.UUID
+			target = ToAnimeMinimalDTO(t)
+		}
+	case domain.Anime:
+		targetID = t.UUID
+		target = ToAnimeMinimalDTO(&t)
+	case *domain.Comment:
+		if t != nil {
+			targetID = t.UUID
+			target = ToCommentDTO(t)
+		}
+	case domain.Comment:
+		targetID = t.UUID
+		target = ToCommentDTO(&t)
+	default:
+		// Fallback to original target if not handled
+		target = item.Target
+	}
+
+	return ActivityItemDTO{
+		Type:      item.Type,
+		User:      ToUserMinimalDTO(&item.User),
+		TargetID:  targetID,
+		Target:    target,
+		Value:     item.Value,
+		CreatedAt: item.CreatedAt,
+	}
+}
+
+func ToActivityDTO(item domain.Activity) ActivityItemDTO {
+	targetID := ""
+	var target interface{}
+
+	// Handle polymorphism from Activity struct
+	if item.Song != nil {
+		targetID = item.Song.UUID
+		target = ToSongMinimalDTO(item.Song)
+	} else if item.UserTarget != nil {
+		targetID = item.UserTarget.UUID
+		target = ToUserMinimalDTO(item.UserTarget)
+	} else if item.Target != nil {
+		// Fallback for generic targets
+		switch t := item.Target.(type) {
+		case *domain.Song:
+			targetID = t.UUID
+			target = ToSongMinimalDTO(t)
+		case *domain.Anime:
+			targetID = t.UUID
+			target = ToAnimeMinimalDTO(t)
+		case *domain.Comment:
+			targetID = t.UUID
+			target = ToCommentDTO(t)
+		}
+	}
+
+	userDto := UserMinimalDTO{}
+	if item.User != nil {
+		userDto = ToUserMinimalDTO(item.User)
+	}
+
+	return ActivityItemDTO{
+		Type:      item.ActionType,
+		User:      userDto,
+		TargetID:  targetID,
+		Target:    target,
+		Value:     item.ActionValue,
+		CreatedAt: item.CreatedAt.Format(time.RFC3339),
+	}
+}
+
+// ─── Tournament Mappers ───
+
+func ToTournamentMinimalDTO(t *domain.Tournament) TournamentMinimalDTO {
+	if t == nil {
+		return TournamentMinimalDTO{}
+	}
+	return TournamentMinimalDTO{
+		ID:        t.UUID,
+		Name:      t.Name,
+		Slug:      t.Slug,
+		Size:      t.Size,
+		Status:    t.Status,
+		CreatedAt: t.CreatedAt,
+	}
+}
+
+func ToTournamentDTO(t *domain.Tournament) TournamentDTO {
+	if t == nil {
+		return TournamentDTO{}
+	}
+
+	matchups := make([]TournamentMatchupDTO, 0)
+	for _, m := range t.Matchups {
+		matchups = append(matchups, ToTournamentMatchupDTO(&m))
+	}
+
+	return TournamentDTO{
+		TournamentMinimalDTO: ToTournamentMinimalDTO(t),
+		Description:          t.Description,
+		Winner:               nil, // Map if winner exists
+		Matchups:             matchups,
+	}
+}
+
+func ToTournamentMatchupDTO(m *domain.TournamentMatchup) TournamentMatchupDTO {
+	if m == nil {
+		return TournamentMatchupDTO{}
+	}
+
+	var s1, s2, winner *SongMinimalDTO
+	if m.Song1 != nil {
+		val := ToSongMinimalDTO(m.Song1)
+		s1 = &val
+	}
+	if m.Song2 != nil {
+		val := ToSongMinimalDTO(m.Song2)
+		s2 = &val
+	}
+	if m.Winner != nil {
+		val := ToSongMinimalDTO(m.Winner)
+		winner = &val
+	}
+
+	return TournamentMatchupDTO{
+		ID:         m.UUID,
+		Round:      m.Round,
+		Position:   m.Position,
+		Song1:      s1,
+		Song2:      s2,
+		Song1Votes: m.Song1Votes,
+		Song2Votes: m.Song2Votes,
+		Winner:     winner,
+		EndsAt:     m.EndsAt,
+		IsActive:   m.IsActive,
+	}
+}
+
+func ToAnnouncementDTO(a domain.Announcement) AnnouncementDTO {
+	return AnnouncementDTO{
+		ID:        strconv.FormatUint(a.ID, 10),
+		Title:     a.Title,
+		Content:   a.Content,
+		Type:      a.Type,
+		Icon:      a.Icon,
+		URL:       a.URL,
+		ImageUrl:  a.ImageUrl,
+		Priority:  a.Priority,
+		IsActive:  a.IsActive,
+		StartsAt:  a.StartsAt,
+		EndsAt:    a.EndsAt,
+	}
+}
+
+func ToNotificationDTO(n domain.Notification) NotificationDTO {
+	var subjectID *string
+	if n.SubjectUUID != nil {
+		subjectID = n.SubjectUUID
+	} else if n.SubjectID != nil {
+		idStr := strconv.FormatUint(*n.SubjectID, 10)
+		subjectID = &idStr
+	}
+
+	return NotificationDTO{
+		ID:          n.ID,
+		Type:        n.Type,
+		SubjectID:   subjectID,
+		SubjectType: n.SubjectType,
+		Data:        n.Data,
+		ReadAt:      n.ReadAt,
+		CreatedAt:   n.CreatedAt,
 	}
 }

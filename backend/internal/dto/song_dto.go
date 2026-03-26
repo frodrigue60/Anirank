@@ -1,7 +1,7 @@
 package dto
 
 type SongMinimalDTO struct {
-	ID               uint64        `json:"id"`
+	ID               string        `json:"id"`
 	SongRomaji       *string       `json:"song_romaji,omitempty"`
 	SongEN           *string       `json:"song_en,omitempty"`
 	SongJP           *string       `json:"song_jp,omitempty"`
@@ -28,7 +28,7 @@ type SongDTO struct {
 }
 
 type SongVariantDTO struct {
-	ID            uint64  `json:"id"`
+	ID            string  `json:"id"`
 	VersionNumber uint64  `json:"version_number"`
 	Slug          string  `json:"slug"`
 	VideoUrl      *string `json:"video_url,omitempty"`

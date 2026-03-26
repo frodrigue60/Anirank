@@ -29,7 +29,8 @@ type AnnouncementFilters struct {
 
 type AnnouncementRepository interface {
 	GetByID(ctx context.Context, id uint64) (*Announcement, error)
-	GetAll(ctx context.Context, filters AnnouncementFilters) ([]Announcement, error)
+	GetAll(ctx context.Context, filters AnnouncementFilters, limit, offset int) ([]Announcement, error)
+	Count(ctx context.Context, filters AnnouncementFilters) (int, error)
 	GetActive(ctx context.Context) ([]Announcement, error)
 	Create(ctx context.Context, a *Announcement) error
 	Update(ctx context.Context, a *Announcement) error

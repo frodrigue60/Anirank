@@ -15,8 +15,8 @@
       const response = await api.get('/tournaments'); 
       if (response.data.data) {
         tournaments = response.data.data;
-        currentPage = response.data.current_page || 1;
-        lastPage = response.data.last_page || 1;
+        currentPage = response.data.pagination?.current_page || 1;
+        lastPage = response.data.pagination?.last_page || 1;
       } else {
         tournaments = response.data; // Fallback if not paginated
       }
@@ -39,8 +39,8 @@
 
       if (response.data.data) {
         tournaments = [...tournaments, ...response.data.data];
-        currentPage = response.data.current_page;
-        lastPage = response.data.last_page;
+        currentPage = response.data.pagination.current_page;
+        lastPage = response.data.pagination.last_page;
       }
     } catch (e) {
       console.error("Error loading more tournaments", e);

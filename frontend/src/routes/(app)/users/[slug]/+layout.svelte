@@ -27,7 +27,7 @@
     if (
       data.profile &&
       authState.user &&
-      String(data.profile.id) === String(authState.user.id)
+      data.profile.uuid === authState.user.uuid
     ) {
       if (
         authState.user.xp !== data.profile.xp ||
@@ -51,8 +51,8 @@
     isProcessing = true;
     try {
       const response = isFollowing
-        ? await api.delete(`/users/${data.profile.id}/follow`)
-        : await api.post(`/users/${data.profile.id}/follow`);
+        ? await api.delete(`/users/${data.profile.uuid}/follow`)
+        : await api.post(`/users/${data.profile.uuid}/follow`);
 
       if (response.status === 200) {
         isFollowing = !isFollowing;
@@ -67,17 +67,13 @@
 
   // Reactive URLs that favor authState when viewing own profile
   const isOwnProfile = $derived(
-    authState.user && String(authState.user.id) === String(data.profile?.id),
+    authState.user && authState.user.uuid === data.profile?.uuid,
   );
   const avatarUrl = $derived(
-    isOwnProfile
-      ? authState.user?.avatar_url
-      : data.profile?.avatar_url || data.profile?.image,
+    isOwnProfile ? authState.user?.avatar_url : data.profile?.avatar_url,
   );
   const bannerUrl = $derived(
-    isOwnProfile
-      ? authState.user?.banner_url
-      : data.profile?.banner_url || data.profile?.banner,
+    isOwnProfile ? authState.user?.banner_url : data.profile?.banner_url,
   );
 
   // Quadratic XP formula: Min XP = Level * (Level - 1) / 2 * 1000
@@ -88,7 +84,9 @@
     isOwnProfile ? (authState.user?.level ?? 1) : (data.profile?.level ?? 1),
   );
   const accentColor = $derived(
-    (isOwnProfile ? authState.user?.profile_color : data.profile?.profile_color) || "#3db4f2",
+    (isOwnProfile
+      ? authState.user?.profile_color
+      : data.profile?.profile_color) || "#3db4f2",
   );
 
   const currentLevelMinXP = $derived(
@@ -139,7 +137,7 @@
                 alt="Profile"
                 class="w-full h-full object-cover"
                 data-alt="User avatar image"
-                src="/images/placeholders/default.png"
+                src="/images/placeholders/default.jpg"
               />
             {/if}
           </div>
@@ -208,7 +206,9 @@
               class="flex items-center justify-center gap-2 px-8 h-11 rounded-xl font-bold text-sm transition-all shadow-lg {isFollowing
                 ? 'bg-white/10 text-white hover:bg-white/20'
                 : 'text-white hover:opacity-90 shadow-lg'}"
-              style={!isFollowing ? `background-color: ${accentColor}; box-shadow: 0 10px 20px ${accentColor}33` : ""}
+              style={!isFollowing
+                ? `background-color: ${accentColor}; box-shadow: 0 10px 20px ${accentColor}33`
+                : ""}
             >
               {#if isProcessing}
                 <span class="animate-spin material-symbols-outlined text-sm"
@@ -237,32 +237,53 @@
         <div class="flex gap-8 overflow-x-auto no-scrollbar">
           <a
             href={`/users/${data.profile.slug}`}
-            class="pb-4 font-bold transition-all border-b-2 {page.url.pathname === `/users/${data.profile.slug}` ? '' : 'border-transparent text-slate-400 hover:text-slate-200'}"
-            style={page.url.pathname === `/users/${data.profile.slug}` ? `border-color: ${accentColor}; color: ${accentColor}` : ""}
-            >Overview</a
+            class="pb-4 font-bold transition-all border-b-2 {page.url
+              .pathname === `/users/${data.profile.slug}`
+              ? ''
+              : 'border-transparent text-slate-400 hover:text-slate-200'}"
+            style={page.url.pathname === `/users/${data.profile.slug}`
+              ? `border-color: ${accentColor}; color: ${accentColor}`
+              : ""}>Overview</a
           >
           <a
             href={`/users/${data.profile.slug}/playlists`}
-            class="pb-4 font-bold transition-all border-b-2 {page.url.pathname === `/users/${data.profile.slug}/playlists` ? '' : 'border-transparent text-slate-400 hover:text-slate-200'}"
-            style={page.url.pathname === `/users/${data.profile.slug}/playlists` ? `border-color: ${accentColor}; color: ${accentColor}` : ""}
-            >Playlists</a
+            class="pb-4 font-bold transition-all border-b-2 {page.url
+              .pathname === `/users/${data.profile.slug}/playlists`
+              ? ''
+              : 'border-transparent text-slate-400 hover:text-slate-200'}"
+            style={page.url.pathname === `/users/${data.profile.slug}/playlists`
+              ? `border-color: ${accentColor}; color: ${accentColor}`
+              : ""}>Playlists</a
           >
           <a
             href={`/users/${data.profile.slug}/favorites`}
-            class="pb-4 font-bold transition-all border-b-2 {page.url.pathname === `/users/${data.profile.slug}/favorites` ? '' : 'border-transparent text-slate-400 hover:text-slate-200'}"
-            style={page.url.pathname === `/users/${data.profile.slug}/favorites` ? `border-color: ${accentColor}; color: ${accentColor}` : ""}
-            >Favorites</a
+            class="pb-4 font-bold transition-all border-b-2 {page.url
+              .pathname === `/users/${data.profile.slug}/favorites`
+              ? ''
+              : 'border-transparent text-slate-400 hover:text-slate-200'}"
+            style={page.url.pathname === `/users/${data.profile.slug}/favorites`
+              ? `border-color: ${accentColor}; color: ${accentColor}`
+              : ""}>Favorites</a
           >
           <a
             href={`/users/${data.profile.slug}/artists`}
-            class="pb-4 font-bold transition-all border-b-2 {page.url.pathname === `/users/${data.profile.slug}/artists` ? '' : 'border-transparent text-slate-400 hover:text-slate-200'}"
-            style={page.url.pathname === `/users/${data.profile.slug}/artists` ? `border-color: ${accentColor}; color: ${accentColor}` : ""}
-            >Artists</a
+            class="pb-4 font-bold transition-all border-b-2 {page.url
+              .pathname === `/users/${data.profile.slug}/artists`
+              ? ''
+              : 'border-transparent text-slate-400 hover:text-slate-200'}"
+            style={page.url.pathname === `/users/${data.profile.slug}/artists`
+              ? `border-color: ${accentColor}; color: ${accentColor}`
+              : ""}>Artists</a
           >
           <a
             href={`/users/${data.profile.slug}/followers`}
-            class="pb-4 font-bold transition-all border-b-2 {page.url.pathname === `/users/${data.profile.slug}/followers` ? '' : 'border-transparent text-slate-400 hover:text-slate-200'} flex gap-2 items-center"
-            style={page.url.pathname === `/users/${data.profile.slug}/followers` ? `border-color: ${accentColor}; color: ${accentColor}` : ""}
+            class="pb-4 font-bold transition-all border-b-2 {page.url
+              .pathname === `/users/${data.profile.slug}/followers`
+              ? ''
+              : 'border-transparent text-slate-400 hover:text-slate-200'} flex gap-2 items-center"
+            style={page.url.pathname === `/users/${data.profile.slug}/followers`
+              ? `border-color: ${accentColor}; color: ${accentColor}`
+              : ""}
           >
             Followers
             <span
@@ -272,8 +293,13 @@
           </a>
           <a
             href={`/users/${data.profile.slug}/following`}
-            class="pb-4 font-bold transition-all border-b-2 {page.url.pathname === `/users/${data.profile.slug}/following` ? '' : 'border-transparent text-slate-400 hover:text-slate-200'} flex gap-2 items-center"
-            style={page.url.pathname === `/users/${data.profile.slug}/following` ? `border-color: ${accentColor}; color: ${accentColor}` : ""}
+            class="pb-4 font-bold transition-all border-b-2 {page.url
+              .pathname === `/users/${data.profile.slug}/following`
+              ? ''
+              : 'border-transparent text-slate-400 hover:text-slate-200'} flex gap-2 items-center"
+            style={page.url.pathname === `/users/${data.profile.slug}/following`
+              ? `border-color: ${accentColor}; color: ${accentColor}`
+              : ""}
           >
             Following
             <span

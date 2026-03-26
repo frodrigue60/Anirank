@@ -93,7 +93,7 @@
   const filters = [
     { label: "All", value: "" },
     { label: "Airing", value: "airing", disabled: true },
-    { label: "Activity", value: "activity", disabled: true },
+    { label: "Activity", value: "activity" },
     { label: "Forum", value: "forum", disabled: true },
     { label: "Follows", value: "follow" },
     { label: "Media", value: "media", disabled: true },
@@ -201,7 +201,14 @@
                     {#if notification.type === "follow"}
                       <img
                         src={notification.data.follower_avatar ||
-                          "/default-avatar.png"}
+                          "/images/placeholders/default.jpg"}
+                        alt=""
+                        class="w-full h-full object-cover"
+                      />
+                    {:else if notification.type === "reply" || notification.type === "comment_reply"}
+                      <img
+                        src={notification.data.replied_by_avatar ||
+                          "/images/placeholders/default.jpg"}
                         alt=""
                         class="w-full h-full object-cover"
                       />
@@ -221,8 +228,25 @@
                             class="font-bold text-white hover:text-primary transition-colors"
                             >{notification.data.follower_name}</a
                           > started following you
-                        {:else if notification.type === "reply"}
-                          Someone replied to your comment
+                        {:else if notification.type === "reply" || notification.type === "comment_reply"}
+                          <a
+                            href="/users/{notification.data.replied_by_slug ||
+                              '#'}"
+                            class="font-bold text-white hover:text-primary transition-colors"
+                            >{notification.data.replied_by_name || "Someone"}</a
+                          >
+                          replied to your comment
+                          {#if notification.data.anime_name}
+                            on <a
+                              href="/songs/{notification.data
+                                .anime_slug}/{notification.data
+                                .song_slug}#comment-{notification.data
+                                ?.comment_uuid || notification.data.comment_id}"
+                              class="text-white hover:text-primary transition-colors font-bold"
+                              >{notification.data.anime_name}
+                              {notification.data.song_slug}</a
+                            >
+                          {/if}
                         {:else if notification.type === "like"}
                           Someone liked your content
                         {:else}
@@ -248,6 +272,18 @@
                     <div
                       class="w-2.5 h-2.5 rounded-full bg-primary shadow-sm shadow-primary"
                     ></div>
+                  {/if}
+
+                  {#if notification.data.anime_cover}
+                    <div
+                      class="shrink-0 w-16 h-20 rounded-lg overflow-hidden border border-white/10 ml-2"
+                    >
+                      <img
+                        src={notification.data.anime_cover}
+                        alt=""
+                        class="w-full h-full object-cover"
+                      />
+                    </div>
                   {/if}
                 </div>
               </div>

@@ -5,6 +5,8 @@ import (
 	"anirank/api/internal/infrastructure"
 	"context"
 	"regexp"
+
+	"github.com/google/uuid"
 )
 
 var iframeSrcRegex = regexp.MustCompile(`src="([^"]+)"`)
@@ -16,9 +18,10 @@ type PlaylistUsecase struct {
 	interactionRepo domain.InteractionRepository
 	mediaService    infrastructure.MediaService
 	xpUsecase       domain.XPUsecase
+	userRepo        domain.UserRepository
 }
 
-func NewPlaylistUsecase(pr domain.PlaylistRepository, sr domain.SongRepository, ar domain.AnimeRepository, ir domain.InteractionRepository, media infrastructure.MediaService, xu domain.XPUsecase) *PlaylistUsecase {
+func NewPlaylistUsecase(pr domain.PlaylistRepository, sr domain.SongRepository, ar domain.AnimeRepository, ir domain.InteractionRepository, media infrastructure.MediaService, xu domain.XPUsecase, ur domain.UserRepository) *PlaylistUsecase {
 	return &PlaylistUsecase{
 		playlistRepo:    pr,
 		songRepo:        sr,
@@ -26,17 +29,23 @@ func NewPlaylistUsecase(pr domain.PlaylistRepository, sr domain.SongRepository, 
 		interactionRepo: ir,
 		mediaService:    media,
 		xpUsecase:       xu,
+		userRepo:        ur,
 	}
 }
 
 // GetUserPlaylists returns all playlists for a specific user.
 // If the requesting user is the owner, include private playlists.
-func (u *PlaylistUsecase) GetUserPlaylists(ctx context.Context, requestingUserID *uint64, targetUserID uint64, limit, offset int) ([]domain.Playlist, error) {
+func (u *PlaylistUsecase) GetUserPlaylists(ctx context.Context, requestingUserID *uint64, targetUserID string, limit, offset int) ([]domain.Playlist, error) {
+	user, err := u.userRepo.GetByUUID(ctx, targetUserID)
+	if err != nil {
+		return nil, domain.NewAppError(404, "User not found", err)
+	}
+
 	includePrivate := false
-	if requestingUserID != nil && *requestingUserID == targetUserID {
+	if requestingUserID != nil && *requestingUserID == user.ID {
 		includePrivate = true
 	}
-	playlists, err := u.playlistRepo.GetByUserID(ctx, targetUserID, includePrivate, limit, offset)
+	playlists, err := u.playlistRepo.GetByUserID(ctx, user.ID, includePrivate, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -83,6 +92,7 @@ func (u *PlaylistUsecase) CreatePlaylist(ctx context.Context, userID uint64, nam
 	}
 
 	playlist := &domain.Playlist{
+		UUID:        uuid.New().String(),
 		UserID:      userID,
 		Name:        name,
 		Description: description,

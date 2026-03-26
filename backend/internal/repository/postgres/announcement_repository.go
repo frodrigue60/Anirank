@@ -30,7 +30,7 @@ func (r *postgresAnnouncementRepository) GetByID(ctx context.Context, id uint64)
 	return &a, nil
 }
 
-func (r *postgresAnnouncementRepository) GetAll(ctx context.Context, filters domain.AnnouncementFilters) ([]domain.Announcement, error) {
+func (r *postgresAnnouncementRepository) GetAll(ctx context.Context, filters domain.AnnouncementFilters, limit, offset int) ([]domain.Announcement, error) {
 	var announcements []domain.Announcement
 	query := `SELECT * FROM announcements WHERE 1=1`
 	args := []interface{}{}
@@ -51,6 +51,12 @@ func (r *postgresAnnouncementRepository) GetAll(ctx context.Context, filters dom
 
 	query += ` ORDER BY priority DESC, created_at DESC`
 
+	if limit > 0 {
+		query += fmt.Sprintf(` LIMIT $%d OFFSET $%d`, i, i+1)
+		args = append(args, limit, offset)
+		i += 2
+	}
+
 	if err := r.db.SelectContext(ctx, &announcements, query, args...); err != nil {
 		return nil, err
 	}
@@ -60,8 +66,31 @@ func (r *postgresAnnouncementRepository) GetAll(ctx context.Context, filters dom
 	return announcements, nil
 }
 
+func (r *postgresAnnouncementRepository) Count(ctx context.Context, filters domain.AnnouncementFilters) (int, error) {
+	var count int
+	query := `SELECT COUNT(*) FROM announcements WHERE 1=1`
+	args := []interface{}{}
+	i := 1
+
+	if filters.ActiveOnly {
+		now := time.Now()
+		query += fmt.Sprintf(` AND is_active = true AND (starts_at IS NULL OR starts_at <= $%d) AND (ends_at IS NULL OR ends_at >= $%d)`, i, i+1)
+		args = append(args, now, now)
+		i += 2
+	}
+
+	if filters.Search != "" {
+		query += fmt.Sprintf(` AND (title ILIKE $%d OR content ILIKE $%d)`, i, i+1)
+		args = append(args, "%"+filters.Search+"%", "%"+filters.Search+"%")
+		i += 2
+	}
+
+	err := r.db.GetContext(ctx, &count, query, args...)
+	return count, err
+}
+
 func (r *postgresAnnouncementRepository) GetActive(ctx context.Context) ([]domain.Announcement, error) {
-	return r.GetAll(ctx, domain.AnnouncementFilters{ActiveOnly: true})
+	return r.GetAll(ctx, domain.AnnouncementFilters{ActiveOnly: true}, 0, 0)
 }
 
 func (r *postgresAnnouncementRepository) Create(ctx context.Context, a *domain.Announcement) error {

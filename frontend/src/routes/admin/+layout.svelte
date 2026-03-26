@@ -356,7 +356,8 @@
           class="flex items-center gap-3 pl-4 border-l border-anirank-divide"
         >
           <img
-            src={authState.user?.avatar_url || "/default-avatar.png"}
+            src={authState.user?.avatar_url ||
+              "/images/placeholders/default.jpg"}
             alt={authState.user?.name || "Admin"}
             class="w-8 h-8 rounded-full object-cover ring-2 ring-white/10"
           />

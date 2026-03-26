@@ -8,20 +8,20 @@
 
   let allSongs = $state<any[]>([]);
   let paginationMeta = $state<{ next?: string | null; current_page: number; per_page: number } | null>(null);
-  let currentSeason = $derived(data.ranking?.current_season);
-  let currentYear = $derived(data.ranking?.current_year);
+  let currentSeason = $derived(data.songsData?.current_season);
+  let currentYear = $derived(data.songsData?.current_year);
   let activeType = $derived(data.type);
   let loading = $state(false);
 
   // Reset when data changes (e.g., type filter changed via SvelteKit navigation)
   $effect(() => {
-    const songs = data.ranking?.songs;
-    if (songs) {
-      allSongs = songs.data || [];
+    const songsData = data.songsData;
+    if (songsData) {
+      allSongs = songsData.data || [];
       paginationMeta = {
-        next: songs.links?.next,
-        current_page: songs.pagination?.current_page || 1,
-        per_page: songs.pagination?.per_page || 24,
+        next: songsData.links?.next,
+        current_page: songsData.pagination?.current_page || 1,
+        per_page: songsData.pagination?.per_page || 24,
       };
     } else {
       allSongs = [];
@@ -42,7 +42,7 @@
     loading = true;
     try {
       const response = await axios.get(paginationMeta.next);
-      const newSongs = response.data?.songs;
+      const newSongs = response.data;
       if (newSongs?.data) {
         allSongs = [...allSongs, ...newSongs.data];
         paginationMeta = {

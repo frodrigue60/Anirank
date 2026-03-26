@@ -99,11 +99,31 @@ func (r *userRepository) GetBySlug(ctx context.Context, slug string) (*domain.Us
 	return &user, err
 }
 
-func (r *userRepository) Create(ctx context.Context, user *domain.User) error {
-	query := `INSERT INTO users (name, slug, email, password, score_format_id, avatar, banner, anilist_id, anilist_username, anilist_access_token, anilist_refresh_token, anilist_token_expires_at, google_id, google_email, google_access_token, google_refresh_token, google_token_expires_at, about, profile_color, created_at, updated_at) 
-			  VALUES (:name, :slug, :email, :password, (SELECT id FROM score_formats WHERE slug = :score_format), :avatar, :banner, :anilist_id, :anilist_username, :anilist_access_token, :anilist_refresh_token, :anilist_token_expires_at, :google_id, :google_email, :google_access_token, :google_refresh_token, :google_token_expires_at, :about, :profile_color, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-			  RETURNING id`
 
+func (r *userRepository) GetByUUID(ctx context.Context, uuid string) (*domain.User, error) {
+	var user domain.User
+	query := `
+		SELECT u.*, sf.slug AS score_format,
+		       (SELECT COUNT(*) FROM follows WHERE followed_id = u.id) as followers_count,
+		       (SELECT COUNT(*) FROM follows WHERE follower_id = u.id) as following_count,
+		       (SELECT COUNT(*) FROM song_ratings WHERE user_id = u.id) as ratings_count
+		FROM users u
+		LEFT JOIN score_formats sf ON u.score_format_id = sf.id
+		WHERE u.uuid = $1
+	`
+	err := r.db.GetContext(ctx, &user, query, uuid)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, domain.ErrNotFound
+	}
+	return &user, err
+}
+
+func (r *userRepository) Create(ctx context.Context, user *domain.User) error {
+	query := `
+		INSERT INTO users (uuid, name, slug, email, password, score_format_id, avatar, banner, anilist_id, anilist_username, anilist_access_token, anilist_refresh_token, anilist_token_expires_at, google_id, google_email, google_access_token, google_refresh_token, google_token_expires_at, about, profile_color, created_at, updated_at)
+		VALUES (:uuid, :name, :slug, :email, :password, (SELECT id FROM score_formats WHERE slug = :score_format), :avatar, :banner, :anilist_id, :anilist_username, :anilist_access_token, :anilist_refresh_token, :anilist_token_expires_at, :google_id, :google_email, :google_access_token, :google_refresh_token, :google_token_expires_at, :about, :profile_color, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		RETURNING id
+	`
 	rows, err := r.db.NamedQueryContext(ctx, query, user)
 	if err != nil {
 		return err
@@ -289,7 +309,7 @@ func (r *userRepository) UpdateBadges(ctx context.Context, userID uint64, badgeI
 func (r *userRepository) Search(ctx context.Context, term string, limit int) ([]domain.User, error) {
 	var users []domain.User
 	query := `
-		SELECT id, name, slug, avatar 
+		SELECT id, uuid, name, slug, avatar 
 		FROM users 
 		WHERE name ILIKE $1 
 		ORDER BY created_at DESC
@@ -338,7 +358,7 @@ func (r *userRepository) GetFollowingCount(ctx context.Context, userID uint64) (
 func (r *userRepository) GetFollowers(ctx context.Context, userID uint64, limit, offset int) ([]domain.User, error) {
 	var users []domain.User
 	query := `
-		SELECT u.id, u.name, u.slug, u.avatar
+		SELECT u.id, u.uuid, u.name, u.slug, u.avatar, u.banner
 		FROM users u
 		JOIN follows f ON u.id = f.follower_id
 		WHERE f.followed_id = $1
@@ -355,7 +375,7 @@ func (r *userRepository) GetFollowers(ctx context.Context, userID uint64, limit,
 func (r *userRepository) GetFollowing(ctx context.Context, userID uint64, limit, offset int) ([]domain.User, error) {
 	var users []domain.User
 	query := `
-		SELECT u.id, u.name, u.slug, u.avatar
+		SELECT u.id, u.uuid, u.name, u.slug, u.avatar, u.banner
 		FROM users u
 		JOIN follows f ON u.id = f.followed_id
 		WHERE f.follower_id = $1

@@ -26,10 +26,10 @@ func (r *notificationRepository) Create(ctx context.Context, n *domain.Notificat
 	}
 
 	query := `
-		INSERT INTO notifications (id, user_id, type, subject_id, subject_type, data, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		INSERT INTO notifications (id, user_id, type, subject_id, subject_uuid, subject_type, data, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 	`
-	_, err := r.db.ExecContext(ctx, query, n.ID, n.UserID, n.Type, n.SubjectID, n.SubjectType, string(n.Data))
+	_, err := r.db.ExecContext(ctx, query, n.ID, n.UserID, n.Type, n.SubjectID, n.SubjectUUID, n.SubjectType, string(n.Data))
 	return err
 }
 
@@ -42,9 +42,13 @@ func (r *notificationRepository) GetByUserID(ctx context.Context, userID uint64,
 	i := 2
 
 	if notificationType != "" {
-		countQuery += fmt.Sprintf(" AND type = $%d", i)
-		countArgs = append(countArgs, notificationType)
-		i++
+		if notificationType == "activity" {
+			countQuery += " AND type IN ('reply', 'comment_reply')"
+		} else {
+			countQuery += fmt.Sprintf(" AND type = $%d", i)
+			countArgs = append(countArgs, notificationType)
+			i++
+		}
 	}
 
 	if err := r.db.GetContext(ctx, &total, countQuery, countArgs...); err != nil {
@@ -52,7 +56,7 @@ func (r *notificationRepository) GetByUserID(ctx context.Context, userID uint64,
 	}
 
 	query := `
-		SELECT id, user_id, type, subject_id, subject_type, data, read_at, created_at, updated_at
+		SELECT id, user_id, type, subject_id, subject_uuid, subject_type, data, read_at, created_at, updated_at
 		FROM notifications
 		WHERE user_id = $1 AND deleted_at IS NULL
 	`
@@ -60,9 +64,13 @@ func (r *notificationRepository) GetByUserID(ctx context.Context, userID uint64,
 	j := 2
 
 	if notificationType != "" {
-		query += fmt.Sprintf(" AND type = $%d", j)
-		args = append(args, notificationType)
-		j++
+		if notificationType == "activity" {
+			query += " AND type IN ('reply', 'comment_reply')"
+		} else {
+			query += fmt.Sprintf(" AND type = $%d", j)
+			args = append(args, notificationType)
+			j++
+		}
 	}
 
 	query += fmt.Sprintf(" ORDER BY created_at DESC LIMIT $%d OFFSET $%d", j, j+1)

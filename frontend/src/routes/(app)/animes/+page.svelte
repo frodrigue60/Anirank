@@ -28,9 +28,9 @@
   // svelte-ignore state_referenced_locally
   let animes = $state(data.animes?.data || []);
   // svelte-ignore state_referenced_locally
-  let currentPage = $state(data.animes?.current_page || 1);
+  let currentPage = $state(data.animes?.pagination?.current_page || 1);
   // svelte-ignore state_referenced_locally
-  let lastPage = $state(data.animes?.last_page || 1);
+  let lastPage = $state(data.animes?.pagination?.last_page || 1);
   let loading = $state(false);
 
   $effect(() => {
@@ -41,10 +41,10 @@
     selectedSort = data.params.sort || "";
 
     // Reset infinite scroll on data change (filters)
-    if (data.animes && data.animes.current_page === 1) {
+    if (data.animes && Number(data.animes.pagination?.current_page) === 1) {
       animes = data.animes.data;
-      currentPage = data.animes.current_page;
-      lastPage = data.animes.last_page;
+      currentPage = Number(data.animes.pagination.current_page);
+      lastPage = Number(data.animes.pagination.last_page);
     }
   });
 
@@ -83,8 +83,8 @@
 
       if (response.data.data) {
         animes = [...animes, ...response.data.data];
-        currentPage = response.data.current_page;
-        lastPage = response.data.last_page;
+        currentPage = Number(response.data.pagination.current_page);
+        lastPage = Number(response.data.pagination.last_page);
       }
     } catch (e) {
       console.error("Error loading more animes", e);

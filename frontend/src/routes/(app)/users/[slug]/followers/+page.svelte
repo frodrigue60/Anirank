@@ -29,7 +29,7 @@
     try {
       const nextPage = currentPage + 1;
       const response = await api.get(`/users/${data.profile.slug}/followers`, {
-        params: { page: nextPage }
+        params: { page: nextPage },
       });
 
       if (response.data.data) {
@@ -58,26 +58,34 @@
   </div>
 
   {#if followers.length > 0}
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+    <div
+      class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+    >
       {#each followers as user}
         <a
           href={`/users/${user.slug}`}
-          class="group bg-white/5 rounded-2xl p-4 border border-white/5 hover:border-primary/30 transition-all hover:bg-white/10 flex items-center gap-4"
+          class="group bg-background-dark p-4 rounded-2xl border border-white/5 hover:border-primary/30 transition-all hover:bg-white/10 flex items-center gap-4"
         >
-          <div class="size-14 rounded-xl overflow-hidden bg-background-dark border border-white/10 group-hover:border-primary/50 transition-colors">
+          <div
+            class="size-14 rounded-xl overflow-hidden bg-background-dark border border-white/10 group-hover:border-primary/50 transition-colors"
+          >
             <img
-              src={user.avatar_url || "/default-avatar.png"}
+              src={user.avatar_url || "/images/placeholders/default.jpg"}
               alt={user.name}
               class="w-full h-full object-cover"
             />
           </div>
           <div class="flex-1 min-w-0">
-            <h3 class="font-bold text-white group-hover:text-primary transition-colors truncate">
+            <h3
+              class="font-bold text-white group-hover:text-primary transition-colors truncate"
+            >
               {user.name}
             </h3>
-            <p class="text-slate-500 text-xs truncate">@{user.slug}</p>
+            <p class="text-slate-500 text-xs truncate">Lvl {user.level}</p>
           </div>
-          <span class="material-symbols-outlined text-slate-600 group-hover:text-primary transition-colors">
+          <span
+            class="material-symbols-outlined text-slate-600 group-hover:text-primary transition-colors"
+          >
             chevron_right
           </span>
         </a>
@@ -90,8 +98,12 @@
       onLoadMore={loadMore}
     />
   {:else}
-    <div class="py-20 text-center bg-white/5 rounded-3xl border border-dashed border-white/10">
-      <div class="size-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-500">
+    <div
+      class="py-20 text-center bg-white/5 rounded-3xl border border-dashed border-white/10"
+    >
+      <div
+        class="size-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-500"
+      >
         <span class="material-symbols-outlined text-4xl">group_off</span>
       </div>
       <h3 class="text-xl font-bold text-white">No followers yet</h3>

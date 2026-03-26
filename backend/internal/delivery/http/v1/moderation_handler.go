@@ -10,11 +10,21 @@ import (
 )
 
 type ModerationHandler struct {
-	usecase *moderation.ModerationUsecase
+	usecase     *moderation.ModerationUsecase
+	songRepo    domain.SongRepository
+	commentRepo domain.CommentRepository
 }
 
-func NewModerationHandler(usecase *moderation.ModerationUsecase) *ModerationHandler {
-	return &ModerationHandler{usecase: usecase}
+func NewModerationHandler(
+	usecase *moderation.ModerationUsecase,
+	songRepo domain.SongRepository,
+	commentRepo domain.CommentRepository,
+) *ModerationHandler {
+	return &ModerationHandler{
+		usecase:     usecase,
+		songRepo:    songRepo,
+		commentRepo: commentRepo,
+	}
 }
 
 // ==== USER FACING ENDPOINTS ====
@@ -37,16 +47,46 @@ func (h *ModerationHandler) CreateSongReport(c *fiber.Ctx) error {
 		return domain.NewAppError(401, "Unauthorized", nil)
 	}
 
-	var req domain.SongReport
-	if err := c.BodyParser(&req); err != nil {
+	type songReportReq struct {
+		SongID  string `json:"song_id"`
+		Title   string `json:"title"`
+		Content string `json:"content"`
+		Source  string `json:"source"`
+	}
+
+	var body songReportReq
+	if err := c.BodyParser(&body); err != nil {
 		return domain.NewAppError(400, "Invalid payload", err)
+	}
+
+	// Resolve Song ID
+	songID, err := strconv.ParseUint(body.SongID, 10, 64)
+	if err != nil {
+		song, err := h.songRepo.GetByUUID(c.Context(), body.SongID)
+		if err != nil {
+			return domain.NewAppError(404, "Song not found", err)
+		}
+		songID = song.ID
+	}
+
+	req := domain.SongReport{
+		SongID:  songID,
+		UserID:  userID,
+		Title:   body.Title,
+		Content: body.Content,
+		Source:  body.Source,
 	}
 
 	if err := h.usecase.CreateSongReport(c.Context(), userID, &req); err != nil {
 		return err
 	}
 
-	return c.Status(201).JSON(fiber.Map{"message": "Report submitted successfully"})
+	return c.Status(201).JSON(fiber.Map{
+		"success": true,
+		"data": fiber.Map{
+			"message": "Report submitted successfully",
+		},
+	})
 }
 
 // CreateUserRequest
@@ -76,7 +116,12 @@ func (h *ModerationHandler) CreateUserRequest(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.Status(201).JSON(fiber.Map{"message": "Request submitted successfully"})
+	return c.Status(201).JSON(fiber.Map{
+		"success": true,
+		"data": fiber.Map{
+			"message": "Request submitted successfully",
+		},
+	})
 }
 
 // CreateCommentReport
@@ -97,16 +142,46 @@ func (h *ModerationHandler) CreateCommentReport(c *fiber.Ctx) error {
 		return domain.NewAppError(401, "Unauthorized", nil)
 	}
 
-	var req domain.CommentReport
-	if err := c.BodyParser(&req); err != nil {
+	type commentReportReq struct {
+		CommentID string `json:"comment_id"`
+		Title     string `json:"title"`
+		Content   string `json:"content"`
+		Source    string `json:"source"`
+	}
+
+	var body commentReportReq
+	if err := c.BodyParser(&body); err != nil {
 		return domain.NewAppError(400, "Invalid payload", err)
+	}
+
+	// Resolve Comment ID
+	commentID, err := strconv.ParseUint(body.CommentID, 10, 64)
+	if err != nil {
+		comment, err := h.commentRepo.GetByUUID(c.Context(), body.CommentID)
+		if err != nil {
+			return domain.NewAppError(404, "Comment not found", err)
+		}
+		commentID = comment.ID
+	}
+
+	req := domain.CommentReport{
+		CommentID: commentID,
+		UserID:    userID,
+		Title:     body.Title,
+		Content:   body.Content,
+		Source:    body.Source,
 	}
 
 	if err := h.usecase.CreateCommentReport(c.Context(), userID, &req); err != nil {
 		return err
 	}
 
-	return c.Status(201).JSON(fiber.Map{"message": "Report submitted successfully"})
+	return c.Status(201).JSON(fiber.Map{
+		"success": true,
+		"data": fiber.Map{
+			"message": "Report submitted successfully",
+		},
+	})
 }
 
 // ==== ADMIN FACING ENDPOINTS ====
@@ -189,7 +264,11 @@ func (h *ModerationHandler) ResolveSongReport(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(fiber.Map{"message": "Report resolved successfully"})
+	return c.JSON(fiber.Map{
+		"data": fiber.Map{
+			"message": "Report resolved successfully",
+		},
+	})
 }
 
 // DeleteSongReport
@@ -213,7 +292,7 @@ func (h *ModerationHandler) DeleteSongReport(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.Status(204).JSON(fiber.Map{"success": true})
+	return c.SendStatus(204)
 }
 
 // GetCommentReports
@@ -294,7 +373,11 @@ func (h *ModerationHandler) ResolveCommentReport(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(fiber.Map{"message": "Report resolved successfully"})
+	return c.JSON(fiber.Map{
+		"data": fiber.Map{
+			"message": "Report resolved successfully",
+		},
+	})
 }
 
 // DeleteCommentReport
@@ -318,7 +401,7 @@ func (h *ModerationHandler) DeleteCommentReport(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.Status(204).JSON(fiber.Map{"success": true})
+	return c.SendStatus(204)
 }
 
 // GetUserRequests
@@ -413,7 +496,11 @@ func (h *ModerationHandler) UpdateUserRequestStatus(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(fiber.Map{"message": "Status updated successfully"})
+	return c.JSON(fiber.Map{
+		"data": fiber.Map{
+			"message": "Status updated successfully",
+		},
+	})
 }
 
 // DeleteUserRequest
@@ -435,5 +522,5 @@ func (h *ModerationHandler) DeleteUserRequest(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.Status(204).JSON(fiber.Map{"success": true})
+	return c.SendStatus(204)
 }

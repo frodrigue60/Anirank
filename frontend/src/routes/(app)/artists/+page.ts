@@ -11,7 +11,7 @@ export const load: PageLoad = async ({ url }) => {
     const response = await api.get('/artists', { params });
 
     return {
-        artists: response.data,
+        artistsData: response.data,
         params
     };
 };

@@ -19,8 +19,8 @@
         recentOnly ? "/activities/recent" : `/activities?page=${pageToFetch}`,
       );
       activities = response.data.data || [];
-      if (!recentOnly) {
-        hasMore = activities.length === perPage;
+      if (!recentOnly && response.data.pagination) {
+        hasMore = response.data.pagination.has_more;
       }
     } catch (error) {
       console.error("Failed to fetch activities:", error);
@@ -92,30 +92,36 @@
       </div>
     {:else}
       {#each activities as activity}
+        {@const target = activity.target}
+        {@const type = activity.type}
+        {@const isSong = type === "rate" || type === "favorite" || type === "reply" || type === "comment"}
+        {@const isUser = type === "follow"}
+        {@const isArtist = type === "artist_favorite"} 
+
         <div
           class="p-4 flex items-start gap-4 hover:bg-white/5 transition-colors group cursor-pointer"
         >
           <div class="relative shrink-0">
             <!-- Target Cover -->
-            {#if activity.target_type === "song" && activity.song}
+            {#if isSong && target}
               <img
-                src={activity.song.anime?.cover_url ||
+                src={target.anime?.cover_url ||
                   "/images/placeholders/default.jpg"}
-                alt={activity.song.anime?.title}
+                alt={target.anime?.title}
                 class="w-12 h-18 rounded-lg object-cover border border-white/10"
               />
-            {:else if activity.target_type === "artist" && activity.artist}
+            {:else if isArtist && target}
               <img
-                src={activity.artist.avatar_url ||
+                src={target.avatar_url ||
                   "/images/placeholders/default.jpg"}
-                alt={activity.artist.name}
+                alt={target.name}
                 class="w-12 h-12 rounded-lg object-cover border border-white/10"
               />
-            {:else if activity.target_type === "user" && activity.user_target}
+            {:else if isUser && target}
               <img
-                src={activity.user_target.avatar_url ||
-                  "/images/placeholders/default.jpg"}
-                alt={activity.user_target.name}
+                src={target.avatar_url ||
+                   "/images/placeholders/default.jpg"}
+                alt={target.name}
                 class="w-12 h-12 rounded-lg object-cover border border-white/10"
               />
             {:else}
@@ -154,48 +160,48 @@
                 class="text-[11px] text-white/50 uppercase font-bold tracking-wider"
               >
                 {activity.user?.name}
-                {#if activity.action === "rate"}
+                {#if type === "rate"}
                   rated <span class="text-yellow-400"
-                    >{activity.action_value}</span
+                    >{activity.value}</span
                   >
-                {:else if activity.action === "favorite"}
+                {:else if type === "favorite"}
                   added favorite
-                {:else if activity.action === "comment"}
+                {:else if type === "comment"}
                   commented on
-                {:else if activity.action === "reply"}
+                {:else if type === "reply"}
                   replied on
-                {:else if activity.action === "follow"}
+                {:else if type === "follow"}
                   started following
                 {:else}
                   interacted
                 {/if}
               </span>
 
-              {#if activity.target_type === "song" && activity.song}
+              {#if isSong && target}
                 <a
-                  href="/songs/{activity.song.anime?.slug}/{activity.song.slug}"
+                  href="/songs/{target.anime?.slug}/{target.slug}"
                   class="text-base font-bold text-white group-hover:text-primary transition-colors truncate flex flex-col"
                 >
                   <span class="text-primary"
-                    >{activity.song.anime?.title} {activity.song.slug}</span
+                    >{target.anime?.title} {target.slug}</span
                   >
                   <span class="italic text-white/60 font-normal"
-                    >{activity.song.name}</span
+                    >{target.song_romaji || target.name}</span
                   >
                 </a>
-              {:else if activity.target_type === "artist" && activity.artist}
+              {:else if isArtist && target}
                 <a
-                  href="/artists/{activity.artist.slug}"
+                  href="/artists/{target.slug}"
                   class="text-base font-bold text-white group-hover:text-primary transition-colors truncate"
                 >
-                  <span class="text-primary">{activity.artist.name}</span>
+                  <span class="text-primary">{target.name}</span>
                 </a>
-              {:else if activity.target_type === "user" && activity.user_target}
+              {:else if isUser && target}
                 <a
-                  href="/profile/{activity.user_target.slug}"
+                  href="/profile/{target.slug}"
                   class="text-base font-bold text-white group-hover:text-primary transition-colors truncate"
                 >
-                  <span class="text-primary">{activity.user_target.name}</span>
+                  <span class="text-primary">{target.name}</span>
                 </a>
               {:else}
                 <span class="text-white/40">Item Deleted</span>

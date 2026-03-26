@@ -16,7 +16,7 @@
     }
   }
 
-  async function deleteUser(id: number) {
+  async function deleteUser(uuid: string) {
     if (
       !confirm(
         "Are you sure you want to delete this user? This action cannot be undone.",
@@ -26,7 +26,7 @@
 
     isDeleting = true;
     try {
-      await api.delete(`/admin/users/${id}`);
+      await api.delete(`/admin/users/${uuid}`);
       // Refresh page data
       goto(
         `/admin/users?search=${searchQuery}&page=${data.pagination.current_page}`,
@@ -136,7 +136,7 @@
                     <a href="/users/{user.slug}">{user.name}</a>
                   </div>
                   <div class="text-xs text-gray-500 font-mono hidden sm:block">
-                    ID: {user.id}
+                    UUID: {user.uuid}
                   </div>
                 </div>
               </div>
@@ -162,7 +162,7 @@
                   <span class="material-symbols-outlined">shield_person</span>
                 </button> -->
                 <a
-                  href="/admin/users/{user.id}/edit"
+                  href="/admin/users/{user.uuid}/edit"
                   class="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
                   title="Edit Profile"
                 >
@@ -170,7 +170,7 @@
                 </a>
 
                 <button
-                  onclick={() => deleteUser(user.id)}
+                  onclick={() => deleteUser(user.uuid)}
                   disabled={isDeleting}
                   class="p-2 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition-colors border border-transparent hover:border-rose-500/20 disabled:opacity-50"
                   title="Delete User"

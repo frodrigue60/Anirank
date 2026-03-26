@@ -23,12 +23,6 @@
           title="AniRank Home"
           aria-label="Go to AniRank Home"
         >
-          <div
-            class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/40 group-hover:scale-105 transition-transform"
-          >
-            <span class="material-symbols-outlined text-[24px]">music_note</span
-            >
-          </div>
           <span class="text-2xl font-black tracking-tighter text-white"
             >AniRank</span
           >

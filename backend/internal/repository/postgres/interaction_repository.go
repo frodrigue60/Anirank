@@ -125,88 +125,55 @@ func (r *interactionRepository) UpsertSongReaction(ctx context.Context, userID, 
 	}
 	defer tx.Rollback()
 
-	// 1. Check existing reaction
+	// 1. Upsert reaction and get its previously existing type
 	var existing int8 = 0
 	var reactionID uint64
 
-	type reactionRecord struct {
-		ID   uint64 `db:"id"`
-		Type int8   `db:"type"`
-	}
-	var rec reactionRecord
-	err = tx.GetContext(ctx, &rec, "SELECT id, type FROM song_reactions WHERE user_id = $1 AND song_id = $2", userID, songID)
-
-	if err == nil {
-		existing = rec.Type
-		reactionID = rec.ID
-	} else if !errors.Is(err, sql.ErrNoRows) {
+	// We use a single query to UPSERT or at least determine what happened.
+	// Actually, toggling is hard with ON CONFLICT because we might want to DELETE.
+	// A better way is to SELECT FOR UPDATE to lock the row.
+	err = tx.QueryRowContext(ctx, "SELECT id, type FROM song_reactions WHERE user_id = $1 AND song_id = $2 FOR UPDATE", userID, songID).Scan(&reactionID, &existing)
+	
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return 0, 0, err
 	}
 
-	likesDiff := 0
-	dislikesDiff := 0
-
 	// 2. Logic to update reactions
-	if existing == reactionType {
+	if err == nil && existing == reactionType {
 		// Toggle OFF
 		_, err = tx.ExecContext(ctx, "DELETE FROM song_reactions WHERE id = $1", reactionID)
 		if err != nil {
 			return 0, 0, err
 		}
-		if existing == 1 {
-			likesDiff = -1
-		} else {
-			dislikesDiff = -1
+	} else if err == nil {
+		// Change type
+		_, err = tx.ExecContext(ctx, "UPDATE song_reactions SET type = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2", reactionType, reactionID)
+		if err != nil {
+			return 0, 0, err
 		}
 	} else {
-		if existing != 0 {
-			// Change type
-			_, err = tx.ExecContext(ctx, "UPDATE song_reactions SET type = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2", reactionType, reactionID)
-			if err != nil {
-				return 0, 0, err
-			}
-			if existing == 1 {
-				likesDiff = -1
-				dislikesDiff = 1
-			} else {
-				likesDiff = 1
-				dislikesDiff = -1
-			}
-		} else {
-			// New reaction
-			_, err = tx.ExecContext(ctx, "INSERT INTO song_reactions (user_id, song_id, type, created_at, updated_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)", userID, songID, reactionType)
-			if err != nil {
-				return 0, 0, err
-			}
-			if reactionType == 1 {
-				likesDiff = 1
-			} else {
-				dislikesDiff = 1
-			}
+		// New reaction
+		_, err = tx.ExecContext(ctx, "INSERT INTO song_reactions (user_id, song_id, type, created_at, updated_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)", userID, songID, reactionType)
+		if err != nil {
+			return 0, 0, err
 		}
 	}
 
-	// 3. Update song counts
+	// 3. Update song counts using exact counts from the reactions table
 	var newLikes, newDislikes int
-	// Note: PostgreSQL doesn't need explicit cast to SIGNED/INTEGER for arithmetic on int columns
-	// but we'll use ::INTEGER for clarity if it matches MySQL logic of ensuring integer context.
 	updateQuery := `
 		UPDATE songs 
-		SET likes_count = GREATEST(0, likes_count + $1),
-		    dislikes_count = GREATEST(0, dislikes_count + $2),
+		SET likes_count = (SELECT count(*) FROM song_reactions WHERE song_id = $1 AND type = 1),
+		    dislikes_count = (SELECT count(*) FROM song_reactions WHERE song_id = $1 AND type = -1),
 			updated_at = CURRENT_TIMESTAMP
-		WHERE id = $3
+		WHERE id = $1
+		RETURNING likes_count, dislikes_count
 	`
-	_, err = tx.ExecContext(ctx, updateQuery, likesDiff, dislikesDiff, songID)
+	err = tx.QueryRowContext(ctx, updateQuery, songID).Scan(&newLikes, &newDislikes)
 	if err != nil {
 		return 0, 0, err
 	}
 
-	// 4. Fetch final counts
-	err = tx.QueryRowContext(ctx, "SELECT likes_count, dislikes_count FROM songs WHERE id = $1", songID).Scan(&newLikes, &newDislikes)
-	if err != nil {
-		return 0, 0, err
-	}
 
 	if err := tx.Commit(); err != nil {
 		return 0, 0, err
@@ -222,73 +189,47 @@ func (r *interactionRepository) UpsertCommentReaction(ctx context.Context, userI
 	}
 	defer tx.Rollback()
 
-	// 1. Check if user already reacted
+	// 1. Check if user already reacted (with lock)
 	var existing int8
 	var reactionID uint64
-	err = tx.QueryRowContext(ctx, "SELECT id, type FROM comment_reactions WHERE user_id = $1 AND comment_id = $2", userID, commentID).Scan(&reactionID, &existing)
+	err = tx.QueryRowContext(ctx, "SELECT id, type FROM comment_reactions WHERE user_id = $1 AND comment_id = $2 FOR UPDATE", userID, commentID).Scan(&reactionID, &existing)
 
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return 0, 0, err
 	}
 
-	var likesDiff, dislikesDiff int
-
 	// 2. Logic
-	if reactionType == existing {
+	if err == nil && reactionType == existing {
 		// Toggle OFF (remove reaction)
 		_, err = tx.ExecContext(ctx, "DELETE FROM comment_reactions WHERE id = $1", reactionID)
 		if err != nil {
 			return 0, 0, err
 		}
-		if existing == 1 {
-			likesDiff = -1
-		} else {
-			dislikesDiff = -1
+	} else if err == nil {
+		// Change type
+		_, err = tx.ExecContext(ctx, "UPDATE comment_reactions SET type = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2", reactionType, reactionID)
+		if err != nil {
+			return 0, 0, err
 		}
 	} else {
-		if existing != 0 {
-			// Change type
-			_, err = tx.ExecContext(ctx, "UPDATE comment_reactions SET type = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2", reactionType, reactionID)
-			if err != nil {
-				return 0, 0, err
-			}
-			if existing == 1 {
-				likesDiff = -1
-				dislikesDiff = 1
-			} else {
-				likesDiff = 1
-				dislikesDiff = -1
-			}
-		} else {
-			// New reaction
-			_, err = tx.ExecContext(ctx, "INSERT INTO comment_reactions (user_id, comment_id, type, created_at, updated_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)", userID, commentID, reactionType)
-			if err != nil {
-				return 0, 0, err
-			}
-			if reactionType == 1 {
-				likesDiff = 1
-			} else {
-				dislikesDiff = 1
-			}
+		// New reaction
+		_, err = tx.ExecContext(ctx, "INSERT INTO comment_reactions (user_id, comment_id, type, created_at, updated_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)", userID, commentID, reactionType)
+		if err != nil {
+			return 0, 0, err
 		}
 	}
 
-	// 3. Update comment counts
+	// 3. Update comment counts using exact counts
 	var newLikes, newDislikes int
 	updateQuery := `
 		UPDATE comments 
-		SET likes_count = GREATEST(0, likes_count + $1),
-		    dislikes_count = GREATEST(0, dislikes_count + $2),
+		SET likes_count = (SELECT count(*) FROM comment_reactions WHERE comment_id = $1 AND type = 1),
+		    dislikes_count = (SELECT count(*) FROM comment_reactions WHERE comment_id = $1 AND type = -1),
 			updated_at = CURRENT_TIMESTAMP
-		WHERE id = $3
+		WHERE id = $1
+		RETURNING likes_count, dislikes_count
 	`
-	_, err = tx.ExecContext(ctx, updateQuery, likesDiff, dislikesDiff, commentID)
-	if err != nil {
-		return 0, 0, err
-	}
-
-	// 4. Fetch final counts
-	err = tx.QueryRowContext(ctx, "SELECT likes_count, dislikes_count FROM comments WHERE id = $1", commentID).Scan(&newLikes, &newDislikes)
+	err = tx.QueryRowContext(ctx, updateQuery, commentID).Scan(&newLikes, &newDislikes)
 	if err != nil {
 		return 0, 0, err
 	}

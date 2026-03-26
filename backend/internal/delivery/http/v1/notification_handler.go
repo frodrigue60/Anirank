@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"math"
+	"anirank/api/internal/dto"
 	"strconv"
 
 	"anirank/api/internal/domain"
@@ -32,20 +32,15 @@ func (h *NotificationHandler) Index(c *fiber.Ctx) error {
 		return err
 	}
 
-	lastPage := int(math.Ceil(float64(total) / float64(limit)))
-	if lastPage < 1 {
-		lastPage = 1
+	dtoNotifications := make([]dto.NotificationDTO, len(notifications))
+	for i, n := range notifications {
+		dtoNotifications[i] = dto.ToNotificationDTO(n)
 	}
 
-	return c.JSON(fiber.Map{
-		"success": true,
-		"data":         notifications,
-		"total":        total,
-		"unread_count": unreadCount,
-		"current_page": page,
-		"last_page":    lastPage,
-		"per_page":     limit,
-	})
+	response := paginatedResponse(c, dtoNotifications, total, page, limit)
+	response["unread_count"] = unreadCount
+
+	return c.JSON(response)
 }
 
 func (h *NotificationHandler) MarkAsRead(c *fiber.Ctx) error {
@@ -56,7 +51,7 @@ func (h *NotificationHandler) MarkAsRead(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(fiber.Map{"success": true})
+	return c.SendStatus(200)
 }
 
 func (h *NotificationHandler) MarkAllAsRead(c *fiber.Ctx) error {
@@ -66,7 +61,7 @@ func (h *NotificationHandler) MarkAllAsRead(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(fiber.Map{"success": true})
+	return c.SendStatus(200)
 }
 
 func (h *NotificationHandler) Delete(c *fiber.Ctx) error {
@@ -77,7 +72,7 @@ func (h *NotificationHandler) Delete(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(fiber.Map{"success": true})
+	return c.SendStatus(204)
 }
 
 func (h *NotificationHandler) GetUnreadCount(c *fiber.Ctx) error {
@@ -86,5 +81,9 @@ func (h *NotificationHandler) GetUnreadCount(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	return c.JSON(fiber.Map{"count": count})
+	return c.JSON(fiber.Map{
+		"data": fiber.Map{
+			"count": count,
+		},
+	})
 }

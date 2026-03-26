@@ -1,7 +1,8 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { authState } from "$lib/state/auth.svelte";
-  const PUBLIC_API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+  const PUBLIC_API_URL =
+    import.meta.env.VITE_API_URL || "http://localhost:8080/api";
   import {
     getSongArtistNames,
     getSongName,
@@ -18,7 +19,7 @@
   import type { Song, Artist, SongVariant as Variant } from "$lib/types/song";
   interface User {
     badges: any;
-    id: number;
+    uuid: string;
     name: string;
     avatar_url: string;
     score_format: string;
@@ -26,9 +27,9 @@
   }
 
   interface Comment {
-    id: number;
+    uuid: string;
     content: string;
-    user_id: number;
+    user_uuid: string;
     created_at: string;
     user: User;
     replies?: Comment[];
@@ -36,6 +37,17 @@
     is_disliked?: boolean;
     likes_count?: number;
     dislikes_count?: number;
+  }
+
+  function mapComment(c: any): Comment {
+    const mappedUser = c.user ? { ...c.user, uuid: c.user.id } : undefined;
+    return {
+      ...c,
+      uuid: c.id,
+      user: mappedUser,
+      user_uuid: mappedUser?.uuid || c.user_uuid,
+      replies: c.replies ? c.replies.map(mapComment) : [],
+    };
   }
 
   let { data } = $props<{
@@ -53,18 +65,18 @@
   );
 
   // svelte-ignore state_referenced_locally
-  let comments: Comment[] = $state(data.comments);
+  let comments: Comment[] = $state(data.comments?.map(mapComment) || []);
 
   $effect(() => {
     currentSong = data.song;
     relatedSongs = data.related;
-    comments = data.comments;
+    comments = data.comments?.map(mapComment) || [];
     selectedVariantIndex = 0;
   });
 
   let newCommentText = $state("");
   let replyText = $state("");
-  let replyingToId: number | null = $state(null);
+  let replyingToUuid: string | null = $state(null);
 
   function changeVariant(index: number) {
     selectedVariantIndex = index;
@@ -74,14 +86,14 @@
   let showReportModal = $state(false);
   let showPlaylistModal = $state(false);
   let showCommentReportModal = $state(false);
-  let reportingCommentId = $state<number | null>(null);
+  let reportingCommentUuid = $state<string | null>(null);
 
-  function openCommentReportModal(id: number) {
+  function openCommentReportModal(uuid: string) {
     if (!authState.isAuthenticated) {
       goto(`/login?redirect=${encodeURIComponent(page.url.pathname)}`);
       return;
     }
-    reportingCommentId = id;
+    reportingCommentUuid = uuid;
     showCommentReportModal = true;
   }
 
@@ -126,8 +138,8 @@
         } else {
           toastState.addToast("Reaction removed", "info");
         }
-        currentSong.likes_count = response.data.likesCount;
-        currentSong.dislikes_count = response.data.dislikesCount;
+        currentSong.likes_count = response.data.data.likesCount;
+        currentSong.dislikes_count = response.data.data.dislikesCount;
       }
     } catch (error: any) {
       console.error("Error liking song:", error);
@@ -156,8 +168,8 @@
         } else {
           toastState.addToast("Reaction removed", "info");
         }
-        currentSong.likes_count = response.data.likesCount;
-        currentSong.dislikes_count = response.data.dislikesCount;
+        currentSong.likes_count = response.data.data.likesCount;
+        currentSong.dislikes_count = response.data.data.dislikesCount;
       }
     } catch (error: any) {
       console.error("Error disliking song:", error);
@@ -184,7 +196,7 @@
         response.status === 201
       ) {
         currentSong.is_favorited =
-          response.data.favorite || response.data.favorited;
+          response.data.data?.favorited ?? response.data.data?.favorite;
         if (currentSong.is_favorited) {
           toastState.addToast("Added to favorites!", "success");
         } else {
@@ -209,11 +221,27 @@
     showReportModal = true;
   }
 
-  async function fetchComments(songId: number) {
+  async function fetchComments(songId: string | number) {
     if (!songId) return;
     try {
       const resp = await api.get(`/songs/${songId}/comments`);
-      comments = resp.data.data;
+      comments = resp.data.data?.map(mapComment) || [];
+
+      // Auto-scroll to comment if hash exists
+      const hash = window.location.hash;
+      if (hash && hash.startsWith("#comment-")) {
+        const commentId = hash.slice(1);
+        setTimeout(() => {
+          const el = document.getElementById(commentId);
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+            el.classList.add("ring-2", "ring-primary", "rounded-xl", "bg-primary/5");
+            setTimeout(() => {
+              el.classList.remove("ring-2", "ring-primary", "bg-primary/5");
+            }, 3000);
+          }
+        }, 500);
+      }
     } catch (e) {
       console.error(e);
     }
@@ -231,7 +259,7 @@
         entity_type: "song",
         content: newCommentText,
       });
-      const newComment = resp.data.data;
+      const newComment = mapComment(resp.data.data);
       if (!newComment.user && authState.user) {
         newComment.user = authState.user;
       }
@@ -242,7 +270,7 @@
     }
   }
 
-  async function postReply(commentId: number) {
+  async function postReply(commentUuid: string) {
     if (!authState.isAuthenticated) {
       goto(`/login?redirect=${encodeURIComponent(page.url.pathname)}`);
       return;
@@ -253,24 +281,24 @@
         entity_id: currentSong.id,
         entity_type: "song",
         content: replyText,
-        parent_id: commentId,
+        parent_id: commentUuid,
       });
-      const newReply = resp.data.data;
+      const newReply = mapComment(resp.data.data);
       if (!newReply.user && authState.user) {
         newReply.user = authState.user;
       }
 
-      const parentIndex = (comments || []).findIndex((c) => c.id === commentId);
+      const parentIndex = (comments || []).findIndex((c) => c.uuid === commentUuid);
       if (parentIndex !== -1) {
         const parent = comments[parentIndex];
         const updatedReplies = parent.replies
-          ? [...parent.replies, newReply]
-          : [newReply];
+            ? [...parent.replies, newReply]
+            : [newReply];
 
         // Use Svelte 5 reactive reassignment to trigger update
         comments[parentIndex] = { ...parent, replies: updatedReplies };
       }
-      replyingToId = null;
+      replyingToUuid = null;
       replyText = "";
     } catch (e) {
       console.error(e);
@@ -298,17 +326,17 @@
     }, 100); // Sube el volumen cada 100ms
   }
 
-  async function deleteComment(id: number, parentId: number | null = null) {
+  async function deleteComment(uuid: string, parentUuid: string | null = null) {
     if (!confirm("Are you sure you want to delete this comment?")) return;
     try {
-      await api.delete(`/comments/${id}`);
-      if (parentId) {
-        const parent = comments.find((c) => c.id === parentId);
+      await api.delete(`/comments/${uuid}`);
+      if (parentUuid) {
+        const parent = comments.find((c) => c.uuid === parentUuid);
         if (parent && parent.replies) {
-          parent.replies = parent.replies.filter((r) => r.id !== id);
+          parent.replies = parent.replies.filter((r) => r.uuid !== uuid);
         }
       } else {
-        comments = comments.filter((c) => c.id !== id);
+        comments = comments.filter((c) => c.uuid !== uuid);
       }
     } catch (error) {
       console.error("Error deleting comment:", error);
@@ -316,8 +344,8 @@
   }
 
   async function toggleCommentLike(
-    commentId: number,
-    parentId: number | null = null,
+    commentUuid: string,
+    parentUuid: string | null = null,
   ) {
     if (!authState.isAuthenticated) {
       goto(`/login?redirect=${encodeURIComponent(page.url.pathname)}`);
@@ -328,13 +356,13 @@
       let parentIndex = -1;
       let replyIndex = -1;
 
-      if (parentId) {
-        const pIdx = comments.findIndex((c) => c.id === parentId);
+      if (parentUuid) {
+        const pIdx = comments.findIndex((c) => c.uuid === parentUuid);
         if (pIdx !== -1) {
           const parent = comments[pIdx];
           if (parent.replies) {
             const rIdx = parent.replies.findIndex(
-              (r: any) => r.id === commentId,
+              (r: any) => r.uuid === commentUuid,
             );
             if (rIdx !== -1) targetComment = parent.replies[rIdx];
             parentIndex = pIdx;
@@ -342,7 +370,7 @@
           }
         }
       } else {
-        parentIndex = comments.findIndex((c) => c.id === commentId);
+        parentIndex = comments.findIndex((c) => c.uuid === commentUuid);
         if (parentIndex !== -1) targetComment = comments[parentIndex];
       }
 
@@ -350,18 +378,18 @@
 
       const type = targetComment.is_liked ? 0 : 1;
       const res = await api.post("/interactions/reactions", {
-        entity_id: targetComment.id,
+        entity_id: targetComment.uuid,
         entity_type: "comment",
         type: type,
       });
 
       if (res.data.success || res.status === 200) {
-        targetComment.likes_count = res.data.likesCount;
-        targetComment.dislikes_count = res.data.dislikesCount;
+        targetComment.likes_count = res.data.data.likesCount;
+        targetComment.dislikes_count = res.data.data.dislikesCount;
         targetComment.is_liked = type === 1;
         targetComment.is_disliked = false;
 
-        if (parentId && parentIndex !== -1 && comments[parentIndex]?.replies) {
+        if (parentUuid && parentIndex !== -1 && comments[parentIndex]?.replies) {
           const p = comments[parentIndex];
           if (p.replies && replyIndex !== -1) {
             p.replies[replyIndex] = targetComment;
@@ -379,8 +407,8 @@
   }
 
   async function toggleCommentDislike(
-    commentId: number,
-    parentId: number | null = null,
+    commentUuid: string,
+    parentUuid: string | null = null,
   ) {
     if (!authState.isAuthenticated) {
       goto(`/login?redirect=${encodeURIComponent(page.url.pathname)}`);
@@ -391,15 +419,15 @@
       let parentIndex = -1;
       let replyIndex = -1;
 
-      if (parentId) {
-        parentIndex = comments.findIndex((c) => c.id === parentId);
+      if (parentUuid) {
+        parentIndex = comments.findIndex((c) => c.uuid === parentUuid);
         const parent = comments[parentIndex];
         if (parentIndex !== -1 && parent?.replies) {
-          replyIndex = parent.replies.findIndex((r: any) => r.id === commentId);
+          replyIndex = parent.replies.findIndex((r: any) => r.uuid === commentUuid);
           if (replyIndex !== -1) targetComment = parent.replies[replyIndex];
         }
       } else {
-        parentIndex = comments.findIndex((c) => c.id === commentId);
+        parentIndex = comments.findIndex((c) => c.uuid === commentUuid);
         if (parentIndex !== -1) targetComment = comments[parentIndex];
       }
 
@@ -407,18 +435,18 @@
 
       const type = targetComment.is_disliked ? 0 : -1;
       const res = await api.post("/interactions/reactions", {
-        entity_id: targetComment.id,
+        entity_id: targetComment.uuid,
         entity_type: "comment",
         type: type,
       });
 
       if (res.data.success || res.status === 200) {
-        targetComment.likes_count = res.data.likesCount;
-        targetComment.dislikes_count = res.data.dislikesCount;
+        targetComment.likes_count = res.data.data.likesCount;
+        targetComment.dislikes_count = res.data.data.dislikesCount;
         targetComment.is_liked = false;
         targetComment.is_disliked = type === -1;
 
-        if (parentId && parentIndex !== -1) {
+        if (parentUuid && parentIndex !== -1) {
           const parent = comments[parentIndex];
           if (parent?.replies && replyIndex !== -1) {
             parent.replies[replyIndex] = targetComment;
@@ -743,8 +771,7 @@
             {#if authState.isAuthenticated && authState.user}
               <img
                 src={authState.user.avatar_url ||
-                  "https://api.dicebear.com/7.x/notionists/svg?seed=" +
-                    authState.user.name}
+                  "/images/placeholders/default.jpg"}
                 alt="{authState.user.name}'s avatar"
                 title="{authState.user.name}'s avatar"
                 class="w-full h-full object-cover"
@@ -783,15 +810,14 @@
 
         <!-- Comments List -->
         <div class="space-y-4 pb-12">
-          {#each comments as comment (comment.id)}
-            <div class="flex gap-4">
+          {#each comments as comment (comment.uuid)}
+            <div class="flex gap-4" id="comment-{comment.uuid}">
               <div
                 class="w-10 h-10 rounded-full bg-white/10 overflow-hidden shrink-0"
               >
                 <img
                   src={comment.user?.avatar_url ||
-                    "https://api.dicebear.com/7.x/notionists/svg?seed=" +
-                      comment.user?.name}
+                    "/images/placeholders/default.jpg"}
                   alt={comment.user?.name}
                   title={comment.user?.name}
                   class="w-full h-full object-cover"
@@ -830,7 +856,7 @@
                 <div class="flex justify-between text-md">
                   <div class="flex gap-2 items-center">
                     <button
-                      onclick={() => toggleCommentLike(comment.id)}
+                      onclick={() => toggleCommentLike(comment.uuid)}
                       class="flex items-center gap-1 transition-colors {comment.is_liked
                         ? 'text-primary'
                         : 'text-white/20 hover:text-white'}"
@@ -849,7 +875,7 @@
                       {comment.likes_count || 0}
                     </button>
                     <button
-                      onclick={() => toggleCommentDislike(comment.id)}
+                      onclick={() => toggleCommentDislike(comment.uuid)}
                       class="flex items-center gap-1 transition-colors {comment.is_disliked
                         ? 'text-red-500'
                         : 'text-white/20 hover:text-white'}"
@@ -869,8 +895,8 @@
                     </button>
                     <button
                       onclick={() => {
-                        replyingToId =
-                          replyingToId === comment.id ? null : comment.id;
+                        replyingToUuid =
+                          replyingToUuid === comment.uuid ? null : comment.uuid;
                         replyText = "";
                       }}
                       class="text-white/40 hover:text-white tracking-wider transition-colors"
@@ -883,7 +909,7 @@
 
                   <div class="flex gap-2">
                     <button
-                      onclick={() => openCommentReportModal(comment.id)}
+                      onclick={() => openCommentReportModal(comment.uuid)}
                       class="shrink-0 p-1 hover:bg-white/10 text-white/40 hover:text-white transition-colors"
                       title="Report Comment"
                       aria-label="Report comment"
@@ -893,9 +919,9 @@
                       >
                     </button>
 
-                    {#if authState.user && (authState.user.id === comment.user_id || authState.isAdmin)}
+                    {#if authState.user && (authState.user.uuid === comment.user?.uuid || authState.isAdmin)}
                       <button
-                        onclick={() => deleteComment(comment.id)}
+                        onclick={() => deleteComment(comment.uuid)}
                         class="text-white/20 hover:text-red-400 transition-colors"
                         title="Delete Comment"
                         aria-label="Delete comment"
@@ -909,7 +935,7 @@
                 </div>
 
                 <!-- Inline Reply Input -->
-                {#if replyingToId === comment.id}
+                {#if replyingToUuid === comment.uuid}
                   <div class="flex gap-3 mt-3">
                     <div class="flex-1 flex gap-2 items-start">
                       <textarea
@@ -920,7 +946,7 @@
                         aria-label="Write a reply"
                       ></textarea>
                       <button
-                        onclick={() => postReply(comment.id)}
+                        onclick={() => postReply(comment.uuid)}
                         disabled={!replyText.trim()}
                         class="bg-white/10 hover:bg-primary text-white font-bold text-xs px-3 py-2 rounded-lg transition-colors disabled:opacity-50 shrink-0"
                         title="Send reply"
@@ -935,15 +961,14 @@
                 <!-- Replies List -->
                 {#if comment.replies && comment.replies.length > 0}
                   <div class="space-y-3 mt-3 border-l-2 border-white/5 pl-4">
-                    {#each comment.replies as reply (reply.id)}
-                      <div class="flex gap-3">
+                    {#each comment.replies as reply (reply.uuid)}
+                      <div class="flex gap-3" id="comment-{reply.uuid}">
                         <div
                           class="w-8 h-8 rounded-full bg-white/10 overflow-hidden shrink-0"
                         >
                           <img
                             src={reply.user?.avatar_url ||
-                              "https://api.dicebear.com/7.x/notionists/svg?seed=" +
-                                reply.user?.name}
+                              "/images/placeholders/default.jpg"}
                             alt={reply.user?.name}
                             title={reply.user?.name}
                             class="w-full h-full object-cover"
@@ -979,10 +1004,10 @@
                                 >
                               </div>
                               <div class="flex items-center gap-2">
-                                {#if authState.user && (authState.user.id === reply.user_id || authState.isAdmin)}
+                                {#if authState.user && (authState.user.uuid === reply.user?.uuid || authState.isAdmin)}
                                   <button
                                     onclick={() =>
-                                      deleteComment(reply.id, comment.id)}
+                                      deleteComment(reply.uuid, comment.uuid)}
                                     class="text-white/20 hover:text-red-400 transition-colors"
                                     title="Delete Reply"
                                     aria-label="Delete reply"
@@ -995,7 +1020,7 @@
                                 {/if}
                                 <button
                                   onclick={() =>
-                                    openCommentReportModal(reply.id)}
+                                    openCommentReportModal(reply.uuid)}
                                   class="text-white/20 hover:text-primary transition-colors"
                                   title="Report Reply"
                                   aria-label="Report reply"
@@ -1015,7 +1040,7 @@
                             <div class="flex gap-4 items-center mt-2">
                               <button
                                 onclick={() =>
-                                  toggleCommentLike(reply.id, comment.id)}
+                                  toggleCommentLike(reply.uuid, comment.uuid)}
                                 class="flex items-center gap-1 transition-colors {reply.is_liked
                                   ? 'text-primary'
                                   : 'text-white/20 hover:text-white'}"
@@ -1037,7 +1062,7 @@
                               </button>
                               <button
                                 onclick={() =>
-                                  toggleCommentDislike(reply.id, comment.id)}
+                                  toggleCommentDislike(reply.uuid, comment.uuid)}
                                 class="flex items-center gap-1 transition-colors {reply.is_disliked
                                   ? 'text-red-500'
                                   : 'text-white/20 hover:text-white'}"
@@ -1176,13 +1201,13 @@
   }}
 />
 
-{#if showCommentReportModal && reportingCommentId}
+{#if showCommentReportModal && reportingCommentUuid}
   <CommentReportModal
     show={showCommentReportModal}
-    commentId={reportingCommentId}
+    commentId={reportingCommentUuid}
     onClose={() => {
       showCommentReportModal = false;
-      reportingCommentId = null;
+      reportingCommentUuid = null;
     }}
   />
 {/if}

@@ -8,6 +8,7 @@ import (
 // Anime
 type Anime struct {
 	ID          uint64  `db:"id" json:"id"`
+	UUID        string  `db:"uuid" json:"uuid"`
 	Title       string  `db:"title" json:"title" form:"title"`
 	Slug        string  `db:"slug" json:"slug" form:"slug"`
 	Description *string `db:"description" json:"description" form:"description"`
@@ -68,6 +69,7 @@ type Format struct {
 
 type Studio struct {
 	ID        uint64    `db:"id" json:"id"`
+	UUID      string    `db:"uuid" json:"uuid"`
 	Name      string    `db:"name" json:"name"`
 	Slug      string    `db:"slug" json:"slug"`
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
@@ -83,6 +85,7 @@ type Studio struct {
 
 type Producer struct {
 	ID        uint64    `db:"id" json:"id"`
+	UUID      string    `db:"uuid" json:"uuid"`
 	Name      string    `db:"name" json:"name"`
 	Slug      string    `db:"slug" json:"slug"`
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
@@ -137,6 +140,7 @@ type ProducerFilters struct {
 // Repositories
 type AnimeRepository interface {
 	GetByID(ctx context.Context, id uint64) (*Anime, error)
+	GetByUUID(ctx context.Context, uuid string) (*Anime, error)
 	GetMany(ctx context.Context, ids []uint64) ([]Anime, error)
 	GetBySlug(ctx context.Context, slug string) (*Anime, error)
 	GetByAnilistID(ctx context.Context, anilistID int64) (*Anime, error)

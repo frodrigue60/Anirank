@@ -43,6 +43,10 @@ func (u *activityUsecase) GetFeed(ctx context.Context, limit, offset int) ([]dom
 	return activities, nil
 }
 
+func (u *activityUsecase) GetCount(ctx context.Context) (int, error) {
+	return u.activityRepo.Count(ctx)
+}
+
 func (u *activityUsecase) enrichActivity(ctx context.Context, activity *domain.Activity) {
 	// Populate compatibility Action field
 	activity.Action = activity.ActionType

@@ -265,8 +265,8 @@ func (u *AdminUsecase) BatchGenerateArtistAvatars(ctx context.Context, ids []uin
 	return u.contentAdmin.BatchGenerateArtistAvatars(ctx, ids, progress)
 }
 
-func (u *AdminUsecase) RecountArtistSongs(ctx context.Context, artistID *uint64, progress chan<- string) error {
-	return u.contentAdmin.RecountArtistSongs(ctx, artistID, progress)
+func (u *AdminUsecase) RecountArtistStats(ctx context.Context, artistID *uint64, progress chan<- string) error {
+	return u.contentAdmin.RecountArtistStats(ctx, artistID, progress)
 }
 
 func (u *AdminUsecase) UpdateArtist(ctx context.Context, a *domain.Artist, meta domain.AuditMetadata) error {

@@ -855,7 +855,7 @@ func (h *AdminHandler) MergeArtists(c *fiber.Ctx) error {
 	return nil
 }
 
-func (h *AdminHandler) RecountArtistSongs(c *fiber.Ctx) error {
+func (h *AdminHandler) RecountArtistStats(c *fiber.Ctx) error {
 	c.Set("Content-Type", "text/event-stream")
 	c.Set("Cache-Control", "no-cache")
 	c.Set("Connection", "keep-alive")
@@ -865,7 +865,7 @@ func (h *AdminHandler) RecountArtistSongs(c *fiber.Ctx) error {
 
 	go func() {
 		defer close(progress)
-		_ = h.usecase.RecountArtistSongs(context.Background(), nil, progress)
+		_ = h.usecase.RecountArtistStats(context.Background(), nil, progress)
 	}()
 
 	c.Context().SetBodyStreamWriter(func(w *bufio.Writer) {

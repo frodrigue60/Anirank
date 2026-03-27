@@ -332,7 +332,7 @@ func SetupPublicRoutes(app *fiber.App,
 	adminOnly.Post("/artists/:id/avatar/generate", adminHandler.GenerateArtistAvatar)
 	adminOnly.Post("/artists/generate-avatars", adminHandler.BatchGenerateArtistAvatars)
 	adminOnly.Post("/artists/merge", adminHandler.MergeArtists)
-	adminOnly.Post("/artists/recount-songs", adminHandler.RecountArtistSongs)
+	adminOnly.Post("/artists/recount-songs", adminHandler.RecountArtistStats)
 	adminOnly.Delete("/artists/:id", adminHandler.DeleteArtist)
 
 	// Taxonomy Operations

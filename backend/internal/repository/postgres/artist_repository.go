@@ -477,16 +477,16 @@ func (r *artistRepository) MergeDuplicateArtists(ctx context.Context, progress c
 		}
 	}
 
-	sendProgress("Recalculating song counters for all artists...")
-	if err := r.RecountSongs(ctx, nil); err != nil {
-		sendProgress(fmt.Sprintf("Warning: Failed to recount all songs: %v", err))
+	sendProgress("Recalculating statistics for all artists...")
+	if err := r.RecountArtistStats(ctx, nil); err != nil {
+		sendProgress(fmt.Sprintf("Warning: Failed to recount statistics: %v", err))
 	}
 
 	sendProgress("Artist merge complete!")
 	return nil
 }
 
-func (r *artistRepository) RecountSongs(ctx context.Context, artistID *uint64) error {
+func (r *artistRepository) RecountArtistStats(ctx context.Context, artistID *uint64) error {
 	// 1. Recount enabled songs
 	enabledQuery := `
 		UPDATE artists SET enabled_songs = sub.cnt
@@ -521,6 +521,16 @@ func (r *artistRepository) RecountSongs(ctx context.Context, artistID *uint64) e
 	_, err = r.db.ExecContext(ctx, disabledQuery, artistID)
 	if err != nil {
 		return fmt.Errorf("failed to recount disabled songs: %w", err)
+	}
+
+	// 3. Recount favorites_count
+	favQuery := `
+		UPDATE artists SET favorites_count = (SELECT COUNT(*) FROM artist_user WHERE artist_id = artists.id)
+		WHERE ($1::bigint IS NULL OR id = $1)
+	`
+	_, err = r.db.ExecContext(ctx, favQuery, artistID)
+	if err != nil {
+		return fmt.Errorf("failed to recount favorites: %w", err)
 	}
 
 	return nil

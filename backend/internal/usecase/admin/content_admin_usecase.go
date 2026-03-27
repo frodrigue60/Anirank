@@ -2263,7 +2263,7 @@ func (u *ContentAdminUsecase) ToggleVariantStatus(ctx context.Context, id uint64
 	return nil
 }
 
-func (u *ContentAdminUsecase) RecountArtistSongs(ctx context.Context, artistID *uint64, progress chan<- string) error {
+func (u *ContentAdminUsecase) RecountArtistStats(ctx context.Context, artistID *uint64, progress chan<- string) error {
 	sendProgress := func(msg string) {
 		if progress != nil {
 			progress <- msg
@@ -2271,12 +2271,12 @@ func (u *ContentAdminUsecase) RecountArtistSongs(ctx context.Context, artistID *
 	}
 
 	if artistID != nil {
-		sendProgress(fmt.Sprintf("Recalculating song counters for artist ID %d...", *artistID))
+		sendProgress(fmt.Sprintf("Recalculating statistics for artist ID %d...", *artistID))
 	} else {
-		sendProgress("Recalculating song counters for ALL artists...")
+		sendProgress("Recalculating statistics for ALL artists...")
 	}
 
-	if err := u.artistRepo.RecountSongs(ctx, artistID); err != nil {
+	if err := u.artistRepo.RecountArtistStats(ctx, artistID); err != nil {
 		sendProgress(fmt.Sprintf("Error: %v", err))
 		return err
 	}

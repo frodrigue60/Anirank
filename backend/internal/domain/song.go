@@ -176,6 +176,7 @@ type ArtistRepository interface {
 	CountFavoritesByUserID(ctx context.Context, userID uint64) (int, error)
 	GetFavoritesByUserID(ctx context.Context, userID uint64, limit, offset int) ([]Artist, error)
 	GetFeatured(ctx context.Context, limit int) ([]Artist, error)
+	GetMany(ctx context.Context, ids []uint64) ([]Artist, error)
 
 	// Admin CRUD
 	Create(ctx context.Context, artist *Artist) error
@@ -183,6 +184,10 @@ type ArtistRepository interface {
 	UpdateAvatar(ctx context.Context, id uint64, avatar string) error
 	Delete(ctx context.Context, id uint64) error
 	ToggleStatus(ctx context.Context, id uint64) error
+
+	// Merging
+	MergeDuplicateArtists(ctx context.Context, progress chan<- string) error
+	RecountSongs(ctx context.Context, artistID *uint64) error
 
 	// Sitemap
 	GetPublicSlugs(ctx context.Context) ([]SitemapItem, error)

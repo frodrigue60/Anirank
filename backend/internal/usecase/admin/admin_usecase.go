@@ -257,8 +257,16 @@ func (u *AdminUsecase) CreateArtist(ctx context.Context, a *domain.Artist, meta 
 	return nil
 }
 
-func (u *AdminUsecase) GenerateArtistAvatar(ctx context.Context, artistID uint64) error {
-	return u.contentAdmin.GenerateArtistAvatar(ctx, artistID)
+func (u *AdminUsecase) GenerateArtistAvatar(ctx context.Context, artistID uint64, force bool) error {
+	return u.contentAdmin.GenerateArtistAvatar(ctx, artistID, force)
+}
+
+func (u *AdminUsecase) BatchGenerateArtistAvatars(ctx context.Context, ids []uint64, progress chan<- string) error {
+	return u.contentAdmin.BatchGenerateArtistAvatars(ctx, ids, progress)
+}
+
+func (u *AdminUsecase) RecountArtistSongs(ctx context.Context, artistID *uint64, progress chan<- string) error {
+	return u.contentAdmin.RecountArtistSongs(ctx, artistID, progress)
 }
 
 func (u *AdminUsecase) UpdateArtist(ctx context.Context, a *domain.Artist, meta domain.AuditMetadata) error {
@@ -281,6 +289,10 @@ func (u *AdminUsecase) DeleteArtist(ctx context.Context, id uint64, meta domain.
 
 func (u *AdminUsecase) ToggleArtistStatus(ctx context.Context, id uint64, meta domain.AuditMetadata) error {
 	return u.contentAdmin.ToggleArtistStatus(ctx, id, meta)
+}
+
+func (u *AdminUsecase) MergeDuplicateArtists(ctx context.Context, progress chan<- string) error {
+	return u.contentAdmin.MergeDuplicateArtists(ctx, progress)
 }
 
 func (u *AdminUsecase) UploadArtistAvatar(ctx context.Context, artistID uint64, file io.Reader, size int64, contentType string) error {

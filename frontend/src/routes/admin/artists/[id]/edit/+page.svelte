@@ -318,6 +318,7 @@
             </div>
 
             <div class="w-full space-y-3">
+              <!-- generate avatares for all artists-->
               <button
                 onclick={generateAvatar}
                 disabled={isGenerating || isSubmitting}
@@ -337,7 +338,8 @@
                 Generate with Magic
               </button>
               <p class="text-gray-500 text-xs text-center">
-                Uses initials-based generation for a clean, consistent look.
+                Tries to fetch the official avatar from AniList. If not found,
+                it keeps the current one or uses a placeholder.
               </p>
             </div>
           </div>

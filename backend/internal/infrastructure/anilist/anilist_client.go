@@ -90,6 +90,28 @@ type Media struct {
 	} `json:"externalLinks"`
 }
 
+type Staff struct {
+	ID   int `json:"id"`
+	Name struct {
+		Full   string `json:"full"`
+		Native string `json:"native"`
+	} `json:"name"`
+	Image struct {
+		Large string `json:"large"`
+	} `json:"image"`
+}
+
+type StaffResponse struct {
+	Data struct {
+		Page struct {
+			Staff []Staff `json:"staff"`
+		} `json:"Page"`
+	} `json:"data"`
+	Errors []struct {
+		Message string `json:"message"`
+	} `json:"errors"`
+}
+
 type Title struct {
 	Romaji  string `json:"romaji"`
 	English string `json:"english"`
@@ -139,6 +161,23 @@ query ($page: Int, $perPage: Int, $search: String, $format: MediaFormat) {
 			}
 		}
 	}
+}
+`
+
+const searchStaffQuery = `
+query ($search: String) {
+  Page(page: 1, perPage: 5) {
+    staff(search: $search) {
+      id
+      name {
+        full
+        native
+      }
+      image {
+        large
+      }
+    }
+  }
 }
 `
 
@@ -461,4 +500,173 @@ func (c *Client) GetViewer(ctx context.Context, accessToken string) (*AnilistUse
 	}
 
 	return &result.Data.Viewer, nil
+}
+
+// SearchStaff searches staff on Anilist by name
+func (c *Client) SearchStaff(ctx context.Context, search string) ([]Staff, error) {
+	variables := map[string]interface{}{
+		"search": search,
+	}
+
+	query := GraphQLQuery{
+		Query:     searchStaffQuery,
+		Variables: variables,
+	}
+
+	bodyBytes, err := json.Marshal(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal query: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", AnilistGraphQLEndpoint, bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusTooManyRequests {
+		return nil, fmt.Errorf("rate limit exceeded (429)")
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("anilist api returned status: %d", resp.StatusCode)
+	}
+
+	var staffResp StaffResponse
+	if err := json.NewDecoder(resp.Body).Decode(&staffResp); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	if len(staffResp.Errors) > 0 {
+		return nil, fmt.Errorf("anilist api error: %s", staffResp.Errors[0].Message)
+	}
+
+	return staffResp.Data.Page.Staff, nil
+}
+
+// SearchStaffBatch searches multiple staff on Anilist by names using GraphQL aliases
+func (c *Client) SearchStaffBatch(ctx context.Context, names []string) (map[string][]Staff, error) {
+	if len(names) == 0 {
+		return make(map[string][]Staff), nil
+	}
+
+	// 1. Build the dynamic GraphQL query with aliases INSIDE a single Page query
+	var queryBuilder strings.Builder
+	queryBuilder.WriteString("query (")
+	for i := 0; i < len(names); i++ {
+		if i > 0 {
+			queryBuilder.WriteString(", ")
+		}
+		fmt.Fprintf(&queryBuilder, "$n%d: String", i)
+	}
+	queryBuilder.WriteString(") {\n")
+	queryBuilder.WriteString("  Page(page: 1, perPage: 20) {\n")
+
+	for i := 0; i < len(names); i++ {
+		fmt.Fprintf(&queryBuilder, "    s%d: staff(search: $n%d) { id name { full native } image { large } }\n", i, i)
+	}
+	queryBuilder.WriteString("  }\n")
+	queryBuilder.WriteString("}")
+
+	variables := make(map[string]interface{})
+	for i, name := range names {
+		variables[fmt.Sprintf("n%d", i)] = name
+	}
+
+	payload := GraphQLQuery{
+		Query:     queryBuilder.String(),
+		Variables: variables,
+	}
+
+	bodyBytes, err := json.Marshal(payload)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal batch query: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", AnilistGraphQLEndpoint, bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create batch request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("batch request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusTooManyRequests {
+		return nil, fmt.Errorf("rate limit exceeded (429)")
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("anilist batch api returned status: %d", resp.StatusCode)
+	}
+
+	// 2. Parse the dynamic aliased response
+	var result struct {
+		Data struct {
+			Page map[string]interface{} `json:"Page"`
+		} `json:"data"`
+		Errors []struct {
+			Message string `json:"message"`
+		} `json:"errors"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("failed to decode batch response: %w", err)
+	}
+
+	if len(result.Errors) > 0 {
+		return nil, fmt.Errorf("anilist batch api error: %s", result.Errors[0].Message)
+	}
+
+	// 3. Map back to names
+	finalResult := make(map[string][]Staff)
+	pageData := result.Data.Page
+
+	for i, name := range names {
+		alias := fmt.Sprintf("s%d", i)
+		if val, ok := pageData[alias]; ok && val != nil {
+			staffList, ok := val.([]interface{})
+			if !ok {
+				continue
+			}
+
+			var staffs []Staff
+			for _, s := range staffList {
+				sMap, ok := s.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				
+				var st Staff
+				st.ID = int(sMap["id"].(float64))
+				
+				nameMap := sMap["name"].(map[string]interface{})
+				st.Name.Full = nameMap["full"].(string)
+				if n, ok := nameMap["native"].(string); ok {
+					st.Name.Native = n
+				}
+
+				imgMap := sMap["image"].(map[string]interface{})
+				st.Image.Large = imgMap["large"].(string)
+				
+				staffs = append(staffs, st)
+			}
+			finalResult[name] = staffs
+		}
+	}
+
+	return finalResult, nil
 }

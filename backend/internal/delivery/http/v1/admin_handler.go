@@ -3,6 +3,9 @@ package v1
 import (
 	"anirank/api/internal/domain"
 	"anirank/api/internal/usecase/admin"
+	"bufio"
+	"context"
+	"fmt"
 	"math"
 	"strconv"
 	"strings"
@@ -791,10 +794,88 @@ func (h *AdminHandler) GenerateArtistAvatar(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	if err := h.usecase.GenerateArtistAvatar(c.Context(), id); err != nil {
+	if err := h.usecase.GenerateArtistAvatar(c.Context(), id, true); err != nil {
 		return err
 	}
 	return c.JSON(fiber.Map{"message": "Avatar generated!"})
+}
+
+func (h *AdminHandler) BatchGenerateArtistAvatars(c *fiber.Ctx) error {
+	var body struct {
+		ArtistIDs []uint64 `json:"artist_ids"`
+	}
+	if err := c.BodyParser(&body); err != nil {
+		// Ignore body parser errors if no body is provided (all artists)
+		body.ArtistIDs = []uint64{}
+	}
+
+	c.Set("Content-Type", "text/event-stream")
+	c.Set("Cache-Control", "no-cache")
+	c.Set("Connection", "keep-alive")
+	c.Set("Transfer-Encoding", "chunked")
+
+	progress := make(chan string)
+
+	go func() {
+		defer close(progress)
+		// Use Background() instead of c.Context() because Fiber context is recycled
+		_ = h.usecase.BatchGenerateArtistAvatars(context.Background(), body.ArtistIDs, progress)
+	}()
+
+	c.Context().SetBodyStreamWriter(func(w *bufio.Writer) {
+		for msg := range progress {
+			fmt.Fprintf(w, "data: %s\n\n", msg)
+			w.Flush()
+		}
+	})
+
+	return nil
+}
+
+func (h *AdminHandler) MergeArtists(c *fiber.Ctx) error {
+	c.Set("Content-Type", "text/event-stream")
+	c.Set("Cache-Control", "no-cache")
+	c.Set("Connection", "keep-alive")
+	c.Set("Transfer-Encoding", "chunked")
+
+	progress := make(chan string)
+
+	go func() {
+		defer close(progress)
+		_ = h.usecase.MergeDuplicateArtists(context.Background(), progress)
+	}()
+
+	c.Context().SetBodyStreamWriter(func(w *bufio.Writer) {
+		for msg := range progress {
+			fmt.Fprintf(w, "data: %s\n\n", msg)
+			w.Flush()
+		}
+	})
+
+	return nil
+}
+
+func (h *AdminHandler) RecountArtistSongs(c *fiber.Ctx) error {
+	c.Set("Content-Type", "text/event-stream")
+	c.Set("Cache-Control", "no-cache")
+	c.Set("Connection", "keep-alive")
+	c.Set("Transfer-Encoding", "chunked")
+
+	progress := make(chan string)
+
+	go func() {
+		defer close(progress)
+		_ = h.usecase.RecountArtistSongs(context.Background(), nil, progress)
+	}()
+
+	c.Context().SetBodyStreamWriter(func(w *bufio.Writer) {
+		for msg := range progress {
+			fmt.Fprintf(w, "data: %s\n\n", msg)
+			w.Flush()
+		}
+	})
+
+	return nil
 }
 
 func (h *AdminHandler) UpdateArtist(c *fiber.Ctx) error {

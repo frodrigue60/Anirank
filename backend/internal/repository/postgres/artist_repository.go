@@ -329,6 +329,38 @@ func (r *artistRepository) GetFeatured(ctx context.Context, limit int) ([]domain
 	return artists, err
 }
 
+func (r *artistRepository) GetMany(ctx context.Context, ids []uint64) ([]domain.Artist, error) {
+	var artists []domain.Artist
+	if len(ids) == 0 {
+		return []domain.Artist{}, nil
+	}
+
+	query, args, err := sqlx.In(`
+		SELECT 
+			id, uuid, name, name_jp, slug, created_at, updated_at, avatar, status, favorites_count, animethemes_id,
+			(SELECT COUNT(*) FROM artist_song asong WHERE asong.artist_id = artists.id) as songs_count,
+			(SELECT ani.banner 
+			 FROM animes ani
+			 JOIN songs s ON s.anime_id = ani.id
+			 JOIN artist_song asong ON asong.song_id = s.id
+			 WHERE asong.artist_id = artists.id
+			 ORDER BY s.created_at DESC
+			 LIMIT 1) as banner
+		FROM artists
+		WHERE id IN (?)
+	`, ids)
+	if err != nil {
+		return nil, err
+	}
+
+	query = r.db.Rebind(query)
+	err = r.db.SelectContext(ctx, &artists, query, args...)
+	if artists == nil {
+		artists = []domain.Artist{}
+	}
+	return artists, err
+}
+
 func (r *artistRepository) Search(ctx context.Context, term string, limit int) ([]domain.Artist, error) {
 	var artists []domain.Artist
 	query := `
@@ -350,4 +382,146 @@ func (r *artistRepository) GetPublicSlugs(ctx context.Context) ([]domain.Sitemap
 	query := `SELECT slug as loc, updated_at as lastmod FROM artists WHERE status = true`
 	err := r.db.SelectContext(ctx, &items, query)
 	return items, err
+}
+
+func (r *artistRepository) MergeDuplicateArtists(ctx context.Context, progress chan<- string) error {
+	sendProgress := func(msg string) {
+		if progress != nil {
+			progress <- msg
+		}
+	}
+
+	// 1. Find duplicate artist names
+	var duplicates []struct {
+		Name  string `db:"name"`
+		Count int    `db:"count"`
+	}
+	err := r.db.SelectContext(ctx, &duplicates, "SELECT name, COUNT(*) as count FROM artists GROUP BY name HAVING COUNT(*) > 1")
+	if err != nil {
+		return fmt.Errorf("failed to query duplicates: %w", err)
+	}
+
+	sendProgress(fmt.Sprintf("Found %d duplicate artist names. Starting merge...", len(duplicates)))
+
+	for _, d := range duplicates {
+		sendProgress(fmt.Sprintf("Processing artist: %s", d.Name))
+
+		// Get all IDs for this name, ordered by ID (smallest first as master)
+		var ids []uint64
+		err = r.db.SelectContext(ctx, &ids, "SELECT id FROM artists WHERE name = $1 ORDER BY id ASC", d.Name)
+		if err != nil {
+			sendProgress(fmt.Sprintf("  Error fetching IDs for %s: %v", d.Name, err))
+			continue
+		}
+
+		if len(ids) < 2 {
+			continue
+		}
+
+		masterID := ids[0]
+		otherIDs := ids[1:]
+
+		for _, otherID := range otherIDs {
+			sendProgress(fmt.Sprintf("  Merging ID %d into %d...", otherID, masterID))
+
+			// Start Tx
+			tx, err := r.db.BeginTxx(ctx, nil)
+			if err != nil {
+				sendProgress(fmt.Sprintf("    Failed to start transaction: %v", err))
+				continue
+			}
+
+			// Merge artist_song
+			// Delete rows from other that already exist for master to avoid unique constraint violations
+			_, err = tx.ExecContext(ctx, "DELETE FROM artist_song WHERE artist_id = $1 AND song_id IN (SELECT song_id FROM artist_song WHERE artist_id = $2)", otherID, masterID)
+			if err != nil {
+				sendProgress(fmt.Sprintf("    Error cleaning artist_song for %d: %v", otherID, err))
+				tx.Rollback()
+				continue
+			}
+			// Update remaining rows
+			_, err = tx.ExecContext(ctx, "UPDATE artist_song SET artist_id = $1 WHERE artist_id = $2", masterID, otherID)
+			if err != nil {
+				sendProgress(fmt.Sprintf("    Error updating artist_song for %d: %v", otherID, err))
+				tx.Rollback()
+				continue
+			}
+
+			// Merge artist_user (favorites)
+			_, err = tx.ExecContext(ctx, "DELETE FROM artist_user WHERE artist_id = $1 AND user_id IN (SELECT user_id FROM artist_user WHERE artist_id = $2)", otherID, masterID)
+			if err != nil {
+				sendProgress(fmt.Sprintf("    Error cleaning artist_user for %d: %v", otherID, err))
+				tx.Rollback()
+				continue
+			}
+			_, err = tx.ExecContext(ctx, "UPDATE artist_user SET artist_id = $1 WHERE artist_id = $2", masterID, otherID)
+			if err != nil {
+				sendProgress(fmt.Sprintf("    Error updating artist_user for %d: %v", otherID, err))
+				tx.Rollback()
+				continue
+			}
+
+			// Delete the duplicate artist
+			_, err = tx.ExecContext(ctx, "DELETE FROM artists WHERE id = $1", otherID)
+			if err != nil {
+				sendProgress(fmt.Sprintf("    Error deleting artist %d: %v", otherID, err))
+				tx.Rollback()
+				continue
+			}
+
+			if err := tx.Commit(); err != nil {
+				sendProgress(fmt.Sprintf("    Failed to commit transaction: %v", err))
+			} else {
+				sendProgress(fmt.Sprintf("    Successfully merged ID %d", otherID))
+			}
+		}
+	}
+
+	sendProgress("Recalculating song counters for all artists...")
+	if err := r.RecountSongs(ctx, nil); err != nil {
+		sendProgress(fmt.Sprintf("Warning: Failed to recount all songs: %v", err))
+	}
+
+	sendProgress("Artist merge complete!")
+	return nil
+}
+
+func (r *artistRepository) RecountSongs(ctx context.Context, artistID *uint64) error {
+	// 1. Recount enabled songs
+	enabledQuery := `
+		UPDATE artists SET enabled_songs = sub.cnt
+		FROM (
+			SELECT a.id, COALESCE(COUNT(s.id), 0) AS cnt
+			FROM artists a
+			LEFT JOIN artist_song asng ON asng.artist_id = a.id
+			LEFT JOIN songs s ON s.id = asng.song_id AND s.status = true
+			WHERE ($1::bigint IS NULL OR a.id = $1)
+			GROUP BY a.id
+		) sub
+		WHERE artists.id = sub.id AND ($1::bigint IS NULL OR artists.id = $1)
+	`
+	_, err := r.db.ExecContext(ctx, enabledQuery, artistID)
+	if err != nil {
+		return fmt.Errorf("failed to recount enabled songs: %w", err)
+	}
+
+	// 2. Recount disabled songs
+	disabledQuery := `
+		UPDATE artists SET disabled_songs = sub.cnt
+		FROM (
+			SELECT a.id, COALESCE(COUNT(s.id), 0) AS cnt
+			FROM artists a
+			LEFT JOIN artist_song asng ON asng.artist_id = a.id
+			LEFT JOIN songs s ON s.id = asng.song_id AND s.status = false
+			WHERE ($1::bigint IS NULL OR a.id = $1)
+			GROUP BY a.id
+		) sub
+		WHERE artists.id = sub.id AND ($1::bigint IS NULL OR artists.id = $1)
+	`
+	_, err = r.db.ExecContext(ctx, disabledQuery, artistID)
+	if err != nil {
+		return fmt.Errorf("failed to recount disabled songs: %w", err)
+	}
+
+	return nil
 }

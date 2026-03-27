@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import api from "$lib/api";
+  import { getAuthToken } from "$lib/state/auth.svelte";
   import { toastState } from "$lib/state/toast.svelte";
 
   let { data } = $props();
@@ -38,9 +39,14 @@
       // Since 'artists' is $derived(data.artists), we can't mutate it directly.
       // However, we can use goto to refresh or just let the user see it on next load.
       // Better: use a local state for the list if we want immediate feedback.
-      goto(window.location.pathname + window.location.search, { invalidateAll: true });
+      goto(window.location.pathname + window.location.search, {
+        invalidateAll: true,
+      });
     } catch (err: any) {
-      toastState.addToast(err.response?.data?.message || "Failed to update status", "error");
+      toastState.addToast(
+        err.response?.data?.message || "Failed to update status",
+        "error",
+      );
     }
   }
 
@@ -49,9 +55,14 @@
     try {
       await api.delete(`/admin/artists/${id}`);
       toastState.addToast("Artist deleted successfully", "success");
-      goto(window.location.pathname + window.location.search, { invalidateAll: true });
+      goto(window.location.pathname + window.location.search, {
+        invalidateAll: true,
+      });
     } catch (err: any) {
-      toastState.addToast(err.response?.data?.message || "Failed to delete artist", "error");
+      toastState.addToast(
+        err.response?.data?.message || "Failed to delete artist",
+        "error",
+      );
     }
   }
 
@@ -73,34 +84,319 @@
       selectedIds = [...selectedIds, id];
     }
   }
+
+  let generatingAvatars = $state(false);
+  let mergingArtists = $state(false);
+  let recountingSongs = $state(false);
+  let progressMessage = $state("");
+
+  async function generateAvatares() {
+    if (
+      !confirm(
+        "Are you sure you want to generate avatars for all artists without one? This will search AniList and fallback to UI-Avatars.",
+      )
+    )
+      return;
+
+    generatingAvatars = true;
+    progressMessage = "Connecting to generation stream...";
+    try {
+      const response = await fetch(
+        `${api.defaults.baseURL}/admin/artists/generate-avatars`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${getAuthToken()}`,
+          },
+          body: JSON.stringify({
+            artist_ids: selectedIds,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          const messages = chunk.split("\n\n");
+
+          for (const msg of messages) {
+            if (msg.startsWith("data: ")) {
+              progressMessage = msg.replace("data: ", "");
+            }
+          }
+        }
+      }
+
+      toastState.addToast("Batch avatar generation completed", "success");
+      selectedIds = [];
+      // Refresh list to show new avatars
+      goto(window.location.pathname + window.location.search, {
+        invalidateAll: true,
+      });
+    } catch (err: any) {
+      console.error(err);
+      toastState.addToast(err.message || "Failed to start generation", "error");
+    } finally {
+      generatingAvatars = false;
+      progressMessage = "";
+    }
+  }
+
+  async function mergeArtists() {
+    if (
+      !confirm(
+        "Are you sure you want to merge artists with duplicate names? This process will move all songs and favorites to a single record and delete the duplicates. This action is irreversible.",
+      )
+    )
+      return;
+
+    mergingArtists = true;
+    progressMessage = "Connecting to merge stream...";
+    try {
+      const response = await fetch(
+        `${api.defaults.baseURL}/admin/artists/merge`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${getAuthToken()}`,
+          },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          const messages = chunk.split("\n\n");
+
+          for (const msg of messages) {
+            if (msg.startsWith("data: ")) {
+              progressMessage = msg.replace("data: ", "");
+            }
+          }
+        }
+      }
+
+      toastState.addToast("Artist merge completed successfully", "success");
+      // Refresh to show updated counts
+      goto(window.location.pathname + window.location.search, {
+        invalidateAll: true,
+      });
+    } catch (err: any) {
+      console.error(err);
+      toastState.addToast(err.message || "Failed to complete merge", "error");
+    } finally {
+      mergingArtists = false;
+      progressMessage = "";
+    }
+  }
+
+  async function recountSongs() {
+    if (
+      !confirm(
+        "Are you sure you want to recalculate song counters for all artists? This might take a few moments.",
+      )
+    )
+      return;
+
+    recountingSongs = true;
+    progressMessage = "Connecting to recalculation stream...";
+    try {
+      const response = await fetch(
+        `${api.defaults.baseURL}/admin/artists/recount-songs`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${getAuthToken()}`,
+          },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          const messages = chunk.split("\n\n");
+
+          for (const msg of messages) {
+            if (msg.startsWith("data: ")) {
+              progressMessage = msg.replace("data: ", "");
+            }
+          }
+        }
+      }
+
+      toastState.addToast("Artist song counters recalculated", "success");
+      // Refresh to show updated counts
+      goto(window.location.pathname + window.location.search, {
+        invalidateAll: true,
+      });
+    } catch (err: any) {
+      console.error(err);
+      toastState.addToast(err.message || "Failed to recount songs", "error");
+    } finally {
+      recountingSongs = false;
+      progressMessage = "";
+    }
+  }
 </script>
 
 <svelte:head>
   <title>Artists Catalog | Admin</title>
 </svelte:head>
 
-<div class="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-  <div>
-    <h1 class="text-3xl font-bold tracking-tight text-white mb-1">Artists Catalog</h1>
-    <p class="text-gray-400">Manage musical artists, bands, and their information.</p>
+<div
+  class="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
+>
+  <div class="me-auto">
+    <h1 class="text-3xl font-bold tracking-tight text-white mb-1">
+      Artists Catalog
+    </h1>
+    <p class="text-gray-400">
+      Manage musical artists, bands, and their information.
+    </p>
   </div>
+  <!-- recount songs -->
+  <button
+    onclick={recountSongs}
+    disabled={recountingSongs}
+    class="px-4 py-2 bg-anirank-primary hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-xl transition-colors shadow-lg shadow-anirank-primary/20 flex items-center gap-2"
+  >
+    {#if recountingSongs}
+      <svg class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
+        <circle
+          class="opacity-25"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          stroke-width="4"
+        ></circle>
+        <path
+          class="opacity-75"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+        ></path>
+      </svg>
+      Recounting...
+    {:else}
+      Recount Songs
+    {/if}
+  </button>
+  <!-- merge artists -->
+  <button
+    onclick={mergeArtists}
+    disabled={mergingArtists}
+    class="px-4 py-2 bg-anirank-primary hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-xl transition-colors shadow-lg shadow-anirank-primary/20 flex items-center gap-2"
+  >
+    {#if mergingArtists}
+      <svg class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
+        <circle
+          class="opacity-25"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          stroke-width="4"
+        ></circle>
+        <path
+          class="opacity-75"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+        ></path>
+      </svg>
+      Merging...
+    {:else}
+      Merge Artists
+    {/if}
+  </button>
 
+  <!-- generate avatares for all artists -->
+  <button
+    onclick={generateAvatares}
+    disabled={generatingAvatars}
+    class="px-4 py-2 bg-anirank-primary hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-xl transition-colors shadow-lg shadow-anirank-primary/20 flex items-center gap-2"
+  >
+    {#if generatingAvatars}
+      <svg class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
+        <circle
+          class="opacity-25"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          stroke-width="4"
+        ></circle>
+        <path
+          class="opacity-75"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+        ></path>
+      </svg>
+      Generating...
+    {:else if selectedIds.length > 0}
+      Generate for {selectedIds.length} Selected
+    {:else}
+      Generate Avatares
+    {/if}
+  </button>
+  <!-- create new artist -->
   <a
     href="/admin/artists/create"
     class="px-4 py-2 bg-anirank-primary hover:bg-blue-600 text-white font-medium rounded-xl transition-colors shadow-lg shadow-anirank-primary/20 flex items-center gap-2"
   >
-    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-    </svg>
-    New Artist
+    + New Artist
   </a>
 </div>
 
 <!-- Filters & Search -->
-<div class="bg-anirank-card border border-white/5 rounded-2xl p-4 mb-6 flex flex-col sm:flex-row gap-4">
+<div
+  class="bg-anirank-card border border-white/5 rounded-2xl p-4 mb-6 flex flex-col sm:flex-row gap-4"
+>
   <div class="relative flex-1">
-    <svg class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+    <svg
+      class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+      />
     </svg>
     <input
       type="text"
@@ -118,6 +414,47 @@
   </button>
 </div>
 
+{#if generatingAvatars || mergingArtists}
+  <div
+    class="mt-6 p-4 bg-anirank-primary/10 border border-anirank-primary/20 rounded-xl animate-in fade-in slide-in-from-top-2 mb-6"
+  >
+    <div class="flex items-center gap-3">
+      <div class="shrink-0">
+        <svg
+          class="animate-spin h-5 w-5 text-anirank-primary"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            class="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            stroke-width="4"
+          ></circle>
+          <path
+            class="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          ></path>
+        </svg>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-medium text-white truncate">
+          {progressMessage}
+        </p>
+      </div>
+    </div>
+    <!-- Simple CSS progress bar (pulse) -->
+    <div class="mt-3 w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
+      <div
+        class="bg-anirank-primary h-full rounded-full animate-pulse w-full"
+      ></div>
+    </div>
+  </div>
+{/if}
+
 <!-- Table -->
 <div class="bg-anirank-card border border-white/5 rounded-2xl overflow-hidden">
   <div class="p-4 border-b border-white/5 flex items-center justify-between">
@@ -129,14 +466,17 @@
 
   <div class="overflow-x-auto">
     <table class="w-full text-left text-sm text-gray-300">
-      <thead class="text-xs text-gray-400 uppercase bg-white/5 border-b border-white/5">
+      <thead
+        class="text-xs text-gray-400 uppercase bg-white/5 border-b border-white/5"
+      >
         <tr>
           <th class="px-6 py-4 font-semibold">
             <input
               type="checkbox"
               class="rounded border-white/10 bg-white/5 checked:bg-anirank-primary focus:ring-anirank-primary transition-all cursor-pointer"
               onchange={toggleSelectAll}
-              checked={selectedIds.length === artists.length && artists.length > 0}
+              checked={selectedIds.length === artists.length &&
+                artists.length > 0}
             />
           </th>
           <th class="px-6 py-4 font-semibold">Avatar</th>
@@ -158,20 +498,41 @@
               />
             </td>
             <td class="px-6 py-4">
-              <div class="w-10 h-10 rounded-full bg-white/5 overflow-hidden border border-white/10">
+              <div
+                class="w-10 h-10 rounded-full bg-white/5 overflow-hidden border border-white/10"
+              >
                 {#if artist.avatar_url}
-                  <img src={artist.avatar_url} alt={artist.name} class="w-full h-full object-cover" />
+                  <img
+                    src={artist.avatar_url}
+                    alt={artist.name}
+                    class="w-full h-full object-cover"
+                  />
                 {:else}
-                  <div class="w-full h-full flex items-center justify-center text-gray-600">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  <div
+                    class="w-full h-full flex items-center justify-center text-gray-600"
+                  >
+                    <svg
+                      class="w-6 h-6"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      />
                     </svg>
                   </div>
                 {/if}
               </div>
             </td>
             <td class="px-6 py-4">
-              <div class="font-medium text-white line-clamp-1" title={artist.name}>
+              <div
+                class="font-medium text-white line-clamp-1"
+                title={artist.name}
+              >
                 {artist.name}
               </div>
               {#if artist.name_jp}
@@ -179,7 +540,9 @@
               {/if}
             </td>
             <td class="px-6 py-4">
-              <span class="text-blue-400 text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-400/10 border border-blue-400/20">
+              <span
+                class="text-blue-400 text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-400/10 border border-blue-400/20"
+              >
                 {artist.songs_count} themes
               </span>
             </td>
@@ -221,7 +584,9 @@
           </tr>
         {:else}
           <tr>
-            <td colspan="6" class="px-6 py-12 text-center text-gray-500">No artists found.</td>
+            <td colspan="6" class="px-6 py-12 text-center text-gray-500"
+              >No artists found.</td
+            >
           </tr>
         {/each}
       </tbody>
@@ -230,7 +595,9 @@
 
   <!-- Pagination -->
   {#if pagination?.last_page > 1}
-    <div class="px-6 py-4 border-t border-white/5 flex items-center justify-between">
+    <div
+      class="px-6 py-4 border-t border-white/5 flex items-center justify-between"
+    >
       <div class="text-sm text-gray-400">
         Showing <span class="font-medium text-white">{artists.length}</span> items
       </div>
@@ -241,19 +608,41 @@
           aria-label="Previous Page"
           class="p-2 rounded-lg border border-white/10 text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/5 transition-colors"
         >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          <svg
+            class="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M15 19l-7-7 7-7"
+            />
           </svg>
         </button>
-        <span class="text-sm text-gray-300 font-medium px-2">Page {pagination.current_page} of {pagination.last_page}</span>
+        <span class="text-sm text-gray-300 font-medium px-2"
+          >Page {pagination.current_page} of {pagination.last_page}</span
+        >
         <button
           disabled={pagination.current_page === pagination.last_page}
           onclick={() => changePage(pagination.current_page + 1)}
           aria-label="Next Page"
           class="p-2 rounded-lg border border-white/10 text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/5 transition-colors"
         >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          <svg
+            class="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 5l7 7-7 7"
+            />
           </svg>
         </button>
       </div>

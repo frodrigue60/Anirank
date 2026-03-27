@@ -4,6 +4,7 @@
   import { configState as config } from "$lib/state/config.svelte";
   import { getSongName } from "$lib/song-utils";
   import api from "$lib/api";
+  import { toastState } from "$lib/state/toast.svelte";
   import type { PageData } from "./$types";
   import ArtistTagsInput from "$lib/components/admin/ArtistTagsInput.svelte";
   import StatusControl from "$lib/components/admin/StatusControl.svelte";
@@ -142,6 +143,7 @@
       const res = await api.put(`/admin/songs/${song.id}`, payload);
 
       if (res.status === 200) {
+        toastState.addToast("Song updated and artists synced (avatars generated)!", "success");
         goto(`/admin/songs/${song.id}`);
       }
     } catch (err: any) {

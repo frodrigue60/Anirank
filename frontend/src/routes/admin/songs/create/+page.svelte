@@ -161,7 +161,7 @@
       const res = await api.post("/admin/songs", payload);
 
       if (res.status === 201 || res.data.success) {
-        toastState.addToast("Song created successfully", "success");
+        toastState.addToast("Song created and artists synced (avatars generated)!", "success");
         const urlAnimeId = page.url.searchParams.get("anime_id") || page.url.searchParams.get("anime");
         if (urlAnimeId) {
           goto(`/admin/animes/${urlAnimeId}/songs`);

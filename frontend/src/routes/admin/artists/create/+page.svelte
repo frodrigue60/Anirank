@@ -22,15 +22,15 @@
 
     isSubmitting = true;
     try {
-      const res = await api.post("/admin/artists", {
+      await api.post("/admin/artists", {
         name,
         name_jp: name_jp || null,
         status,
       });
 
-      // The backend triggers avatar generation in the background
+      // The backend triggers avatar generation synchronously
       toastState.addToast(
-        "Artist created successfully! Redirecting...",
+        "Artist created and avatar generated successfully!",
         "success",
       );
       goto("/admin/artists");
@@ -179,7 +179,7 @@
       <h4 class="text-blue-200 font-medium">Automatic Avatar Generation</h4>
       <p class="text-blue-300/70 text-sm mt-1">
         Once created, an avatar will be automatically generated using the
-        DiceBear API and stored in S3. You can change it later in the edit view.
+        AniList API (staff search) or UI-Avatars as fallback.
       </p>
     </div>
   </div>

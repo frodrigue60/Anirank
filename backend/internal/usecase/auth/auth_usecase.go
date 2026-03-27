@@ -151,14 +151,14 @@ func (u *AuthUsecase) Register(ctx context.Context, name, email, password string
 }
 
 func (u *AuthUsecase) GenerateUserAvatar(ctx context.Context, userID uint64, name string) {
-	res, err := avatar.Generate(ctx, name)
+	res, err := avatar.Generate(ctx, name, 180)
 	if err != nil {
 		log.Printf("ERROR: failed to generate avatar for user %d: %v", userID, err)
 		return
 	}
 
 	buf := bytes.NewReader(res.Data)
-	filename := fmt.Sprintf("users/avatars/%d_%s.png", userID, uuid.New().String())
+	filename := fmt.Sprintf("users/avatars/%d_%s.avif", userID, uuid.New().String())
 
 	_, err = u.storage.UploadFile(ctx, filename, buf, res.Size, res.ContentType)
 	if err != nil {

@@ -8,10 +8,11 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
 	"strings"
 	"time"
+
+	"anirank/api/internal/pkg/avatar"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -102,22 +103,15 @@ func main() {
 	for _, artist := range artists {
 		log.Printf("Generating avatar for artist: %s", artist.Name)
 
-		// Fetch Avatar from UI-Avatars
-		avatarUrlStr := fmt.Sprintf("https://ui-avatars.com/api/?name=%s&background=random&size=512&color=fff&format=png", url.QueryEscape(artist.Name))
-		resp, err := http.Get(avatarUrlStr)
+		// Generate Local Avatar (180px, AVIF)
+		res, err := avatar.Generate(context.Background(), artist.Name, 180)
 		if err != nil {
-			log.Printf("Failed to get avatar for %s: %v", artist.Name, err)
+			log.Printf("Failed to generate avatar for %s: %v", artist.Name, err)
 			continue
 		}
+		bodyBytes := res.Data
 
-		bodyBytes, err := io.ReadAll(resp.Body)
-		resp.Body.Close()
-		if err != nil {
-			log.Printf("Failed to read avatar body for %s: %v", artist.Name, err)
-			continue
-		}
-
-		s3Key := fmt.Sprintf("artists/%s-avatar-%d.png", artist.Slug, artist.ID)
+		s3Key := fmt.Sprintf("artists/%s-avatar-%d.avif", artist.Slug, artist.ID)
 
 		// Upload to S3
 		_, err = s3client.PutObject(context.TODO(), &s3.PutObjectInput{
@@ -126,29 +120,6 @@ func main() {
 			Body:        bytes.NewReader(bodyBytes),
 			ContentType: aws.String("image/png"),
 		})
-		if err != nil {
-			log.Printf("Failed to upload avatar to S3 for %s: %v", artist.Name, err)
-			continue
-		}
-
-		// Update or Insert DB
-		var existingImageId uint64
-		err = db.Get(&existingImageId, "SELECT id FROM images WHERE imageable_id = ? AND imageable_type = 'App\\\\Models\\\\Artist' AND type = 'thumbnail'", artist.ID)
-
-		if err != nil {
-			// Not found
-			_, dbErr := db.Exec("INSERT INTO images (path, type, imageable_id, imageable_type, created_at, updated_at) VALUES (?, 'thumbnail', ?, 'App\\\\Models\\\\Artist', NOW(), NOW())", s3Key, artist.ID)
-			if dbErr != nil {
-				log.Printf("Failed to insert image record in db for %s: %v", artist.Name, dbErr)
-			}
-		} else {
-			// Exists
-			_, dbErr := db.Exec("UPDATE images SET path = ?, updated_at = NOW() WHERE id = ?", s3Key, existingImageId)
-			if dbErr != nil {
-				log.Printf("Failed to update image record in db for %s: %v", artist.Name, dbErr)
-			}
-		}
-		time.Sleep(200 * time.Millisecond) // Throttle request to ui-avatars
 	}
 
 	// 2. Process Animes from AniList

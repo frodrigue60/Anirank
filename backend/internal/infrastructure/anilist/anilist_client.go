@@ -93,8 +93,9 @@ type Media struct {
 type Staff struct {
 	ID   int `json:"id"`
 	Name struct {
-		Full   string `json:"full"`
-		Native string `json:"native"`
+		Full        string   `json:"full"`
+		Native      string   `json:"native"`
+		Alternative []string `json:"alternative"`
 	} `json:"name"`
 	Image struct {
 		Large string `json:"large"`
@@ -172,6 +173,7 @@ query ($search: String) {
       name {
         full
         native
+        alternative
       }
       image {
         large
@@ -552,33 +554,48 @@ func (c *Client) SearchStaff(ctx context.Context, search string) ([]Staff, error
 	return staffResp.Data.Page.Staff, nil
 }
 
-// SearchStaffBatch searches multiple staff on Anilist by names using GraphQL aliases
-func (c *Client) SearchStaffBatch(ctx context.Context, names []string) (map[string][]Staff, error) {
-	if len(names) == 0 {
+type StaffSearchReq struct {
+	ID   *uint64
+	Name string
+}
+
+// SearchStaffBatch searches multiple staff on Anilist by names or IDs using GraphQL aliases
+func (c *Client) SearchStaffBatch(ctx context.Context, reqs []StaffSearchReq) (map[string][]Staff, error) {
+	if len(reqs) == 0 {
 		return make(map[string][]Staff), nil
 	}
 
 	// 1. Build the dynamic GraphQL query with aliases INSIDE a single Page query
 	var queryBuilder strings.Builder
 	queryBuilder.WriteString("query (")
-	for i := 0; i < len(names); i++ {
+	for i, req := range reqs {
 		if i > 0 {
 			queryBuilder.WriteString(", ")
 		}
-		fmt.Fprintf(&queryBuilder, "$n%d: String", i)
+		if req.ID != nil {
+			fmt.Fprintf(&queryBuilder, "$id%d: Int", i)
+		} else {
+			fmt.Fprintf(&queryBuilder, "$n%d: String", i)
+		}
 	}
 	queryBuilder.WriteString(") {\n")
-	queryBuilder.WriteString("  Page(page: 1, perPage: 20) {\n")
 
-	for i := 0; i < len(names); i++ {
-		fmt.Fprintf(&queryBuilder, "    s%d: staff(search: $n%d) { id name { full native } image { large } }\n", i, i)
+	for i, req := range reqs {
+		if req.ID != nil {
+			fmt.Fprintf(&queryBuilder, "  s%d: staff(id: $id%d) { id name { full native alternative } image { large } }\n", i, i)
+		} else {
+			fmt.Fprintf(&queryBuilder, "  s%d: Page(page: 1, perPage: 1) { staff(search: $n%d) { id name { full native alternative } image { large } } }\n", i, i)
+		}
 	}
-	queryBuilder.WriteString("  }\n")
 	queryBuilder.WriteString("}")
 
 	variables := make(map[string]interface{})
-	for i, name := range names {
-		variables[fmt.Sprintf("n%d", i)] = name
+	for i, req := range reqs {
+		if req.ID != nil {
+			variables[fmt.Sprintf("id%d", i)] = *req.ID
+		} else {
+			variables[fmt.Sprintf("n%d", i)] = req.Name
+		}
 	}
 
 	payload := GraphQLQuery{
@@ -615,9 +632,7 @@ func (c *Client) SearchStaffBatch(ctx context.Context, names []string) (map[stri
 
 	// 2. Parse the dynamic aliased response
 	var result struct {
-		Data struct {
-			Page map[string]interface{} `json:"Page"`
-		} `json:"data"`
+		Data map[string]interface{} `json:"data"`
 		Errors []struct {
 			Message string `json:"message"`
 		} `json:"errors"`
@@ -631,42 +646,66 @@ func (c *Client) SearchStaffBatch(ctx context.Context, names []string) (map[stri
 		return nil, fmt.Errorf("anilist batch api error: %s", result.Errors[0].Message)
 	}
 
-	// 3. Map back to names
+	// 3. Map back to original name keys
 	finalResult := make(map[string][]Staff)
-	pageData := result.Data.Page
+	data := result.Data
 
-	for i, name := range names {
+	for i, req := range reqs {
 		alias := fmt.Sprintf("s%d", i)
-		if val, ok := pageData[alias]; ok && val != nil {
-			staffList, ok := val.([]interface{})
-			if !ok {
-				continue
-			}
-
+		if val, ok := data[alias]; ok && val != nil {
 			var staffs []Staff
-			for _, s := range staffList {
-				sMap, ok := s.(map[string]interface{})
-				if !ok {
-					continue
+			
+			// Handle both s%d: staff (ID search) and s%d: Page { staff: [] } (Name search)
+			sMap, isMap := val.(map[string]interface{})
+			if isMap {
+				if staffList, ok := sMap["staff"].([]interface{}); ok {
+					// It's the Page { staff: [] } structure
+					for _, s := range staffList {
+						if sm, ok := s.(map[string]interface{}); ok {
+							staffs = append(staffs, decodeStaffMap(sm))
+						}
+					}
+				} else if _, isID := sMap["id"]; isID {
+					// It's the root staff structure (ID search)
+					staffs = append(staffs, decodeStaffMap(sMap))
 				}
-				
-				var st Staff
-				st.ID = int(sMap["id"].(float64))
-				
-				nameMap := sMap["name"].(map[string]interface{})
-				st.Name.Full = nameMap["full"].(string)
-				if n, ok := nameMap["native"].(string); ok {
-					st.Name.Native = n
-				}
-
-				imgMap := sMap["image"].(map[string]interface{})
-				st.Image.Large = imgMap["large"].(string)
-				
-				staffs = append(staffs, st)
 			}
-			finalResult[name] = staffs
+			
+			finalResult[req.Name] = staffs
 		}
 	}
 
 	return finalResult, nil
 }
+
+func decodeStaffMap(sMap map[string]interface{}) Staff {
+	var st Staff
+	if id, ok := sMap["id"].(float64); ok {
+		st.ID = int(id)
+	}
+	
+	if nameData, ok := sMap["name"].(map[string]interface{}); ok {
+		if full, ok := nameData["full"].(string); ok {
+			st.Name.Full = full
+		}
+		if native, ok := nameData["native"].(string); ok {
+			st.Name.Native = native
+		}
+		if alt, ok := nameData["alternative"].([]interface{}); ok {
+			for _, a := range alt {
+				if as, ok := a.(string); ok {
+					st.Name.Alternative = append(st.Name.Alternative, as)
+				}
+			}
+		}
+	}
+
+	if imgData, ok := sMap["image"].(map[string]interface{}); ok {
+		if large, ok := imgData["large"].(string); ok {
+			st.Image.Large = large
+		}
+	}
+	
+	return st
+}
+

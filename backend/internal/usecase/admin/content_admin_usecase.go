@@ -724,7 +724,7 @@ func (u *ContentAdminUsecase) SyncArtistsFromString(ctx context.Context, songID 
 	}
 	
 	if len(artistIDs) > 0 {
-		return u.songRepo.SyncArtists(ctx, songID, artistIDs)
+		return u.SyncSongArtists(ctx, songID, artistIDs)
 	}
 	return nil
 }
@@ -846,6 +846,20 @@ type ATResponse struct {
 	} `json:"anime"`
 }
 
+type ATResource struct {
+	Site string `json:"site"`
+	Link string `json:"link"`
+}
+
+type ATArtistData struct {
+	ID        uint64       `json:"id"`
+	Resources []ATResource `json:"resources"`
+}
+
+type ATArtistResponse struct {
+	Artists []ATArtistData `json:"artists"`
+}
+
 func (u *ContentAdminUsecase) HydrateSeason(ctx context.Context, year int, seasonName string, meta domain.AuditMetadata, progress chan<- string) error {
 	sendProgress := func(msg string) {
 		if progress != nil {
@@ -877,6 +891,8 @@ func (u *ContentAdminUsecase) HydrateSeason(ctx context.Context, year int, seaso
 
 	totalAnime := len(atResp.Anime)
 	sendProgress(fmt.Sprintf("Found %d animes in AnimeThemes. Collecting IDs...", totalAnime))
+
+	allProcessedArtistIDs := make(map[uint64]bool) // To trigger avatar gen later
 
 	// --- Phase 1: ID Collection ---
 	uniqueAlIDs := make(map[int64]bool)
@@ -931,6 +947,52 @@ func (u *ContentAdminUsecase) HydrateSeason(ctx context.Context, year int, seaso
 			}
 			if end < len(ids) {
 				time.Sleep(1 * time.Second) // Safe buffer between batches
+			}
+		}
+	}
+
+	// --- Phase 2.5: Batch Fetch Artist Resources ---
+	uniqueArtistIDs := make(map[uint64]bool)
+	for _, a := range atResp.Anime {
+		for _, theme := range a.AnimeThemes {
+			for _, art := range theme.Song.Artists {
+				uniqueArtistIDs[art.ID] = true
+			}
+		}
+	}
+
+	artistResourcesMap := make(map[uint64][]ATResource)
+	if len(uniqueArtistIDs) > 0 {
+		artistIDs := make([]uint64, 0, len(uniqueArtistIDs))
+		for id := range uniqueArtistIDs {
+			artistIDs = append(artistIDs, id)
+		}
+
+		sendProgress(fmt.Sprintf("Fetching resources for %d artists in batches...", len(artistIDs)))
+		for i := 0; i < len(artistIDs); i += 100 {
+			end := i + 100
+			if end > len(artistIDs) {
+				end = len(artistIDs)
+			}
+			chunk := artistIDs[i:end]
+			idStrings := make([]string, len(chunk))
+			for j, id := range chunk {
+				idStrings[j] = fmt.Sprintf("%d", id)
+			}
+
+			artistUrl := fmt.Sprintf("https://api.animethemes.moe/artist?include=resources&filter[id]=%s&page[size]=100", strings.Join(idStrings, ","))
+			aResp, err := client.Get(artistUrl)
+			if err == nil {
+				var artResp ATArtistResponse
+				if err := json.NewDecoder(aResp.Body).Decode(&artResp); err == nil {
+					for _, artData := range artResp.Artists {
+						artistResourcesMap[artData.ID] = artData.Resources
+					}
+				}
+				aResp.Body.Close()
+			}
+			if end < len(artistIDs) {
+				time.Sleep(500 * time.Millisecond)
 			}
 		}
 	}
@@ -1238,6 +1300,23 @@ func (u *ContentAdminUsecase) HydrateSeason(ctx context.Context, year int, seaso
 						continue
 					}
 
+					// Extract Anilist ID from resources
+					var alID *uint64
+					resources := artistResourcesMap[atArtID]
+					for _, res := range resources {
+						if res.Site == "AniList" && strings.Contains(res.Link, "anilist.co/staff/") {
+							parts := strings.Split(strings.TrimRight(res.Link, "/"), "/")
+							if len(parts) > 0 {
+								idStr := parts[len(parts)-1]
+								var idVal uint64
+								if _, err := fmt.Sscanf(idStr, "%d", &idVal); err == nil {
+									alID = &idVal
+								}
+							}
+							break
+						}
+					}
+
 					var artist *domain.Artist
 					// 1. Match by AnimeThemes ID (Most reliable)
 					artist, _ = u.artistRepo.GetByAnimeThemesID(ctx, atArtID)
@@ -1252,12 +1331,16 @@ func (u *ContentAdminUsecase) HydrateSeason(ctx context.Context, year int, seaso
 						artist.Name = cleanName
 						artist.Slug = aSlug
 						artist.AnimeThemesID = &atArtID
+						if alID != nil {
+							artist.AnilistID = alID
+						}
 						_ = u.artistRepo.Update(ctx, artist)
 					} else {
 						// Create
 						artist = &domain.Artist{
 							Name:          cleanName,
 							Slug:          aSlug,
+							AnilistID:     alID,
 							Status:        true,
 							AnimeThemesID: &atArtID,
 							UUID:          uuid.New().String(),
@@ -1266,6 +1349,9 @@ func (u *ContentAdminUsecase) HydrateSeason(ctx context.Context, year int, seaso
 							continue
 						}
 					}
+
+					// Collect all artist IDs for avatar generation later
+					allProcessedArtistIDs[artist.ID] = true
 
 					// Skip if we already added this artist to THIS song
 					if !processedArtists[artist.ID] {
@@ -1278,6 +1364,17 @@ func (u *ContentAdminUsecase) HydrateSeason(ctx context.Context, year int, seaso
 			}
 		}
 	}
+
+	// Phase 4: Generate Artist Avatars for all processed artists
+	if len(allProcessedArtistIDs) > 0 {
+		sendProgress(fmt.Sprintf("Syncing avatars for %d artists...", len(allProcessedArtistIDs)))
+		ids := make([]uint64, 0, len(allProcessedArtistIDs))
+		for id := range allProcessedArtistIDs {
+			ids = append(ids, id)
+		}
+		_ = u.BatchGenerateArtistAvatars(ctx, ids, progress)
+	}
+
 	sendProgress("Hydration completed successfully!")
 	return nil
 }
@@ -1565,35 +1662,15 @@ func (u *ContentAdminUsecase) GenerateArtistAvatar(ctx context.Context, artistID
 		return err
 	}
 
-	// 1. Try AniList Staff Search
+	// Bypassed AniList search per configuration
 	var avatarData []byte
 	var avatarSize int64
 	var avatarContentType string
 
-	staffResults, err := u.anilistClient.SearchStaff(ctx, artist.Name)
-	if err == nil && len(staffResults) > 0 {
-		staff := staffResults[0] // Take the first result
-		// Regex to catch default AniList staff images (e.g. /staff/large/default.jpg)
-		defaultImgRe := regexp.MustCompile(`.*\/default\.jpg$`)
-		if staff.Image.Large != "" && !defaultImgRe.MatchString(staff.Image.Large) {
-			// Download from AniList
-			client := &http.Client{Timeout: 10 * time.Second}
-			resp, err := client.Get(staff.Image.Large)
-			if err == nil && resp.StatusCode == http.StatusOK {
-				defer resp.Body.Close()
-				avatarData, err = io.ReadAll(resp.Body)
-				if err == nil {
-					avatarSize = int64(len(avatarData))
-					avatarContentType = resp.Header.Get("Content-Type")
-				}
-			}
-		}
-	}
-
 	// 2. Fallback Logic
 	if len(avatarData) == 0 {
 		// Fallback to avatar-ui (ui-avatars.com)
-		res, err := avatar.Generate(ctx, artist.Name)
+		res, err := avatar.Generate(ctx, artist.Name, 180)
 		if err != nil {
 			return err
 		}
@@ -1651,102 +1728,15 @@ func (u *ContentAdminUsecase) BatchGenerateArtistAvatars(ctx context.Context, id
 		return nil
 	}
 
-	sendProgress(fmt.Sprintf("Found %d artists to process. Starting Phase 1: AniList Sync...", len(targets)))
+	sendProgress(fmt.Sprintf("Found %d artists to process. Starting avatar generation via Avatar-UI...", len(targets)))
 
-	// --- Phase 1: AniList Batching ---
-	chunkSize := 20
-	var stillMissing []domain.Artist
-	defaultImgRe := regexp.MustCompile(`.*\/default\.jpg$`)
+	stillMissing := targets
 
-	for i := 0; i < len(targets); i += chunkSize {
-		end := i + chunkSize
-		if end > len(targets) {
-			end = len(targets)
-		}
-		chunk := targets[i:end]
-		
-		var names []string
-		for _, a := range chunk {
-			names = append(names, a.Name)
-		}
-
-		sendProgress(fmt.Sprintf("[Phase 1] Searching AniList for %d artists (%d/%d)...", len(names), end, len(targets)))
-		
-		var results map[string][]anilist.Staff
-		var err error
-
-		// Retry loop for 429 (Rate Limit) errors
-		maxRetries := 2
-		for attempt := 0; attempt <= maxRetries; attempt++ {
-			results, err = u.anilistClient.SearchStaffBatch(ctx, names)
-			if err == nil {
-				break
-			}
-
-			if strings.Contains(err.Error(), "429") && attempt < maxRetries {
-				sendProgress(fmt.Sprintf("Rate limited (Attempt %d/%d)! Waiting 30 seconds before retry...", attempt+1, maxRetries+1))
-				time.Sleep(30 * time.Second)
-				continue
-			}
-
-			// If not a retryable error or we've exhausted retries
-			sendProgress(fmt.Sprintf("AniList Batch error: %v. Continuing to fallback...", err))
-			break
-		}
-
-		if err != nil {
-			stillMissing = append(stillMissing, chunk...)
-			continue
-		}
-
-		for _, a := range chunk {
-			staffs, found := results[a.Name]
-			if !found || len(staffs) == 0 {
-				stillMissing = append(stillMissing, a)
-				continue
-			}
-
-			staff := staffs[0]
-			if staff.Image.Large == "" || defaultImgRe.MatchString(staff.Image.Large) {
-				stillMissing = append(stillMissing, a)
-				continue
-			}
-
-			// Download and upload
-			client := &http.Client{Timeout: 10 * time.Second}
-			resp, err := client.Get(staff.Image.Large)
-			if err != nil || resp.StatusCode != http.StatusOK {
-				stillMissing = append(stillMissing, a)
-				continue
-			}
-			defer resp.Body.Close()
-
-			data, err := io.ReadAll(resp.Body)
-			if err != nil {
-				stillMissing = append(stillMissing, a)
-				continue
-			}
-
-			_, url, err := u.mediaService.UploadImage(ctx, "artists/avatars", a.ID, bytes.NewReader(data), int64(len(data)), resp.Header.Get("Content-Type"))
-			if err != nil {
-				stillMissing = append(stillMissing, a)
-				continue
-			}
-
-			_ = u.artistRepo.UpdateAvatar(ctx, a.ID, url)
-			sendProgress(fmt.Sprintf("✓ [AniList] Synchronized: %s", a.Name))
-		}
-
-		if end < len(targets) {
-			time.Sleep(2 * time.Second) // Respect AniList rate limits
-		}
-	}
-
-	// --- Phase 2: Avatar-UI Fallback ---
+	// --- Phase 2: Avatar-UI Generation ---
 	if len(stillMissing) > 0 {
-		sendProgress(fmt.Sprintf("Starting Phase 2: Generating %d placeholders via Avatar-UI...", len(stillMissing)))
+		sendProgress(fmt.Sprintf("Generating %d placeholder avatars via Avatar-UI...", len(stillMissing)))
 		for i, a := range stillMissing {
-			res, err := avatar.Generate(ctx, a.Name)
+			res, err := avatar.Generate(ctx, a.Name, 180)
 			if err != nil {
 				sendProgress(fmt.Sprintf("✗ [Avatar-UI] Failed %s: %v", a.Name, err))
 				continue

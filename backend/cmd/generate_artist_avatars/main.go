@@ -4,23 +4,21 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"log"
-	"net/http"
-	"net/url"
 	"os"
 	"time"
 
 	"anirank/api/internal/infrastructure"
+	"anirank/api/internal/pkg/avatar"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 )
 
 func main() {
-	if err := godotenv.Load(".env"); err != nil {
-		log.Println("No .env file found.")
-	}
+	// Load env: repo-root .env then local .env as overrides.
+	_ = godotenv.Load("../.env")
+	_ = godotenv.Overload(".env")
 	ctx := context.Background()
 
 	// 1. DB Connection
@@ -53,8 +51,20 @@ func main() {
 
 	log.Println("Starting Artist Avatar Generation & R2 Migration...")
 
-	// 3. Fetch artists without avatar
-	rows, err := pool.Query(ctx, "SELECT id, name FROM artists WHERE avatar IS NULL OR avatar = ''")
+	// 3. Clear existing avatars folder
+	log.Println("Clearing existing avatars in artists/avatars/...")
+	existingFiles, err := storage.ListFiles(ctx, "artists/avatars/")
+	if err != nil {
+		log.Printf("Warning: failed to list existing files for cleanup: %v\n", err)
+	} else {
+		for _, f := range existingFiles {
+			_ = storage.DeleteFile(ctx, f)
+		}
+		log.Printf("Cleaned %d files.\n", len(existingFiles))
+	}
+
+	// 4. Fetch all artists
+	rows, err := pool.Query(ctx, "SELECT id, name FROM artists")
 	if err != nil {
 		log.Fatalf("Query error: %v\n", err)
 	}
@@ -73,34 +83,25 @@ func main() {
 		artists = append(artists, a)
 	}
 
-	log.Printf("Found %d artists needing avatars.\n", len(artists))
+	log.Printf("Found %d total artists to process.\n", len(artists))
 
-	// 4. Process each artist
+	// 5. Process each artist
 	for i, a := range artists {
 		log.Printf("[%d/%d] Processing %s...\n", i+1, len(artists), a.Name)
 
-		// Generate UI Avatar URL
-		// Example: https://ui-avatars.com/api/?name=John+Doe&size=512&background=random&color=fff
-		avatarSourceURL := fmt.Sprintf("https://ui-avatars.com/api/?name=%s&size=512&background=random&color=fff", url.QueryEscape(a.Name))
-
-		// Download
-		resp, err := http.Get(avatarSourceURL)
+		// Generate Local Avatar (180px, AVIF)
+		res, err := avatar.Generate(ctx, a.Name, 180)
 		if err != nil {
-			log.Printf("  Error downloading for %s: %v\n", a.Name, err)
+			log.Printf("  Error generating for %s: %v\n", a.Name, err)
 			continue
 		}
-		data, err := io.ReadAll(resp.Body)
-		resp.Body.Close()
-		if err != nil {
-			log.Printf("  Error reading data for %s: %v\n", a.Name, err)
-			continue
-		}
+		data := res.Data
 
 		// Upload to R2
-		contentType := "image/png"
-		newPath := fmt.Sprintf("artists/avatars/%d_%s.png", a.ID, uuid.New().String()[:8])
+		contentType := "image/avif"
+		newPath := fmt.Sprintf("artists/avatars/%d_%s.avif", a.ID, uuid.New().String()[:8])
 		
-		_, err = storage.UploadFile(ctx, newPath, bytes.NewReader(data), int64(len(data)), contentType)
+		_, err = storage.UploadFile(ctx, newPath, bytes.NewReader(data), res.Size, contentType)
 		if err != nil {
 			log.Printf("  Error uploading to R2 for %s: %v\n", a.Name, err)
 			continue
@@ -114,8 +115,8 @@ func main() {
 			log.Printf("  Successfully generated avatar: %s\n", newPath)
 		}
 
-		// Rate limit protection
-		time.Sleep(200 * time.Millisecond)
+		// Small delay to be safe
+		time.Sleep(50 * time.Millisecond)
 	}
 
 	log.Println("Artist Avatar Generation Complete!")

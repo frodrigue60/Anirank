@@ -18,6 +18,7 @@ type StorageService interface {
 	GetURL(relativePath string) string
 	DeleteFile(ctx context.Context, relativePath string) error
 	FileExists(ctx context.Context, relativePath string) (bool, error)
+	ListFiles(ctx context.Context, prefix string) ([]string, error)
 }
 
 type S3Storage struct {
@@ -110,4 +111,27 @@ func (s *S3Storage) DeleteFile(ctx context.Context, relativePath string) error {
 		return fmt.Errorf("failed to delete file: %w", err)
 	}
 	return nil
+}
+
+func (s *S3Storage) ListFiles(ctx context.Context, prefix string) ([]string, error) {
+	var files []string
+	paginator := s3.NewListObjectsV2Paginator(s.client, &s3.ListObjectsV2Input{
+		Bucket: aws.String(s.bucket),
+		Prefix: aws.String(prefix),
+	})
+
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to list files: %w", err)
+		}
+
+		for _, obj := range page.Contents {
+			if obj.Key != nil {
+				files = append(files, *obj.Key)
+			}
+		}
+	}
+
+	return files, nil
 }

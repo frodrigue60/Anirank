@@ -298,6 +298,8 @@ func SetupPublicRoutes(app *fiber.App,
 	adminOnly.Post("/animes", adminHandler.CreateAnime)
 	adminOnly.Post("/animes/batch", adminHandler.BatchFetchAnimes)
 	adminOnly.Post("/animes/hydrate", adminHandler.HydrateAnimeSeason)
+	adminOnly.Get("/animes/animethemes/search", adminHandler.SearchAnimeThemes)
+	adminOnly.Post("/animes/animethemes/hydrate", adminHandler.HydrateAnimeThemes)
 	adminOnly.Put("/animes/:id", adminHandler.UpdateAnime)
 	adminOnly.Patch("/animes/:id/status", adminHandler.ToggleAnimeStatus)
 	adminOnly.Post("/animes/:id/sync", adminHandler.SyncAnime)

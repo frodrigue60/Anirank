@@ -35,11 +35,6 @@ type ATAnime struct {
 	Resources   []ATResource `json:"resources"`
 }
 
-type ATResource struct {
-	Site string `json:"site"`
-	Link string `json:"link"`
-}
-
 type ATTaxonomy struct {
 	Name string `json:"name"`
 	Slug string `json:"slug"`
@@ -63,14 +58,28 @@ type ATEntry struct {
 }
 
 type ATSong struct {
-	// ... (rest of structs)
 	Title   string     `json:"title"`
 	Artists []ATArtist `json:"artists"`
 }
 
 type ATArtist struct {
+	ID   uint64 `json:"id"`
 	Name string `json:"name"`
 	Slug string `json:"slug"`
+}
+
+type ATResource struct {
+	Site string `json:"site"`
+	Link string `json:"link"`
+}
+
+type ATArtistData struct {
+	ID        uint64       `json:"id"`
+	Resources []ATResource `json:"resources"`
+}
+
+type ATArtistResponse struct {
+	Artists []ATArtistData `json:"artists"`
 }
 
 // AniList Structs
@@ -193,6 +202,11 @@ func main() {
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		log.Fatalf("API returned error status %d: %s\n", resp.StatusCode, string(body))
+	}
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Fatalf("Failed to read response body: %v\n", err)
@@ -204,6 +218,54 @@ func main() {
 	}
 
 	fmt.Printf("API returned %d animes\n", len(atResp.Anime))
+
+	// 1.5 Batch Fetch Artist Resources
+	uniqueArtistIDs := make(map[uint64]bool)
+	for _, a := range atResp.Anime {
+		for _, theme := range a.AnimeThemes {
+			if theme.Song != nil {
+				for _, art := range theme.Song.Artists {
+					uniqueArtistIDs[art.ID] = true
+				}
+			}
+		}
+	}
+
+	artistResourcesMap := make(map[uint64][]ATResource)
+	if len(uniqueArtistIDs) > 0 {
+		artistIDs := make([]uint64, 0, len(uniqueArtistIDs))
+		for id := range uniqueArtistIDs {
+			artistIDs = append(artistIDs, id)
+		}
+
+		fmt.Printf("Fetching resources for %d artists in batches of 100...\n", len(artistIDs))
+		for i := 0; i < len(artistIDs); i += 100 {
+			end := i + 100
+			if end > len(artistIDs) {
+				end = len(artistIDs)
+			}
+			chunk := artistIDs[i:end]
+			idStrings := make([]string, len(chunk))
+			for j, id := range chunk {
+				idStrings[j] = fmt.Sprintf("%d", id)
+			}
+
+			artistUrl := fmt.Sprintf("https://api.animethemes.moe/artist?include=resources&filter[id]=%s&page[size]=100", strings.Join(idStrings, ","))
+			aResp, err := client.Get(artistUrl)
+			if err != nil {
+				log.Printf("Warning: Failed to fetch artists batch: %v\n", err)
+				continue
+			}
+			var artResp ATArtistResponse
+			if err := json.NewDecoder(aResp.Body).Decode(&artResp); err == nil {
+				for _, artData := range artResp.Artists {
+					artistResourcesMap[artData.ID] = artData.Resources
+				}
+			}
+			aResp.Body.Close()
+			time.Sleep(500 * time.Millisecond)
+		}
+	}
 
 	// 2. Process
 	for _, a := range atResp.Anime {
@@ -229,7 +291,6 @@ func main() {
 
 		// Upsert Season
 		var seasonID uint64
-		// Normalize season name to Title Case (e.g., "winter" -> "Winter")
 		normalizedSeason := strings.Title(strings.ToLower(a.Season))
 		err = tx.QueryRow(ctx, "SELECT id FROM seasons WHERE name = $1", normalizedSeason).Scan(&seasonID)
 		if err != nil {
@@ -244,17 +305,17 @@ func main() {
 		// Upsert Format
 		var formatID uint64
 		if a.MediaFormat == "" {
-			a.MediaFormat = "TV" // Default fallback
+			a.MediaFormat = "TV"
 		}
 		formatSlug := strings.ToLower(a.MediaFormat)
 		err = tx.QueryRow(ctx, "SELECT id FROM formats WHERE slug = $1", formatSlug).Scan(&formatID)
 		if err != nil {
 			err = tx.QueryRow(ctx, "INSERT INTO formats (name, slug, created_at, updated_at) VALUES ($1, $2, NOW(), NOW()) RETURNING id", a.MediaFormat, formatSlug).Scan(&formatID)
 			if err != nil {
-				// Non-critical error, just log it
 				log.Printf("Format Error: %v\n", err)
 			}
 		}
+
 		// Find Image
 		coverUrl := ""
 		for _, img := range a.Images {
@@ -276,7 +337,6 @@ func main() {
 			}
 		}
 
-		// Enforce hyphenated slug for anime
 		animeSlug := slugify(a.Slug)
 
 		// 1.5 Fetch from AniList if available
@@ -287,7 +347,6 @@ func main() {
 			if err != nil {
 				log.Printf("  AniList Error for %d: %v\n", anilistID, err)
 			} else {
-				// Override AnimeThemes data with AniList data
 				if alData.Data.Media.Title.Romaji != "" {
 					a.Name = alData.Data.Media.Title.Romaji
 				}
@@ -298,11 +357,10 @@ func main() {
 					coverUrl = alData.Data.Media.CoverImage.ExtraLarge
 				}
 			}
-			// Rate Limit: 10 r/s (100ms)
 			time.Sleep(100 * time.Millisecond)
 		}
 
-		// Find existing Anime by AniList ID first, then by slug
+		// Find existing Anime
 		var animeID uint64
 		found := false
 		var errLookup error
@@ -321,16 +379,12 @@ func main() {
 			}
 		}
 
-		// Flush existing association data for this anime if found
 		if found {
-			// We keep songs and their variants to update them instead of deleting
-			// but we clean up pivot tables for taxonomies to ensure a clean refresh of associations
 			_, _ = tx.Exec(ctx, "DELETE FROM anime_studio WHERE anime_id = $1", animeID)
 			_, _ = tx.Exec(ctx, "DELETE FROM anime_producer WHERE anime_id = $1", animeID)
 			_, _ = tx.Exec(ctx, "DELETE FROM anime_genre WHERE anime_id = $1", animeID)
 			_, _ = tx.Exec(ctx, "DELETE FROM anime_external_link WHERE anime_id = $1", animeID)
 
-			// Update the anime itself (enforcing new slug and metadata)
 			bannerUrl := ""
 			if alData != nil {
 				bannerUrl = alData.Data.Media.BannerImage
@@ -345,7 +399,6 @@ func main() {
 			if alData != nil {
 				bannerUrl = alData.Data.Media.BannerImage
 			}
-			// Not found at all, insert new
 			animeUUID := uuid.New().String()
 			err = tx.QueryRow(ctx, `
 				INSERT INTO animes (uuid, title, slug, cover, banner, description, format_id, anilist_id, season_id, year_id, status, created_at, updated_at) 
@@ -358,7 +411,7 @@ func main() {
 			continue
 		}
 
-		// Process Studios & Producers (from AniList if available, otherwise AT)
+		// Studios & Producers
 		if alData != nil {
 			for _, edge := range alData.Data.Media.Studios.Edges {
 				var targetID uint64
@@ -366,7 +419,7 @@ func main() {
 				if edge.IsMain {
 					err = tx.QueryRow(ctx, "SELECT id FROM studios WHERE slug = $1", sSlug).Scan(&targetID)
 					if err != nil {
-						err = tx.QueryRow(ctx, "INSERT INTO studios (name, slug, created_at, updated_at) VALUES ($1, $2, NOW(), NOW()) RETURNING id", edge.Node.Name, sSlug).Scan(&targetID)
+						err = tx.QueryRow(ctx, "INSERT INTO studios (uuid, name, slug, created_at, updated_at) VALUES ($1, $2, $3, NOW(), NOW()) RETURNING id", uuid.New().String(), edge.Node.Name, sSlug).Scan(&targetID)
 					}
 					if err == nil {
 						_, _ = tx.Exec(ctx, "INSERT INTO anime_studio (anime_id, studio_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", animeID, targetID)
@@ -374,7 +427,7 @@ func main() {
 				} else {
 					err = tx.QueryRow(ctx, "SELECT id FROM producers WHERE slug = $1", sSlug).Scan(&targetID)
 					if err != nil {
-						err = tx.QueryRow(ctx, "INSERT INTO producers (name, slug, created_at, updated_at) VALUES ($1, $2, NOW(), NOW()) RETURNING id", edge.Node.Name, sSlug).Scan(&targetID)
+						err = tx.QueryRow(ctx, "INSERT INTO producers (uuid, name, slug, created_at, updated_at) VALUES ($1, $2, $3, NOW(), NOW()) RETURNING id", uuid.New().String(), edge.Node.Name, sSlug).Scan(&targetID)
 					}
 					if err == nil {
 						_, _ = tx.Exec(ctx, "INSERT INTO anime_producer (anime_id, producer_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", animeID, targetID)
@@ -382,7 +435,6 @@ func main() {
 				}
 			}
 
-			// Process Genres (AniList only)
 			for _, gName := range alData.Data.Media.Genres {
 				var genreID uint64
 				gSlug := slugify(gName)
@@ -395,31 +447,25 @@ func main() {
 				}
 			}
 
-			// Process External Links (AniList only)
 			for _, l := range alData.Data.Media.ExternalLinks {
 				var linkID uint64
-				// Check if link with same URL already exists
 				err = tx.QueryRow(ctx, "SELECT id FROM external_links WHERE url = $1 LIMIT 1", l.URL).Scan(&linkID)
 				if err != nil {
-					// Not found, create new
 					err = tx.QueryRow(ctx, "INSERT INTO external_links (name, url, type, created_at, updated_at) VALUES ($1, $2, 'info', NOW(), NOW()) RETURNING id", l.Site, l.URL).Scan(&linkID)
 				} else {
-					// Update name just in case it changed
 					_, _ = tx.Exec(ctx, "UPDATE external_links SET name = $1, updated_at = NOW() WHERE id = $2", l.Site, linkID)
 				}
-
 				if err == nil {
 					_, _ = tx.Exec(ctx, "INSERT INTO anime_external_link (anime_id, external_link_id, created_at, updated_at) VALUES ($1, $2, NOW(), NOW()) ON CONFLICT DO NOTHING", animeID, linkID)
 				}
 			}
 		} else {
-			// Fallback to AT Studios
 			for _, s := range a.Studios {
 				var studioID uint64
 				sSlug := slugify(s.Name)
 				err = tx.QueryRow(ctx, "SELECT id FROM studios WHERE slug = $1", sSlug).Scan(&studioID)
 				if err != nil {
-					err = tx.QueryRow(ctx, "INSERT INTO studios (name, slug, created_at, updated_at) VALUES ($1, $2, NOW(), NOW()) RETURNING id", s.Name, sSlug).Scan(&studioID)
+					err = tx.QueryRow(ctx, "INSERT INTO studios (uuid, name, slug, created_at, updated_at) VALUES ($1, $2, $3, NOW(), NOW()) RETURNING id", uuid.New().String(), s.Name, sSlug).Scan(&studioID)
 				}
 				if err == nil {
 					_, _ = tx.Exec(ctx, "INSERT INTO anime_studio (anime_id, studio_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", animeID, studioID)
@@ -427,7 +473,7 @@ func main() {
 			}
 		}
 
-		// Process Themes
+		// Themes
 		for _, t := range a.AnimeThemes {
 			if t.Song == nil {
 				continue
@@ -439,77 +485,71 @@ func main() {
 			}
 
 			songSlug := fmt.Sprintf("%s%d", t.Type, themeNum)
-
 			var songID uint64
 			err = tx.QueryRow(ctx, "SELECT id FROM songs WHERE slug = $1 AND anime_id = $2", songSlug, animeID).Scan(&songID)
 			if err == nil {
 				_, err = tx.Exec(ctx, "UPDATE songs SET song_romaji = $1, season_id = $2, year_id = $3, updated_at = NOW() WHERE id = $4", t.Song.Title, seasonID, yearID, songID)
 			} else {
 				err = tx.QueryRow(ctx, `
-					INSERT INTO songs (song_romaji, song_jp, song_en, slug, type, theme_num, anime_id, season_id, year_id, status, created_at, updated_at)
-					VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true, NOW(), NOW())
-					RETURNING id`, t.Song.Title, t.Song.Title, t.Song.Title, songSlug, t.Type, fmt.Sprintf("%d", themeNum), animeID, seasonID, yearID).Scan(&songID)
+					INSERT INTO songs (uuid, song_romaji, song_jp, song_en, slug, type, theme_num, anime_id, season_id, year_id, status, created_at, updated_at)
+					VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, true, NOW(), NOW())
+					RETURNING id`, uuid.New().String(), t.Song.Title, t.Song.Title, t.Song.Title, songSlug, t.Type, fmt.Sprintf("%d", themeNum), animeID, seasonID, yearID).Scan(&songID)
 			}
-
 			if err != nil {
-				log.Printf("Song Error (%s): %v\n", songSlug, err)
+				log.Printf("Song Error: %v\n", err)
 				continue
 			}
 
-			// Process Variants (Entries)
+			// Variants
 			for _, entry := range t.AnimeThemeEntries {
 				version := entry.Version
 				if version == 0 {
 					version = 1
 				}
 				variantSlug := fmt.Sprintf("V%d", version)
-
 				var variantID uint64
 				err = tx.QueryRow(ctx, "SELECT id FROM song_variants WHERE slug = $1 AND song_id = $2", variantSlug, songID).Scan(&variantID)
 				if err != nil {
 					err = tx.QueryRow(ctx, `
-						INSERT INTO song_variants (version_number, song_id, slug, views, season_id, year_id, status, created_at, updated_at)
-						VALUES ($1, $2, $3, 0, $4, $5, true, NOW(), NOW())
-						RETURNING id`, version, songID, variantSlug, seasonID, yearID).Scan(&variantID)
-					if err != nil {
-						log.Printf("Variant Error (%s): %v\n", variantSlug, err)
-					}
+						INSERT INTO song_variants (uuid, version_number, song_id, slug, views, season_id, year_id, status, created_at, updated_at)
+						VALUES ($1, $2, $3, $4, 0, $5, $6, true, NOW(), NOW())
+						RETURNING id`, uuid.New().String(), version, songID, variantSlug, seasonID, yearID).Scan(&variantID)
 				}
 			}
 
-			// Process Artists
+			// Artists
 			for _, art := range t.Song.Artists {
 				var artistID uint64
 				cleanName := strings.TrimSpace(art.Name)
 				aSlug := slugify(cleanName)
 
-				// Find existing Artist by name (case-insensitive) OR slug
+				var alID *uint64
+				resources := artistResourcesMap[art.ID]
+				for _, res := range resources {
+					if res.Site == "AniList" && strings.Contains(res.Link, "anilist.co/staff/") {
+						parts := strings.Split(strings.TrimRight(res.Link, "/"), "/")
+						if len(parts) > 0 {
+							idStr := parts[len(parts)-1]
+							var idVal uint64
+							if _, err := fmt.Sscanf(idStr, "%d", &idVal); err == nil {
+								alID = &idVal
+							}
+						}
+						break
+					}
+				}
+
 				err = tx.QueryRow(ctx, "SELECT id FROM artists WHERE LOWER(name) = LOWER($1) OR slug = $2 LIMIT 1", cleanName, aSlug).Scan(&artistID)
 				if err == nil {
-					// Update existing to ensure name matches Exactly (case-sensitive update) and slug matches
-					_, err = tx.Exec(ctx, "UPDATE artists SET name = $1, slug = $2, updated_at = NOW() WHERE id = $3", cleanName, aSlug, artistID)
+					_, err = tx.Exec(ctx, "UPDATE artists SET name = $1, slug = $2, anilist_id = $3, updated_at = NOW() WHERE id = $4", cleanName, aSlug, alID, artistID)
 				} else {
-					// Not found, insert new
 					err = tx.QueryRow(ctx, `
-						INSERT INTO artists (name, slug, status, created_at, updated_at)
-						VALUES ($1, $2, true, NOW(), NOW())
-						RETURNING id`, cleanName, aSlug).Scan(&artistID)
+						INSERT INTO artists (uuid, name, slug, anilist_id, status, created_at, updated_at)
+						VALUES ($1, $2, $3, $4, true, NOW(), NOW())
+						RETURNING id`, uuid.New().String(), cleanName, aSlug, alID).Scan(&artistID)
 				}
-
-				if err != nil {
-					log.Printf("Artist Error (%s): %v\n", cleanName, err)
-					continue
-				}
-
-				// Link Artist-Song
-				_, err = tx.Exec(ctx, "INSERT INTO artist_song (artist_id, song_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", artistID, songID)
-				if err != nil {
-					// If the link table also doesn't have a unique constraint, we check first
-					var dummy uint64
-					errCheck := tx.QueryRow(ctx, "SELECT artist_id FROM artist_song WHERE artist_id = $1 AND song_id = $2", artistID, songID).Scan(&dummy)
-					if errCheck != nil {
-						_, _ = tx.Exec(ctx, "INSERT INTO artist_song (artist_id, song_id) VALUES ($1, $2)", artistID, songID)
-					}
+				if err == nil {
+					_, _ = tx.Exec(ctx, "INSERT INTO artist_song (artist_id, song_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", artistID, songID)
 				}
 			}
 		}
@@ -521,9 +561,8 @@ func main() {
 		}
 	}
 
-	// Post-hydration: Recalculate all artist song counts from ground truth
 	fmt.Println("Recalculating artist song counts...")
-	_, err = pool.Exec(ctx, `
+	_, _ = pool.Exec(ctx, `
 		UPDATE artists SET enabled_songs = sub.cnt
 		FROM (
 			SELECT a.id, COALESCE(COUNT(s.id), 0) AS cnt
@@ -533,11 +572,8 @@ func main() {
 			GROUP BY a.id
 		) sub
 		WHERE artists.id = sub.id`)
-	if err != nil {
-		log.Printf("Error recalculating enabled_songs: %v\n", err)
-	}
 
-	_, err = pool.Exec(ctx, `
+	_, _ = pool.Exec(ctx, `
 		UPDATE artists SET disabled_songs = sub.cnt
 		FROM (
 			SELECT a.id, COALESCE(COUNT(s.id), 0) AS cnt
@@ -547,20 +583,14 @@ func main() {
 			GROUP BY a.id
 		) sub
 		WHERE artists.id = sub.id`)
-	if err != nil {
-		log.Printf("Error recalculating disabled_songs: %v\n", err)
-	}
 
 	fmt.Println("Hydration Complete!")
 }
 
 func slugify(s string) string {
 	s = strings.ToLower(s)
-	// Replace underscores and spaces with hyphens
 	s = strings.ReplaceAll(s, "_", "-")
 	s = strings.ReplaceAll(s, " ", "-")
-
-	// Remove non-alphanumeric (except hyphen)
 	var result strings.Builder
 	for _, r := range s {
 		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' {
@@ -568,11 +598,8 @@ func slugify(s string) string {
 		}
 	}
 	s = result.String()
-
-	// Remove duplicate hyphens
 	for strings.Contains(s, "--") {
 		s = strings.ReplaceAll(s, "--", "-")
 	}
-
 	return strings.Trim(s, "-")
 }

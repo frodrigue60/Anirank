@@ -15,10 +15,12 @@ import (
 	"anirank/api/internal/infrastructure/anilist"
 	"anirank/api/internal/pkg/avatar"
 	"anirank/api/internal/pkg/utils"
+	"encoding/json"
+	"net/http"
+	"net/url"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	"net/http"
-	"encoding/json"
 )
 
 type ContentAdminUsecase struct {
@@ -421,13 +423,15 @@ func (u *ContentAdminUsecase) BatchFetchAnimes(ctx context.Context, season strin
 					defer wg.Done()
 					updated := false
 					if a.Cover == nil && m.CoverImage.ExtraLarge != "" {
-						if imgUrl, err := u.downloadAndStore(ctx, m.CoverImage.ExtraLarge, "animes/covers", uint64(m.ID)); err == nil {
+						options := infrastructure.ImageOptions{Width: 220, Format: "avif", Quality: 75}
+						if imgUrl, err := u.downloadAndStore(ctx, m.CoverImage.ExtraLarge, "animes/covers", uint64(m.ID), options); err == nil {
 							a.Cover = &imgUrl
 							updated = true
 						}
 					}
 					if a.Banner == nil && m.BannerImage != "" {
-						if imgUrl, err := u.downloadAndStore(ctx, m.BannerImage, "animes/banners", uint64(m.ID)); err == nil {
+						options := infrastructure.ImageOptions{Format: "avif", Quality: 75}
+						if imgUrl, err := u.downloadAndStore(ctx, m.BannerImage, "animes/banners", uint64(m.ID), options); err == nil {
 							a.Banner = &imgUrl
 							updated = true
 						}
@@ -604,12 +608,7 @@ func (u *ContentAdminUsecase) SyncAnimeWithAnilist(ctx context.Context, anime *d
 	}
 	fmt.Printf("[INFO] Synced %d genres for anime %d\n", len(genreIDs), anime.ID)
 
-	links := make([]domain.ExternalLink, 0, len(media.ExternalLinks)+1)
-	links = append(links, domain.ExternalLink{
-		Name: "AniList",
-		URL:  fmt.Sprintf("https://anilist.co/anime/%d", media.ID),
-		Type: "anilist",
-	})
+	links := make([]domain.ExternalLink, 0, len(media.ExternalLinks))
 	for _, l := range media.ExternalLinks {
 		links = append(links, domain.ExternalLink{
 			Name: l.Site,
@@ -663,11 +662,10 @@ func (u *ContentAdminUsecase) BatchCreateAnimesFromAnilist(ctx context.Context, 
 	return result
 }
 
-
 func (u *ContentAdminUsecase) SyncArtistsFromString(ctx context.Context, songID uint64, artistsStr string, meta domain.AuditMetadata) error {
 	names := strings.Split(artistsStr, ",")
 	var artistIDs []uint64
-	
+
 	// Regex for "Name (NameJP)" format
 	re := regexp.MustCompile(`^(.+?)\s*\(\s*(.+?)\s*\)$`)
 
@@ -688,7 +686,7 @@ func (u *ContentAdminUsecase) SyncArtistsFromString(ctx context.Context, songID 
 
 		slug := utils.Slugify(name)
 		if slug == "" {
-			// If name is non-latin, use the full name as slug (Slugify will probably fail again, 
+			// If name is non-latin, use the full name as slug (Slugify will probably fail again,
 			// but we need a slug. We might need a better slugifier later)
 			slug = "artist-" + utils.Slugify(nameJP)
 			if slug == "artist-" {
@@ -722,17 +720,16 @@ func (u *ContentAdminUsecase) SyncArtistsFromString(ctx context.Context, songID 
 			artistIDs = append(artistIDs, artist.ID)
 		}
 	}
-	
+
 	if len(artistIDs) > 0 {
 		return u.SyncSongArtists(ctx, songID, artistIDs)
 	}
 	return nil
 }
 
-
 func (u *ContentAdminUsecase) ensureLocalImages(ctx context.Context, anime *domain.Anime, preferredCover, preferredBanner string, anilistID int64) {
 	updated := false
-	
+
 	// Cover
 	if preferredCover != "" {
 		if !u.isLocalImage(anime.Cover) {
@@ -740,7 +737,8 @@ func (u *ContentAdminUsecase) ensureLocalImages(ctx context.Context, anime *doma
 			if id == 0 {
 				id = anime.ID
 			}
-			if imgUrl, err := u.downloadAndStore(ctx, preferredCover, "animes/covers", id); err == nil {
+			options := infrastructure.ImageOptions{Width: 220, Format: "avif", Quality: 75}
+			if imgUrl, err := u.downloadAndStore(ctx, preferredCover, "animes/covers", id, options); err == nil {
 				anime.Cover = &imgUrl
 				updated = true
 			} else {
@@ -756,7 +754,8 @@ func (u *ContentAdminUsecase) ensureLocalImages(ctx context.Context, anime *doma
 			if id == 0 {
 				id = anime.ID
 			}
-			if imgUrl, err := u.downloadAndStore(ctx, preferredBanner, "animes/banners", id); err == nil {
+			options := infrastructure.ImageOptions{Format: "avif", Quality: 75} // No resize for banners
+			if imgUrl, err := u.downloadAndStore(ctx, preferredBanner, "animes/banners", id, options); err == nil {
 				anime.Banner = &imgUrl
 				updated = true
 			} else {
@@ -774,7 +773,7 @@ func (u *ContentAdminUsecase) ensureLocalImages(ctx context.Context, anime *doma
 	}
 }
 
-func (u *ContentAdminUsecase) downloadAndStore(ctx context.Context, url string, prefix string, id uint64) (string, error) {
+func (u *ContentAdminUsecase) downloadAndStore(ctx context.Context, url string, prefix string, id uint64, opts infrastructure.ImageOptions) (string, error) {
 	if u.mediaService == nil {
 		return "", fmt.Errorf("no media service configured")
 	}
@@ -801,49 +800,53 @@ func (u *ContentAdminUsecase) downloadAndStore(ctx context.Context, url string, 
 		return "", err
 	}
 
-	path, url, err := u.mediaService.UploadImage(ctx, prefix, id, bytes.NewReader(buf), int64(len(buf)), resp.Header.Get("Content-Type"))
+	path, url, err := u.mediaService.UploadImageOptimized(ctx, prefix, id, bytes.NewReader(buf), opts)
 	_ = path // avoid unused
 	return url, err
 }
 
+type ATAnimeData struct {
+	ID          uint64 `json:"id"`
+	Name        string `json:"name"`
+	Slug        string `json:"slug"`
+	Year        int    `json:"year"`
+	Season      string `json:"season"`
+	Synopsis    string `json:"synopsis"`
+	MediaFormat string `json:"media_format"`
+	Images      []struct {
+		Facet string `json:"facet"`
+		Link  string `json:"link"`
+	} `json:"images"`
+	Resources []struct {
+		Site       string `json:"site"`
+		Link       string `json:"link"`
+		ExternalID int64  `json:"external_id"`
+	} `json:"resources"`
+	Studios []struct {
+		Name string `json:"name"`
+		Slug string `json:"slug"`
+	} `json:"studios"`
+	AnimeThemes []struct {
+		ID       uint64 `json:"id"`
+		Type     string `json:"type"`
+		Sequence int    `json:"sequence"`
+		Song     *struct {
+			Title   string `json:"title"`
+			Artists []struct {
+				ID   uint64 `json:"id"`
+				Name string `json:"name"`
+				Slug string `json:"slug"`
+			} `json:"artists"`
+		} `json:"song"`
+		AnimeThemeEntries []struct {
+			ID      uint64 `json:"id"`
+			Version int    `json:"version"`
+		} `json:"animethemeentries"`
+	} `json:"animethemes"`
+}
+
 type ATResponse struct {
-	Anime []struct {
-		Name        string `json:"name"`
-		Slug        string `json:"slug"`
-		Year        int    `json:"year"`
-		Season      string `json:"season"`
-		Synopsis    string `json:"synopsis"`
-		MediaFormat string `json:"media_format"`
-		Images      []struct {
-			Facet string `json:"facet"`
-			Link  string `json:"link"`
-		} `json:"images"`
-		Resources []struct {
-			Site string `json:"site"`
-			Link string `json:"link"`
-		} `json:"resources"`
-		Studios []struct {
-			Name string `json:"name"`
-			Slug string `json:"slug"`
-		} `json:"studios"`
-		AnimeThemes []struct {
-			ID       uint64 `json:"id"`
-			Type     string `json:"type"`
-			Sequence int    `json:"sequence"`
-			Song     *struct {
-				Title   string `json:"title"`
-				Artists []struct {
-					ID   uint64 `json:"id"`
-					Name string `json:"name"`
-					Slug string `json:"slug"`
-				} `json:"artists"`
-			} `json:"song"`
-			AnimeThemeEntries []struct {
-				ID      uint64 `json:"id"`
-				Version int    `json:"version"`
-			} `json:"animethemeentries"`
-		} `json:"animethemes"`
-	} `json:"anime"`
+	Anime []ATAnimeData `json:"anime"`
 }
 
 type ATResource struct {
@@ -890,19 +893,129 @@ func (u *ContentAdminUsecase) HydrateSeason(ctx context.Context, year int, seaso
 	}
 
 	totalAnime := len(atResp.Anime)
-	sendProgress(fmt.Sprintf("Found %d animes in AnimeThemes. Collecting IDs...", totalAnime))
+	if totalAnime == 0 {
+		sendProgress("No animes found for this season.")
+		return nil
+	}
 
-	allProcessedArtistIDs := make(map[uint64]bool) // To trigger avatar gen later
+	return u.syncAnimeThemesCollection(ctx, atResp.Anime, meta, progress)
+}
+
+func (u *ContentAdminUsecase) SearchAnimeThemes(ctx context.Context, query string) ([]ATAnimeData, error) {
+	// Using 'q' parameter as 'filter[name][like]' causes 500 errors on AnimeThemes API
+	url := fmt.Sprintf("https://api.animethemes.moe/anime?q=%s&include=images,resources&page[size]=20", url.QueryEscape(query))
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("AnimeThemes API status %d", resp.StatusCode)
+	}
+
+	var atResp ATResponse
+	if err := json.NewDecoder(resp.Body).Decode(&atResp); err != nil {
+		return nil, err
+	}
+
+	return atResp.Anime, nil
+}
+
+func (u *ContentAdminUsecase) HydrateAnimeThemes(ctx context.Context, ids []uint64, meta domain.AuditMetadata, progress chan<- string) error {
+	sendProgress := func(msg string) {
+		if progress != nil {
+			select {
+			case progress <- msg:
+			default:
+			}
+		}
+	}
+
+	if len(ids) == 0 {
+		return nil
+	}
+
+	idStrings := make([]string, len(ids))
+	for i, id := range ids {
+		idStrings[i] = fmt.Sprintf("%d", id)
+	}
+
+	// 1. Initial fetch to get slugs for deep-fetch
+	url := fmt.Sprintf("https://api.animethemes.moe/anime?filter[id]=%s&page[size]=100", strings.Join(idStrings, ","))
+	client := &http.Client{Timeout: 30 * time.Second}
+
+	sendProgress(fmt.Sprintf("Verifying %d animes on AnimeThemes...", len(ids)))
+	resp, err := client.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	var atResp ATResponse
+	if err := json.NewDecoder(resp.Body).Decode(&atResp); err != nil {
+		return err
+	}
+
+	if len(atResp.Anime) == 0 {
+		return fmt.Errorf("no animes found for IDs: %s", strings.Join(idStrings, ","))
+	}
+
+	// 2. Deep-fetch each anime individually to ensure all relationships (songs, studios) are populated
+	// AnimeThemes index/filter endpoints are unreliable for nested includes
+	var fullAnimeList []ATAnimeData
+	for i, a := range atResp.Anime {
+		sendProgress(fmt.Sprintf("[%d/%d] Fetching full record for: %s", i+1, len(atResp.Anime), a.Name))
+		detailUrl := fmt.Sprintf("https://api.animethemes.moe/anime/%s?include=animethemes.song.artists,images,animethemes.animethemeentries,studios,resources", a.Slug)
+
+		dResp, err := client.Get(detailUrl)
+		if err != nil {
+			fmt.Printf("[ERROR] Failed to deep-fetch slug %s: %v\n", a.Slug, err)
+			continue
+		}
+
+		var detailResp struct {
+			Anime ATAnimeData `json:"anime"`
+		}
+		if err := json.NewDecoder(dResp.Body).Decode(&detailResp); err == nil {
+			fullAnimeList = append(fullAnimeList, detailResp.Anime)
+		}
+		dResp.Body.Close()
+	}
+
+	return u.syncAnimeThemesCollection(ctx, fullAnimeList, meta, progress)
+}
+
+func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, animeList []ATAnimeData, meta domain.AuditMetadata, progress chan<- string) error {
+	sendProgress := func(msg string) {
+		if progress != nil {
+			select {
+			case progress <- msg:
+			default:
+			}
+		}
+	}
+
+	totalAnime := len(animeList)
+	sendProgress(fmt.Sprintf("Found %d animes. Collecting IDs for enrichment...", totalAnime))
+
+	allProcessedArtistIDs := make(map[uint64]bool)
 
 	// --- Phase 1: ID Collection ---
 	uniqueAlIDs := make(map[int64]bool)
-	for _, a := range atResp.Anime {
+	for _, a := range animeList {
 		var alID int64
 		for _, res := range a.Resources {
 			if res.Site == "AniList" {
-				parts := strings.Split(strings.TrimRight(res.Link, "/"), "/")
-				if len(parts) > 0 {
-					fmt.Sscanf(parts[len(parts)-1], "%d", &alID)
+				if res.ExternalID > 0 {
+					alID = res.ExternalID
+				} else {
+					parts := strings.Split(strings.TrimRight(res.Link, "/"), "/")
+					if len(parts) > 0 {
+						fmt.Sscanf(parts[len(parts)-1], "%d", &alID)
+					}
 				}
 				break
 			}
@@ -953,7 +1066,7 @@ func (u *ContentAdminUsecase) HydrateSeason(ctx context.Context, year int, seaso
 
 	// --- Phase 2.5: Batch Fetch Artist Resources ---
 	uniqueArtistIDs := make(map[uint64]bool)
-	for _, a := range atResp.Anime {
+	for _, a := range animeList {
 		for _, theme := range a.AnimeThemes {
 			for _, art := range theme.Song.Artists {
 				uniqueArtistIDs[art.ID] = true
@@ -969,6 +1082,7 @@ func (u *ContentAdminUsecase) HydrateSeason(ctx context.Context, year int, seaso
 		}
 
 		sendProgress(fmt.Sprintf("Fetching resources for %d artists in batches...", len(artistIDs)))
+		client := &http.Client{Timeout: 30 * time.Second}
 		for i := 0; i < len(artistIDs); i += 100 {
 			end := i + 100
 			if end > len(artistIDs) {
@@ -998,7 +1112,7 @@ func (u *ContentAdminUsecase) HydrateSeason(ctx context.Context, year int, seaso
 	}
 
 	// --- Phase 3: Processing ---
-	for i, a := range atResp.Anime {
+	for i, a := range animeList {
 		sendProgress(fmt.Sprintf("[%d/%d] Processing: %s", i+1, totalAnime, a.Name))
 		// 1. Resolve Taxonomies
 		yearObj, err := u.taxonomyRepo.GetOrCreateYear(ctx, fmt.Sprintf("%d", a.Year))
@@ -1024,9 +1138,13 @@ func (u *ContentAdminUsecase) HydrateSeason(ctx context.Context, year int, seaso
 		var anilistID int64
 		for _, res := range a.Resources {
 			if res.Site == "AniList" {
-				parts := strings.Split(strings.TrimRight(res.Link, "/"), "/")
-				if len(parts) > 0 {
-					fmt.Sscanf(parts[len(parts)-1], "%d", &anilistID)
+				if res.ExternalID > 0 {
+					anilistID = res.ExternalID
+				} else {
+					parts := strings.Split(strings.TrimRight(res.Link, "/"), "/")
+					if len(parts) > 0 {
+						fmt.Sscanf(parts[len(parts)-1], "%d", &anilistID)
+					}
 				}
 				break
 			}
@@ -1154,213 +1272,213 @@ func (u *ContentAdminUsecase) HydrateSeason(ctx context.Context, year int, seaso
 			_ = u.animeRepo.UpdateStudios(ctx, anime.ID, studioIDs)
 		}
 
-			// 6. Process Songs & Themes
-			// We need to load songs for the anime to check for existence
-			animeSongs, _ := u.songRepo.GetByAnimeID(ctx, anime.ID)
-			processedSongs := make(map[uint64]bool) // Track processed IDs in this batch
-			
-			for _, t := range a.AnimeThemes {
-				if t.Song == nil {
-					continue
-				}
+		// 6. Process Songs & Themes
+		// We need to load songs for the anime to check for existence
+		animeSongs, _ := u.songRepo.GetByAnimeID(ctx, anime.ID)
+		processedSongs := make(map[uint64]bool) // Track processed IDs in this batch
 
-				atID := t.ID
-				themeNum := t.Sequence
-				if themeNum == 0 {
-					themeNum = 1
-				}
-				songSlug := fmt.Sprintf("%s%d", t.Type, themeNum)
+		for _, t := range a.AnimeThemes {
+			if t.Song == nil {
+				continue
+			}
 
-				var song *domain.Song
-				// 1. Match by AnimeThemes ID (Most reliable)
+			atID := t.ID
+			themeNum := t.Sequence
+			if themeNum == 0 {
+				themeNum = 1
+			}
+			songSlug := fmt.Sprintf("%s%d", t.Type, themeNum)
+
+			var song *domain.Song
+			// 1. Match by AnimeThemes ID (Most reliable)
+			for i := range animeSongs {
+				if animeSongs[i].AnimeThemesID != nil && *animeSongs[i].AnimeThemesID == atID {
+					song = &animeSongs[i]
+					break
+				}
+			}
+			// 2. Fallback to Slug if no ID match
+			if song == nil {
 				for i := range animeSongs {
-					if animeSongs[i].AnimeThemesID != nil && *animeSongs[i].AnimeThemesID == atID {
+					if animeSongs[i].Slug == songSlug {
 						song = &animeSongs[i]
 						break
 					}
 				}
+			}
+
+			// Skip if we already processed this ID in this run (Duplicate in AT response)
+			if song != nil && processedSongs[song.ID] {
+				continue
+			}
+
+			title := t.Song.Title
+			if song != nil {
+				// Update
+				song.SongRomaji = &title
+				song.YearID = yearObj.ID
+				song.SeasonID = seasonObj.ID
+				song.AnimeThemesID = &atID
+				_ = u.songRepo.Update(ctx, song)
+				processedSongs[song.ID] = true
+			} else {
+				// Create
+				song = &domain.Song{
+					SongRomaji:    &title,
+					Slug:          songSlug,
+					Type:          t.Type,
+					ThemeNum:      fmt.Sprintf("%d", themeNum),
+					AnimeID:       anime.ID,
+					YearID:        yearObj.ID,
+					SeasonID:      seasonObj.ID,
+					Status:        true,
+					AnimeThemesID: &atID,
+					UUID:          uuid.New().String(),
+				}
+				if err := u.songRepo.Create(ctx, song); err != nil {
+					continue
+				}
+				processedSongs[song.ID] = true
+			}
+
+			// Process Variants
+			existingVariants, _ := u.songRepo.GetVariantsBySongID(ctx, song.ID)
+			processedVariants := make(map[uint64]bool)
+
+			for _, entry := range t.AnimeThemeEntries {
+				atvID := entry.ID
+				version := uint64(entry.Version)
+				if version == 0 {
+					version = 1
+				}
+				variantSlug := fmt.Sprintf("V%d", version)
+
+				var variant *domain.SongVariant
+				// 1. Match by AnimeThemes ID (Most reliable)
+				for i := range existingVariants {
+					if existingVariants[i].AnimeThemesID != nil && *existingVariants[i].AnimeThemesID == atvID {
+						variant = &existingVariants[i]
+						break
+					}
+				}
 				// 2. Fallback to Slug if no ID match
-				if song == nil {
-					for i := range animeSongs {
-						if animeSongs[i].Slug == songSlug {
-							song = &animeSongs[i]
+				if variant == nil {
+					for i := range existingVariants {
+						if existingVariants[i].Slug == variantSlug {
+							variant = &existingVariants[i]
 							break
 						}
 					}
 				}
 
 				// Skip if we already processed this ID in this run (Duplicate in AT response)
-				if song != nil && processedSongs[song.ID] {
+				if variant != nil && processedVariants[variant.ID] {
 					continue
 				}
 
-				title := t.Song.Title
-				if song != nil {
+				if variant != nil {
 					// Update
-					song.SongRomaji = &title
-					song.YearID = yearObj.ID
-					song.SeasonID = seasonObj.ID
-					song.AnimeThemesID = &atID
-					_ = u.songRepo.Update(ctx, song)
-					processedSongs[song.ID] = true
+					variant.VersionNumber = version
+					variant.Slug = variantSlug
+					variant.AnimeThemesID = &atvID
+					variant.YearID = yearObj.ID
+					variant.SeasonID = seasonObj.ID
+					_ = u.variantRepo.Update(ctx, variant)
+					processedVariants[variant.ID] = true
 				} else {
 					// Create
-					song = &domain.Song{
-						SongRomaji:    &title,
-						Slug:          songSlug,
-						Type:          t.Type,
-						ThemeNum:      fmt.Sprintf("%d", themeNum),
-						AnimeID:       anime.ID,
+					variant = &domain.SongVariant{
+						SongID:        song.ID,
+						Slug:          variantSlug,
+						VersionNumber: version,
+						Status:        true,
 						YearID:        yearObj.ID,
 						SeasonID:      seasonObj.ID,
-						Status:        true,
-						AnimeThemesID: &atID,
+						AnimeThemesID: &atvID,
 						UUID:          uuid.New().String(),
 					}
-					if err := u.songRepo.Create(ctx, song); err != nil {
-						continue
-					}
-					processedSongs[song.ID] = true
-				}
-
-				// Process Variants
-				existingVariants, _ := u.songRepo.GetVariantsBySongID(ctx, song.ID)
-				processedVariants := make(map[uint64]bool)
-
-				for _, entry := range t.AnimeThemeEntries {
-					atvID := entry.ID
-					version := uint64(entry.Version)
-					if version == 0 {
-						version = 1
-					}
-					variantSlug := fmt.Sprintf("V%d", version)
-					
-					var variant *domain.SongVariant
-					// 1. Match by AnimeThemes ID (Most reliable)
-					for i := range existingVariants {
-						if existingVariants[i].AnimeThemesID != nil && *existingVariants[i].AnimeThemesID == atvID {
-							variant = &existingVariants[i]
-							break
-						}
-					}
-					// 2. Fallback to Slug if no ID match
-					if variant == nil {
-						for i := range existingVariants {
-							if existingVariants[i].Slug == variantSlug {
-								variant = &existingVariants[i]
-								break
-							}
-						}
-					}
-
-					// Skip if we already processed this ID in this run (Duplicate in AT response)
-					if variant != nil && processedVariants[variant.ID] {
-						continue
-					}
-
-					if variant != nil {
-						// Update
-						variant.VersionNumber = version
-						variant.Slug = variantSlug
-						variant.AnimeThemesID = &atvID
-						variant.YearID = yearObj.ID
-						variant.SeasonID = seasonObj.ID
-						_ = u.variantRepo.Update(ctx, variant)
+					if err := u.variantRepo.Create(ctx, variant); err == nil {
 						processedVariants[variant.ID] = true
-					} else {
-						// Create
-						variant = &domain.SongVariant{
-							SongID:        song.ID,
-							Slug:          variantSlug,
-							VersionNumber: version,
-							Status:        true,
-							YearID:        yearObj.ID,
-							SeasonID:      seasonObj.ID,
-							AnimeThemesID: &atvID,
-							UUID:          uuid.New().String(),
+					}
+				}
+			}
+
+			// Process Artists
+			var artistIDs []uint64
+			processedArtists := make(map[uint64]bool)
+
+			for _, art := range t.Song.Artists {
+				atArtID := art.ID
+				cleanName := strings.TrimSpace(art.Name)
+				aSlug := utils.Slugify(cleanName)
+				if aSlug == "" {
+					aSlug = utils.Slugify(art.Slug)
+				}
+				if aSlug == "" {
+					continue
+				}
+
+				// Extract Anilist ID from resources
+				var alID *uint64
+				resources := artistResourcesMap[atArtID]
+				for _, res := range resources {
+					if res.Site == "AniList" && strings.Contains(res.Link, "anilist.co/staff/") {
+						parts := strings.Split(strings.TrimRight(res.Link, "/"), "/")
+						if len(parts) > 0 {
+							idStr := parts[len(parts)-1]
+							var idVal uint64
+							if _, err := fmt.Sscanf(idStr, "%d", &idVal); err == nil {
+								alID = &idVal
+							}
 						}
-						if err := u.variantRepo.Create(ctx, variant); err == nil {
-							processedVariants[variant.ID] = true
-						}
+						break
 					}
 				}
 
-				// Process Artists
-				var artistIDs []uint64
-				processedArtists := make(map[uint64]bool)
+				var artist *domain.Artist
+				// 1. Match by AnimeThemes ID (Most reliable)
+				artist, _ = u.artistRepo.GetByAnimeThemesID(ctx, atArtID)
 
-				for _, art := range t.Song.Artists {
-					atArtID := art.ID
-					cleanName := strings.TrimSpace(art.Name)
-					aSlug := utils.Slugify(cleanName)
-					if aSlug == "" {
-						aSlug = utils.Slugify(art.Slug)
+				// 2. Fallback to Slug if no ID match
+				if artist == nil {
+					artist, _ = u.artistRepo.GetBySlug(ctx, aSlug)
+				}
+
+				if artist != nil {
+					// Update and ensure ID is saved
+					artist.Name = cleanName
+					artist.Slug = aSlug
+					artist.AnimeThemesID = &atArtID
+					if alID != nil {
+						artist.AnilistID = alID
 					}
-					if aSlug == "" {
+					_ = u.artistRepo.Update(ctx, artist)
+				} else {
+					// Create
+					artist = &domain.Artist{
+						Name:          cleanName,
+						Slug:          aSlug,
+						AnilistID:     alID,
+						Status:        true,
+						AnimeThemesID: &atArtID,
+						UUID:          uuid.New().String(),
+					}
+					if err := u.artistRepo.Create(ctx, artist); err != nil {
 						continue
 					}
-
-					// Extract Anilist ID from resources
-					var alID *uint64
-					resources := artistResourcesMap[atArtID]
-					for _, res := range resources {
-						if res.Site == "AniList" && strings.Contains(res.Link, "anilist.co/staff/") {
-							parts := strings.Split(strings.TrimRight(res.Link, "/"), "/")
-							if len(parts) > 0 {
-								idStr := parts[len(parts)-1]
-								var idVal uint64
-								if _, err := fmt.Sscanf(idStr, "%d", &idVal); err == nil {
-									alID = &idVal
-								}
-							}
-							break
-						}
-					}
-
-					var artist *domain.Artist
-					// 1. Match by AnimeThemes ID (Most reliable)
-					artist, _ = u.artistRepo.GetByAnimeThemesID(ctx, atArtID)
-					
-					// 2. Fallback to Slug if no ID match
-					if artist == nil {
-						artist, _ = u.artistRepo.GetBySlug(ctx, aSlug)
-					}
-
-					if artist != nil {
-						// Update and ensure ID is saved
-						artist.Name = cleanName
-						artist.Slug = aSlug
-						artist.AnimeThemesID = &atArtID
-						if alID != nil {
-							artist.AnilistID = alID
-						}
-						_ = u.artistRepo.Update(ctx, artist)
-					} else {
-						// Create
-						artist = &domain.Artist{
-							Name:          cleanName,
-							Slug:          aSlug,
-							AnilistID:     alID,
-							Status:        true,
-							AnimeThemesID: &atArtID,
-							UUID:          uuid.New().String(),
-						}
-						if err := u.artistRepo.Create(ctx, artist); err != nil {
-							continue
-						}
-					}
-
-					// Collect all artist IDs for avatar generation later
-					allProcessedArtistIDs[artist.ID] = true
-
-					// Skip if we already added this artist to THIS song
-					if !processedArtists[artist.ID] {
-						artistIDs = append(artistIDs, artist.ID)
-						processedArtists[artist.ID] = true
-					}
 				}
-				if len(artistIDs) > 0 {
-					_ = u.songRepo.SyncArtists(ctx, song.ID, artistIDs)
+
+				// Collect all artist IDs for avatar generation later
+				allProcessedArtistIDs[artist.ID] = true
+
+				// Skip if we already added this artist to THIS song
+				if !processedArtists[artist.ID] {
+					artistIDs = append(artistIDs, artist.ID)
+					processedArtists[artist.ID] = true
+				}
+			}
+			if len(artistIDs) > 0 {
+				_ = u.songRepo.SyncArtists(ctx, song.ID, artistIDs)
 			}
 		}
 	}
@@ -1600,8 +1718,6 @@ func (u *ContentAdminUsecase) nullifyEmptySongFields(s *domain.Song) {
 	}
 }
 
-
-
 // ---- ARTISTS ----
 func (u *ContentAdminUsecase) GetArtists(ctx context.Context, page, limit int, search string) ([]domain.Artist, int, error) {
 	if page < 1 {
@@ -1750,7 +1866,7 @@ func (u *ContentAdminUsecase) BatchGenerateArtistAvatars(ctx context.Context, id
 
 			_ = u.artistRepo.UpdateAvatar(ctx, a.ID, url)
 			sendProgress(fmt.Sprintf("[%d/%d] ✓ [Avatar-UI] Generated placeholder: %s", i+1, len(stillMissing), a.Name))
-			
+
 			// Small delay for avatar-ui fallback to be safe
 			time.Sleep(500 * time.Millisecond)
 		}
@@ -2191,6 +2307,7 @@ func (u *ContentAdminUsecase) UploadArtistAvatar(ctx context.Context, artistID u
 	artist.Avatar = &url
 	return u.artistRepo.Update(ctx, artist)
 }
+
 // validateStatusPermissions ensures role-based status control
 // 1. Creators cannot set status to true (active).
 // 2. New content from Creators (isNew=true) is forced to false (inactive/draft).

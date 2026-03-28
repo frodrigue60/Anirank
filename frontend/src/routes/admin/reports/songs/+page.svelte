@@ -43,7 +43,7 @@
 </script>
 
 <svelte:head>
-  <title>User Reports | Admin</title>
+  <title>Song Reports | Admin</title>
 </svelte:head>
 
 <div
@@ -51,10 +51,10 @@
 >
   <div>
     <h1 class="text-3xl font-bold tracking-tight text-white mb-1">
-      User Reports
+      Song Reports
     </h1>
     <p class="text-gray-400">
-      Review reported content, comments, and community guideline violations.
+      Review and manage reports for song metadata and media.
     </p>
   </div>
 </div>
@@ -117,7 +117,7 @@
                 ID: {rpt.song_id}
               </div>
               <a
-                href="/admin/songs/reports/{rpt.id}"
+                href="/admin/reports/songs/{rpt.id}"
                 class="mt-2 text-xs text-gray-400 hover:text-white underline decoration-white/20 underline-offset-2"
                 >Read report</a
               >

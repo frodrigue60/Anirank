@@ -98,6 +98,7 @@ type Artist struct {
 	FavoritesCount uint64 `db:"favorites_count" json:"favorites_count"`
 	IsFavorited    bool   `db:"-" json:"is_favorited"`
 	AnimeThemesID  *uint64 `db:"animethemes_id" json:"animethemes_id,omitempty"`
+	AnilistID      *uint64 `db:"anilist_id" json:"anilist_id,omitempty"`
 }
 
 type ArtistFilters struct {
@@ -168,6 +169,7 @@ type ArtistRepository interface {
 	GetByID(ctx context.Context, id uint64) (*Artist, error)
 	GetByUUID(ctx context.Context, uuid string) (*Artist, error)
 	GetBySlug(ctx context.Context, slug string) (*Artist, error)
+	GetByAnilistID(ctx context.Context, id uint64) (*Artist, error)
 	GetByAnimeThemesID(ctx context.Context, id uint64) (*Artist, error)
 	GetPaginated(ctx context.Context, limit, offset int, filters ArtistFilters) ([]Artist, error)
 	Count(ctx context.Context, filters ArtistFilters) (int, error)

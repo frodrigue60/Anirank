@@ -103,8 +103,8 @@ func main() {
 	for _, artist := range artists {
 		log.Printf("Generating avatar for artist: %s", artist.Name)
 
-		// Generate Local Avatar (180px, AVIF)
-		res, err := avatar.Generate(context.Background(), artist.Name, 180)
+		// Generate Local Avatar (256px, AVIF)
+		res, err := avatar.Generate(context.Background(), artist.Name, 256)
 		if err != nil {
 			log.Printf("Failed to generate avatar for %s: %v", artist.Name, err)
 			continue

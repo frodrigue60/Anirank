@@ -13,6 +13,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/disintegration/gift"
+	"github.com/gen2brain/avif"
 	_ "golang.org/x/image/webp"
 )
 
@@ -69,4 +71,37 @@ func decodeFromFile(path string) (image.Image, string, error) {
 		return nil, "", err
 	}
 	return image.Decode(bytes.NewReader(data))
+}
+
+// Resize resizes the image to the target width and height.
+// If one of them is 0, the aspect ratio is preserved based on the other side.
+func Resize(img image.Image, width, height int) image.Image {
+	if width == 0 && height == 0 {
+		return img
+	}
+
+	g := gift.New()
+	if width > 0 && height == 0 {
+		g.Add(gift.Resize(width, 0, gift.LanczosResampling))
+	} else if width == 0 && height > 0 {
+		g.Add(gift.Resize(0, height, gift.LanczosResampling))
+	} else {
+		g.Add(gift.Resize(width, height, gift.LanczosResampling))
+	}
+
+	dst := image.NewRGBA(g.Bounds(img.Bounds()))
+	g.Draw(dst, img)
+	return dst
+}
+
+// EncodeAVIF encodes the image into AVIF format.
+func EncodeAVIF(img image.Image, quality int) ([]byte, error) {
+	var buf bytes.Buffer
+	if quality <= 0 {
+		quality = 70
+	}
+	if err := avif.Encode(&buf, img, avif.Options{Quality: quality}); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }

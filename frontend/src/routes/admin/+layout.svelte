@@ -157,7 +157,7 @@
         <li>
           <!-- songs reports -->
           <a
-            href="/admin/songs/reports"
+            href="/admin/reports/songs"
             class="flex items-center p-3 rounded-xl hover:bg-anirank-primary/10 hover:text-anirank-primary transition-colors {isSidebarOpen
               ? ''
               : 'justify-center'}"
@@ -171,7 +171,7 @@
         <li>
           <!-- comments reports -->
           <a
-            href="/admin/comments/reports"
+            href="/admin/reports/comments"
             class="flex items-center p-3 rounded-xl hover:bg-anirank-primary/10 hover:text-anirank-primary transition-colors {isSidebarOpen
               ? ''
               : 'justify-center'}"

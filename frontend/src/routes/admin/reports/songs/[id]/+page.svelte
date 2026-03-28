@@ -21,7 +21,7 @@
       await api.put(`/admin/songs/reports/${report.id}/resolve`);
       toastState.addToast("Report marked as resolved", "success");
       report.status = "fixed";
-      goto("/admin/songs/reports");
+      goto("/admin/reports/songs");
     } catch (err: any) {
       console.error("Error resolving report:", err);
       toastState.addToast(
@@ -41,7 +41,7 @@
     try {
       await api.delete(`/admin/songs/reports/${report.id}`);
       toastState.addToast("Report deleted", "success");
-      goto("/admin/songs/reports");
+      goto("/admin/reports/songs");
     } catch (err: any) {
       console.error("Error deleting report:", err);
       toastState.addToast("Failed to delete report", "error");
@@ -68,8 +68,8 @@
     <div>
       <div class="flex items-center gap-3 mb-2">
         <a
-          href="/admin/songs/reports"
-          class="p-2 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 transition-colors"
+          href="/admin/reports/songs"
+          class="p-2 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 font-bold transition-colors"
         >
           <span class="material-symbols-outlined text-xl">arrow_back</span>
         </a>
@@ -171,8 +171,7 @@
                     class="text-xs text-blue-400 font-bold uppercase tracking-wider mb-1"
                   >
                     <a
-                      href="/songs/{report.song?.anime?.slug}/{report.song
-                        ?.slug}"
+                      href="/songs/{report.song?.anime?.slug}/{report.song?.slug}"
                       target="_blank"
                       class="text-lg font-bold text-white hover:text-blue-400 transition-colors"
                     >

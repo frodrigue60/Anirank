@@ -292,7 +292,11 @@ func (h *ModerationHandler) DeleteSongReport(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.SendStatus(204)
+	return c.JSON(fiber.Map{
+		"success": true,
+		"message": "Song report deleted successfully",
+		"data":    nil,
+	})
 }
 
 // GetCommentReports
@@ -401,7 +405,11 @@ func (h *ModerationHandler) DeleteCommentReport(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.SendStatus(204)
+	return c.JSON(fiber.Map{
+		"success": true,
+		"message": "Comment report deleted successfully",
+		"data":    nil,
+	})
 }
 
 // GetUserRequests
@@ -522,5 +530,9 @@ func (h *ModerationHandler) DeleteUserRequest(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.SendStatus(204)
+	return c.JSON(fiber.Map{
+		"success": true,
+		"message": "User request deleted successfully",
+		"data":    nil,
+	})
 }

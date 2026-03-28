@@ -149,6 +149,14 @@ func (u *AdminUsecase) HydrateAnimeSeason(ctx context.Context, year int, season 
 	return u.contentAdmin.HydrateSeason(ctx, year, season, meta, progress)
 }
 
+func (u *AdminUsecase) SearchAnimeThemes(ctx context.Context, query string) ([]ATAnimeData, error) {
+	return u.contentAdmin.SearchAnimeThemes(ctx, query)
+}
+
+func (u *AdminUsecase) HydrateAnimeThemes(ctx context.Context, ids []uint64, meta domain.AuditMetadata, progress chan<- string) error {
+	return u.contentAdmin.HydrateAnimeThemes(ctx, ids, meta, progress)
+}
+
 func (u *AdminUsecase) ResolveSongsURLs(songs []domain.Song) {
 	u.contentAdmin.ResolveSongsURLs(songs)
 }

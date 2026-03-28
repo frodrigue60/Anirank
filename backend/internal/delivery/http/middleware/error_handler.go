@@ -28,7 +28,8 @@ func ErrorHandler(c *fiber.Ctx, err error) error {
 
 	// Send JSON response with error details
 	return c.Status(code).JSON(fiber.Map{
-		"error":   true,
+		"success": false,
 		"message": message,
+		"data":    nil,
 	})
 }

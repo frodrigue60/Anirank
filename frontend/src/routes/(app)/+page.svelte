@@ -514,10 +514,6 @@
       <div class="bg-surface-darker rounded-2xl p-6 border border-white/5">
         <div class="flex items-center justify-between mb-6">
           <h3 class="font-bold text-white text-lg">Featured Artists</h3>
-          <!-- <a
-                        class="text-primary text-xs font-bold uppercase tracking-wide hover:underline"
-                        href="/artists">View All</a
-                    > -->
         </div>
         {#if homeData.featured_artists?.length > 0}
           <div class="flex flex-col gap-5">
@@ -527,9 +523,9 @@
                 class="flex items-center justify-between group"
                 title="View artist profile: {artist.name}"
               >
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-3 min-w-0">
                   <div
-                    class="w-12 h-12 rounded-full overflow-hidden border-2 border-transparent group-hover:border-primary transition-colors flex items-center justify-center bg-primary/20 text-primary"
+                    class="w-10 h-10 rounded-full overflow-hidden border-2 border-transparent group-hover:border-primary transition-colors flex items-center justify-center bg-primary/20 text-primary shrink-0"
                   >
                     <img
                       alt={artist.name}
@@ -539,23 +535,14 @@
                         "/images/placeholders/default.jpg"}
                     />
                   </div>
-                  <div>
+                  <div class="min-w-0">
                     <h4
-                      class="text-sm font-bold text-white group-hover:text-primary transition-colors"
+                      class="text-sm font-bold text-white group-hover:text-primary transition-colors truncate"
                     >
                       {artist.name}
                     </h4>
                   </div>
                 </div>
-                <button
-                  class="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-primary transition-colors shrink-0"
-                  title="View artist profile"
-                  aria-label="Go to {artist.name}'s profile"
-                >
-                  <span class="material-symbols-outlined text-[18px]"
-                    >arrow_forward</span
-                  >
-                </button>
               </a>
             {/each}
           </div>

@@ -19,12 +19,160 @@
   let atSeason = $state("");
   let progressMessage = $state("");
 
-  function handleAnilistSearch(e: Event) {
+  // AnimeThemes Hydration State
+  let animeThemesQuery = $state("");
+  let animeThemesResults = $state<any[]>([]);
+  let selectedAnimeThemesIDs = $state<Set<number>>(new Set());
+  let isSearchingAnimeThemes = $state(false);
+  let showResultsModal = $state(false);
+
+  // Anilist Search State
+  let anilistResults = $state<any[]>([]);
+  let selectedAnilistIDs = $state<Set<number>>(new Set());
+  let isSearchingAnilist = $state(false);
+  let showAnilistResultsModal = $state(false);
+  let isImportingAnilist = $state(false);
+
+  async function handleAnimeThemesSearch(e: Event) {
+    e.preventDefault();
+    if (!animeThemesQuery.trim()) return;
+
+    isSearchingAnimeThemes = true;
+    try {
+      const resp = await api.get(
+        `/admin/animes/animethemes/search?q=${encodeURIComponent(animeThemesQuery.trim())}`,
+      );
+      animeThemesResults = resp.data.data || [];
+      selectedAnimeThemesIDs = new Set();
+      showResultsModal = true;
+    } catch (err: any) {
+      toastState.addToast("Failed to search AnimeThemes", "error");
+    } finally {
+      isSearchingAnimeThemes = false;
+    }
+  }
+
+  function toggleAnimeSelection(id: number) {
+    if (selectedAnimeThemesIDs.has(id)) {
+      selectedAnimeThemesIDs.delete(id);
+    } else {
+      selectedAnimeThemesIDs.add(id);
+    }
+    // Trigger reactivity for Set in Svelte 5
+    selectedAnimeThemesIDs = new Set(selectedAnimeThemesIDs);
+  }
+
+  async function handleImportSelected() {
+    if (selectedAnimeThemesIDs.size === 0) return;
+
+    showResultsModal = false;
+    isHydrating = true;
+    progressMessage = "Starting targeted hydration...";
+
+    try {
+      const response = await fetch(
+        `${api.defaults.baseURL}/admin/animes/animethemes/hydrate`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${getAuthToken()}`,
+          },
+          body: JSON.stringify({
+            ids: Array.from(selectedAnimeThemesIDs),
+          }),
+        },
+      );
+
+      if (!response.ok) throw new Error("Import failed");
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          const messages = chunk.split("\n\n");
+
+          for (const msg of messages) {
+            if (msg.startsWith("data: ")) {
+              progressMessage = msg.replace("data: ", "");
+            }
+          }
+        }
+      }
+
+      toastState.addToast(
+        `Imported ${selectedAnimeThemesIDs.size} animes successfully`,
+        "success",
+      );
+    } catch (err: any) {
+      toastState.addToast(`Import failed: ${err.message}`, "error");
+    } finally {
+      isHydrating = false;
+      progressMessage = "";
+    }
+  }
+
+  async function handleAnilistSearch(e: Event) {
     e.preventDefault();
     if (!anilistQuery.trim()) return;
-    goto(
-      `/admin/animes/anilist-search?q=${encodeURIComponent(anilistQuery.trim())}`,
-    );
+
+    isSearchingAnilist = true;
+    try {
+      const resp = await api.get(
+        `/admin/animes/anilist-search?q=${encodeURIComponent(anilistQuery.trim())}`,
+      );
+      anilistResults = resp.data.data || [];
+      selectedAnilistIDs = new Set();
+      showAnilistResultsModal = true;
+    } catch (err: any) {
+      toastState.addToast("Failed to search AniList", "error");
+    } finally {
+      isSearchingAnilist = false;
+    }
+  }
+
+  function toggleAnilistSelection(id: number) {
+    if (selectedAnilistIDs.has(id)) {
+      selectedAnilistIDs.delete(id);
+    } else {
+      selectedAnilistIDs.add(id);
+    }
+    selectedAnilistIDs = new Set(selectedAnilistIDs);
+  }
+
+  async function handleAnilistImportSelected() {
+    if (selectedAnilistIDs.size === 0) return;
+
+    isImportingAnilist = true;
+    try {
+      const resp = await api.post("/admin/animes/batch-from-anilist", {
+        anilist_ids: Array.from(selectedAnilistIDs),
+      });
+
+      const result = resp.data.data;
+      if (result.imported > 0) {
+        toastState.addToast(
+          `Imported ${result.imported} animes successfully`,
+          "success",
+        );
+      }
+      if (result.failed > 0) {
+        toastState.addToast(
+          `Failed to import ${result.failed} animes`,
+          "warning",
+        );
+      }
+      showAnilistResultsModal = false;
+    } catch (err: any) {
+      toastState.addToast(`Import failed: ${err.message}`, "error");
+    } finally {
+      isImportingAnilist = false;
+    }
   }
 
   async function handleBatchGenerate(e: Event) {
@@ -58,17 +206,20 @@
     isHydrating = true;
     progressMessage = "Connecting to hydration stream...";
     try {
-      const response = await fetch(`${api.defaults.baseURL}/admin/animes/hydrate`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${getAuthToken()}`, // Use standardized token getter
+      const response = await fetch(
+        `${api.defaults.baseURL}/admin/animes/hydrate`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${getAuthToken()}`, // Use standardized token getter
+          },
+          body: JSON.stringify({
+            year: parseInt(atYear),
+            season: atSeason,
+          }),
         },
-        body: JSON.stringify({
-          year: parseInt(atYear),
-          season: atSeason,
-        }),
-      });
+      );
 
       if (!response.ok) {
         throw new Error(`Server returned ${response.status}`);
@@ -111,268 +262,655 @@
   <title>Batch Import | Admin</title>
 </svelte:head>
 
-<!-- <div class="mb-8">
-  <h1 class="text-3xl font-bold tracking-tight text-white mb-1">
-    AniList Autogen
-  </h1>
-  <p class="text-gray-400">
-    Import animes in batch or search specifically on AniList to add them to the catalog.
-  </p>
-</div> -->
-
-<!-- batch generate -->
-<div class="mb-8">
-  <form
-    onsubmit={handleBatchGenerate}
-    class="flex flex-wrap gap-4 items-center bg-white/5 p-6 rounded-2xl border border-white/10 shadow-xl"
-  >
-    <div class="w-full mb-2">
-      <h2 class="text-lg font-semibold text-white flex items-center gap-2">
-        <span class="material-symbols-outlined text-anirank-primary"
-          >auto_fix_high</span
-        >
-        Batch Import by Season
-      </h2>
-      <p class="text-sm text-gray-400">
-        Select parameters to fetch multiple animes at once.
-      </p>
-    </div>
-
-    <div class="flex flex-wrap gap-4 w-full">
-      <div class="flex-1 min-w-[200px]">
-        <label
-          for="batchYear"
-          class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2"
-          >Year</label
-        >
-        <select
-          id="batchYear"
-          bind:value={batchYear}
-          required
-          class="w-full bg-black/50 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-anirank-primary transition-colors"
-        >
-          <option value="">Select Year</option>
-          {#each Array.from({ length: 77 }, (_, i) => new Date().getFullYear() + 1 - i) as year}
-            <option value={year}>{year}</option>
-          {/each}
-        </select>
+<div class="space-y-8">
+  <div class="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
+    <!-- Section: AniList Tools -->
+    <section class="space-y-6">
+      <div class="px-1">
+        <h2 class="text-xl font-bold text-white leading-tight">AniList Integration</h2>
+        <p class="text-xs text-gray-500 uppercase tracking-widest font-bold mt-1">
+          Metadata & Resource Discovery
+        </p>
       </div>
 
-      <div class="flex-1 min-w-[200px]">
-        <label
-          for="batchSeason"
-          class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2"
-          >Season</label
+      <!-- Batch Import (AniList) -->
+      <div
+        class="bg-anirank-card border border-white/5 rounded-3xl p-6 shadow-2xl relative overflow-hidden group"
+      >
+        <div
+          class="absolute top-0 right-0 p-8 opacity-5 -mr-4 -mt-4 group-hover:scale-110 transition-transform"
         >
-        <select
-          id="batchSeason"
-          bind:value={batchSeason}
-          required
-          class="w-full bg-black/50 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-anirank-primary transition-colors"
-        >
-          <option value="">Select Season</option>
-          <option value="WINTER">Winter</option>
-          <option value="SPRING">Spring</option>
-          <option value="SUMMER">Summer</option>
-          <option value="FALL">Fall</option>
-        </select>
-      </div>
-
-      <div class="flex-1 min-w-[200px]">
-        <label
-          for="batchFormat"
-          class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2"
-          >Format</label
-        >
-        <select
-          id="batchFormat"
-          bind:value={batchFormat}
-          required
-          class="w-full bg-black/50 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-anirank-primary transition-colors"
-        >
-          <option value="">Select Format</option>
-          <option value="TV">TV</option>
-          <option value="TV_SHORT">TV Short</option>
-          <option value="MOVIE">Movie</option>
-          <option value="SPECIAL">Special</option>
-          <option value="OVA">OVA</option>
-          <option value="ONA">ONA</option>
-          <option value="MUSIC">Music</option>
-          <option value="MANGA">Manga</option>
-          <option value="NOVEL">Novel</option>
-          <option value="ONE_SHOT">One Shot</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="w-full pt-4 flex justify-end">
-      <button
-        type="submit"
-        disabled={isGenerating}
-        class="bg-anirank-primary hover:bg-blue-600 disabled:bg-gray-600 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 px-8 py-3 rounded-xl text-white font-bold transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-anirank-primary/20"
-      >
-        {#if isGenerating}
-          <svg
-            class="animate-spin h-5 w-5 text-white"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              class="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              stroke-width="4"
-            ></circle>
-            <path
-              class="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            ></path>
-          </svg>
-          Fetching & Saving...
-        {:else}
-          <span class="material-symbols-outlined">download</span>
-          Fetch from AniList
-        {/if}
-      </button>
-    </div>
-  </form>
-</div>
-
-<!-- Search on Anilist -->
-<div class="bg-anirank-card border border-white/5 rounded-2xl p-6 shadow-xl">
-  <div class="mb-4">
-    <h2 class="text-lg font-semibold text-white flex items-center gap-2">
-      <span class="material-symbols-outlined text-anirank-primary">search</span>
-      Search & Import from AniList
-    </h2>
-    <p class="text-sm text-gray-400">
-      Search for a specific anime by title to import it immediately.
-    </p>
-  </div>
-
-  <form onsubmit={handleAnilistSearch} class="flex gap-3">
-    <input
-      type="text"
-      bind:value={anilistQuery}
-      placeholder="Search anime title on AniList..."
-      aria-label="Search anime title on AniList"
-      class="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-anirank-primary transition-colors"
-    />
-    <button
-      type="submit"
-      class="px-8 py-3 bg-anirank-primary hover:bg-anirank-primary/80 text-white font-bold rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2 shadow-lg shadow-anirank-primary/20"
-    >
-      <span class="material-symbols-outlined">search</span>
-      Search AniList
-    </button>
-  </form>
-</div>
-
-<!-- fetch from animethemes -->
-<div class="bg-anirank-card border border-white/5 rounded-2xl p-6 shadow-xl">
-  <div class="mb-6">
-    <h2 class="text-lg font-semibold text-white flex items-center gap-2">
-      <span class="material-symbols-outlined text-anirank-primary"
-        >cloud_download</span
-      >
-      Import from AnimeThemes (Hydrate)
-    </h2>
-    <p class="text-sm text-gray-400">
-      Fetch music data from AnimeThemes and enrich it with AniList metadata.
-    </p>
-  </div>
-
-  <form onsubmit={handleATHydration} class="flex flex-wrap gap-4 items-end">
-    <div class="flex-1 min-w-[150px]">
-      <label
-        for="atYear"
-        class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2"
-        >Year</label
-      >
-      <select
-        id="atYear"
-        bind:value={atYear}
-        required
-        class="w-full bg-black/50 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-anirank-primary transition-colors"
-      >
-        <option value="">Select Year</option>
-        {#each Array.from({ length: 77 }, (_, i) => new Date().getFullYear() + 1 - i) as year}
-          <option value={year}>{year}</option>
-        {/each}
-      </select>
-    </div>
-
-    <div class="flex-1 min-w-[150px]">
-      <label
-        for="atSeason"
-        class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2"
-        >Season</label
-      >
-      <select
-        id="atSeason"
-        bind:value={atSeason}
-        required
-        class="w-full bg-black/50 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-anirank-primary transition-colors"
-      >
-        <option value="">Select Season</option>
-        <option value="WINTER">Winter</option>
-        <option value="SPRING">Spring</option>
-        <option value="SUMMER">Summer</option>
-        <option value="FALL">Fall</option>
-      </select>
-    </div>
-
-    <button
-      type="submit"
-      disabled={isHydrating}
-      class="bg-anirank-primary hover:bg-blue-600 disabled:bg-gray-600 cursor-pointer disabled:opacity-50 h-[46px] px-8 rounded-xl text-white font-bold transition-all flex items-center gap-2 shadow-lg shadow-anirank-primary/20"
-    >
-      {#if isHydrating}
-        <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-          <circle
-            class="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            stroke-width="4"
-          ></circle>
-          <path
-            class="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-          ></path>
-        </svg>
-        Hydrating...
-      {:else}
-        <span class="material-symbols-outlined">refresh</span>
-        Start Hydration
-      {/if}
-    </button>
-  </form>
-
-  {#if isHydrating}
-    <div class="mt-6 p-4 bg-anirank-primary/10 border border-anirank-primary/20 rounded-xl animate-in fade-in slide-in-from-top-2">
-      <div class="flex items-center gap-3">
-        <div class="shrink-0">
-          <svg class="animate-spin h-5 w-5 text-anirank-primary" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
+          <span class="material-symbols-outlined text-8xl">auto_fix_high</span>
         </div>
-        <div class="flex-1 min-w-0">
-          <p class="text-sm font-medium text-white truncate">
-            {progressMessage}
+
+        <div class="mb-6 relative">
+          <h3 class="text-lg font-bold text-white flex items-center gap-2">
+            Batch Seasonal Import
+          </h3>
+          <p class="text-sm text-gray-400">
+            Fetch series data for a specific year and season.
           </p>
         </div>
+
+        <form onsubmit={handleBatchGenerate} class="space-y-6 relative">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="space-y-2">
+              <label
+                for="batchYear"
+                class="text-[10px] font-bold uppercase text-gray-400 ml-1"
+                >Year</label
+              >
+              <select
+                id="batchYear"
+                bind:value={batchYear}
+                required
+                class="w-full bg-black/60 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-anirank-primary transition-all shadow-inner"
+              >
+                <option value="">Year</option>
+                {#each Array.from({ length: 77 }, (_, i) => new Date().getFullYear() + 1 - i) as year}
+                  <option value={year}>{year}</option>
+                {/each}
+              </select>
+            </div>
+
+            <div class="space-y-2">
+              <label
+                for="batchSeason"
+                class="text-[10px] font-bold uppercase text-gray-400 ml-1"
+                >Season</label
+              >
+              <select
+                id="batchSeason"
+                bind:value={batchSeason}
+                required
+                class="w-full bg-black/60 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-anirank-primary transition-all shadow-inner"
+              >
+                <option value="">Season</option>
+                <option value="WINTER">Winter</option>
+                <option value="SPRING">Spring</option>
+                <option value="SUMMER">Summer</option>
+                <option value="FALL">Fall</option>
+              </select>
+            </div>
+
+            <div class="space-y-2">
+              <label
+                for="batchFormat"
+                class="text-[10px] font-bold uppercase text-gray-400 ml-1"
+                >Format</label
+              >
+              <select
+                id="batchFormat"
+                bind:value={batchFormat}
+                required
+                class="w-full bg-black/60 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-anirank-primary transition-all shadow-inner"
+              >
+                <option value="">Format</option>
+                <option value="TV">TV</option>
+                <option value="TV_SHORT">Short</option>
+                <option value="MOVIE">Movie</option>
+                <option value="OVA">OVA</option>
+                <option value="ONA">ONA</option>
+                <option value="SPECIAL">Special</option>
+              </select>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={isGenerating}
+            class="w-full bg-blue-600 hover:bg-blue-600/80 disabled:bg-gray-700 py-3 rounded-xl text-white font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-anirank-primary/20"
+          >
+            {#if isGenerating}
+              <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24"
+                ><circle
+                  class="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  stroke-width="4"
+                ></circle><path
+                  class="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path></svg
+              >
+              Processing Batch...
+            {:else}
+              <span class="material-symbols-outlined">download</span>
+              Fetch from AniList
+            {/if}
+          </button>
+        </form>
       </div>
-      <!-- Simple CSS progress bar (pulse) -->
-      <div class="mt-3 w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
-        <div class="bg-anirank-primary h-full rounded-full animate-pulse w-full"></div>
+
+      <!-- Manual Search (AniList) -->
+      <div
+        class="bg-anirank-card border border-white/5 rounded-3xl p-6 shadow-2xl"
+      >
+        <div class="mb-4">
+          <h3 class="text-lg font-bold text-white flex items-center gap-2">
+            Focused AniList Search
+          </h3>
+          <p class="text-sm text-gray-400">
+            Import a specific title by searching.
+          </p>
+        </div>
+
+        <form onsubmit={handleAnilistSearch} class="flex gap-3">
+          <input
+            type="text"
+            required
+            bind:value={anilistQuery}
+            placeholder="Series title on AniList..."
+            class="flex-1 bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-anirank-primary transition-all"
+          />
+          <button
+            type="submit"
+            disabled={isSearchingAnilist}
+            class="px-6 bg-blue-600 hover:bg-blue-600/80 disabled:bg-gray-700 rounded-xl text-white font-bold transition-all flex items-center gap-2 shadow-lg shadow-anirank-primary/20"
+          >
+            {#if isSearchingAnilist}
+              <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24"
+                ><circle
+                  class="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  stroke-width="4"
+                ></circle><path
+                  class="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path></svg
+              >
+            {:else}
+              <span class="material-symbols-outlined">search</span>
+            {/if}
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- Section: AnimeThemes Tools -->
+    <section class="space-y-6">
+      <div class="px-1">
+        <h2 class="text-xl font-bold text-white leading-tight">AnimeThemes Integration</h2>
+        <p class="text-xs text-gray-500 uppercase tracking-widest font-bold mt-1">
+          Music Hydration & Synchro
+        </p>
+      </div>
+
+      <!-- Hydration (AnimeThemes) -->
+      <div
+        class="bg-anirank-card border border-white/5 rounded-3xl p-6 shadow-2xl relative overflow-hidden group"
+      >
+        <div
+          class="absolute top-0 right-0 p-8 opacity-5 -mr-4 -mt-4 group-hover:scale-110 transition-transform"
+        >
+          <span class="material-symbols-outlined text-8xl text-purple-400"
+            >refresh</span
+          >
+        </div>
+
+        <div class="mb-6 relative">
+          <h3 class="text-lg font-bold text-white">Seasonal Music Hydration</h3>
+          <p class="text-sm text-gray-400">
+            Enrich existing animes with songs and variants.
+          </p>
+        </div>
+
+        <form onsubmit={handleATHydration} class="space-y-6 relative">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="space-y-2">
+              <label
+                for="atYear"
+                class="text-[10px] font-bold uppercase text-gray-400 ml-1"
+                >Year</label
+              >
+              <select
+                id="atYear"
+                bind:value={atYear}
+                required
+                class="w-full bg-black/60 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-purple-500 transition-all shadow-inner"
+              >
+                <option value="">Year</option>
+                {#each Array.from({ length: 77 }, (_, i) => new Date().getFullYear() + 1 - i) as year}
+                  <option value={year}>{year}</option>
+                {/each}
+              </select>
+            </div>
+
+            <div class="space-y-2">
+              <label
+                for="atSeason"
+                class="text-[10px] font-bold uppercase text-gray-400 ml-1"
+                >Season</label
+              >
+              <select
+                id="atSeason"
+                bind:value={atSeason}
+                required
+                class="w-full bg-black/60 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-purple-500 transition-all shadow-inner"
+              >
+                <option value="">Season</option>
+                <option value="WINTER">Winter</option>
+                <option value="SPRING">Spring</option>
+                <option value="SUMMER">Summer</option>
+                <option value="FALL">Fall</option>
+              </select>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={isHydrating}
+            class="w-full bg-purple-600 hover:bg-purple-600/80 disabled:bg-gray-700 py-3 rounded-xl text-white font-bold transition-all flex items-center justify-center gap-2"
+          >
+            {#if isHydrating}
+              <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24"
+                ><circle
+                  class="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  stroke-width="4"
+                ></circle><path
+                  class="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path></svg
+              >
+              Hydrating Stream...
+            {:else}
+              <span class="material-symbols-outlined">refresh</span>
+              Start Hydration
+            {/if}
+          </button>
+        </form>
+
+        {#if isHydrating}
+          <div
+            class="mt-6 p-4 bg-purple-500/10 border border-purple-500/20 rounded-xl animate-in fade-in slide-in-from-top-2 relative"
+          >
+            <div class="flex items-center gap-3">
+              <div class="shrink-0">
+                <svg
+                  class="animate-spin h-4 w-4 text-purple-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  ><circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                  ></circle><path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path></svg
+                >
+              </div>
+              <p class="text-sm font-medium text-white truncate">
+                {progressMessage}
+              </p>
+            </div>
+            <div
+              class="mt-3 w-full bg-white/5 rounded-full h-1 overflow-hidden"
+            >
+              <div class="bg-purple-500 h-full w-full animate-pulse"></div>
+            </div>
+          </div>
+        {/if}
+      </div>
+
+      <!-- Manual Search (AnimeThemes) -->
+      <div
+        class="bg-anirank-card border border-white/5 rounded-3xl p-6 shadow-2xl"
+      >
+        <div class="mb-4">
+          <h3 class="text-lg font-bold text-white flex items-center gap-2">
+            Focused AnimeThemes Search
+          </h3>
+          <p class="text-sm text-gray-400">
+            Import a specific title by searching on AnimeThemes.
+          </p>
+        </div>
+
+        <form onsubmit={handleAnimeThemesSearch} class="flex gap-3">
+          <input
+            type="text"
+            bind:value={animeThemesQuery}
+            placeholder="Series title on AnimeThemes..."
+            class="flex-1 bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-purple-500 transition-all font-medium"
+          />
+          <button
+            type="submit"
+            disabled={isSearchingAnimeThemes}
+            class="px-6 bg-purple-600 hover:bg-purple-600/80 disabled:bg-gray-700 rounded-xl text-white font-bold transition-all flex items-center gap-2"
+          >
+            {#if isSearchingAnimeThemes}
+              <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24"
+                ><circle
+                  class="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  stroke-width="4"
+                ></circle><path
+                  class="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path></svg
+              >
+            {:else}
+              <span class="material-symbols-outlined">search</span>
+            {/if}
+          </button>
+        </form>
+      </div>
+    </section>
+  </div>
+</div>
+
+{#if showResultsModal}
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in"
+  >
+    <div
+      class="bg-anirank-card border border-white/10 rounded-3xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden"
+    >
+      <!-- Header -->
+      <div
+        class="p-6 border-b border-white/10 flex justify-between items-center bg-white/5"
+      >
+        <div>
+          <h3 class="text-xl font-bold text-white flex items-center gap-2">
+            <span class="text-anirank-primary material-symbols-outlined"
+              >cloud_download</span
+            >
+            AnimeThemes Results
+          </h3>
+          <p class="text-sm text-gray-400">
+            Showing results for: <span class="text-white font-medium italic"
+              >"{animeThemesQuery}"</span
+            >
+          </p>
+        </div>
+        <button
+          onclick={() => (showResultsModal = false)}
+          class="p-2 hover:bg-white/10 rounded-full transition-colors text-gray-400"
+        >
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <!-- Results List -->
+      <div class="flex-1 overflow-y-auto p-6">
+        {#if animeThemesResults.length === 0}
+          <div class="text-center py-12">
+            <span class="material-symbols-outlined text-5xl text-gray-600 mb-2"
+              >search_off</span
+            >
+            <p class="text-gray-400">No results found on AnimeThemes.</p>
+          </div>
+        {:else}
+          <div
+            class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"
+          >
+            {#each animeThemesResults as anime}
+              <button
+                onclick={() => toggleAnimeSelection(anime.id)}
+                class="flex flex-col gap-3 p-3 rounded-2xl border transition-all text-left group/card relative {selectedAnimeThemesIDs.has(
+                  anime.id,
+                )
+                  ? 'bg-anirank-primary/20 border-anirank-primary shadow-lg shadow-anirank-primary/10'
+                  : 'bg-white/5 border-white/5 hover:border-white/20'}"
+              >
+                <div
+                  class="relative w-full aspect-2/3 shrink-0 rounded-xl overflow-hidden bg-black/40 shadow-inner"
+                >
+                  {#if anime.images?.find((i: any) => i.facet === "Large Cover" || i.facet === "Small Cover")}
+                    <img
+                      src={anime.images.find(
+                        (i: any) =>
+                          i.facet === "Large Cover" ||
+                          i.facet === "Small Cover",
+                      )?.link}
+                      alt={anime.name}
+                      title={anime.name}
+                      class="w-full h-full object-cover group-hover/card:scale-110 transition-transform duration-500"
+                    />
+                  {:else}
+                    <div class="w-full h-full flex items-center justify-center">
+                      <span class="material-symbols-outlined text-gray-600"
+                        >image</span
+                      >
+                    </div>
+                  {/if}
+
+                  {#if selectedAnimeThemesIDs.has(anime.id)}
+                    <div
+                      class="absolute inset-0 bg-anirank-primary/40 flex items-center justify-center backdrop-blur-[2px]"
+                    >
+                      <span
+                        class="material-symbols-outlined text-white font-bold scale-125"
+                        >check_circle</span
+                      >
+                    </div>
+                  {/if}
+                </div>
+
+                <div class="flex-1 min-w-0 px-1">
+                  <h4
+                    class="font-bold text-white truncate text-sm"
+                    title={anime.name}
+                  >
+                    {anime.name}
+                  </h4>
+                  <div class="flex flex-col mt-1">
+                    <p
+                      class="text-[10px] text-gray-400 uppercase tracking-widest font-bold"
+                    >
+                      {anime.season}
+                      {anime.year}
+                    </p>
+                    <p class="text-[10px] text-gray-500 font-medium mt-0.5">
+                      {anime.media_format || "TV"}
+                    </p>
+                  </div>
+                </div>
+              </button>
+            {/each}
+          </div>
+        {/if}
+      </div>
+
+      <!-- Footer -->
+      <div
+        class="p-6 border-t border-white/10 flex justify-between items-center bg-white/5"
+      >
+        <p class="text-sm text-gray-400">
+          <span class="text-white font-bold">{selectedAnimeThemesIDs.size}</span
+          > selected
+        </p>
+        <div class="flex gap-3">
+          <button
+            onclick={() => (showResultsModal = false)}
+            class="px-6 py-2.5 rounded-xl text-white font-medium hover:bg-white/5 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onclick={handleImportSelected}
+            disabled={selectedAnimeThemesIDs.size === 0}
+            class="px-8 py-2.5 bg-anirank-primary hover:bg-blue-600 disabled:bg-gray-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-anirank-primary/20"
+          >
+            Import Selected
+          </button>
+        </div>
       </div>
     </div>
-  {/if}
-</div>
+  </div>
+{/if}
+
+{#if showAnilistResultsModal}
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in"
+  >
+    <div
+      class="bg-anirank-card border border-white/10 rounded-3xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden"
+    >
+      <!-- Header -->
+      <div
+        class="p-6 border-b border-white/10 flex justify-between items-center bg-white/5"
+      >
+        <div>
+          <h3 class="text-xl font-bold text-white flex items-center gap-2">
+            <span class="text-anirank-primary material-symbols-outlined"
+              >search</span
+            >
+            AniList Results
+          </h3>
+          <p class="text-sm text-gray-400">
+            Showing results for: <span class="text-white font-medium italic"
+              >"{anilistQuery}"</span
+            >
+          </p>
+        </div>
+        <button
+          onclick={() => (showAnilistResultsModal = false)}
+          class="p-2 hover:bg-white/10 rounded-full transition-colors text-gray-400"
+        >
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <!-- Results List -->
+      <div class="flex-1 overflow-y-auto p-6">
+        {#if anilistResults.length === 0}
+          <div class="text-center py-12">
+            <span class="material-symbols-outlined text-5xl text-gray-600 mb-2"
+              >search_off</span
+            >
+            <p class="text-gray-400">No results found on AniList.</p>
+          </div>
+        {:else}
+          <div
+            class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"
+          >
+            {#each anilistResults as anime}
+              <button
+                onclick={() => toggleAnilistSelection(anime.id)}
+                class="flex flex-col gap-3 p-3 rounded-2xl border transition-all text-left group/card relative {selectedAnilistIDs.has(
+                  anime.id,
+                )
+                  ? 'bg-anirank-primary/20 border-anirank-primary shadow-lg shadow-anirank-primary/10'
+                  : 'bg-white/5 border-white/5 hover:border-white/20'}"
+              >
+                <div
+                  class="relative w-full aspect-2/3 shrink-0 rounded-xl overflow-hidden bg-black/40 shadow-inner"
+                >
+                  {#if anime.coverImage?.large}
+                    <img
+                      src={anime.coverImage.large}
+                      alt={anime.title.romaji}
+                      title={anime.title.romaji}
+                      class="w-full h-full object-cover group-hover/card:scale-110 transition-transform duration-500"
+                    />
+                  {:else}
+                    <div class="w-full h-full flex items-center justify-center">
+                      <span class="material-symbols-outlined text-gray-600"
+                        >image</span
+                      >
+                    </div>
+                  {/if}
+
+                  {#if selectedAnilistIDs.has(anime.id)}
+                    <div
+                      class="absolute inset-0 bg-anirank-primary/40 flex items-center justify-center backdrop-blur-[2px]"
+                    >
+                      <span
+                        class="material-symbols-outlined text-white font-bold scale-125"
+                        >check_circle</span
+                      >
+                    </div>
+                  {/if}
+                </div>
+
+                <div class="flex-1 min-w-0 px-1">
+                  <h4
+                    class="font-bold text-white truncate text-sm"
+                    title={anime.title.romaji}
+                  >
+                    {anime.title.romaji || anime.title.english}
+                  </h4>
+                  <div class="flex flex-col mt-1">
+                    <p
+                      class="text-[10px] text-gray-400 uppercase tracking-widest font-bold"
+                    >
+                      {anime.season || "N/A"}
+                      {anime.seasonYear || ""}
+                    </p>
+                    <p class="text-[10px] text-gray-500 font-medium mt-0.5">
+                      {anime.format || "TV"}
+                    </p>
+                  </div>
+                </div>
+              </button>
+            {/each}
+          </div>
+        {/if}
+      </div>
+
+      <!-- Footer -->
+      <div
+        class="p-6 border-t border-white/10 flex justify-between items-center bg-white/5"
+      >
+        <p class="text-sm text-gray-400">
+          <span class="text-white font-bold">{selectedAnilistIDs.size}</span> selected
+        </p>
+        <div class="flex gap-3">
+          <button
+            onclick={() => (showAnilistResultsModal = false)}
+            class="px-6 py-2.5 rounded-xl text-white font-medium hover:bg-white/5 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onclick={handleAnilistImportSelected}
+            disabled={selectedAnilistIDs.size === 0 || isImportingAnilist}
+            class="px-8 py-2.5 bg-anirank-primary hover:bg-blue-600 disabled:bg-gray-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-anirank-primary/20 flex items-center gap-2"
+          >
+            {#if isImportingAnilist}
+              <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                <circle
+                  class="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  stroke-width="4"
+                ></circle>
+                <path
+                  class="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+              Importing...
+            {:else}
+              Import Selected
+            {/if}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+{/if}

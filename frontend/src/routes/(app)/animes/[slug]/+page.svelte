@@ -29,28 +29,31 @@
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
     <!-- Sidebar -->
     <aside class="lg:col-span-3 space-y-8">
-      <div
-        class="relative rounded-xl overflow-hidden shadow-2xl shadow-primary/10 border border-white/5 group"
-      >
-        <img
-          alt="Cover art for {anime.title}"
-          title="Cover art for {anime.title}"
-          class="w-full h-auto aspect-2/3 object-cover transition-transform duration-700 group-hover:scale-105"
-          src={anime.cover_url}
-        />
+      <div class="flex flex-col space-y-2">
         <div
-          class="absolute top-0 left-0 w-full h-full bg-linear-to-t from-background-dark/80 via-transparent to-transparent opacity-60"
-        ></div>
-        <!-- <div class="absolute bottom-4 left-4 right-4">
-                    <button
-                        class="w-full bg-primary hover:bg-primary-dark text-white font-bold py-2.5 rounded-lg transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 text-sm"
-                    >
-                        <span class="material-symbols-outlined text-lg"
-                            >add</span
-                        >
-                        Add to List
-                    </button>
-                </div> -->
+          class="relative rounded-xl overflow-hidden shadow-2xl shadow-primary/10 border border-white/5 group"
+        >
+          <img
+            alt="Cover art for {anime.title}"
+            title="Cover art for {anime.title}"
+            class="w-full h-auto aspect-2/3 object-cover transition-transform duration-700 group-hover:scale-105"
+            src={anime.cover_url}
+          />
+          <div
+            class="absolute top-0 left-0 w-full h-full bg-linear-to-t from-background-dark/80 via-transparent to-transparent opacity-60"
+          ></div>
+        </div>
+
+        <div>
+          <a
+            href="https://anilist.co/anime/{anime.anilist_id}"
+            target="_blank"
+            title="Track {anime.title} on AniList"
+            class="w-full bg-primary hover:bg-primary/80 text-white font-bold py-2.5 rounded-lg transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 text-sm"
+          >
+            Track on AniList
+          </a>
+        </div>
       </div>
 
       <div class="space-y-6">
@@ -62,15 +65,6 @@
           </h3>
         </div>
         <div class="space-y-5 text-sm">
-          <div class="flex items-center gap-2">
-            <span class="material-symbols-outlined text-white/40">link</span>
-            <a
-              href="https://anilist.co/anime/{anime.anilist_id}"
-              target="_blank"
-              class="text-white/70 hover:text-white transition-colors"
-              title="View {anime.title} on Anilist">View on Anilist</a
-            >
-          </div>
           <div
             class="border-l-2 border-transparent hover:border-primary pl-3 transition-all duration-200"
           >

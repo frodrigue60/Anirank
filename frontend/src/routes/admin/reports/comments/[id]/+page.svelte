@@ -21,7 +21,7 @@
     if (!report || !confirm("Are you sure you want to delete this report?")) return;
     try {
       await api.delete(`/admin/comments/reports/${report.id}`);
-      window.location.href = "/admin/comments/reports";
+      window.location.href = "/admin/reports/comments";
     } catch (e) {
       console.error("Failed to delete report:", e);
       alert("Error deleting report.");
@@ -33,8 +33,8 @@
   <!-- Header & Navigation -->
   <div class="flex items-center gap-4">
     <a
-      href="/admin/comments/reports"
-      class="flex items-center justify-center w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all"
+      href="/admin/reports/comments"
+      class="flex items-center justify-center w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all font-bold"
     >
       <span class="material-symbols-outlined">arrow_back</span>
     </a>
@@ -66,13 +66,13 @@
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <!-- Main Info (Left Column) -->
     <div class="lg:col-span-2 space-y-6">
-      <div class="bg-white/5 border border-white/5 rounded-2xl p-6 space-y-4">
+      <div class="bg-anirank-card border border-white/5 rounded-2xl p-6 space-y-4">
         <div class="flex items-center gap-3 border-b border-white/5 pb-4">
-          <span class="material-symbols-outlined text-primary text-2xl">forum</span>
-          <h2 class="text-xl font-bold">Reported Comment</h2>
+          <span class="material-symbols-outlined text-blue-400 text-2xl">forum</span>
+          <h2 class="text-xl font-bold text-white">Reported Comment</h2>
         </div>
         
-        <div class="bg-black/20 rounded-xl p-4 text-white/80 whitespace-pre-wrap border-l-4 border-primary/50">
+        <div class="bg-black/20 rounded-xl p-4 text-white/80 whitespace-pre-wrap border-l-4 border-blue-600/50">
           {report?.comment?.content || "Comment content not found"}
         </div>
         
@@ -89,7 +89,7 @@
     <!-- Sidebar Info (Right Column) -->
     <div class="space-y-6">
       <!-- Reporter Info -->
-      <div class="bg-white/5 border border-white/5 rounded-2xl p-6 space-y-4">
+      <div class="bg-anirank-card border border-white/5 rounded-2xl p-6 space-y-4">
         <h3 class="text-sm font-bold text-white/60 uppercase tracking-wider border-b border-white/5 pb-3">
           Reporter Details
         </h3>
@@ -105,7 +105,7 @@
       </div>
 
       <!-- Actions -->
-      <div class="bg-white/5 border border-white/5 rounded-2xl p-6 space-y-4">
+      <div class="bg-anirank-card border border-white/5 rounded-2xl p-6 space-y-4">
         <h3 class="text-sm font-bold text-white/60 uppercase tracking-wider border-b border-white/5 pb-3">
           Actions
         </h3>

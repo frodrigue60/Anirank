@@ -31,7 +31,6 @@
       await api.delete(`/admin/comments/reports/${id}`);
     } catch (e: any) {
       console.error("Failed to delete report:", e);
-      // Rollback on error strategy can be added here
       alert("Failed to delete report.");
     }
   }
@@ -48,7 +47,7 @@
         Comment Reports
       </h1>
       <p class="text-white/50 text-sm mt-1">
-        Manage and review user reports for comments.
+        Manage and review user reports for comments across the platform.
       </p>
     </div>
   </div>
@@ -59,7 +58,7 @@
       onclick={() => loadReports("pending")}
       class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {statusFilter ===
       'pending'
-        ? 'bg-primary text-white'
+        ? 'bg-blue-600 text-white'
         : 'text-white/50 hover:bg-white/5 hover:text-white'}"
     >
       Pending
@@ -76,7 +75,7 @@
   </div>
 
   <div
-    class="bg-[#1a1122] border border-white/5 rounded-2xl overflow-hidden shadow-xl"
+    class="bg-anirank-card border border-white/5 rounded-2xl overflow-hidden shadow-xl"
   >
     {#if isLoading}
       <div class="p-8 flex justify-center text-white/40">
@@ -128,8 +127,8 @@
                 <td class="p-4">
                   <div class="flex items-center gap-2">
                     <a
-                      href="/admin/comments/reports/{report.id}"
-                      class="flex items-center justify-center w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-primary transition-all"
+                      href="/admin/reports/comments/{report.id}"
+                      class="flex items-center justify-center w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-blue-400 transition-all font-bold"
                       title="View Details"
                     >
                       <span class="material-symbols-outlined text-[18px]">visibility</span>

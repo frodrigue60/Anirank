@@ -4,15 +4,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"image"
 	"image/jpeg"
+	"image/png"
 	"io"
 	"os"
 	"strings"
 
 	"anirank/api/internal/pkg/imageutil"
-
-	"github.com/disintegration/gift"
 	"github.com/google/uuid"
 )
 
@@ -21,6 +19,14 @@ type MediaService interface {
 	Resolve(path *string) *string
 	GeneratePath(prefix string, id uint64, ext string) string
 	UploadImage(ctx context.Context, prefix string, id uint64, file io.Reader, size int64, contentType string) (string, string, error)
+	UploadImageOptimized(ctx context.Context, prefix string, id uint64, file io.Reader, options ImageOptions) (string, string, error)
+}
+
+type ImageOptions struct {
+	Width   int
+	Height  int
+	Format  string // "avif", "jpg", "png"
+	Quality int
 }
 
 type mediaService struct {
@@ -67,32 +73,48 @@ func (s *mediaService) GeneratePath(prefix string, id uint64, ext string) string
 }
 
 func (s *mediaService) UploadImage(ctx context.Context, prefix string, id uint64, file io.Reader, size int64, contentType string) (string, string, error) {
-	// 1. Decode Image (Supports JPEG, PNG, WebP decoding with CLI fallbacks)
+	return s.UploadImageOptimized(ctx, prefix, id, file, ImageOptions{Format: "jpg", Quality: 80})
+}
+
+func (s *mediaService) UploadImageOptimized(ctx context.Context, prefix string, id uint64, file io.Reader, opts ImageOptions) (string, string, error) {
+	// 1. Decode
 	img, _, err := imageutil.Decode(file)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to decode image: %w", err)
 	}
 
-	// 2. Process image with GIFT
-	// For now, we just pass it through a neutral filter to normalize it, 
-	// but we could add resizing or other optimizations here.
-	gi := gift.New()
-	dst := image.NewRGBA(gi.Bounds(img.Bounds()))
-	gi.Draw(dst, img)
-
-	// 3. Encode to JPEG (High compatibility substitute for WebP)
-	var buf bytes.Buffer
-	err = jpeg.Encode(&buf, dst, &jpeg.Options{Quality: 80})
-	if err != nil {
-		return "", "", fmt.Errorf("failed to encode image to jpeg: %w", err)
+	// 2. Resize if requested
+	if opts.Width > 0 || opts.Height > 0 {
+		img = imageutil.Resize(img, opts.Width, opts.Height)
 	}
 
-	processedData := buf.Bytes()
-
-	// 4. Overwrite extension and content type
+	// 3. Encode
+	var processedData []byte
 	ext := "jpg"
 	finalContentType := "image/jpeg"
 
+	if opts.Format == "avif" {
+		ext = "avif"
+		finalContentType = "image/avif"
+		processedData, err = imageutil.EncodeAVIF(img, opts.Quality)
+	} else if opts.Format == "png" {
+		ext = "png"
+		finalContentType = "image/png"
+		var buf bytes.Buffer
+		err = png.Encode(&buf, img)
+		processedData = buf.Bytes()
+	} else {
+		// Default to JPEG
+		var buf bytes.Buffer
+		err = jpeg.Encode(&buf, img, &jpeg.Options{Quality: opts.Quality})
+		processedData = buf.Bytes()
+	}
+
+	if err != nil {
+		return "", "", fmt.Errorf("failed to encode image: %w", err)
+	}
+
+	// 4. Upload
 	filename := s.GeneratePath(prefix, id, ext)
 	_, err = s.storage.UploadFile(ctx, filename, bytes.NewReader(processedData), int64(len(processedData)), finalContentType)
 	if err != nil {

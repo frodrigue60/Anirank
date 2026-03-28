@@ -215,7 +215,11 @@ func (h *AdminHandler) CreateUser(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.Status(201).JSON(fiber.Map{"data": req.User})
+	return c.Status(201).JSON(fiber.Map{
+		"success": true,
+		"message": "User created successfully",
+		"data":    req.User,
+	})
 }
 
 func (h *AdminHandler) UpdateUser(c *fiber.Ctx) error {
@@ -237,7 +241,11 @@ func (h *AdminHandler) UpdateUser(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(fiber.Map{"data": req.User})
+	return c.JSON(fiber.Map{
+		"success": true,
+		"message": "User updated successfully",
+		"data":    req.User,
+	})
 }
 
 func (h *AdminHandler) DeleteUser(c *fiber.Ctx) error {
@@ -248,7 +256,11 @@ func (h *AdminHandler) DeleteUser(c *fiber.Ctx) error {
 	if err := h.usecase.DeleteUser(c.Context(), id, h.getAuditMetadata(c)); err != nil {
 		return err
 	}
-	return c.SendStatus(204)
+	return c.JSON(fiber.Map{
+		"success": true,
+		"message": "User deleted successfully",
+		"data":    nil,
+	})
 }
 
 func (h *AdminHandler) ResetPassword(c *fiber.Ctx) error {
@@ -260,7 +272,11 @@ func (h *AdminHandler) ResetPassword(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	return c.JSON(fiber.Map{"password": newPassword})
+	return c.JSON(fiber.Map{
+		"success": true,
+		"message": "Password reset successfully",
+		"password": newPassword,
+	})
 }
 
 // ANIMES

@@ -10,6 +10,7 @@ import (
 
 	"anirank/api/internal/infrastructure"
 	"anirank/api/internal/pkg/avatar"
+
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
@@ -89,8 +90,8 @@ func main() {
 	for i, a := range artists {
 		log.Printf("[%d/%d] Processing %s...\n", i+1, len(artists), a.Name)
 
-		// Generate Local Avatar (180px, AVIF)
-		res, err := avatar.Generate(ctx, a.Name, 180)
+		// Generate Local Avatar (256px, AVIF)
+		res, err := avatar.Generate(ctx, a.Name, 256)
 		if err != nil {
 			log.Printf("  Error generating for %s: %v\n", a.Name, err)
 			continue
@@ -100,7 +101,7 @@ func main() {
 		// Upload to R2
 		contentType := "image/avif"
 		newPath := fmt.Sprintf("artists/avatars/%d_%s.avif", a.ID, uuid.New().String()[:8])
-		
+
 		_, err = storage.UploadFile(ctx, newPath, bytes.NewReader(data), res.Size, contentType)
 		if err != nil {
 			log.Printf("  Error uploading to R2 for %s: %v\n", a.Name, err)

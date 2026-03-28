@@ -25,14 +25,14 @@ import (
 )
 
 type AuthUsecase struct {
-	userRepo   domain.UserRepository
-	jwtService *JWTService
-	storage    infrastructure.StorageService
-	media          infrastructure.MediaService
-	xpUsecase      domain.XPUsecase
-	anilist        *anilist.Client
-	google         *google.Client
-	encryptionKey  string
+	userRepo      domain.UserRepository
+	jwtService    *JWTService
+	storage       infrastructure.StorageService
+	media         infrastructure.MediaService
+	xpUsecase     domain.XPUsecase
+	anilist       *anilist.Client
+	google        *google.Client
+	encryptionKey string
 }
 
 func NewAuthUsecase(userRepo domain.UserRepository, jwtService *JWTService, storage infrastructure.StorageService, media infrastructure.MediaService, xu domain.XPUsecase, ac *anilist.Client, gc *google.Client, eKey string) *AuthUsecase {
@@ -151,7 +151,7 @@ func (u *AuthUsecase) Register(ctx context.Context, name, email, password string
 }
 
 func (u *AuthUsecase) GenerateUserAvatar(ctx context.Context, userID uint64, name string) {
-	res, err := avatar.Generate(ctx, name, 180)
+	res, err := avatar.Generate(ctx, name, 256)
 	if err != nil {
 		log.Printf("ERROR: failed to generate avatar for user %d: %v", userID, err)
 		return
@@ -466,11 +466,11 @@ func (u *AuthUsecase) LoginWithGoogle(ctx context.Context, code, redirectURI str
 					}
 					return nil, domain.NewAppError(http.StatusInternalServerError, "Database error", err)
 				}
-				
+
 				// Automatically link the Google ID to this user
 				user.GoogleID = &googleUser.Sub
 				user.GoogleEmail = &googleUser.Email
-				
+
 				// Update tokens for future sync
 				encryptedAccess, _ := crypto.Encrypt(tokenResp.AccessToken, u.encryptionKey)
 				user.GoogleAccessToken = &encryptedAccess

@@ -46,6 +46,7 @@ type Anime struct {
 type Year struct {
 	ID        uint64    `db:"id" json:"id"`
 	Name      string    `db:"name" json:"name"`
+	Slug      string    `db:"slug" json:"slug"`
 	Current   bool      `db:"current" json:"current"`
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
@@ -54,6 +55,7 @@ type Year struct {
 type Season struct {
 	ID        uint64    `db:"id" json:"id"`
 	Name      string    `db:"name" json:"name"`
+	Slug      string    `db:"slug" json:"slug"`
 	Current   bool      `db:"current" json:"current"`
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
@@ -118,13 +120,14 @@ type ExternalLink struct {
 }
 
 type AnimeFilters struct {
-	YearID   *uint64
-	SeasonID *uint64
-	FormatID *uint64
-	Status   *bool
-	Search   string
-	Sort     string
-	IsAdmin  bool
+	Year    string
+	Season  string
+	Format  string
+	Genre   string
+	Status  *bool
+	Search  string
+	Sort    string
+	IsAdmin bool
 }
 
 type StudioFilters struct {

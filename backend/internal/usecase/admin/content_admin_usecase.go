@@ -57,7 +57,7 @@ func NewContentAdminUsecase(
 }
 
 // ---- ANIME ----
-func (u *ContentAdminUsecase) GetAnimes(ctx context.Context, page, limit int, search string, yearID, seasonID, formatID *uint64, status *bool) ([]domain.Anime, int, error) {
+func (u *ContentAdminUsecase) GetAnimes(ctx context.Context, page, limit int, search string, year, season, format, genre string, status *bool) ([]domain.Anime, int, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -67,13 +67,14 @@ func (u *ContentAdminUsecase) GetAnimes(ctx context.Context, page, limit int, se
 	offset := (page - 1) * limit
 
 	filters := domain.AnimeFilters{
-		Search:   search,
-		YearID:   yearID,
-		SeasonID: seasonID,
-		FormatID: formatID,
-		Status:   status,
-		Sort:     "latest",
-		IsAdmin:  true,
+		Search:  search,
+		Year:    year,
+		Season:  season,
+		Format:  format,
+		Genre:   genre,
+		Status:  status,
+		Sort:    "latest",
+		IsAdmin: true,
 	}
 
 	animes, err := u.animeRepo.GetPaginated(ctx, limit, offset, filters)

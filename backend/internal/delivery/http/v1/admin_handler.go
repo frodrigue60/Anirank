@@ -285,28 +285,23 @@ func (h *AdminHandler) GetAnimes(c *fiber.Ctx) error {
 	limit, _ := strconv.Atoi(c.Query("limit", "20"))
 	search := c.Query("search", "")
 
-	var (
-		yearID   *uint64
-		seasonID *uint64
-		formatID *uint64
-		status   *bool
-	)
+	year := c.Query("year", "")
+	if year == "" {
+		year = c.Query("year_id", "")
+	}
+	season := c.Query("season", "")
+	if season == "" {
+		season = c.Query("season_id", "")
+	}
+	format := c.Query("format", "")
+	if format == "" {
+		format = c.Query("format_id", "")
+	}
+	if format == "" {
+		format = c.Query("type", "")
+	}
 
-	if yID, err := strconv.ParseUint(c.Query("year"), 10, 64); err == nil && yID > 0 {
-		yearID = &yID
-	} else if yID, err := strconv.ParseUint(c.Query("year_id"), 10, 64); err == nil && yID > 0 {
-		yearID = &yID
-	}
-	if sID, err := strconv.ParseUint(c.Query("season"), 10, 64); err == nil && sID > 0 {
-		seasonID = &sID
-	} else if sID, err := strconv.ParseUint(c.Query("season_id"), 10, 64); err == nil && sID > 0 {
-		seasonID = &sID
-	}
-	if fID, err := strconv.ParseUint(c.Query("format"), 10, 64); err == nil && fID > 0 {
-		formatID = &fID
-	} else if fID, err := strconv.ParseUint(c.Query("format_id"), 10, 64); err == nil && fID > 0 {
-		formatID = &fID
-	}
+	var status *bool
 	if statusStr := c.Query("status"); statusStr != "" {
 		if statusStr == "true" || statusStr == "1" {
 			v := true
@@ -317,7 +312,9 @@ func (h *AdminHandler) GetAnimes(c *fiber.Ctx) error {
 		}
 	}
 
-	animes, total, err := h.usecase.GetAnimes(c.Context(), page, limit, search, yearID, seasonID, formatID, status)
+	genre := c.Query("genre", "")
+
+	animes, total, err := h.usecase.GetAnimes(c.Context(), page, limit, search, year, season, format, genre, status)
 	if err != nil {
 		return err
 	}

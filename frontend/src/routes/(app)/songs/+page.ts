@@ -4,8 +4,9 @@ import api from '$lib/api';
 export const load: PageLoad = async ({ url }) => {
     const params = {
         name: url.searchParams.get('name') || '',
-        year_id: url.searchParams.get('year_id') || '',
-        season_id: url.searchParams.get('season_id') || '',
+        year: url.searchParams.get('year') || '',
+        season: url.searchParams.get('season') || '',
+        genre: url.searchParams.get('genre') || '',
         type: url.searchParams.get('type') || '',
         sort: url.searchParams.get('sort') || 'recent',
         page: url.searchParams.get('page') || 1

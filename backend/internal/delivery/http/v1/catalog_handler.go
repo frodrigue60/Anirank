@@ -53,6 +53,9 @@ func (h *CatalogHandler) SongIndex(c *fiber.Ctx) error {
 		Search:   c.Query("name", ""),
 		YearID:   yearID,
 		SeasonID: seasonID,
+		Year:     c.Query("year", ""),
+		Season:   c.Query("season", ""),
+		Genre:    c.Query("genre", ""),
 		Type:     c.Query("type", ""),
 		Sort:     c.Query("sort", ""),
 	}
@@ -157,6 +160,9 @@ func (h *CatalogHandler) ArtistShow(c *fiber.Ctx) error {
 		Search:   c.Query("name", ""),
 		YearID:   yearID,
 		SeasonID: seasonID,
+		Year:     c.Query("year", ""),
+		Season:   c.Query("season", ""),
+		Genre:    c.Query("genre", ""),
 		Type:     c.Query("type", ""),
 		Sort:     c.Query("sort", ""),
 	}

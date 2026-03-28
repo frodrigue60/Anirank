@@ -1,7 +1,7 @@
 export interface TaxonomyItem {
     id: number;
     name: string;
-    slug?: string;
+    slug: string;
 }
 
 export const configState = $state<{

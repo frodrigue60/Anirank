@@ -113,6 +113,9 @@ type SongFilters struct {
 	SeasonID uint64
 	GenreID  uint64
 	AnimeID  uint64
+	Year     string
+	Season   string
+	Genre    string
 	Status   *bool
 	Type     string
 	Sort     string

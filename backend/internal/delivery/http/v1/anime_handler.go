@@ -26,7 +26,7 @@ func NewAnimeHandler(u *public.AnimeUsecase) *AnimeHandler {
 // @Tags Anime
 // @Produce json
 // @Param page query int false "Page number" default(1)
-// @Success 200 {array} domain.Anime
+// @Success 200 {array} dto.AnimeDTO
 // @Router /animes [get]
 func (h *AnimeHandler) Index(c *fiber.Ctx) error {
 	page, err := strconv.Atoi(c.Query("page", "1"))
@@ -38,18 +38,12 @@ func (h *AnimeHandler) Index(c *fiber.Ctx) error {
 	offset := (page - 1) * limit
 
 	domainFilters := domain.AnimeFilters{
-		Search: c.Query("name", ""),
-		Sort:   c.Query("sort", ""),
-	}
-
-	if yid, err := strconv.ParseUint(c.Query("year_id", "0"), 10, 64); err == nil && yid > 0 {
-		domainFilters.YearID = &yid
-	}
-	if sid, err := strconv.ParseUint(c.Query("season_id", "0"), 10, 64); err == nil && sid > 0 {
-		domainFilters.SeasonID = &sid
-	}
-	if fid, err := strconv.ParseUint(c.Query("type", "0"), 10, 64); err == nil && fid > 0 {
-		domainFilters.FormatID = &fid
+		Search:  c.Query("name", ""),
+		Sort:    c.Query("sort", ""),
+		Year:    c.Query("year", ""),
+		Season:  c.Query("season", ""),
+		Format:  c.Query("format", ""),
+		Genre:   c.Query("genre", ""),
 	}
 
 	animes, total, err := h.usecase.GetPaginatedAnimes(c.Context(), limit, offset, domainFilters)
@@ -65,9 +59,9 @@ func (h *AnimeHandler) Index(c *fiber.Ctx) error {
 		lastPage = 1
 	}
 
-	animeDTOs := make([]dto.AnimeMinimalDTO, len(animes))
+	animeDTOs := make([]dto.AnimeDTO, len(animes))
 	for i, a := range animes {
-		animeDTOs[i] = dto.ToAnimeMinimalDTO(&a)
+		animeDTOs[i] = dto.ToAnimeDTO(&a)
 	}
 
 	return c.JSON(paginatedResponse(c, animeDTOs, total, page, limit))

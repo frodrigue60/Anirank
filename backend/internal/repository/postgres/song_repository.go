@@ -99,24 +99,44 @@ func (r *songRepository) GetPaginated(ctx context.Context, limit, offset int, fi
 	}
 
 	i := 1
-	if filters.YearID > 0 {
-		whereClauses = append(whereClauses, fmt.Sprintf("s.year_id = $%d", i))
-		args = append(args, filters.YearID)
-		i++
+	
+	if filters.IsAdmin {
+		if filters.YearID > 0 {
+			whereClauses = append(whereClauses, fmt.Sprintf("s.year_id = $%d", i))
+			args = append(args, filters.YearID)
+			i++
+		}
+		if filters.SeasonID > 0 {
+			whereClauses = append(whereClauses, fmt.Sprintf("s.season_id = $%d", i))
+			args = append(args, filters.SeasonID)
+			i++
+		}
+		if filters.GenreID > 0 {
+			whereClauses = append(whereClauses, fmt.Sprintf("s.anime_id IN (SELECT anime_id FROM anime_genre WHERE genre_id = $%d)", i))
+			args = append(args, filters.GenreID)
+			i++
+		}
+	} else {
+		if filters.Year != "" && filters.Year != "any" {
+			whereClauses = append(whereClauses, fmt.Sprintf("s.year_id IN (SELECT id FROM years WHERE slug = $%d)", i))
+			args = append(args, filters.Year)
+			i++
+		}
+		if filters.Season != "" && filters.Season != "any" {
+			whereClauses = append(whereClauses, fmt.Sprintf("s.season_id IN (SELECT id FROM seasons WHERE slug = $%d)", i))
+			args = append(args, filters.Season)
+			i++
+		}
+		if filters.Genre != "" && filters.Genre != "any" {
+			whereClauses = append(whereClauses, fmt.Sprintf("s.anime_id IN (SELECT ag.anime_id FROM anime_genre ag JOIN genres g ON ag.genre_id = g.id WHERE g.slug = $%d)", i))
+			args = append(args, filters.Genre)
+			i++
+		}
 	}
-	if filters.SeasonID > 0 {
-		whereClauses = append(whereClauses, fmt.Sprintf("s.season_id = $%d", i))
-		args = append(args, filters.SeasonID)
-		i++
-	}
+
 	if filters.Type != "" && filters.Type != "any" {
 		whereClauses = append(whereClauses, fmt.Sprintf("s.type = $%d", i))
 		args = append(args, filters.Type)
-		i++
-	}
-	if filters.GenreID > 0 {
-		whereClauses = append(whereClauses, fmt.Sprintf("s.id IN (SELECT song_id FROM anime_genres WHERE genre_id = $%d)", i))
-		args = append(args, filters.GenreID)
 		i++
 	}
 	if filters.Search != "" {
@@ -204,24 +224,44 @@ func (r *songRepository) Count(ctx context.Context, filters domain.SongFilters) 
 	}
 
 	i := 1
-	if filters.YearID > 0 {
-		whereClauses = append(whereClauses, fmt.Sprintf("s.year_id = $%d", i))
-		args = append(args, filters.YearID)
-		i++
+
+	if filters.IsAdmin {
+		if filters.YearID > 0 {
+			whereClauses = append(whereClauses, fmt.Sprintf("s.year_id = $%d", i))
+			args = append(args, filters.YearID)
+			i++
+		}
+		if filters.SeasonID > 0 {
+			whereClauses = append(whereClauses, fmt.Sprintf("s.season_id = $%d", i))
+			args = append(args, filters.SeasonID)
+			i++
+		}
+		if filters.GenreID > 0 {
+			whereClauses = append(whereClauses, fmt.Sprintf("s.anime_id IN (SELECT anime_id FROM anime_genre WHERE genre_id = $%d)", i))
+			args = append(args, filters.GenreID)
+			i++
+		}
+	} else {
+		if filters.Year != "" && filters.Year != "any" {
+			whereClauses = append(whereClauses, fmt.Sprintf("s.year_id IN (SELECT id FROM years WHERE slug = $%d)", i))
+			args = append(args, filters.Year)
+			i++
+		}
+		if filters.Season != "" && filters.Season != "any" {
+			whereClauses = append(whereClauses, fmt.Sprintf("s.season_id IN (SELECT id FROM seasons WHERE slug = $%d)", i))
+			args = append(args, filters.Season)
+			i++
+		}
+		if filters.Genre != "" && filters.Genre != "any" {
+			whereClauses = append(whereClauses, fmt.Sprintf("s.anime_id IN (SELECT ag.anime_id FROM anime_genre ag JOIN genres g ON ag.genre_id = g.id WHERE g.slug = $%d)", i))
+			args = append(args, filters.Genre)
+			i++
+		}
 	}
-	if filters.SeasonID > 0 {
-		whereClauses = append(whereClauses, fmt.Sprintf("s.season_id = $%d", i))
-		args = append(args, filters.SeasonID)
-		i++
-	}
+
 	if filters.Type != "" && filters.Type != "any" {
 		whereClauses = append(whereClauses, fmt.Sprintf("s.type = $%d", i))
 		args = append(args, filters.Type)
-		i++
-	}
-	if filters.GenreID > 0 {
-		whereClauses = append(whereClauses, fmt.Sprintf("s.id IN (SELECT song_id FROM anime_genres WHERE genre_id = $%d)", i))
-		args = append(args, filters.GenreID)
 		i++
 	}
 	if filters.Search != "" {
@@ -447,21 +487,46 @@ func (r *songRepository) GetByArtistID(ctx context.Context, artistID uint64, lim
 	args = append(args, artistID)
 	i++
 
-	if filters.YearID > 0 {
-		whereClauses = append(whereClauses, fmt.Sprintf("s.year_id = $%d", i))
-		args = append(args, filters.YearID)
-		i++
+	if filters.IsAdmin {
+		if filters.YearID > 0 {
+			whereClauses = append(whereClauses, fmt.Sprintf("s.year_id = $%d", i))
+			args = append(args, filters.YearID)
+			i++
+		}
+		if filters.SeasonID > 0 {
+			whereClauses = append(whereClauses, fmt.Sprintf("s.season_id = $%d", i))
+			args = append(args, filters.SeasonID)
+			i++
+		}
+		if filters.GenreID > 0 {
+			whereClauses = append(whereClauses, fmt.Sprintf("s.anime_id IN (SELECT anime_id FROM anime_genre WHERE genre_id = $%d)", i))
+			args = append(args, filters.GenreID)
+			i++
+		}
+	} else {
+		if filters.Year != "" && filters.Year != "any" {
+			whereClauses = append(whereClauses, fmt.Sprintf("s.year_id IN (SELECT id FROM years WHERE slug = $%d)", i))
+			args = append(args, filters.Year)
+			i++
+		}
+		if filters.Season != "" && filters.Season != "any" {
+			whereClauses = append(whereClauses, fmt.Sprintf("s.season_id IN (SELECT id FROM seasons WHERE slug = $%d)", i))
+			args = append(args, filters.Season)
+			i++
+		}
+		if filters.Genre != "" && filters.Genre != "any" {
+			whereClauses = append(whereClauses, fmt.Sprintf("s.anime_id IN (SELECT ag.anime_id FROM anime_genre ag JOIN genres g ON ag.genre_id = g.id WHERE g.slug = $%d)", i))
+			args = append(args, filters.Genre)
+			i++
+		}
 	}
-	if filters.SeasonID > 0 {
-		whereClauses = append(whereClauses, fmt.Sprintf("s.season_id = $%d", i))
-		args = append(args, filters.SeasonID)
-		i++
-	}
+
 	if filters.Type != "" && filters.Type != "any" {
 		whereClauses = append(whereClauses, fmt.Sprintf("s.type = $%d", i))
 		args = append(args, filters.Type)
 		i++
 	}
+
 	if filters.Search != "" {
 		whereClauses = append(whereClauses, fmt.Sprintf("(s.song_romaji ILIKE $%d OR s.song_jp ILIKE $%d OR s.song_en ILIKE $%d)", i, i+1, i+2))
 		searchTerm := "%" + filters.Search + "%"
@@ -511,16 +576,40 @@ func (r *songRepository) CountByArtistID(ctx context.Context, artistID uint64, f
 	args = append(args, artistID)
 	i++
 
-	if filters.YearID > 0 {
-		whereClauses = append(whereClauses, fmt.Sprintf("s.year_id = $%d", i))
-		args = append(args, filters.YearID)
-		i++
+	if filters.IsAdmin {
+		if filters.YearID > 0 {
+			whereClauses = append(whereClauses, fmt.Sprintf("s.year_id = $%d", i))
+			args = append(args, filters.YearID)
+			i++
+		}
+		if filters.SeasonID > 0 {
+			whereClauses = append(whereClauses, fmt.Sprintf("s.season_id = $%d", i))
+			args = append(args, filters.SeasonID)
+			i++
+		}
+		if filters.GenreID > 0 {
+			whereClauses = append(whereClauses, fmt.Sprintf("s.anime_id IN (SELECT anime_id FROM anime_genre WHERE genre_id = $%d)", i))
+			args = append(args, filters.GenreID)
+			i++
+		}
+	} else {
+		if filters.Year != "" && filters.Year != "any" {
+			whereClauses = append(whereClauses, fmt.Sprintf("s.year_id IN (SELECT id FROM years WHERE slug = $%d)", i))
+			args = append(args, filters.Year)
+			i++
+		}
+		if filters.Season != "" && filters.Season != "any" {
+			whereClauses = append(whereClauses, fmt.Sprintf("s.season_id IN (SELECT id FROM seasons WHERE slug = $%d)", i))
+			args = append(args, filters.Season)
+			i++
+		}
+		if filters.Genre != "" && filters.Genre != "any" {
+			whereClauses = append(whereClauses, fmt.Sprintf("s.anime_id IN (SELECT ag.anime_id FROM anime_genre ag JOIN genres g ON ag.genre_id = g.id WHERE g.slug = $%d)", i))
+			args = append(args, filters.Genre)
+			i++
+		}
 	}
-	if filters.SeasonID > 0 {
-		whereClauses = append(whereClauses, fmt.Sprintf("s.season_id = $%d", i))
-		args = append(args, filters.SeasonID)
-		i++
-	}
+
 	if filters.Type != "" && filters.Type != "any" {
 		whereClauses = append(whereClauses, fmt.Sprintf("s.type = $%d", i))
 		args = append(args, filters.Type)

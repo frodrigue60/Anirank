@@ -13,7 +13,6 @@ type InitData struct {
 	Seasons []domain.Season `json:"seasons"`
 	Formats []domain.Format `json:"formats"`
 	Genres  []domain.Genre  `json:"genres"`
-	// Note: Studios and Producers usually scale too much over time, dropping them from initial load might be required later. Included for now based on legacy logic.
 }
 
 type DiscoveryUsecase struct {

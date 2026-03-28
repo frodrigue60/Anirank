@@ -14,6 +14,7 @@
   let searchTerm = $state("");
   let selectedYear = $state("");
   let selectedSeason = $state("");
+  let selectedGenre = $state("");
   let selectedType = $state("");
   let selectedSort = $state("");
 
@@ -23,13 +24,16 @@
   let currentPage = $state(data.songs?.pagination?.current_page || 1);
   // svelte-ignore state_referenced_locally
   let lastPage = $state(data.songs?.pagination?.last_page || 1);
+  // svelte-ignore state_referenced_locally
+  let totalSongs = $state(data.songs?.pagination?.total || 0);
   let loading = $state(false);
 
   // Sync state with URL params
   $effect(() => {
     searchTerm = data.params.name || "";
-    selectedYear = data.params.year_id || "";
-    selectedSeason = data.params.season_id || "";
+    selectedYear = data.params.year || "";
+    selectedSeason = data.params.season || "";
+    selectedGenre = data.params.genre || "";
     selectedType = data.params.type || "";
     selectedSort = data.params.sort || "";
 
@@ -38,6 +42,7 @@
       songs = data.songs.data;
       currentPage = Number(data.songs.pagination.current_page);
       lastPage = Number(data.songs.pagination.last_page);
+      totalSongs = Number(data.songs.pagination.total);
     }
   });
 
@@ -52,8 +57,9 @@
     if (searchTerm) url.searchParams.set("name", searchTerm);
     else url.searchParams.delete("name");
 
-    setParam("year_id", selectedYear);
-    setParam("season_id", selectedSeason);
+    setParam("year", selectedYear);
+    setParam("season", selectedSeason);
+    setParam("genre", selectedGenre);
     setParam("type", selectedType);
     setParam("sort", selectedSort);
 
@@ -78,6 +84,7 @@
         songs = [...songs, ...response.data.data];
         currentPage = Number(response.data.pagination.current_page);
         lastPage = Number(response.data.pagination.last_page);
+        totalSongs = Number(response.data.pagination.total);
       }
     } catch (e) {
       console.error("Error loading more songs", e);
@@ -104,15 +111,22 @@
   const yearOptions = $derived([
     { value: "any", label: "Any Year" },
     ...configState.years.map((y) => ({
-      value: y.id.toString(),
+      value: y.slug,
       label: y.name,
     })),
   ]);
   const seasonOptions = $derived([
     { value: "any", label: "Any Season" },
     ...configState.seasons.map((s) => ({
-      value: s.id.toString(),
+      value: s.slug,
       label: s.name,
+    })),
+  ]);
+  const genreOptions = $derived([
+    { value: "any", label: "Any Genre" },
+    ...configState.genres.map((g) => ({
+      value: g.slug,
+      label: g.name,
     })),
   ]);
   const typeOptions = [
@@ -185,6 +199,15 @@
         />
 
         <CustomSelect
+          label="Genre"
+          bind:value={selectedGenre}
+          options={genreOptions}
+          placeholder="All Genres"
+          icon={ListFilter}
+          onchange={updateFilters}
+        />
+
+        <CustomSelect
           label="Type"
           bind:value={selectedType}
           options={typeOptions}
@@ -206,11 +229,11 @@
   </section>
 
   <!-- Results count -->
-  {#if data.songs?.pagination?.total > 0}
+  {#if totalSongs > 0}
     <div class="mb-8 flex items-center justify-between">
       <h3 class="text-xl font-bold flex items-center gap-3 text-white">
         <span class="w-2 h-6 bg-primary rounded-full"></span>
-        Results ({data.songs.pagination.total.toLocaleString()})
+        Results ({totalSongs.toLocaleString()})
       </h3>
     </div>
   {/if}

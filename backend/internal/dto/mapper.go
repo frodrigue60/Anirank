@@ -263,19 +263,21 @@ func ToAnimeMinimalDTO(a *domain.Anime) AnimeMinimalDTO {
 
 	var season *SeasonDTO
 	if a.Season != nil {
-		season = &SeasonDTO{Name: a.Season.Name}
+		sDTO := ToSeasonDTO(a.Season)
+		season = &sDTO
 	}
 	var year *YearDTO
 	if a.Year != nil {
-		year = &YearDTO{Name: a.Year.Name}
+		yDTO := ToYearDTO(a.Year)
+		year = &yDTO
 	}
 	var format *FormatDTO
 	if a.Format != nil {
-		format = &FormatDTO{Name: a.Format.Name}
+		fDTO := ToFormatDTO(a.Format)
+		format = &fDTO
 	}
 
 	return AnimeMinimalDTO{
-		ID:         a.UUID,
 		AnilistID:  a.AnilistID,
 		Title:      a.Title,
 		Slug:       a.Slug,
@@ -334,7 +336,6 @@ func ToStudioDTO(s *domain.Studio) StudioDTO {
 		return StudioDTO{}
 	}
 	return StudioDTO{
-		ID:         s.UUID,
 		Name:       s.Name,
 		Slug:       s.Slug,
 		LogoUrl:    s.LogoUrl,
@@ -348,7 +349,6 @@ func ToProducerDTO(p *domain.Producer) ProducerDTO {
 		return ProducerDTO{}
 	}
 	return ProducerDTO{
-		ID:         p.UUID,
 		Name:       p.Name,
 		Slug:       p.Slug,
 		LogoUrl:    p.LogoUrl,
@@ -362,9 +362,38 @@ func ToGenreDTO(g *domain.Genre) GenreDTO {
 		return GenreDTO{}
 	}
 	return GenreDTO{
-		ID:   g.ID,
 		Name: g.Name,
 		Slug: g.Slug,
+	}
+}
+
+func ToYearDTO(y *domain.Year) YearDTO {
+	if y == nil {
+		return YearDTO{}
+	}
+	return YearDTO{
+		Name: y.Name,
+		Slug: y.Slug,
+	}
+}
+
+func ToSeasonDTO(s *domain.Season) SeasonDTO {
+	if s == nil {
+		return SeasonDTO{}
+	}
+	return SeasonDTO{
+		Name: s.Name,
+		Slug: s.Slug,
+	}
+}
+
+func ToFormatDTO(f *domain.Format) FormatDTO {
+	if f == nil {
+		return FormatDTO{}
+	}
+	return FormatDTO{
+		Name: f.Name,
+		Slug: f.Slug,
 	}
 }
 

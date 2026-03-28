@@ -89,8 +89,8 @@ func (u *AdminUsecase) ResetPassword(ctx context.Context, id uint64) (string, er
 
 
 // ---- ANIME ----
-func (u *AdminUsecase) GetAnimes(ctx context.Context, page, limit int, search string, yearID, seasonID, formatID *uint64, status *bool) ([]domain.Anime, int, error) {
-	return u.contentAdmin.GetAnimes(ctx, page, limit, search, yearID, seasonID, formatID, status)
+func (u *AdminUsecase) GetAnimes(ctx context.Context, page, limit int, search string, year, season, format, genre string, status *bool) ([]domain.Anime, int, error) {
+	return u.contentAdmin.GetAnimes(ctx, page, limit, search, year, season, format, genre, status)
 }
 
 func (u *AdminUsecase) GetAnime(ctx context.Context, id uint64) (*domain.Anime, error) {

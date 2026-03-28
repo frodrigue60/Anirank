@@ -22,8 +22,9 @@
   let searchTerm = $state("");
   let selectedYear = $state("");
   let selectedSeason = $state("");
-  let selectedType = $state("");
+  let selectedFormat = $state("");
   let selectedSort = $state("");
+  let selectedGenre = $state("");
 
   // svelte-ignore state_referenced_locally
   let animes = $state(data.animes?.data || []);
@@ -35,9 +36,10 @@
 
   $effect(() => {
     searchTerm = data.params.name || "";
-    selectedYear = data.params.year_id || "";
-    selectedSeason = data.params.season_id || "";
-    selectedType = data.params.type || "";
+    selectedYear = data.params.year || "";
+    selectedSeason = data.params.season || "";
+    selectedFormat = data.params.format || "";
+    selectedGenre = data.params.genre || "";
     selectedSort = data.params.sort || "";
 
     // Reset infinite scroll on data change (filters)
@@ -59,9 +61,10 @@
     if (searchTerm) url.searchParams.set("name", searchTerm);
     else url.searchParams.delete("name");
 
-    setParam("year_id", selectedYear);
-    setParam("season_id", selectedSeason);
-    setParam("type", selectedType);
+    setParam("year", selectedYear);
+    setParam("season", selectedSeason);
+    setParam("format", selectedFormat);
+    setParam("genre", selectedGenre);
     setParam("sort", selectedSort);
 
     url.searchParams.set("page", "1");
@@ -77,8 +80,8 @@
       const response = await api.get("/animes", {
         params: {
           ...data.params,
-          page: nextPage
-        }
+          page: nextPage,
+        },
       });
 
       if (response.data.data) {
@@ -113,21 +116,21 @@
   const yearOptions = $derived([
     { value: "any", label: "Any Year" },
     ...configState.years.map((y) => ({
-      value: y.id.toString(),
+      value: y.slug,
       label: y.name,
     })),
   ]);
   const seasonOptions = $derived([
     { value: "any", label: "Any Season" },
     ...configState.seasons.map((s) => ({
-      value: s.id.toString(),
+      value: s.slug,
       label: s.name,
     })),
   ]);
-  const typeOptions = $derived([
+  const formatOptions = $derived([
     { value: "any", label: "Any" },
     ...configState.formats.map((f) => ({
-      value: f.id.toString(),
+      value: f.slug,
       label: f.name,
     })),
   ]);
@@ -138,15 +141,23 @@
     { value: "latest", label: "Recently Added" },
     { value: "title", label: "Alphabetical" },
   ];
+  const genreOptions = $derived([
+    { value: "any", label: "Any" },
+    ...configState.genres.map((g) => ({
+      value: g.slug,
+      label: g.name,
+    })),
+  ]);
+  let viewType = $state<"grid" | "card" | "list">("grid");
 </script>
 
-<SEO 
-  title="Browse Anime" 
-  description="Browse and search the extensive catalog of anime to find your favorite theme songs on AniRank." 
+<SEO
+  title="Browse Anime"
+  description="Browse and search the extensive catalog of anime to find your favorite theme songs on AniRank."
 />
 
 <main class="flex-1 w-full max-w-[1440px] mx-auto px-6 py-12">
-  <div class="flex flex-col gap-10">
+  <div class="flex flex-col gap-4">
     <!-- Header/Filters Section -->
     <section
       class="relative z-40 flex flex-col gap-4 bg-surface-dark/30 p-4 rounded-3xl border border-white/5 backdrop-blur-md shadow-2xl"
@@ -171,7 +182,7 @@
               bind:value={searchTerm}
               oninput={handleInput}
               onkeydown={handleKeydown}
-              class="w-full h-12 bg-surface-darker/50 border border-white/10 rounded-xl pl-12 pr-6 text-sm text-white focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 placeholder:text-white/20 transition-all"
+              class="w-full h-12 bg-surface-darker/50 border border-white/10 rounded-xl pl-12 pr-6 text-sm text-white focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 placeholder:text-white/20 transition-all"
               placeholder="What are you looking for?"
               type="text"
             />
@@ -203,20 +214,31 @@
           />
         </div>
 
-        <!-- Type Select -->
+        <!-- Format Select -->
         <div class="">
           <CustomSelect
-            label="Type"
-            bind:value={selectedType}
-            options={typeOptions}
-            placeholder="Any Type"
+            label="Format"
+            bind:value={selectedFormat}
+            options={formatOptions}
+            placeholder="Any Format"
+            icon={Layout}
+            onchange={updateFilters}
+          />
+        </div>
+        <!-- select genres -->
+        <div class="">
+          <CustomSelect
+            label="Genres"
+            bind:value={selectedGenre}
+            options={genreOptions}
+            placeholder="Any Genre"
             icon={Layout}
             onchange={updateFilters}
           />
         </div>
 
-        <!-- Sort & Clear -->
-        <div class="flex items-end gap-2">
+        <!-- Sort Section (Integrated in header if needed, but the user wants the one below) -->
+        <!--  <div class="flex items-end gap-2">
           <div class="w-full">
             <CustomSelect
               label="Sort"
@@ -227,19 +249,77 @@
               onchange={updateFilters}
             />
           </div>
-        </div>
+        </div> -->
       </div>
     </section>
 
     <!-- Results Section -->
-    <section class="mt-4">
+    <section class="">
+      <div class="flex justify-end text-2xl gap-2 mb-4">
+        <div class="">
+          <CustomSelect
+            bind:value={selectedSort}
+            options={sortOptions}
+            placeholder="Sort"
+            icon={SortDesc}
+            onchange={updateFilters}
+          />
+        </div>
+
+        <!-- <select
+          bind:value={selectedSort}
+          class="bg-surface-dark p-1 rounded-md text-white/80 text-sm"
+          onchange={updateFilters}
+        >
+          <option value="any">Any</option>
+          <option value="latest">Latest</option>
+          <option value="most_themes">Most Themes</option>
+          <option value="least_themes">Least Themes</option>
+          <option value="title">Title</option>
+        </select> -->
+        <button
+          onclick={() => (viewType = "grid")}
+          class="flex items-center gap-2 bg-surface-dark p-1 rounded-md {viewType ===
+          'grid'
+            ? 'text-primary'
+            : 'text-white/60'}"
+          title="Compact Grid"
+        >
+          <span class="material-symbols-outlined">grid_on</span>
+        </button>
+        <button
+          onclick={() => (viewType = "card")}
+          class="flex items-center gap-2 bg-surface-dark p-1 rounded-md {viewType ===
+          'card'
+            ? 'text-primary'
+            : 'text-white/60'}"
+          title="Detailed Cards"
+        >
+          <span class="material-symbols-outlined">border_all</span>
+        </button>
+        <button
+          onclick={() => (viewType = "list")}
+          class="flex items-center gap-2 bg-surface-dark p-1 rounded-md {viewType ===
+          'list'
+            ? 'text-primary'
+            : 'text-white/60'}"
+          title="List View"
+        >
+          <span class="material-symbols-outlined">list_alt</span>
+        </button>
+      </div>
+
       {#if animes.length > 0}
         <div
-          class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6"
+          class="grid gap-6 {viewType === 'grid'
+            ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6'
+            : viewType === 'card'
+              ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3'
+              : 'grid-cols-1'}"
         >
-          {#each animes as anime (anime.id)}
+          {#each animes as anime (anime.slug)}
             <div in:fade={{ duration: 300 }}>
-              <AnimeCard {anime} />
+              <AnimeCard {anime} view={viewType} />
             </div>
           {/each}
         </div>
@@ -256,8 +336,8 @@
           <Search size={48} class="text-white/10 mb-4" />
           <h3 class="text-xl font-bold text-white mb-2">No results found</h3>
           <p class="text-white/40 max-w-xs text-center">
-            Try adjusting your filters or search terms to find what you're looking
-            for.
+            Try adjusting your filters or search terms to find what you're
+            looking for.
           </p>
         </div>
       {/if}

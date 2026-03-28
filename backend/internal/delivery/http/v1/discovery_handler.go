@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"anirank/api/internal/dto"
 	"anirank/api/internal/usecase/public"
 
 	"github.com/gofiber/fiber/v2"
@@ -26,10 +27,36 @@ func NewDiscoveryHandler(u *public.DiscoveryUsecase) *DiscoveryHandler {
 func (h *DiscoveryHandler) Init(c *fiber.Ctx) error {
 	data, err := h.usecase.GetInitData(c.Context())
 	if err != nil {
-		return err // Let middleware handle fiber errors
+		return err
+	}
+
+	// Map to DTO for hiding IDs
+	yearDTOs := make([]dto.YearDTO, len(data.Years))
+	for i, y := range data.Years {
+		yearDTOs[i] = dto.ToYearDTO(&y)
+	}
+
+	seasonDTOs := make([]dto.SeasonDTO, len(data.Seasons))
+	for i, s := range data.Seasons {
+		seasonDTOs[i] = dto.ToSeasonDTO(&s)
+	}
+
+	formatDTOs := make([]dto.FormatDTO, len(data.Formats))
+	for i, f := range data.Formats {
+		formatDTOs[i] = dto.ToFormatDTO(&f)
+	}
+
+	genreDTOs := make([]dto.GenreDTO, len(data.Genres))
+	for i, g := range data.Genres {
+		genreDTOs[i] = dto.ToGenreDTO(&g)
 	}
 
 	return c.JSON(fiber.Map{
-		"data": data,
+		"data": dto.InitDataDTO{
+			Years:   yearDTOs,
+			Seasons: seasonDTOs,
+			Formats: formatDTOs,
+			Genres:  genreDTOs,
+		},
 	})
 }

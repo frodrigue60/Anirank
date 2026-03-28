@@ -79,40 +79,81 @@ func (r *animeRepository) GetByAnilistID(ctx context.Context, anilistID int64) (
 
 func (r *animeRepository) GetPaginated(ctx context.Context, limit, offset int, filters domain.AnimeFilters) ([]domain.Anime, error) {
 	animes := []domain.Anime{}
-	query := "SELECT * FROM animes"
+	query := "SELECT animes.* FROM animes"
 	var args []interface{}
+	i := 1
 
+	// Joins (Only for public slug-based filtering)
 	if !filters.IsAdmin {
-		query += " WHERE status = true"
+		if filters.Year != "" {
+			query += " JOIN years y ON animes.year_id = y.id"
+		}
+		if filters.Season != "" {
+			query += " JOIN seasons s ON animes.season_id = s.id"
+		}
+		if filters.Format != "" {
+			query += " JOIN formats f ON animes.format_id = f.id"
+		}
+		if filters.Genre != "" {
+			query += " JOIN anime_genre ag ON animes.id = ag.anime_id"
+			query += " JOIN genres g ON ag.genre_id = g.id"
+		}
+	} else if filters.Genre != "" {
+		// Admin still needs join for genres but filters by genre_id
+		query += " JOIN anime_genre ag ON animes.id = ag.anime_id"
+	}
+
+	// Where Clause
+	if !filters.IsAdmin {
+		query += " WHERE animes.status = true"
 	} else {
 		query += " WHERE true"
 	}
 
-	i := 1
 	if filters.IsAdmin && filters.Status != nil {
-		query += fmt.Sprintf(" AND status = $%d", i)
+		query += fmt.Sprintf(" AND animes.status = $%d", i)
 		args = append(args, *filters.Status)
 		i++
 	}
 
-
-	if filters.YearID != nil && *filters.YearID > 0 {
-		query += fmt.Sprintf(" AND year_id = $%d", i)
-		args = append(args, *filters.YearID)
+	if filters.Year != "" {
+		if filters.IsAdmin {
+			query += fmt.Sprintf(" AND animes.year_id = $%d", i)
+		} else {
+			query += fmt.Sprintf(" AND y.slug = $%d", i)
+		}
+		args = append(args, filters.Year)
 		i++
 	}
-	if filters.SeasonID != nil && *filters.SeasonID > 0 {
-		query += fmt.Sprintf(" AND season_id = $%d", i)
-		args = append(args, *filters.SeasonID)
+	if filters.Season != "" {
+		if filters.IsAdmin {
+			query += fmt.Sprintf(" AND animes.season_id = $%d", i)
+		} else {
+			query += fmt.Sprintf(" AND s.slug = $%d", i)
+		}
+		args = append(args, filters.Season)
 		i++
 	}
-	if filters.FormatID != nil && *filters.FormatID > 0 {
-		query += fmt.Sprintf(" AND format_id = $%d", i)
-		args = append(args, *filters.FormatID)
+	if filters.Format != "" {
+		if filters.IsAdmin {
+			query += fmt.Sprintf(" AND animes.format_id = $%d", i)
+		} else {
+			query += fmt.Sprintf(" AND f.slug = $%d", i)
+		}
+		args = append(args, filters.Format)
+		i++
+	}
+	if filters.Genre != "" {
+		if filters.IsAdmin {
+			query += fmt.Sprintf(" AND ag.genre_id = $%d", i)
+		} else {
+			query += fmt.Sprintf(" AND g.slug = $%d", i)
+		}
+		args = append(args, filters.Genre)
 		i++
 	}
 	if filters.Search != "" {
-		query += fmt.Sprintf(" AND title ILIKE $%d", i)
+		query += fmt.Sprintf(" AND animes.title ILIKE $%d", i)
 		args = append(args, "%"+filters.Search+"%")
 		i++
 	}
@@ -120,15 +161,15 @@ func (r *animeRepository) GetPaginated(ctx context.Context, limit, offset int, f
 	// Sorting
 	switch filters.Sort {
 	case "title":
-		query += " ORDER BY title ASC"
+		query += " ORDER BY animes.title ASC"
 	case "latest":
-		query += " ORDER BY created_at DESC, id DESC"
+		query += " ORDER BY animes.created_at DESC, animes.id DESC"
 	case "most_themes":
-		query += " ORDER BY songs_count DESC"
+		query += " ORDER BY animes.songs_count DESC"
 	case "least_themes":
-		query += " ORDER BY songs_count ASC"
+		query += " ORDER BY animes.songs_count ASC"
 	default:
-		query += " ORDER BY created_at DESC, id DESC"
+		query += " ORDER BY animes.created_at DESC, animes.id DESC"
 	}
 
 	query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", i, i+1)
@@ -140,40 +181,81 @@ func (r *animeRepository) GetPaginated(ctx context.Context, limit, offset int, f
 
 func (r *animeRepository) Count(ctx context.Context, filters domain.AnimeFilters) (int, error) {
 	var count int
-	query := "SELECT COUNT(*) FROM animes"
+	query := "SELECT COUNT(DISTINCT animes.id) FROM animes"
 	var args []interface{}
+	i := 1
 
+	// Joins (Only for public slug-based filtering)
 	if !filters.IsAdmin {
-		query += " WHERE status = true"
+		if filters.Year != "" {
+			query += " JOIN years y ON animes.year_id = y.id"
+		}
+		if filters.Season != "" {
+			query += " JOIN seasons s ON animes.season_id = s.id"
+		}
+		if filters.Format != "" {
+			query += " JOIN formats f ON animes.format_id = f.id"
+		}
+		if filters.Genre != "" {
+			query += " JOIN anime_genre ag ON animes.id = ag.anime_id"
+			query += " JOIN genres g ON ag.genre_id = g.id"
+		}
+	} else if filters.Genre != "" {
+		// Admin still needs join for genres but filters by genre_id
+		query += " JOIN anime_genre ag ON animes.id = ag.anime_id"
+	}
+
+	// Where Clause
+	if !filters.IsAdmin {
+		query += " WHERE animes.status = true"
 	} else {
 		query += " WHERE true"
 	}
 
-	i := 1
 	if filters.IsAdmin && filters.Status != nil {
-		query += fmt.Sprintf(" AND status = $%d", i)
+		query += fmt.Sprintf(" AND animes.status = $%d", i)
 		args = append(args, *filters.Status)
 		i++
 	}
 
-
-	if filters.YearID != nil && *filters.YearID > 0 {
-		query += fmt.Sprintf(" AND year_id = $%d", i)
-		args = append(args, *filters.YearID)
+	if filters.Year != "" {
+		if filters.IsAdmin {
+			query += fmt.Sprintf(" AND animes.year_id = $%d", i)
+		} else {
+			query += fmt.Sprintf(" AND y.slug = $%d", i)
+		}
+		args = append(args, filters.Year)
 		i++
 	}
-	if filters.SeasonID != nil && *filters.SeasonID > 0 {
-		query += fmt.Sprintf(" AND season_id = $%d", i)
-		args = append(args, *filters.SeasonID)
+	if filters.Season != "" {
+		if filters.IsAdmin {
+			query += fmt.Sprintf(" AND animes.season_id = $%d", i)
+		} else {
+			query += fmt.Sprintf(" AND s.slug = $%d", i)
+		}
+		args = append(args, filters.Season)
 		i++
 	}
-	if filters.FormatID != nil && *filters.FormatID > 0 {
-		query += fmt.Sprintf(" AND format_id = $%d", i)
-		args = append(args, *filters.FormatID)
+	if filters.Format != "" {
+		if filters.IsAdmin {
+			query += fmt.Sprintf(" AND animes.format_id = $%d", i)
+		} else {
+			query += fmt.Sprintf(" AND f.slug = $%d", i)
+		}
+		args = append(args, filters.Format)
+		i++
+	}
+	if filters.Genre != "" {
+		if filters.IsAdmin {
+			query += fmt.Sprintf(" AND ag.genre_id = $%d", i)
+		} else {
+			query += fmt.Sprintf(" AND g.slug = $%d", i)
+		}
+		args = append(args, filters.Genre)
 		i++
 	}
 	if filters.Search != "" {
-		query += fmt.Sprintf(" AND title ILIKE $%d", i)
+		query += fmt.Sprintf(" AND animes.title ILIKE $%d", i)
 		args = append(args, "%"+filters.Search+"%")
 		i++
 	}
@@ -425,56 +507,85 @@ func (r *animeRepository) LoadManyRelations(ctx context.Context, animes []domain
 	// 2. Load Many-To-Many (Genres, Studios, Producers)
 	genresQuery := `SELECT g.id, g.name, g.slug, ag.anime_id FROM genres g JOIN anime_genre ag ON g.id = ag.genre_id WHERE ag.anime_id IN (?)`
 	var genreRows []struct {
-		domain.Genre
+		ID      uint64 `db:"id"`
+		Name    string `db:"name"`
+		Slug    string `db:"slug"`
 		AnimeID uint64 `db:"anime_id"`
 	}
-	gQ, gArgs, _ := sqlx.In(genresQuery, ids)
-	if err := r.db.SelectContext(ctx, &genreRows, r.db.Rebind(gQ), gArgs...); err == nil {
-		gMap := make(map[uint64][]domain.Genre)
-		for _, row := range genreRows {
-			gMap[row.AnimeID] = append(gMap[row.AnimeID], row.Genre)
-		}
-		for i := range animes {
-			animes[i].Genres = gMap[animes[i].ID]
-		}
+	gQ, gArgs, err := sqlx.In(genresQuery, ids)
+	if err != nil {
+		return err
+	}
+	if err := r.db.SelectContext(ctx, &genreRows, r.db.Rebind(gQ), gArgs...); err != nil {
+		return err
 	}
 
-	studiosQuery := `SELECT s.id, s.name, s.slug, s.logo, s.anime_count, ast.anime_id FROM studios s JOIN anime_studio ast ON s.id = ast.studio_id WHERE ast.anime_id IN (?)`
-	var studioRows []struct {
-		domain.Studio
-		AnimeID uint64 `db:"anime_id"`
-	}
-	sQ, sArgs, _ := sqlx.In(studiosQuery, ids)
-	if err := r.db.SelectContext(ctx, &studioRows, r.db.Rebind(sQ), sArgs...); err == nil {
-		sMap := make(map[uint64][]domain.Studio)
-		for _, row := range studioRows {
-			sMap[row.AnimeID] = append(sMap[row.AnimeID], row.Studio)
-		}
-		for i := range animes {
-			animes[i].Studios = sMap[animes[i].ID]
-		}
+	gMap := make(map[uint64][]domain.Genre)
+	for _, row := range genreRows {
+		gMap[row.AnimeID] = append(gMap[row.AnimeID], domain.Genre{
+			ID:   row.ID,
+			Name: row.Name,
+			Slug: row.Slug,
+		})
 	}
 
-	// 3. Load Songs Count
-	songsCountQuery := `SELECT anime_id, COUNT(*) as count FROM songs WHERE anime_id IN (?)`
-	if !isAdmin {
-		songsCountQuery += " AND status = true"
+	// 2. Studios
+	studiosQuery := `SELECT s.id, s.uuid, s.name, s.slug, s.logo, s.anime_count, ast.anime_id FROM studios s JOIN anime_studio ast ON s.id = ast.studio_id WHERE ast.anime_id IN (?)`
+	sQ, sArgs, err := sqlx.In(studiosQuery, ids)
+	if err != nil {
+		return err
 	}
-	songsCountQuery += " GROUP BY anime_id"
+	type studioRow struct {
+		ID         uint64  `db:"id"`
+		UUID       string  `db:"uuid"`
+		Name       string  `db:"name"`
+		Slug       string  `db:"slug"`
+		Logo       *string `db:"logo"`
+		AnimeCount int     `db:"anime_count"`
+		AnimeID    uint64  `db:"anime_id"`
+	}
+	var studioRows []studioRow
+	if err := r.db.SelectContext(ctx, &studioRows, r.db.Rebind(sQ), sArgs...); err != nil {
+		return err
+	}
 
-	var countRows []struct {
-		AnimeID uint64 `db:"anime_id"`
-		Count   int    `db:"count"`
+	sMap := make(map[uint64][]domain.Studio)
+	for _, row := range studioRows {
+		sMap[row.AnimeID] = append(sMap[row.AnimeID], domain.Studio{
+			ID:         row.ID,
+			UUID:       row.UUID,
+			Name:       row.Name,
+			Slug:       row.Slug,
+			LogoUrl:    row.Logo,
+			AnimeCount: row.AnimeCount,
+		})
 	}
-	cQ, cArgs, _ := sqlx.In(songsCountQuery, ids)
-	if err := r.db.SelectContext(ctx, &countRows, r.db.Rebind(cQ), cArgs...); err == nil {
-		cMap := make(map[uint64]int)
-		for _, row := range countRows {
-			cMap[row.AnimeID] = row.Count
-		}
-		for i := range animes {
-			animes[i].SongsCount = cMap[animes[i].ID]
-		}
+
+	// 3. Songs Count
+	songsCountQuery := `SELECT anime_id, COUNT(*) as songs_count FROM songs WHERE anime_id IN (?) GROUP BY anime_id`
+	scQ, scArgs, err := sqlx.In(songsCountQuery, ids)
+	if err != nil {
+		return err
+	}
+	type countRow struct {
+		AnimeID    uint64 `db:"anime_id"`
+		SongsCount int    `db:"songs_count"`
+	}
+	var countRows []countRow
+	if err := r.db.SelectContext(ctx, &countRows, r.db.Rebind(scQ), scArgs...); err != nil {
+		return err
+	}
+
+	scMap := make(map[uint64]int)
+	for _, row := range countRows {
+		scMap[row.AnimeID] = row.SongsCount
+	}
+
+	// 4. Map back
+	for i := range animes {
+		animes[i].Genres = gMap[animes[i].ID]
+		animes[i].Studios = sMap[animes[i].ID]
+		animes[i].SongsCount = scMap[animes[i].ID]
 	}
 
 	return nil

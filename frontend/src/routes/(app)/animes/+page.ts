@@ -3,9 +3,10 @@ import api from '$lib/api';
 export const load = async ({ url }) => {
     const params = {
         name: url.searchParams.get('name') || '',
-        year_id: url.searchParams.get('year_id') || '',
-        season_id: url.searchParams.get('season_id') || '',
-        type: url.searchParams.get('type') || '',
+        year: url.searchParams.get('year') || '',
+        season: url.searchParams.get('season') || '',
+        format: url.searchParams.get('format') || '',
+        genre: url.searchParams.get('genre') || '',
         sort: url.searchParams.get('sort') || '',
         page: url.searchParams.get('page') || 1
     };

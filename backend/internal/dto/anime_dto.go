@@ -1,7 +1,6 @@
 package dto
 
 type AnimeMinimalDTO struct {
-	ID         string     `json:"id"`
 	AnilistID  *int64     `json:"anilist_id"`
 	Title      string     `json:"title"`
 	Slug       string     `json:"slug"`
@@ -15,14 +14,17 @@ type AnimeMinimalDTO struct {
 
 type SeasonDTO struct {
 	Name string `json:"name"`
+	Slug string `json:"slug"`
 }
 
 type YearDTO struct {
 	Name string `json:"name"`
+	Slug string `json:"slug"`
 }
 
 type FormatDTO struct {
 	Name string `json:"name"`
+	Slug string `json:"slug"`
 }
 
 type SongAnimeDTO struct {

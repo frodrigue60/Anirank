@@ -906,13 +906,23 @@ func (u *ContentAdminUsecase) SearchAnimeThemes(ctx context.Context, query strin
 	url := fmt.Sprintf("https://api.animethemes.moe/anime?q=%s&include=images,resources&page[size]=20", url.QueryEscape(query))
 
 	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Get(url)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", "Anirank/1.0 (https://anirank.work)")
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode == 500 {
+			return nil, domain.NewAppError(503, "AnimeThemes search service is currently unavailable. Please try searching for the exact title or provide the AnimeThemes ID if known.", nil)
+		}
 		return nil, fmt.Errorf("AnimeThemes API status %d", resp.StatusCode)
 	}
 

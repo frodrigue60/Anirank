@@ -46,7 +46,10 @@
       selectedAnimeThemesIDs = new Set();
       showResultsModal = true;
     } catch (err: any) {
-      toastState.addToast("Failed to search AnimeThemes", "error");
+      toastState.addToast(
+        err.message || "Failed to search AnimeThemes",
+        "error",
+      );
     } finally {
       isSearchingAnimeThemes = false;
     }
@@ -130,7 +133,7 @@
       selectedAnilistIDs = new Set();
       showAnilistResultsModal = true;
     } catch (err: any) {
-      toastState.addToast("Failed to search AniList", "error");
+      toastState.addToast(err.message || "Failed to search AniList", "error");
     } finally {
       isSearchingAnilist = false;
     }
@@ -267,8 +270,12 @@
     <!-- Section: AniList Tools -->
     <section class="space-y-6">
       <div class="px-1">
-        <h2 class="text-xl font-bold text-white leading-tight">AniList Integration</h2>
-        <p class="text-xs text-gray-500 uppercase tracking-widest font-bold mt-1">
+        <h2 class="text-xl font-bold text-white leading-tight">
+          AniList Integration
+        </h2>
+        <p
+          class="text-xs text-gray-500 uppercase tracking-widest font-bold mt-1"
+        >
           Metadata & Resource Discovery
         </p>
       </div>
@@ -437,8 +444,12 @@
     <!-- Section: AnimeThemes Tools -->
     <section class="space-y-6">
       <div class="px-1">
-        <h2 class="text-xl font-bold text-white leading-tight">AnimeThemes Integration</h2>
-        <p class="text-xs text-gray-500 uppercase tracking-widest font-bold mt-1">
+        <h2 class="text-xl font-bold text-white leading-tight">
+          AnimeThemes Integration
+        </h2>
+        <p
+          class="text-xs text-gray-500 uppercase tracking-widest font-bold mt-1"
+        >
           Music Hydration & Synchro
         </p>
       </div>

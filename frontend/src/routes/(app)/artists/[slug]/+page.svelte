@@ -33,8 +33,8 @@
   $effect(() => {
     isFavorited = artist?.is_favorited || false;
     searchTerm = data.params?.name || "";
-    selectedYear = data.params?.year_id || "";
-    selectedSeason = data.params?.season_id || "";
+    selectedYear = data.params?.year || "";
+    selectedSeason = data.params?.season || "";
     selectedType = data.params?.type || "";
     selectedSort = data.params?.sort || "";
   });
@@ -50,8 +50,8 @@
     if (searchTerm) url.searchParams.set("name", searchTerm);
     else url.searchParams.delete("name");
 
-    setParam("year_id", selectedYear);
-    setParam("season_id", selectedSeason);
+    setParam("year", selectedYear);
+    setParam("season", selectedSeason);
     setParam("type", selectedType);
     setParam("sort", selectedSort);
 
@@ -78,14 +78,14 @@
   const yearOptions = $derived([
     { value: "any", label: "Any Year" },
     ...configState.years.map((y) => ({
-      value: y.id.toString(),
+      value: y.slug,
       label: y.name,
     })),
   ]);
   const seasonOptions = $derived([
     { value: "any", label: "Any Season" },
     ...configState.seasons.map((s) => ({
-      value: s.id.toString(),
+      value: s.slug,
       label: s.name,
     })),
   ]);
@@ -104,7 +104,7 @@
   ];
 
   function goToPage(p: number | string) {
-    if (typeof p === "string") return;
+    if (!p || typeof p === "string") return;
     const url = new URL(page.url);
     url.searchParams.set("page", p.toString());
     goto(url.toString(), { keepFocus: true, noScroll: false });
@@ -141,8 +141,11 @@
   }
 
   let paginationRange = $derived(
-    data.songs && data.songs.current_page
-      ? getPaginationRange(data.songs.current_page, data.songs.last_page)
+    data.pagination?.current_page
+      ? getPaginationRange(
+          data.pagination.current_page,
+          data.pagination.last_page,
+        )
       : [],
   );
 
@@ -313,10 +316,23 @@
       </div>
     </section>
 
+    <div class="flex items-center justify-between mb-8">
+      <div class="flex items-center">
+        <h2 class="text-2xl font-bold flex items-center gap-3">
+          <span class="w-2 h-8 bg-primary rounded-full"></span>
+          Songs
+          {#if data.songs?.length > 0}
+            <span class="text-white/30 font-normal text-lg ml-2"
+              >({data.songs.length.toLocaleString()})</span
+            >
+          {/if}
+        </h2>
+      </div>
+    </div>
     <!-- Grid Results -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {#if data.songs?.data && data.songs.data.length > 0}
-        {#each data.songs.data as song}
+      {#if data.songs && data.songs.length > 0}
+        {#each data.songs as song}
           <SongCard {song} />
         {/each}
       {:else}
@@ -342,11 +358,11 @@
     </div>
 
     <!-- Pagination -->
-    {#if data.songs?.last_page > 1}
+    {#if data.pagination?.last_page > 1}
       <div class="mt-16 flex justify-center items-center gap-2">
         <button
-          onclick={() => goToPage(data.songs.current_page - 1)}
-          disabled={data.songs.current_page === 1}
+          onclick={() => goToPage(data.pagination.current_page - 1)}
+          disabled={data.pagination.current_page === 1}
           class="w-10 h-10 rounded-xl bg-background-dark/50 border border-white/5 flex items-center justify-center text-white hover:bg-surface-dark transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           title="Go to previous page"
         >
@@ -360,7 +376,7 @@
             <button
               onclick={() => goToPage(p)}
               class="w-10 h-10 rounded-xl font-bold text-sm transition-all {data
-                .songs.current_page === p
+                .pagination.current_page === p
                 ? 'bg-primary text-white shadow-lg shadow-primary/30'
                 : 'bg-background-dark/50 border border-white/5 text-white/60 hover:text-white hover:bg-surface-dark'}"
               title="Go to page {p}"
@@ -371,8 +387,8 @@
         {/each}
 
         <button
-          onclick={() => goToPage(data.songs.current_page + 1)}
-          disabled={data.songs.current_page === data.songs.last_page}
+          onclick={() => goToPage(data.pagination.current_page + 1)}
+          disabled={data.pagination.current_page === data.pagination.last_page}
           class="w-10 h-10 rounded-xl bg-background-dark/50 border border-white/5 flex items-center justify-center text-white hover:bg-surface-dark transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           title="Go to next page"
         >

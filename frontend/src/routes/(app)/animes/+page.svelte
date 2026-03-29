@@ -32,6 +32,8 @@
   let currentPage = $state(data.animes?.pagination?.current_page || 1);
   // svelte-ignore state_referenced_locally
   let lastPage = $state(data.animes?.pagination?.last_page || 1);
+  // svelte-ignore state_referenced_locally
+  let totalAnimes = $state(data.animes?.pagination?.total || 0);
   let loading = $state(false);
 
   $effect(() => {
@@ -47,6 +49,7 @@
       animes = data.animes.data;
       currentPage = Number(data.animes.pagination.current_page);
       lastPage = Number(data.animes.pagination.last_page);
+      totalAnimes = Number(data.animes.pagination.total);
     }
   });
 
@@ -88,6 +91,7 @@
         animes = [...animes, ...response.data.data];
         currentPage = Number(response.data.pagination.current_page);
         lastPage = Number(response.data.pagination.last_page);
+        totalAnimes = Number(response.data.pagination.total);
       }
     } catch (e) {
       console.error("Error loading more animes", e);
@@ -236,26 +240,6 @@
             onchange={updateFilters}
           />
         </div>
-
-        <!-- Sort Section (Integrated in header if needed, but the user wants the one below) -->
-        <!--  <div class="flex items-end gap-2">
-          <div class="w-full">
-            <CustomSelect
-              label="Sort"
-              bind:value={selectedSort}
-              options={sortOptions}
-              placeholder="Sort By"
-              icon={SortDesc}
-              onchange={updateFilters}
-            />
-          </div>
-        </div> -->
-      </div>
-    </section>
-
-    <!-- Results Section -->
-    <section class="">
-      <div class="flex justify-end text-2xl gap-2 mb-4">
         <div class="">
           <CustomSelect
             bind:value={selectedSort}
@@ -265,48 +249,56 @@
             onchange={updateFilters}
           />
         </div>
+      </div>
+    </section>
 
-        <!-- <select
-          bind:value={selectedSort}
-          class="bg-surface-dark p-1 rounded-md text-white/80 text-sm"
-          onchange={updateFilters}
-        >
-          <option value="any">Any</option>
-          <option value="latest">Latest</option>
-          <option value="most_themes">Most Themes</option>
-          <option value="least_themes">Least Themes</option>
-          <option value="title">Title</option>
-        </select> -->
-        <button
-          onclick={() => (viewType = "grid")}
-          class="flex items-center gap-2 bg-surface-dark p-1 rounded-md {viewType ===
-          'grid'
-            ? 'text-primary'
-            : 'text-white/60'}"
-          title="Compact Grid"
-        >
-          <span class="material-symbols-outlined">grid_on</span>
-        </button>
-        <button
-          onclick={() => (viewType = "card")}
-          class="flex items-center gap-2 bg-surface-dark p-1 rounded-md {viewType ===
-          'card'
-            ? 'text-primary'
-            : 'text-white/60'}"
-          title="Detailed Cards"
-        >
-          <span class="material-symbols-outlined">border_all</span>
-        </button>
-        <button
-          onclick={() => (viewType = "list")}
-          class="flex items-center gap-2 bg-surface-dark p-1 rounded-md {viewType ===
-          'list'
-            ? 'text-primary'
-            : 'text-white/60'}"
-          title="List View"
-        >
-          <span class="material-symbols-outlined">list_alt</span>
-        </button>
+    <!-- Results Section -->
+    <section class="">
+      <div class="flex justify-between text-2xl gap-2 mb-4">
+        <div>
+          <!-- Results count -->
+          {#if totalAnimes > 0}
+            <div class="mb-4 flex items-center justify-between">
+              <h3 class="text-xl font-bold flex items-center gap-3 text-white">
+                <span class="w-2 h-6 bg-primary rounded-full"></span>
+                Results ({totalAnimes.toLocaleString()})
+              </h3>
+            </div>
+          {/if}
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button
+            onclick={() => (viewType = "grid")}
+            class="flex items-center gap-2 bg-surface-dark p-1 rounded-md {viewType ===
+            'grid'
+              ? 'text-primary'
+              : 'text-white/60'}"
+            title="Compact Grid"
+          >
+            <span class="material-symbols-outlined">grid_on</span>
+          </button>
+          <button
+            onclick={() => (viewType = "card")}
+            class="flex items-center gap-2 bg-surface-dark p-1 rounded-md {viewType ===
+            'card'
+              ? 'text-primary'
+              : 'text-white/60'}"
+            title="Detailed Cards"
+          >
+            <span class="material-symbols-outlined">border_all</span>
+          </button>
+          <button
+            onclick={() => (viewType = "list")}
+            class="flex items-center gap-2 bg-surface-dark p-1 rounded-md {viewType ===
+            'list'
+              ? 'text-primary'
+              : 'text-white/60'}"
+            title="List View"
+          >
+            <span class="material-symbols-outlined">list_alt</span>
+          </button>
+        </div>
       </div>
 
       {#if animes.length > 0}

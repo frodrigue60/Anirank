@@ -26,7 +26,11 @@
     selectedSort = data.params.sort || "";
 
     // Reset infinite scroll on data change (filters)
-    if (data.studios && (data.studios.pagination?.current_page === 1 || data.studios.current_page === 1)) {
+    if (
+      data.studios &&
+      (data.studios.pagination?.current_page === 1 ||
+        data.studios.current_page === 1)
+    ) {
       studios = data.studios.data;
       currentPage = Number(data.studios.pagination.current_page);
       lastPage = Number(data.studios.pagination.last_page);
@@ -59,10 +63,10 @@
       const response = await api.get("/studios", {
         params: {
           ...data.params,
-          page: nextPage
-        }
+          page: nextPage,
+        },
       });
-      
+
       if (response.data.data) {
         studios = [...studios, ...response.data.data];
         currentPage = Number(response.data.pagination.current_page);
@@ -99,12 +103,12 @@
   ];
 </script>
 
-<SEO 
-  title="Animation Studios" 
-  description="Explore the best animation studios and discover the anime series they have produced on AniRank." 
+<SEO
+  title="Animation Studios"
+  description="Explore the best animation studios and discover the anime series they have produced on AniRank."
 />
 
-<main class="flex-1 w-full max-w-[1440px] mx-auto px-6 py-12">
+<main class="flex-1 w-full max-w-[1440px] mx-auto px-6 py-12 space-y-4">
   <!-- Filter Row -->
   <section
     class="relative z-40 flex flex-col gap-4 bg-surface-dark/30 p-4 rounded-3xl border border-white/5 backdrop-blur-md shadow-2xl mb-10"
@@ -116,7 +120,7 @@
           for="studio-search"
           class="block text-[10px] uppercase font-black text-white/40 mb-2 ml-1 tracking-widest"
         >
-          Search Studio
+          Search Studios
         </label>
         <div class="relative">
           <span
@@ -125,7 +129,7 @@
             <Search size={20} />
           </span>
           <input
-            id="studio-search"
+            id="producer-search"
             type="text"
             bind:value={searchQuery}
             oninput={handleInput}
@@ -151,16 +155,18 @@
   </section>
 
   <!-- Title and Count -->
-  <div class="flex items-center justify-between mb-8">
-    <h2 class="text-2xl font-bold flex items-center gap-3">
-      <span class="w-2 h-8 bg-primary rounded-full"></span>
-      Studios
-      {#if data.studios?.pagination?.total > 0}
-        <span class="text-white/30 font-normal text-lg ml-2"
-          >({data.studios.pagination.total.toLocaleString()})</span
-        >
-      {/if}
-    </h2>
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="text-2xl font-bold flex items-center gap-3">
+        <span class="w-2 h-8 bg-primary rounded-full"></span>
+        Studios
+        {#if data.studios?.pagination?.total > 0}
+          <span class="text-white/30 font-normal text-lg ml-2"
+            >({data.studios.pagination.total.toLocaleString()})</span
+          >
+        {/if}
+      </h2>
+    </div>
   </div>
 
   <!-- Studio Grid (3 Columns) -->
@@ -174,7 +180,8 @@
           <!-- Background Image (Banner) -->
           <div
             class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
-            style="background-image: url('{studio.banner_url || '/images/placeholders/default-banner.jpg'}'); filter:brightness(0.5)"
+            style="background-image: url('{studio.banner_url ||
+              '/images/placeholders/default-banner.jpg'}'); filter:brightness(0.5)"
           ></div>
 
           <div
@@ -214,8 +221,7 @@
     <div
       class="text-center py-20 bg-surface-darker/30 rounded-3xl border-2 border-dashed border-white/5"
     >
-      <span
-        class="material-symbols-outlined text-6xl text-white/10 mb-4 block"
+      <span class="material-symbols-outlined text-6xl text-white/10 mb-4 block"
         >search_off</span
       >
       <h3 class="text-xl font-bold text-white/40">No studios found</h3>

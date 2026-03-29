@@ -153,18 +153,13 @@ func (h *CatalogHandler) ArtistShow(c *fiber.Ctx) error {
 		page = 1
 	}
 
-	yearID, _ := strconv.ParseUint(c.Query("year_id", "0"), 10, 64)
-	seasonID, _ := strconv.ParseUint(c.Query("season_id", "0"), 10, 64)
-
 	filters := domain.SongFilters{
-		Search:   c.Query("name", ""),
-		YearID:   yearID,
-		SeasonID: seasonID,
-		Year:     c.Query("year", ""),
-		Season:   c.Query("season", ""),
-		Genre:    c.Query("genre", ""),
-		Type:     c.Query("type", ""),
-		Sort:     c.Query("sort", ""),
+		Search: c.Query("name", ""),
+		Year:   c.Query("year", ""),
+		Season: c.Query("season", ""),
+		Genre:  c.Query("genre", ""),
+		Type:   c.Query("type", ""),
+		Sort:   c.Query("sort", "recent"),
 	}
 
 	userID := h.getUserID(c)
@@ -178,10 +173,10 @@ func (h *CatalogHandler) ArtistShow(c *fiber.Ctx) error {
 		songDTOs[i] = dto.ToSongMinimalDTO(&s)
 	}
 
-	return c.JSON(fiber.Map{
-		"artist": dto.ToArtistDTO(artist),
-		"data":   paginatedResponse(c, songDTOs, total, page, limit),
-	})
+	response := paginatedResponse(c, songDTOs, total, page, limit)
+	response["artist"] = dto.ToArtistDTO(artist)
+
+	return c.JSON(response)
 }
 
 // ─── Studios ───

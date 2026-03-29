@@ -8,14 +8,14 @@
   let anilistQuery = $state("");
 
   // Batch Form State
-  let batchYear = $state("");
+  let batchYear = $state(new Date().getFullYear());
   let batchSeason = $state("");
   let batchFormat = $state("");
   let isGenerating = $state(false);
   let isHydrating = $state(false);
 
   // Hydration Form State
-  let atYear = $state(new Date().getFullYear().toString());
+  let atYear = $state(new Date().getFullYear());
   let atSeason = $state("");
   let progressMessage = $state("");
 
@@ -185,7 +185,7 @@
     isGenerating = true;
     try {
       await api.post("/admin/animes/batch", {
-        year: parseInt(batchYear),
+        year: batchYear,
         season: batchSeason,
         format: batchFormat,
       });
@@ -218,7 +218,7 @@
             Authorization: `Bearer ${getAuthToken()}`, // Use standardized token getter
           },
           body: JSON.stringify({
-            year: parseInt(atYear),
+            year: atYear,
             season: atSeason,
           }),
         },
@@ -313,7 +313,7 @@
                 required
                 class="w-full bg-black/60 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-anirank-primary transition-all shadow-inner"
               >
-                <option value="">Year</option>
+                <option value={0}>Year</option>
                 {#each Array.from({ length: 77 }, (_, i) => new Date().getFullYear() + 1 - i) as year}
                   <option value={year}>{year}</option>
                 {/each}
@@ -487,7 +487,7 @@
                 required
                 class="w-full bg-black/60 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-purple-500 transition-all shadow-inner"
               >
-                <option value="">Year</option>
+                <option value={0}>Year</option>
                 {#each Array.from({ length: 77 }, (_, i) => new Date().getFullYear() + 1 - i) as year}
                   <option value={year}>{year}</option>
                 {/each}

@@ -26,7 +26,10 @@
     selectedSort = data.params.sort || "";
 
     // Reset infinite scroll on data change (filters)
-    if (data.artistsData && Number(data.artistsData.pagination?.current_page) === 1) {
+    if (
+      data.artistsData &&
+      Number(data.artistsData.pagination?.current_page) === 1
+    ) {
       artists = data.artistsData.data;
       currentPage = Number(data.artistsData.pagination.current_page);
       lastPage = Number(data.artistsData.pagination.last_page);
@@ -59,10 +62,10 @@
       const response = await api.get("/artists", {
         params: {
           ...data.params,
-          page: nextPage
-        }
+          page: nextPage,
+        },
       });
-      
+
       if (response.data.data) {
         artists = [...artists, ...response.data.data];
         currentPage = Number(response.data.pagination.current_page);
@@ -106,14 +109,14 @@
 />
 
 <main class="flex-1 w-full max-w-[1440px] mx-auto px-6 py-12">
-  <div class="flex flex-col gap-10">
+  <div class="flex flex-col gap-4">
     <!-- Search and Filters Section -->
     <section
       class="relative z-40 flex flex-col gap-4 bg-surface-dark/30 p-4 rounded-3xl border border-white/5 backdrop-blur-md shadow-2xl"
     >
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
+      <div class="flex items-end gap-4">
         <!-- Search -->
-        <div class="lg:col-span-8 relative group">
+        <div class="relative group w-full">
           <label
             for="artist-search"
             class="block text-[10px] uppercase font-black text-white/40 mb-2 ml-1 tracking-widest"
@@ -139,7 +142,7 @@
         </div>
 
         <!-- Sort -->
-        <div class="lg:col-span-4">
+        <div class="w-50">
           <CustomSelect
             label="Sort"
             bind:value={selectedSort}
@@ -153,7 +156,7 @@
     </section>
 
     <!-- Artists Grid -->
-    <section class="mt-8">
+    <section class="">
       <div class="flex items-center justify-between mb-8">
         <h2 class="text-2xl font-bold flex items-center gap-3">
           <span class="w-2 h-8 bg-primary rounded-full"></span>
@@ -168,7 +171,7 @@
 
       {#if artists.length > 0}
         <div
-          class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-8"
+          class="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-8"
         >
           {#each artists as artist}
             <div class="group flex flex-col items-center gap-4 cursor-pointer">

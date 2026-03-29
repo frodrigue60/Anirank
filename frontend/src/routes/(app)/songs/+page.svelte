@@ -38,7 +38,11 @@
     selectedSort = data.params.sort || "";
 
     // Reset infinite scroll on data change (filters)
-    if (data.songs && (data.songs.pagination?.current_page === 1 || data.songs.current_page === 1)) {
+    if (
+      data.songs &&
+      (data.songs.pagination?.current_page === 1 ||
+        data.songs.current_page === 1)
+    ) {
       songs = data.songs.data;
       currentPage = Number(data.songs.pagination.current_page);
       lastPage = Number(data.songs.pagination.last_page);
@@ -76,10 +80,10 @@
       const response = await api.get("/songs", {
         params: {
           ...data.params,
-          page: nextPage
-        }
+          page: nextPage,
+        },
       });
-      
+
       if (response.data.data) {
         songs = [...songs, ...response.data.data];
         currentPage = Number(response.data.pagination.current_page);
@@ -143,15 +147,15 @@
   ];
 </script>
 
-<SEO 
-  title="Discover Anime Songs" 
-  description="Explore thousands of high-quality anime openings and endings. Filter by season, year, or search for your favorite tracks on AniRank." 
+<SEO
+  title="Discover Anime Songs"
+  description="Explore thousands of high-quality anime openings and endings. Filter by season, year, or search for your favorite tracks on AniRank."
 />
 
-<main class="max-w-[1440px] mx-auto px-6 py-10">
+<main class="max-w-[1440px] mx-auto px-6 py-10 space-y-4">
   <!-- Filter Bar -->
   <section
-    class="relative z-40 bg-surface-dark/30 p-4 rounded-3xl border border-white/5 backdrop-blur-md shadow-2xl mb-12"
+    class="relative z-40 bg-surface-dark/30 p-4 rounded-3xl border border-white/5 backdrop-blur-md shadow-2xl"
   >
     <div class="flex flex-col gap-6">
       <div class="relative group">
@@ -229,14 +233,18 @@
   </section>
 
   <!-- Results count -->
-  {#if totalSongs > 0}
-    <div class="mb-8 flex items-center justify-between">
+  <div class="flex items-center justify-between">
+    <div class="flex items-center justify-between">
       <h3 class="text-xl font-bold flex items-center gap-3 text-white">
         <span class="w-2 h-6 bg-primary rounded-full"></span>
-        Results ({totalSongs.toLocaleString()})
+        {#if totalSongs > 0}
+          Results ({totalSongs.toLocaleString()})
+        {:else}
+          No results found
+        {/if}
       </h3>
     </div>
-  {/if}
+  </div>
 
   <!-- Grid Results -->
   <div class="grid grid-cols-1 md:grid-cols-2 gap-6">

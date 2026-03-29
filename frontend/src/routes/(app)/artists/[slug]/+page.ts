@@ -6,8 +6,8 @@ export const load: PageLoad = async ({ params, url }) => {
         const queryParams = {
             page: url.searchParams.get('page') || 1,
             name: url.searchParams.get('name') || '',
-            year_id: url.searchParams.get('year_id') || '',
-            season_id: url.searchParams.get('season_id') || '',
+            year: url.searchParams.get('year') || '',
+            season: url.searchParams.get('season') || '',
             type: url.searchParams.get('type') || '',
             sort: url.searchParams.get('sort') || 'recent'
         };
@@ -19,10 +19,11 @@ export const load: PageLoad = async ({ params, url }) => {
         const response = await api.get(`/artists/${params.slug}/songs`, {
             params: cleanParams
         });
-
+        //console.log(response.data.data);
         return {
             artist: response.data.artist,
             songs: response.data.data,
+            pagination: response.data.pagination,
             params: queryParams
         };
     } catch (e) {

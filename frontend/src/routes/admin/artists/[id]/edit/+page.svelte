@@ -43,6 +43,25 @@
     }
   }
 
+  async function getAvatarFromAniList() {
+    if (!artist.id) return;
+    isGenerating = true;
+    try {
+      const res = await api.post(`/admin/artists/${artist.id}/sync-avatar`);
+      artist = res.data.data;
+      previewUrl = artist.avatar_url;
+      toastState.addToast("Avatar synced successfully!", "success");
+    } catch (error: any) {
+      toastState.addToast(
+        "Failed to sync avatar: " +
+          (error.response?.data?.message || error.message),
+        "error",
+      );
+    } finally {
+      isGenerating = false;
+    }
+  }
+
   async function handleSubmit() {
     artist.name = artist.name.trim().replace(/\s+/g, " ");
     if (artist.name_jp) {
@@ -62,6 +81,11 @@
         formData.append("name", artist.name);
         formData.append("name_jp", artist.name_jp || "");
         formData.append("slug", artist.slug);
+        formData.append("status", String(artist.status));
+        if (artist.anilist_id)
+          formData.append("anilist_id", String(artist.anilist_id));
+        if (artist.animethemes_id)
+          formData.append("animethemes_id", String(artist.animethemes_id));
         formData.append("avatar", avatarFile);
 
         await api.put(`/admin/artists/${artist.id}`, formData, {
@@ -73,6 +97,11 @@
           name: artist.name,
           name_jp: artist.name_jp || null,
           slug: artist.slug,
+          status: artist.status,
+          anilist_id: artist.anilist_id ? Number(artist.anilist_id) : null,
+          animethemes_id: artist.animethemes_id
+            ? Number(artist.animethemes_id)
+            : null,
         });
       }
 
@@ -175,6 +204,50 @@
                   bind:value={artist.name_jp}
                   class="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-anirank-primary transition-colors h-14"
                 />
+              </div>
+              <div class="space-y-2">
+                <label
+                  for="anilist_id"
+                  class="block text-sm font-medium text-gray-400 px-1"
+                >
+                  AniList ID (Optional)
+                </label>
+                <input
+                  id="anilist_id"
+                  type="text"
+                  bind:value={artist.anilist_id}
+                  class="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-anirank-primary transition-colors h-14"
+                />
+              </div>
+              <div class="space-y-2">
+                <label
+                  for="animethemes_id"
+                  class="block text-sm font-medium text-gray-400 px-1"
+                >
+                  AnimeThemes ID (Optional)
+                </label>
+                <input
+                  id="animethemes_id"
+                  type="text"
+                  bind:value={artist.animethemes_id}
+                  class="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-anirank-primary transition-colors h-14"
+                />
+              </div>
+              <div class="space-y-2">
+                <label
+                  for="status"
+                  class="block text-sm font-medium text-gray-400 px-1"
+                >
+                  Status
+                </label>
+                <select
+                  id="status"
+                  bind:value={artist.status}
+                  class="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-anirank-primary transition-colors h-14"
+                >
+                  <option value={true}>Active</option>
+                  <option value={false}>Inactive</option>
+                </select>
               </div>
             </div>
 
@@ -324,18 +397,14 @@
                 disabled={isGenerating || isSubmitting}
                 class="w-full py-3 bg-white/5 hover:bg-white/10 text-white rounded-2xl border border-white/10 transition-colors flex items-center justify-center gap-2"
               >
-                <svg
-                  class="w-5 h-5 text-amber-400"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fill-rule="evenodd"
-                    d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 11-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z"
-                    clip-rule="evenodd"
-                  />
-                </svg>
                 Generate with Magic
+              </button>
+              <button
+                onclick={getAvatarFromAniList}
+                disabled={isGenerating || isSubmitting}
+                class="w-full py-3 bg-white/5 hover:bg-white/10 text-white rounded-2xl border border-white/10 transition-colors flex items-center justify-center gap-2"
+              >
+                Avatar from AT/AL
               </button>
               <p class="text-gray-500 text-xs text-center">
                 Tries to fetch the official avatar from AniList. If not found,

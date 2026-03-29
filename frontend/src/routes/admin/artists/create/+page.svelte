@@ -7,6 +7,8 @@
   let name = $state("");
   let name_jp = $state("");
   let status = $state(true);
+  let anilist_id = $state("");
+  let animethemes_id = $state("");
   let isSubmitting = $state(false);
 
   async function handleSubmit() {
@@ -26,6 +28,8 @@
         name,
         name_jp: name_jp || null,
         status,
+        anilist_id: anilist_id ? Number(anilist_id) : null,
+        animethemes_id: animethemes_id ? Number(animethemes_id) : null,
       });
 
       // The backend triggers avatar generation synchronously
@@ -110,9 +114,54 @@
               class="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-anirank-primary transition-colors h-14"
             />
           </div>
+          <div class="space-y-2">
+            <label
+              for="anilist_id"
+              class="block text-sm font-medium text-gray-400 px-1"
+            >
+              AniList ID (Optional)
+            </label>
+            <input
+              id="anilist_id"
+              type="text"
+              bind:value={anilist_id}
+              placeholder="e.g. 12345"
+              class="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-anirank-primary transition-colors h-14"
+            />
+          </div>
+          <div class="space-y-2">
+            <label
+              for="animethemes_id"
+              class="block text-sm font-medium text-gray-400 px-1"
+            >
+              AnimeThemes ID (Optional)
+            </label>
+            <input
+              id="animethemes_id"
+              type="text"
+              bind:value={animethemes_id}
+              placeholder="e.g. 12345"
+              class="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-anirank-primary transition-colors h-14"
+            />
+          </div>
         </div>
 
-        <StatusControl bind:status={status} />
+        <div class="space-y-2">
+          <label
+            for="status"
+            class="block text-sm font-medium text-gray-400 px-1"
+          >
+            Status
+          </label>
+          <select
+            id="status"
+            bind:value={status}
+            class="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-anirank-primary transition-colors h-14"
+          >
+            <option value={true}>Active</option>
+            <option value={false}>Inactive</option>
+          </select>
+        </div>
 
         <div class="pt-4 flex items-center justify-end gap-4">
           <button

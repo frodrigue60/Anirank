@@ -1080,12 +1080,12 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 	}
 
 	// --- Phase 2.5: Batch Fetch Artist Resources ---
-	uniqueArtistSlugs := make(map[string]bool)
+	uniqueArtistIDs := make(map[uint64]bool)
 	for _, a := range animeList {
 		for _, theme := range a.AnimeThemes {
 			for _, art := range theme.Song.Artists {
-				if art.Slug != "" {
-					uniqueArtistSlugs[art.Slug] = true
+				if art.ID > 0 {
+					uniqueArtistIDs[art.ID] = true
 				}
 			}
 		}
@@ -1093,22 +1093,22 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 
 	artistResourcesMap := make(map[uint64][]ATResource)
 	artistImagesMap := make(map[uint64]string)
-	if len(uniqueArtistSlugs) > 0 {
-		artistSlugs := make([]string, 0, len(uniqueArtistSlugs))
-		for slug := range uniqueArtistSlugs {
-			artistSlugs = append(artistSlugs, slug)
+	if len(uniqueArtistIDs) > 0 {
+		artistIDs := make([]string, 0, len(uniqueArtistIDs))
+		for id := range uniqueArtistIDs {
+			artistIDs = append(artistIDs, fmt.Sprintf("%d", id))
 		}
 
-		sendProgress(fmt.Sprintf("Fetching resources and images for %d artists in batches...", len(artistSlugs)))
+		sendProgress(fmt.Sprintf("Fetching resources and images for %d artists in batches...", len(artistIDs)))
 		client := &http.Client{Timeout: 30 * time.Second}
-		for i := 0; i < len(artistSlugs); i += 100 {
+		for i := 0; i < len(artistIDs); i += 100 {
 			end := i + 100
-			if end > len(artistSlugs) {
-				end = len(artistSlugs)
+			if end > len(artistIDs) {
+				end = len(artistIDs)
 			}
-			chunk := artistSlugs[i:end]
+			chunk := artistIDs[i:end]
 
-			artistUrl := fmt.Sprintf("https://api.animethemes.moe/artist?include=resources,images&filter[slug]=%s&page[size]=100", strings.Join(chunk, ","))
+			artistUrl := fmt.Sprintf("https://api.animethemes.moe/artist?include=resources,images&filter[artist][id]=%s&page[size]=100", strings.Join(chunk, ","))
 			aResp, err := client.Get(artistUrl)
 			if err == nil {
 				var artResp ATArtistResponse
@@ -1129,7 +1129,7 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 				}
 				aResp.Body.Close()
 			}
-			if end < len(artistSlugs) {
+			if end < len(artistIDs) {
 				time.Sleep(500 * time.Millisecond)
 			}
 		}
@@ -1937,6 +1937,12 @@ func (u *ContentAdminUsecase) UpdateArtist(ctx context.Context, a *domain.Artist
 		return err
 	}
 
+	// Protect existing avatar from being overwritten with NULL if no new avatar string is provided
+	// Note: UploadArtistAvatar already updates the DB synchronously before this method runs
+	if a.Avatar == nil {
+		a.Avatar = existing.Avatar
+	}
+
 	if err := u.artistRepo.Update(ctx, a); err != nil {
 		return err
 	}
@@ -2431,4 +2437,139 @@ func (u *ContentAdminUsecase) RecountArtistStats(ctx context.Context, artistID *
 
 	sendProgress("Recalculation complete!")
 	return nil
+}
+
+func (u *ContentAdminUsecase) SyncArtistAvatar(ctx context.Context, id uint64, meta domain.AuditMetadata) (*domain.Artist, error) {
+	artist, err := u.artistRepo.GetByID(ctx, id)
+	if err != nil {
+		return nil, domain.NewAppError(404, "Artist not found", err)
+	}
+
+	avatarDownloaded := false
+	var newAvatarURL string
+
+	// Step 1: AniList
+	if artist.AnilistID != nil {
+		req := anilist.StaffSearchReq{ID: artist.AnilistID}
+		res, err := u.anilistClient.SearchStaffBatch(ctx, []anilist.StaffSearchReq{req})
+		if err == nil {
+			if len(res) > 0 {
+				var staffs []anilist.Staff
+				for _, st := range res {
+					staffs = append(staffs, st...)
+				}
+				if len(staffs) > 0 && staffs[0].Image.Large != "" {
+					img := staffs[0].Image.Large
+					if !strings.Contains(img, "default.jpg") {
+						options := infrastructure.ImageOptions{Format: "avif", Quality: 85}
+						imgUrl, err := u.downloadAndStore(ctx, img, "artists/avatars", artist.ID, options)
+						if err == nil {
+							newAvatarURL = imgUrl
+							avatarDownloaded = true
+						}
+					}
+				}
+			}
+		}
+	} else if artist.Name != "" {
+		// Step 2: Search AniList by Name
+		req := anilist.StaffSearchReq{Name: artist.Name}
+		res, err := u.anilistClient.SearchStaffBatch(ctx, []anilist.StaffSearchReq{req})
+		if err == nil {
+			if staffs, ok := res[artist.Name]; ok && len(staffs) > 0 {
+				for _, st := range staffs {
+					match := false
+					if utils.NameSimilarity(artist.Name, st.Name.Full) >= 0.85 {
+						match = true
+					} else if utils.NameSimilarity(artist.Name, st.Name.Native) >= 0.85 {
+						match = true
+					} else {
+						for _, alt := range st.Name.Alternative {
+							if utils.NameSimilarity(artist.Name, alt) >= 0.85 {
+								match = true
+								break
+							}
+						}
+					}
+
+					if match {
+						img := st.Image.Large
+						if img != "" && !strings.Contains(img, "default.jpg") {
+							options := infrastructure.ImageOptions{Format: "avif", Quality: 85}
+							imgUrl, err := u.downloadAndStore(ctx, img, "artists/avatars", artist.ID, options)
+							if err == nil {
+								newAvatarURL = imgUrl
+								avatarDownloaded = true
+								break
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Step 3: Fallback to AnimeThemes
+	if !avatarDownloaded {
+		client := &http.Client{Timeout: 30 * time.Second}
+		var artistUrl string
+		if artist.AnimeThemesID != nil {
+			artistUrl = fmt.Sprintf("https://api.animethemes.moe/artist?include=images&filter[artist][id]=%d&page[size]=1", *artist.AnimeThemesID)
+		} else {
+			artistUrl = fmt.Sprintf("https://api.animethemes.moe/artist?include=images&filter[slug]=%s&page[size]=1", artist.Slug)
+		}
+		
+		aResp, err := client.Get(artistUrl)
+		if err == nil {
+			var artResp ATArtistResponse
+			if err := json.NewDecoder(aResp.Body).Decode(&artResp); err == nil && len(artResp.Artists) > 0 {
+				artData := artResp.Artists[0]
+				var atImage string
+				for _, img := range artData.Images {
+					if img.Facet == "Large Avatar" || img.Facet == "Large Cover" || img.Facet == "" {
+						atImage = img.Link
+						break
+					}
+				}
+				if atImage == "" && len(artData.Images) > 0 {
+					atImage = artData.Images[0].Link
+				}
+
+				if atImage != "" {
+					options := infrastructure.ImageOptions{Format: "avif", Quality: 85}
+					imgUrl, err := u.downloadAndStore(ctx, atImage, "artists/avatars", artist.ID, options)
+					if err == nil {
+						newAvatarURL = imgUrl
+						avatarDownloaded = true
+					}
+				}
+			}
+			aResp.Body.Close()
+		}
+	}
+
+	// Step 4: Local Fallback
+	if !avatarDownloaded {
+		progress := make(chan string, 10)
+		go func() {
+			for range progress {}
+		}()
+		err := u.BatchGenerateArtistAvatars(ctx, []uint64{artist.ID}, progress)
+		close(progress)
+		if err != nil {
+			return nil, err
+		}
+		artist, _ = u.artistRepo.GetByID(ctx, id)
+		return artist, nil
+	}
+
+	// Update DB if we successfully downloaded something
+	artist.Avatar = &newAvatarURL
+	if err := u.artistRepo.Update(ctx, artist); err != nil {
+		return nil, domain.NewAppError(500, "Failed to update artist with new avatar", err)
+	}
+
+	_ = u.auditUsecase.LogActions(ctx, meta.ActorID, "updated", artist.ID, "artist_avatar_synced", nil, artist, &meta.URL, &meta.IPAddress, &meta.UserAgent)
+
+	return artist, nil
 }

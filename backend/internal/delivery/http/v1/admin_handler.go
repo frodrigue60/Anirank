@@ -813,6 +813,23 @@ func (h *AdminHandler) GenerateArtistAvatar(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"message": "Avatar generated!"})
 }
 
+func (h *AdminHandler) SyncArtistAvatar(c *fiber.Ctx) error {
+	id, err := h.resolveID(c, "artist")
+	if err != nil {
+		return err
+	}
+	artist, err := h.usecase.SyncArtistAvatar(c.Context(), id, h.getAuditMetadata(c))
+	if err != nil {
+		return err
+	}
+	h.usecase.ResolveArtistURLs(artist)
+	return c.JSON(fiber.Map{
+		"success": true,
+		"message": "Avatar synced successfully",
+		"data":    artist,
+	})
+}
+
 func (h *AdminHandler) BatchGenerateArtistAvatars(c *fiber.Ctx) error {
 	var body struct {
 		ArtistIDs []uint64 `json:"artist_ids"`

@@ -276,9 +276,7 @@
   <title>Artists Catalog | Admin</title>
 </svelte:head>
 
-<div
-  class="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
->
+<div class="mb-8 flex flex-col gap-4">
   <div class="me-auto">
     <h1 class="text-3xl font-bold tracking-tight text-white mb-1">
       Artists Catalog
@@ -287,97 +285,99 @@
       Manage musical artists, bands, and their information.
     </p>
   </div>
-  <!-- recount songs -->
-  <button
-    onclick={recountSongs}
-    disabled={recountingSongs}
-    class="px-4 py-2 bg-anirank-primary hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-xl transition-colors shadow-lg shadow-anirank-primary/20 flex items-center gap-2"
-  >
-    {#if recountingSongs}
-      <svg class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
-        <circle
-          class="opacity-25"
-          cx="12"
-          cy="12"
-          r="10"
-          stroke="currentColor"
-          stroke-width="4"
-        ></circle>
-        <path
-          class="opacity-75"
-          fill="currentColor"
-          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-        ></path>
-      </svg>
-      Recounting...
-    {:else}
-      Recount Songs
-    {/if}
-  </button>
-  <!-- merge artists -->
-  <button
-    onclick={mergeArtists}
-    disabled={mergingArtists}
-    class="px-4 py-2 bg-anirank-primary hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-xl transition-colors shadow-lg shadow-anirank-primary/20 flex items-center gap-2"
-  >
-    {#if mergingArtists}
-      <svg class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
-        <circle
-          class="opacity-25"
-          cx="12"
-          cy="12"
-          r="10"
-          stroke="currentColor"
-          stroke-width="4"
-        ></circle>
-        <path
-          class="opacity-75"
-          fill="currentColor"
-          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-        ></path>
-      </svg>
-      Merging...
-    {:else}
-      Merge Artists
-    {/if}
-  </button>
+  <div class="flex flex-col md:flex-row gap-4">
+    <!-- recount songs -->
+    <button
+      onclick={recountSongs}
+      disabled={recountingSongs}
+      class="px-4 py-2 bg-primary hover:bg-primary/80 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-xl transition-colors shadow-lg shadow-anirank-primary/20 flex items-center gap-2"
+    >
+      {#if recountingSongs}
+        <svg class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
+          <circle
+            class="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            stroke-width="4"
+          ></circle>
+          <path
+            class="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          ></path>
+        </svg>
+        Recounting...
+      {:else}
+        Recount Songs
+      {/if}
+    </button>
+    <!-- merge artists -->
+    <button
+      onclick={mergeArtists}
+      disabled={mergingArtists}
+      class="px-4 py-2 bg-primary hover:bg-primary/80 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-xl transition-colors shadow-lg shadow-anirank-primary/20 flex items-center gap-2"
+    >
+      {#if mergingArtists}
+        <svg class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
+          <circle
+            class="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            stroke-width="4"
+          ></circle>
+          <path
+            class="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          ></path>
+        </svg>
+        Merging...
+      {:else}
+        Merge Artists
+      {/if}
+    </button>
 
-  <!-- generate avatares for all artists -->
-  <button
-    onclick={generateAvatares}
-    disabled={generatingAvatars}
-    class="px-4 py-2 bg-anirank-primary hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-xl transition-colors shadow-lg shadow-anirank-primary/20 flex items-center gap-2"
-  >
-    {#if generatingAvatars}
-      <svg class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
-        <circle
-          class="opacity-25"
-          cx="12"
-          cy="12"
-          r="10"
-          stroke="currentColor"
-          stroke-width="4"
-        ></circle>
-        <path
-          class="opacity-75"
-          fill="currentColor"
-          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-        ></path>
-      </svg>
-      Generating...
-    {:else if selectedIds.length > 0}
-      Generate for {selectedIds.length} Selected
-    {:else}
-      Generate Avatares
-    {/if}
-  </button>
-  <!-- create new artist -->
-  <a
-    href="/admin/artists/create"
-    class="px-4 py-2 bg-anirank-primary hover:bg-blue-600 text-white font-medium rounded-xl transition-colors shadow-lg shadow-anirank-primary/20 flex items-center gap-2"
-  >
-    + New Artist
-  </a>
+    <!-- generate avatares for all artists -->
+    <button
+      onclick={generateAvatares}
+      disabled={generatingAvatars}
+      class="px-4 py-2 bg-primary hover:bg-primary/80 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-xl transition-colors shadow-lg shadow-anirank-primary/20 flex items-center gap-2"
+    >
+      {#if generatingAvatars}
+        <svg class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
+          <circle
+            class="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            stroke-width="4"
+          ></circle>
+          <path
+            class="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          ></path>
+        </svg>
+        Generating...
+      {:else if selectedIds.length > 0}
+        Generate for {selectedIds.length} Selected
+      {:else}
+        Generate Avatares
+      {/if}
+    </button>
+    <!-- create new artist -->
+    <a
+      href="/admin/artists/create"
+      class="px-4 py-2 bg-primary hover:bg-primary/80 text-white font-medium rounded-xl transition-colors shadow-lg shadow-anirank-primary/20 flex items-center gap-2"
+    >
+      + New Artist
+    </a>
+  </div>
 </div>
 
 <!-- Filters & Search -->
@@ -408,7 +408,7 @@
   </div>
   <button
     onclick={handleSearch}
-    class="px-6 py-2 bg-anirank-primary hover:bg-blue-600 text-white rounded-xl transition-all font-medium border border-white/10"
+    class="px-6 py-2 bg-primary hover:bg-primary/80 text-white rounded-xl transition-all font-medium border border-white/10"
   >
     Search
   </button>
@@ -529,11 +529,11 @@
               </div>
             </td>
             <td class="px-6 py-4">
-              <div
-                class="font-medium text-white line-clamp-1"
-                title={artist.name}
-              >
-                {artist.name}
+              <div class="font-medium line-clamp-1" title={artist.name}>
+                <a
+                  class="text-light hover:text-primary/80 transition-colors"
+                  href="/admin/artists/{artist.id}">{artist.name}</a
+                >
               </div>
               {#if artist.name_jp}
                 <div class="text-xs text-gray-500">{artist.name_jp}</div>

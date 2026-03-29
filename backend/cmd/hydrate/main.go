@@ -250,7 +250,7 @@ func main() {
 				idStrings[j] = fmt.Sprintf("%d", id)
 			}
 
-			artistUrl := fmt.Sprintf("https://api.animethemes.moe/artist?include=resources&filter[id]=%s&page[size]=100", strings.Join(idStrings, ","))
+			artistUrl := fmt.Sprintf("https://api.animethemes.moe/artist?include=resources&filter[artist][id]=%s&page[size]=100", strings.Join(idStrings, ","))
 			aResp, err := client.Get(artistUrl)
 			if err != nil {
 				log.Printf("Warning: Failed to fetch artists batch: %v\n", err)

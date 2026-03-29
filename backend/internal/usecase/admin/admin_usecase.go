@@ -273,6 +273,10 @@ func (u *AdminUsecase) BatchGenerateArtistAvatars(ctx context.Context, ids []uin
 	return u.contentAdmin.BatchGenerateArtistAvatars(ctx, ids, progress)
 }
 
+func (u *AdminUsecase) SyncArtistAvatar(ctx context.Context, id uint64, meta domain.AuditMetadata) (*domain.Artist, error) {
+	return u.contentAdmin.SyncArtistAvatar(ctx, id, meta)
+}
+
 func (u *AdminUsecase) RecountArtistStats(ctx context.Context, artistID *uint64, progress chan<- string) error {
 	return u.contentAdmin.RecountArtistStats(ctx, artistID, progress)
 }

@@ -858,6 +858,10 @@ type ATResource struct {
 type ATArtistData struct {
 	ID        uint64       `json:"id"`
 	Resources []ATResource `json:"resources"`
+	Images    []struct {
+		Facet string `json:"facet"`
+		Link  string `json:"link"`
+	} `json:"images"`
 }
 
 type ATArtistResponse struct {
@@ -1076,47 +1080,56 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 	}
 
 	// --- Phase 2.5: Batch Fetch Artist Resources ---
-	uniqueArtistIDs := make(map[uint64]bool)
+	uniqueArtistSlugs := make(map[string]bool)
 	for _, a := range animeList {
 		for _, theme := range a.AnimeThemes {
 			for _, art := range theme.Song.Artists {
-				uniqueArtistIDs[art.ID] = true
+				if art.Slug != "" {
+					uniqueArtistSlugs[art.Slug] = true
+				}
 			}
 		}
 	}
 
 	artistResourcesMap := make(map[uint64][]ATResource)
-	if len(uniqueArtistIDs) > 0 {
-		artistIDs := make([]uint64, 0, len(uniqueArtistIDs))
-		for id := range uniqueArtistIDs {
-			artistIDs = append(artistIDs, id)
+	artistImagesMap := make(map[uint64]string)
+	if len(uniqueArtistSlugs) > 0 {
+		artistSlugs := make([]string, 0, len(uniqueArtistSlugs))
+		for slug := range uniqueArtistSlugs {
+			artistSlugs = append(artistSlugs, slug)
 		}
 
-		sendProgress(fmt.Sprintf("Fetching resources for %d artists in batches...", len(artistIDs)))
+		sendProgress(fmt.Sprintf("Fetching resources and images for %d artists in batches...", len(artistSlugs)))
 		client := &http.Client{Timeout: 30 * time.Second}
-		for i := 0; i < len(artistIDs); i += 100 {
+		for i := 0; i < len(artistSlugs); i += 100 {
 			end := i + 100
-			if end > len(artistIDs) {
-				end = len(artistIDs)
+			if end > len(artistSlugs) {
+				end = len(artistSlugs)
 			}
-			chunk := artistIDs[i:end]
-			idStrings := make([]string, len(chunk))
-			for j, id := range chunk {
-				idStrings[j] = fmt.Sprintf("%d", id)
-			}
+			chunk := artistSlugs[i:end]
 
-			artistUrl := fmt.Sprintf("https://api.animethemes.moe/artist?include=resources&filter[id]=%s&page[size]=100", strings.Join(idStrings, ","))
+			artistUrl := fmt.Sprintf("https://api.animethemes.moe/artist?include=resources,images&filter[slug]=%s&page[size]=100", strings.Join(chunk, ","))
 			aResp, err := client.Get(artistUrl)
 			if err == nil {
 				var artResp ATArtistResponse
 				if err := json.NewDecoder(aResp.Body).Decode(&artResp); err == nil {
 					for _, artData := range artResp.Artists {
 						artistResourcesMap[artData.ID] = artData.Resources
+						for _, img := range artData.Images {
+							if img.Facet == "Large Avatar" || img.Facet == "Large Cover" || img.Facet == "" {
+								artistImagesMap[artData.ID] = img.Link
+								break
+							}
+						}
+						// Fallback if no specific facet matched but an image exists
+						if artistImagesMap[artData.ID] == "" && len(artData.Images) > 0 {
+							artistImagesMap[artData.ID] = artData.Images[0].Link
+						}
 					}
 				}
 				aResp.Body.Close()
 			}
-			if end < len(artistIDs) {
+			if end < len(artistSlugs) {
 				time.Sleep(500 * time.Millisecond)
 			}
 		}
@@ -1479,8 +1492,25 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 					}
 				}
 
-				// Collect all artist IDs for avatar generation later
-				allProcessedArtistIDs[artist.ID] = true
+				// Download avatar from AnimeThemes if available
+				avatarDownloaded := false
+				if atImage, ok := artistImagesMap[atArtID]; ok && atImage != "" && !u.isLocalImage(artist.Avatar) {
+					// Solo encode a avif (mantener el formato solicitado por el usuario, sin redimensionar ancho)
+					options := infrastructure.ImageOptions{Format: "avif", Quality: 85}
+					if imgUrl, err := u.downloadAndStore(ctx, atImage, "artists/avatars", artist.ID, options); err == nil {
+						artist.Avatar = &imgUrl
+						_ = u.artistRepo.Update(ctx, artist)
+						avatarDownloaded = true
+						fmt.Printf("[INFO] Downloaded AnimeThemes avatar for artist %d\n", artist.ID)
+					} else {
+						fmt.Printf("[ERROR] Failed to download AT avatar for artist %d: %v\n", artist.ID, err)
+					}
+				}
+
+				// If no avatar was downloaded or already local, add to queue for local generation fallback
+				if !avatarDownloaded && !u.isLocalImage(artist.Avatar) {
+					allProcessedArtistIDs[artist.ID] = true
+				}
 
 				// Skip if we already added this artist to THIS song
 				if !processedArtists[artist.ID] {

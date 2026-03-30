@@ -181,6 +181,38 @@ func (r *userRepository) GetRolesByUserID(ctx context.Context, userID uint64) ([
 	return roles, err
 }
 
+func (r *userRepository) GetPermissionsByRoleID(ctx context.Context, roleID uint64) ([]domain.Permission, error) {
+	var permissions []domain.Permission
+	query := `
+		SELECT p.id, p.name, p.slug, p.description, p.created_at, p.updated_at
+		FROM permissions p
+		JOIN role_permissions rp ON p.id = rp.permission_id
+		WHERE rp.role_id = $1
+	`
+	err := r.db.SelectContext(ctx, &permissions, query, roleID)
+	return permissions, err
+}
+
+func (r *userRepository) GetPermissionsByUserID(ctx context.Context, userID uint64) ([]domain.Permission, error) {
+	var permissions []domain.Permission
+	query := `
+		SELECT DISTINCT p.id, p.name, p.slug, p.description, p.created_at, p.updated_at
+		FROM permissions p
+		JOIN role_permissions rp ON p.id = rp.permission_id
+		JOIN role_user ru ON rp.role_id = ru.role_id
+		WHERE ru.user_id = $1
+	`
+	err := r.db.SelectContext(ctx, &permissions, query, userID)
+	return permissions, err
+}
+
+func (r *userRepository) GetAllPermissions(ctx context.Context) ([]domain.Permission, error) {
+	var permissions []domain.Permission
+	query := "SELECT id, name, slug, description, created_at, updated_at FROM permissions ORDER BY slug ASC"
+	err := r.db.SelectContext(ctx, &permissions, query)
+	return permissions, err
+}
+
 func (r *userRepository) GetRoles(ctx context.Context) ([]domain.Role, error) {
 	var roles []domain.Role
 	query := "SELECT id, name, slug, description, created_at FROM roles"
@@ -298,6 +330,38 @@ func (r *userRepository) UpdateBadges(ctx context.Context, userID uint64, badgeI
 
 		for _, badgeID := range badgeIDs {
 			if _, err := stmt.ExecContext(ctx, userID, badgeID); err != nil {
+				return err
+			}
+		}
+	}
+
+	return tx.Commit()
+}
+
+func (r *userRepository) UpdateRolePermissions(ctx context.Context, roleID uint64, permissionIDs []uint64) error {
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// 1. Delete existing permissions for the role
+	_, err = tx.ExecContext(ctx, "DELETE FROM role_permissions WHERE role_id = $1", roleID)
+	if err != nil {
+		return err
+	}
+
+	// 2. Insert new permissions
+	if len(permissionIDs) > 0 {
+		query := "INSERT INTO role_permissions (role_id, permission_id) VALUES ($1, $2)"
+		stmt, err := tx.PrepareContext(ctx, query)
+		if err != nil {
+			return err
+		}
+		defer stmt.Close()
+
+		for _, permID := range permissionIDs {
+			if _, err := stmt.ExecContext(ctx, roleID, permID); err != nil {
 				return err
 			}
 		}

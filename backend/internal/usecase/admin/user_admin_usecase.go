@@ -10,6 +10,7 @@ import (
 	"anirank/api/internal/domain"
 	"anirank/api/internal/infrastructure"
 	"anirank/api/internal/pkg/utils"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -100,6 +101,11 @@ func (u *UserAdminUsecase) CreateUser(ctx context.Context, user *domain.User, ro
 	if user.Slug == nil || *user.Slug == "" {
 		slug := u.generateUniqueUserSlug(ctx, user.Name)
 		user.Slug = &slug
+	}
+
+	// Generate UUID
+	if user.UUID == "" {
+		user.UUID = uuid.New().String()
 	}
 
 	// Create User

@@ -13,6 +13,21 @@ import (
 
 const AnilistGraphQLEndpoint = "https://graphql.anilist.co"
 const AnilistTokenEndpoint = "https://anilist.co/api/v2/oauth/token"
+const UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
+
+func (c *Client) setAdvancedHeaders(req *http.Request) {
+	req.Header.Set("User-Agent", UserAgent)
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
+	req.Header.Set("Origin", "https://anilist.co")
+	req.Header.Set("Referer", "https://anilist.co/")
+	req.Header.Set("Sec-Ch-Ua", ` "Google Chrome";v="123", "Not:A-Brand";v="8", "Chromium";v="123" `)
+	req.Header.Set("Sec-Ch-Ua-Mobile", "?0")
+	req.Header.Set("Sec-Ch-Ua-Platform", `"Windows"`)
+	req.Header.Set("Sec-Fetch-Dest", "empty")
+	req.Header.Set("Sec-Fetch-Mode", "cors")
+	req.Header.Set("Sec-Fetch-Site", "same-site")
+}
 
 type Client struct {
 	httpClient *http.Client
@@ -211,7 +226,7 @@ func (c *Client) SearchAnimes(ctx context.Context, search string, format string,
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
+	c.setAdvancedHeaders(req)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -296,7 +311,7 @@ func (c *Client) GetMediaByIDs(ctx context.Context, ids []int) ([]Media, error) 
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
+	c.setAdvancedHeaders(req)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -395,7 +410,7 @@ func (c *Client) FetchAnimes(ctx context.Context, page int, season string, seaso
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
+	c.setAdvancedHeaders(req)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -434,7 +449,7 @@ func (c *Client) ExchangeCode(ctx context.Context, clientID, clientSecret, redir
 	}
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("Accept", "application/json")
+	c.setAdvancedHeaders(req)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -484,6 +499,7 @@ func (c *Client) GetViewer(ctx context.Context, accessToken string) (*AnilistUse
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+accessToken)
+	c.setAdvancedHeaders(req)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -526,7 +542,7 @@ func (c *Client) SearchStaff(ctx context.Context, search string) ([]Staff, error
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
+	c.setAdvancedHeaders(req)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -614,7 +630,7 @@ func (c *Client) SearchStaffBatch(ctx context.Context, reqs []StaffSearchReq) (m
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
+	c.setAdvancedHeaders(req)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {

@@ -577,7 +577,11 @@ func (h *AdminHandler) CreateSong(c *fiber.Ctx) error {
 		_ = h.usecase.SyncSongArtists(c.Context(), req.Song.ID, req.ArtistIDs)
 	}
 
-	return c.Status(201).JSON(fiber.Map{"data": req.Song})
+	return c.Status(201).JSON(fiber.Map{
+		"success": true,
+		"message": "Song created successfully",
+		"data":    req.Song,
+	})
 }
 
 func (h *AdminHandler) UpdateSong(c *fiber.Ctx) error {
@@ -606,7 +610,11 @@ func (h *AdminHandler) UpdateSong(c *fiber.Ctx) error {
 		_ = h.usecase.SyncSongArtists(c.Context(), req.Song.ID, req.ArtistIDs)
 	}
 
-	return c.JSON(fiber.Map{"data": req.Song})
+	return c.JSON(fiber.Map{
+		"success": true,
+		"message": "Song updated successfully",
+		"data":    req.Song,
+	})
 }
 
 func (h *AdminHandler) DeleteSong(c *fiber.Ctx) error {
@@ -617,7 +625,10 @@ func (h *AdminHandler) DeleteSong(c *fiber.Ctx) error {
 	if err := h.usecase.DeleteSong(c.Context(), id, h.getAuditMetadata(c)); err != nil {
 		return err
 	}
-	return c.SendStatus(204)
+	return c.JSON(fiber.Map{
+		"success": true,
+		"message": "Song deleted successfully",
+	})
 }
 
 func (h *AdminHandler) ToggleSongStatus(c *fiber.Ctx) error {
@@ -628,7 +639,10 @@ func (h *AdminHandler) ToggleSongStatus(c *fiber.Ctx) error {
 	if err := h.usecase.ToggleSongStatus(c.Context(), id, h.getAuditMetadata(c)); err != nil {
 		return err
 	}
-	return c.SendStatus(204)
+	return c.JSON(fiber.Map{
+		"success": true,
+		"message": "Status updated successfully",
+	})
 }
 
 // SONG VARIANTS

@@ -68,6 +68,16 @@ type Follow struct {
 }
 
 type Role struct {
+	ID          uint64       `db:"id" json:"id"`
+	Name        string       `db:"name" json:"name"`
+	Slug        string       `db:"slug" json:"slug"`
+	Description *string      `db:"description" json:"description"`
+	Permissions []Permission `db:"-" json:"permissions,omitempty"`
+	CreatedAt   time.Time    `db:"created_at" json:"created_at"`
+	UpdatedAt   time.Time    `db:"updated_at" json:"updated_at"`
+}
+
+type Permission struct {
 	ID          uint64    `db:"id" json:"id"`
 	Name        string    `db:"name" json:"name"`
 	Slug        string    `db:"slug" json:"slug"`
@@ -111,6 +121,12 @@ type UserRepository interface {
 	// Badges Loaders
 	GetBadgesByUserID(ctx context.Context, userID uint64) ([]Badge, error)
 	UpdateBadges(ctx context.Context, userID uint64, badgeIDs []uint64) error
+
+	// Permissions
+	GetPermissionsByRoleID(ctx context.Context, roleID uint64) ([]Permission, error)
+	GetPermissionsByUserID(ctx context.Context, userID uint64) ([]Permission, error)
+	GetAllPermissions(ctx context.Context) ([]Permission, error)
+	UpdateRolePermissions(ctx context.Context, roleID uint64, permissionIDs []uint64) error
 
 	// Admin
 	GetUsers(ctx context.Context, page, limit int, search string) ([]User, int, error)

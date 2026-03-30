@@ -1220,8 +1220,17 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 		}
 
 		bannerUrl := ""
-		if alData != nil {
+		if alData != nil && alData.BannerImage != "" {
 			bannerUrl = alData.BannerImage
+		}
+		// Fallback for banner if still empty
+		if bannerUrl == "" {
+			for _, img := range a.Images {
+				if img.Facet == "Large Cover" || img.Facet == "Cover" {
+					bannerUrl = img.Link
+					break
+				}
+			}
 		}
 
 		var coverPtr, bannerPtr *string
@@ -1282,18 +1291,32 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 		}
 
 		// 5. Sync Associations
+		// Always sync Studios and Resources from AnimeThemes as base/fallback
+		var studioIDs []uint64
+		for _, s := range a.Studios {
+			obj, err := u.taxonomyRepo.GetOrCreateStudio(ctx, s.Name)
+			if err == nil {
+				studioIDs = append(studioIDs, obj.ID)
+			}
+		}
+		_ = u.animeRepo.UpdateStudios(ctx, anime.ID, studioIDs)
+
+		// Sync Resources from AnimeThemes as External Links
+		if len(a.Resources) > 0 {
+			links := make([]domain.ExternalLink, 0, len(a.Resources))
+			for _, r := range a.Resources {
+				links = append(links, domain.ExternalLink{
+					Name: r.Site,
+					URL:  r.Link,
+					Type: strings.ToLower(r.Site),
+				})
+			}
+			_ = u.animeRepo.UpdateExternalLinks(ctx, anime.ID, links)
+		}
+
+		// Enrich with AniList if available (may overwrite/add genres, producers, more links)
 		if alData != nil {
 			_ = u.SyncAnimeWithAnilist(ctx, anime, alData)
-		} else {
-			// Fallback to AT Studios
-			var studioIDs []uint64
-			for _, s := range a.Studios {
-				obj, err := u.taxonomyRepo.GetOrCreateStudio(ctx, s.Name)
-				if err == nil {
-					studioIDs = append(studioIDs, obj.ID)
-				}
-			}
-			_ = u.animeRepo.UpdateStudios(ctx, anime.ID, studioIDs)
 		}
 
 		// 6. Process Songs & Themes
@@ -1626,6 +1649,7 @@ func (u *ContentAdminUsecase) CreateSong(ctx context.Context, s *domain.Song, me
 	}
 
 	s.Slug = fmt.Sprintf("%s%s", s.Type, s.ThemeNum)
+	s.UUID = uuid.New().String()
 
 	// Handle inheritance
 	if s.SeasonID == 0 || s.YearID == 0 {
@@ -2078,6 +2102,7 @@ func (u *ContentAdminUsecase) CreateVariant(ctx context.Context, v *domain.SongV
 		v.VersionNumber = maxVersion + 1
 		v.Slug = fmt.Sprintf("v%d", v.VersionNumber)
 	}
+
 	v.UUID = uuid.New().String()
 
 	// Role-based status control

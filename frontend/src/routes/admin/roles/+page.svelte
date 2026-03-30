@@ -1,254 +1,224 @@
 <script lang="ts">
+  import api from "$lib/api";
+  import { toastState } from "$lib/state/toast.svelte";
+  import { onMount } from "svelte";
+
   let { data } = $props();
+
+  // Roles state initialization
   // svelte-ignore state_referenced_locally
-  let roles = $state(data.roles);
+  let roles = $state(data.roles || []);
+  // svelte-ignore state_referenced_locally
+  let allPermissions = $state(data.allPermissions || []);
+  let selectedRoleIndex = $state(0);
+  let selectedRole = $derived(roles[selectedRoleIndex] || null);
+
+  // Buffer for currently selected permissions for the active role
+  let selectedPermissionIds = $state<Set<number>>(new Set());
+  let isSaving = $state(false);
+
+  // Group permissions by resource prefix
+  let groupedPermissions = $derived(() => {
+    const groups: Record<string, typeof allPermissions> = {};
+    allPermissions.forEach((p: any) => {
+      const parts = p.slug.split(".");
+      const group = parts.length > 1 ? parts[0] : "system";
+      if (!groups[group]) groups[group] = [];
+      groups[group].push(p);
+    });
+    return groups;
+  });
+
+  // Sync selected permissions set when the selected role changes
+  $effect(() => {
+    if (selectedRole && selectedRole.permissions) {
+      selectedPermissionIds = new Set(selectedRole.permissions.map((p: any) => p.id));
+    } else {
+      selectedPermissionIds = new Set();
+    }
+  });
+
+  function togglePermission(id: number) {
+    if (selectedRole?.slug === 'owner') return; // Owner bypass logic
+
+    if (selectedPermissionIds.has(id)) {
+      selectedPermissionIds.delete(id);
+    } else {
+      selectedPermissionIds.add(id);
+    }
+    // Trigger reactivity
+    selectedPermissionIds = new Set(selectedPermissionIds);
+  }
+
+  async function handleSave() {
+    if (!selectedRole || isSaving) return;
+
+    isSaving = true;
+    try {
+      const resp = await api.post(`/admin/roles/${selectedRole.id}/permissions`, {
+        permission_ids: Array.from(selectedPermissionIds),
+      });
+
+      if (resp.data.success) {
+        toastState.addToast("Permissions updated successfully!", "success");
+        // Update local role object to reflect new permissions (important!)
+        const updatedPermissions = allPermissions.filter((p: any) =>
+          selectedPermissionIds.has(p.id)
+        );
+        roles[selectedRoleIndex].permissions = updatedPermissions;
+      }
+    } catch (err: any) {
+      console.error(err);
+      toastState.addToast(
+        err.response?.data?.message || "Failed to update permissions",
+        "error"
+      );
+    } finally {
+      isSaving = false;
+    }
+  }
+
+  const getResourceIcon = (group: string) => {
+    switch (group) {
+      case "anime": return "tv";
+      case "song": return "music";
+      case "artist": return "user-group";
+      default: return "cog";
+    }
+  };
+
+  const getRoleColor = (slug: string) => {
+    switch (slug) {
+      case "owner": return "rose";
+      case "admin": return "orange";
+      case "editor": return "blue";
+      case "creator": return "emerald";
+      default: return "gray";
+    }
+  };
 </script>
 
 <svelte:head>
   <title>Roles & Permissions | Admin</title>
 </svelte:head>
 
-<div
-  class="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
->
-  <div>
-    <h1 class="text-3xl font-bold tracking-tight text-white mb-1">
-      Roles & Permissions
-    </h1>
-    <p class="text-gray-400">
-      Manage system roles and their assigned capabilities.
-    </p>
+<div class="mb-8 overflow-hidden">
+  <h1 class="text-3xl font-bold tracking-tight text-white mb-2">Roles & Permissions</h1>
+  <p class="text-gray-400">Configure what each account can do within the system.</p>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+  <!-- ROLES LIST (Maestro) -->
+  <div class="lg:col-span-1 space-y-3">
+    <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2 mb-2">System Roles</h2>
+    {#each roles as role, i}
+      <button
+        onclick={() => (selectedRoleIndex = i)}
+        class="w-full flex items-center gap-3 p-4 rounded-2xl border transition-all text-left {selectedRoleIndex === i 
+          ? 'bg-white/10 border-white/20 ring-1 ring-white/10' 
+          : 'bg-anirank-card border-white/5 hover:bg-white/5 grayscale hover:grayscale-0'}"
+      >
+        <div class="w-10 h-10 rounded-xl bg-{getRoleColor(role.slug)}-500/20 text-{getRoleColor(role.slug)}-400 flex items-center justify-center shrink-0">
+          <span class="font-bold text-lg">{role.name?.[0].toUpperCase()}</span>
+        </div>
+        <div class="overflow-hidden">
+          <div class="font-bold text-white text-sm truncate">{role.name}</div>
+          <div class="text-xs text-gray-400 truncate capitalize">{role.slug}</div>
+        </div>
+      </button>
+    {/each}
   </div>
 
-  <button
-    class="px-4 py-2 bg-white/5 hover:bg-white/10 text-white font-medium rounded-xl transition-colors border border-white/10 flex items-center gap-2"
-    disabled
-  >
-    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-      ><path
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-width="2"
-        d="M12 4v16m8-8H4"
-      /></svg
-    >
-    New Role (Disabled)
-  </button>
-</div>
-
-<div
-  class="bg-orange-500/10 border border-orange-500/20 text-orange-400 p-4 rounded-xl mb-6 flex gap-3"
->
-  <svg
-    class="w-6 h-6 shrink-0"
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-    ><path
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      stroke-width="2"
-      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-    /></svg
-  >
-  <p class="text-sm">
-    <strong>Fixed Architecture:</strong> The current system uses a hardcoded role
-    hierarchy (`admin`, `editor`, `creator`, `user`). Creating custom roles with granular
-    permissions is not supported in the current backend iteration.
-  </p>
-</div>
-
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-  {#each roles as role}
-    <div
-      class="bg-anirank-card border border-white/5 rounded-2xl p-6 flex flex-col"
-    >
-      <div class="flex items-start justify-between mb-4">
-        <div class="flex items-center gap-3">
-          <div
-            class="w-12 h-12 rounded-xl bg-{role.color}-500/20 text-{role.color}-400 flex items-center justify-center border border-{role.color}-500/30"
-          >
-            <svg
-              class="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              {#if role.name === "admin"}
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                />
-              {:else if role.name === "editor"}
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                />
-              {:else if role.name === "creator"}
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                />
-              {:else}
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                />
-              {/if}
-            </svg>
-          </div>
+  <!-- PERMISSIONS MATRIX (Detalle) -->
+  <div class="lg:col-span-3 space-y-6">
+    {#if selectedRole}
+      <div class="bg-anirank-card border border-white/5 rounded-3xl overflow-hidden">
+        <!-- Role Info Header -->
+        <div class="p-6 border-b border-white/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white/[0.02]">
           <div>
-            <h2 class="text-xl font-bold text-white capitalize">{role.name}</h2>
-            <p class="text-sm text-gray-500">
-              {role.users_count.toLocaleString()} accounts assigned
+            <div class="flex items-center gap-2 mb-1">
+              <h2 class="text-2xl font-bold text-white capitalize">{selectedRole.name}</h2>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-{getRoleColor(selectedRole.slug)}-500/20 text-{getRoleColor(selectedRole.slug)}-400 border border-{getRoleColor(selectedRole.slug)}-500/30">
+                {selectedRole.slug}
+              </span>
+            </div>
+            <p class="text-sm text-gray-400">{selectedRole.description || 'No description provided.'}</p>
+          </div>
+
+          {#if selectedRole.slug !== 'owner'}
+            <button
+              onclick={handleSave}
+              disabled={isSaving}
+              class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20 flex items-center gap-2 text-sm"
+            >
+              {#if isSaving}
+                <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                Saving...
+              {:else}
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
+                Save Changes
+              {/if}
+            </button>
+          {/if}
+        </div>
+
+        {#if selectedRole.slug === 'owner'}
+          <div class="p-8 text-center bg-rose-500/5 border-b border-white/5">
+            <div class="inline-flex p-3 rounded-full bg-rose-500/20 text-rose-400 mb-4 font-bold">Total Access (Locked)</div>
+            <p class="text-sm text-gray-400 max-w-lg mx-auto">
+              The <strong>Owner</strong> role has a hardcoded bypass in the backend for security and redundancy.
+              Permissions for this role cannot be restricted through the UI.
             </p>
           </div>
+        {/if}
+
+        <!-- Permissions Grid -->
+        <div class="p-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {#each Object.entries(groupedPermissions()) as [group, perms]}
+              <div class="space-y-4">
+                <div class="flex items-center gap-2 pb-2 border-b border-white/5">
+                  <span class="text-indigo-400 capitalize text-sm font-bold tracking-tight">{group}</span>
+                </div>
+                <div class="space-y-2">
+                  {#each perms as perm}
+                    <button
+                      onclick={() => togglePermission(perm.id)}
+                      disabled={selectedRole.slug === 'owner'}
+                      class="w-full flex items-center justify-between p-3 rounded-xl border transition-all group {selectedPermissionIds.has(perm.id) 
+                        ? 'bg-indigo-500/10 border-indigo-500/30' 
+                        : 'bg-white/[0.02] border-white/5 hover:border-white/20'}"
+                    >
+                      <div class="flex flex-col items-start gap-0.5 text-left">
+                        <span class="text-sm font-semibold {selectedPermissionIds.has(perm.id) ? 'text-white' : 'text-gray-300'}">{perm.name}</span>
+                        <span class="text-[10px] text-gray-500 font-mono tracking-tighter uppercase">{perm.slug}</span>
+                      </div>
+                      
+                      <div class="w-6 h-6 rounded-lg flex items-center justify-center transition-all {selectedPermissionIds.has(perm.id)
+                        ? 'bg-indigo-500 text-white' 
+                        : 'bg-white/5 text-gray-600 group-hover:bg-white/10'}">
+                        {#if selectedPermissionIds.has(perm.id)}
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                        {:else}
+                          <div class="w-2 h-2 rounded-full bg-current opacity-20"></div>
+                        {/if}
+                      </div>
+                    </button>
+                  {/each}
+                </div>
+              </div>
+            {/each}
+          </div>
         </div>
-        <button
-          class="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white text-xs font-semibold rounded-lg transition-colors border border-white/10"
-        >
-          View Users
-        </button>
       </div>
-
-      <p class="text-sm text-gray-400 mb-6 flex-1">
-        {role.description}
-      </p>
-
-      <div class="pt-4 border-t border-white/5 mt-auto">
-        <h3
-          class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3"
-        >
-          Key Capabilities
-        </h3>
-        <ul class="space-y-2 text-sm text-gray-300">
-          {#if role.name === "admin"}
-            <li class="flex items-center gap-2">
-              <svg
-                class="w-4 h-4 text-emerald-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                ><path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M5 13l4 4L19 7"
-                /></svg
-              > Full Backend Access
-            </li>
-            <li class="flex items-center gap-2">
-              <svg
-                class="w-4 h-4 text-emerald-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                ><path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M5 13l4 4L19 7"
-                /></svg
-              > Role Management
-            </li>
-          {:else if role.name === "editor"}
-            <li class="flex items-center gap-2">
-              <svg
-                class="w-4 h-4 text-emerald-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                ><path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M5 13l4 4L19 7"
-                /></svg
-              > Direct Catalog Publish
-            </li>
-            <li class="flex items-center gap-2">
-              <svg
-                class="w-4 h-4 text-emerald-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                ><path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M5 13l4 4L19 7"
-                /></svg
-              > Resolve Reports
-            </li>
-          {:else if role.name === "creator"}
-            <li class="flex items-center gap-2">
-              <svg
-                class="w-4 h-4 text-emerald-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                ><path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M5 13l4 4L19 7"
-                /></svg
-              > Bypass Upload Limits
-            </li>
-            <li class="flex items-center gap-2">
-              <svg
-                class="w-4 h-4 text-amber-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                ><path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                /></svg
-              > Catalog submissions need review
-            </li>
-          {:else}
-            <li class="flex items-center gap-2">
-              <svg
-                class="w-4 h-4 text-emerald-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                ><path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M5 13l4 4L19 7"
-                /></svg
-              > Voting & Playlists
-            </li>
-            <li class="flex items-center gap-2 text-rose-400">
-              <svg
-                class="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                ><path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M6 18L18 6M6 6l12 12"
-                /></svg
-              > No Admin Panel Access
-            </li>
-          {/if}
-        </ul>
+    {:else}
+      <div class="h-64 flex items-center justify-center text-gray-500 animate-pulse bg-anirank-card rounded-3xl border border-white/5">
+        Select a role to manage its permissions
       </div>
-    </div>
-  {/each}
+    {/if}
+  </div>
 </div>
+
+<style>
+  /* Optional transition or focus styles if needed */
+</style>

@@ -32,3 +32,10 @@ func NewAppError(code int, message string, err error) *AppError {
 		Err:     err,
 	}
 }
+
+// Response is a standardized JSON response structure for the API.
+type Response struct {
+	Success bool   `json:"success"`
+	Message string `json:"message,omitempty"`
+	Data    any    `json:"data,omitempty"`
+}

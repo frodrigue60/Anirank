@@ -161,7 +161,7 @@
       const res = await api.post("/admin/songs", payload);
 
       if (res.status === 201 || res.data.success) {
-        toastState.addToast("Song created and artists synced (avatars generated)!", "success");
+        toastState.addToast(res.data.message || "Song created successfully!", "success");
         const urlAnimeId = page.url.searchParams.get("anime_id") || page.url.searchParams.get("anime");
         if (urlAnimeId) {
           goto(`/admin/animes/${urlAnimeId}/songs`);
@@ -171,10 +171,13 @@
       }
     } catch (err: any) {
       console.error(err);
-      errorMsg =
+      const msg =
         err.response?.data?.message ||
         err.response?.data?.error ||
         "An error occurred while creating the song.";
+      
+      errorMsg = msg;
+      toastState.addToast(msg, "error");
     } finally {
       loading = false;
     }

@@ -142,16 +142,19 @@
 
       const res = await api.put(`/admin/songs/${song.id}`, payload);
 
-      if (res.status === 200) {
-        toastState.addToast("Song updated and artists synced (avatars generated)!", "success");
+      if (res.status === 200 || res.data.success) {
+        toastState.addToast(res.data.message || "Song updated successfully!", "success");
         goto(`/admin/songs/${song.id}`);
       }
     } catch (err: any) {
       console.error(err);
-      errorMsg =
+      const msg =
         err.response?.data?.message ||
         err.response?.data?.error ||
         "An error occurred while updating the song.";
+      
+      errorMsg = msg;
+      toastState.addToast(msg, "error");
     } finally {
       loading = false;
     }

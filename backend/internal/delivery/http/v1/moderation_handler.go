@@ -13,17 +13,20 @@ type ModerationHandler struct {
 	usecase     *moderation.ModerationUsecase
 	songRepo    domain.SongRepository
 	commentRepo domain.CommentRepository
+	userRepo    domain.UserRepository
 }
 
 func NewModerationHandler(
 	usecase *moderation.ModerationUsecase,
 	songRepo domain.SongRepository,
 	commentRepo domain.CommentRepository,
+	userRepo domain.UserRepository,
 ) *ModerationHandler {
 	return &ModerationHandler{
 		usecase:     usecase,
 		songRepo:    songRepo,
 		commentRepo: commentRepo,
+		userRepo:    userRepo,
 	}
 }
 
@@ -533,6 +536,171 @@ func (h *ModerationHandler) DeleteUserRequest(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"success": true,
 		"message": "User request deleted successfully",
+		"data":    nil,
+	})
+}
+
+// ==== USER REPORTS ENDPOINTS ====
+
+// CreateUserReport
+// @Summary Create a User Report
+// @Description Submit a report for a specific user.
+// @Tags Moderation
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body domain.UserReport true "User Report Data"
+// @Success 201 {object} object{message=string}
+// @Router /users/reports [post]
+func (h *ModerationHandler) CreateUserReport(c *fiber.Ctx) error {
+	userID, ok := c.Locals("user_id").(uint64)
+	if !ok {
+		return domain.NewAppError(401, "Unauthorized", nil)
+	}
+
+	type userReportReq struct {
+		ReportedUserID string `json:"reported_user_id"`
+		Reason         string `json:"reason"`
+		Content        string `json:"content"`
+		Source         string `json:"source"`
+	}
+
+	var body userReportReq
+	if err := c.BodyParser(&body); err != nil {
+		return domain.NewAppError(400, "Invalid payload", err)
+	}
+
+	// Resolve User ID
+	reportedUserID, err := strconv.ParseUint(body.ReportedUserID, 10, 64)
+	if err != nil {
+		// Try resolving as UUID
+		user, err := h.userRepo.GetByUUID(c.Context(), body.ReportedUserID)
+		if err != nil {
+			return domain.NewAppError(404, "Reported user not found", err)
+		}
+		reportedUserID = user.ID
+	}
+
+	req := domain.UserReport{
+		ReportedUserID: reportedUserID,
+		ReporterUserID: userID,
+		Reason:         body.Reason,
+		Content:        body.Content,
+		Source:         body.Source,
+	}
+
+	if err := h.usecase.CreateUserReport(c.Context(), userID, &req); err != nil {
+		return err
+	}
+
+	return c.Status(201).JSON(fiber.Map{
+		"success": true,
+		"data": fiber.Map{
+			"message": "User report submitted successfully",
+		},
+	})
+}
+
+// GetUserReports
+// @Summary List User Reports
+// @Description Admin endpoint to list user reports.
+// @Tags Admin Moderation
+// @Security BearerAuth
+// @Produce json
+// @Param status query string false "Status (pending, resolved)" default(pending)
+// @Param limit query int false "Limit" default(20)
+// @Param offset query int false "Offset" default(0)
+// @Router /admin/users/reports [get]
+func (h *ModerationHandler) GetUserReports(c *fiber.Ctx) error {
+	status := c.Query("status", "pending")
+	limit, _ := strconv.Atoi(c.Query("limit", "20"))
+	offset, _ := strconv.Atoi(c.Query("offset", "0"))
+
+	var appStatus *bool
+	if status == "resolved" || status == "fixed" {
+		t := true
+		appStatus = &t
+	} else if status == "pending" {
+		f := false
+		appStatus = &f
+	}
+
+	reports, err := h.usecase.GetUserReports(c.Context(), appStatus, limit, offset)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{"data": reports})
+}
+
+// GetUserReport
+// @Summary Get User Report Details
+// @Description Admin endpoint to get a specific user report.
+// @Tags Admin Moderation
+// @Security BearerAuth
+// @Produce json
+// @Param id path int true "Report ID"
+// @Router /admin/users/reports/{id} [get]
+func (h *ModerationHandler) GetUserReport(c *fiber.Ctx) error {
+	id, err := strconv.ParseUint(c.Params("id"), 10, 64)
+	if err != nil {
+		return domain.NewAppError(400, "Invalid ID format", err)
+	}
+
+	report, err := h.usecase.GetUserReport(c.Context(), id)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{"data": report})
+}
+
+// ResolveUserReport
+// @Summary Resolve User Report
+// @Description Admin endpoint to mark a user report as resolved.
+// @Tags Admin Moderation
+// @Security BearerAuth
+// @Produce json
+// @Param id path int true "Report ID"
+// @Router /admin/users/reports/{id}/resolve [put]
+func (h *ModerationHandler) ResolveUserReport(c *fiber.Ctx) error {
+	id, err := strconv.ParseUint(c.Params("id"), 10, 64)
+	if err != nil {
+		return domain.NewAppError(400, "Invalid ID", nil)
+	}
+
+	if err := h.usecase.ResolveUserReport(c.Context(), id); err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{
+		"data": fiber.Map{
+			"message": "User report resolved successfully",
+		},
+	})
+}
+
+// DeleteUserReport
+// @Summary Delete User Report
+// @Description Admin endpoint to delete a user report.
+// @Tags Admin Moderation
+// @Security BearerAuth
+// @Produce json
+// @Param id path int true "Report ID"
+// @Router /admin/users/reports/{id} [delete]
+func (h *ModerationHandler) DeleteUserReport(c *fiber.Ctx) error {
+	id, err := strconv.ParseUint(c.Params("id"), 10, 64)
+	if err != nil {
+		return domain.NewAppError(400, "Invalid ID", nil)
+	}
+
+	if err := h.usecase.DeleteUserReport(c.Context(), id); err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{
+		"success": true,
+		"message": "User report deleted successfully",
 		"data":    nil,
 	})
 }

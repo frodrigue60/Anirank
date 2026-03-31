@@ -55,6 +55,23 @@ type UserRequest struct {
 	AttendedAdmin *User `db:"-" json:"attended_admin,omitempty"`
 }
 
+// UserReport represents a user report against another user.
+type UserReport struct {
+	ID             uint64    `db:"id" json:"id"`
+	ReportedUserID uint64    `db:"reported_user_id" json:"reported_user_id"`
+	ReporterUserID uint64    `db:"reporter_user_id" json:"reporter_user_id"`
+	Source         string    `db:"source" json:"source"` // E.g., 'web', 'app', 'ext'
+	Reason         string    `db:"reason" json:"reason"`
+	Content        string    `db:"content" json:"content"`
+	Status         bool      `db:"status" json:"status"` // false: pending, true: fixed
+	CreatedAt      time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt      time.Time `db:"updated_at" json:"updated_at"`
+
+	// Relational
+	ReportedUser *User `db:"-" json:"reported_user,omitempty"`
+	ReporterUser *User `db:"-" json:"reporter_user,omitempty"`
+}
+
 type ModerationRepository interface {
 	// User Facing
 	CreateSongReport(ctx context.Context, report *SongReport) error
@@ -77,4 +94,12 @@ type ModerationRepository interface {
 	GetUserRequest(ctx context.Context, requestID uint64) (*UserRequest, error)
 	UpdateUserRequestStatus(ctx context.Context, requestID uint64, status bool, adminID uint64) error
 	DeleteUserRequest(ctx context.Context, requestID uint64) error
+
+	// User Reports
+	CreateUserReport(ctx context.Context, report *UserReport) error
+	IsUserReportedByReporter(ctx context.Context, reporterID, reportedID uint64) (bool, error)
+	GetUserReports(ctx context.Context, status *bool, limit, offset int) ([]UserReport, error)
+	GetUserReport(ctx context.Context, reportID uint64) (*UserReport, error)
+	ResolveUserReport(ctx context.Context, reportID uint64) error
+	DeleteUserReport(ctx context.Context, reportID uint64) error
 }

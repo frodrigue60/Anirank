@@ -183,6 +183,20 @@
           </a>
         </li>
         <li>
+          <!-- user reports -->
+          <a
+            href="/admin/reports/users"
+            class="flex items-center p-3 rounded-xl hover:bg-anirank-primary/10 hover:text-anirank-primary transition-colors {isSidebarOpen
+              ? ''
+              : 'justify-center'}"
+          >
+            <span class="material-symbols-outlined w-5 h-5">flag</span>
+            {#if isSidebarOpen}<span class="ml-3 font-medium"
+                >User Reports</span
+              >{/if}
+          </a>
+        </li>
+        <li>
           <!-- requests -->
           <a
             href="/admin/requests"

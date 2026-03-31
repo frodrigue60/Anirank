@@ -166,7 +166,7 @@ func main() {
 	seoUsecase := public.NewSEOUsecase(animeRepo, songRepo, artistRepo, userRepo, playlistRepo, ogGenerator.GetVersion)
 	seoHandler := v1.NewSEOHandler(seoUsecase)
 
-	moderationUsecase := moderation.NewModerationUsecase(moderationRepo, notificationRepo)
+	moderationUsecase := moderation.NewModerationUsecase(moderationRepo, notificationRepo, mediaService)
 	tournamentUsecase := tournament.NewTournamentUsecase(tournamentRepo, songRepo, animeRepo, storageService)
 
 	// --- 1.5 Start Background Cron Scheduler ---

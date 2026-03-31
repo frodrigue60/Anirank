@@ -493,3 +493,168 @@ func (r *moderationRepository) DeleteUserRequest(ctx context.Context, requestID 
 
 	return err
 }
+
+// ---- User Reports (CRUD) ----
+
+func (r *moderationRepository) CreateUserReport(ctx context.Context, report *domain.UserReport) error {
+	query := `
+		INSERT INTO user_reports (reported_user_id, reporter_user_id, source, reason, content, status, created_at, updated_at) 
+		VALUES (:reported_user_id, :reporter_user_id, :source, :reason, :content, false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		RETURNING id
+	`
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		return err
+	}
+	err = stmt.QueryRowContext(ctx, report).Scan(&report.ID)
+	return err
+}
+
+func (r *moderationRepository) IsUserReportedByReporter(ctx context.Context, reporterID, reportedID uint64) (bool, error) {
+	var count int
+	query := "SELECT COUNT(*) FROM user_reports WHERE reporter_user_id = $1 AND reported_user_id = $2 AND status = false"
+	err := r.db.GetContext(ctx, &count, query, reporterID, reportedID)
+	return count > 0, err
+}
+
+func (r *moderationRepository) GetUserReports(ctx context.Context, status *bool, limit, offset int) ([]domain.UserReport, error) {
+	query := `
+		SELECT r.*, 
+		       u1.id as "reported.id", u1.name as "reported.name", u1.slug as "reported.slug", u1.avatar as "reported.avatar",
+		       u2.id as "reporter.id", u2.name as "reporter.name", u2.slug as "reporter.slug", u2.avatar as "reporter.avatar"
+		FROM user_reports r
+		JOIN users u1 ON r.reported_user_id = u1.id
+		JOIN users u2 ON r.reporter_user_id = u2.id
+		WHERE 1=1
+	`
+	var args []interface{}
+	i := 1
+	if status != nil {
+		query += fmt.Sprintf(" AND r.status = $%d", i)
+		args = append(args, *status)
+		i++
+	}
+	query += fmt.Sprintf(`
+		ORDER BY r.created_at DESC
+		LIMIT $%d OFFSET $%d
+	`, i, i+1)
+	args = append(args, limit, offset)
+
+	type ReportRow struct {
+		domain.UserReport
+		ReportedID     uint64  `db:"reported.id"`
+		ReportedName   string  `db:"reported.name"`
+		ReportedSlug   *string `db:"reported.slug"`
+		ReportedAvatar *string `db:"reported.avatar"`
+		ReporterID     uint64  `db:"reporter.id"`
+		ReporterName   string  `db:"reporter.name"`
+		ReporterSlug   *string `db:"reporter.slug"`
+		ReporterAvatar *string `db:"reporter.avatar"`
+	}
+
+	var rows []ReportRow
+	err := r.db.SelectContext(ctx, &rows, query, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	var reports []domain.UserReport
+	for _, row := range rows {
+		rep := row.UserReport
+		rep.ReportedUser = &domain.User{
+			ID:     row.ReportedID,
+			Name:   row.ReportedName,
+			Slug:   row.ReportedSlug,
+			Avatar: row.ReportedAvatar,
+		}
+		rep.ReporterUser = &domain.User{
+			ID:     row.ReporterID,
+			Name:   row.ReporterName,
+			Slug:   row.ReporterSlug,
+			Avatar: row.ReporterAvatar,
+		}
+		reports = append(reports, rep)
+	}
+
+	if reports == nil {
+		reports = []domain.UserReport{}
+	}
+
+	return reports, nil
+}
+
+func (r *moderationRepository) GetUserReport(ctx context.Context, reportID uint64) (*domain.UserReport, error) {
+	query := `
+		SELECT r.*, 
+		       u1.id as "reported.id", u1.name as "reported.name", u1.slug as "reported.slug", u1.avatar as "reported.avatar",
+		       u2.id as "reporter.id", u2.name as "reporter.name", u2.slug as "reporter.slug", u2.avatar as "reporter.avatar"
+		FROM user_reports r
+		JOIN users u1 ON r.reported_user_id = u1.id
+		JOIN users u2 ON r.reporter_user_id = u2.id
+		WHERE r.id = $1
+	`
+
+	type ReportRow struct {
+		domain.UserReport
+		ReportedID     uint64  `db:"reported.id"`
+		ReportedName   string  `db:"reported.name"`
+		ReportedSlug   *string `db:"reported.slug"`
+		ReportedAvatar *string `db:"reported.avatar"`
+		ReporterID     uint64  `db:"reporter.id"`
+		ReporterName   string  `db:"reporter.name"`
+		ReporterSlug   *string `db:"reporter.slug"`
+		ReporterAvatar *string `db:"reporter.avatar"`
+	}
+
+	var row ReportRow
+	err := r.db.GetContext(ctx, &row, query, reportID)
+	if err != nil {
+		return nil, err
+	}
+
+	rep := row.UserReport
+	rep.ReportedUser = &domain.User{
+		ID:     row.ReportedID,
+		Name:   row.ReportedName,
+		Slug:   row.ReportedSlug,
+		Avatar: row.ReportedAvatar,
+	}
+	rep.ReporterUser = &domain.User{
+		ID:     row.ReporterID,
+		Name:   row.ReporterName,
+		Slug:   row.ReporterSlug,
+		Avatar: row.ReporterAvatar,
+	}
+
+	return &rep, nil
+}
+
+func (r *moderationRepository) ResolveUserReport(ctx context.Context, reportID uint64) error {
+	query := "UPDATE user_reports SET status = true, updated_at = CURRENT_TIMESTAMP WHERE id = $1"
+	res, err := r.db.ExecContext(ctx, query, reportID)
+	if err != nil {
+		return err
+	}
+
+	affected, err := res.RowsAffected()
+	if err == nil && affected == 0 {
+		return errors.New("report not found or already resolved")
+	}
+
+	return err
+}
+
+func (r *moderationRepository) DeleteUserReport(ctx context.Context, reportID uint64) error {
+	query := "DELETE FROM user_reports WHERE id = $1"
+	res, err := r.db.ExecContext(ctx, query, reportID)
+	if err != nil {
+		return err
+	}
+
+	affected, err := res.RowsAffected()
+	if err == nil && affected == 0 {
+		return errors.New("report not found")
+	}
+
+	return err
+}

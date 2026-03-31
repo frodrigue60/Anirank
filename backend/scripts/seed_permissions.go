@@ -48,7 +48,7 @@ func main() {
 		{"Create Artist", "artist.create", "Allows adding new artists"},
 		{"Edit Artist", "artist.edit", "Allows editing artist profiles"},
 		{"Delete Artist", "artist.delete", "Allows removing artists"},
-		{"Manage Reports", "reports.manage", "Allows resolving moderation/content reports"},
+		{"Manage Reports", "reports.manage", "Allows resolving moderation/content reports (songs, comments, users)"},
 		{"Manage Users", "users.manage", "Allows listing and editing user profiles"},
 		{"Manage Permissions", "permissions.manage", "Allows modifying role-permission mappings"},
 		{"Manage Tournaments", "tournament.manage", "Allows creating, seeding and managing tournaments"},

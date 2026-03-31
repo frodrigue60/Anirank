@@ -5,6 +5,7 @@
   import { goto } from "$app/navigation";
   import api from "$lib/api";
   import XPProgressBar from "$lib/components/XPProgressBar.svelte";
+  import UserReportModal from "$lib/components/UserReportModal.svelte";
 
   let { data, children } = $props();
 
@@ -15,6 +16,7 @@
   // svelte-ignore state_referenced_locally
   let followingCount = $state(data.profile?.following_count || 0);
   let isProcessing = $state(false);
+  let showReportModal = $state(false);
 
   // Sync state if data changes
   $effect(() => {
@@ -222,14 +224,23 @@
               {isFollowing ? "Unfollow" : "Follow"}
             </button>
             <button
+              onclick={() => (showReportModal = true)}
               class="flex items-center justify-center size-11 rounded-xl bg-white/10 backdrop-blur hover:bg-white/20 text-white transition-all"
+              title="Report User"
             >
-              <span class="material-symbols-outlined">more_horiz</span>
+              <span class="material-symbols-outlined">report</span>
             </button>
           {/if}
         </div>
       </div>
     </div>
+
+    <!-- User Report Modal -->
+    <UserReportModal
+      show={showReportModal}
+      reportedUser={data.profile}
+      onClose={() => (showReportModal = false)}
+    />
 
     <!-- content -->
     <div class="max-w-7xl mx-auto px-6 py-12">

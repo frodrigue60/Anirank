@@ -66,7 +66,7 @@ func SetupPublicRoutes(app *fiber.App,
 	interactionHandler := v1.NewInteractionHandler(interactionUsecase, activityUsecase, songRepo, userRepo, animeRepo, artistRepo, commentRepo)
 	playlistHandler := v1.NewPlaylistHandler(playlistUsecase, playlistRepo, songRepo, userRepo)
 	adminHandler := v1.NewAdminHandler(adminUsecase, songRepo, userRepo, animeRepo, artistRepo, playlistRepo)
-	moderationHandler := v1.NewModerationHandler(moderationUsecase, songRepo, commentRepo)
+	moderationHandler := v1.NewModerationHandler(moderationUsecase, songRepo, commentRepo, userRepo)
 	tournamentHandler := v1.NewTournamentHandler(tournamentUsecase)
 
 	announcementRepo := postgres.NewAnnouncementRepository(db)
@@ -245,6 +245,7 @@ func SetupPublicRoutes(app *fiber.App,
 	// Protected Moderation / User Support
 	protected.Post("/songs/reports", moderationHandler.CreateSongReport)
 	protected.Post("/comments/reports", moderationHandler.CreateCommentReport)
+	protected.Post("/users/reports", moderationHandler.CreateUserReport)
 	protected.Post("/user-requests", moderationHandler.CreateUserRequest)
 
 	// Protected Tournament Voting
@@ -272,6 +273,11 @@ func SetupPublicRoutes(app *fiber.App,
 	adminOnly.Get("/user-requests/:id", moderationHandler.GetUserRequest)
 	adminOnly.Patch("/user-requests/:id/status", middleware.HasPermissionMiddleware("reports.manage", userRepo), moderationHandler.UpdateUserRequestStatus)
 	adminOnly.Delete("/user-requests/:id", middleware.HasPermissionMiddleware("reports.manage", userRepo), moderationHandler.DeleteUserRequest)
+
+	adminOnly.Get("/users/reports", moderationHandler.GetUserReports)
+	adminOnly.Get("/users/reports/:id", moderationHandler.GetUserReport)
+	adminOnly.Put("/users/reports/:id/resolve", middleware.HasPermissionMiddleware("reports.manage", userRepo), moderationHandler.ResolveUserReport)
+	adminOnly.Delete("/users/reports/:id", middleware.HasPermissionMiddleware("reports.manage", userRepo), moderationHandler.DeleteUserReport)
 
 	// Ranking Operations
 	adminOnly.Post("/ranking/snapshot", adminHandler.SnapshotRankingPositions)

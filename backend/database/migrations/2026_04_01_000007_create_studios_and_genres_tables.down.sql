@@ -1,0 +1,4 @@
+DROP TABLE IF EXISTS genres;
+DROP TABLE IF EXISTS external_links;
+DROP TABLE IF EXISTS producers;
+DROP TABLE IF EXISTS studios;

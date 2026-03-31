@@ -51,7 +51,7 @@
         <li>
           <a
             href="/admin"
-            class="flex items-center p-3 rounded-xl hover:bg-anirank-primary/10 hover:text-anirank-primary transition-colors {isSidebarOpen
+            class="flex items-center p-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors {isSidebarOpen
               ? ''
               : 'justify-center'}"
           >
@@ -71,7 +71,7 @@
         <li>
           <a
             href="/admin/animes"
-            class="flex items-center p-3 rounded-xl hover:bg-anirank-primary/10 hover:text-anirank-primary transition-colors {isSidebarOpen
+            class="flex items-center p-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors {isSidebarOpen
               ? ''
               : 'justify-center'}"
           >
@@ -83,7 +83,7 @@
         <li>
           <a
             href="/admin/animes-autogen"
-            class="flex items-center p-3 rounded-xl hover:bg-anirank-primary/10 hover:text-anirank-primary transition-colors {isSidebarOpen
+            class="flex items-center p-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors {isSidebarOpen
               ? ''
               : 'justify-center'}"
           >
@@ -96,7 +96,7 @@
           <!-- songs -->
           <a
             href="/admin/songs"
-            class="flex items-center p-3 rounded-xl hover:bg-anirank-primary/10 hover:text-anirank-primary transition-colors {isSidebarOpen
+            class="flex items-center p-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors {isSidebarOpen
               ? ''
               : 'justify-center'}"
           >
@@ -108,7 +108,7 @@
           <!-- artists -->
           <a
             href="/admin/artists"
-            class="flex items-center p-3 rounded-xl hover:bg-anirank-primary/10 hover:text-anirank-primary transition-colors {isSidebarOpen
+            class="flex items-center p-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors {isSidebarOpen
               ? ''
               : 'justify-center'}"
           >
@@ -122,14 +122,14 @@
         <li class="pt-4 pb-2">
           {#if isSidebarOpen}<span
               class="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider"
-              >Events & Moderation</span
+              >Events</span
             >{/if}
         </li>
         <li>
           <!-- announcements -->
           <a
             href="/admin/announcements"
-            class="flex items-center p-3 rounded-xl hover:bg-anirank-primary/10 hover:text-anirank-primary transition-colors {isSidebarOpen
+            class="flex items-center p-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors {isSidebarOpen
               ? ''
               : 'justify-center'}"
           >
@@ -144,7 +144,7 @@
           <!-- tournaments -->
           <a
             href="/admin/tournaments"
-            class="flex items-center p-3 rounded-xl hover:bg-anirank-primary/10 hover:text-anirank-primary transition-colors {isSidebarOpen
+            class="flex items-center p-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors {isSidebarOpen
               ? ''
               : 'justify-center'}"
           >
@@ -154,11 +154,18 @@
           </a>
         </li>
 
+        <li class="pt-4 pb-2">
+          {#if isSidebarOpen}<span
+              class="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider"
+              >Moderation</span
+            >{/if}
+        </li>
+
         <li>
           <!-- songs reports -->
           <a
             href="/admin/reports/songs"
-            class="flex items-center p-3 rounded-xl hover:bg-anirank-primary/10 hover:text-anirank-primary transition-colors {isSidebarOpen
+            class="flex items-center p-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors {isSidebarOpen
               ? ''
               : 'justify-center'}"
           >
@@ -172,11 +179,11 @@
           <!-- comments reports -->
           <a
             href="/admin/reports/comments"
-            class="flex items-center p-3 rounded-xl hover:bg-anirank-primary/10 hover:text-anirank-primary transition-colors {isSidebarOpen
+            class="flex items-center p-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors {isSidebarOpen
               ? ''
               : 'justify-center'}"
           >
-            <span class="material-symbols-outlined w-5 h-5">forum</span>
+            <span class="material-symbols-outlined">forum</span>
             {#if isSidebarOpen}<span class="ml-3 font-medium"
                 >Comment Reports</span
               >{/if}
@@ -186,13 +193,12 @@
           <!-- user reports -->
           <a
             href="/admin/reports/users"
-            class="flex items-center p-3 rounded-xl hover:bg-anirank-primary/10 hover:text-anirank-primary transition-colors {isSidebarOpen
+            class="flex items-center p-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors {isSidebarOpen
               ? ''
               : 'justify-center'}"
           >
-            <span class="material-symbols-outlined w-5 h-5">flag</span>
-            {#if isSidebarOpen}<span class="ml-3 font-medium"
-                >User Reports</span
+            <span class="material-symbols-outlined">flag</span>
+            {#if isSidebarOpen}<span class="ml-3 font-medium">User Reports</span
               >{/if}
           </a>
         </li>
@@ -200,7 +206,7 @@
           <!-- requests -->
           <a
             href="/admin/requests"
-            class="flex items-center p-3 rounded-xl hover:bg-anirank-primary/10 hover:text-anirank-primary transition-colors {isSidebarOpen
+            class="flex items-center p-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors {isSidebarOpen
               ? ''
               : 'justify-center'}"
           >
@@ -221,7 +227,7 @@
           <!-- users -->
           <a
             href="/admin/users"
-            class="flex items-center p-3 rounded-xl hover:bg-anirank-primary/10 hover:text-anirank-primary transition-colors {isSidebarOpen
+            class="flex items-center p-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors {isSidebarOpen
               ? ''
               : 'justify-center'}"
           >
@@ -233,7 +239,7 @@
           <!-- audit logs -->
           <a
             href="/admin/audit-logs"
-            class="flex items-center p-3 rounded-xl hover:bg-anirank-primary/10 hover:text-anirank-primary transition-colors {isSidebarOpen
+            class="flex items-center p-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors {isSidebarOpen
               ? ''
               : 'justify-center'}"
           >
@@ -246,7 +252,7 @@
           <!-- roles -->
           <a
             href="/admin/roles"
-            class="flex items-center p-3 rounded-xl hover:bg-anirank-primary/10 hover:text-anirank-primary transition-colors {isSidebarOpen
+            class="flex items-center p-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors {isSidebarOpen
               ? ''
               : 'justify-center'}"
           >
@@ -258,7 +264,7 @@
           <!-- badges -->
           <a
             href="/admin/badges"
-            class="flex items-center p-3 rounded-xl hover:bg-anirank-primary/10 hover:text-anirank-primary transition-colors {isSidebarOpen
+            class="flex items-center p-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors {isSidebarOpen
               ? ''
               : 'justify-center'}"
           >
@@ -279,7 +285,7 @@
           <!-- genres -->
           <a
             href="/admin/genres"
-            class="flex items-center p-3 rounded-xl hover:bg-anirank-primary/10 hover:text-anirank-primary transition-colors {isSidebarOpen
+            class="flex items-center p-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors {isSidebarOpen
               ? ''
               : 'justify-center'}"
           >
@@ -292,7 +298,7 @@
           <!-- formats -->
           <a
             href="/admin/formats"
-            class="flex items-center p-3 rounded-xl hover:bg-anirank-primary/10 hover:text-anirank-primary transition-colors {isSidebarOpen
+            class="flex items-center p-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors {isSidebarOpen
               ? ''
               : 'justify-center'}"
           >
@@ -308,7 +314,7 @@
           <!-- seasons -->
           <a
             href="/admin/seasons"
-            class="flex items-center p-3 rounded-xl hover:bg-anirank-primary/10 hover:text-anirank-primary transition-colors {isSidebarOpen
+            class="flex items-center p-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors {isSidebarOpen
               ? ''
               : 'justify-center'}"
           >
@@ -321,7 +327,7 @@
           <!-- years -->
           <a
             href="/admin/years"
-            class="flex items-center p-3 rounded-xl hover:bg-anirank-primary/10 hover:text-anirank-primary transition-colors {isSidebarOpen
+            class="flex items-center p-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors {isSidebarOpen
               ? ''
               : 'justify-center'}"
           >

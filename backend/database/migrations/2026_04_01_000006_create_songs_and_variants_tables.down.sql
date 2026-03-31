@@ -1,0 +1,4 @@
+DROP TABLE IF EXISTS artist_song;
+DROP TABLE IF EXISTS videos;
+DROP TABLE IF EXISTS song_variants;
+DROP TABLE IF EXISTS songs;

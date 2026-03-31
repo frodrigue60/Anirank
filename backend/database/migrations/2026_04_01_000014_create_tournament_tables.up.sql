@@ -1,0 +1,43 @@
+CREATE TABLE IF NOT EXISTS tournaments (
+    id BIGSERIAL PRIMARY KEY,
+    uuid UUID UNIQUE NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) UNIQUE NOT NULL,
+    description TEXT,
+    size INTEGER DEFAULT 16,
+    status VARCHAR(20) DEFAULT 'draft' CHECK (status IN ('draft', 'active', 'completed')),
+    type_filter VARCHAR(50), -- 'OP', 'ED', etc.
+    current_round INTEGER,
+    winner_song_id BIGINT NULL REFERENCES songs(id) ON DELETE SET NULL,
+    started_at TIMESTAMP WITH TIME ZONE NULL,
+    completed_at TIMESTAMP WITH TIME ZONE NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS tournament_matchups (
+    id BIGSERIAL PRIMARY KEY,
+    tournament_id BIGINT NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
+    round INTEGER NOT NULL,
+    position INTEGER NOT NULL,
+    song1_id BIGINT NULL REFERENCES songs(id) ON DELETE SET NULL,
+    song2_id BIGINT NULL REFERENCES songs(id) ON DELETE SET NULL,
+    song1_votes INTEGER DEFAULT 0,
+    song2_votes INTEGER DEFAULT 0,
+    winner_song_id BIGINT NULL REFERENCES songs(id) ON DELETE SET NULL,
+    ends_at TIMESTAMP WITH TIME ZONE NULL,
+    is_active BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS tournament_votes (
+    id BIGSERIAL PRIMARY KEY,
+    tournament_matchup_id BIGINT NOT NULL REFERENCES tournament_matchups(id) ON DELETE CASCADE,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    song_id BIGINT NOT NULL REFERENCES songs(id) ON DELETE CASCADE,
+    ip_address VARCHAR(45),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_user_matchup_vote UNIQUE (tournament_matchup_id, user_id)
+);

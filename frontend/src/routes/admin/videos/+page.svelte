@@ -4,6 +4,7 @@
   import type { PageData } from "./$types";
   import api from "$lib/api";
   import { toastState } from "$lib/state/toast.svelte";
+  import { getApiErrorMessage } from "$lib/api-errors";
   import AutocompleteAnime from "$lib/components/admin/AutocompleteAnime.svelte";
   import { getSongName } from "$lib/song-utils";
 
@@ -34,10 +35,7 @@
       toastState.addToast("Video status updated", "success");
     } catch (err: any) {
       console.error(err);
-      toastState.addToast(
-        `Failed to update status: ${err.message || err}`,
-        "error",
-      );
+      toastState.addToast(getApiErrorMessage(err, "Failed to update status"), "error");
     }
   }
 

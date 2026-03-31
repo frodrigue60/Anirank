@@ -464,3 +464,11 @@ func (u *AdminUsecase) GetAllXPActivities(ctx context.Context) ([]domain.XPActiv
 func (u *AdminUsecase) UpdateXPActivity(ctx context.Context, activity *domain.XPActivity) error {
 	return u.adminRepo.UpdateXPActivity(ctx, activity)
 }
+
+func (u *AdminUsecase) CheckAnilistStatus(ctx context.Context) (bool, string) {
+	return u.contentAdmin.CheckAnilistStatus(ctx)
+}
+
+func (u *AdminUsecase) CheckAnimeThemesStatus(ctx context.Context) (bool, string) {
+	return u.contentAdmin.CheckAnimeThemesStatus(ctx)
+}

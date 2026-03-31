@@ -1,5 +1,6 @@
 <script lang="ts">
   import api from "$lib/api";
+  import { getApiErrorMessage } from "$lib/api-errors";
 
   let { badge = null, onclose, onsave } = $props();
 
@@ -60,8 +61,7 @@
       onsave(res.data.data);
     } catch (err: any) {
       console.error("Error saving badge:", err);
-      error =
-        err.response?.data?.error || err.message || "Failed to save badge";
+      error = getApiErrorMessage(err, "Failed to save badge");
     } finally {
       loading = false;
     }
@@ -120,7 +120,7 @@
         >
         <div class="flex items-center gap-4">
           <div
-            class="w-16 h-16 rounded-xl border border-white/10 bg-black/20 flex items-center justify-center overflow-hidden flex-shrink-0"
+            class="w-16 h-16 rounded-xl border border-white/10 bg-black/20 flex items-center justify-center overflow-hidden shrink-0"
           >
             {#if iconPreview}
               <img

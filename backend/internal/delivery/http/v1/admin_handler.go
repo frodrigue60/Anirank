@@ -1243,3 +1243,20 @@ func (h *AdminHandler) UpdateXPActivity(c *fiber.Ctx) error {
 	}
 	return c.JSON(fiber.Map{"message": "XP Activity updated", "data": activity})
 }
+
+// GetApiStatus returns the health status of external APIs
+func (h *AdminHandler) GetApiStatus(c *fiber.Ctx) error {
+	anilistOnline, anilistMsg := h.usecase.CheckAnilistStatus(c.Context())
+	animeThemesOnline, animeThemesMsg := h.usecase.CheckAnimeThemesStatus(c.Context())
+
+	return c.JSON(fiber.Map{
+		"anilist": fiber.Map{
+			"status":  map[bool]string{true: "online", false: "offline"}[anilistOnline],
+			"message": anilistMsg,
+		},
+		"animethemes": fiber.Map{
+			"status":  map[bool]string{true: "online", false: "offline"}[animeThemesOnline],
+			"message": animeThemesMsg,
+		},
+	})
+}

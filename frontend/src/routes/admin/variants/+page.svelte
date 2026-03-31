@@ -4,6 +4,7 @@
   import type { PageData } from "./$types";
   import api from "$lib/api";
   import { toastState } from "$lib/state/toast.svelte";
+  import { getApiErrorMessage } from "$lib/api-errors";
   import AutocompleteAnime from "$lib/components/admin/AutocompleteAnime.svelte";
   import { getSongName } from "$lib/song-utils";
 
@@ -34,10 +35,7 @@
       toastState.addToast("Variant status updated", "success");
     } catch (err: any) {
       console.error(err);
-      toastState.addToast(
-        `Failed to update status: ${err.message || err}`,
-        "error",
-      );
+      toastState.addToast(getApiErrorMessage(err, "Failed to update status"), "error");
     }
   }
 
@@ -159,7 +157,7 @@
     <table class="w-full text-left border-collapse">
       <thead>
         <tr
-          class="bg-white/[0.02] border-b border-white/5 text-sm uppercase tracking-wider text-gray-400 font-medium"
+          class="bg-white/2 border-b border-white/5 text-sm uppercase tracking-wider text-gray-400 font-medium"
         >
           <th class="py-4 px-6">ID</th>
           <th class="py-4 px-6">Song ID</th>
@@ -171,7 +169,7 @@
       </thead>
       <tbody class="divide-y divide-white/5">
         {#each variants as variant (variant.id)}
-          <tr class="hover:bg-white/[0.02] transition-colors group">
+          <tr class="hover:bg-white/2 transition-colors group">
             <!-- ID -->
             <td class="py-4 px-6 whitespace-nowrap text-gray-400">
               #{variant.id}

@@ -1,6 +1,7 @@
 <script lang="ts">
   import api from "$lib/api";
   import { toastState } from "$lib/state/toast.svelte";
+  import { getApiErrorMessage } from "$lib/api-errors";
 
   let { data } = $props();
 
@@ -87,10 +88,7 @@
       toastState.addToast("Ranking snapshot completed successfully", "success");
     } catch (err: any) {
       console.error(err);
-      toastState.addToast(
-        `Failed to update rankings: ${err.message || err}`,
-        "error",
-      );
+      toastState.addToast(getApiErrorMessage(err, "Failed to update rankings"), "error");
     } finally {
       isUpdating = false;
     }
@@ -103,10 +101,7 @@
       toastState.addToast("OG Image Cache flushed successfully", "success");
     } catch (err: any) {
       console.error(err);
-      toastState.addToast(
-        `Failed to flush OG cache: ${err.message || err}`,
-        "error",
-      );
+      toastState.addToast(getApiErrorMessage(err, "Failed to flush OG cache"), "error");
     } finally {
       isFlushing = false;
     }

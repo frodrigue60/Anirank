@@ -3,6 +3,7 @@
   import api from "$lib/api";
   import { getAuthToken } from "$lib/state/auth.svelte";
   import { toastState } from "$lib/state/toast.svelte";
+  import { getApiErrorMessage } from "$lib/api-errors";
 
   let { data } = $props();
 
@@ -43,10 +44,7 @@
         invalidateAll: true,
       });
     } catch (err: any) {
-      toastState.addToast(
-        err.response?.data?.message || "Failed to update status",
-        "error",
-      );
+      toastState.addToast(getApiErrorMessage(err, "Failed to update status"), "error");
     }
   }
 
@@ -59,10 +57,7 @@
         invalidateAll: true,
       });
     } catch (err: any) {
-      toastState.addToast(
-        err.response?.data?.message || "Failed to delete artist",
-        "error",
-      );
+      toastState.addToast(getApiErrorMessage(err, "Failed to delete artist"), "error");
     }
   }
 
@@ -146,7 +141,7 @@
       });
     } catch (err: any) {
       console.error(err);
-      toastState.addToast(err.message || "Failed to start generation", "error");
+      toastState.addToast(getApiErrorMessage(err, "Failed to start generation"), "error");
     } finally {
       generatingAvatars = false;
       progressMessage = "";
@@ -205,7 +200,7 @@
       });
     } catch (err: any) {
       console.error(err);
-      toastState.addToast(err.message || "Failed to complete merge", "error");
+      toastState.addToast(getApiErrorMessage(err, "Failed to complete merge"), "error");
     } finally {
       mergingArtists = false;
       progressMessage = "";
@@ -264,7 +259,7 @@
       });
     } catch (err: any) {
       console.error(err);
-      toastState.addToast(err.message || "Failed to recount songs", "error");
+      toastState.addToast(getApiErrorMessage(err, "Failed to recount songs"), "error");
     } finally {
       recountingSongs = false;
       progressMessage = "";

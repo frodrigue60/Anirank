@@ -2,6 +2,7 @@
   import { invalidateAll } from "$app/navigation";
   import api from "$lib/api";
   import { toastState } from "$lib/state/toast.svelte";
+  import { getApiErrorMessage } from "$lib/api-errors";
   import type { PageData } from "./$types";
 
   let { data } = $props<{ data: PageData }>();
@@ -15,7 +16,7 @@
       toastState.addToast("Song deleted successfully", "success");
       await invalidateAll();
     } catch (err: any) {
-      toastState.addToast(err.response?.data?.message || "Failed to delete song", "error");
+      toastState.addToast(getApiErrorMessage(err, "Failed to delete song"), "error");
     }
   }
 
@@ -29,7 +30,7 @@
       toastState.addToast("Status updated successfully", "success");
     } catch (err: any) {
       console.error(err);
-      toastState.addToast(err.response?.data?.message || err.message || "Failed to update status", "error");
+      toastState.addToast(getApiErrorMessage(err, "Failed to update status"), "error");
     }
   }
 </script>

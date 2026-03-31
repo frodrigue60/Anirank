@@ -570,6 +570,45 @@ func (c *Client) SearchStaff(ctx context.Context, search string) ([]Staff, error
 	return staffResp.Data.Page.Staff, nil
 }
 
+// Ping performs a minimal query to verify connectivity and API availability
+func (c *Client) Ping(ctx context.Context) error {
+	query := GraphQLQuery{
+		Query: "{ Page(perPage: 1) { media(type: ANIME) { id } } }",
+	}
+	bodyBytes, _ := json.Marshal(query)
+	req, err := http.NewRequestWithContext(ctx, "POST", AnilistGraphQLEndpoint, bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		return err
+	}
+	c.setAdvancedHeaders(req)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("api returned status: %d", resp.StatusCode)
+	}
+
+	var result struct {
+		Errors []struct {
+			Message string `json:"message"`
+		} `json:"errors"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return err
+	}
+
+	if len(result.Errors) > 0 {
+		return fmt.Errorf("api error: %s", result.Errors[0].Message)
+	}
+
+	return nil
+}
+
 type StaffSearchReq struct {
 	ID   *uint64
 	Name string

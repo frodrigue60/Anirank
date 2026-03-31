@@ -3,6 +3,8 @@
   import { configState as config } from "$lib/state/config.svelte";
   import TagsInput from "$lib/components/admin/TagsInput.svelte";
   import api from "$lib/api";
+  import { toastState } from "$lib/state/toast.svelte";
+  import { getApiErrorMessage } from "$lib/api-errors";
   import type { PageData } from "./$types";
 
   let { data } = $props<{ data: PageData }>();
@@ -39,7 +41,6 @@
 
   // UI State
   let loading = $state(false);
-  let errorMsg = $state("");
 
   // Handlers for file inputs
   function onCoverChange(e: Event) {
@@ -61,7 +62,6 @@
   async function handleSubmit(e: Event) {
     e.preventDefault();
     loading = true;
-    errorMsg = "";
 
     try {
       const formData = new FormData();
@@ -91,14 +91,15 @@
         },
       });
 
-      if (res.status === 200) {
+      if (res.data.success || res.status === 200) {
+        toastState.addToast(res.data.message || "Anime updated successfully", "success");
         goto(`/admin/animes/${anime.id}`);
+      } else {
+        toastState.addToast(res.data.message || "Failed to update anime", "error");
       }
     } catch (err: any) {
       console.error(err);
-      errorMsg =
-        err.response?.data?.message ||
-        "An error occurred while updating the anime.";
+      toastState.addToast(getApiErrorMessage(err, "An error occurred while updating the anime"), "error");
     } finally {
       loading = false;
     }
@@ -114,25 +115,6 @@
   <p class="text-xs text-gray-500">Update general details, taxonomies and media assets.</p>
 </div>
 
-{#if errorMsg}
-  <div
-    class="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl mb-6 flex gap-3"
-  >
-    <svg
-      class="w-5 h-5 shrink-0"
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-      ><path
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-width="2"
-        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-      /></svg
-    >
-    <p>{errorMsg}</p>
-  </div>
-{/if}
 
 <form onsubmit={handleSubmit} class="space-y-6 max-w-4xl">
   <!-- General Info -->

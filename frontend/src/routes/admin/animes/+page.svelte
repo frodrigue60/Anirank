@@ -2,6 +2,7 @@
   import { goto } from "$app/navigation";
   import api from "$lib/api";
   import { toastState } from "$lib/state/toast.svelte";
+  import { getApiErrorMessage } from "$lib/api-errors";
 
   import { onMount } from "svelte";
 
@@ -35,7 +36,7 @@
         }
       } catch (err: any) {
         toastState.addToast(
-          err.response?.data?.message || "Failed to link Anilist account",
+          getApiErrorMessage(err, "Failed to link Anilist account"),
           "error",
         );
       }
@@ -87,10 +88,7 @@
       toastState.addToast("Anime status updated", "success");
     } catch (err: any) {
       console.error(err);
-      toastState.addToast(
-        `Failed to update status: ${err.message || err}`,
-        "error",
-      );
+      toastState.addToast(getApiErrorMessage(err, "Failed to update status"), "error");
     }
   }
 
@@ -103,10 +101,7 @@
       toastState.addToast(`Anime "${title}" deleted successfully`, "success");
     } catch (err: any) {
       console.error(err);
-      toastState.addToast(
-        `Failed to delete anime: ${err.message || err}`,
-        "error",
-      );
+      toastState.addToast(getApiErrorMessage(err, "Failed to delete anime"), "error");
     }
   }
 
@@ -149,10 +144,7 @@
       selectedIds = [];
     } catch (err: any) {
       console.error(err);
-      toastState.addToast(
-        `Failed to delete animes: ${err.message || err}`,
-        "error",
-      );
+      toastState.addToast(getApiErrorMessage(err, "Failed to delete animes"), "error");
     }
   }
 </script>

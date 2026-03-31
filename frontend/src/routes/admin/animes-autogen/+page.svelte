@@ -3,6 +3,7 @@
   import api from "$lib/api";
   import { getAuthToken } from "$lib/state/auth.svelte";
   import { toastState } from "$lib/state/toast.svelte";
+  import { getApiErrorMessage } from "$lib/api-errors";
 
   // Anilist search form state
   let anilistQuery = $state("");
@@ -33,6 +34,45 @@
   let showAnilistResultsModal = $state(false);
   let isImportingAnilist = $state(false);
 
+  import { untrack } from 'svelte';
+
+  // API Status State
+  let apiStatus = $state<{
+    anilist: { status: 'loading' | 'online' | 'offline'; message?: string };
+    animethemes: { status: 'loading' | 'online' | 'offline'; message?: string };
+  }>({
+    anilist: { status: 'loading' },
+    animethemes: { status: 'loading' }
+  });
+
+  let isCheckingStatus = false;
+
+  async function fetchApiStatus() {
+    if (isCheckingStatus) return;
+    isCheckingStatus = true;
+    
+    apiStatus.anilist.status = 'loading';
+    apiStatus.animethemes.status = 'loading';
+    
+    try {
+      const resp = await api.get('/admin/system/api-status');
+      const data = resp.data;
+      apiStatus.anilist = data.anilist;
+      apiStatus.animethemes = data.animethemes;
+    } catch (err: any) {
+      apiStatus.anilist = { status: 'offline', message: 'Connection Error' };
+      apiStatus.animethemes = { status: 'offline', message: 'Connection Error' };
+    } finally {
+      isCheckingStatus = false;
+    }
+  }
+
+  $effect(() => {
+    untrack(() => {
+      fetchApiStatus();
+    });
+  });
+
   async function handleAnimeThemesSearch(e: Event) {
     e.preventDefault();
     if (!animeThemesQuery.trim()) return;
@@ -47,7 +87,7 @@
       showResultsModal = true;
     } catch (err: any) {
       toastState.addToast(
-        err.message || "Failed to search AnimeThemes",
+        getApiErrorMessage(err, "Failed to search AnimeThemes"),
         "error",
       );
     } finally {
@@ -113,7 +153,7 @@
         "success",
       );
     } catch (err: any) {
-      toastState.addToast(`Import failed: ${err.message}`, "error");
+      toastState.addToast(getApiErrorMessage(err, "Import failed"), "error");
     } finally {
       isHydrating = false;
       progressMessage = "";
@@ -133,7 +173,7 @@
       selectedAnilistIDs = new Set();
       showAnilistResultsModal = true;
     } catch (err: any) {
-      toastState.addToast(err.message || "Failed to search AniList", "error");
+      toastState.addToast(getApiErrorMessage(err, "Failed to search AniList"), "error");
     } finally {
       isSearchingAnilist = false;
     }
@@ -172,7 +212,7 @@
       }
       showAnilistResultsModal = false;
     } catch (err: any) {
-      toastState.addToast(`Import failed: ${err.message}`, "error");
+      toastState.addToast(getApiErrorMessage(err, "Import failed"), "error");
     } finally {
       isImportingAnilist = false;
     }
@@ -194,7 +234,7 @@
     } catch (err: any) {
       console.error(err);
       toastState.addToast(
-        `Failed to batch fetch animes: ${err.message || err}`,
+        getApiErrorMessage(err, "Failed to batch fetch animes"),
         "error",
       );
     } finally {
@@ -253,7 +293,7 @@
       );
     } catch (err: any) {
       console.error(err);
-      toastState.addToast(`Hydration failed: ${err.message || err}`, "error");
+      toastState.addToast(getApiErrorMessage(err, "Hydration failed"), "error");
     } finally {
       isHydrating = false;
       progressMessage = "";
@@ -266,6 +306,88 @@
 </svelte:head>
 
 <div class="space-y-8">
+  <div
+    class="bg-anirank-card border border-white/5 rounded-3xl p-4 flex flex-wrap items-center gap-6 shadow-xl"
+  >
+    <div class="flex flex-col">
+      <span class="text-[10px] font-bold uppercase text-gray-500 tracking-wider"
+        >External Services</span
+      >
+      <h2 class="text-white font-bold">API Health Check</h2>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-3">
+      <!-- Anilist Status -->
+      <div
+        class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/40 border border-white/10"
+      >
+        <span class="text-xs font-bold text-gray-400">AniList</span>
+        {#if apiStatus.anilist.status === "loading"}
+          <div class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>
+        {:else if apiStatus.anilist.status === "online"}
+          <div class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+        {:else}
+          <div class="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]"></div>
+        {/if}
+        <span
+          class="text-[10px] font-bold uppercase {apiStatus.anilist.status ===
+          'online'
+            ? 'text-emerald-500'
+            : apiStatus.anilist.status === 'offline'
+              ? 'text-rose-500'
+              : 'text-amber-500'}"
+        >
+          {apiStatus.anilist.status}
+        </span>
+      </div>
+
+      <!-- AnimeThemes Status -->
+      <div
+        class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/40 border border-white/10"
+      >
+        <span class="text-xs font-bold text-gray-400">AnimeThemes</span>
+        {#if apiStatus.animethemes.status === "loading"}
+          <div class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>
+        {:else if apiStatus.animethemes.status === "online"}
+          <div class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+        {:else}
+          <div class="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8_px_rgba(244,63,94,0.5)]"></div>
+        {/if}
+        <span
+          class="text-[10px] font-bold uppercase {apiStatus.animethemes
+            .status === 'online'
+            ? 'text-emerald-500'
+            : apiStatus.animethemes.status === 'offline'
+              ? 'text-rose-500'
+              : 'text-amber-500'}"
+        >
+          {apiStatus.animethemes.status}
+        </span>
+      </div>
+
+      <button
+        onclick={fetchApiStatus}
+        class="p-2 hover:bg-white/5 rounded-full transition-colors text-gray-400 hover:text-white"
+        title="Check status now"
+      >
+        <span
+          class="material-symbols-outlined text-sm {apiStatus.anilist.status ===
+            'loading' || apiStatus.animethemes.status === 'loading'
+            ? 'animate-spin'
+            : ''}">refresh</span
+        >
+      </button>
+    </div>
+
+    {#if apiStatus.anilist.status === "offline" || apiStatus.animethemes.status === "offline"}
+      <div class="flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-500/10 border border-rose-500/20 animate-in fade-in slide-in-from-left-2">
+        <span class="material-symbols-outlined text-rose-500 text-sm">warning</span>
+        <p class="text-[11px] text-rose-200 font-medium">
+          Partial outages detected. Generation may be incomplete.
+        </p>
+      </div>
+    {/if}
+  </div>
   <div class="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
     <!-- Section: AniList Tools -->
     <section class="space-y-6">
@@ -365,7 +487,7 @@
 
           <button
             type="submit"
-            disabled={isGenerating}
+            disabled={isGenerating || apiStatus.anilist.status !== 'online'}
             class="w-full bg-blue-600 hover:bg-blue-600/80 disabled:bg-gray-700 py-3 rounded-xl text-white font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-anirank-primary/20"
           >
             {#if isGenerating}
@@ -415,7 +537,7 @@
           />
           <button
             type="submit"
-            disabled={isSearchingAnilist}
+            disabled={isSearchingAnilist || apiStatus.anilist.status !== 'online'}
             class="px-6 bg-blue-600 hover:bg-blue-600/80 disabled:bg-gray-700 rounded-xl text-white font-bold transition-all flex items-center gap-2 shadow-lg shadow-anirank-primary/20"
           >
             {#if isSearchingAnilist}
@@ -517,7 +639,7 @@
 
           <button
             type="submit"
-            disabled={isHydrating}
+            disabled={isHydrating || apiStatus.animethemes.status !== 'online'}
             class="w-full bg-purple-600 hover:bg-purple-600/80 disabled:bg-gray-700 py-3 rounded-xl text-white font-bold transition-all flex items-center justify-center gap-2"
           >
             {#if isHydrating}
@@ -602,7 +724,7 @@
           />
           <button
             type="submit"
-            disabled={isSearchingAnimeThemes}
+            disabled={isSearchingAnimeThemes || apiStatus.animethemes.status !== 'online'}
             class="px-6 bg-purple-600 hover:bg-purple-600/80 disabled:bg-gray-700 rounded-xl text-white font-bold transition-all flex items-center gap-2"
           >
             {#if isSearchingAnimeThemes}

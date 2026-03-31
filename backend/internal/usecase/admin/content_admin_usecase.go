@@ -23,6 +23,12 @@ import (
 	"github.com/google/uuid"
 )
 
+type ApiStatusCache struct {
+	Online    bool
+	Message   string
+	LastCheck time.Time
+}
+
 type ContentAdminUsecase struct {
 	animeRepo     domain.AnimeRepository
 	songRepo      domain.SongRepository
@@ -32,6 +38,10 @@ type ContentAdminUsecase struct {
 	anilistClient *anilist.Client
 	mediaService  infrastructure.MediaService
 	auditUsecase  domain.AuditLogUsecase
+
+	anilistCache     ApiStatusCache
+	animeThemesCache ApiStatusCache
+	statusMu         sync.Mutex
 }
 
 func NewContentAdminUsecase(
@@ -2595,6 +2605,69 @@ func (u *ContentAdminUsecase) SyncArtistAvatar(ctx context.Context, id uint64, m
 	}
 
 	_ = u.auditUsecase.LogActions(ctx, meta.ActorID, "updated", artist.ID, "artist_avatar_synced", nil, artist, &meta.URL, &meta.IPAddress, &meta.UserAgent)
-
 	return artist, nil
+}
+
+// CheckAnilistStatus verifies the reachability of the AniList API with caching
+func (u *ContentAdminUsecase) CheckAnilistStatus(ctx context.Context) (bool, string) {
+	u.statusMu.Lock()
+	if time.Since(u.anilistCache.LastCheck) < 5*time.Minute {
+		defer u.statusMu.Unlock()
+		return u.anilistCache.Online, u.anilistCache.Message
+	}
+	u.statusMu.Unlock()
+
+	online, msg := true, "Online"
+	err := u.anilistClient.Ping(ctx)
+	if err != nil {
+		online, msg = false, err.Error()
+	}
+
+	u.statusMu.Lock()
+	u.anilistCache = ApiStatusCache{
+		Online:    online,
+		Message:   msg,
+		LastCheck: time.Now(),
+	}
+	u.statusMu.Unlock()
+
+	return online, msg
+}
+
+// CheckAnimeThemesStatus verifies the reachability of the AnimeThemes API with caching
+func (u *ContentAdminUsecase) CheckAnimeThemesStatus(ctx context.Context) (bool, string) {
+	u.statusMu.Lock()
+	if time.Since(u.animeThemesCache.LastCheck) < 5*time.Minute {
+		defer u.statusMu.Unlock()
+		return u.animeThemesCache.Online, u.animeThemesCache.Message
+	}
+	u.statusMu.Unlock()
+
+	online, msg := true, "Online"
+	// Simple request to check API health
+	req, err := http.NewRequestWithContext(ctx, "GET", "https://api.animethemes.moe/anime?page[size]=1", nil)
+	if err != nil {
+		online, msg = false, err.Error()
+	} else {
+		client := &http.Client{Timeout: 5 * time.Second}
+		resp, err := client.Do(req)
+		if err != nil {
+			online, msg = false, err.Error()
+		} else {
+			defer resp.Body.Close()
+			if resp.StatusCode >= 400 {
+				online, msg = false, fmt.Sprintf("API returned status %d", resp.StatusCode)
+			}
+		}
+	}
+
+	u.statusMu.Lock()
+	u.animeThemesCache = ApiStatusCache{
+		Online:    online,
+		Message:   msg,
+		LastCheck: time.Now(),
+	}
+	u.statusMu.Unlock()
+
+	return online, msg
 }

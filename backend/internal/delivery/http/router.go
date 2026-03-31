@@ -255,22 +255,23 @@ func SetupPublicRoutes(app *fiber.App,
 
 	// Dashboard & System
 	adminOnly.Get("/dashboard", adminHandler.GetDashboard)
+	adminOnly.Get("/system/api-status", adminHandler.GetApiStatus)
 	adminOnly.Post("/og/flush", ogHandler.FlushOGCache)
 
 	// Admin Moderation Tickets Review
 	adminOnly.Get("/songs/reports", moderationHandler.GetSongReports)
 	adminOnly.Get("/songs/reports/:id", moderationHandler.GetSongReport)
-	adminOnly.Put("/songs/reports/:id/resolve", moderationHandler.ResolveSongReport)
-	adminOnly.Delete("/songs/reports/:id", moderationHandler.DeleteSongReport)
+	adminOnly.Put("/songs/reports/:id/resolve", middleware.HasPermissionMiddleware("reports.manage", userRepo), moderationHandler.ResolveSongReport)
+	adminOnly.Delete("/songs/reports/:id", middleware.HasPermissionMiddleware("reports.manage", userRepo), moderationHandler.DeleteSongReport)
 	
 	adminOnly.Get("/comments/reports", moderationHandler.GetCommentReports)
 	adminOnly.Get("/comments/reports/:id", moderationHandler.GetCommentReport)
-	adminOnly.Put("/comments/reports/:id/resolve", moderationHandler.ResolveCommentReport)
-	adminOnly.Delete("/comments/reports/:id", moderationHandler.DeleteCommentReport)
+	adminOnly.Put("/comments/reports/:id/resolve", middleware.HasPermissionMiddleware("reports.manage", userRepo), moderationHandler.ResolveCommentReport)
+	adminOnly.Delete("/comments/reports/:id", middleware.HasPermissionMiddleware("reports.manage", userRepo), moderationHandler.DeleteCommentReport)
 	adminOnly.Get("/user-requests", moderationHandler.GetUserRequests)
 	adminOnly.Get("/user-requests/:id", moderationHandler.GetUserRequest)
-	adminOnly.Patch("/user-requests/:id/status", moderationHandler.UpdateUserRequestStatus)
-	adminOnly.Delete("/user-requests/:id", moderationHandler.DeleteUserRequest)
+	adminOnly.Patch("/user-requests/:id/status", middleware.HasPermissionMiddleware("reports.manage", userRepo), moderationHandler.UpdateUserRequestStatus)
+	adminOnly.Delete("/user-requests/:id", middleware.HasPermissionMiddleware("reports.manage", userRepo), moderationHandler.DeleteUserRequest)
 
 	// Ranking Operations
 	adminOnly.Post("/ranking/snapshot", adminHandler.SnapshotRankingPositions)
@@ -348,29 +349,29 @@ func SetupPublicRoutes(app *fiber.App,
 
 	// Years
 	adminOnly.Get("/taxonomies/years", adminHandler.GetYears)
-	adminOnly.Post("/taxonomies/years", adminHandler.CreateYear)
-	adminOnly.Put("/taxonomies/years/:id", adminHandler.UpdateYear)
-	adminOnly.Patch("/taxonomies/years/:id/current", adminHandler.ToggleYearCurrent)
-	adminOnly.Delete("/taxonomies/years/:id", adminHandler.DeleteYear)
+	adminOnly.Post("/taxonomies/years", middleware.HasPermissionMiddleware("taxonomy.years", userRepo), adminHandler.CreateYear)
+	adminOnly.Put("/taxonomies/years/:id", middleware.HasPermissionMiddleware("taxonomy.years", userRepo), adminHandler.UpdateYear)
+	adminOnly.Patch("/taxonomies/years/:id/current", middleware.HasPermissionMiddleware("taxonomy.years", userRepo), adminHandler.ToggleYearCurrent)
+	adminOnly.Delete("/taxonomies/years/:id", middleware.HasPermissionMiddleware("taxonomy.years", userRepo), adminHandler.DeleteYear)
 
 	// Seasons
 	adminOnly.Get("/taxonomies/seasons", adminHandler.GetSeasons)
-	adminOnly.Post("/taxonomies/seasons", adminHandler.CreateSeason)
-	adminOnly.Put("/taxonomies/seasons/:id", adminHandler.UpdateSeason)
-	adminOnly.Patch("/taxonomies/seasons/:id/current", adminHandler.ToggleSeasonCurrent)
-	adminOnly.Delete("/taxonomies/seasons/:id", adminHandler.DeleteSeason)
+	adminOnly.Post("/taxonomies/seasons", middleware.HasPermissionMiddleware("taxonomy.seasons", userRepo), adminHandler.CreateSeason)
+	adminOnly.Put("/taxonomies/seasons/:id", middleware.HasPermissionMiddleware("taxonomy.seasons", userRepo), adminHandler.UpdateSeason)
+	adminOnly.Patch("/taxonomies/seasons/:id/current", middleware.HasPermissionMiddleware("taxonomy.seasons", userRepo), adminHandler.ToggleSeasonCurrent)
+	adminOnly.Delete("/taxonomies/seasons/:id", middleware.HasPermissionMiddleware("taxonomy.seasons", userRepo), adminHandler.DeleteSeason)
 
 	// Formats
 	adminOnly.Get("/taxonomies/formats", adminHandler.GetFormats)
-	adminOnly.Post("/taxonomies/formats", adminHandler.CreateFormat)
-	adminOnly.Put("/taxonomies/formats/:id", adminHandler.UpdateFormat)
-	adminOnly.Delete("/taxonomies/formats/:id", adminHandler.DeleteFormat)
+	adminOnly.Post("/taxonomies/formats", middleware.HasPermissionMiddleware("taxonomy.formats", userRepo), adminHandler.CreateFormat)
+	adminOnly.Put("/taxonomies/formats/:id", middleware.HasPermissionMiddleware("taxonomy.formats", userRepo), adminHandler.UpdateFormat)
+	adminOnly.Delete("/taxonomies/formats/:id", middleware.HasPermissionMiddleware("taxonomy.formats", userRepo), adminHandler.DeleteFormat)
 
 	// Genres
 	adminOnly.Get("/genres", adminHandler.GetGenres)
-	adminOnly.Post("/taxonomies/genres", adminHandler.CreateGenre)
-	adminOnly.Put("/taxonomies/genres/:id", adminHandler.UpdateGenre)
-	adminOnly.Delete("/taxonomies/genres/:id", adminHandler.DeleteGenre)
+	adminOnly.Post("/taxonomies/genres", middleware.HasPermissionMiddleware("taxonomy.genres", userRepo), adminHandler.CreateGenre)
+	adminOnly.Put("/taxonomies/genres/:id", middleware.HasPermissionMiddleware("taxonomy.genres", userRepo), adminHandler.UpdateGenre)
+	adminOnly.Delete("/taxonomies/genres/:id", middleware.HasPermissionMiddleware("taxonomy.genres", userRepo), adminHandler.DeleteGenre)
 
 	// Studios & Producers (Search/List)
 	adminOnly.Get("/studios", adminHandler.GetStudios)
@@ -379,26 +380,26 @@ func SetupPublicRoutes(app *fiber.App,
 	// Badges
 	adminOnly.Get("/badges", badgeHandler.GetAll)
 	adminOnly.Get("/badges/:id", badgeHandler.GetByID)
-	adminOnly.Post("/badges", badgeHandler.Create)
-	adminOnly.Put("/badges/:id", badgeHandler.Update)
-	adminOnly.Delete("/badges/:id", badgeHandler.Delete)
+	adminOnly.Post("/badges", middleware.HasPermissionMiddleware("badge.manage", userRepo), badgeHandler.Create)
+	adminOnly.Put("/badges/:id", middleware.HasPermissionMiddleware("badge.manage", userRepo), badgeHandler.Update)
+	adminOnly.Delete("/badges/:id", middleware.HasPermissionMiddleware("badge.manage", userRepo), badgeHandler.Delete)
 
 	// Tournament Operations
 	adminOnly.Get("/tournaments", tournamentHandler.ListTournaments)
 	adminOnly.Get("/tournaments/:id<int>", tournamentHandler.GetTournament)
-	adminOnly.Post("/tournaments", tournamentHandler.CreateTournament)
-	adminOnly.Post("/tournaments/:id<int>/seed", tournamentHandler.SeedTournament)
-	adminOnly.Post("/tournaments/:id<int>/advance", tournamentHandler.AdvanceTournament)
-	adminOnly.Delete("/tournaments/:id<int>", tournamentHandler.DeleteTournament)
+	adminOnly.Post("/tournaments", middleware.HasPermissionMiddleware("tournament.manage", userRepo), tournamentHandler.CreateTournament)
+	adminOnly.Post("/tournaments/:id<int>/seed", middleware.HasPermissionMiddleware("tournament.manage", userRepo), tournamentHandler.SeedTournament)
+	adminOnly.Post("/tournaments/:id<int>/advance", middleware.HasPermissionMiddleware("tournament.manage", userRepo), tournamentHandler.AdvanceTournament)
+	adminOnly.Delete("/tournaments/:id<int>", middleware.HasPermissionMiddleware("tournament.manage", userRepo), tournamentHandler.DeleteTournament)
 
 	// Announcement Operations
 	adminOnly.Get("/announcements", announcementHandler.GetAllAnnouncements)
 	adminOnly.Get("/announcements/:id", announcementHandler.GetAnnouncementByID)
-	adminOnly.Post("/announcements", announcementHandler.CreateAnnouncement)
-	adminOnly.Put("/announcements/:id", announcementHandler.UpdateAnnouncement)
-	adminOnly.Delete("/announcements/:id", announcementHandler.DeleteAnnouncement)
-	adminOnly.Patch("/announcements/:id/toggle", announcementHandler.ToggleActive)
-	adminOnly.Delete("/announcements/:id", announcementHandler.DeleteAnnouncement)
+	adminOnly.Post("/announcements", middleware.HasPermissionMiddleware("announcement.manage", userRepo), announcementHandler.CreateAnnouncement)
+	adminOnly.Put("/announcements/:id", middleware.HasPermissionMiddleware("announcement.manage", userRepo), announcementHandler.UpdateAnnouncement)
+	adminOnly.Delete("/announcements/:id", middleware.HasPermissionMiddleware("announcement.manage", userRepo), announcementHandler.DeleteAnnouncement)
+	adminOnly.Patch("/announcements/:id/toggle", middleware.HasPermissionMiddleware("announcement.manage", userRepo), announcementHandler.ToggleActive)
+	adminOnly.Delete("/announcements/:id", middleware.HasPermissionMiddleware("announcement.manage", userRepo), announcementHandler.DeleteAnnouncement)
 
 	// Permission Management (Owner/Admin only)
 	adminOnly.Get("/permissions", permissionHandler.GetAllPermissions)

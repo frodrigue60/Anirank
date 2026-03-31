@@ -3,6 +3,7 @@
   import api from "$lib/api";
   import { toastState } from "$lib/state/toast.svelte";
   import { invalidateAll } from "$app/navigation";
+  import { getApiErrorMessage } from "$lib/api-errors";
 
   let { data } = $props<{ data: PageData }>();
   let anime = $derived(data.anime);
@@ -18,7 +19,7 @@
       await invalidateAll();
     } catch (err: any) {
       console.error(err);
-      toastState.addToast(err.message || "Failed to sync anime data", "error");
+      toastState.addToast(getApiErrorMessage(err, "Failed to sync anime data"), "error");
     } finally {
       isSyncing = false;
     }

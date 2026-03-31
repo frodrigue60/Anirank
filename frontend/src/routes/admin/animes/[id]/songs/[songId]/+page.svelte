@@ -4,6 +4,7 @@
   import { toastState } from "$lib/state/toast.svelte";
   import { getSongName } from "$lib/song-utils";
   import { goto } from "$app/navigation";
+  import { getApiErrorMessage } from "$lib/api-errors";
 
   let { data } = $props<{ data: PageData }>();
   let song = $derived(data.song);
@@ -32,7 +33,7 @@
       toastState.addToast("Status updated successfully", "success");
     } catch (err: any) {
       console.error(err);
-      toastState.addToast(err.message || "Failed to update status", "error");
+      toastState.addToast(getApiErrorMessage(err, "Failed to update status"), "error");
     }
   }
 
@@ -48,7 +49,7 @@
       goto(`/admin/variants/${newVariantId}/video`);
     } catch (err: any) {
       console.error(err);
-      toastState.addToast(err.response?.data?.message || "Failed to create variant", "error");
+      toastState.addToast(getApiErrorMessage(err, "Failed to create variant"), "error");
     } finally {
       isCreating = false;
     }

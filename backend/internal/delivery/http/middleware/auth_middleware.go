@@ -32,7 +32,7 @@ func AuthMiddleware(jwtService *auth.JWTService) fiber.Handler {
 
 		// Store user info in Context Locals for downstream handlers
 		c.Locals("user_id", claims.UserID)
-		c.Locals("user_role", claims.Role)
+		c.Locals("user_roles", claims.Roles)
 
 		return c.Next()
 	}
@@ -51,7 +51,7 @@ func OptionalAuthMiddleware(jwtService *auth.JWTService) fiber.Handler {
 			tokenString := parts[1]
 			if claims, err := jwtService.ValidateToken(tokenString); err == nil {
 				c.Locals("user_id", claims.UserID)
-				c.Locals("user_role", claims.Role)
+				c.Locals("user_roles", claims.Roles)
 			}
 		}
 
@@ -62,8 +62,20 @@ func OptionalAuthMiddleware(jwtService *auth.JWTService) fiber.Handler {
 // StaffMiddleware only allows users with core administrative type roles to proceed.
 func StaffMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		role, ok := c.Locals("user_role").(string)
-		if !ok || (role != "admin" && role != "editor" && role != "creator") {
+		roles, ok := c.Locals("user_roles").([]string)
+		if !ok || len(roles) == 0 {
+			return domain.NewAppError(403, "Forbidden. Action requires staff privileges", nil)
+		}
+
+		isStaff := false
+		for _, r := range roles {
+			if r == "owner" || r == "admin" || r == "editor" || r == "creator" {
+				isStaff = true
+				break
+			}
+		}
+
+		if !isStaff {
 			return domain.NewAppError(403, "Forbidden. Action requires staff privileges", nil)
 		}
 		return c.Next()
@@ -73,8 +85,20 @@ func StaffMiddleware() fiber.Handler {
 // AdminMiddleware strictly only allows top-level admin
 func AdminMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		role, ok := c.Locals("user_role").(string)
-		if !ok || role != "admin" {
+		roles, ok := c.Locals("user_roles").([]string)
+		if !ok || len(roles) == 0 {
+			return domain.NewAppError(403, "Forbidden. Feature restricted to Administrators", nil)
+		}
+
+		isAdmin := false
+		for _, r := range roles {
+			if r == "owner" || r == "admin" {
+				isAdmin = true
+				break
+			}
+		}
+
+		if !isAdmin {
 			return domain.NewAppError(403, "Forbidden. Feature restricted to Administrators", nil)
 		}
 		return c.Next()

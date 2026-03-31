@@ -16,8 +16,8 @@ type JWTService struct {
 
 // Claims matches the Laravel Sanctum / Auth payload plus our custom RBAC fields
 type Claims struct {
-	UserID uint64 `json:"user_id"`
-	Role   string `json:"role"` // Main role derived from DB
+	UserID uint64   `json:"user_id"`
+	Roles  []string `json:"roles"` // All role slugs assigned to the user
 	jwt.RegisteredClaims
 }
 
@@ -34,12 +34,12 @@ func NewJWTService() *JWTService {
 }
 
 // GenerateToken creates a new token with 24 hours validity
-func (s *JWTService) GenerateToken(userID uint64, role string) (string, error) {
+func (s *JWTService) GenerateToken(userID uint64, roles []string) (string, error) {
 	expirationTime := time.Now().Add(24 * time.Hour)
 
 	claims := &Claims{
 		UserID: userID,
-		Role:   role,
+		Roles:  roles,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

@@ -72,3 +72,18 @@ func (m *PermissionManager) HasPermission(roleSlug, permSlug string) bool {
 	}
 	return false
 }
+
+// HasAnyRolePermission checks if any of the provided roles have a specific permission.
+func (m *PermissionManager) HasAnyRolePermission(roleSlugs []string, permSlug string) bool {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	for _, role := range roleSlugs {
+		if perms, ok := m.cache[role]; ok {
+			if perms[permSlug] {
+				return true
+			}
+		}
+	}
+	return false
+}

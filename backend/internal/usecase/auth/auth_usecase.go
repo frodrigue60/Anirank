@@ -70,10 +70,13 @@ func (u *AuthUsecase) Login(ctx context.Context, email, password string) (*AuthT
 		return nil, domain.NewAppError(401, "Invalid email or password", nil)
 	}
 
-	role := "user"
+	roleSlugs := []string{}
 	roles, _ := u.userRepo.GetRolesByUserID(ctx, user.ID)
-	if len(roles) > 0 {
-		role = roles[0].Slug
+	for _, r := range roles {
+		roleSlugs = append(roleSlugs, r.Slug)
+	}
+	if len(roleSlugs) == 0 {
+		roleSlugs = append(roleSlugs, "user") // Fallback
 	}
 	user.Roles = roles
 
@@ -81,10 +84,13 @@ func (u *AuthUsecase) Login(ctx context.Context, email, password string) (*AuthT
 	_ = u.xpUsecase.CheckDailyLogin(ctx, user.ID)
 
 	// Fetch user again to get updated XP/Level if it was awarded
-	user, _ = u.userRepo.GetByID(ctx, user.ID)
+	if refreshed, err := u.userRepo.GetByID(ctx, user.ID); err == nil {
+		refreshed.Roles = roles // Re-attach roles after refresh
+		user = refreshed
+	}
 
 	// Generate standard token
-	token, err := u.jwtService.GenerateToken(user.ID, role)
+	token, err := u.jwtService.GenerateToken(user.ID, roleSlugs)
 	if err != nil {
 		return nil, domain.NewAppError(500, "Could not generate authentication token", err)
 	}
@@ -137,7 +143,7 @@ func (u *AuthUsecase) Register(ctx context.Context, name, email, password string
 		return nil, domain.NewAppError(500, "Failed to create user account", err)
 	}
 
-	token, _ := u.jwtService.GenerateToken(newUser.ID, "user") // New users are strictly basic tier
+	token, _ := u.jwtService.GenerateToken(newUser.ID, []string{"user"}) // New users are strictly basic tier
 
 	newUser.Password = ""
 
@@ -493,14 +499,17 @@ func (u *AuthUsecase) LoginWithGoogle(ctx context.Context, code, redirectURI str
 	}
 
 	// 5. Generate JWT
-	role := "user"
+	roleSlugs := []string{}
 	roles, _ := u.userRepo.GetRolesByUserID(ctx, user.ID)
-	if len(roles) > 0 {
-		role = roles[0].Slug
+	for _, r := range roles {
+		roleSlugs = append(roleSlugs, r.Slug)
+	}
+	if len(roleSlugs) == 0 {
+		roleSlugs = append(roleSlugs, "user") // Fallback
 	}
 	user.Roles = roles
 
-	token, err := u.jwtService.GenerateToken(user.ID, role)
+	token, err := u.jwtService.GenerateToken(user.ID, roleSlugs)
 	if err != nil {
 		return nil, domain.NewAppError(http.StatusInternalServerError, "Failed to generate token", err)
 	}
@@ -571,17 +580,20 @@ func (u *AuthUsecase) LoginWithAnilist(ctx context.Context, code string) (*AuthT
 		return nil, domain.NewAppError(http.StatusInternalServerError, "Failed to update user", err)
 	}
 
-	role := "user"
+	roleSlugs := []string{}
 	roles, _ := u.userRepo.GetRolesByUserID(ctx, user.ID)
-	if len(roles) > 0 {
-		role = roles[0].Slug
+	for _, r := range roles {
+		roleSlugs = append(roleSlugs, r.Slug)
+	}
+	if len(roleSlugs) == 0 {
+		roleSlugs = append(roleSlugs, "user") // Fallback
 	}
 	user.Roles = roles
 
 	_ = u.xpUsecase.CheckDailyLogin(ctx, user.ID)
 	user, _ = u.userRepo.GetByID(ctx, user.ID)
 
-	token, err := u.jwtService.GenerateToken(user.ID, role)
+	token, err := u.jwtService.GenerateToken(user.ID, roleSlugs)
 	if err != nil {
 		return nil, domain.NewAppError(http.StatusInternalServerError, "Could not generate authentication token", err)
 	}

@@ -133,10 +133,14 @@
                 {/if}
                 <div>
                   <div class="font-bold text-white mb-0.5">
-                    <a href="/users/{user.slug}">{user.name}</a>
+                    <a
+                      href="/admin/users/{user.id}"
+                      class="hover:text-anirank-primary transition-colors"
+                      >{user.name}</a
+                    >
                   </div>
                   <div class="text-xs text-gray-500 font-mono hidden sm:block">
-                    UUID: {user.uuid}
+                    ID: {user.id}
                   </div>
                 </div>
               </div>
@@ -152,25 +156,25 @@
               </span>
             </td>
             <td class="px-6 py-4 text-right">
-              <div
-                class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <!-- <button
-                  class="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white text-xs font-semibold rounded-lg transition-colors border border-white/10"
-                  title="Manage Roles"
+              <div class="flex items-center justify-end gap-2">
+                <!-- <a
+                  href="/admin/users/{user.id}"
+                  class="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors border border-transparent hover:border-white/10"
+                  title="View Details"
                 >
-                  <span class="material-symbols-outlined">shield_person</span>
-                </button> -->
+                  <span class="material-symbols-outlined">visibility</span>
+                </a> -->
+
                 <a
-                  href="/admin/users/{user.uuid}/edit"
-                  class="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                  href="/admin/users/{user.id}/edit"
+                  class="p-2 text-gray-400 hover:text-white hover:bg-emerald-500/10 rounded-lg transition-colors border border-transparent hover:border-emerald-500/10"
                   title="Edit Profile"
                 >
                   <span class="material-symbols-outlined">edit</span>
                 </a>
 
                 <button
-                  onclick={() => deleteUser(user.uuid)}
+                  onclick={() => deleteUser(user.id)}
                   disabled={isDeleting}
                   class="p-2 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition-colors border border-transparent hover:border-rose-500/20 disabled:opacity-50"
                   title="Delete User"
@@ -220,7 +224,8 @@
           >
         </button>
         <span class="text-sm text-gray-300 font-medium px-2"
-          >Page {data.pagination.current_page} of {data.pagination.last_page}</span
+          >Page {data.pagination.current_page} of {data.pagination
+            .last_page}</span
         >
         <button
           disabled={data.pagination.current_page === data.pagination.last_page}

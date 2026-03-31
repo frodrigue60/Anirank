@@ -157,7 +157,7 @@ func main() {
 	auditUsecase := audit.NewAuditLogUsecase(auditRepo)
 
 	userAdminUsecase := admin.NewUserAdminUsecase(userRepo, mediaService, auditUsecase)
-	contentAdminUsecase := admin.NewContentAdminUsecase(animeRepo, songRepo, variantRepo, artistRepo, taxonomyRepo, anilistClient, mediaService, auditUsecase)
+	contentAdminUsecase := admin.NewContentAdminUsecase(animeRepo, songRepo, variantRepo, artistRepo, taxonomyRepo, userRepo, anilistClient, mediaService, auditUsecase)
 	adminUsecase := admin.NewAdminUsecase(userAdminUsecase, contentAdminUsecase, adminRepo, moderationRepo, jobsRepo)
 
 	ogGenerator := og.NewGenerator(s3PublicUrl, s3Endpoint)

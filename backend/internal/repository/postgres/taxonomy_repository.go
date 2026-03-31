@@ -427,6 +427,66 @@ func (r *taxonomyRepository) GetOrCreateProducer(ctx context.Context, name strin
 	return &p, nil
 }
 
+func (r *taxonomyRepository) GetByYear(ctx context.Context, name int) (*domain.Year, error) {
+	var y domain.Year
+	query := "SELECT id, name, slug, current, created_at, updated_at FROM years WHERE name = $1 LIMIT 1"
+	err := r.db.GetContext(ctx, &y, query, fmt.Sprintf("%d", name))
+	if err != nil {
+		return nil, err
+	}
+	return &y, nil
+}
+
+func (r *taxonomyRepository) GetBySeason(ctx context.Context, name string) (*domain.Season, error) {
+	var s domain.Season
+	query := "SELECT id, name, slug, current, created_at, updated_at FROM seasons WHERE name = $1 LIMIT 1"
+	err := r.db.GetContext(ctx, &s, query, name)
+	if err != nil {
+		return nil, err
+	}
+	return &s, nil
+}
+
+func (r *taxonomyRepository) GetByFormat(ctx context.Context, name string) (*domain.Format, error) {
+	var f domain.Format
+	query := "SELECT id, name, slug, created_at, updated_at FROM formats WHERE name = $1 LIMIT 1"
+	err := r.db.GetContext(ctx, &f, query, name)
+	if err != nil {
+		return nil, err
+	}
+	return &f, nil
+}
+
+func (r *taxonomyRepository) GetByGenre(ctx context.Context, name string) (*domain.Genre, error) {
+	var g domain.Genre
+	query := "SELECT id, name, slug, created_at, updated_at FROM genres WHERE name = $1 LIMIT 1"
+	err := r.db.GetContext(ctx, &g, query, name)
+	if err != nil {
+		return nil, err
+	}
+	return &g, nil
+}
+
+func (r *taxonomyRepository) GetByStudio(ctx context.Context, name string) (*domain.Studio, error) {
+	var s domain.Studio
+	query := "SELECT id, uuid, name, slug, created_at, updated_at FROM studios WHERE name = $1 LIMIT 1"
+	err := r.db.GetContext(ctx, &s, query, name)
+	if err != nil {
+		return nil, err
+	}
+	return &s, nil
+}
+
+func (r *taxonomyRepository) GetByProducer(ctx context.Context, name string) (*domain.Producer, error) {
+	var p domain.Producer
+	query := "SELECT id, uuid, name, slug, created_at, updated_at FROM producers WHERE name = $1 LIMIT 1"
+	err := r.db.GetContext(ctx, &p, query, name)
+	if err != nil {
+		return nil, err
+	}
+	return &p, nil
+}
+
 func (r *taxonomyRepository) GetYearByID(ctx context.Context, id uint64) (*domain.Year, error) {
 	var y domain.Year
 	query := "SELECT id, name, slug, current, created_at, updated_at FROM years WHERE id = $1"

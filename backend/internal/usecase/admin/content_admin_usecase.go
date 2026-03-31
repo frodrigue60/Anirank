@@ -14,6 +14,7 @@ import (
 	"anirank/api/internal/infrastructure"
 	"anirank/api/internal/infrastructure/anilist"
 	"anirank/api/internal/pkg/avatar"
+	"anirank/api/internal/pkg/rbac"
 	"anirank/api/internal/pkg/utils"
 	"encoding/json"
 	"net/http"
@@ -35,6 +36,7 @@ type ContentAdminUsecase struct {
 	variantRepo   domain.SongVariantRepository
 	artistRepo    domain.ArtistRepository
 	taxonomyRepo  domain.TaxonomyRepository
+	userRepo      domain.UserRepository
 	anilistClient *anilist.Client
 	mediaService  infrastructure.MediaService
 	auditUsecase  domain.AuditLogUsecase
@@ -50,6 +52,7 @@ func NewContentAdminUsecase(
 	sv domain.SongVariantRepository,
 	artistR domain.ArtistRepository,
 	tr domain.TaxonomyRepository,
+	ur domain.UserRepository,
 	ac *anilist.Client,
 	media infrastructure.MediaService,
 	audit domain.AuditLogUsecase,
@@ -60,6 +63,7 @@ func NewContentAdminUsecase(
 		variantRepo:   sv,
 		artistRepo:    artistR,
 		taxonomyRepo:  tr,
+		userRepo:      ur,
 		anilistClient: ac,
 		mediaService:  media,
 		auditUsecase:  audit,
@@ -425,7 +429,8 @@ func (u *ContentAdminUsecase) BatchFetchAnimes(ctx context.Context, season strin
 			}
 
 			// Sync relations
-			_ = u.SyncAnimeWithAnilist(ctx, &processedAnime, &media)
+			pm := rbac.GetPermissionManager(u.userRepo)
+			_ = u.SyncAnimeWithAnilist(ctx, &processedAnime, &media, pm, meta)
 
 			// Async image processing
 			if processedAnime.ID > 0 {
@@ -493,7 +498,8 @@ func (u *ContentAdminUsecase) CreateAnimeFromAnilist(ctx context.Context, anilis
 	anilistID64 := int64(anilistID)
 	existing, _ := u.animeRepo.GetByAnilistID(ctx, anilistID64)
 	if existing != nil {
-		_ = u.SyncAnimeWithAnilist(ctx, existing, media)
+		pm := rbac.GetPermissionManager(u.userRepo)
+		_ = u.SyncAnimeWithAnilist(ctx, existing, media, pm, meta)
 		return existing, nil
 	}
 
@@ -522,7 +528,8 @@ func (u *ContentAdminUsecase) CreateAnimeFromAnilist(ctx context.Context, anilis
 	}
 
 	_ = u.auditUsecase.LogActions(ctx, meta.ActorID, "created_from_anilist", newAnime.ID, "anime", nil, newAnime, &meta.URL, &meta.IPAddress, &meta.UserAgent)
-	_ = u.SyncAnimeWithAnilist(ctx, &newAnime, media)
+	pm := rbac.GetPermissionManager(u.userRepo)
+	_ = u.SyncAnimeWithAnilist(ctx, &newAnime, media, pm, meta)
 	go u.ensureLocalImages(context.Background(), &newAnime, media.CoverImage.ExtraLarge, media.BannerImage, int64(media.ID))
 
 	return &newAnime, nil
@@ -576,25 +583,61 @@ func (u *ContentAdminUsecase) SyncAnime(ctx context.Context, id uint64, meta dom
 	}
 
 	_ = u.auditUsecase.LogActions(ctx, meta.ActorID, "synced_from_anilist", anime.ID, "anime", existing, anime, &meta.URL, &meta.IPAddress, &meta.UserAgent)
-
-	_ = u.SyncAnimeWithAnilist(ctx, anime, &media)
+	pm := rbac.GetPermissionManager(u.userRepo)
+	_ = u.SyncAnimeWithAnilist(ctx, anime, &media, pm, meta)
 	go u.ensureLocalImages(context.Background(), anime, media.CoverImage.ExtraLarge, media.BannerImage, int64(media.ID))
 
 	return nil
 }
 
-func (u *ContentAdminUsecase) SyncAnimeWithAnilist(ctx context.Context, anime *domain.Anime, media *anilist.Media) error {
-	var studioIDs []uint64
+// SyncAnimeWithAnilist synchronizes genres, producers and other metadata if permissions allow
+func (u *ContentAdminUsecase) SyncAnimeWithAnilist(ctx context.Context, anime *domain.Anime, alData *anilist.Media, pm *rbac.PermissionManager, meta domain.AuditMetadata) error {
+	canCreateGenres := pm != nil && (pm.HasPermission(meta.Role, "taxonomy.genres.create") || meta.Role == "admin" || meta.Role == "owner")
+	canCreateProducers := pm != nil && (pm.HasPermission(meta.Role, "taxonomy.producers.create") || meta.Role == "admin" || meta.Role == "owner")
+	canCreateStudios := pm != nil && (pm.HasPermission(meta.Role, "taxonomy.studios.create") || meta.Role == "admin" || meta.Role == "owner")
+
+	// 1. Sync Genres
+	var genreIDs []uint64
+	for _, g := range alData.Genres {
+		var obj *domain.Genre
+		var err error
+		if canCreateGenres {
+			obj, err = u.taxonomyRepo.GetOrCreateGenre(ctx, g)
+		} else {
+			obj, _ = u.taxonomyRepo.GetByGenre(ctx, g)
+		}
+		if err == nil && obj != nil {
+			genreIDs = append(genreIDs, obj.ID)
+		}
+	}
+	if err := u.animeRepo.UpdateGenres(ctx, anime.ID, genreIDs); err != nil {
+		fmt.Printf("[ERROR] Failed to update genres for anime %d: %v\n", anime.ID, err)
+	}
+
+	// 2. Sync Studios & Producers
 	var producerIDs []uint64
-	for _, edge := range media.Studios.Edges {
+	var studioIDs []uint64
+	for _, edge := range alData.Studios.Edges {
 		if edge.IsMain {
-			obj, err := u.taxonomyRepo.GetOrCreateStudio(ctx, edge.Node.Name)
-			if err == nil {
+			var obj *domain.Studio
+			var err error
+			if canCreateStudios {
+				obj, err = u.taxonomyRepo.GetOrCreateStudio(ctx, edge.Node.Name)
+			} else {
+				obj, _ = u.taxonomyRepo.GetByStudio(ctx, edge.Node.Name)
+			}
+			if err == nil && obj != nil {
 				studioIDs = append(studioIDs, obj.ID)
 			}
 		} else {
-			obj, err := u.taxonomyRepo.GetOrCreateProducer(ctx, edge.Node.Name)
-			if err == nil {
+			var obj *domain.Producer
+			var err error
+			if canCreateProducers {
+				obj, err = u.taxonomyRepo.GetOrCreateProducer(ctx, edge.Node.Name)
+			} else {
+				obj, _ = u.taxonomyRepo.GetByProducer(ctx, edge.Node.Name)
+			}
+			if err == nil && obj != nil {
 				producerIDs = append(producerIDs, obj.ID)
 			}
 		}
@@ -607,28 +650,19 @@ func (u *ContentAdminUsecase) SyncAnimeWithAnilist(ctx context.Context, anime *d
 	}
 	fmt.Printf("[INFO] Synced %d studios and %d producers for anime %d\n", len(studioIDs), len(producerIDs), anime.ID)
 
-	var genreIDs []uint64
-	for _, gName := range media.Genres {
-		obj, err := u.taxonomyRepo.GetOrCreateGenre(ctx, gName)
-		if err == nil {
-			genreIDs = append(genreIDs, obj.ID)
+	// 3. Sync External Links
+	if len(alData.ExternalLinks) > 0 {
+		links := make([]domain.ExternalLink, 0, len(alData.ExternalLinks))
+		for _, l := range alData.ExternalLinks {
+			links = append(links, domain.ExternalLink{
+				Name: l.Site,
+				URL:  l.URL,
+				Type: strings.ToLower(l.Site),
+			})
 		}
-	}
-	if err := u.animeRepo.UpdateGenres(ctx, anime.ID, genreIDs); err != nil {
-		fmt.Printf("[ERROR] Failed to update genres for anime %d: %v\n", anime.ID, err)
-	}
-	fmt.Printf("[INFO] Synced %d genres for anime %d\n", len(genreIDs), anime.ID)
-
-	links := make([]domain.ExternalLink, 0, len(media.ExternalLinks))
-	for _, l := range media.ExternalLinks {
-		links = append(links, domain.ExternalLink{
-			Name: l.Site,
-			URL:  l.URL,
-			Type: strings.ToLower(l.Site),
-		})
-	}
-	if err := u.animeRepo.UpdateExternalLinks(ctx, anime.ID, links); err != nil {
-		fmt.Printf("[ERROR] Failed to update external links for anime %d: %v\n", anime.ID, err)
+		if err := u.animeRepo.UpdateExternalLinks(ctx, anime.ID, links); err != nil {
+			fmt.Printf("[ERROR] Failed to update external links for anime %d: %v\n", anime.ID, err)
+		}
 	}
 
 	return nil
@@ -1145,26 +1179,48 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 		}
 	}
 
+	pm := rbac.GetPermissionManager(u.userRepo)
+	canCreateYears := pm.HasPermission(meta.Role, "taxonomy.years.create") || meta.Role == "admin" || meta.Role == "owner"
+	canCreateSeasons := pm.HasPermission(meta.Role, "taxonomy.seasons.create") || meta.Role == "admin" || meta.Role == "owner"
+	canCreateFormats := pm.HasPermission(meta.Role, "taxonomy.formats.create") || meta.Role == "admin" || meta.Role == "owner"
+	canCreateStudios := pm.HasPermission(meta.Role, "taxonomy.studios.create") || meta.Role == "admin" || meta.Role == "owner"
+
 	// --- Phase 3: Processing ---
 	for i, a := range animeList {
 		sendProgress(fmt.Sprintf("[%d/%d] Processing: %s", i+1, totalAnime, a.Name))
 		// 1. Resolve Taxonomies
-		yearObj, err := u.taxonomyRepo.GetOrCreateYear(ctx, fmt.Sprintf("%d", a.Year))
-		if err != nil {
+		var yearObj *domain.Year
+		var err error
+		if canCreateYears {
+			yearObj, err = u.taxonomyRepo.GetOrCreateYear(ctx, fmt.Sprintf("%d", a.Year))
+		} else {
+			yearObj, _ = u.taxonomyRepo.GetByYear(ctx, a.Year)
+		}
+		if err != nil || yearObj == nil {
 			continue
 		}
 
 		normalizedSeason := strings.Title(strings.ToLower(a.Season))
-		seasonObj, err := u.taxonomyRepo.GetOrCreateSeason(ctx, normalizedSeason)
-		if err != nil {
+		var seasonObj *domain.Season
+		if canCreateSeasons {
+			seasonObj, err = u.taxonomyRepo.GetOrCreateSeason(ctx, normalizedSeason)
+		} else {
+			seasonObj, _ = u.taxonomyRepo.GetBySeason(ctx, normalizedSeason)
+		}
+		if err != nil || seasonObj == nil {
 			continue
 		}
 
 		if a.MediaFormat == "" {
 			a.MediaFormat = "TV"
 		}
-		formatObj, err := u.taxonomyRepo.GetOrCreateFormat(ctx, a.MediaFormat)
-		if err != nil {
+		var formatObj *domain.Format
+		if canCreateFormats {
+			formatObj, err = u.taxonomyRepo.GetOrCreateFormat(ctx, a.MediaFormat)
+		} else {
+			formatObj, _ = u.taxonomyRepo.GetByFormat(ctx, a.MediaFormat)
+		}
+		if err != nil || formatObj == nil {
 			continue
 		}
 
@@ -1293,6 +1349,10 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 				Status:      true,
 				UUID:        uuid.New().String(),
 			}
+
+			// Force Draft status for creators
+			u.validateStatusPermissions(meta.Role, &anime.Status, true)
+
 			if err := u.animeRepo.Create(ctx, anime); err != nil {
 				continue
 			}
@@ -1304,8 +1364,13 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 		// Always sync Studios and Resources from AnimeThemes as base/fallback
 		var studioIDs []uint64
 		for _, s := range a.Studios {
-			obj, err := u.taxonomyRepo.GetOrCreateStudio(ctx, s.Name)
-			if err == nil {
+			var obj *domain.Studio
+			if canCreateStudios {
+				obj, err = u.taxonomyRepo.GetOrCreateStudio(ctx, s.Name)
+			} else {
+				obj, _ = u.taxonomyRepo.GetByStudio(ctx, s.Name)
+			}
+			if err == nil && obj != nil {
 				studioIDs = append(studioIDs, obj.ID)
 			}
 		}
@@ -1324,9 +1389,9 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 			_ = u.animeRepo.UpdateExternalLinks(ctx, anime.ID, links)
 		}
 
-		// Enrich with AniList if available (may overwrite/add genres, producers, more links)
+		// Enrichment with AniList
 		if alData != nil {
-			_ = u.SyncAnimeWithAnilist(ctx, anime, alData)
+			_ = u.SyncAnimeWithAnilist(ctx, anime, alData, pm, meta)
 		}
 
 		// 6. Process Songs & Themes
@@ -1392,6 +1457,10 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 					AnimeThemesID: &atID,
 					UUID:          uuid.New().String(),
 				}
+
+				// Force Draft status for creators
+				u.validateStatusPermissions(meta.Role, &song.Status, true)
+
 				if err := u.songRepo.Create(ctx, song); err != nil {
 					continue
 				}
@@ -1454,6 +1523,10 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 						AnimeThemesID: &atvID,
 						UUID:          uuid.New().String(),
 					}
+
+					// Force Draft status for creators
+					u.validateStatusPermissions(meta.Role, &variant.Status, true)
+
 					if err := u.variantRepo.Create(ctx, variant); err == nil {
 						processedVariants[variant.ID] = true
 					}
@@ -1520,6 +1593,10 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 						AnimeThemesID: &atArtID,
 						UUID:          uuid.New().String(),
 					}
+
+					// Force Draft status for creators
+					u.validateStatusPermissions(meta.Role, &artist.Status, true)
+
 					if err := u.artistRepo.Create(ctx, artist); err != nil {
 						continue
 					}

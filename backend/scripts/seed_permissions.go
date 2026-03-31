@@ -31,6 +31,7 @@ func main() {
 	
 	// Perform cleanup of redundant/legacy permissions
 	_, _ = db.Exec("DELETE FROM permissions WHERE slug = 'taxonomy.manage'")
+	_, _ = db.Exec("DELETE FROM permissions WHERE slug IN ('taxonomy.years', 'taxonomy.seasons', 'taxonomy.formats', 'taxonomy.genres')")
 
 	// 1. Define Permissions
 	permissions := []struct {
@@ -52,11 +53,37 @@ func main() {
 		{"Manage Permissions", "permissions.manage", "Allows modifying role-permission mappings"},
 		{"Manage Tournaments", "tournament.manage", "Allows creating, seeding and managing tournaments"},
 		{"Manage Announcements", "announcement.manage", "Allows creating and managing platform announcements"},
-		{"Manage Years", "taxonomy.years", "Allows managing years"},
-		{"Manage Seasons", "taxonomy.seasons", "Allows managing seasons"},
-		{"Manage Formats", "taxonomy.formats", "Allows managing anime formats"},
-		{"Manage Genres", "taxonomy.genres", "Allows managing genres"},
 		{"Manage Badges", "badge.manage", "Allows creating and managing system badges"},
+
+		// Granular Taxonomies - Years
+		{"Create Years", "taxonomy.years.create", "Allows adding new years"},
+		{"Edit Years", "taxonomy.years.edit", "Allows editing existing years"},
+		{"Delete Years", "taxonomy.years.delete", "Allows removing years"},
+
+		// Granular Taxonomies - Seasons
+		{"Create Seasons", "taxonomy.seasons.create", "Allows adding new seasons"},
+		{"Edit Seasons", "taxonomy.seasons.edit", "Allows editing existing seasons"},
+		{"Delete Seasons", "taxonomy.seasons.delete", "Allows removing seasons"},
+
+		// Granular Taxonomies - Formats
+		{"Create Formats", "taxonomy.formats.create", "Allows adding new anime formats"},
+		{"Edit Formats", "taxonomy.formats.edit", "Allows editing existing formats"},
+		{"Delete Formats", "taxonomy.formats.delete", "Allows removing formats"},
+
+		// Granular Taxonomies - Genres
+		{"Create Genres", "taxonomy.genres.create", "Allows adding new genres"},
+		{"Edit Genres", "taxonomy.genres.edit", "Allows editing existing genres"},
+		{"Delete Genres", "taxonomy.genres.delete", "Allows removing genres"},
+
+		// Granular Taxonomies - Studios
+		{"Create Studios", "taxonomy.studios.create", "Allows adding new studios"},
+		{"Edit Studios", "taxonomy.studios.edit", "Allows editing existing studios"},
+		{"Delete Studios", "taxonomy.studios.delete", "Allows removing studios"},
+
+		// Granular Taxonomies - Producers
+		{"Create Producers", "taxonomy.producers.create", "Allows adding new producers"},
+		{"Edit Producers", "taxonomy.producers.edit", "Allows editing existing producers"},
+		{"Delete Producers", "taxonomy.producers.delete", "Allows removing producers"},
 	}
 
 	for _, p := range permissions {
@@ -77,8 +104,13 @@ func main() {
 			"artist.create", "artist.edit", "artist.delete",
 			"reports.manage", "users.manage", "permissions.manage",
 			"tournament.manage", "announcement.manage",
-			"taxonomy.years", "taxonomy.seasons", "taxonomy.formats", "taxonomy.genres",
 			"badge.manage",
+			"taxonomy.years.create", "taxonomy.years.edit", "taxonomy.years.delete",
+			"taxonomy.seasons.create", "taxonomy.seasons.edit", "taxonomy.seasons.delete",
+			"taxonomy.formats.create", "taxonomy.formats.edit", "taxonomy.formats.delete",
+			"taxonomy.genres.create", "taxonomy.genres.edit", "taxonomy.genres.delete",
+			"taxonomy.studios.create", "taxonomy.studios.edit", "taxonomy.studios.delete",
+			"taxonomy.producers.create", "taxonomy.producers.edit", "taxonomy.producers.delete",
 		},
 		"editor": {
 			"anime.create", "anime.edit",
@@ -86,7 +118,12 @@ func main() {
 			"artist.create", "artist.edit",
 			"reports.manage",
 			"tournament.manage", "announcement.manage",
-			"taxonomy.years", "taxonomy.seasons", "taxonomy.formats", "taxonomy.genres",
+			"taxonomy.years.create", "taxonomy.years.edit",
+			"taxonomy.seasons.create", "taxonomy.seasons.edit",
+			"taxonomy.formats.create", "taxonomy.formats.edit",
+			"taxonomy.genres.create", "taxonomy.genres.edit",
+			"taxonomy.studios.create", "taxonomy.studios.edit",
+			"taxonomy.producers.create", "taxonomy.producers.edit",
 		},
 		"creator": {
 			"anime.create", "song.create", "artist.create",

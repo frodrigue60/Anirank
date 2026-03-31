@@ -22,7 +22,15 @@
     const groups: Record<string, typeof allPermissions> = {};
     allPermissions.forEach((p: any) => {
       const parts = p.slug.split(".");
-      const group = parts.length > 1 ? parts[0] : "system";
+      let group = "system";
+      
+      // Handle granular taxonomy grouping: taxonomy.genres.create -> taxonomy: genres
+      if (parts[0] === "taxonomy" && parts.length >= 2) {
+        group = `taxonomy: ${parts[1]}`;
+      } else if (parts.length > 1) {
+        group = parts[0];
+      }
+
       if (!groups[group]) groups[group] = [];
       groups[group].push(p);
     });
@@ -79,12 +87,27 @@
   }
 
   const getResourceIcon = (group: string) => {
+    if (group.startsWith("taxonomy")) return "category";
     switch (group) {
-      case "anime": return "tv";
-      case "song": return "music";
-      case "artist": return "user-group";
-      default: return "cog";
+      case "anime": return "movie";
+      case "song": return "music_note";
+      case "artist": return "person";
+      case "users": return "group";
+      case "reports": return "report";
+      case "permissions": return "admin_panel_settings";
+      case "badge": return "workspace_premium";
+      case "announcement": return "campaign";
+      case "tournament": return "military_tech";
+      default: return "settings";
     }
+  };
+
+  const formatGroupName = (group: string) => {
+    if (group.startsWith("taxonomy: ")) {
+       const entity = group.replace("taxonomy: ", "");
+       return `Taxonomy: ${entity.charAt(0).toUpperCase() + entity.slice(1)}`;
+    }
+    return group.charAt(0).toUpperCase() + group.slice(1);
   };
 
   const getRoleColor = (slug: string) => {
@@ -178,7 +201,10 @@
             {#each Object.entries(groupedPermissions()) as [group, perms]}
               <div class="space-y-4">
                 <div class="flex items-center gap-2 pb-2 border-b border-white/5">
-                  <span class="text-indigo-400 capitalize text-sm font-bold tracking-tight">{group}</span>
+                  <div class="p-1 px-1.5 rounded-md bg-indigo-500/20 text-indigo-400">
+                    <span class="material-symbols-outlined text-sm! leading-none">{getResourceIcon(group)}</span>
+                  </div>
+                  <span class="text-indigo-400 text-sm font-bold tracking-tight">{formatGroupName(group)}</span>
                 </div>
                 <div class="space-y-2">
                   {#each perms as perm}

@@ -3,6 +3,7 @@ package admin
 import (
 	"anirank/api/internal/domain"
 	"anirank/api/internal/infrastructure/anilist"
+	"anirank/api/internal/pkg/rbac"
 	"context"
 	"github.com/gofiber/fiber/v2"
 	"io"
@@ -173,8 +174,9 @@ func (u *AdminUsecase) SyncAnime(ctx context.Context, id uint64, meta domain.Aud
 	return u.contentAdmin.SyncAnime(ctx, id, meta)
 }
 
-func (u *AdminUsecase) SyncAnimeWithAnilist(ctx context.Context, anime *domain.Anime, media *anilist.Media) error {
-	return u.contentAdmin.SyncAnimeWithAnilist(ctx, anime, media)
+func (u *AdminUsecase) SyncAnimeWithAnilist(ctx context.Context, anime *domain.Anime, media *anilist.Media, meta domain.AuditMetadata) error {
+	pm := rbac.GetPermissionManager(u.contentAdmin.userRepo)
+	return u.contentAdmin.SyncAnimeWithAnilist(ctx, anime, media, pm, meta)
 }
 
 func (u *AdminUsecase) BatchCreateAnimesFromAnilist(ctx context.Context, anilistIDs []int, meta domain.AuditMetadata) *domain.AnilistBatchImportResult {

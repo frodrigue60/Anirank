@@ -213,6 +213,13 @@ type TaxonomyRepository interface {
 	GetOrCreateStudio(ctx context.Context, name string) (*Studio, error)
 	GetOrCreateProducer(ctx context.Context, name string) (*Producer, error)
 
+	GetByYear(ctx context.Context, name int) (*Year, error)
+	GetBySeason(ctx context.Context, name string) (*Season, error)
+	GetByFormat(ctx context.Context, name string) (*Format, error)
+	GetByGenre(ctx context.Context, name string) (*Genre, error)
+	GetByStudio(ctx context.Context, name string) (*Studio, error)
+	GetByProducer(ctx context.Context, name string) (*Producer, error)
+
 	// Admin CRUD
 	GetYearByID(ctx context.Context, id uint64) (*Year, error)
 	CreateYear(ctx context.Context, year *Year) error

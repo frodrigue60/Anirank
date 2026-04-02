@@ -47,16 +47,20 @@ func ToUserDTO(u *domain.User) UserDTO {
 	}
 
 	return UserDTO{
-		UserMinimalDTO: ToUserMinimalDTO(u),
-		About:          u.About,
-		ProfileColor:   u.ProfileColor,
-		FollowersCount: u.FollowersCount,
-		FollowingCount: u.FollowingCount,
-		RatingsCount:   u.RatingsCount,
-		IsFollowing:    u.IsFollowing,
-		Roles:          roles,
-		Badges:         badges,
-		CreatedAt:      u.CreatedAt,
+		UserMinimalDTO:  ToUserMinimalDTO(u),
+		About:           u.About,
+		ProfileColor:    u.ProfileColor,
+		FollowersCount:  u.FollowersCount,
+		FollowingCount:  u.FollowingCount,
+		RatingsCount:    u.RatingsCount,
+		IsFollowing:     u.IsFollowing,
+		Roles:           roles,
+		Badges:          badges,
+		AnilistID:       u.AnilistID,
+		AnilistUsername: u.AnilistUsername,
+		GoogleID:        u.GoogleID,
+		GoogleEmail:     u.GoogleEmail,
+		CreatedAt:       u.CreatedAt,
 	}
 }
 

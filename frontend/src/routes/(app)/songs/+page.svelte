@@ -155,7 +155,7 @@
 <main class="max-w-[1440px] mx-auto px-6 py-10 space-y-4">
   <!-- Filter Bar -->
   <section
-    class="relative z-40 bg-surface-dark/30 p-4 rounded-3xl border border-white/5 backdrop-blur-md shadow-2xl"
+    class="relative z-40 bg-surface-dark/30 p-4 rounded-3xl border border-white/5 shadow-2xl"
   >
     <div class="flex flex-col gap-6">
       <div class="relative group">

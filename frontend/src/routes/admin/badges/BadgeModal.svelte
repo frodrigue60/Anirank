@@ -72,7 +72,7 @@
   <!-- Backdrop -->
   <button
     type="button"
-    class="absolute inset-0 bg-black/60 backdrop-blur-sm w-full h-full border-none cursor-default"
+    class="absolute inset-0 bg-black/60 w-full h-full border-none cursor-default"
     onclick={onclose}
     aria-label="Close modal"
   ></button>

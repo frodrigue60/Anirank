@@ -33,7 +33,7 @@
         <div
           class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black text-white uppercase tracking-wider shadow-lg {song.user_rating
             ? 'bg-green-500/50'
-            : 'bg-slate-500/50 backdrop-blur-sm'}"
+            : 'bg-slate-500/50 '}"
         >
           {song.user_rating ? "Rated" : "Not rated"}
         </div>
@@ -85,7 +85,7 @@
       <div class="flex items-center gap-2 mt-4">
         <a
           href="/songs/{song.anime?.slug}/{song.slug}"
-          class="flex items-center justify-center h-12 w-12 rounded-full bg-white/10 hover:bg-primary transition-all text-white backdrop-blur-md border border-white/10 group-hover:border-primary/50 group-hover:scale-110 shadow-lg"
+          class="flex items-center justify-center h-12 w-12 rounded-full bg-white/10 hover:bg-primary transition-all text-white border border-white/10 group-hover:border-primary/50 group-hover:scale-110 shadow-lg"
           title="Play theme: {getSongName(song)}"
         >
           <span class="material-symbols-outlined text-2xl">play_arrow</span>

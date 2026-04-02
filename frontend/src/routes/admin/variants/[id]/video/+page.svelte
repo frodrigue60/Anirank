@@ -33,11 +33,12 @@
       } else if (embedCode) {
         formData.append("embed", embedCode);
       }
-      
+
       formData.append("status", status ? "true" : "false");
 
       if (!videoFile && !embedCode && status === variant.status) {
-        errorMsg = "Please provide either a video file, an embed code, or change the status.";
+        errorMsg =
+          "Please provide either a video file, an embed code, or change the status.";
         loading = false;
         return;
       }
@@ -91,7 +92,9 @@
 <div class="space-y-6">
   <div class="mb-6">
     <h2 class="text-xl font-bold text-white">Video Source Management</h2>
-    <p class="text-xs text-gray-500">Configure the streaming URL and player settings for this version.</p>
+    <p class="text-xs text-gray-500">
+      Configure the streaming URL and player settings for this version.
+    </p>
   </div>
 
   {#if errorMsg}
@@ -129,7 +132,7 @@
   {/if}
 
   <div
-    class="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800 rounded-3xl shadow-xl overflow-hidden p-8 max-w-4xl"
+    class="bg-zinc-900/50 border border-zinc-800 rounded-3xl shadow-xl overflow-hidden p-8 max-w-4xl"
   >
     <div class="space-y-8">
       <!-- Current Video Preview if exists -->

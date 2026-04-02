@@ -46,8 +46,8 @@
       const response = await api.get("/playlists", {
         params: {
           ...data.params,
-          page: nextPage
-        }
+          page: nextPage,
+        },
       });
 
       if (response.data.data) {
@@ -90,7 +90,7 @@
 
   <!-- Filter Row -->
   <section
-    class="relative z-40 flex flex-col gap-4 bg-surface-dark/30 p-4 rounded-3xl border border-white/5 backdrop-blur-md shadow-2xl mb-10"
+    class="relative z-40 flex flex-col gap-4 bg-surface-dark/30 p-4 rounded-3xl border border-white/5 shadow-2xl mb-10"
   >
     <div class="relative group">
       <label
@@ -180,9 +180,7 @@
   {:else}
     <div class="text-center py-20">
       <Search size={48} class="text-white/10 mx-auto mb-4" />
-      <p class="text-white/40">
-        No playlists found matching your criteria.
-      </p>
+      <p class="text-white/40">No playlists found matching your criteria.</p>
     </div>
   {/if}
 </main>

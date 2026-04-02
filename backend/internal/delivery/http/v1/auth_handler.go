@@ -382,7 +382,11 @@ func (h *AuthHandler) GoogleLink(c *fiber.Ctx) error {
 	url := fmt.Sprintf("https://accounts.google.com/o/oauth2/v2/auth?client_id=%s&redirect_uri=%s&response_type=code&scope=%s&access_type=offline&prompt=consent",
 		clientID, redirectURI, scope)
 
-	return c.JSON(fiber.Map{"url": url})
+	return c.JSON(fiber.Map{
+		"data": fiber.Map{
+			"url": url,
+		},
+	})
 }
 
 func (h *AuthHandler) GoogleCallback(c *fiber.Ctx) error {
@@ -413,7 +417,11 @@ func (h *AuthHandler) GoogleLogin(c *fiber.Ctx) error {
 	url := fmt.Sprintf("https://accounts.google.com/o/oauth2/v2/auth?client_id=%s&redirect_uri=%s&response_type=code&scope=%s&access_type=offline&prompt=consent",
 		clientID, redirectURI, scope)
 
-	return c.JSON(fiber.Map{"url": url})
+	return c.JSON(fiber.Map{
+		"data": fiber.Map{
+			"url": url,
+		},
+	})
 }
 
 func (h *AuthHandler) GoogleLoginCallback(c *fiber.Ctx) error {

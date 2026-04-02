@@ -357,7 +357,7 @@
   <div class="flex-1 flex flex-col min-w-0 bg-[#0a0a0c]">
     <!-- Top Navbar -->
     <header
-      class="h-16 bg-anirank-card/80 backdrop-blur-md border-b border-anirank-divide flex items-center justify-between px-6 z-10"
+      class="h-16 bg-anirank-card/80 border-b border-anirank-divide flex items-center justify-between px-6 z-10"
     >
       <div class="flex items-center gap-4">
         <!-- Contextual Breadcrumbs could go here -->

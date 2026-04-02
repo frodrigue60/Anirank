@@ -16,8 +16,8 @@
   });
 
   let hasValidData = $derived(
-    (song?.season_id > 0 || (song?.anime?.season_id > 0)) &&
-    (song?.year_id > 0 || (song?.anime?.year_id > 0))
+    (song?.season_id > 0 || song?.anime?.season_id > 0) &&
+      (song?.year_id > 0 || song?.anime?.year_id > 0),
   );
 
   let loading = $state(false);
@@ -84,7 +84,9 @@
   <div class="flex items-center justify-between gap-4">
     <div>
       <h2 class="text-xl font-bold text-white">Song Variants</h2>
-      <p class="text-xs text-gray-500">Version control and video sources for this theme.</p>
+      <p class="text-xs text-gray-500">
+        Version control and video sources for this theme.
+      </p>
     </div>
     {#if !hasValidData}
       <button
@@ -92,8 +94,18 @@
         class="px-4 py-2 bg-zinc-800 text-zinc-500 border border-zinc-700 text-xs font-bold rounded-xl flex items-center gap-2 cursor-not-allowed"
         title="Song or Anime must have Season and Year assigned"
       >
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        <svg
+          class="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 4v16m8-8H4"
+          />
         </svg>
         Add New Variant
       </button>
@@ -103,8 +115,18 @@
         disabled={loading}
         class="px-4 py-2 bg-anirank-primary hover:bg-blue-600 text-white text-xs font-bold rounded-xl transition-all flex items-center gap-2"
       >
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        <svg
+          class="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 4v16m8-8H4"
+          />
         </svg>
         Add New Variant
       </button>
@@ -116,12 +138,30 @@
       transition:slide
       class="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-amber-500 text-sm flex items-start gap-3"
     >
-      <svg class="w-5 h-5 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+      <svg
+        class="w-5 h-5 shrink-0 mt-0.5"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+        />
       </svg>
       <div>
-        <h3 class="font-bold text-xs uppercase tracking-widest mb-1 text-amber-500">Missing Information</h3>
-        <p class="text-amber-500/80">This song (or its parent anime) must have a Season and Year assigned before you can create variants. Please edit the song or anime info first.</p>
+        <h3
+          class="font-bold text-xs uppercase tracking-widest mb-1 text-amber-500"
+        >
+          Missing Information
+        </h3>
+        <p class="text-amber-500/80">
+          This song (or its parent anime) must have a Season and Year assigned
+          before you can create variants. Please edit the song or anime info
+          first.
+        </p>
       </div>
     </div>
   {/if}
@@ -144,7 +184,7 @@
   {/if}
 
   <div
-    class="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800 rounded-3xl shadow-xl overflow-hidden text-white"
+    class="bg-zinc-900/50 border border-zinc-800 rounded-3xl shadow-xl overflow-hidden text-white"
   >
     <div class="overflow-x-auto">
       <table class="w-full text-left border-collapse">

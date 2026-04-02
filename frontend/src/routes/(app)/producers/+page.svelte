@@ -26,7 +26,11 @@
     selectedSort = data.params.sort || "";
 
     // Reset infinite scroll on data change (filters)
-    if (data.producers && (data.producers.pagination?.current_page === 1 || data.producers.current_page === 1)) {
+    if (
+      data.producers &&
+      (data.producers.pagination?.current_page === 1 ||
+        data.producers.current_page === 1)
+    ) {
       producers = data.producers.data;
       currentPage = Number(data.producers.pagination.current_page);
       lastPage = Number(data.producers.pagination.last_page);
@@ -59,10 +63,10 @@
       const response = await api.get("/producers", {
         params: {
           ...data.params,
-          page: nextPage
-        }
+          page: nextPage,
+        },
       });
-      
+
       if (response.data.data) {
         producers = [...producers, ...response.data.data];
         currentPage = Number(response.data.pagination.current_page);
@@ -99,15 +103,15 @@
   ];
 </script>
 
-<SEO 
-  title="Anime Producers" 
-  description="Discover the companies involved in anime production and explore their series catalog on AniRank." 
+<SEO
+  title="Anime Producers"
+  description="Discover the companies involved in anime production and explore their series catalog on AniRank."
 />
 
 <main class="flex-1 w-full max-w-[1440px] mx-auto px-6 py-12">
   <!-- Filter Row -->
   <section
-    class="relative z-40 flex flex-col gap-4 bg-surface-dark/30 p-4 rounded-3xl border border-white/5 backdrop-blur-md shadow-2xl mb-10"
+    class="relative z-40 flex flex-col gap-4 bg-surface-dark/30 p-4 rounded-3xl border border-white/5 shadow-2xl mb-10"
   >
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
       <!-- Search -->
@@ -174,7 +178,8 @@
           <!-- Background Image (Banner) -->
           <div
             class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
-            style="background-image: url('{producer.banner_url || '/images/placeholders/default-banner.jpg'}'); filter:brightness(0.5)"
+            style="background-image: url('{producer.banner_url ||
+              '/images/placeholders/default-banner.jpg'}'); filter:brightness(0.5)"
           ></div>
 
           <div
@@ -214,8 +219,7 @@
     <div
       class="text-center py-20 bg-surface-darker/30 rounded-3xl border-2 border-dashed border-white/5"
     >
-      <span
-        class="material-symbols-outlined text-6xl text-white/10 mb-4 block"
+      <span class="material-symbols-outlined text-6xl text-white/10 mb-4 block"
         >search_off</span
       >
       <h3 class="text-xl font-bold text-white/40">No producers found</h3>

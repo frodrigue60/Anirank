@@ -43,13 +43,13 @@
       >
         {#if anime.format?.name}
           <span
-            class="bg-black/60 backdrop-blur-md text-white px-2 py-1 rounded-md text-[10px] font-bold shadow-sm border border-white/10"
+            class="bg-black/60 text-white px-2 py-1 rounded-md text-[10px] font-bold shadow-sm border border-white/10"
           >
             {anime.format.name}
           </span>
         {/if}
         <span
-          class="bg-primary/40 backdrop-blur-md text-white px-2 py-1 rounded-md text-[10px] font-bold shadow-sm flex items-center gap-1 border border-primary/20"
+          class="bg-primary/40 text-white px-2 py-1 rounded-md text-[10px] font-bold shadow-sm flex items-center gap-1 border border-primary/20"
         >
           {anime.songs_count || 0} Themes
         </span>
@@ -94,9 +94,7 @@
         <div
           class="absolute inset-0 bg-linear-to-t from-black/90 via-black/20 to-transparent"
         ></div>
-        <div
-          class="absolute bottom-0 left-0 right-0 backdrop-blur-sm bg-white/10 p-2"
-        >
+        <div class="absolute bottom-0 left-0 right-0 bg-white/10 p-2">
           <h4
             class="text-[10px] sm:text-xs font-bold text-white/80 transition-colors uppercase tracking-wider mb-1 line-clamp-1"
           >

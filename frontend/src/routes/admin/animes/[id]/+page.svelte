@@ -19,7 +19,10 @@
       await invalidateAll();
     } catch (err: any) {
       console.error(err);
-      toastState.addToast(getApiErrorMessage(err, "Failed to sync anime data"), "error");
+      toastState.addToast(
+        getApiErrorMessage(err, "Failed to sync anime data"),
+        "error",
+      );
     } finally {
       isSyncing = false;
     }
@@ -67,7 +70,7 @@
         <span
           class="px-2 py-1 text-[10px] font-bold rounded-lg {anime.status
             ? 'bg-green-500 text-white'
-            : 'bg-zinc-800 text-zinc-400'} shadow-lg backdrop-blur-md"
+            : 'bg-zinc-800 text-zinc-400'} shadow-lg"
         >
           {anime.status ? "ACTIVE" : "INACTIVE"}
         </span>

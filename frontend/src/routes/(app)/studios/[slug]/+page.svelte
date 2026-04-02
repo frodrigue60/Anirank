@@ -120,7 +120,7 @@
 
   <!-- Filter Bar -->
   <section
-    class="relative z-40 bg-surface-dark/30 p-4 rounded-3xl border border-white/5 backdrop-blur-md shadow-2xl mx-auto"
+    class="relative z-40 bg-surface-dark/30 p-4 rounded-3xl border border-white/5 shadow-2xl mx-auto"
   >
     <div class="flex flex-col gap-6">
       <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">

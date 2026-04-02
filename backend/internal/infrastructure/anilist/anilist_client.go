@@ -134,6 +134,30 @@ type Title struct {
 	Native  string `json:"native"`
 }
 
+type MediaList struct {
+	ID     int    `json:"id"`
+	Status string `json:"status"`
+	Media  Media  `json:"media"`
+}
+
+type AnilistMediaListResponse struct {
+	Data struct {
+		Page struct {
+			PageInfo struct {
+				Total       int  `json:"total"`
+				PerPage     int  `json:"perPage"`
+				CurrentPage int  `json:"currentPage"`
+				LastPage    int  `json:"lastPage"`
+				HasNextPage bool `json:"hasNextPage"`
+			} `json:"pageInfo"`
+			MediaList []MediaList `json:"mediaList"`
+		} `json:"Page"`
+	} `json:"data"`
+	Errors []struct {
+		Message string `json:"message"`
+	} `json:"errors"`
+}
+
 // the query to search animes by title
 const searchMediaQuery = `
 query ($page: Int, $perPage: Int, $search: String, $format: MediaFormat) {
@@ -192,6 +216,43 @@ query ($search: String) {
       }
       image {
         large
+      }
+    }
+  }
+}
+`
+
+const userMediaListQuery = `
+query ($userId: Int, $status: MediaListStatus, $page: Int, $perPage: Int) {
+  Page(page: $page, perPage: $perPage) {
+    pageInfo {
+      total
+      perPage
+      currentPage
+      lastPage
+      hasNextPage
+    }
+    mediaList(userId: $userId, type: ANIME, status: $status) {
+      id
+      status
+      media {
+        id
+        title {
+          romaji
+          english
+          native
+        }
+        description(asHtml: false)
+        status
+        coverImage {
+          extraLarge
+          large
+        }
+        bannerImage
+        season
+        seasonYear
+        format
+        episodes
       }
     }
   }
@@ -423,6 +484,58 @@ func (c *Client) FetchAnimes(ctx context.Context, page int, season string, seaso
 	}
 
 	var anilistResp AnilistResponse
+	if err := json.NewDecoder(resp.Body).Decode(&anilistResp); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	if len(anilistResp.Errors) > 0 {
+		return nil, fmt.Errorf("anilist api error: %s", anilistResp.Errors[0].Message)
+	}
+
+	return &anilistResp, nil
+}
+
+// GetUserMediaList fetches a page of media list entries for a user from Anilist
+func (c *Client) GetUserMediaList(ctx context.Context, anilistID int64, status string, page, perPage int) (*AnilistMediaListResponse, error) {
+	variables := map[string]interface{}{
+		"userId":  anilistID,
+		"page":    page,
+		"perPage": perPage,
+	}
+
+	if status != "" && status != "ALL" {
+		variables["status"] = status
+	}
+
+	query := GraphQLQuery{
+		Query:     userMediaListQuery,
+		Variables: variables,
+	}
+
+	bodyBytes, err := json.Marshal(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal query: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", AnilistGraphQLEndpoint, bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	c.setAdvancedHeaders(req)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("anilist api returned status: %d", resp.StatusCode)
+	}
+
+	var anilistResp AnilistMediaListResponse
 	if err := json.NewDecoder(resp.Body).Decode(&anilistResp); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}

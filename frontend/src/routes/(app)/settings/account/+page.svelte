@@ -64,8 +64,9 @@
   async function handleAnilistLink() {
     try {
       const response = await api.get("/auth/anilist/link");
-      if (response.data.url) {
-        window.location.href = response.data.url;
+      const url = response.data.data?.url || response.data.url;
+      if (url) {
+        window.location.href = url;
       }
     } catch (err: unknown) {
       toastState.addToast(
@@ -78,8 +79,9 @@
   async function handleGoogleSync() {
     try {
       const response = await api.get("/auth/google/link");
-      if (response.data.url) {
-        window.location.href = response.data.url;
+      const url = response.data.data?.url || response.data.url;
+      if (url) {
+        window.location.href = url;
       }
     } catch (err: unknown) {
       toastState.addToast(
@@ -244,7 +246,7 @@
     class="bg-surface-dark border border-white/5 rounded-3xl overflow-hidden shadow-2xl transition-all duration-500 animate-in fade-in slide-in-from-bottom-6"
   >
     <div class="px-8 py-6 border-b border-white/5 bg-white/2">
-      <h2 class="text-lg font-bold text-white tracking-tight text-red-500/80">
+      <h2 class="text-lg font-bold text-red-500/80 tracking-tight">
         Danger Zone
       </h2>
     </div>

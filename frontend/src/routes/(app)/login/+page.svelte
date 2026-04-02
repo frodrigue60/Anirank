@@ -80,8 +80,9 @@
   async function handleGoogleLogin() {
     try {
       const response = await api.get("/auth/google/login");
-      if (response.data.url) {
-        window.location.href = response.data.url;
+      const url = response.data.data?.url || response.data.url;
+      if (url) {
+        window.location.href = url;
       }
     } catch (error: unknown) {
       errorMessage = getApiErrorMessage(
@@ -94,8 +95,9 @@
   async function handleAnilistLogin() {
     try {
       const response = await api.get("/auth/anilist/login");
-      if (response.data.url) {
-        window.location.href = response.data.url;
+      const url = response.data.data?.url || response.data.url;
+      if (url) {
+        window.location.href = url;
       }
     } catch (error: unknown) {
       errorMessage = getApiErrorMessage(

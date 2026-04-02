@@ -77,7 +77,7 @@
           <div
             class="relative z-10 p-8 md:p-12 flex flex-col md:flex-row gap-8 items-center md:items-end w-full h-full"
           >
-            <div class="relative shrink-0 hero-glow">
+            <div class="relative shrink-0 box-shadow-lg shadow-primary/80">
               <div
                 class="w-48 h-48 md:w-64 md:h-64 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden relative border border-white/10"
               >
@@ -110,7 +110,7 @@
               class="flex flex-col gap-4 text-center md:text-left flex-1 pb-4"
             >
               <div
-                class="inline-flex items-center gap-2 self-center md:self-start bg-primary/20 text-primary border border-primary/30 px-3 py-1.5 rounded-full backdrop-blur-md shadow-lg shadow-primary/10"
+                class="inline-flex items-center gap-2 self-center md:self-start bg-primary/20 text-primary border border-primary/30 px-3 py-1.5 rounded-full shadow-lg shadow-primary/10"
               >
                 <span class="material-symbols-outlined text-[16px] filled"
                   >auto_awesome</span
@@ -387,7 +387,7 @@
                       "/images/placeholders/default.jpg"}
                   />
                   <div
-                    class="absolute top-2 right-2 bg-black/70 backdrop-blur-sm px-1.5 py-0.5 rounded text-[10px] font-bold text-white border border-white/10 uppercase"
+                    class="absolute top-2 right-2 bg-black/70 px-1.5 py-0.5 rounded text-[10px] font-bold text-white border border-white/10 uppercase"
                   >
                     {song.type ?? "type n/a"}
                   </div>
@@ -430,7 +430,7 @@
                       "/images/placeholders/default.jpg"}
                   />
                   <div
-                    class="absolute top-2 right-2 bg-black/70 backdrop-blur-sm px-1.5 py-0.5 rounded text-[10px] font-bold text-white border border-white/10 uppercase"
+                    class="absolute top-2 right-2 bg-black/70 px-1.5 py-0.5 rounded text-[10px] font-bold text-white border border-white/10 uppercase"
                   >
                     {song.type ?? "type n/a"}
                   </div>
@@ -475,7 +475,7 @@
                       "/images/placeholders/default.jpg"}
                   />
                   <div
-                    class="absolute top-2 right-2 bg-black/70 backdrop-blur-sm px-1.5 py-0.5 rounded text-[10px] font-bold text-white border border-white/10 uppercase"
+                    class="absolute top-2 right-2 bg-black/70 px-1.5 py-0.5 rounded text-[10px] font-bold text-white border border-white/10 uppercase"
                   >
                     {song.type ?? "type n/a"}
                   </div>

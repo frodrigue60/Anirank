@@ -34,15 +34,15 @@
   let showAnilistResultsModal = $state(false);
   let isImportingAnilist = $state(false);
 
-  import { untrack } from 'svelte';
+  import { untrack } from "svelte";
 
   // API Status State
   let apiStatus = $state<{
-    anilist: { status: 'loading' | 'online' | 'offline'; message?: string };
-    animethemes: { status: 'loading' | 'online' | 'offline'; message?: string };
+    anilist: { status: "loading" | "online" | "offline"; message?: string };
+    animethemes: { status: "loading" | "online" | "offline"; message?: string };
   }>({
-    anilist: { status: 'loading' },
-    animethemes: { status: 'loading' }
+    anilist: { status: "loading" },
+    animethemes: { status: "loading" },
   });
 
   let isCheckingStatus = false;
@@ -50,18 +50,21 @@
   async function fetchApiStatus() {
     if (isCheckingStatus) return;
     isCheckingStatus = true;
-    
-    apiStatus.anilist.status = 'loading';
-    apiStatus.animethemes.status = 'loading';
-    
+
+    apiStatus.anilist.status = "loading";
+    apiStatus.animethemes.status = "loading";
+
     try {
-      const resp = await api.get('/admin/system/api-status');
+      const resp = await api.get("/admin/system/api-status");
       const data = resp.data;
       apiStatus.anilist = data.anilist;
       apiStatus.animethemes = data.animethemes;
     } catch (err: any) {
-      apiStatus.anilist = { status: 'offline', message: 'Connection Error' };
-      apiStatus.animethemes = { status: 'offline', message: 'Connection Error' };
+      apiStatus.anilist = { status: "offline", message: "Connection Error" };
+      apiStatus.animethemes = {
+        status: "offline",
+        message: "Connection Error",
+      };
     } finally {
       isCheckingStatus = false;
     }
@@ -173,7 +176,10 @@
       selectedAnilistIDs = new Set();
       showAnilistResultsModal = true;
     } catch (err: any) {
-      toastState.addToast(getApiErrorMessage(err, "Failed to search AniList"), "error");
+      toastState.addToast(
+        getApiErrorMessage(err, "Failed to search AniList"),
+        "error",
+      );
     } finally {
       isSearchingAnilist = false;
     }
@@ -325,9 +331,13 @@
         {#if apiStatus.anilist.status === "loading"}
           <div class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>
         {:else if apiStatus.anilist.status === "online"}
-          <div class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+          <div
+            class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+          ></div>
         {:else}
-          <div class="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]"></div>
+          <div
+            class="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]"
+          ></div>
         {/if}
         <span
           class="text-[10px] font-bold uppercase {apiStatus.anilist.status ===
@@ -349,9 +359,13 @@
         {#if apiStatus.animethemes.status === "loading"}
           <div class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>
         {:else if apiStatus.animethemes.status === "online"}
-          <div class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+          <div
+            class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+          ></div>
         {:else}
-          <div class="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8_px_rgba(244,63,94,0.5)]"></div>
+          <div
+            class="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8_px_rgba(244,63,94,0.5)]"
+          ></div>
         {/if}
         <span
           class="text-[10px] font-bold uppercase {apiStatus.animethemes
@@ -380,8 +394,12 @@
     </div>
 
     {#if apiStatus.anilist.status === "offline" || apiStatus.animethemes.status === "offline"}
-      <div class="flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-500/10 border border-rose-500/20 animate-in fade-in slide-in-from-left-2">
-        <span class="material-symbols-outlined text-rose-500 text-sm">warning</span>
+      <div
+        class="flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-500/10 border border-rose-500/20 animate-in fade-in slide-in-from-left-2"
+      >
+        <span class="material-symbols-outlined text-rose-500 text-sm"
+          >warning</span
+        >
         <p class="text-[11px] text-rose-200 font-medium">
           Partial outages detected. Generation may be incomplete.
         </p>
@@ -487,7 +505,7 @@
 
           <button
             type="submit"
-            disabled={isGenerating || apiStatus.anilist.status !== 'online'}
+            disabled={isGenerating || apiStatus.anilist.status !== "online"}
             class="w-full bg-blue-600 hover:bg-blue-600/80 disabled:bg-gray-700 py-3 rounded-xl text-white font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-anirank-primary/20"
           >
             {#if isGenerating}
@@ -537,7 +555,8 @@
           />
           <button
             type="submit"
-            disabled={isSearchingAnilist || apiStatus.anilist.status !== 'online'}
+            disabled={isSearchingAnilist ||
+              apiStatus.anilist.status !== "online"}
             class="px-6 bg-blue-600 hover:bg-blue-600/80 disabled:bg-gray-700 rounded-xl text-white font-bold transition-all flex items-center gap-2 shadow-lg shadow-anirank-primary/20"
           >
             {#if isSearchingAnilist}
@@ -639,7 +658,7 @@
 
           <button
             type="submit"
-            disabled={isHydrating || apiStatus.animethemes.status !== 'online'}
+            disabled={isHydrating || apiStatus.animethemes.status !== "online"}
             class="w-full bg-purple-600 hover:bg-purple-600/80 disabled:bg-gray-700 py-3 rounded-xl text-white font-bold transition-all flex items-center justify-center gap-2"
           >
             {#if isHydrating}
@@ -724,7 +743,8 @@
           />
           <button
             type="submit"
-            disabled={isSearchingAnimeThemes || apiStatus.animethemes.status !== 'online'}
+            disabled={isSearchingAnimeThemes ||
+              apiStatus.animethemes.status !== "online"}
             class="px-6 bg-purple-600 hover:bg-purple-600/80 disabled:bg-gray-700 rounded-xl text-white font-bold transition-all flex items-center gap-2"
           >
             {#if isSearchingAnimeThemes}
@@ -754,7 +774,7 @@
 
 {#if showResultsModal}
   <div
-    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in"
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 animate-in fade-in"
   >
     <div
       class="bg-anirank-card border border-white/10 rounded-3xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden"
@@ -830,7 +850,7 @@
 
                   {#if selectedAnimeThemesIDs.has(anime.id)}
                     <div
-                      class="absolute inset-0 bg-anirank-primary/40 flex items-center justify-center backdrop-blur-[2px]"
+                      class="absolute inset-0 bg-anirank-primary/40 flex items-center justify-center"
                     >
                       <span
                         class="material-symbols-outlined text-white font-bold scale-125"
@@ -895,7 +915,7 @@
 
 {#if showAnilistResultsModal}
   <div
-    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in"
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 animate-in fade-in"
   >
     <div
       class="bg-anirank-card border border-white/10 rounded-3xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden"
@@ -967,7 +987,7 @@
 
                   {#if selectedAnilistIDs.has(anime.id)}
                     <div
-                      class="absolute inset-0 bg-anirank-primary/40 flex items-center justify-center backdrop-blur-[2px]"
+                      class="absolute inset-0 bg-anirank-primary/40 flex items-center justify-center"
                     >
                       <span
                         class="material-symbols-outlined text-white font-bold scale-125"

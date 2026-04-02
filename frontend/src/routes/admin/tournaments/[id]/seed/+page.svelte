@@ -647,7 +647,7 @@
     <!-- Preview Modal -->
     {#if previewSong}
       <div
-        class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4"
+        class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
         on:click|self={() => (previewSong = null)}
         on:keydown={(e) => e.key === "Escape" && (previewSong = null)}
         role="button"

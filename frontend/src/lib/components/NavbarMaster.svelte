@@ -59,7 +59,7 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
   onclick={closeDropdowns}
-  class="sticky top-0 z-50 backdrop-blur-md bg-surface-dark/80 border-b border-white/5 w-full"
+  class="sticky top-0 z-50 bg-surface-dark border-b border-white/5 w-full"
 >
   <header
     class="max-w-[1440px] mx-auto px-6 h-16 flex items-center justify-between gap-4"
@@ -395,7 +395,7 @@
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
       onclick={() => (showMobileMenu = false)}
-      class="absolute inset-0 bg-black/60 backdrop-blur-sm"
+      class="absolute inset-0 bg-black/60"
     ></div>
 
     <div

@@ -25,9 +25,15 @@
     }
   });
 
+  let isProcessing = false;
   $effect(() => {
-    if (isIntersecting && hasMore && !loading) {
+    if (isIntersecting && hasMore && !loading && !isProcessing) {
+      isProcessing = true;
       onLoadMore();
+      // Reset processing after a short delay or when loading state changes
+      setTimeout(() => {
+        isProcessing = false;
+      }, 500);
     }
   });
 

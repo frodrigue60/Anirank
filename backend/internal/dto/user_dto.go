@@ -30,6 +30,10 @@ type UserDTO struct {
 	IsFollowing    bool       `json:"is_following"`
 	Roles          []string   `json:"roles,omitempty"`
 	Badges         []BadgeDTO `json:"badges,omitempty"`
+	AnilistID      *uint64    `json:"anilist_id,omitempty"`
+	AnilistUsername *string    `json:"anilist_username,omitempty"`
+	GoogleID       *string    `json:"google_id,omitempty"`
+	GoogleEmail    *string    `json:"google_email,omitempty"`
 	CreatedAt      time.Time  `json:"created_at"`
 }
 

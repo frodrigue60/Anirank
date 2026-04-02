@@ -252,7 +252,7 @@
 
     <!-- Filter Bar -->
     <section
-      class="relative z-40 bg-surface-dark/30 p-4 rounded-3xl border border-white/5 backdrop-blur-md shadow-2xl mb-12"
+      class="relative z-40 bg-surface-dark/30 p-4 rounded-3xl border border-white/5 shadow-2xl mb-12"
     >
       <div class="flex flex-col gap-6">
         <div class="relative group">

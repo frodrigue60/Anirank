@@ -113,7 +113,7 @@
   <div class="flex flex-col gap-4">
     <!-- Search and Filters Section -->
     <section
-      class="relative z-40 flex flex-col gap-4 bg-surface-dark/30 p-4 rounded-3xl border border-white/5 backdrop-blur-md shadow-2xl"
+      class="relative z-40 flex flex-col gap-4 bg-surface-dark/30 p-4 rounded-3xl border border-white/5 shadow-2xl"
     >
       <div class="flex items-end gap-4">
         <!-- Search -->

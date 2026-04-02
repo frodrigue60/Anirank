@@ -111,7 +111,7 @@
 <main class="flex-1 w-full max-w-[1440px] mx-auto px-6 py-12 space-y-4">
   <!-- Filter Row -->
   <section
-    class="relative z-40 flex flex-col gap-4 bg-surface-dark/30 p-4 rounded-3xl border border-white/5 backdrop-blur-md shadow-2xl mb-10"
+    class="relative z-40 flex flex-col gap-4 bg-surface-dark/30 p-4 rounded-3xl border border-white/5 shadow-2xl mb-10"
   >
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
       <!-- Search -->

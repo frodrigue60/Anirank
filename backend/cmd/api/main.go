@@ -148,7 +148,7 @@ func main() {
 	discoveryUsecase := public.NewDiscoveryUsecase(taxonomyRepo)
 	animeUsecase := public.NewAnimeUsecase(animeRepo, songRepo, mediaService)
 	searchUsecase := public.NewSearchUsecase(animeRepo, songRepo, artistRepo, taxonomyRepo, userRepo, storageService)
-	catalogUsecase := public.NewCatalogUsecase(animeRepo, songRepo, artistRepo, taxonomyRepo, userRepo, playlistRepo, interactionRepo, moderationRepo, mediaService, appCache)
+	catalogUsecase := public.NewCatalogUsecase(animeRepo, songRepo, artistRepo, taxonomyRepo, userRepo, playlistRepo, interactionRepo, moderationRepo, anilistClient, mediaService, appCache, os.Getenv("ENCRYPTION_KEY"))
 	xpUsecase := usecase.NewXPUsecase(xpRepo, userRepo)
 	activityUsecase := usecase.NewActivityUsecase(postgres.NewActivityRepository(db), userRepo, songRepo, artistRepo, mediaService)
 	authUsecase := auth.NewAuthUsecase(userRepo, jwtService, storageService, mediaService, xpUsecase, anilistClient, googleClient, os.Getenv("ENCRYPTION_KEY"))

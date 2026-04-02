@@ -148,6 +148,7 @@ type AnimeRepository interface {
 	GetMany(ctx context.Context, ids []uint64) ([]Anime, error)
 	GetBySlug(ctx context.Context, slug string) (*Anime, error)
 	GetByAnilistID(ctx context.Context, anilistID int64) (*Anime, error)
+	GetByAnilistIDs(ctx context.Context, anilistIDs []int) ([]Anime, error)
 	GetPaginated(ctx context.Context, limit, offset int, filters AnimeFilters) ([]Anime, error)
 	Count(ctx context.Context, filters AnimeFilters) (int, error)
 	Create(ctx context.Context, anime *Anime) error

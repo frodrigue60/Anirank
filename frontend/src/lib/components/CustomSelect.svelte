@@ -64,7 +64,7 @@
   <button
     type="button"
     onclick={toggle}
-    class="w-full h-12 bg-surface-darker/50 border border-white/10 rounded-xl px-4 flex items-center justify-between text-sm text-white focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer backdrop-blur-sm shadow-lg shadow-black/20"
+    class="w-full h-12 bg-surface-darker/50 border border-white/10 rounded-xl px-4 flex items-center justify-between text-sm text-white focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer shadow-lg shadow-black/20"
   >
     <div class="flex items-center gap-3">
       {#if IconComponent}
@@ -91,7 +91,7 @@
   {#if isOpen}
     <div
       in:fade={{ duration: 150 }}
-      class="absolute z-50 w-full mt-2 py-2 bg-surface-dark/95 border border-white/10 rounded-2xl backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden"
+      class="absolute z-50 w-full mt-2 py-2 bg-surface-dark/95 border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden"
     >
       <div class="max-h-60 overflow-y-auto custom-scrollbar">
         {#each options as option}

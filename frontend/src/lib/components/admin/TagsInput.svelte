@@ -238,7 +238,7 @@
 
   {#if showSuggestions && suggestions.length > 0}
     <ul
-      class="absolute z-50 w-full mt-2 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl overflow-hidden backdrop-blur-xl"
+      class="absolute z-50 w-full mt-2 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl overflow-hidden"
       onblur={() => setTimeout(() => (showSuggestions = false), 200)}
     >
       {#each suggestions as suggest, i}

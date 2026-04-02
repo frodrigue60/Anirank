@@ -87,10 +87,7 @@
           ></div>
         {:else}
           <div class="absolute inset-0 bg-surface-darker"></div>
-          <div
-            class="absolute inset-0 {typeConfig[item.type]?.bg ||
-              ''} backdrop-blur-3xl"
-          ></div>
+          <div class="absolute inset-0 {typeConfig[item.type]?.bg || ''}"></div>
         {/if}
 
         <!-- Content -->

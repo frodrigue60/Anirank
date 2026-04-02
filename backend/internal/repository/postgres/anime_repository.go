@@ -77,6 +77,23 @@ func (r *animeRepository) GetByAnilistID(ctx context.Context, anilistID int64) (
 	return &anime, err
 }
 
+func (r *animeRepository) GetByAnilistIDs(ctx context.Context, anilistIDs []int) ([]domain.Anime, error) {
+	if len(anilistIDs) == 0 {
+		return []domain.Anime{}, nil
+	}
+	query, args, err := sqlx.In("SELECT * FROM animes WHERE anilist_id IN (?)", anilistIDs)
+	if err != nil {
+		return nil, err
+	}
+	query = r.db.Rebind(query)
+	var animes []domain.Anime
+	err = r.db.SelectContext(ctx, &animes, query, args...)
+	if animes == nil {
+		animes = []domain.Anime{}
+	}
+	return animes, err
+}
+
 func (r *animeRepository) GetPaginated(ctx context.Context, limit, offset int, filters domain.AnimeFilters) ([]domain.Anime, error) {
 	animes := []domain.Anime{}
 	query := "SELECT animes.* FROM animes"

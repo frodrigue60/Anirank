@@ -379,6 +379,9 @@ func (u *AuthUsecase) LinkAnilist(ctx context.Context, userID uint64, code strin
 	// 4. Update user record
 	user, err := u.userRepo.GetByID(ctx, userID)
 	if err != nil {
+		if err == domain.ErrNotFound {
+			return domain.NewAppError(http.StatusUnauthorized, "User account not found. Your session may be stale. Please log out and log in again.", nil)
+		}
 		return err
 	}
 
@@ -429,6 +432,9 @@ func (u *AuthUsecase) LinkGoogle(ctx context.Context, userID uint64, code string
 	// 4. Update user record
 	user, err := u.userRepo.GetByID(ctx, userID)
 	if err != nil {
+		if err == domain.ErrNotFound {
+			return domain.NewAppError(http.StatusUnauthorized, "User account not found. Your session may be stale. Please log out and log in again.", nil)
+		}
 		return err
 	}
 

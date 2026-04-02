@@ -26,7 +26,7 @@
 
 <div
   in:fade={{ duration: 300 }}
-  class="group relative bg-surface-dark/30 rounded-2xl border border-white/5 p-5 backdrop-blur-sm hover:bg-surface-dark/50 transition-all flex flex-col gap-4 overflow-hidden aspect-video"
+  class="group relative bg-surface-dark/30 rounded-2xl border border-white/5 p-5 hover:bg-surface-dark/50 transition-all flex flex-col gap-4 overflow-hidden aspect-video"
 >
   <!-- Background Image -->
   <div
@@ -45,7 +45,7 @@
     >
       <button
         onclick={togglePrivacy}
-        class="text-white/70 hover:text-primary bg-white/5 hover:bg-white/10 rounded-lg px-3 py-2 transition-all border border-white/5 pointer-events-auto flex items-center gap-1.5 backdrop-blur-sm"
+        class="text-white/70 hover:text-primary bg-white/5 hover:bg-white/10 rounded-lg px-3 py-2 transition-all border border-white/5 pointer-events-auto flex items-center gap-1.5"
         title="Toggle Privacy"
       >
         <span class="material-symbols-outlined text-sm">
@@ -58,14 +58,14 @@
       <div class="flex items-center gap-2 pointer-events-auto">
         <button
           onclick={() => openEditModal(playlist)}
-          class="text-white/70 hover:text-primary bg-white/5 hover:bg-white/10 rounded-lg p-2 transition-all border border-white/5 backdrop-blur-sm"
+          class="text-white/70 hover:text-primary bg-white/5 hover:bg-white/10 rounded-lg p-2 transition-all border border-white/5"
           title="Edit Playlist"
         >
           <span class="material-symbols-outlined text-[20px]">edit</span>
         </button>
         <button
           onclick={() => handleDelete(playlist.id)}
-          class="text-white/70 hover:text-red-500 bg-white/5 hover:bg-white/10 rounded-lg p-2 transition-all border border-white/5 backdrop-blur-sm"
+          class="text-white/70 hover:text-red-500 bg-white/5 hover:bg-white/10 rounded-lg p-2 transition-all border border-white/5"
           title="Delete Playlist"
         >
           <span class="material-symbols-outlined text-[20px]">delete</span>

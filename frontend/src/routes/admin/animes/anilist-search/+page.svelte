@@ -90,9 +90,9 @@
 
   function formatBatchErrors(errors: AnilistBatchImportError[] | undefined) {
     if (!errors?.length) return "";
-    const parts = errors.slice(0, 3).map(
-      (e) => `#${e.anilist_id}: ${e.message || "unknown error"}`,
-    );
+    const parts = errors
+      .slice(0, 3)
+      .map((e) => `#${e.anilist_id}: ${e.message || "unknown error"}`);
     const suffix = errors.length > 3 ? ` (+${errors.length - 3} more)` : "";
     return ` ${parts.join(" · ")}${suffix}`;
   }
@@ -312,7 +312,7 @@
 
           {#if alreadySaved}
             <div
-              class="absolute inset-0 bg-green-500/10 backdrop-blur-[2px] flex items-center justify-center"
+              class="absolute inset-0 bg-green-500/10 flex items-center justify-center"
             >
               <div
                 class="bg-green-500 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1 shadow-lg"

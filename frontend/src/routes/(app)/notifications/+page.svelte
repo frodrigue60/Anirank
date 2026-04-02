@@ -164,7 +164,7 @@
       <div class="flex-1 min-w-0">
         {#if notifications.length === 0}
           <div
-            class="glass-panel p-20 rounded-3xl text-center border border-white/5 bg-white/2"
+            class="p-20 rounded-3xl text-center border border-white/5 bg-white/2"
             in:fade
           >
             <div
@@ -187,7 +187,7 @@
           <div class="space-y-3">
             {#each notifications as notification, i (notification.id)}
               <div
-                class="group relative glass-panel p-5 rounded-2xl border transition-all {notification.read_at
+                class="group relative p-5 rounded-2xl border transition-all {notification.read_at
                   ? 'bg-white/2 border-white/5 opacity-80'
                   : 'bg-white/5 border-primary/20 shadow-lg shadow-primary/5'}"
                 in:fly={{ y: 20, delay: i * 30 }}

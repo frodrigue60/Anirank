@@ -6,12 +6,27 @@
   interface Props {
     show: boolean;
     onClose: () => void;
+    initialTitle?: string;
+    initialContent?: string;
   }
 
-  let { show, onClose }: Props = $props();
+  let {
+    show,
+    onClose,
+    initialTitle = "",
+    initialContent = "",
+  }: Props = $props();
 
-  let title = $state("");
-  let content = $state("");
+  let title = $state(initialTitle);
+  let content = $state(initialContent);
+
+  // Update internal state when props change
+  $effect(() => {
+    if (show) {
+      if (initialTitle && !title) title = initialTitle;
+      if (initialContent && !content) content = initialContent;
+    }
+  });
   let isSubmitting = $state(false);
   let isSuccess = $state(false);
   let errorMessage = $state("");
@@ -59,7 +74,7 @@
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
-    class="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+    class="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/80"
     onclick={handleClose}
     transition:fade={{ duration: 200 }}
   >

@@ -206,7 +206,7 @@
 <!-- Modal -->
 {#if showModal}
   <div
-    class="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+    class="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/80"
   >
     <div
       class="bg-anirank-card border border-white/10 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200"

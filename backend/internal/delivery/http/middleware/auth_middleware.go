@@ -10,8 +10,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// AuthMiddleware validates JWT context over routes
-func AuthMiddleware(jwtService *auth.JWTService) fiber.Handler {
+// AuthMiddleware validates JWT context over routes and ensures user still exists in DB
+func AuthMiddleware(jwtService *auth.JWTService, userRepo domain.UserRepository) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		authHeader := c.Get("Authorization")
 		if authHeader == "" {
@@ -28,6 +28,15 @@ func AuthMiddleware(jwtService *auth.JWTService) fiber.Handler {
 		if err != nil {
 			log.Printf("Auth Error: %v", err)
 			return domain.NewAppError(401, "Invalid or expired token", nil)
+		}
+
+		// EXTRA SECURITY: Verify user exists in DB (Critical after DB wipes)
+		_, err = userRepo.GetByID(c.Context(), claims.UserID)
+		if err != nil {
+			if err == domain.ErrNotFound {
+				return domain.NewAppError(401, "Session belongs to a non-existent user. Please re-login.", nil)
+			}
+			return domain.NewAppError(500, "Database validation error", err)
 		}
 
 		// Store user info in Context Locals for downstream handlers

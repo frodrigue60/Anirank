@@ -189,7 +189,7 @@
         <!-- svelte-ignore a11y_click_events_have_key_events -->
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
-          class="bg-[rgba(30,22,37,0.6)] backdrop-blur-lg border border-[rgba(127,19,236,0.15)] p-8 rounded-2xl cursor-pointer hover:bg-[rgba(40,30,50,0.7)] transition-all group relative overflow-hidden"
+          class="bg-[rgba(30,22,37,0.6)] border border-[rgba(127,19,236,0.15)] p-8 rounded-2xl cursor-pointer hover:bg-[rgba(40,30,50,0.7)] transition-all group relative overflow-hidden"
           onclick={() => (isExpanded = !isExpanded)}
         >
           <p
@@ -239,7 +239,7 @@
           </h2>
         </div>
         <div
-          class="bg-[rgba(30,22,37,0.6)] backdrop-blur-lg border border-[rgba(127,19,236,0.15)] rounded-2xl overflow-hidden"
+          class="bg-[rgba(30,22,37,0.6)] border border-[rgba(127,19,236,0.15)] rounded-2xl overflow-hidden"
         >
           <table class="w-full text-left border-collapse">
             <thead>

@@ -196,11 +196,12 @@ func SetupPublicRoutes(app *fiber.App,
 	api.Get("/users/:slug/playlists", middleware.OptionalAuthMiddleware(jwtService), catalogHandler.UserPlaylists)
 	api.Get("/users/:slug/followers", catalogHandler.UserFollowers)
 	api.Get("/users/:slug/following", catalogHandler.UserFollowing)
+	api.Get("/users/:slug/anilist-list", catalogHandler.UserAnilistList)
 	api.Post("/users/favorites/themes", catalogHandler.UserFavorites)
 	api.Post("/users/favorites/artists", catalogHandler.UserArtistFavorites)
 
 	// --- PROTECTED ROUTES ---
-	protected := api.Group("/", middleware.AuthMiddleware(jwtService))
+	protected := api.Group("/", middleware.AuthMiddleware(jwtService, userRepo))
 
 	// User Profile
 	protected.Get("/profile", authHandler.Profile)

@@ -332,7 +332,7 @@
 
                 {#if isGenerating}
                   <div
-                    class="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center"
+                    class="absolute inset-0 bg-black/60 flex items-center justify-center"
                   >
                     <svg
                       class="animate-spin h-8 w-8 text-anirank-primary"

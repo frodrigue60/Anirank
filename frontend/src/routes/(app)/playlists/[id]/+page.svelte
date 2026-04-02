@@ -9,7 +9,8 @@
   import { toastState } from "$lib/state/toast.svelte";
 
   import SEO from "$lib/components/SEO.svelte";
-  const PUBLIC_API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+  const PUBLIC_API_URL =
+    import.meta.env.VITE_API_URL || "http://localhost:8080/api";
 
   let { data } = $props();
   // svelte-ignore state_referenced_locally
@@ -206,7 +207,10 @@
       toastState.addToast("Song removed from playlist", "info");
     } catch (e: any) {
       console.error("Failed to remove song", e);
-      toastState.addToast(e.response?.data?.message || "Failed to remove song", "error");
+      toastState.addToast(
+        e.response?.data?.message || "Failed to remove song",
+        "error",
+      );
     }
   }
 
@@ -268,11 +272,17 @@
         if (currentSong.is_liked) currentSong.is_disliked = false;
         currentSong.likes_count = resp.data.likesCount;
         currentSong.dislikes_count = resp.data.dislikesCount;
-        toastState.addToast(currentSong.is_liked ? "Song liked!" : "Like removed!", "success");
+        toastState.addToast(
+          currentSong.is_liked ? "Song liked!" : "Like removed!",
+          "success",
+        );
       }
     } catch (e: any) {
       console.error(e);
-      toastState.addToast(e.response?.data?.message || "Failed to update like status", "error");
+      toastState.addToast(
+        e.response?.data?.message || "Failed to update like status",
+        "error",
+      );
     }
   }
 
@@ -294,11 +304,17 @@
         if (currentSong.is_disliked) currentSong.is_liked = false;
         currentSong.likes_count = resp.data.likesCount;
         currentSong.dislikes_count = resp.data.dislikesCount;
-        toastState.addToast(currentSong.is_disliked ? "Song disliked!" : "Dislike removed!", "success");
+        toastState.addToast(
+          currentSong.is_disliked ? "Song disliked!" : "Dislike removed!",
+          "success",
+        );
       }
     } catch (e: any) {
       console.error(e);
-      toastState.addToast(e.response?.data?.message || "Failed to update dislike status", "error");
+      toastState.addToast(
+        e.response?.data?.message || "Failed to update dislike status",
+        "error",
+      );
     }
   }
 
@@ -315,18 +331,26 @@
       });
       if (resp.data.success || resp.status === 200 || resp.status === 201) {
         currentSong.is_favorited = resp.data.favorited || resp.data.favorite;
-        toastState.addToast(currentSong.is_favorited ? "Added to favorites!" : "Removed from favorites", "success");
+        toastState.addToast(
+          currentSong.is_favorited
+            ? "Added to favorites!"
+            : "Removed from favorites",
+          "success",
+        );
       }
     } catch (e: any) {
       console.error(e);
-      toastState.addToast(e.response?.data?.message || "Failed to update favorites", "error");
+      toastState.addToast(
+        e.response?.data?.message || "Failed to update favorites",
+        "error",
+      );
     }
   }
 </script>
 
-<SEO 
-  title={`${playlist.name} - Playlist by ${playlist.user?.name || 'User'} - AniRank`}
-  description={`Listen to the "${playlist.name}" playlist curated by ${playlist.user?.name || 'User'} on AniRank. Featuring ${songs.length} anime theme songs.`}
+<SEO
+  title={`${playlist.name} - Playlist by ${playlist.user?.name || "User"} - AniRank`}
+  description={`Listen to the "${playlist.name}" playlist curated by ${playlist.user?.name || "User"} on AniRank. Featuring ${songs.length} anime theme songs.`}
   image={`${PUBLIC_API_URL}/og/playlist/${playlist.id}`}
 />
 
@@ -377,7 +401,7 @@
               "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=2070&auto=format&fit=crop"}
           />
           <div
-            class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm"
+            class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
           >
             <span class="material-symbols-outlined text-[64px]">play_arrow</span
             >
@@ -417,14 +441,19 @@
                 class="flex items-center gap-1.5 text-yellow-400 font-black text-xl"
               >
                 <span class="material-symbols-outlined text-[20px]">star</span>
-                <span>{getFormattedScore(currentSong.average_rating, authState.user?.score_format)}</span>
+                <span
+                  >{getFormattedScore(
+                    currentSong.average_rating,
+                    authState.user?.score_format,
+                  )}</span
+                >
               </div>
             </div>
           {/if}
         </div>
 
         <div
-          class="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10 glass-panel"
+          class="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10"
         >
           <div class="flex items-center gap-6">
             <button
@@ -602,7 +631,10 @@
                 class="flex items-center gap-1 text-yellow-400 font-bold text-sm"
               >
                 <span class="material-symbols-outlined text-[14px]">star</span>
-                {getFormattedScore(song.average_rating, authState.user?.score_format)}
+                {getFormattedScore(
+                  song.average_rating,
+                  authState.user?.score_format,
+                )}
               </div>
             </div>
           </div>
@@ -622,7 +654,7 @@
 
       <!-- Player Controls (Footer of Section) -->
       <div
-        class="p-4 glass-panel border-t border-white/5 flex items-center justify-between gap-4"
+        class="p-4 border-t border-white/5 flex items-center justify-between gap-4"
       >
         <!-- Left: Column (Hidden volume spacer) -->
         <div class="flex-1 min-w-0"></div>
@@ -747,7 +779,12 @@
               class="flex items-center gap-1 text-yellow-400 font-black text-base"
             >
               <span class="material-symbols-outlined text-[16px]">star</span>
-              <span>{getFormattedScore(currentSong.average_rating, authState.user?.score_format)}</span>
+              <span
+                >{getFormattedScore(
+                  currentSong.average_rating,
+                  authState.user?.score_format,
+                )}</span
+              >
             </div>
           {/if}
           <div class="flex items-center gap-1">
@@ -878,7 +915,10 @@
                 class="flex items-center gap-0.5 text-yellow-400 font-bold text-xs"
               >
                 <span class="material-symbols-outlined text-[12px]">star</span>
-                {getFormattedScore(song.average_rating, authState.user?.score_format)}
+                {getFormattedScore(
+                  song.average_rating,
+                  authState.user?.score_format,
+                )}
               </div>
             </div>
           </div>
@@ -899,7 +939,7 @@
 
     <!-- STICKY BOTTOM: Player Controls -->
     <div
-      class="shrink-0 sticky bottom-0 z-30 glass-panel border-t border-white/5 px-4 py-3 safe-area-bottom"
+      class="shrink-0 sticky bottom-0 z-30 border-t border-white/5 px-4 py-3 safe-area-bottom"
     >
       <div class="flex items-center justify-between gap-2">
         <button
@@ -957,17 +997,12 @@
     show={showReportModal}
     song={currentSong}
     onClose={() => (showReportModal = false)}
-    onSuccess={() => toastState.addToast("Report submitted successfully!", "success")}
+    onSuccess={() =>
+      toastState.addToast("Report submitted successfully!", "success")}
   />
 {/if}
 
 <style>
-  .glass-panel {
-    background: rgba(29, 20, 40, 0.6);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-  }
   .neon-border {
     box-shadow:
       0 0 15px rgba(127, 19, 236, 0.3),

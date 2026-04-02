@@ -125,78 +125,68 @@
       <div
         class="absolute bottom-0 left-0 w-full px-6 md:px-20 pb-8 z-20 flex flex-col md:flex-row items-end gap-6"
       >
-        <div class="relative group">
-          <div class="size-32 md:size-44 rounded-full overflow-hidden">
-            {#if avatarUrl}
-              <img
-                alt="Profile"
-                class="w-full h-full object-cover"
-                data-alt="User avatar image"
-                src={avatarUrl}
+        <div class="flex w-full gap-6">
+          <div class="relative group">
+            <div class="size-32 md:size-44 rounded-full overflow-hidden">
+              {#if avatarUrl}
+                <img
+                  alt="Profile"
+                  class="w-full h-full object-cover"
+                  data-alt="User avatar image"
+                  src={avatarUrl}
+                />
+              {:else}
+                <img
+                  alt="Profile"
+                  class="w-full h-full object-cover"
+                  data-alt="User avatar image"
+                  src="/images/placeholders/default.jpg"
+                />
+              {/if}
+            </div>
+          </div>
+
+          <div class="flex-1 mb-1">
+            <h1
+              class="text-3xl md:text-5xl font-black text-white tracking-tighter"
+            >
+              {data.profile.name}
+            </h1>
+            <p class="text-white/80 font-medium text-lg mt-1">
+              followers {followersCount} | following {followingCount}
+            </p>
+            <div class="mt-4">
+              <XPProgressBar
+                xp={profileXP}
+                level={profileLevel}
+                {nextLevelXP}
+                {currentLevelMinXP}
+                {accentColor}
               />
-            {:else}
-              <img
-                alt="Profile"
-                class="w-full h-full object-cover"
-                data-alt="User avatar image"
-                src="/images/placeholders/default.jpg"
-              />
-            {/if}
+            </div>
+
+            <div class="flex flex-col text-sm text-slate-400 mt-4">
+              {#if data.profile.badges}
+                <span class="text-slate-400">Badges</span>
+                <div class="flex gap-1 items-center">
+                  {#each data.profile.badges as badge}
+                    <img
+                      src={badge.image_url}
+                      alt={badge.name}
+                      class="w-5 h-5 brightness-0 invert"
+                      title={badge.name}
+                    />
+                  {/each}
+                </div>
+              {/if}
+            </div>
           </div>
         </div>
-
-        <div class="flex-1 mb-1">
-          <h1
-            class="text-3xl md:text-5xl font-black text-white tracking-tighter"
-          >
-            {data.profile.name}
-          </h1>
-          <p class="text-white/80 font-medium text-lg mt-1">
-            followers {followersCount} | following {followingCount}
-          </p>
-          <!-- <div class="flex gap-2 mt-2">
-            <a href={data.profile.anilists_profile_url}>
-              <span class="material-symbols-outlined">globe</span>
-              <span>AnilistProfile</span>
-            </a>
-            |
-            <a href={data.profile.discord_tag}>
-              <span class="material-symbols-outlined">message</span>
-              <span>#DiscordTag</span>
-            </a>
-          </div> -->
-
-          <div class="mt-4">
-            <XPProgressBar
-              xp={profileXP}
-              level={profileLevel}
-              {nextLevelXP}
-              {currentLevelMinXP}
-              {accentColor}
-            />
-          </div>
-
-          <div class="flex flex-col text-sm text-slate-400 mt-4">
-            {#if data.profile.badges}
-              <span class="text-slate-400">Badges</span>
-              <div class="flex gap-1 items-center">
-                {#each data.profile.badges as badge}
-                  <img
-                    src={badge.image_url}
-                    alt={badge.name}
-                    class="w-5 h-5 brightness-0 invert"
-                    title={badge.name}
-                  />
-                {/each}
-              </div>
-            {/if}
-          </div>
-        </div>
-        <div class="flex gap-3 mb-2">
+        <div class="hidden md:flex gap-3 mb-2">
           {#if isOwnProfile}
             <a
               href="/settings"
-              class="flex items-center justify-center gap-2 px-6 h-11 rounded-xl bg-white/10 backdrop-blur hover:bg-white/20 text-white transition-all font-bold text-sm"
+              class="flex items-center justify-center gap-2 px-6 h-11 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all font-bold text-sm"
             >
               <span class="material-symbols-outlined text-sm">settings</span>
               Edit Profile
@@ -225,7 +215,7 @@
             </button>
             <button
               onclick={() => (showReportModal = true)}
-              class="flex items-center justify-center size-11 rounded-xl bg-white/10 backdrop-blur hover:bg-white/20 text-white transition-all"
+              class="flex items-center justify-center size-11 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all"
               title="Report User"
             >
               <span class="material-symbols-outlined">report</span>
@@ -243,8 +233,8 @@
     />
 
     <!-- content -->
-    <div class="max-w-7xl mx-auto px-6 py-12">
-      <div class="px-6 md:px-20 py-6 border-b border-primary/10 mb-8">
+    <div class="max-w-7xl mx-auto px-6 py-6">
+      <div class="py-6 border-b border-primary/10 mb-8">
         <div class="flex gap-8 overflow-x-auto no-scrollbar">
           <a
             href={`/users/${data.profile.slug}`}
@@ -256,6 +246,19 @@
               ? `border-color: ${accentColor}; color: ${accentColor}`
               : ""}>Overview</a
           >
+          {#if true == true}
+            <a
+              href={`/users/${data.profile.slug}/anime-list`}
+              class="pb-4 font-bold transition-all border-b-2 {page.url
+                .pathname === `/users/${data.profile.slug}/anime-list`
+                ? ''
+                : 'border-transparent text-slate-400 hover:text-slate-200'}"
+              style={page.url.pathname ===
+              `/users/${data.profile.slug}/anime-list`
+                ? `border-color: ${accentColor}; color: ${accentColor}`
+                : ""}>Anime List</a
+            >
+          {/if}
           <a
             href={`/users/${data.profile.slug}/playlists`}
             class="pb-4 font-bold transition-all border-b-2 {page.url

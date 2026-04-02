@@ -3,7 +3,7 @@
 </script>
 
 <footer
-  class="mt-20 border-t border-white/5 bg-surface-darker/50 backdrop-blur-xl relative overflow-hidden"
+  class="mt-20 border-t border-white/5 bg-surface-darker/50 relative overflow-hidden"
 >
   <!-- Decorative glow effect -->
   <div

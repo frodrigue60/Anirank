@@ -161,8 +161,13 @@
       const res = await api.post("/admin/songs", payload);
 
       if (res.status === 201 || res.data.success) {
-        toastState.addToast(res.data.message || "Song created successfully!", "success");
-        const urlAnimeId = page.url.searchParams.get("anime_id") || page.url.searchParams.get("anime");
+        toastState.addToast(
+          res.data.message || "Song created successfully!",
+          "success",
+        );
+        const urlAnimeId =
+          page.url.searchParams.get("anime_id") ||
+          page.url.searchParams.get("anime");
         if (urlAnimeId) {
           goto(`/admin/animes/${urlAnimeId}/songs`);
         } else {
@@ -175,7 +180,7 @@
         err.response?.data?.message ||
         err.response?.data?.error ||
         "An error occurred while creating the song.";
-      
+
       errorMsg = msg;
       toastState.addToast(msg, "error");
     } finally {
@@ -349,7 +354,7 @@
 
               {#if showResults && searchResults.length > 0}
                 <div
-                  class="absolute z-50 w-full mt-2 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-xl"
+                  class="absolute z-50 w-full mt-2 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden"
                   onblur={() => setTimeout(() => (showResults = false), 200)}
                 >
                   <div class="max-h-60 overflow-y-auto">

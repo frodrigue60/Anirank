@@ -6,10 +6,12 @@ type AnimeMinimalDTO struct {
 	Slug       string     `json:"slug"`
 	CoverUrl   *string    `json:"cover_url"`
 	BannerUrl  *string    `json:"banner_url"`
-	SongsCount int        `json:"songs_count"`
-	Season     *SeasonDTO `json:"season,omitempty"`
-	Year       *YearDTO   `json:"year,omitempty"`
-	Format     *FormatDTO `json:"format,omitempty"`
+	SongsCount    int        `json:"songs_count"`
+	EnabledSongs  int        `json:"enabled_songs"`
+	DisabledSongs int        `json:"disabled_songs"`
+	Season        *SeasonDTO `json:"season,omitempty"`
+	Year          *YearDTO   `json:"year,omitempty"`
+	Format        *FormatDTO `json:"format,omitempty"`
 }
 
 type SeasonDTO struct {

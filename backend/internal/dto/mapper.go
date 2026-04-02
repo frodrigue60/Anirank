@@ -282,15 +282,17 @@ func ToAnimeMinimalDTO(a *domain.Anime) AnimeMinimalDTO {
 	}
 
 	return AnimeMinimalDTO{
-		AnilistID:  a.AnilistID,
-		Title:      a.Title,
-		Slug:       a.Slug,
-		CoverUrl:   a.CoverUrl,
-		BannerUrl:  a.BannerUrl,
-		SongsCount: a.SongsCount,
-		Season:     season,
-		Year:       year,
-		Format:     format,
+		AnilistID:     a.AnilistID,
+		Title:         a.Title,
+		Slug:          a.Slug,
+		CoverUrl:      a.CoverUrl,
+		BannerUrl:     a.BannerUrl,
+		SongsCount:    a.EnabledSongs, // Abstract as only enabled songs for public
+		EnabledSongs:  a.EnabledSongs,
+		DisabledSongs: a.DisabledSongs,
+		Season:        season,
+		Year:          year,
+		Format:        format,
 	}
 }
 

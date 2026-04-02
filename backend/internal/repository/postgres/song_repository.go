@@ -220,7 +220,7 @@ func (r *songRepository) Count(ctx context.Context, filters domain.SongFilters) 
 	var whereClauses []string
 
 	if !filters.IsAdmin {
-		whereClauses = append(whereClauses, "a.status = true")
+		whereClauses = append(whereClauses, "a.status = true", "s.status = true")
 	}
 
 	i := 1

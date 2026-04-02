@@ -24,6 +24,7 @@ func (r *artistRepository) GetByID(ctx context.Context, id uint64) (*domain.Arti
 	query := `
 		SELECT 
 			id, uuid, name, name_jp, slug, created_at, updated_at, avatar, status, favorites_count, anime_themes_id, anilist_id,
+			enabled_songs, disabled_songs,
 			(SELECT COUNT(*) FROM artist_song asong WHERE asong.artist_id = artists.id) as songs_count,
 			(SELECT ani.banner 
 			 FROM animes ani
@@ -50,6 +51,7 @@ func (r *artistRepository) GetByUUID(ctx context.Context, uuid string) (*domain.
 	query := `
 		SELECT 
 			id, uuid, name, name_jp, slug, created_at, updated_at, avatar, status, favorites_count, anime_themes_id, anilist_id,
+			enabled_songs, disabled_songs,
 			(SELECT COUNT(*) FROM artist_song asong WHERE asong.artist_id = artists.id) as songs_count,
 			(SELECT ani.banner 
 			 FROM animes ani
@@ -76,6 +78,7 @@ func (r *artistRepository) GetBySlug(ctx context.Context, slug string) (*domain.
 	query := `
 		SELECT 
 			id, uuid, name, name_jp, slug, created_at, updated_at, avatar, status, favorites_count, anime_themes_id, anilist_id,
+			enabled_songs, disabled_songs,
 			(SELECT COUNT(*) FROM artist_song asong WHERE asong.artist_id = artists.id) as songs_count,
 			(SELECT ani.banner 
 			 FROM animes ani
@@ -102,6 +105,7 @@ func (r *artistRepository) GetByAnilistID(ctx context.Context, id uint64) (*doma
 	query := `
 		SELECT 
 			id, uuid, name, name_jp, slug, created_at, updated_at, avatar, status, favorites_count, anime_themes_id, anilist_id,
+			enabled_songs, disabled_songs,
 			(SELECT COUNT(*) FROM artist_song asong WHERE asong.artist_id = artists.id) as songs_count,
 			(SELECT ani.banner 
 			 FROM animes ani
@@ -128,6 +132,7 @@ func (r *artistRepository) GetByAnimeThemesID(ctx context.Context, id uint64) (*
 	query := `
 		SELECT 
 			id, uuid, name, name_jp, slug, created_at, updated_at, avatar, status, favorites_count, anime_themes_id, anilist_id,
+			enabled_songs, disabled_songs,
 			(SELECT COUNT(*) FROM artist_song asong WHERE asong.artist_id = artists.id) as songs_count,
 			(SELECT ani.banner 
 			 FROM animes ani
@@ -333,6 +338,7 @@ func (r *artistRepository) GetFeatured(ctx context.Context, limit int) ([]domain
 	query := `
 		SELECT 
 			id, uuid, name, name_jp, slug, created_at, updated_at, avatar, status, anilist_id,
+			enabled_songs, disabled_songs,
 			(SELECT COUNT(*) FROM artist_user f WHERE f.artist_id = artists.id) as favorites_count,
 			(SELECT COUNT(*) FROM artist_song asong WHERE asong.artist_id = artists.id) as songs_count,
 			(SELECT ani.banner 
@@ -364,6 +370,7 @@ func (r *artistRepository) GetMany(ctx context.Context, ids []uint64) ([]domain.
 	query, args, err := sqlx.In(`
 		SELECT 
 			id, uuid, name, name_jp, slug, created_at, updated_at, avatar, status, favorites_count, anime_themes_id, anilist_id,
+			enabled_songs, disabled_songs,
 			(SELECT COUNT(*) FROM artist_song asong WHERE asong.artist_id = artists.id) as songs_count,
 			(SELECT ani.banner 
 			 FROM animes ani

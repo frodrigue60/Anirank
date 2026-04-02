@@ -784,6 +784,19 @@ func (r *animeRepository) UpdateExternalLinks(ctx context.Context, animeID uint6
 	return tx.Commit()
 }
 
+func (r *animeRepository) RecountAnimeStats(ctx context.Context, animeID *uint64) error {
+	query := `
+		UPDATE animes 
+		SET 
+			enabled_songs = (SELECT COUNT(*) FROM songs s WHERE s.anime_id = animes.id AND s.status = true),
+			disabled_songs = (SELECT COUNT(*) FROM songs s WHERE s.anime_id = animes.id AND s.status = false),
+			songs_count = (SELECT COUNT(*) FROM songs s WHERE s.anime_id = animes.id)
+		WHERE ($1::bigint IS NULL OR id = $1)
+	`
+	_, err := r.db.ExecContext(ctx, query, animeID)
+	return err
+}
+
 func (r *animeRepository) GetPublicSlugs(ctx context.Context) ([]domain.SitemapItem, error) {
 	var items []domain.SitemapItem
 	query := `SELECT slug as loc, updated_at as lastmod FROM animes WHERE status = true`

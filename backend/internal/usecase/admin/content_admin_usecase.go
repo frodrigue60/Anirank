@@ -767,7 +767,15 @@ func (u *ContentAdminUsecase) SyncArtistsFromString(ctx context.Context, songID 
 	}
 
 	if len(artistIDs) > 0 {
-		return u.SyncSongArtists(ctx, songID, artistIDs)
+		if err := u.SyncSongArtists(ctx, songID, artistIDs); err != nil {
+			return err
+		}
+		// Recount for affected artists
+		for _, id := range artistIDs {
+			artistID := id
+			_ = u.artistRepo.RecountArtistStats(ctx, &artistID)
+		}
+		return nil
 	}
 	return nil
 }
@@ -1653,6 +1661,10 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 		_ = u.BatchGenerateArtistAvatars(ctx, ids, progress)
 	}
 
+	// Recount all stats once after batch processing for accuracy
+	_ = u.artistRepo.RecountArtistStats(ctx, nil)
+	_ = u.animeRepo.RecountAnimeStats(ctx, nil)
+
 	sendProgress("Hydration completed successfully!")
 	return nil
 }
@@ -1858,10 +1870,16 @@ func (u *ContentAdminUsecase) SyncSongArtists(ctx context.Context, songID uint64
 		return err
 	}
 
-	// Trigger avatar generation synchronously for each artist
-	// S3 check inside GenerateArtistAvatar will prevent redundant work
+	// Recount stats for each artist to update enabled/disabled counters
 	for _, id := range artistIDs {
+		artistID := id
+		_ = u.artistRepo.RecountArtistStats(ctx, &artistID)
 		_ = u.GenerateArtistAvatar(ctx, id, false)
+	}
+
+	// Also recount for the anime associated with the song
+	if song, err := u.songRepo.GetByID(ctx, songID); err == nil && song != nil {
+		_ = u.animeRepo.RecountAnimeStats(ctx, &song.AnimeID)
 	}
 
 	return nil

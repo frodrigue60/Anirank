@@ -41,6 +41,8 @@ type Anime struct {
 	Genres        []Genre        `db:"-" json:"genres,omitempty"`
 	ExternalLinks []ExternalLink `db:"-" json:"external_links,omitempty"`
 	SongsCount    int            `db:"songs_count" json:"songs_count"`
+	EnabledSongs  int            `db:"enabled_songs" json:"enabled_songs"`
+	DisabledSongs int            `db:"disabled_songs" json:"disabled_songs"`
 }
 
 // Taxonomies
@@ -170,6 +172,7 @@ type AnimeRepository interface {
 	UpdateGenres(ctx context.Context, animeID uint64, genreIDs []uint64) error
 	UpdateProducers(ctx context.Context, animeID uint64, producerIDs []uint64) error
 	UpdateExternalLinks(ctx context.Context, animeID uint64, links []ExternalLink) error
+	RecountAnimeStats(ctx context.Context, animeID *uint64) error
 	BatchDelete(ctx context.Context, ids []uint64) error
 
 	// Sitemap

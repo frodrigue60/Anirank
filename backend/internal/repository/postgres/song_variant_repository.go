@@ -162,8 +162,8 @@ func (r *songVariantRepository) Create(ctx context.Context, variant *domain.Song
 	defer tx.Rollback()
 
 	query := `
-		INSERT INTO song_variants (uuid, version_number, song_id, slug, views, season_id, year_id, spoiler, status, animethemes_id, created_at, updated_at) 
-		VALUES (:uuid, :version_number, :song_id, :slug, :views, :season_id, :year_id, :spoiler, :status, :animethemes_id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		INSERT INTO song_variants (uuid, version_number, song_id, slug, views, season_id, year_id, spoiler, status, anime_themes_id, created_at, updated_at) 
+		VALUES (:uuid, :version_number, :song_id, :slug, :views, :season_id, :year_id, :spoiler, :status, :anime_themes_id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 		RETURNING id
 	`
 	stmt, err := tx.PrepareNamedContext(ctx, query)
@@ -201,7 +201,7 @@ func (r *songVariantRepository) Update(ctx context.Context, variant *domain.Song
 		UPDATE song_variants 
 		SET version_number = :version_number, song_id = :song_id, slug = :slug, views = :views, 
 		    season_id = :season_id, year_id = :year_id, spoiler = :spoiler, status = :status, 
-		    animethemes_id = :animethemes_id, updated_at = CURRENT_TIMESTAMP
+		    anime_themes_id = :anime_themes_id, updated_at = CURRENT_TIMESTAMP
 		WHERE id = :id
 	`
 	_, err = tx.NamedExecContext(ctx, query, variant)

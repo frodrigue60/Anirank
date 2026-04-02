@@ -267,8 +267,8 @@ func (r *animeRepository) Count(ctx context.Context, filters domain.AnimeFilters
 // Write Operations
 func (r *animeRepository) Create(ctx context.Context, anime *domain.Anime) error {
 	query := `
-		INSERT INTO animes (uuid, title, slug, description, anilist_id, status, year_id, season_id, format_id, cover, banner, created_at, updated_at) 
-		VALUES (:uuid, :title, :slug, :description, :anilist_id, :status, :year_id, :season_id, :format_id, :cover, :banner, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		INSERT INTO animes (uuid, title, slug, description, anilist_id, anime_themes_id, status, year_id, season_id, format_id, cover, banner, created_at, updated_at) 
+		VALUES (:uuid, :title, :slug, :description, :anilist_id, :anime_themes_id, :status, :year_id, :season_id, :format_id, :cover, :banner, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 		RETURNING id
 	`
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
@@ -283,7 +283,7 @@ func (r *animeRepository) Update(ctx context.Context, anime *domain.Anime) error
 	query := `
 		UPDATE animes 
 		SET title = :title, slug = :slug, description = :description, anilist_id = :anilist_id, 
-		    status = :status, year_id = :year_id, 
+		    anime_themes_id = :anime_themes_id, status = :status, year_id = :year_id, 
 		    season_id = :season_id, format_id = :format_id, 
 		    cover = :cover, banner = :banner, updated_at = CURRENT_TIMESTAMP
 		WHERE id = :id
@@ -581,7 +581,39 @@ func (r *animeRepository) LoadManyRelations(ctx context.Context, animes []domain
 		scMap[row.AnimeID] = row.SongsCount
 	}
 
-	// 4. Map back
+	// 4. Producers
+	producersQuery := `SELECT p.id, p.uuid, p.name, p.slug, p.logo, p.anime_count, apu.anime_id FROM producers p JOIN anime_producer apu ON p.id = apu.producer_id WHERE apu.anime_id IN (?)`
+	pQ, pArgs, err := sqlx.In(producersQuery, ids)
+	if err == nil {
+		type producerRow struct {
+			ID         uint64  `db:"id"`
+			UUID       string  `db:"uuid"`
+			Name       string  `db:"name"`
+			Slug       string  `db:"slug"`
+			Logo       *string `db:"logo"`
+			AnimeCount int     `db:"anime_count"`
+			AnimeID    uint64  `db:"anime_id"`
+		}
+		var producerRows []producerRow
+		if err := r.db.SelectContext(ctx, &producerRows, r.db.Rebind(pQ), pArgs...); err == nil {
+			pMap := make(map[uint64][]domain.Producer)
+			for _, row := range producerRows {
+				pMap[row.AnimeID] = append(pMap[row.AnimeID], domain.Producer{
+					ID:         row.ID,
+					UUID:       row.UUID,
+					Name:       row.Name,
+					Slug:       row.Slug,
+					LogoUrl:    row.Logo,
+					AnimeCount: row.AnimeCount,
+				})
+			}
+			for i := range animes {
+				animes[i].Producers = pMap[animes[i].ID]
+			}
+		}
+	}
+
+	// 5. Map back everything else
 	for i := range animes {
 		animes[i].Genres = gMap[animes[i].ID]
 		animes[i].Studios = sMap[animes[i].ID]
@@ -611,6 +643,10 @@ func (r *animeRepository) ToggleStatus(ctx context.Context, id uint64) error {
 }
 
 func (r *animeRepository) UpdateStudios(ctx context.Context, animeID uint64, studioIDs []uint64) error {
+	// 0. Get old studio IDs to recount later
+	var oldIDs []uint64
+	_ = r.db.SelectContext(ctx, &oldIDs, "SELECT studio_id FROM anime_studio WHERE anime_id = $1", animeID)
+
 	// 1. Delete existing
 	_, err := r.db.ExecContext(ctx, "DELETE FROM anime_studio WHERE anime_id = $1", animeID)
 	if err != nil {
@@ -624,6 +660,20 @@ func (r *animeRepository) UpdateStudios(ctx context.Context, animeID uint64, stu
 			return err
 		}
 	}
+
+	// 3. Recount for affected IDs (Union of old and new)
+	affectedMap := make(map[uint64]bool)
+	for _, id := range oldIDs {
+		affectedMap[id] = true
+	}
+	for _, id := range studioIDs {
+		affectedMap[id] = true
+	}
+
+	for id := range affectedMap {
+		_, _ = r.db.ExecContext(ctx, "UPDATE studios SET anime_count = (SELECT count(*) FROM anime_studio WHERE studio_id = $1) WHERE id = $1", id)
+	}
+
 	return nil
 }
 
@@ -643,17 +693,37 @@ func (r *animeRepository) UpdateGenres(ctx context.Context, animeID uint64, genr
 }
 
 func (r *animeRepository) UpdateProducers(ctx context.Context, animeID uint64, producerIDs []uint64) error {
+	// 0. Get old producer IDs to recount later
+	var oldIDs []uint64
+	_ = r.db.SelectContext(ctx, &oldIDs, "SELECT producer_id FROM anime_producer WHERE anime_id = $1", animeID)
+
+	// 1. Delete existing
 	_, err := r.db.ExecContext(ctx, "DELETE FROM anime_producer WHERE anime_id = $1", animeID)
 	if err != nil {
 		return err
 	}
 
+	// 2. Insert new
 	for _, pID := range producerIDs {
 		_, err = r.db.ExecContext(ctx, "INSERT INTO anime_producer (anime_id, producer_id) VALUES ($1, $2)", animeID, pID)
 		if err != nil {
 			return err
 		}
 	}
+
+	// 3. Recount for affected IDs (Union of old and new)
+	affectedMap := make(map[uint64]bool)
+	for _, id := range oldIDs {
+		affectedMap[id] = true
+	}
+	for _, id := range producerIDs {
+		affectedMap[id] = true
+	}
+
+	for id := range affectedMap {
+		_, _ = r.db.ExecContext(ctx, "UPDATE producers SET anime_count = (SELECT count(*) FROM anime_producer WHERE producer_id = $1) WHERE id = $1", id)
+	}
+
 	return nil
 }
 

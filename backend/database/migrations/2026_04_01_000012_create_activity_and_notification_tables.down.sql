@@ -1,5 +1,0 @@
-DROP TABLE IF EXISTS audit_logs;
-DROP TABLE IF EXISTS follows;
-DROP TABLE IF EXISTS announcements;
-DROP TABLE IF EXISTS notifications;
-DROP TABLE IF EXISTS activities;

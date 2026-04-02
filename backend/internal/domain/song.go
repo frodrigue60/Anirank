@@ -23,7 +23,7 @@ type Song struct {
 	FavoritesCount uint64    `db:"favorites_count" json:"favorites_count"`
 	CreatedAt     time.Time `db:"created_at" json:"created_at"`
 	Status        bool      `db:"status" json:"status"`
-	AnimeThemesID *uint64   `db:"animethemes_id" json:"animethemes_id,omitempty"`
+	AnimeThemesID *uint64   `db:"anime_themes_id" json:"animethemes_id,omitempty"`
 
 	// Computed for frontend
 	Name          string  `db:"-" json:"name"`
@@ -58,7 +58,7 @@ type SongVariant struct {
 	YearID        uint64    `db:"year_id" json:"year_id"`
 	Spoiler       bool      `db:"spoiler" json:"spoiler"`
 	Status        bool      `db:"status" json:"status"`
-	AnimeThemesID *uint64   `db:"animethemes_id" json:"animethemes_id,omitempty"`
+	AnimeThemesID *uint64   `db:"anime_themes_id" json:"animethemes_id,omitempty"`
 
 	// Computed for frontend
 	Video *SongVariantVideo `db:"-" json:"video,omitempty"`
@@ -97,7 +97,7 @@ type Artist struct {
 	DisabledSongs  int    `db:"disabled_songs" json:"disabled_songs"`
 	FavoritesCount uint64 `db:"favorites_count" json:"favorites_count"`
 	IsFavorited    bool   `db:"-" json:"is_favorited"`
-	AnimeThemesID  *uint64 `db:"animethemes_id" json:"animethemes_id,omitempty"`
+	AnimeThemesID  *uint64 `db:"anime_themes_id" json:"animethemes_id,omitempty"`
 	AnilistID      *uint64 `db:"anilist_id" json:"anilist_id,omitempty"`
 }
 

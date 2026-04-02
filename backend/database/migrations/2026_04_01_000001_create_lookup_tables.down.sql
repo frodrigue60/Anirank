@@ -1,4 +1,0 @@
-DROP TABLE IF EXISTS score_formats;
-DROP TABLE IF EXISTS years;
-DROP TABLE IF EXISTS seasons;
-DROP TABLE IF EXISTS formats;

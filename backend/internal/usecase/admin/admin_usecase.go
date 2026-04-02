@@ -84,8 +84,8 @@ func (u *AdminUsecase) DeleteUser(ctx context.Context, id uint64, meta domain.Au
 	return u.userAdmin.DeleteUser(ctx, id, meta)
 }
 
-func (u *AdminUsecase) ResetPassword(ctx context.Context, id uint64) (string, error) {
-	return u.userAdmin.ResetPassword(ctx, id)
+func (u *AdminUsecase) ResetPassword(ctx context.Context, id uint64, meta domain.AuditMetadata) (string, error) {
+	return u.userAdmin.ResetPassword(ctx, id, meta)
 }
 
 

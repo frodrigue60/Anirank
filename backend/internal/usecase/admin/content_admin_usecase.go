@@ -1180,6 +1180,8 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 	}
 
 	pm := rbac.GetPermissionManager(u.userRepo)
+	_ = pm.Refresh(ctx) // Ensure we have the latest permissions from DB to avoid hydration skips
+
 	canCreateYears := pm.HasPermission(meta.Role, "taxonomy.years.create") || meta.Role == "admin" || meta.Role == "owner"
 	canCreateSeasons := pm.HasPermission(meta.Role, "taxonomy.seasons.create") || meta.Role == "admin" || meta.Role == "owner"
 	canCreateFormats := pm.HasPermission(meta.Role, "taxonomy.formats.create") || meta.Role == "admin" || meta.Role == "owner"
@@ -1197,6 +1199,7 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 			yearObj, _ = u.taxonomyRepo.GetByYear(ctx, a.Year)
 		}
 		if err != nil || yearObj == nil {
+			sendProgress(fmt.Sprintf("[SKIP] %s: Year %v not found and creation not allowed/failed.", a.Name, a.Year))
 			continue
 		}
 
@@ -1208,6 +1211,7 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 			seasonObj, _ = u.taxonomyRepo.GetBySeason(ctx, normalizedSeason)
 		}
 		if err != nil || seasonObj == nil {
+			sendProgress(fmt.Sprintf("[SKIP] %s: Season %s not found and creation not allowed/failed.", a.Name, a.Season))
 			continue
 		}
 
@@ -1221,6 +1225,7 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 			formatObj, _ = u.taxonomyRepo.GetByFormat(ctx, a.MediaFormat)
 		}
 		if err != nil || formatObj == nil {
+			sendProgress(fmt.Sprintf("[SKIP] %s: Format %s not found and creation not allowed/failed.", a.Name, a.MediaFormat))
 			continue
 		}
 
@@ -1325,6 +1330,8 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 			if alIDPtr != nil {
 				anime.AnilistID = alIDPtr
 			}
+			atID := a.ID
+			anime.AnimeThemesID = &atID
 			anime.YearID = yearObj.ID
 			anime.SeasonID = seasonObj.ID
 			anime.FormatID = formatObj.ID
@@ -1336,6 +1343,7 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 			go u.ensureLocalImages(context.Background(), anime, coverUrl, bannerUrl, anilistID)
 		} else {
 			// Create
+			atID := a.ID
 			anime = &domain.Anime{
 				Title:       a.Name,
 				Slug:        animeSlug,
@@ -1343,6 +1351,7 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 				Cover:       coverPtr, // Will be updated by ensureLocalImages
 				Banner:      bannerPtr,
 				AnilistID:   alIDPtr,
+				AnimeThemesID: &atID,
 				YearID:      yearObj.ID,
 				SeasonID:    seasonObj.ID,
 				FormatID:    formatObj.ID,

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import api from "$lib/api";
+  import { toastState } from "$lib/state/toast.svelte";
   let { data } = $props();
 
   let searchQuery = $state("");
@@ -27,13 +28,15 @@
     isDeleting = true;
     try {
       await api.delete(`/admin/users/${uuid}`);
+      toastState.addToast("User deleted successfully", "success");
       // Refresh page data
       goto(
         `/admin/users?search=${searchQuery}&page=${data.pagination.current_page}`,
         { invalidateAll: true },
       );
-    } catch (err) {
-      alert("Failed to delete user. Check console for details.");
+    } catch (err: any) {
+      const msg = err.response?.data?.message || "Failed to delete user.";
+      toastState.addToast(msg, "error");
       console.error(err);
     } finally {
       isDeleting = false;

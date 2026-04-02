@@ -21,6 +21,7 @@ type Anime struct {
 	YearID      uint64  `json:"year_id" db:"year_id" form:"year_id"`
 	SeasonID    uint64  `json:"season_id" db:"season_id" form:"season_id"`
 	FormatID    uint64  `json:"format_id" db:"format_id" form:"format_id"`
+	AnimeThemesID *uint64 `db:"anime_themes_id" json:"animethemes_id,omitempty"`
 
 	// Input-only fields for relations (manual creation)
 	StudiosString   string `json:"-" form:"studios"`

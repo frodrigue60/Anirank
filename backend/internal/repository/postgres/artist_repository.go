@@ -23,7 +23,7 @@ func (r *artistRepository) GetByID(ctx context.Context, id uint64) (*domain.Arti
 	var a domain.Artist
 	query := `
 		SELECT 
-			id, uuid, name, name_jp, slug, created_at, updated_at, avatar, status, favorites_count, animethemes_id, anilist_id,
+			id, uuid, name, name_jp, slug, created_at, updated_at, avatar, status, favorites_count, anime_themes_id, anilist_id,
 			(SELECT COUNT(*) FROM artist_song asong WHERE asong.artist_id = artists.id) as songs_count,
 			(SELECT ani.banner 
 			 FROM animes ani
@@ -49,7 +49,7 @@ func (r *artistRepository) GetByUUID(ctx context.Context, uuid string) (*domain.
 	var a domain.Artist
 	query := `
 		SELECT 
-			id, uuid, name, name_jp, slug, created_at, updated_at, avatar, status, favorites_count, animethemes_id, anilist_id,
+			id, uuid, name, name_jp, slug, created_at, updated_at, avatar, status, favorites_count, anime_themes_id, anilist_id,
 			(SELECT COUNT(*) FROM artist_song asong WHERE asong.artist_id = artists.id) as songs_count,
 			(SELECT ani.banner 
 			 FROM animes ani
@@ -75,7 +75,7 @@ func (r *artistRepository) GetBySlug(ctx context.Context, slug string) (*domain.
 	var a domain.Artist
 	query := `
 		SELECT 
-			id, uuid, name, name_jp, slug, created_at, updated_at, avatar, status, favorites_count, animethemes_id, anilist_id,
+			id, uuid, name, name_jp, slug, created_at, updated_at, avatar, status, favorites_count, anime_themes_id, anilist_id,
 			(SELECT COUNT(*) FROM artist_song asong WHERE asong.artist_id = artists.id) as songs_count,
 			(SELECT ani.banner 
 			 FROM animes ani
@@ -101,7 +101,7 @@ func (r *artistRepository) GetByAnilistID(ctx context.Context, id uint64) (*doma
 	var a domain.Artist
 	query := `
 		SELECT 
-			id, uuid, name, name_jp, slug, created_at, updated_at, avatar, status, favorites_count, animethemes_id, anilist_id,
+			id, uuid, name, name_jp, slug, created_at, updated_at, avatar, status, favorites_count, anime_themes_id, anilist_id,
 			(SELECT COUNT(*) FROM artist_song asong WHERE asong.artist_id = artists.id) as songs_count,
 			(SELECT ani.banner 
 			 FROM animes ani
@@ -127,7 +127,7 @@ func (r *artistRepository) GetByAnimeThemesID(ctx context.Context, id uint64) (*
 	var a domain.Artist
 	query := `
 		SELECT 
-			id, uuid, name, name_jp, slug, created_at, updated_at, avatar, status, favorites_count, animethemes_id, anilist_id,
+			id, uuid, name, name_jp, slug, created_at, updated_at, avatar, status, favorites_count, anime_themes_id, anilist_id,
 			(SELECT COUNT(*) FROM artist_song asong WHERE asong.artist_id = artists.id) as songs_count,
 			(SELECT ani.banner 
 			 FROM animes ani
@@ -137,7 +137,7 @@ func (r *artistRepository) GetByAnimeThemesID(ctx context.Context, id uint64) (*
 			 ORDER BY s.created_at DESC
 			 LIMIT 1) as banner
 		FROM artists
-		WHERE animethemes_id = $1
+		WHERE anime_themes_id = $1
 	`
 	err := r.db.GetContext(ctx, &a, query, id)
 	if err != nil {
@@ -153,8 +153,8 @@ func (r *artistRepository) GetByAnimeThemesID(ctx context.Context, id uint64) (*
 
 func (r *artistRepository) Create(ctx context.Context, artist *domain.Artist) error {
 	query := `
-		INSERT INTO artists (uuid, name, name_jp, slug, avatar, status, animethemes_id, anilist_id, created_at, updated_at) 
-		VALUES (:uuid, :name, :name_jp, :slug, :avatar, :status, :animethemes_id, :anilist_id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		INSERT INTO artists (uuid, name, name_jp, slug, avatar, status, anime_themes_id, anilist_id, created_at, updated_at) 
+		VALUES (:uuid, :name, :name_jp, :slug, :avatar, :status, :anime_themes_id, :anilist_id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 		RETURNING id
 	`
 	rows, err := r.db.NamedQueryContext(ctx, query, artist)
@@ -173,7 +173,7 @@ func (r *artistRepository) Update(ctx context.Context, artist *domain.Artist) er
 	query := `
 		UPDATE artists 
 		SET name = :name, name_jp = :name_jp, slug = :slug, avatar = :avatar, status = :status, 
-		    animethemes_id = :animethemes_id, anilist_id = :anilist_id, updated_at = CURRENT_TIMESTAMP
+		    anime_themes_id = :anime_themes_id, anilist_id = :anilist_id, updated_at = CURRENT_TIMESTAMP
 		WHERE id = :id
 	`
 	res, err := r.db.NamedExecContext(ctx, query, artist)
@@ -363,7 +363,7 @@ func (r *artistRepository) GetMany(ctx context.Context, ids []uint64) ([]domain.
 
 	query, args, err := sqlx.In(`
 		SELECT 
-			id, uuid, name, name_jp, slug, created_at, updated_at, avatar, status, favorites_count, animethemes_id, anilist_id,
+			id, uuid, name, name_jp, slug, created_at, updated_at, avatar, status, favorites_count, anime_themes_id, anilist_id,
 			(SELECT COUNT(*) FROM artist_song asong WHERE asong.artist_id = artists.id) as songs_count,
 			(SELECT ani.banner 
 			 FROM animes ani

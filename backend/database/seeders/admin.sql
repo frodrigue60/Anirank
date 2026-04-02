@@ -5,7 +5,7 @@ VALUES (
     'Luis Rodz',
     'luis-rodz',
     'frodrigue60@gmail.com',
-    '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', -- standard hash for 'password'
+    '$2a$10$XxVaW4uBeckodmw2883vv.PXDUw8HQjYFltqCYHCbHx8oR/Ksj3l6', -- standard hash for 'a12edc21cd'
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
 )

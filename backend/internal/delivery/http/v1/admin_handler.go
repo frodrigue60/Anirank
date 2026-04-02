@@ -96,9 +96,23 @@ func (h *AdminHandler) paginatedResponse(c *fiber.Ctx, items interface{}, total 
 
 func (h *AdminHandler) getAuditMetadata(c *fiber.Ctx) domain.AuditMetadata {
 	actorID, _ := c.Locals("user_id").(uint64)
+	roles, _ := c.Locals("user_roles").([]string)
+
+	primaryRole := ""
+	if len(roles) > 0 {
+		primaryRole = roles[0]
+		// Prioritize most powerful roles for permission checks
+		for _, r := range roles {
+			if r == "owner" || r == "admin" {
+				primaryRole = r
+				break
+			}
+		}
+	}
 
 	return domain.AuditMetadata{
 		ActorID:   actorID,
+		Role:      primaryRole,
 		URL:       c.OriginalURL(),
 		IPAddress: c.IP(),
 		UserAgent: c.Get("User-Agent"),
@@ -268,7 +282,7 @@ func (h *AdminHandler) ResetPassword(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	newPassword, err := h.usecase.ResetPassword(c.Context(), id)
+	newPassword, err := h.usecase.ResetPassword(c.Context(), id, h.getAuditMetadata(c))
 	if err != nil {
 		return err
 	}

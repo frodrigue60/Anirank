@@ -59,12 +59,13 @@
         role_ids: selectedRoleIds,
         badge_ids: selectedBadgeIds,
       });
+      toastState.addToast("User created successfully", "success");
       goto("/admin/users");
     } catch (err: any) {
       console.error("Failed to create user", err);
       const msg =
         err.response?.data?.message || "Uh oh! Failed to create the user.";
-      alert(msg);
+      toastState.addToast(msg, "error");
     } finally {
       isSaving = false;
     }

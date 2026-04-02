@@ -291,8 +291,8 @@ func (r *songRepository) Count(ctx context.Context, filters domain.SongFilters) 
 
 func (r *songRepository) Create(ctx context.Context, song *domain.Song) error {
 	query := `
-		INSERT INTO songs (song_romaji, song_jp, song_en, uuid, theme_num, type, slug, anime_id, season_id, year_id, views, status, animethemes_id, created_at, updated_at) 
-		VALUES (:song_romaji, :song_jp, :song_en, :uuid, :theme_num, :type, :slug, :anime_id, :season_id, :year_id, :views, :status, :animethemes_id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		INSERT INTO songs (song_romaji, song_jp, song_en, uuid, theme_num, type, slug, anime_id, season_id, year_id, views, status, anime_themes_id, created_at, updated_at) 
+		VALUES (:song_romaji, :song_jp, :song_en, :uuid, :theme_num, :type, :slug, :anime_id, :season_id, :year_id, :views, :status, :anime_themes_id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 		RETURNING id
 	`
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
@@ -309,7 +309,7 @@ func (r *songRepository) Update(ctx context.Context, song *domain.Song) error {
 		SET song_romaji = :song_romaji, song_jp = :song_jp, song_en = :song_en, 
 		    theme_num = :theme_num, type = :type, slug = :slug, anime_id = :anime_id, 
 		    season_id = :season_id, year_id = :year_id, views = :views, status = :status, 
-		    animethemes_id = :animethemes_id, updated_at = CURRENT_TIMESTAMP
+		    anime_themes_id = :anime_themes_id, updated_at = CURRENT_TIMESTAMP
 		WHERE id = :id
 	`
 	res, err := r.db.NamedExecContext(ctx, query, song)

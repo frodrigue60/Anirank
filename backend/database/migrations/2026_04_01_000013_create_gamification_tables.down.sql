@@ -1,5 +1,0 @@
-DROP TABLE IF EXISTS xp_logs;
-DROP TABLE IF EXISTS levels;
-DROP TABLE IF EXISTS xp_activities;
-DROP TABLE IF EXISTS badge_user;
-DROP TABLE IF EXISTS badges;

@@ -128,6 +128,38 @@ func (u *UserAdminUsecase) CreateUser(ctx context.Context, user *domain.User, ro
 }
 
 func (u *UserAdminUsecase) UpdateUser(ctx context.Context, user *domain.User, roleIDs []uint64, badgeIDs []uint64, meta domain.AuditMetadata) error {
+	// 1. Load target and actor roles
+	targetRoles, _ := u.userRepo.GetRolesByUserID(ctx, user.ID)
+	actorRoles, err := u.userRepo.GetRolesByUserID(ctx, meta.ActorID)
+	if err != nil {
+		return err
+	}
+
+	// 2. Self-modification guard for roles (Optional, but safer for hierarchy)
+	// If actor is not owner, they can only modify themselves if their weight > target's highest role weight?
+	// Actually, let's keep it simple: Actor Max Weight >= Target Max Weight to UPDATE (except roles).
+	// But let's stricter: Actor Weight >= Target Weight.
+	targetMaxWeight := -1
+	for _, r := range targetRoles {
+		if r.Weight > targetMaxWeight {
+			targetMaxWeight = r.Weight
+		}
+	}
+
+	actorMaxWeight := -1
+	for _, r := range actorRoles {
+		if r.Weight > actorMaxWeight {
+			actorMaxWeight = r.Weight
+		}
+	}
+
+	// Rule: You cannot edit someone of equal or higher rank (unless you are editing yourself?)
+	// Usually, admins can edit their own basic info, but not their own roles.
+	if meta.ActorID != user.ID && actorMaxWeight <= targetMaxWeight {
+		return domain.NewAppError(403, "Access denied. Your role level is insufficient to update this user.", nil)
+	}
+
+	// 3. Load existing user
 	existing, err := u.userRepo.GetByID(ctx, user.ID)
 	if err != nil {
 		return err
@@ -145,6 +177,9 @@ func (u *UserAdminUsecase) UpdateUser(ctx context.Context, user *domain.User, ro
 		return err
 	}
 
+	// 4. Role Update Guard: You cannot assign roles with weight > your max weight
+	// However, for now let's just use the current permission gated logic.
+
 	if err := u.userRepo.UpdateRoles(ctx, existing.ID, roleIDs); err != nil {
 		return err
 	}
@@ -159,15 +194,82 @@ func (u *UserAdminUsecase) UpdateUser(ctx context.Context, user *domain.User, ro
 }
 
 func (u *UserAdminUsecase) DeleteUser(ctx context.Context, id uint64, meta domain.AuditMetadata) error {
-	existing, _ := u.userRepo.GetByID(ctx, id)
+	// 1. Prevent self-deletion
+	if meta.ActorID == id {
+		return domain.NewAppError(403, "You cannot delete your own account from the admin panel", nil)
+	}
+
+	// 2. Load target user and their roles
+	targetUser, err := u.userRepo.GetByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	targetRoles, _ := u.userRepo.GetRolesByUserID(ctx, id)
+	
+	// Get target's max weight
+	targetMaxWeight := -1
+	for _, r := range targetRoles {
+		if r.Weight > targetMaxWeight {
+			targetMaxWeight = r.Weight
+		}
+	}
+
+	// 3. Load actor and their roles
+	actorRoles, err := u.userRepo.GetRolesByUserID(ctx, meta.ActorID)
+	if err != nil {
+		return err
+	}
+
+	// Get actor's max weight
+	actorMaxWeight := -1
+	for _, r := range actorRoles {
+		if r.Weight > actorMaxWeight {
+			actorMaxWeight = r.Weight
+		}
+	}
+
+	// 4. Role Hierarchy Check: Actor must have strictly MORE weight than target
+	// Exception: Owners (weight 100) are handled by the same logic, but we could add more guards if needed.
+	if actorMaxWeight <= targetMaxWeight {
+		return domain.NewAppError(403, "Access denied. Your role level is insufficient to delete this user.", nil)
+	}
+
+	// 5. Proceed with deletion
 	if err := u.userRepo.Delete(ctx, id); err != nil {
 		return err
 	}
-	_ = u.auditUsecase.LogActions(ctx, meta.ActorID, "deleted", id, "user", existing, nil, &meta.URL, &meta.IPAddress, &meta.UserAgent)
+
+	_ = u.auditUsecase.LogActions(ctx, meta.ActorID, "deleted", id, "user", targetUser, nil, &meta.URL, &meta.IPAddress, &meta.UserAgent)
 	return nil
 }
 
-func (u *UserAdminUsecase) ResetPassword(ctx context.Context, id uint64) (string, error) {
+func (u *UserAdminUsecase) ResetPassword(ctx context.Context, id uint64, meta domain.AuditMetadata) (string, error) {
+	// 1. Role Hierarchy Check
+	targetRoles, _ := u.userRepo.GetRolesByUserID(ctx, id)
+	actorRoles, err := u.userRepo.GetRolesByUserID(ctx, meta.ActorID)
+	if err != nil {
+		return "", err
+	}
+
+	targetMaxWeight := -1
+	for _, r := range targetRoles {
+		if r.Weight > targetMaxWeight {
+			targetMaxWeight = r.Weight
+		}
+	}
+
+	actorMaxWeight := -1
+	for _, r := range actorRoles {
+		if r.Weight > actorMaxWeight {
+			actorMaxWeight = r.Weight
+		}
+	}
+
+	// Actor must have weight >= Target for password reset? (Self-reset is handled elsewhere)
+	if meta.ActorID != id && actorMaxWeight <= targetMaxWeight {
+		return "", domain.NewAppError(403, "Access denied. Insufficient role to reset password for this user.", nil)
+	}
+
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*"
 	var pw strings.Builder
 	for i := 0; i < 10; i++ {
@@ -188,6 +290,8 @@ func (u *UserAdminUsecase) ResetPassword(ctx context.Context, id uint64) (string
 	if err := u.userRepo.UpdatePassword(ctx, id, string(hashedPassword)); err != nil {
 		return "", err
 	}
+	
+	_ = u.auditUsecase.LogActions(ctx, meta.ActorID, "reset_password", id, "user", nil, nil, &meta.URL, &meta.IPAddress, &meta.UserAgent)
 
 	return rawPassword, nil
 }

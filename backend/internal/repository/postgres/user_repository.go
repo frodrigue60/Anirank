@@ -172,7 +172,7 @@ func (r *userRepository) UpdateScoreFormat(ctx context.Context, userID uint64, f
 func (r *userRepository) GetRolesByUserID(ctx context.Context, userID uint64) ([]domain.Role, error) {
 	var roles []domain.Role
 	query := `
-		SELECT r.id, r.name, r.slug 
+		SELECT r.id, r.name, r.slug, r.weight 
 		FROM roles r 
 		JOIN role_user ru ON r.id = ru.role_id 
 		WHERE ru.user_id = $1
@@ -215,7 +215,7 @@ func (r *userRepository) GetAllPermissions(ctx context.Context) ([]domain.Permis
 
 func (r *userRepository) GetRoles(ctx context.Context) ([]domain.Role, error) {
 	var roles []domain.Role
-	query := "SELECT id, name, slug, description, created_at FROM roles"
+	query := "SELECT id, name, slug, weight, description, created_at FROM roles ORDER BY weight DESC"
 	err := r.db.SelectContext(ctx, &roles, query)
 	return roles, err
 }

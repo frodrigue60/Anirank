@@ -281,26 +281,30 @@ func main() {
 		var yearID uint64
 		err = tx.QueryRow(ctx, "SELECT id FROM years WHERE name = $1", fmt.Sprintf("%d", a.Year)).Scan(&yearID)
 		if err != nil {
+			fmt.Printf(" [YEAR] Creating new year: %d\n", a.Year)
 			err = tx.QueryRow(ctx, "INSERT INTO years (name, current, created_at, updated_at) VALUES ($1, false, NOW(), NOW()) RETURNING id", fmt.Sprintf("%d", a.Year)).Scan(&yearID)
 			if err != nil {
 				tx.Rollback(ctx)
-				log.Printf("Year Error: %v\n", err)
+				log.Printf(" [ERROR] Year Upsert failed for %d: %v\n", a.Year, err)
 				continue
 			}
 		}
+		fmt.Printf(" [YEAR] Using year ID: %d\n", yearID)
 
 		// Upsert Season
 		var seasonID uint64
 		normalizedSeason := strings.Title(strings.ToLower(a.Season))
 		err = tx.QueryRow(ctx, "SELECT id FROM seasons WHERE name = $1", normalizedSeason).Scan(&seasonID)
 		if err != nil {
+			fmt.Printf(" [SEASON] Creating new season: %s\n", normalizedSeason)
 			err = tx.QueryRow(ctx, "INSERT INTO seasons (name, current, created_at, updated_at) VALUES ($1, false, NOW(), NOW()) RETURNING id", normalizedSeason).Scan(&seasonID)
 			if err != nil {
 				tx.Rollback(ctx)
-				log.Printf("Season Error: %v\n", err)
+				log.Printf(" [ERROR] Season Upsert failed for %s: %v\n", normalizedSeason, err)
 				continue
 			}
 		}
+		fmt.Printf(" [SEASON] Using season ID: %d\n", seasonID)
 
 		// Upsert Format
 		var formatID uint64
@@ -310,11 +314,13 @@ func main() {
 		formatSlug := strings.ToLower(a.MediaFormat)
 		err = tx.QueryRow(ctx, "SELECT id FROM formats WHERE slug = $1", formatSlug).Scan(&formatID)
 		if err != nil {
+			fmt.Printf(" [FORMAT] Creating new format: %s\n", a.MediaFormat)
 			err = tx.QueryRow(ctx, "INSERT INTO formats (name, slug, created_at, updated_at) VALUES ($1, $2, NOW(), NOW()) RETURNING id", a.MediaFormat, formatSlug).Scan(&formatID)
 			if err != nil {
-				log.Printf("Format Error: %v\n", err)
+				log.Printf(" [ERROR] Format Upsert failed for %s: %v\n", a.MediaFormat, err)
 			}
 		}
+		fmt.Printf(" [FORMAT] Using format ID: %d\n", formatID)
 
 		// Find Image
 		coverUrl := ""
@@ -380,10 +386,19 @@ func main() {
 		}
 
 		if found {
-			_, _ = tx.Exec(ctx, "DELETE FROM anime_studio WHERE anime_id = $1", animeID)
-			_, _ = tx.Exec(ctx, "DELETE FROM anime_producer WHERE anime_id = $1", animeID)
-			_, _ = tx.Exec(ctx, "DELETE FROM anime_genre WHERE anime_id = $1", animeID)
-			_, _ = tx.Exec(ctx, "DELETE FROM anime_external_link WHERE anime_id = $1", animeID)
+			fmt.Printf(" [ANIME] Updating existing entry: %s (ID: %d)\n", a.Name, animeID)
+			if _, err := tx.Exec(ctx, "DELETE FROM anime_studio WHERE anime_id = $1", animeID); err != nil {
+				log.Printf(" [WARN] Failed to clear anime_studio: %v\n", err)
+			}
+			if _, err := tx.Exec(ctx, "DELETE FROM anime_producer WHERE anime_id = $1", animeID); err != nil {
+				log.Printf(" [WARN] Failed to clear anime_producer: %v\n", err)
+			}
+			if _, err := tx.Exec(ctx, "DELETE FROM anime_genre WHERE anime_id = $1", animeID); err != nil {
+				log.Printf(" [WARN] Failed to clear anime_genre: %v\n", err)
+			}
+			if _, err := tx.Exec(ctx, "DELETE FROM anime_external_link WHERE anime_id = $1", animeID); err != nil {
+				log.Printf(" [WARN] Failed to clear anime_external_link: %v\n", err)
+			}
 
 			bannerUrl := ""
 			if alData != nil {
@@ -395,6 +410,7 @@ func main() {
 				SET title = $1, slug = $2, cover = $3, banner = $4, description = $5, format_id = $6, anilist_id = $7, season_id = $8, year_id = $9, updated_at = NOW() 
 				WHERE id = $10`, a.Name, animeSlug, coverUrl, bannerUrl, a.Synopsis, formatID, anilistID, seasonID, yearID, animeID)
 		} else {
+			fmt.Printf(" [ANIME] Creating new entry: %s\n", a.Name)
 			bannerUrl := ""
 			if alData != nil {
 				bannerUrl = alData.Data.Media.BannerImage
@@ -407,9 +423,10 @@ func main() {
 		}
 		if err != nil {
 			tx.Rollback(ctx)
-			log.Printf("Anime Error: %v\n", err)
+			log.Printf(" [ERROR] Anime Upsert failed for %s: %v\n", a.Name, err)
 			continue
 		}
+		fmt.Printf(" [ANIME] Final Anime ID: %d\n", animeID)
 
 		// Studios & Producers
 		if alData != nil {
@@ -419,18 +436,24 @@ func main() {
 				if edge.IsMain {
 					err = tx.QueryRow(ctx, "SELECT id FROM studios WHERE slug = $1", sSlug).Scan(&targetID)
 					if err != nil {
+						fmt.Printf("   [STUDIO] Creating new studio: %s\n", edge.Node.Name)
 						err = tx.QueryRow(ctx, "INSERT INTO studios (uuid, name, slug, created_at, updated_at) VALUES ($1, $2, $3, NOW(), NOW()) RETURNING id", uuid.New().String(), edge.Node.Name, sSlug).Scan(&targetID)
 					}
 					if err == nil {
-						_, _ = tx.Exec(ctx, "INSERT INTO anime_studio (anime_id, studio_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", animeID, targetID)
+						if _, err := tx.Exec(ctx, "INSERT INTO anime_studio (anime_id, studio_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", animeID, targetID); err != nil {
+							log.Printf("   [ERROR] Failed to link studio %s: %v\n", sSlug, err)
+						}
 					}
 				} else {
 					err = tx.QueryRow(ctx, "SELECT id FROM producers WHERE slug = $1", sSlug).Scan(&targetID)
 					if err != nil {
+						fmt.Printf("   [PRODUCER] Creating new producer: %s\n", edge.Node.Name)
 						err = tx.QueryRow(ctx, "INSERT INTO producers (uuid, name, slug, created_at, updated_at) VALUES ($1, $2, $3, NOW(), NOW()) RETURNING id", uuid.New().String(), edge.Node.Name, sSlug).Scan(&targetID)
 					}
 					if err == nil {
-						_, _ = tx.Exec(ctx, "INSERT INTO anime_producer (anime_id, producer_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", animeID, targetID)
+						if _, err := tx.Exec(ctx, "INSERT INTO anime_producer (anime_id, producer_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", animeID, targetID); err != nil {
+							log.Printf("   [ERROR] Failed to link producer %s: %v\n", sSlug, err)
+						}
 					}
 				}
 			}
@@ -440,10 +463,13 @@ func main() {
 				gSlug := slugify(gName)
 				err = tx.QueryRow(ctx, "SELECT id FROM genres WHERE slug = $1", gSlug).Scan(&genreID)
 				if err != nil {
+					fmt.Printf("   [GENRE] Creating new genre: %s\n", gName)
 					err = tx.QueryRow(ctx, "INSERT INTO genres (name, slug, created_at, updated_at) VALUES ($1, $2, NOW(), NOW()) RETURNING id", gName, gSlug).Scan(&genreID)
 				}
 				if err == nil {
-					_, _ = tx.Exec(ctx, "INSERT INTO anime_genre (anime_id, genre_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", animeID, genreID)
+					if _, err := tx.Exec(ctx, "INSERT INTO anime_genre (anime_id, genre_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", animeID, genreID); err != nil {
+						log.Printf("   [ERROR] Failed to link genre %s: %v\n", gSlug, err)
+					}
 				}
 			}
 
@@ -456,7 +482,9 @@ func main() {
 					_, _ = tx.Exec(ctx, "UPDATE external_links SET name = $1, updated_at = NOW() WHERE id = $2", l.Site, linkID)
 				}
 				if err == nil {
-					_, _ = tx.Exec(ctx, "INSERT INTO anime_external_link (anime_id, external_link_id, created_at, updated_at) VALUES ($1, $2, NOW(), NOW()) ON CONFLICT DO NOTHING", animeID, linkID)
+					if _, err := tx.Exec(ctx, "INSERT INTO anime_external_link (anime_id, external_link_id, created_at, updated_at) VALUES ($1, $2, NOW(), NOW()) ON CONFLICT DO NOTHING", animeID, linkID); err != nil {
+						log.Printf("   [ERROR] Failed to link external site %s: %v\n", l.Site, err)
+					}
 				}
 			}
 		} else {
@@ -496,9 +524,10 @@ func main() {
 					RETURNING id`, uuid.New().String(), t.Song.Title, t.Song.Title, t.Song.Title, songSlug, t.Type, fmt.Sprintf("%d", themeNum), animeID, seasonID, yearID).Scan(&songID)
 			}
 			if err != nil {
-				log.Printf("Song Error: %v\n", err)
+				log.Printf("   [ERROR] Song Upsert failed for %s (%s): %v\n", t.Song.Title, songSlug, err)
 				continue
 			}
+			fmt.Printf("   [THEME] Saved song %d: %s\n", songID, t.Song.Title)
 
 			// Variants
 			for _, entry := range t.AnimeThemeEntries {
@@ -549,7 +578,9 @@ func main() {
 						RETURNING id`, uuid.New().String(), cleanName, aSlug, alID).Scan(&artistID)
 				}
 				if err == nil {
-					_, _ = tx.Exec(ctx, "INSERT INTO artist_song (artist_id, song_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", artistID, songID)
+					if _, err := tx.Exec(ctx, "INSERT INTO artist_song (artist_id, song_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", artistID, songID); err != nil {
+						log.Printf("     [ERROR] Failed to link artist %s to song %d: %v\n", cleanName, songID, err)
+					}
 				}
 			}
 		}

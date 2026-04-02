@@ -58,9 +58,11 @@
     try {
       const res = await api.post(`/admin/users/${data.user.uuid}/reset-password`);
       newPassword = res.data.password;
-    } catch (err) {
+      toastState.addToast("Password reset successfully", "success");
+    } catch (err: any) {
       console.error("Failed to reset password", err);
-      alert("Failed to reset password.");
+      const msg = err.response?.data?.message || "Failed to reset password.";
+      toastState.addToast(msg, "error");
     } finally {
       isResetting = false;
     }
@@ -77,10 +79,12 @@
         role_ids: selectedRoleIds,
         badge_ids: selectedBadgeIds,
       });
+      toastState.addToast("User updated successfully", "success");
       goto("/admin/users");
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to update user", err);
-      alert("Uh oh! Failed to update the user details.");
+      const msg = err.response?.data?.message || "Uh oh! Failed to update the user details.";
+      toastState.addToast(msg, "error");
     } finally {
       isSaving = false;
     }

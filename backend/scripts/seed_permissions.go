@@ -127,6 +127,12 @@ func main() {
 		},
 		"creator": {
 			"anime.create", "song.create", "artist.create",
+			"taxonomy.years.create",
+			"taxonomy.seasons.create",
+			"taxonomy.formats.create",
+			"taxonomy.genres.create",
+			"taxonomy.studios.create",
+			"taxonomy.producers.create",
 		},
 	}
 

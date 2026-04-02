@@ -71,10 +71,11 @@ type Role struct {
 	ID          uint64       `db:"id" json:"id"`
 	Name        string       `db:"name" json:"name"`
 	Slug        string       `db:"slug" json:"slug"`
+	Weight      int          `db:"weight" json:"weight"`
 	Description *string      `db:"description" json:"description"`
 	Permissions []Permission `db:"-" json:"permissions,omitempty"`
-	CreatedAt   time.Time    `db:"created_at" json:"created_at"`
-	UpdatedAt   time.Time    `db:"updated_at" json:"updated_at"`
+	CreatedAt   *time.Time    `db:"created_at" json:"created_at"`
+	UpdatedAt   *time.Time    `db:"updated_at" json:"updated_at"`
 }
 
 type Permission struct {
@@ -82,8 +83,8 @@ type Permission struct {
 	Name        string    `db:"name" json:"name"`
 	Slug        string    `db:"slug" json:"slug"`
 	Description *string   `db:"description" json:"description"`
-	CreatedAt   time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt   time.Time `db:"updated_at" json:"updated_at"`
+	CreatedAt   *time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt   *time.Time `db:"updated_at" json:"updated_at"`
 }
 
 type Badge struct {
@@ -93,8 +94,8 @@ type Badge struct {
 	Icon        *string   `db:"icon" json:"-"`
 	IconUrl     *string   `db:"-" json:"image_url,omitempty"`
 	IsActive    bool      `db:"is_active" json:"is_active"`
-	CreatedAt   time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt   time.Time `db:"updated_at" json:"updated_at"`
+	CreatedAt   *time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt   *time.Time `db:"updated_at" json:"updated_at"`
 }
 
 // Repositories

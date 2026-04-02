@@ -292,12 +292,12 @@ func SetupPublicRoutes(app *fiber.App,
 
 	// Users Operations
 	adminOnly.Get("/users", adminHandler.GetUsers)
-	adminOnly.Post("/users", adminHandler.CreateUser)
+	adminOnly.Post("/users", middleware.HasPermissionMiddleware("users.manage", userRepo), adminHandler.CreateUser)
 	adminOnly.Get("/roles", adminHandler.GetRoles)
 	adminOnly.Get("/users/:id", adminHandler.GetUser)
-	adminOnly.Put("/users/:id", adminHandler.UpdateUser)
-	adminOnly.Delete("/users/:id", adminHandler.DeleteUser)
-	adminOnly.Post("/users/:id/reset-password", adminHandler.ResetPassword)
+	adminOnly.Put("/users/:id", middleware.HasPermissionMiddleware("users.manage", userRepo), adminHandler.UpdateUser)
+	adminOnly.Delete("/users/:id", middleware.HasPermissionMiddleware("users.manage", userRepo), adminHandler.DeleteUser)
+	adminOnly.Post("/users/:id/reset-password", middleware.HasPermissionMiddleware("users.manage", userRepo), adminHandler.ResetPassword)
 
 	// Anime Operations
 	adminOnly.Get("/animes", adminHandler.GetAnimes)

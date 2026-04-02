@@ -109,7 +109,13 @@ BEGIN
     IF creator_id IS NOT NULL THEN
         INSERT INTO role_permissions (role_id, permission_id)
         SELECT creator_id, id FROM permissions WHERE slug IN (
-            'anime.create', 'song.create', 'artist.create'
+            'anime.create', 'song.create', 'artist.create',
+            'taxonomy.years.create',
+            'taxonomy.seasons.create',
+            'taxonomy.formats.create',
+            'taxonomy.genres.create',
+            'taxonomy.studios.create',
+            'taxonomy.producers.create'
         ) ON CONFLICT DO NOTHING;
     END IF;
 END $$;

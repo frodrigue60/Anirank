@@ -2,6 +2,7 @@
   import SongCard from "$lib/components/SongCard.svelte";
   import SEO from "$lib/components/SEO.svelte";
   import { page } from "$app/state";
+  import snarkdown from "snarkdown";
   const PUBLIC_API_URL =
     import.meta.env.VITE_API_URL || "http://localhost:8080/api";
 
@@ -9,17 +10,9 @@
 
   const accentColor = $derived(data.profile?.profile_color || "#3db4f2");
 
-  function renderMarkdown(text: string) {
+  function renderMarkdown(text: string | null | undefined) {
     if (!text) return "";
-    // Very simple markdown replacement
-    return text
-      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-      .replace(/\*(.*?)\*/g, "<em>$1</em>")
-      .replace(
-        /\[(.*?)\]\((.*?)\)/g,
-        '<a href="$2" class="text-primary hover:underline" target="_blank">$1</a>',
-      )
-      .replace(/\n/g, "<br>");
+    return snarkdown(text);
   }
 </script>
 
@@ -47,7 +40,7 @@
         <span class="material-symbols-outlined text-sm">person</span>
         About Me
       </h3>
-      <div class="text-white/70 leading-relaxed text-sm font-medium">
+      <div class="text-white/70 leading-relaxed text-sm font-medium markdown-content">
         {@html renderMarkdown(data.profile.about)}
       </div>
     </div>

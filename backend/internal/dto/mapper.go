@@ -34,7 +34,7 @@ func ToUserDTO(u *domain.User) UserDTO {
 	badges := make([]BadgeDTO, 0)
 	for _, b := range u.Badges {
 		badges = append(badges, BadgeDTO{
-			ID:          b.ID,
+			ID:          b.UUID,
 			Name:        b.Name,
 			Description: b.Description,
 			IconUrl:     b.IconUrl,
@@ -497,6 +497,14 @@ func ToActivityItemDTO(item domain.ActivityItem) ActivityItemDTO {
 	case domain.Comment:
 		targetID = t.UUID
 		target = ToCommentDTO(&t)
+	case *domain.Artist:
+		if t != nil {
+			targetID = t.UUID
+			target = ToArtistMinimalDTO(t)
+		}
+	case domain.Artist:
+		targetID = t.UUID
+		target = ToArtistMinimalDTO(&t)
 	default:
 		// Fallback to original target if not handled
 		target = item.Target
@@ -504,10 +512,11 @@ func ToActivityItemDTO(item domain.ActivityItem) ActivityItemDTO {
 
 	return ActivityItemDTO{
 		Type:      item.Type,
-		User:      ToUserMinimalDTO(&item.User),
-		TargetID:  targetID,
-		Target:    target,
-		Value:     item.Value,
+		User:       ToUserMinimalDTO(&item.User),
+		TargetID:   targetID,
+		TargetType: item.TargetType,
+		Target:     target,
+		Value:      item.Value,
 		CreatedAt: item.CreatedAt,
 	}
 }
@@ -520,6 +529,9 @@ func ToActivityDTO(item domain.Activity) ActivityItemDTO {
 	if item.Song != nil {
 		targetID = item.Song.UUID
 		target = ToSongMinimalDTO(item.Song)
+	} else if item.Artist != nil {
+		targetID = item.Artist.UUID
+		target = ToArtistMinimalDTO(item.Artist)
 	} else if item.UserTarget != nil {
 		targetID = item.UserTarget.UUID
 		target = ToUserMinimalDTO(item.UserTarget)
@@ -535,6 +547,9 @@ func ToActivityDTO(item domain.Activity) ActivityItemDTO {
 		case *domain.Comment:
 			targetID = t.UUID
 			target = ToCommentDTO(t)
+		case *domain.Artist:
+			targetID = t.UUID
+			target = ToArtistMinimalDTO(t)
 		}
 	}
 
@@ -544,12 +559,13 @@ func ToActivityDTO(item domain.Activity) ActivityItemDTO {
 	}
 
 	return ActivityItemDTO{
-		Type:      item.ActionType,
-		User:      userDto,
-		TargetID:  targetID,
-		Target:    target,
-		Value:     item.ActionValue,
-		CreatedAt: item.CreatedAt.Format(time.RFC3339),
+		Type:       item.ActionType,
+		User:       userDto,
+		TargetID:   targetID,
+		TargetType: item.TargetType,
+		Target:     target,
+		Value:      item.ActionValue,
+		CreatedAt:  item.CreatedAt.Format(time.RFC3339),
 	}
 }
 

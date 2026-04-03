@@ -55,6 +55,13 @@ func (r *interactionRepository) GetAverageRating(ctx context.Context, songID uin
 	return avg.Float64, nil
 }
 
+func (r *interactionRepository) CountRatingsByUser(ctx context.Context, userID uint64) (int, error) {
+	var count int
+	query := "SELECT COUNT(*) FROM song_ratings WHERE user_id = $1"
+	err := r.db.GetContext(ctx, &count, query, userID)
+	return count, err
+}
+
 // Favorites
 func (r *interactionRepository) ToggleFavorite(ctx context.Context, favorite *domain.Favorite) (bool, error) {
 	var table string
@@ -310,8 +317,14 @@ func (r *interactionRepository) GetRecentActivities(ctx context.Context, limit i
 			SELECT 'favorite' as activity_type, f.id as activity_id, f.user_id, u.name as user_name, f.song_id as target_id, 'song' as target_type, NULL as value, f.created_at
 			FROM song_user f JOIN users u ON f.user_id = u.id
 			UNION ALL
+			SELECT 'favorite' as activity_type, f.id as activity_id, f.user_id, u.name as user_name, f.artist_id as target_id, 'artist' as target_type, NULL as value, f.created_at
+			FROM artist_user f JOIN users u ON f.user_id = u.id
+			UNION ALL
 			SELECT 'comment' as activity_type, c.id as activity_id, c.user_id, u.name as user_name, c.song_id as target_id, 'song' as target_type, c.content as value, c.created_at
 			FROM comments c JOIN users u ON c.user_id = u.id
+			UNION ALL
+			SELECT 'follow' as activity_type, f.followed_id as activity_id, f.follower_id as user_id, u.name as user_name, f.followed_id as target_id, 'user' as target_type, NULL as value, f.created_at
+			FROM follows f JOIN users u ON f.follower_id = u.id
 		) as activities
 		ORDER BY created_at DESC
 		LIMIT $1
@@ -330,6 +343,7 @@ func (r *interactionRepository) GetRecentActivities(ctx context.Context, limit i
 			Type:     row.ActivityType,
 			UserID:   row.UserID,
 			TargetID: row.TargetID,
+			TargetType: row.TargetType,
 			User: domain.User{
 				ID:   row.UserID,
 				Name: row.UserName,

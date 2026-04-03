@@ -14,10 +14,10 @@ type UserMinimalDTO struct {
 }
 
 type BadgeDTO struct {
-	ID          uint64  `json:"id"`
+	ID          string  `json:"id"`
 	Name        string  `json:"name"`
 	Description *string `json:"description"`
-	IconUrl     *string `json:"image_url,omitempty"`
+	IconUrl     *string `json:"icon_url,omitempty"`
 }
 
 type UserDTO struct {

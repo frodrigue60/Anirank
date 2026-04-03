@@ -18,10 +18,11 @@ type CommentDTO struct {
 }
 
 type ActivityItemDTO struct {
-	Type      string      `json:"type"`
-	User      UserMinimalDTO `json:"user"`
-	TargetID  string      `json:"target_id"`
-	Target    interface{} `json:"target"`
-	Value     interface{} `json:"value,omitempty"`
-	CreatedAt string      `json:"created_at"`
+	Type       string      `json:"type"`
+	User       UserMinimalDTO `json:"user"`
+	TargetID   string      `json:"target_id"`
+	TargetType string      `json:"target_type"`
+	Target     interface{} `json:"target"`
+	Value      interface{} `json:"value,omitempty"`
+	CreatedAt  string      `json:"created_at"`
 }

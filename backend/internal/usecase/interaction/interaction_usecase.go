@@ -21,6 +21,8 @@ type InteractionUsecase struct {
 	mediaService     infrastructure.MediaService
 	xpUsecase        domain.XPUsecase
 	activityUsecase  domain.ActivityUsecase
+	badgeUsecase     domain.BadgeUsecase
+	artistRepo       domain.ArtistRepository
 }
 
 func NewInteractionUsecase(
@@ -30,9 +32,11 @@ func NewInteractionUsecase(
 	nr domain.NotificationRepository,
 	sr domain.SongRepository,
 	ar domain.AnimeRepository,
+	atr domain.ArtistRepository,
 	ms infrastructure.MediaService,
 	xu domain.XPUsecase,
 	au domain.ActivityUsecase,
+	bu domain.BadgeUsecase,
 ) *InteractionUsecase {
 	return &InteractionUsecase{
 		interactionRepo:  ir,
@@ -41,9 +45,11 @@ func NewInteractionUsecase(
 		notificationRepo: nr,
 		songRepo:         sr,
 		animeRepo:        ar,
+		artistRepo:       atr,
 		mediaService:     ms,
 		xpUsecase:        xu,
 		activityUsecase:  au,
+		badgeUsecase:     bu,
 	}
 }
 
@@ -78,6 +84,9 @@ func (u *InteractionUsecase) RateSong(ctx context.Context, userID, songID uint64
 		// Log Activity
 		scoreStr := strconv.FormatFloat(score, 'f', 1, 64)
 		_ = u.activityUsecase.LogActivity(ctx, userID, "rate", songID, "song", &scoreStr)
+
+		// 5. Automatic Badge Check
+		_ = u.badgeUsecase.CheckAndAwardBadges(ctx, userID, "ratings")
 	}
 	return avg, score, err
 }
@@ -272,10 +281,12 @@ func (u *InteractionUsecase) SongComment(ctx context.Context, userID, entityID u
 	}
 	_ = u.xpUsecase.AwardXP(ctx, userID, activityKey, map[string]interface{}{"comment_id": comment.ID})
 
-	// Log Activity
 	targetID := entityID
 	targetType := entityType
 	_ = u.activityUsecase.LogActivity(ctx, userID, activityKey, targetID, targetType, nil)
+
+	// Automatic Badge Check
+	_ = u.badgeUsecase.CheckAndAwardBadges(ctx, userID, "comments")
 
 	return comment, nil
 }
@@ -337,7 +348,95 @@ func (u *InteractionUsecase) GetGlobalActivity(ctx context.Context, limit int) (
 	if limit <= 0 || limit > 100 {
 		limit = 20
 	}
-	return u.interactionRepo.GetRecentActivities(ctx, limit)
+	activities, err := u.interactionRepo.GetRecentActivities(ctx, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	u.enrichActivities(ctx, activities)
+	return activities, nil
+}
+
+func (u *InteractionUsecase) enrichActivities(ctx context.Context, items []domain.ActivityItem) {
+	// 1. Collect IDs by type to batch fetch
+	songIDs := make([]uint64, 0)
+	artistIDs := make([]uint64, 0)
+	userIDs := make([]uint64, 0)
+
+	for _, item := range items {
+		userIDs = append(userIDs, item.UserID)
+		switch item.TargetType {
+		case "song":
+			songIDs = append(songIDs, item.TargetID)
+		case "artist":
+			artistIDs = append(artistIDs, item.TargetID)
+		}
+	}
+
+	// 2. Fetch data (batch)
+	songs := make(map[uint64]domain.Song)
+	if len(songIDs) > 0 {
+		if s, err := u.songRepo.GetMany(ctx, songIDs); err == nil {
+			for _, song := range s {
+				songs[song.ID] = song
+			}
+		}
+	}
+
+	artists := make(map[uint64]domain.Artist)
+	if len(artistIDs) > 0 {
+		if a, err := u.artistRepo.GetMany(ctx, artistIDs); err == nil {
+			for _, artist := range a {
+				artists[artist.ID] = artist
+			}
+		}
+	}
+
+	userData := make(map[uint64]domain.User)
+	if len(userIDs) > 0 {
+		// Unique user IDs for query
+		uniqueIDs := make([]uint64, 0)
+		seen := make(map[uint64]bool)
+		for _, id := range userIDs {
+			if !seen[id] {
+				uniqueIDs = append(uniqueIDs, id)
+				seen[id] = true
+			}
+		}
+		if users, err := u.userRepo.GetMany(ctx, uniqueIDs); err == nil {
+			for _, user := range users {
+				userData[user.ID] = user
+			}
+		}
+	}
+
+	// 3. Populate targets and user details (avatars/banners)
+	for i := range items {
+		// Populate User
+		if user, ok := userData[items[i].UserID]; ok {
+			// Populate image URLs for frontend
+			if user.Avatar != nil {
+				user.AvatarUrl = u.mediaService.Resolve(user.Avatar)
+			}
+			items[i].User = user
+		}
+
+		// Populate Target
+		switch items[i].TargetType {
+		case "song":
+			if song, ok := songs[items[i].TargetID]; ok {
+				items[i].Target = &song
+			}
+		case "artist":
+			if artist, ok := artists[items[i].TargetID]; ok {
+				// Populate image URLs for artist
+				if artist.Avatar != nil {
+					artist.AvatarUrl = u.mediaService.Resolve(artist.Avatar)
+				}
+				items[i].Target = &artist
+			}
+		}
+	}
 }
 
 // ---- FOLLOWS ----

@@ -223,7 +223,7 @@ func (r *userRepository) GetRoles(ctx context.Context) ([]domain.Role, error) {
 func (r *userRepository) GetBadgesByUserID(ctx context.Context, userID uint64) ([]domain.Badge, error) {
 	var badges []domain.Badge
 	query := `
-		SELECT b.id, b.name, b.description, b.icon, b.is_active 
+		SELECT b.id, b.uuid, b.name, b.description, b.icon, b.is_active 
 		FROM badges b 
 		JOIN badge_user bu ON b.id = bu.badge_id 
 		WHERE bu.user_id = $1
@@ -487,5 +487,24 @@ func (r *userRepository) GetRanking(ctx context.Context, sortBy string, limit, o
 	}
 
 	return users, total, nil
+}
+
+func (r *userRepository) GetMany(ctx context.Context, ids []uint64) ([]domain.User, error) {
+	if len(ids) == 0 {
+		return []domain.User{}, nil
+	}
+
+	var users []domain.User
+	query, args, err := sqlx.In("SELECT * FROM users WHERE id IN (?)", ids)
+	if err != nil {
+		return nil, err
+	}
+
+	query = r.db.Rebind(query)
+	err = r.db.SelectContext(ctx, &users, query, args...)
+	if users == nil {
+		users = []domain.User{}
+	}
+	return users, err
 }
 

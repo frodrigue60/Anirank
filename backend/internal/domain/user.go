@@ -88,14 +88,18 @@ type Permission struct {
 }
 
 type Badge struct {
-	ID          uint64    `db:"id" json:"id"`
-	Name        string    `db:"name" json:"name"`
-	Description *string   `db:"description" json:"description"`
-	Icon        *string   `db:"icon" json:"-"`
-	IconUrl     *string   `db:"-" json:"image_url,omitempty"`
-	IsActive    bool      `db:"is_active" json:"is_active"`
-	CreatedAt   *time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt   *time.Time `db:"updated_at" json:"updated_at"`
+	ID               uint64     `db:"id" json:"id"`
+	UUID             string     `db:"uuid" json:"uuid"`
+	Name             string     `db:"name" json:"name"`
+	Description      *string    `db:"description" json:"description"`
+	Icon             *string    `db:"icon" json:"-"`
+	IconUrl          *string    `db:"-" json:"icon_url,omitempty"`
+	IsActive         bool       `db:"is_active" json:"is_active"`
+	IsAutomatic      bool       `db:"is_automatic" json:"is_automatic"`
+	RequirementType  *string    `db:"requirement_type" json:"requirement_type,omitempty"`
+	RequirementValue *int       `db:"requirement_value" json:"requirement_value,omitempty"`
+	CreatedAt        *time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt        *time.Time `db:"updated_at" json:"updated_at"`
 }
 
 // Repositories
@@ -141,4 +145,5 @@ type UserRepository interface {
 	GetFollowingCount(ctx context.Context, userID uint64) (int, error)
 	GetFollowers(ctx context.Context, userID uint64, limit, offset int) ([]User, error)
 	GetFollowing(ctx context.Context, userID uint64, limit, offset int) ([]User, error)
+	GetMany(ctx context.Context, ids []uint64) ([]User, error)
 }

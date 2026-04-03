@@ -62,7 +62,11 @@ func SetupPublicRoutes(app *fiber.App,
 	searchHandler := v1.NewSearchHandler(searchUsecase)
 	catalogHandler := v1.NewCatalogHandler(catalogUsecase)
 	authHandler := v1.NewAuthHandler(authUsecase)
-	interactionUsecase = interaction.NewInteractionUsecase(interactionRepo, commentRepo, userRepo, notificationRepo, songRepo, animeRepo, mediaService, xpUsecase, activityUsecase)
+	
+	badgeRepo := postgres.NewBadgeRepository(db)
+	badgeUsecase := admin.NewBadgeUsecase(badgeRepo, userRepo, interactionRepo, commentRepo, storageService, auditLogUsecase)
+
+	interactionUsecase = interaction.NewInteractionUsecase(interactionRepo, commentRepo, userRepo, notificationRepo, songRepo, animeRepo, artistRepo, mediaService, xpUsecase, activityUsecase, badgeUsecase)
 	interactionHandler := v1.NewInteractionHandler(interactionUsecase, activityUsecase, songRepo, userRepo, animeRepo, artistRepo, commentRepo)
 	playlistHandler := v1.NewPlaylistHandler(playlistUsecase, playlistRepo, songRepo, userRepo)
 	adminHandler := v1.NewAdminHandler(adminUsecase, songRepo, userRepo, animeRepo, artistRepo, playlistRepo)
@@ -73,8 +77,6 @@ func SetupPublicRoutes(app *fiber.App,
 	announcementUsecase := announcement.NewAnnouncementUsecase(announcementRepo, storageService)
 	announcementHandler := v1.NewAnnouncementHandler(announcementUsecase)
 
-	badgeRepo := postgres.NewBadgeRepository(db)
-	badgeUsecase := admin.NewBadgeUsecase(badgeRepo, storageService, auditLogUsecase)
 	badgeHandler := v1.NewBadgeHandler(badgeUsecase)
 
 	activityHandler := v1.NewActivityHandler(activityUsecase)

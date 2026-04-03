@@ -94,9 +94,9 @@
       {#each activities as activity}
         {@const target = activity.target}
         {@const type = activity.type}
-        {@const isSong = type === "rate" || type === "favorite" || type === "reply" || type === "comment"}
+        {@const isSong = activity.target_type === "song"}
+        {@const isArtist = activity.target_type === "artist"}
         {@const isUser = type === "follow"}
-        {@const isArtist = type === "artist_favorite"} 
 
         <div
           class="p-4 flex items-start gap-4 hover:bg-white/5 transition-colors group cursor-pointer"
@@ -112,15 +112,13 @@
               />
             {:else if isArtist && target}
               <img
-                src={target.avatar_url ||
-                  "/images/placeholders/default.jpg"}
+                src={target.avatar_url || "/images/placeholders/default.jpg"}
                 alt={target.name}
-                class="w-12 h-12 rounded-lg object-cover border border-white/10"
+                class="w-12 h-18 rounded-lg object-cover border border-white/10"
               />
             {:else if isUser && target}
               <img
-                src={target.avatar_url ||
-                   "/images/placeholders/default.jpg"}
+                src={target.avatar_url || "/images/placeholders/default.jpg"}
                 alt={target.name}
                 class="w-12 h-12 rounded-lg object-cover border border-white/10"
               />
@@ -161,9 +159,7 @@
               >
                 {activity.user?.name}
                 {#if type === "rate"}
-                  rated <span class="text-yellow-400"
-                    >{activity.value}</span
-                  >
+                  rated <span class="text-yellow-400">{activity.value}</span>
                 {:else if type === "favorite"}
                   added favorite
                 {:else if type === "comment"}
@@ -182,9 +178,7 @@
                   href="/songs/{target.anime?.slug}/{target.slug}"
                   class="text-base font-bold text-white group-hover:text-primary transition-colors truncate flex flex-col"
                 >
-                  <span class="text-primary"
-                    >{target.anime?.title} {target.slug}</span
-                  >
+                  <span class="text-primary">{target.anime?.title}</span>
                   <span class="italic text-white/60 font-normal"
                     >{target.song_romaji || target.name}</span
                   >

@@ -149,12 +149,16 @@ func main() {
 	animeUsecase := public.NewAnimeUsecase(animeRepo, songRepo, mediaService)
 	searchUsecase := public.NewSearchUsecase(animeRepo, songRepo, artistRepo, taxonomyRepo, userRepo, storageService)
 	catalogUsecase := public.NewCatalogUsecase(animeRepo, songRepo, artistRepo, taxonomyRepo, userRepo, playlistRepo, interactionRepo, moderationRepo, anilistClient, mediaService, appCache, os.Getenv("ENCRYPTION_KEY"))
-	xpUsecase := usecase.NewXPUsecase(xpRepo, userRepo)
-	activityUsecase := usecase.NewActivityUsecase(postgres.NewActivityRepository(db), userRepo, songRepo, artistRepo, mediaService)
-	authUsecase := auth.NewAuthUsecase(userRepo, jwtService, storageService, mediaService, xpUsecase, anilistClient, googleClient, os.Getenv("ENCRYPTION_KEY"))
-	interactionUsecase := interaction.NewInteractionUsecase(interactionRepo, commentRepo, userRepo, notificationRepo, songRepo, animeRepo, mediaService, xpUsecase, activityUsecase)
-	playlistUsecase := playlist.NewPlaylistUsecase(playlistRepo, songRepo, animeRepo, interactionRepo, mediaService, xpUsecase, userRepo)
+	
+	badgeRepo := postgres.NewBadgeRepository(db)
 	auditUsecase := audit.NewAuditLogUsecase(auditRepo)
+	badgeUsecase := admin.NewBadgeUsecase(badgeRepo, userRepo, interactionRepo, commentRepo, storageService, auditUsecase)
+
+	xpUsecase := usecase.NewXPUsecase(xpRepo, userRepo, badgeUsecase)
+	activityUsecase := usecase.NewActivityUsecase(postgres.NewActivityRepository(db), userRepo, songRepo, artistRepo, mediaService)
+	authUsecase := auth.NewAuthUsecase(userRepo, jwtService, storageService, mediaService, xpUsecase, badgeUsecase, anilistClient, googleClient, os.Getenv("ENCRYPTION_KEY"))
+	interactionUsecase := interaction.NewInteractionUsecase(interactionRepo, commentRepo, userRepo, notificationRepo, songRepo, animeRepo, artistRepo, mediaService, xpUsecase, activityUsecase, badgeUsecase)
+	playlistUsecase := playlist.NewPlaylistUsecase(playlistRepo, songRepo, animeRepo, interactionRepo, mediaService, xpUsecase, userRepo)
 
 	userAdminUsecase := admin.NewUserAdminUsecase(userRepo, mediaService, auditUsecase)
 	contentAdminUsecase := admin.NewContentAdminUsecase(animeRepo, songRepo, variantRepo, artistRepo, taxonomyRepo, userRepo, anilistClient, mediaService, auditUsecase)

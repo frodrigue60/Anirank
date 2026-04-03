@@ -63,13 +63,14 @@ type Favorite struct {
 }
 
 type ActivityItem struct {
-	Type      string      `json:"type"` // "rating", "favorite", "comment"
-	UserID    uint64      `json:"user_id"`
-	User      User        `json:"user"`
-	TargetID  uint64      `json:"target_id"`
-	Target    interface{} `json:"target"`          // The Anime, Song or Comment
-	Value     interface{} `json:"value,omitempty"` // Example: Rating score
-	CreatedAt string      `json:"created_at"`      // Returning raw string from MySQL
+	Type       string      `json:"type"` // "rating", "favorite", "comment"
+	UserID     uint64      `json:"user_id"`
+	User       User        `json:"user"`
+	TargetID   uint64      `json:"target_id"`
+	TargetType string      `json:"target_type"`
+	Target     interface{} `json:"target"`          // The Anime, Song or Comment
+	Value      interface{} `json:"value,omitempty"` // Example: Rating score
+	CreatedAt  string      `json:"created_at"`      // Returning raw string from MySQL
 }
 
 type Comment struct {
@@ -98,6 +99,7 @@ type InteractionRepository interface {
 	UpsertRating(ctx context.Context, rating *Rating) error
 	GetRatingByUser(ctx context.Context, userID, songID uint64) (*Rating, error)
 	GetAverageRating(ctx context.Context, songID uint64) (float64, error)
+	CountRatingsByUser(ctx context.Context, userID uint64) (int, error) // For automatic badges
 
 	// Reactions (Likes & Dislikes)
 	ToggleReaction(ctx context.Context, reaction *Reaction) error // Executes TX to increment/decrement Counter too.
@@ -120,6 +122,7 @@ type CommentRepository interface {
 	GetByID(ctx context.Context, id uint64) (*Comment, error)
 	GetByUUID(ctx context.Context, uuid string) (*Comment, error)
 	GetCountByEntity(ctx context.Context, entityID uint64, entityType string) (int, error)
+	GetCountByUser(ctx context.Context, userID uint64) (int, error) // For automatic badges
 	GetRepliesCount(ctx context.Context, parentID uint64) (int, error)
 	GetCount(ctx context.Context, songID uint64) (int, error)
 	Create(ctx context.Context, comment *Comment) error

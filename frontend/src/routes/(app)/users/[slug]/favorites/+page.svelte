@@ -35,7 +35,7 @@
     try {
       const nextPage = songsPage + 1;
       const response = await api.post(`/users/favorites/themes`, {
-        user_uuid: data.profile.uuid,
+        user_uuid: data.profile.uuid || data.profile.id,
         page: nextPage,
       });
 

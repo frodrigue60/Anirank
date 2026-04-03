@@ -13,6 +13,12 @@
   let description = $state(badge?.description || "");
   // svelte-ignore state_referenced_locally
   let isActive = $state(badge ? badge.is_active : true);
+  // svelte-ignore state_referenced_locally
+  let isAutomatic = $state(badge?.is_automatic || false);
+  // svelte-ignore state_referenced_locally
+  let requirementType = $state(badge?.requirement_type || "level");
+  // svelte-ignore state_referenced_locally
+  let requirementValue = $state(badge?.requirement_value || 0);
 
   let iconFile: File | null = $state(null);
   // svelte-ignore state_referenced_locally
@@ -36,6 +42,11 @@
       formData.append("name", name);
       formData.append("description", description);
       formData.append("is_active", isActive ? "true" : "false");
+      formData.append("is_automatic", isAutomatic ? "true" : "false");
+      if (isAutomatic) {
+        formData.append("requirement_type", requirementType);
+        formData.append("requirement_value", requirementValue.toString());
+      }
 
       if (iconFile) {
         formData.append("icon", iconFile);
@@ -44,7 +55,7 @@
       let res;
       if (badge) {
         // Update
-        res = await api.put(`/admin/badges/${badge.id}`, formData, {
+        res = await api.put(`/admin/badges/${badge.admin_id}`, formData, {
           headers: {
             "Content-Type": "multipart/form-data",
           },
@@ -190,16 +201,82 @@
         ></textarea>
       </div>
 
-      <!-- Status Toggle -->
-      <div class="flex items-center gap-3">
-        <label class="relative inline-flex items-center cursor-pointer">
-          <input type="checkbox" bind:checked={isActive} class="sr-only peer" />
-          <div
-            class="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-300 peer-checked:after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-anirank-primary"
-          ></div>
-          <span class="ml-3 text-sm font-medium text-white">Active</span>
-        </label>
+      <!-- Status & Automation -->
+      <div class="grid grid-cols-2 gap-4">
+        <div class="flex items-center gap-3">
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              bind:checked={isActive}
+              class="sr-only peer"
+            />
+            <div
+              class="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-300 peer-checked:after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-anirank-primary"
+            ></div>
+            <span class="ml-3 text-sm font-medium text-white">Active</span>
+          </label>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              bind:checked={isAutomatic}
+              class="sr-only peer"
+            />
+            <div
+              class="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-300 peer-checked:after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-500"
+            ></div>
+            <span class="ml-3 text-sm font-medium text-white">Automatic</span>
+          </label>
+        </div>
       </div>
+
+      {#if isAutomatic}
+        <div class="space-y-4 p-4 rounded-xl bg-indigo-500/5 border border-indigo-500/10 animate-scale-in">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label for="reqType" class="block text-sm font-medium text-gray-300 mb-1.5">
+                Type
+              </label>
+              <select
+                id="reqType"
+                bind:value={requirementType}
+                class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all [&>option]:bg-[#1a1a24]"
+              >
+                <option value="level">Level</option>
+                <option value="ratings">Ratings</option>
+                <option value="anilist">AniList</option>
+                <option value="comments">Comments</option>
+              </select>
+            </div>
+            <div>
+              <label for="reqValue" class="block text-sm font-medium text-gray-300 mb-1.5">
+                Value
+              </label>
+              <input
+                type="number"
+                id="reqValue"
+                bind:value={requirementValue}
+                min="0"
+                disabled={requirementType === 'anilist'}
+                class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all disabled:opacity-30"
+              />
+            </div>
+          </div>
+          <p class="text-[10px] text-indigo-400/60 leading-tight">
+            {#if requirementType === 'level'}
+              Reward users when they reach level <strong>{requirementValue}</strong>.
+            {:else if requirementType === 'ratings'}
+              Reward users after they submit <strong>{requirementValue}</strong> ratings.
+            {:else if requirementType === 'anilist'}
+              Reward users when they connect their AniList account.
+            {:else if requirementType === 'comments'}
+              Reward users after they post <strong>{requirementValue}</strong> comments.
+            {/if}
+          </p>
+        </div>
+      {/if}
 
       <!-- Actions -->
       <div

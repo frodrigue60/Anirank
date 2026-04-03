@@ -357,6 +357,9 @@ func (u *CatalogUsecase) GetUserPlaylists(ctx context.Context, requestingUserID 
 }
 
 func (u *CatalogUsecase) GetUserFavorites(ctx context.Context, userID string, limit, offset int) ([]domain.Song, int, error) {
+	if userID == "" {
+		return []domain.Song{}, 0, nil
+	}
 	user, err := u.userRepo.GetByUUID(ctx, userID)
 	if err != nil {
 		return nil, 0, err
@@ -386,6 +389,9 @@ func (u *CatalogUsecase) GetUserFavorites(ctx context.Context, userID string, li
 }
 
 func (u *CatalogUsecase) GetUserFavoriteArtists(ctx context.Context, userID string, limit, offset int) ([]domain.Artist, int, error) {
+	if userID == "" {
+		return []domain.Artist{}, 0, nil
+	}
 	user, err := u.userRepo.GetByUUID(ctx, userID)
 	if err != nil {
 		return nil, 0, err

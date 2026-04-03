@@ -37,6 +37,13 @@
 
   async function fetchItems(reset = false) {
     if (isFetching) return;
+    
+    if (!data.profile?.anilist_id) {
+      isNotLinked = true;
+      isLoading = false;
+      return;
+    }
+
     if (!reset && !hasMore) return;
 
     if (reset) {

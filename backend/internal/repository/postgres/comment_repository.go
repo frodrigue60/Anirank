@@ -283,6 +283,13 @@ func (r *commentRepository) GetCountByEntity(ctx context.Context, entityID uint6
 	return count, err
 }
 
+func (r *commentRepository) GetCountByUser(ctx context.Context, userID uint64) (int, error) {
+	var count int
+	query := "SELECT COUNT(*) FROM comments WHERE user_id = $1"
+	err := r.db.GetContext(ctx, &count, query, userID)
+	return count, err
+}
+
 func (r *commentRepository) GetRepliesCount(ctx context.Context, parentID uint64) (int, error) {
 	var count int
 	query := "SELECT COUNT(*) FROM comments WHERE parent_id = $1"

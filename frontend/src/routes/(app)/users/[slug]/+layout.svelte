@@ -167,13 +167,12 @@
 
             <div class="flex flex-col text-sm text-slate-400 mt-4">
               {#if data.profile.badges}
-                <span class="text-slate-400">Badges</span>
                 <div class="flex gap-1 items-center">
                   {#each data.profile.badges as badge}
                     <img
-                      src={badge.image_url}
+                      src={badge.icon_url}
                       alt={badge.name}
-                      class="w-5 h-5 brightness-0 invert"
+                      class="w-5 h-5"
                       title={badge.name}
                     />
                   {/each}
@@ -246,7 +245,7 @@
               ? `border-color: ${accentColor}; color: ${accentColor}`
               : ""}>Overview</a
           >
-          {#if true == true}
+          {#if data.profile.anilist_id}
             <a
               href={`/users/${data.profile.slug}/anime-list`}
               class="pb-4 font-bold transition-all border-b-2 {page.url

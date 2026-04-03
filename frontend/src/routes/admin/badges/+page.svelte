@@ -94,6 +94,7 @@
             <th class="px-6 py-4 font-medium hidden md:table-cell"
               >Description</th
             >
+            <th class="px-6 py-4 font-medium">Automation</th>
             <th class="px-6 py-4 font-medium">Status</th>
             <th class="px-6 py-4 font-medium text-right">Actions</th>
           </tr>
@@ -102,30 +103,11 @@
           {#each badges as badge (badge.id)}
             <tr class="hover:bg-white/2 transition-colors group">
               <td class="px-6 py-4">
-                {#if badge.icon_url}
-                  <img
-                    src={badge.icon_url}
-                    alt={badge.name}
-                    class="w-10 h-10 object-contain rounded-md bg-black/20 p-1"
-                  />
-                {:else}
-                  <div
-                    class="w-10 h-10 rounded-md bg-white/10 flex items-center justify-center text-gray-500"
-                  >
-                    <svg
-                      class="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      ><path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                      ></path></svg
-                    >
-                  </div>
-                {/if}
+                <img
+                  src={badge?.icon_url || "/images/placeholders/default.jpg"}
+                  alt={badge.name}
+                  class="w-10 h-10 object-contain rounded-md bg-black/20 p-1"
+                />
               </td>
               <td class="px-6 py-4 font-medium text-white">
                 {badge.name}
@@ -134,6 +116,34 @@
                 class="px-6 py-4 hidden md:table-cell max-w-[200px] truncate text-gray-400"
               >
                 {badge.description || "-"}
+              </td>
+              <td class="px-6 py-4">
+                {#if badge.is_automatic}
+                  <div class="flex flex-col gap-0.5">
+                    <span
+                      class="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-indigo-500/10 text-indigo-400 border border-indigo-500/20"
+                    >
+                      Auto
+                    </span>
+                    <span class="text-[10px] text-gray-500 font-medium">
+                      {#if badge.requirement_type === "level"}
+                        Level {badge.requirement_value}
+                      {:else if badge.requirement_type === "ratings"}
+                        {badge.requirement_value} Ratings
+                      {:else if badge.requirement_type === "anilist"}
+                        AniList Link
+                      {:else if badge.requirement_type === "comments"}
+                        {badge.requirement_value} Comments
+                      {/if}
+                    </span>
+                  </div>
+                {:else}
+                  <span
+                    class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-white/5 text-gray-500 border border-white/10"
+                  >
+                    Manual
+                  </span>
+                {/if}
               </td>
               <td class="px-6 py-4">
                 <span
@@ -167,7 +177,7 @@
                     >
                   </button>
                   <button
-                    onclick={() => deleteBadge(badge.id)}
+                    onclick={() => deleteBadge(badge.admin_id)}
                     disabled={loadingDelete === badge.id}
                     class="p-2 hover:bg-red-500/20 text-gray-400 hover:text-red-400 rounded-lg transition-colors disabled:opacity-50"
                     title="Delete"

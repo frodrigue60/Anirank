@@ -9,7 +9,7 @@ export const load = async ({ params, parent }: { params: { slug: string }, paren
     }
 
     try {
-        const res = await api.post(`/users/favorites/themes`, { user_uuid: user.uuid, page: 1 });
+        const res = await api.post(`/users/favorites/themes`, { user_uuid: user.uuid || user.id, page: 1 });
         return {
             songs: res.data || { data: [], pagination: { current_page: 1, last_page: 1 } }
         };

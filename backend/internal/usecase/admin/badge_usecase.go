@@ -9,16 +9,34 @@ import (
 	"anirank/api/internal/infrastructure"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 )
 
 type BadgeUsecase struct {
 	repo         domain.BadgeRepository
+	userRepo     domain.UserRepository
+	interactionRepo domain.InteractionRepository
+	commentRepo     domain.CommentRepository
 	storage      infrastructure.StorageService
 	auditUsecase domain.AuditLogUsecase
 }
 
-func NewBadgeUsecase(repo domain.BadgeRepository, storage infrastructure.StorageService, auditUsecase domain.AuditLogUsecase) domain.BadgeUsecase {
-	return &BadgeUsecase{repo: repo, storage: storage, auditUsecase: auditUsecase}
+func NewBadgeUsecase(
+	repo domain.BadgeRepository,
+	userRepo domain.UserRepository,
+	interactionRepo domain.InteractionRepository,
+	commentRepo domain.CommentRepository,
+	storage infrastructure.StorageService,
+	auditUsecase domain.AuditLogUsecase,
+) domain.BadgeUsecase {
+	return &BadgeUsecase{
+		repo:            repo,
+		userRepo:        userRepo,
+		interactionRepo: interactionRepo,
+		commentRepo:     commentRepo,
+		storage:         storage,
+		auditUsecase:    auditUsecase,
+	}
 }
 
 func (u *BadgeUsecase) GetByID(ctx context.Context, id uint64) (*domain.Badge, error) {
@@ -42,6 +60,9 @@ func (u *BadgeUsecase) GetAll(ctx context.Context) ([]domain.Badge, error) {
 func (u *BadgeUsecase) Create(ctx context.Context, badge *domain.Badge, meta domain.AuditMetadata) error {
 	if badge.Name == "" {
 		return domain.NewAppError(400, "Badge name is required", nil)
+	}
+	if badge.UUID == "" {
+		badge.UUID = uuid.New().String()
 	}
 	if err := u.repo.Create(ctx, badge); err != nil {
 		return err
@@ -132,4 +153,76 @@ func (u *BadgeUsecase) ResolveBadgesURLs(badges []domain.Badge) {
 	for i := range badges {
 		u.ResolveBadgeURL(&badges[i])
 	}
+}
+
+func (u *BadgeUsecase) CheckAndAwardBadges(ctx context.Context, userID uint64, triggerType string) error {
+	// 1. Get all automatic badges
+	autoBadges, err := u.repo.GetAutomatic(ctx)
+	if err != nil {
+		return err
+	}
+
+	if len(autoBadges) == 0 {
+		return nil
+	}
+
+	// 2. Get user's current badges to avoid duplicates
+	userBadgeIDs, err := u.repo.GetUserBadgeIDs(ctx, userID)
+	if err != nil {
+		return err
+	}
+	earnedMap := make(map[uint64]bool)
+	for _, id := range userBadgeIDs {
+		earnedMap[id] = true
+	}
+
+	// 3. Evaluate each automatic badge if it matches the triggerType
+	for _, badge := range autoBadges {
+		if earnedMap[badge.ID] {
+			continue
+		}
+
+		if badge.RequirementType == nil || *badge.RequirementType != triggerType {
+			continue
+		}
+
+		shouldAward := false
+		reqVal := 0
+		if badge.RequirementValue != nil {
+			reqVal = *badge.RequirementValue
+		}
+
+		switch triggerType {
+		case "level":
+			user, err := u.userRepo.GetByID(ctx, userID)
+			if err == nil && int(user.Level) >= reqVal {
+				shouldAward = true
+			}
+		case "ratings":
+			count, err := u.interactionRepo.CountRatingsByUser(ctx, userID)
+			if err == nil && count >= reqVal {
+				shouldAward = true
+			}
+		case "anilist":
+			user, err := u.userRepo.GetByID(ctx, userID)
+			if err == nil && user.AnilistID != nil {
+				shouldAward = true
+			}
+		case "comments":
+			count, err := u.commentRepo.GetCountByUser(ctx, userID)
+			if err == nil && count >= reqVal {
+				shouldAward = true
+			}
+		}
+
+		if shouldAward {
+			err = u.repo.Award(ctx, userID, badge.ID)
+			if err != nil {
+				// Log error but continue with other badges
+				fmt.Printf("Error awarding badge %d to user %d: %v\n", badge.ID, userID, err)
+			}
+		}
+	}
+
+	return nil
 }

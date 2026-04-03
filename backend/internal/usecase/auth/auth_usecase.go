@@ -30,18 +30,20 @@ type AuthUsecase struct {
 	storage       infrastructure.StorageService
 	media         infrastructure.MediaService
 	xpUsecase     domain.XPUsecase
+	badgeUsecase  domain.BadgeUsecase
 	anilist       *anilist.Client
 	google        *google.Client
 	encryptionKey string
 }
 
-func NewAuthUsecase(userRepo domain.UserRepository, jwtService *JWTService, storage infrastructure.StorageService, media infrastructure.MediaService, xu domain.XPUsecase, ac *anilist.Client, gc *google.Client, eKey string) *AuthUsecase {
+func NewAuthUsecase(userRepo domain.UserRepository, jwtService *JWTService, storage infrastructure.StorageService, media infrastructure.MediaService, xu domain.XPUsecase, bu domain.BadgeUsecase, ac *anilist.Client, gc *google.Client, eKey string) *AuthUsecase {
 	return &AuthUsecase{
 		userRepo:      userRepo,
 		jwtService:    jwtService,
 		storage:       storage,
 		media:         media,
 		xpUsecase:     xu,
+		badgeUsecase:  bu,
 		anilist:       ac,
 		google:        gc,
 		encryptionKey: eKey,
@@ -393,7 +395,14 @@ func (u *AuthUsecase) LinkAnilist(ctx context.Context, userID uint64, code strin
 	}
 	user.AnilistTokenExpiresAt = &expiresAt
 
-	return u.userRepo.Update(ctx, user)
+	if err := u.userRepo.Update(ctx, user); err != nil {
+		return err
+	}
+
+	// Automatic Badge Check
+	_ = u.badgeUsecase.CheckAndAwardBadges(ctx, userID, "anilist")
+
+	return nil
 }
 
 func (u *AuthUsecase) LinkGoogle(ctx context.Context, userID uint64, code string) error {
@@ -585,6 +594,9 @@ func (u *AuthUsecase) LoginWithAnilist(ctx context.Context, code string) (*AuthT
 	if err := u.userRepo.Update(ctx, user); err != nil {
 		return nil, domain.NewAppError(http.StatusInternalServerError, "Failed to update user", err)
 	}
+
+	// Automatic Badge Check
+	_ = u.badgeUsecase.CheckAndAwardBadges(ctx, user.ID, "anilist")
 
 	roleSlugs := []string{}
 	roles, _ := u.userRepo.GetRolesByUserID(ctx, user.ID)

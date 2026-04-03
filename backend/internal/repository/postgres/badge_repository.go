@@ -39,10 +39,46 @@ func (r *badgeRepository) GetAll(ctx context.Context) ([]domain.Badge, error) {
 	return badges, nil
 }
 
+func (r *badgeRepository) GetAutomatic(ctx context.Context) ([]domain.Badge, error) {
+	var badges []domain.Badge
+	query := "SELECT * FROM badges WHERE is_active = true AND is_automatic = true"
+	err := r.db.SelectContext(ctx, &badges, query)
+	if err != nil {
+		return nil, err
+	}
+	if badges == nil {
+		badges = []domain.Badge{}
+	}
+	return badges, nil
+}
+
+func (r *badgeRepository) GetUserBadgeIDs(ctx context.Context, userID uint64) ([]uint64, error) {
+	var ids []uint64
+	query := "SELECT badge_id FROM badge_user WHERE user_id = $1"
+	err := r.db.SelectContext(ctx, &ids, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	if ids == nil {
+		ids = []uint64{}
+	}
+	return ids, nil
+}
+
+func (r *badgeRepository) Award(ctx context.Context, userID, badgeID uint64) error {
+	query := `
+		INSERT INTO badge_user (user_id, badge_id, awarded_at, created_at, updated_at)
+		VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		ON CONFLICT DO NOTHING
+	`
+	_, err := r.db.ExecContext(ctx, query, userID, badgeID)
+	return err
+}
+
 func (r *badgeRepository) Create(ctx context.Context, badge *domain.Badge) error {
 	query := `
-		INSERT INTO badges (name, description, icon, is_active, created_at, updated_at)
-		VALUES (:name, :description, :icon, :is_active, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		INSERT INTO badges (uuid, name, description, icon, is_active, is_automatic, requirement_type, requirement_value, created_at, updated_at)
+		VALUES (:uuid, :name, :description, :icon, :is_active, :is_automatic, :requirement_type, :requirement_value, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 		RETURNING id
 	`
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
@@ -58,7 +94,11 @@ func (r *badgeRepository) Update(ctx context.Context, badge *domain.Badge) error
 		UPDATE badges 
 		SET name = :name, 
 		    description = :description, 
+		    icon = :icon,
 		    is_active = :is_active,
+		    is_automatic = :is_automatic,
+		    requirement_type = :requirement_type,
+		    requirement_value = :requirement_value,
 		    updated_at = CURRENT_TIMESTAMP
 		WHERE id = :id
 	`

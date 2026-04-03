@@ -37,7 +37,7 @@
     try {
       const nextPage = artistsPage + 1;
       const response = await api.post(`/users/favorites/artists`, {
-        user_uuid: data.profile.uuid,
+        user_uuid: data.profile.uuid || data.profile.id,
         page: nextPage,
       });
 

@@ -75,6 +75,19 @@ func (h *BadgeHandler) Create(c *fiber.Ctx) error {
 			badge.Description = &description
 		}
 		badge.IsActive = c.FormValue("is_active") == "true"
+		badge.IsAutomatic = c.FormValue("is_automatic") == "true"
+		if badge.IsAutomatic {
+			reqType := c.FormValue("requirement_type")
+			if reqType != "" {
+				badge.RequirementType = &reqType
+			}
+			reqValStr := c.FormValue("requirement_value")
+			if reqValStr != "" {
+				if val, err := strconv.Atoi(reqValStr); err == nil {
+					badge.RequirementValue = &val
+				}
+			}
+		}
 	}
 
 	if err := h.usecase.Create(c.Context(), &badge, h.getAuditMetadata(c)); err != nil {
@@ -112,6 +125,19 @@ func (h *BadgeHandler) Update(c *fiber.Ctx) error {
 			badge.Description = &description
 		}
 		badge.IsActive = c.FormValue("is_active") == "true"
+		badge.IsAutomatic = c.FormValue("is_automatic") == "true"
+		if badge.IsAutomatic {
+			reqType := c.FormValue("requirement_type")
+			if reqType != "" {
+				badge.RequirementType = &reqType
+			}
+			reqValStr := c.FormValue("requirement_value")
+			if reqValStr != "" {
+				if val, err := strconv.Atoi(reqValStr); err == nil {
+					badge.RequirementValue = &val
+				}
+			}
+		}
 	}
 	badge.ID = id
 

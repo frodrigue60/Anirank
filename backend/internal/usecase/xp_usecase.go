@@ -9,14 +9,16 @@ import (
 )
 
 type xpUsecase struct {
-	xpRepo   domain.XPRepository
-	userRepo domain.UserRepository
+	xpRepo       domain.XPRepository
+	userRepo     domain.UserRepository
+	badgeUsecase domain.BadgeUsecase
 }
 
-func NewXPUsecase(xpRepo domain.XPRepository, userRepo domain.UserRepository) domain.XPUsecase {
+func NewXPUsecase(xpRepo domain.XPRepository, userRepo domain.UserRepository, badgeUsecase domain.BadgeUsecase) domain.XPUsecase {
 	return &xpUsecase{
-		xpRepo:   xpRepo,
-		userRepo: userRepo,
+		xpRepo:       xpRepo,
+		userRepo:     userRepo,
+		badgeUsecase: badgeUsecase,
 	}
 }
 
@@ -92,7 +94,14 @@ func (u *xpUsecase) AwardXP(ctx context.Context, userID uint64, activityKey stri
 		return err
 	}
 
-	return u.xpRepo.UpdateUserXPAndLevel(ctx, userID, activity.XPAmount, newLevel)
+	if err := u.xpRepo.UpdateUserXPAndLevel(ctx, userID, activity.XPAmount, newLevel); err != nil {
+		return err
+	}
+
+	// 5. Automatic Badge Check
+	_ = u.badgeUsecase.CheckAndAwardBadges(ctx, userID, "level")
+
+	return nil
 }
 
 func (u *xpUsecase) CheckDailyLogin(ctx context.Context, userID uint64) error {

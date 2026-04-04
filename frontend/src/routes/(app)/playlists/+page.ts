@@ -10,7 +10,7 @@ export const load: PageLoad = async ({ url }) => {
     const response = await api.get('/playlists', { params });
 
     return {
-        playlists: response.data.data,
+        playlists: response.data,
         params
     };
 };

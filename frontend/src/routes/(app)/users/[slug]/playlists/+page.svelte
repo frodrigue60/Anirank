@@ -85,11 +85,11 @@
       class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12"
     >
       <div>
-        <h3 class="text-3xl font-black text-white tracking-tight leading-tight">
+        <h3 class="text-3xl font-black text-on-surface tracking-tight leading-tight">
           {data.profile.name}'s
           <span class="text-primary italic">Playlists</span>
         </h3>
-        <p class="text-white/40 mt-2 font-medium">
+        <p class="text-on-surface-variant mt-2 font-medium">
           Browse collections curated by {data.profile.name}.
         </p>
       </div>
@@ -98,23 +98,25 @@
         class="flex flex-col sm:flex-row items-center gap-4 w-full max-w-2xl"
       >
         <div class="relative flex-1 w-full">
-          <span class="absolute left-4 top-1/2 -translate-y-1/2 text-white/20">
+          <span
+            class="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/40"
+          >
             <Search size={20} />
           </span>
           <input
             type="text"
             bind:value={searchQuery}
             placeholder="Search playlists..."
-            class="w-full bg-surface-darker/50 border border-white/10 rounded-2xl py-4 pl-12 pr-6 text-white placeholder:text-white/20 focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all"
+            class="w-full bg-surface-low border border-on-surface-variant/10 rounded-2xl py-4 pl-12 pr-6 text-on-surface placeholder:text-on-surface-variant/40 focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all font-medium"
           />
         </div>
 
         {#if isOwner}
           <button
             onclick={() => (showCreateModal = true)}
-            class="bg-primary hover:bg-primary/80 text-white px-6 py-4 rounded-2xl text-sm font-bold transition-all flex items-center gap-2 whitespace-nowrap"
+            class="bg-primary hover:opacity-90 text-white px-8 py-4 rounded-2xl text-sm font-black uppercase tracking-widest transition-all flex items-center gap-2 whitespace-nowrap shadow-lg shadow-primary/20 active:scale-95"
           >
-            <span class="material-symbols-outlined text-sm">add</span>
+            <span class="material-symbols-outlined text-sm font-black">add</span>
             New Playlist
           </button>
         {/if}
@@ -135,11 +137,11 @@
       </div>
     {:else}
       <div
-        class="py-20 flex flex-col items-center justify-center text-center opacity-40"
+        class="py-20 flex flex-col items-center justify-center text-center text-on-surface-variant/40"
       >
         <Music size={80} strokeWidth={1} />
         <h2 class="text-2xl font-bold mt-6">No playlists found</h2>
-        <p class="mt-2 text-sm">
+        <p class="mt-2 text-sm font-medium">
           This user hasn't made any public playlists yet.
         </p>
       </div>

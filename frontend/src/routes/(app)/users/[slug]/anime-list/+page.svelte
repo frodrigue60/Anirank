@@ -104,16 +104,16 @@
 <div class="space-y-8" in:fade>
   <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
     <div>
-      <h2 class="text-2xl font-black text-white tracking-tight uppercase">AniList Sync</h2>
-      <p class="text-sm text-white/50">Synchronized collection from AniList profile</p>
+      <h2 class="text-2xl font-black text-on-surface tracking-tight uppercase">AniList Sync</h2>
+      <p class="text-sm text-on-surface-variant">Synchronized collection from AniList profile</p>
     </div>
 
     <!-- Status Tabs -->
-    <div class="flex bg-white/5 p-1 rounded-2xl border border-white/10 overflow-x-auto no-scrollbar max-w-full">
+    <div class="flex bg-surface-lowest p-1 rounded-2xl border border-on-surface-variant/10 overflow-x-auto no-scrollbar max-w-full">
       {#each statuses as s}
         <button
           onclick={() => handleStatusChange(s.value)}
-          class="px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all whitespace-nowrap {status === s.value ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-white/40 hover:text-white/60'}"
+          class="px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all whitespace-nowrap {status === s.value ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-on-surface-variant/40 hover:text-on-surface'}"
         >
           {s.label}
         </button>
@@ -127,31 +127,31 @@
         <span class="material-symbols-outlined text-4xl">link_off</span>
       </div>
       <div class="space-y-2 max-w-sm px-4">
-        <h3 class="text-2xl font-black text-white uppercase tracking-tighter">Sync Required</h3>
-        <p class="text-sm text-white/50 leading-relaxed uppercase tracking-tighter">
+        <h3 class="text-2xl font-black text-on-surface uppercase tracking-tighter">Sync Required</h3>
+        <p class="text-sm text-on-surface-variant leading-relaxed uppercase tracking-tighter">
           This user has not linked their AniList account yet. Syncing allows you to cross-reference their AniList collection with our library.
         </p>
       </div>
       {#if isOwnProfile}
-        <a href="/settings" class="bg-primary hover:bg-primary/80 text-white px-8 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-xl shadow-primary/20 hover:scale-105 active:scale-95">
+        <a href="/settings" class="bg-primary hover:opacity-90 text-white px-8 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-xl shadow-primary/20 hover:scale-105 active:scale-95">
           Link AniList Now
         </a>
       {/if}
     </div>
   {:else if items.length === 0 && !isLoading}
     <div class="py-20 flex flex-col items-center justify-center text-center space-y-4" in:fade>
-      <div class="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center text-white/20">
+      <div class="w-20 h-20 bg-surface-highest rounded-full flex items-center justify-center text-on-surface-variant/20">
         <Plus size={40} />
       </div>
-      <h3 class="text-xl font-bold text-white">No series found</h3>
-      <p class="text-sm text-white/40 max-w-xs">No series were found in this category on the user's AniList profile.</p>
+      <h3 class="text-xl font-bold text-on-surface">No series found</h3>
+      <p class="text-sm text-on-surface-variant max-w-xs">No series were found in this category on the user's AniList profile.</p>
     </div>
   {:else}
     <!-- Grid -->
     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
       {#each items as item (item.anilist_id)}
         <div class="group relative" in:fade>
-          <div class="aspect-2/3 rounded-2xl md:rounded-3xl overflow-hidden bg-white/5 border border-white/10 transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl hover:shadow-primary/20 relative">
+          <div class="aspect-2/3 rounded-2xl md:rounded-3xl overflow-hidden bg-surface-container border border-on-surface-variant/10 transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl hover:shadow-primary/20 relative shadow-md">
             <!-- Cover Image with Grayscale logic -->
             <img
               src={item.cover_image}
@@ -163,9 +163,9 @@
             <!-- Overlay for nonexistent -->
             {#if !item.is_in_db}
               <div class="absolute inset-0 bg-black/70 flex flex-col items-center justify-center p-4 opacity-100 group-hover:opacity-0 transition-opacity">
-                <div class="bg-zinc-900 border border-white/10 rounded-full px-3 py-1 flex items-center gap-1.5 shadow-xl">
-                  <div class="w-1.5 h-1.5 rounded-full bg-white/50"></div>
-                  <span class="text-[10px] font-bold text-white uppercase tracking-wider">Not in DB</span>
+                <div class="bg-surface-highest border border-on-surface-variant/10 rounded-full px-3 py-1 flex items-center gap-1.5 shadow-xl">
+                  <div class="w-1.5 h-1.5 rounded-full bg-on-surface/50"></div>
+                  <span class="text-[10px] font-bold text-on-surface uppercase tracking-wider">Not in DB</span>
                 </div>
               </div>
             {/if}
@@ -175,7 +175,7 @@
               {#if item.is_in_db}
                 <a
                   href={`/animes/${item.anime_slug}`}
-                  class="w-full bg-primary hover:bg-primary/80 text-white py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-lg shadow-primary/30"
+                  class="w-full bg-primary hover:opacity-90 text-white py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-lg shadow-primary/30 active:scale-95"
                 >
                   View Details
                   <ExternalLink size={14} />
@@ -183,7 +183,7 @@
               {:else}
                 <button
                   onclick={() => openRequest(item.title)}
-                  class="w-full bg-zinc-800 hover:bg-zinc-700 border border-white/10 text-white py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-xl"
+                  class="w-full bg-surface-highest hover:bg-surface-highest/80 border border-on-surface-variant/10 text-on-surface py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-xl active:scale-95"
                 >
                   Request Series
                   <MessageSquarePlus size={14} />
@@ -198,11 +198,11 @@
           </div>
 
           <div class="mt-3 px-1">
-            <h4 class="text-sm font-bold text-white line-clamp-1 group-hover:text-primary transition-colors">{item.title}</h4>
-            <div class="flex items-center gap-2 mt-1 text-[10px] font-bold text-white/30 uppercase tracking-widest">
+            <h4 class="text-sm font-bold text-on-surface line-clamp-1 group-hover:text-primary transition-colors">{item.title}</h4>
+            <div class="flex items-center gap-2 mt-1 text-[10px] font-bold text-on-surface-variant/60 uppercase tracking-widest">
               <span>{item.format}</span>
               {#if item.season_year}
-                <span class="w-1 h-1 rounded-full bg-white/10"></span>
+                <span class="w-1 h-1 rounded-full bg-on-surface-variant/20"></span>
                 <span>{item.season_year}</span>
               {/if}
             </div>

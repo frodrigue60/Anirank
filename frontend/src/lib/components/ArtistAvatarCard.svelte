@@ -21,7 +21,7 @@
   <div class="text-center">
     <a
       href="/artists/{artist.slug}"
-      class="font-bold text-white group-hover:text-primary transition-colors text-lg line-clamp-1"
+      class="font-bold text-on-surface group-hover:text-primary transition-colors text-lg line-clamp-1"
       title="View artist profile: {artist.name}">{artist.name}</a
     >
     <div

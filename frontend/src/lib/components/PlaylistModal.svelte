@@ -97,13 +97,13 @@
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
-    class="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/80"
+    class="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
     onclick={handleClose}
     transition:fade={{ duration: 200 }}
   >
     <!-- Modal Content -->
     <div
-      class="modal-glass w-full max-w-sm rounded-4xl overflow-hidden shadow-2xl p-8 flex flex-col items-center text-center relative"
+      class="modal-glass w-full max-w-sm rounded-[2.5rem] overflow-hidden shadow-2xl p-10 flex flex-col items-center text-center relative max-h-[90vh]"
       onclick={(e) => e.stopPropagation()}
       transition:scale={{ duration: 300, start: 0.95 }}
     >
@@ -111,21 +111,21 @@
       <div class="w-full flex justify-between items-start mb-6">
         <div class="text-left">
           <div class="flex items-center gap-2 text-primary mb-1">
-            <ListMusic size={14} />
-            <p class="text-[10px] font-bold uppercase tracking-[0.2em]">
+            <span class="material-symbols-outlined text-[14px]">library_music</span>
+            <p class="text-[10px] font-black uppercase tracking-[0.2em]">
               Add to Collection
             </p>
           </div>
-          <h3 class="text-xl font-bold leading-tight tracking-tight">
+          <h3 class="text-xl font-bold leading-tight tracking-tight text-on-surface">
             Your Playlists
           </h3>
-          <p class="text-xs text-white/50 mt-1">
+          <p class="text-xs text-on-surface-variant mt-1">
             Select where to add this theme.
           </p>
         </div>
         <button
           onclick={handleClose}
-          class="w-8 h-8 rounded-full hover:bg-white/5 flex items-center justify-center transition-colors text-white/40 hover:text-white"
+          class="w-8 h-8 rounded-full hover:bg-on-surface/5 flex items-center justify-center transition-colors text-on-surface-variant hover:text-on-surface"
         >
           <X size={18} />
         </button>
@@ -136,10 +136,10 @@
       >
         {#if isLoading}
           <div
-            class="py-12 flex flex-col items-center justify-center text-white/20"
+            class="py-12 flex flex-col items-center justify-center text-on-surface-variant/20"
           >
             <Loader2 class="animate-spin mb-2" size={32} />
-            <span class="text-xs font-bold uppercase tracking-widest"
+            <span class="text-[10px] font-black uppercase tracking-widest"
               >Loading...</span
             >
           </div>
@@ -148,13 +148,13 @@
             class="py-12 flex flex-col items-center justify-center text-center space-y-4"
           >
             <div
-              class="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center text-white/20"
+              class="w-16 h-16 bg-surface-highest rounded-full flex items-center justify-center text-on-surface-variant/20"
             >
               <Music size={32} />
             </div>
             <div>
-              <p class="text-sm font-bold text-white/80">No playlists found</p>
-              <p class="text-xs text-white/40">
+              <p class="text-sm font-bold text-on-surface/80">No playlists found</p>
+              <p class="text-xs text-on-surface-variant">
                 Create your first collection below.
               </p>
             </div>
@@ -163,22 +163,22 @@
           {#each playlists as playlist}
             <button
               onclick={() => toggleSong(playlist)}
-              class="w-full group flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all text-left"
+              class="w-full group flex items-center justify-between p-4 rounded-2xl bg-surface-highest/40 border border-outline-variant/5 hover:bg-surface-highest/80 hover:border-outline-variant/10 transition-all text-left"
             >
               <div class="flex items-center gap-4">
                 <div
-                  class="w-10 h-10 rounded-xl bg-surface-dark flex items-center justify-center text-white/40 group-hover:text-primary transition-colors"
+                  class="w-10 h-10 rounded-xl bg-surface-lowest flex items-center justify-center text-on-surface-variant/40 group-hover:text-primary transition-colors"
                 >
-                  <ListMusic size={20} />
+                  <span class="material-symbols-outlined text-[20px]">list_alt</span>
                 </div>
                 <div>
                   <h4
-                    class="text-sm font-bold text-white group-hover:text-primary transition-colors"
+                    class="text-sm font-bold text-on-surface group-hover:text-primary transition-colors"
                   >
                     {playlist.name}
                   </h4>
                   <p
-                    class="text-[10px] text-white/40 font-medium uppercase tracking-wider"
+                    class="text-[10px] text-on-surface-variant font-black uppercase tracking-wider"
                   >
                     {playlist.song_count} themes
                   </p>
@@ -194,11 +194,11 @@
                 </div>
               {:else}
                 <div
-                  class="w-6 h-6 rounded-full border border-white/10 group-hover:border-primary/50 flex items-center justify-center transition-colors"
+                  class="w-6 h-6 rounded-full border border-outline-variant/20 group-hover:border-primary/50 flex items-center justify-center transition-colors"
                 >
                   <Plus
                     size={14}
-                    class="text-white/20 group-hover:text-primary"
+                    class="text-on-surface-variant/20 group-hover:text-primary"
                   />
                 </div>
               {/if}
@@ -221,9 +221,9 @@
 
         <button
           onclick={() => (showCreateModal = true)}
-          class="w-full bg-white text-black py-4 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 hover:bg-gray-200 active:scale-95"
+          class="w-full bg-on-surface text-surface py-4 rounded-xl font-black text-sm transition-all flex items-center justify-center gap-2 hover:opacity-90 active:scale-95"
         >
-          <Plus size={16} />
+          <span class="material-symbols-outlined text-[18px]">add</span>
           Create New Playlist
         </button>
       </div>
@@ -239,10 +239,8 @@
 
 <style lang="postcss">
   .modal-glass {
-    background: rgba(25, 16, 34, 0.9);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--color-surface-container);
+    border: 1px solid var(--color-outline-variant, rgba(255, 255, 255, 0.1));
   }
 
   .custom-scrollbar::-webkit-scrollbar {
@@ -252,10 +250,10 @@
     background: transparent;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--color-outline-variant, rgba(255, 255, 255, 0.1));
     border-radius: 2px;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: var(--primary);
+    background: var(--color-primary);
   }
 </style>

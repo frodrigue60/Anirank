@@ -310,7 +310,7 @@ func SetupPublicRoutes(app *fiber.App,
 	adminOnly.Get("/animes/:id", adminHandler.GetAnime)
 	adminOnly.Post("/animes", middleware.HasPermissionMiddleware("anime.create", userRepo), adminHandler.CreateAnime)
 	adminOnly.Post("/animes/batch", middleware.HasPermissionMiddleware("anime.create", userRepo), adminHandler.BatchFetchAnimes)
-	adminOnly.Post("/animes/hydrate", middleware.HasPermissionMiddleware("anime.create", userRepo), adminHandler.HydrateAnimeThemes)
+	adminOnly.Post("/animes/hydrate", middleware.HasPermissionMiddleware("anime.create", userRepo), adminHandler.HydrateAnimeSeason)
 	adminOnly.Get("/animes/animethemes/search", adminHandler.SearchAnimeThemes)
 	adminOnly.Post("/animes/animethemes/hydrate", middleware.HasPermissionMiddleware("anime.create", userRepo), adminHandler.HydrateAnimeThemes)
 	adminOnly.Put("/animes/:id", middleware.HasPermissionMiddleware("anime.edit", userRepo), adminHandler.UpdateAnime)

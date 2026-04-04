@@ -72,9 +72,9 @@
         href={item.url}
         target={item.url?.startsWith("http") ? "_blank" : undefined}
         title={item.content}
-        class="relative rounded-2xl overflow-hidden min-h-[150px] flex flex-col justify-end p-5 group transition-all hover:scale-[1.02] active:scale-[0.98] border {typeConfig[
+        class="group relative flex min-h-[150px] flex-col justify-end overflow-hidden rounded-2xl p-5 transition-all hover:scale-[1.02] active:scale-[0.98] border {typeConfig[
           item.type
-        ]?.border || 'border-white/5'} {item.url ? 'cursor-pointer' : ''}"
+        ]?.border || 'border-outline-variant/10'} {item.url ? 'cursor-pointer' : ''}"
       >
         <!-- Background Image -->
         {#if item.image_url}
@@ -83,10 +83,10 @@
             style="background-image: url('{item.image_url}');"
           ></div>
           <div
-            class="absolute inset-0 bg-linear-to-t from-black via-black/60 to-transparent"
+            class="absolute inset-0 bg-linear-to-t from-black/90 via-black/40 to-transparent"
           ></div>
         {:else}
-          <div class="absolute inset-0 bg-surface-darker"></div>
+          <div class="absolute inset-0 bg-surface-low"></div>
           <div class="absolute inset-0 {typeConfig[item.type]?.bg || ''}"></div>
         {/if}
 
@@ -111,12 +111,20 @@
             </span>
           </div> -->
 
-          <h3 class="text-lg font-bold text-white leading-tight line-clamp-2">
+          <h3
+            class="line-clamp-2 text-lg font-bold leading-tight {item.image_url
+              ? 'text-white'
+              : 'text-on-surface'}"
+          >
             {item.title}
           </h3>
 
           {#if item.content}
-            <p class="text-white/70 text-xs line-clamp-2 mt-1">
+            <p
+              class="line-clamp-2 mt-1 text-xs {item.image_url
+                ? 'text-white/70'
+                : 'text-on-surface-variant'}"
+            >
               {item.content}
             </p>
           {/if}

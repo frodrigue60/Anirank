@@ -74,13 +74,13 @@
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
-    class="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/80"
+    class="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
     onclick={handleClose}
     transition:fade={{ duration: 200 }}
   >
     <!-- Modal Content -->
     <div
-      class="modal-glass w-full max-w-sm rounded-4xl overflow-hidden shadow-2xl p-8 flex flex-col items-center text-center relative"
+      class="modal-glass w-full max-w-sm rounded-[2.5rem] overflow-hidden shadow-2xl p-10 flex flex-col items-center text-center relative"
       onclick={(e) => e.stopPropagation()}
       transition:scale={{ duration: 300, start: 0.95 }}
     >
@@ -88,21 +88,21 @@
       <div class="w-full flex justify-between items-start mb-6">
         <div class="text-left">
           <div class="flex items-center gap-2 text-primary mb-1">
-            <Music size={14} />
-            <p class="text-[10px] font-bold uppercase tracking-[0.2em]">
+            <span class="material-symbols-outlined text-[14px]">music_note</span>
+            <p class="text-[10px] font-black uppercase tracking-[0.2em]">
               Request Theme
             </p>
           </div>
-          <h3 class="text-xl font-bold leading-tight tracking-tight">
+          <h3 class="text-xl font-bold leading-tight tracking-tight text-on-surface">
             Missing a theme?
           </h3>
-          <p class="text-xs text-white/50 mt-1">
+          <p class="text-xs text-on-surface-variant mt-1">
             Let us know what song or anime is missing.
           </p>
         </div>
         <button
           onclick={handleClose}
-          class="w-8 h-8 rounded-full hover:bg-white/5 flex items-center justify-center transition-colors text-white/40 hover:text-white"
+          class="w-8 h-8 rounded-full hover:bg-on-surface/5 flex items-center justify-center transition-colors text-on-surface-variant hover:text-on-surface"
         >
           <X size={18} />
         </button>
@@ -111,12 +111,12 @@
       {#if isSuccess}
         <div class="py-12 flex flex-col items-center space-y-4" in:scale>
           <div
-            class="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center text-green-500 mb-2"
+            class="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center text-green-500 mb-2 shadow-inner"
           >
             <CheckCircle2 size={36} />
           </div>
-          <h4 class="text-lg font-bold">Request Sent!</h4>
-          <p class="text-xs text-white/50 leading-relaxed">
+          <h4 class="text-lg font-bold text-on-surface">Request Sent!</h4>
+          <p class="text-xs text-on-surface-variant leading-relaxed">
             Your request has been submitted. We'll check it out!
           </p>
         </div>
@@ -126,7 +126,7 @@
           <div>
             <label
               for="request-title"
-              class="block text-[10px] font-bold uppercase tracking-wider text-white/40 mb-2 px-1"
+              class="block text-[10px] font-black uppercase tracking-wider text-on-surface-variant mb-2 px-1"
               >Anime/Song Title</label
             >
             <input
@@ -134,7 +134,7 @@
               type="text"
               bind:value={title}
               placeholder="e.g. Oshi no Ko - Idol"
-              class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-primary/50 transition-all"
+              class="w-full bg-surface-highest border border-outline-variant/10 rounded-xl px-4 py-3 text-sm text-on-surface focus:outline-none focus:border-primary/30 transition-all hover:bg-surface-highest/80"
             />
           </div>
 
@@ -142,19 +142,20 @@
           <div>
             <label
               for="request-content"
-              class="block text-[10px] font-bold uppercase tracking-wider text-white/40 mb-2 px-1"
+              class="block text-[10px] font-black uppercase tracking-wider text-on-surface-variant mb-2 px-1"
               >Links or Info (Optional)</label
             >
             <textarea
               id="request-content"
               bind:value={content}
               placeholder="Add links or specific details about the request..."
-              class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-primary/50 transition-all min-h-[100px] resize-none"
+              class="w-full bg-surface-highest border border-outline-variant/10 rounded-xl px-4 py-3 text-sm text-on-surface focus:outline-none focus:border-primary/30 transition-all min-h-[100px] resize-none hover:bg-surface-highest/80"
             ></textarea>
           </div>
 
           {#if errorMessage}
-            <p class="text-red-500 text-[10px] font-medium px-1 leading-tight">
+            <p class="text-red-500 text-[10px] font-bold px-1 leading-tight flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[14px]">error</span>
               {errorMessage}
             </p>
           {/if}
@@ -163,14 +164,14 @@
           <button
             onclick={handleSubmit}
             disabled={isSubmitting}
-            class="w-full bg-primary hover:bg-primary/80 disabled:opacity-50 text-white py-4 rounded-xl font-bold text-sm transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 active:scale-95"
+            class="w-full bg-primary hover:bg-primary/90 disabled:opacity-50 text-white py-4 rounded-xl font-black text-sm transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 active:scale-95"
           >
             {#if isSubmitting}
               <Loader2 class="animate-spin" size={18} />
               Sending...
             {:else}
               Submit Request
-              <Send size={16} />
+              <span class="material-symbols-outlined text-[18px]">send</span>
             {/if}
           </button>
         </div>
@@ -181,9 +182,7 @@
 
 <style lang="postcss">
   .modal-glass {
-    background: rgba(25, 16, 34, 0.9);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--color-surface-container);
+    border: 1px solid var(--color-outline-variant, rgba(255, 255, 255, 0.1));
   }
 </style>

@@ -101,10 +101,9 @@
 
 {#if data.profile}
   <div>
-    <!-- Cinematic Header Section -->
     <div class="relative h-[200px] md:h-[300px] w-full overflow-hidden">
       <div
-        class="absolute inset-0 bg-linear-to-t from-background-dark via-transparent to-transparent z-10"
+        class="absolute inset-0 bg-linear-to-t from-surface-container via-transparent to-transparent z-10"
       ></div>
       <!-- svelte-ignore a11y_img_redundant_alt -->
       {#if bannerUrl}
@@ -148,11 +147,11 @@
 
           <div class="flex-1 mb-1">
             <h1
-              class="text-3xl md:text-5xl font-black text-white tracking-tighter"
+              class="text-3xl md:text-5xl font-black text-on-surface tracking-tighter"
             >
               {data.profile.name}
             </h1>
-            <p class="text-white/80 font-medium text-lg mt-1">
+            <p class="text-on-surface-variant font-medium text-lg mt-1">
               followers {followersCount} | following {followingCount}
             </p>
             <div class="mt-4">
@@ -165,7 +164,7 @@
               />
             </div>
 
-            <div class="flex flex-col text-sm text-slate-400 mt-4">
+            <div class="flex flex-col text-sm text-on-surface-variant mt-4">
               {#if data.profile.badges}
                 <div class="flex gap-1 items-center">
                   {#each data.profile.badges as badge}
@@ -185,7 +184,7 @@
           {#if isOwnProfile}
             <a
               href="/settings"
-              class="flex items-center justify-center gap-2 px-6 h-11 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all font-bold text-sm"
+              class="flex items-center justify-center gap-2 px-6 h-11 rounded-xl bg-surface-highest/50 hover:bg-surface-highest text-on-surface border border-on-surface-variant/10 transition-all font-bold text-sm"
             >
               <span class="material-symbols-outlined text-sm">settings</span>
               Edit Profile
@@ -195,7 +194,7 @@
               onclick={handleFollow}
               disabled={isProcessing}
               class="flex items-center justify-center gap-2 px-8 h-11 rounded-xl font-bold text-sm transition-all shadow-lg {isFollowing
-                ? 'bg-white/10 text-white hover:bg-white/20'
+                ? 'bg-surface-highest text-on-surface hover:bg-surface-highest/80'
                 : 'text-white hover:opacity-90 shadow-lg'}"
               style={!isFollowing
                 ? `background-color: ${accentColor}; box-shadow: 0 10px 20px ${accentColor}33`
@@ -214,7 +213,7 @@
             </button>
             <button
               onclick={() => (showReportModal = true)}
-              class="flex items-center justify-center size-11 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all"
+              class="flex items-center justify-center size-11 rounded-xl bg-surface-highest/50 hover:bg-surface-highest border border-on-surface-variant/10 text-on-surface transition-all"
               title="Report User"
             >
               <span class="material-symbols-outlined">report</span>
@@ -240,7 +239,7 @@
             class="pb-4 font-bold transition-all border-b-2 {page.url
               .pathname === `/users/${data.profile.slug}`
               ? ''
-              : 'border-transparent text-slate-400 hover:text-slate-200'}"
+              : 'border-transparent text-on-surface-variant hover:text-on-surface'}"
             style={page.url.pathname === `/users/${data.profile.slug}`
               ? `border-color: ${accentColor}; color: ${accentColor}`
               : ""}>Overview</a
@@ -251,7 +250,7 @@
               class="pb-4 font-bold transition-all border-b-2 {page.url
                 .pathname === `/users/${data.profile.slug}/anime-list`
                 ? ''
-                : 'border-transparent text-slate-400 hover:text-slate-200'}"
+                : 'border-transparent text-on-surface-variant hover:text-on-surface'}"
               style={page.url.pathname ===
               `/users/${data.profile.slug}/anime-list`
                 ? `border-color: ${accentColor}; color: ${accentColor}`
@@ -263,7 +262,7 @@
             class="pb-4 font-bold transition-all border-b-2 {page.url
               .pathname === `/users/${data.profile.slug}/playlists`
               ? ''
-              : 'border-transparent text-slate-400 hover:text-slate-200'}"
+              : 'border-transparent text-on-surface-variant hover:text-on-surface'}"
             style={page.url.pathname === `/users/${data.profile.slug}/playlists`
               ? `border-color: ${accentColor}; color: ${accentColor}`
               : ""}>Playlists</a
@@ -273,7 +272,7 @@
             class="pb-4 font-bold transition-all border-b-2 {page.url
               .pathname === `/users/${data.profile.slug}/favorites`
               ? ''
-              : 'border-transparent text-slate-400 hover:text-slate-200'}"
+              : 'border-transparent text-on-surface-variant hover:text-on-surface'}"
             style={page.url.pathname === `/users/${data.profile.slug}/favorites`
               ? `border-color: ${accentColor}; color: ${accentColor}`
               : ""}>Favorites</a
@@ -283,7 +282,7 @@
             class="pb-4 font-bold transition-all border-b-2 {page.url
               .pathname === `/users/${data.profile.slug}/artists`
               ? ''
-              : 'border-transparent text-slate-400 hover:text-slate-200'}"
+              : 'border-transparent text-on-surface-variant hover:text-on-surface'}"
             style={page.url.pathname === `/users/${data.profile.slug}/artists`
               ? `border-color: ${accentColor}; color: ${accentColor}`
               : ""}>Artists</a
@@ -293,14 +292,14 @@
             class="pb-4 font-bold transition-all border-b-2 {page.url
               .pathname === `/users/${data.profile.slug}/followers`
               ? ''
-              : 'border-transparent text-slate-400 hover:text-slate-200'} flex gap-2 items-center"
+              : 'border-transparent text-on-surface-variant hover:text-on-surface'} flex gap-2 items-center"
             style={page.url.pathname === `/users/${data.profile.slug}/followers`
               ? `border-color: ${accentColor}; color: ${accentColor}`
               : ""}
           >
             Followers
             <span
-              class="text-[10px] bg-white/10 px-2 py-0.5 rounded-full font-bold"
+              class="text-[10px] bg-surface-highest px-2 py-0.5 rounded-full font-bold text-on-surface-variant"
               >{followersCount}</span
             >
           </a>
@@ -309,14 +308,14 @@
             class="pb-4 font-bold transition-all border-b-2 {page.url
               .pathname === `/users/${data.profile.slug}/following`
               ? ''
-              : 'border-transparent text-slate-400 hover:text-slate-200'} flex gap-2 items-center"
+              : 'border-transparent text-on-surface-variant hover:text-on-surface'} flex gap-2 items-center"
             style={page.url.pathname === `/users/${data.profile.slug}/following`
               ? `border-color: ${accentColor}; color: ${accentColor}`
               : ""}
           >
             Following
             <span
-              class="text-[10px] bg-white/10 px-2 py-0.5 rounded-full font-bold"
+              class="text-[10px] bg-surface-highest px-2 py-0.5 rounded-full font-bold text-on-surface-variant"
               >{followingCount}</span
             >
           </a>
@@ -337,8 +336,8 @@
     >
       <span class="material-symbols-outlined text-[48px]">person_off</span>
     </div>
-    <h1 class="text-3xl font-black text-white mb-2">User Not Found</h1>
-    <p class="text-white/40 max-w-md">
+    <h1 class="text-3xl font-black text-on-surface mb-2">User Not Found</h1>
+    <p class="text-on-surface-variant max-w-md">
       The profile you're looking for doesn't exist or has been removed.
     </p>
     <a

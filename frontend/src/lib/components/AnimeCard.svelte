@@ -67,11 +67,11 @@
     </a>
     <div>
       <h3
-        class="font-bold text-white group-hover:text-primary transition-colors line-clamp-1"
+        class="font-bold text-on-surface group-hover:text-primary transition-colors line-clamp-1"
       >
         {anime.title}
       </h3>
-      <p class="text-xs text-white/40">
+      <p class="text-xs text-on-surface-variant">
         {anime.season?.name || "Season"}
         {anime.year?.name || "Year"}
       </p>
@@ -81,7 +81,7 @@
   <!-- --- CARD VIEW (Detailed Card) --- -->
   <a
     href="/animes/{anime.slug}"
-    class="group block bg-surface-dark/30 hover:bg-surface-dark/50 border border-white/5 hover:border-primary/20 rounded-2xl overflow-hidden transition-all duration-300 h-full"
+    class="group block bg-surface-container hover:bg-surface-container-hover border border-white/5 hover:border-primary/20 rounded-2xl overflow-hidden transition-all duration-300 h-full"
   >
     <div class="flex flex-row h-full">
       <!-- Media Section -->
@@ -94,7 +94,7 @@
         <div
           class="absolute inset-0 bg-linear-to-t from-black/90 via-black/20 to-transparent"
         ></div>
-        <div class="absolute bottom-0 left-0 right-0 bg-white/10 p-2">
+        <div class="absolute bottom-0 left-0 right-0 p-2">
           <h4
             class="text-[10px] sm:text-xs font-bold text-white/80 transition-colors uppercase tracking-wider mb-1 line-clamp-1"
           >
@@ -110,26 +110,26 @@
             <div class="min-w-0 flex-1">
               <div class="flex items-center gap-2 mb-1 font-bold">
                 <span
-                  class="text-[10px] sm:text-xs text-white/40 uppercase tracking-widest"
+                  class="text-[10px] sm:text-xs text-on-surface-variant uppercase tracking-widest"
                 >
                   {anime.season?.name || ""}
                   {anime.year?.name || ""}
                 </span>
                 {#if anime.format?.name}
-                  <span class="text-[10px] text-white/30">•</span>
-                  <span class="text-[10px] text-white/40 uppercase">
+                  <span class="text-[10px] text-on-surface-variant">•</span>
+                  <span class="text-[10px] text-on-surface-variant uppercase">
                     {anime.format.name}
                   </span>
                 {/if}
                 <span
-                  class="text-[10px] sm:text-xs text-white/40 flex items-center gap-1.5"
+                  class="text-[10px] sm:text-xs text-on-surface-variant flex items-center gap-1.5"
                 >
-                  <span class="text-[10px] text-white/30">•</span>
+                  <span class="text-[10px] text-on-surface-variant">•</span>
                   {anime.songs_count || 0} Themes
                 </span>
               </div>
               <h3
-                class="text-base sm:text-xl font-bold text-white/80 group-hover:text-primary transition-all line-clamp-2 leading-tight"
+                class="text-base sm:text-xl font-bold text-primary group-hover:text-primary-container transition-all line-clamp-2 leading-tight"
               >
                 {anime.title}
               </h3>
@@ -157,9 +157,15 @@
 
           {#if anime.description}
             <p
-              class="text-white/50 text-[10px] sm:text-sm line-clamp-2 sm:line-clamp-4 leading-relaxed font-medium"
+              class="text-on-surface-variant text-[10px] sm:text-sm line-clamp-2 sm:line-clamp-4 leading-relaxed font-medium"
             >
               {@html anime.description}
+            </p>
+          {:else}
+            <p
+              class="text-on-surface-variant text-[10px] sm:text-sm line-clamp-2 sm:line-clamp-4 leading-relaxed font-medium"
+            >
+              No description available
             </p>
           {/if}
 
@@ -173,7 +179,7 @@
           <div class="flex flex-wrap gap-1 sm:gap-2">
             {#each anime.genres?.slice(0, 3) || [] as genre}
               <span
-                class="px-2 py-0.5 rounded-full bg-surface-darker/50 border border-white/10 text-white/50 text-[8px] sm:text-[10px] font-bold uppercase"
+                class="px-2 py-0.5 rounded-full bg-primary border border-white/10 text-on-primary text-[8px] sm:text-[10px] font-bold uppercase"
               >
                 {genre.name}
               </span>
@@ -187,7 +193,7 @@
   <!-- --- LIST VIEW (Horizontal Row) --- -->
   <a
     href="/animes/{anime.slug}"
-    class="group block bg-surface-dark/20 hover:bg-surface-dark/40 border border-white/5 hover:border-primary/20 rounded-xl overflow-hidden transition-all duration-300"
+    class="group block bg-surface-container hover:bg-surface-container-hover border border-white/5 hover:border-primary/20 rounded-xl overflow-hidden transition-all duration-300"
   >
     <div class="flex items-center h-20 sm:h-24 pr-4 sm:pr-8">
       <!-- Media Section -->
@@ -206,18 +212,18 @@
         <!-- Title & Genres -->
         <div class="flex-1 min-w-0">
           <h3
-            class="text-base sm:text-lg font-bold text-white group-hover:text-primary transition-colors truncate"
+            class="text-base sm:text-lg font-bold text-on-surface group-hover:text-primary transition-colors truncate"
           >
             {anime.title}
           </h3>
           <div class="flex-wrap gap-2 mt-1 flex">
             {#each anime.genres?.slice(0, 3) || [] as genre}
               <span
-                class="text-[10px] font-bold text-white/30 uppercase tracking-widest"
+                class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest"
                 >{genre.name}</span
               >
               {#if genre !== anime.genres[2] && genre !== anime.genres[anime.genres.length - 1]}
-                <span class="text-[10px] text-white/10">•</span>
+                <span class="text-[10px] text-on-surface-variant">•</span>
               {/if}
             {/each}
           </div>
@@ -243,7 +249,7 @@
             </span>
           {/if}
           <span
-            class="text-[10px] sm:text-xs text-white/40 flex items-center gap-1.5"
+            class="text-[10px] sm:text-xs text-on-surface-variant flex items-center gap-1.5"
           >
             {anime.songs_count || 0} Themes
           </span>
@@ -255,12 +261,12 @@
         >
           <div class="flex items-center gap-2">
             {#if anime.format?.name}
-              <span class="text-xs font-bold text-white/60 uppercase"
+              <span class="text-xs font-bold text-on-surface-variant uppercase"
                 >{anime.format.name}</span
               >
               {#if anime.episodes}
-                <span class="text-[10px] text-white/20">•</span>
-                <span class="text-xs text-white/40"
+                <span class="text-[10px] text-on-surface-variant">•</span>
+                <span class="text-xs text-on-surface-variant"
                   >{anime.episodes} episodes</span
                 >
               {/if}
@@ -268,7 +274,7 @@
           </div>
           <div class="flex items-center gap-2">
             <span
-              class="text-xs font-black text-white/20 uppercase tracking-wider"
+              class="text-xs font-black text-on-surface-variant uppercase tracking-wider"
             >
               {anime.season?.name || ""}
               {anime.year?.name || ""}

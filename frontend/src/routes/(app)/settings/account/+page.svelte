@@ -108,11 +108,11 @@
 
 <div class="mb-10">
   <h1
-    class="text-3xl font-black text-white tracking-tighter transition-all duration-500 animate-in fade-in slide-in-from-left-4"
+    class="text-3xl font-black text-on-surface tracking-tighter transition-all duration-500 animate-in fade-in slide-in-from-left-4"
   >
     Account Settings
   </h1>
-  <p class="text-white/40 text-sm mt-1">
+  <p class="text-on-surface-variant text-sm mt-1">
     Manage your account connections, security, and data.
   </p>
 </div>
@@ -120,17 +120,17 @@
 <div class="grid gap-8">
   <!-- Account Connections -->
   <section
-    class="bg-surface-dark border border-white/5 rounded-3xl overflow-hidden shadow-2xl transition-all duration-500 animate-in fade-in slide-in-from-bottom-4"
+    class="bg-surface-container border border-white/5 rounded-3xl overflow-hidden shadow-2xl transition-all duration-500 animate-in fade-in slide-in-from-bottom-4"
   >
-    <div class="px-8 py-6 border-b border-white/5 bg-white/2">
-      <h2 class="text-lg font-bold text-white tracking-tight">
+    <div class="px-8 py-6 border-b border-white/5 bg-surface-highest">
+      <h2 class="text-lg font-bold text-on-surface tracking-tight">
         Account Connections
       </h2>
     </div>
     <div class="p-8 space-y-6">
       <!-- Anilist -->
       <div
-        class="flex items-center justify-between p-4 rounded-2xl bg-background-dark border border-white/5"
+        class="flex items-center justify-between p-4 rounded-2xl bg-surface-container border border-on-surface-variant/10"
       >
         <div class="flex items-center gap-4">
           <div
@@ -139,15 +139,15 @@
             <img src="/images/anilist_icon.svg" alt="Anilist" class="w-6 h-6" />
           </div>
           <div>
-            <h3 class="text-sm font-bold text-white">Anilist</h3>
+            <h3 class="text-sm font-bold text-on-surface">Anilist</h3>
             {#if authState.user?.anilist_username}
-              <p class="text-xs text-white/40">
+              <p class="text-xs text-on-surface-variant">
                 Linked as <span class="text-primary font-bold"
                   >{authState.user.anilist_username}</span
                 >
               </p>
             {:else}
-              <p class="text-xs text-white/20">Not linked</p>
+              <p class="text-xs text-on-surface-variant">Not linked</p>
             {/if}
           </div>
         </div>
@@ -155,8 +155,8 @@
           onclick={handleAnilistLink}
           class="px-5 py-2 rounded-xl font-bold text-xs uppercase tracking-widest transition-all {authState
             .user?.anilist_id
-            ? 'bg-white/5 text-white/40 border border-white/10'
-            : 'bg-[#02a9ff] text-white shadow-[0_0_20px_rgba(2,169,255,0.3)] hover:scale-105 active:scale-95'}"
+            ? 'bg-surface-highest text-on-surface-variant/40 border border-on-surface-variant/10'
+            : 'bg-[#02a9ff] text-white shadow-lg shadow-[#02a9ff]/20 hover:scale-105 active:scale-95'}"
         >
           {authState.user?.anilist_id ? "Synced" : "Sync account"}
         </button>
@@ -164,13 +164,13 @@
 
       <!-- Google -->
       <div
-        class="flex items-center justify-between p-4 rounded-2xl bg-background-dark border border-white/5"
+        class="flex items-center justify-between p-4 rounded-2xl bg-surface-container border border-on-surface-variant/10"
       >
         <div class="flex items-center gap-4">
           <div
-            class="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center border border-white/10"
+            class="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center border border-on-surface-variant/10"
           >
-            <svg class="w-6 h-6 text-white" viewBox="0 0 24 24">
+            <svg class="w-6 h-6 text-on-surface" viewBox="0 0 24 24">
               <path
                 fill="currentColor"
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -190,15 +190,15 @@
             </svg>
           </div>
           <div>
-            <h3 class="text-sm font-bold text-white">Google</h3>
+            <h3 class="text-sm font-bold text-on-surface">Google</h3>
             {#if authState.user?.google_email}
-              <p class="text-xs text-white/40">
+              <p class="text-xs text-on-surface-variant">
                 Linked as <span class="text-primary font-bold"
                   >{authState.user.google_email}</span
                 >
               </p>
             {:else}
-              <p class="text-xs text-white/20">Not linked</p>
+              <p class="text-xs text-on-surface-variant">Not linked</p>
             {/if}
           </div>
         </div>
@@ -206,8 +206,8 @@
           onclick={handleGoogleSync}
           class="px-5 py-2 rounded-xl font-bold text-xs uppercase tracking-widest transition-all {authState
             .user?.google_id
-            ? 'bg-white/5 text-white/40 border border-white/10'
-            : 'bg-white text-black hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.2)]'}"
+            ? 'bg-surface-highest text-on-surface-variant/40 border border-on-surface-variant/10'
+            : 'bg-on-surface text-surface hover:scale-105 active:scale-95 shadow-lg shadow-black/20'}"
         >
           {authState.user?.google_id ? "Synced" : "Sync account"}
         </button>
@@ -217,24 +217,24 @@
 
   <!-- Security -->
   <section
-    class="bg-surface-dark border border-white/5 rounded-3xl overflow-hidden shadow-2xl transition-all duration-500 animate-in fade-in slide-in-from-bottom-5"
+    class="bg-surface-container border border-white/5 rounded-3xl overflow-hidden shadow-2xl transition-all duration-500 animate-in fade-in slide-in-from-bottom-5"
   >
-    <div class="px-8 py-6 border-b border-white/5 bg-white/2">
-      <h2 class="text-lg font-bold text-white tracking-tight">Security</h2>
+    <div class="px-8 py-6 border-b border-white/5 bg-surface-highest">
+      <h2 class="text-lg font-bold text-on-surface tracking-tight">Security</h2>
     </div>
     <div class="p-8 space-y-4">
       <button
         onclick={handleResetPassword}
-        class="w-full flex items-center justify-between p-4 rounded-2xl bg-background-dark border border-white/5 hover:bg-white/5 transition-colors group"
+        class="w-full flex items-center justify-between p-4 rounded-2xl bg-surface-low border border-on-surface-variant/10 hover:bg-surface-highest transition-colors group"
       >
         <div class="text-left">
-          <h3 class="text-sm font-bold text-white">Reset Password</h3>
-          <p class="text-xs text-white/40">
+          <h3 class="text-sm font-bold text-on-surface">Reset Password</h3>
+          <p class="text-xs text-on-surface-variant">
             Send a password reset link to your email.
           </p>
         </div>
         <span
-          class="material-symbols-outlined text-white/20 group-hover:text-primary transition-colors"
+          class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors"
           >lock_reset</span
         >
       </button>
@@ -243,9 +243,9 @@
 
   <!-- Termination -->
   <section
-    class="bg-surface-dark border border-white/5 rounded-3xl overflow-hidden shadow-2xl transition-all duration-500 animate-in fade-in slide-in-from-bottom-6"
+    class="bg-surface-container border border-white/5 rounded-3xl overflow-hidden shadow-2xl transition-all duration-500 animate-in fade-in slide-in-from-bottom-6"
   >
-    <div class="px-8 py-6 border-b border-white/5 bg-white/2">
+    <div class="px-8 py-6 border-b border-white/5 bg-surface-highest">
       <h2 class="text-lg font-bold text-red-500/80 tracking-tight">
         Danger Zone
       </h2>

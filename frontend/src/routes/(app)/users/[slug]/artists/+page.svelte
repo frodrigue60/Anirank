@@ -3,6 +3,7 @@
   import { User as UserIcon } from "lucide-svelte";
   import InfiniteScroll from "$lib/components/InfiniteScroll.svelte";
   import api from "$lib/api";
+  import ArtistAvatarCard from "$lib/components/ArtistAvatarCard.svelte";
 
   let { data } = $props();
 
@@ -44,8 +45,10 @@
       const producersData = response.data.artists || response.data;
       if (producersData?.data) {
         artists = [...artists, ...producersData.data];
-        artistsPage = producersData.pagination?.current_page || producersData.current_page;
-        artistsLastPage = producersData.pagination?.last_page || artistsLastPage;
+        artistsPage =
+          producersData.pagination?.current_page || producersData.current_page;
+        artistsLastPage =
+          producersData.pagination?.last_page || artistsLastPage;
       }
     } catch (e) {
       console.error("Error loading more artists", e);
@@ -59,10 +62,10 @@
   {#if data.profile}
     <div class="flex items-center justify-between mb-12">
       <div>
-        <h3 class="text-3xl font-black text-white tracking-tight leading-tight">
+        <h3 class="text-3xl font-black text-on-surface tracking-tight leading-tight">
           Favorite <span class="text-primary italic">Artists</span>
         </h3>
-        <p class="text-white/40 mt-2 font-medium">
+        <p class="text-on-surface-variant mt-2 font-medium">
           Artists curated by {data.profile.name}.
         </p>
       </div>
@@ -73,30 +76,7 @@
         class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-8 mb-12"
       >
         {#each artists as artist}
-          <a
-            href={`/artists/${artist.slug}`}
-            class="flex flex-col items-center group cursor-pointer"
-          >
-            <div
-              class="size-24 sm:size-32 rounded-full border-2 border-primary/30 p-1 group-hover:border-primary transition-all mb-4 bg-surface-darker/50"
-            >
-              <!-- svelte-ignore a11y_missing_attribute -->
-              <img
-                class="h-full w-full rounded-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
-                data-alt="Artist portrait"
-                src={artist.avatar_url ||
-                  "https://placehold.co/200x200/2a2136/white?text=Artist"}
-              />
-            </div>
-            <h5
-              class="text-slate-100 font-bold text-center text-sm md:text-base line-clamp-1"
-            >
-              {artist.name}
-            </h5>
-            <p class="text-slate-500 text-xs mt-1">
-              {artist.songs_count || 0} Themes
-            </p>
-          </a>
+          <ArtistAvatarCard {artist} />
         {/each}
       </div>
 
@@ -107,7 +87,7 @@
       />
     {:else}
       <div
-        class="py-20 flex flex-col items-center justify-center text-center opacity-40"
+        class="py-20 flex flex-col items-center justify-center text-center text-on-surface-variant/40"
       >
         <UserIcon size={80} strokeWidth={1} />
         <h2 class="text-2xl font-bold mt-6">No artists found</h2>

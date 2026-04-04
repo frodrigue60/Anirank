@@ -11,10 +11,10 @@
 </script>
 
 <div
-  class="bg-surface-dark/30 border border-white/5 rounded-2xl overflow-hidden mb-8"
+  class="bg-surface-container border border-white/5 rounded-2xl overflow-hidden mb-8"
 >
   <div
-    class="grid grid-cols-[80px_1fr_100px_120px_120px_120px] gap-4 px-8 py-4 border-b border-white/5 text-[10px] font-black uppercase tracking-widest text-white/30 bg-surface-darker/50"
+    class="grid grid-cols-[80px_1fr_100px_120px_120px_120px] gap-4 px-8 py-4 border-b border-white/5 text-[10px] font-black uppercase tracking-widest text-on-surface-variant"
   >
     <div class="text-center">Rank</div>
     <div>User</div>
@@ -55,11 +55,11 @@
             <div class="min-w-0 flex flex-col">
               <a
                 href={`/users/${user.slug}`}
-                class="text-lg font-bold text-white hover:text-primary transition-colors truncate"
+                class="text-lg font-bold text-on-surface hover:text-primary transition-colors truncate"
               >
                 {user.name}
               </a>
-              <span class="text-white/40 text-xs"
+              <span class="text-on-surface-variant text-xs"
                 >Joined {new Date(user.created_at).toLocaleDateString()}</span
               >
             </div>
@@ -74,16 +74,19 @@
           </div>
 
           <div class="text-center">
-            <span class="text-white font-bold">{formatNumber(user.xp)}</span>
-          </div>
-
-          <div class="text-center">
-            <span class="text-white/80">{formatNumber(user.ratings_count)}</span
+            <span class="text-on-surface font-bold"
+              >{formatNumber(user.xp)}</span
             >
           </div>
 
           <div class="text-center">
-            <span class="text-white/80"
+            <span class="text-on-surface-variant"
+              >{formatNumber(user.ratings_count)}</span
+            >
+          </div>
+
+          <div class="text-center">
+            <span class="text-on-surface-variant"
               >{formatNumber(user.comments_count)}</span
             >
           </div>
@@ -91,7 +94,7 @@
       {/each}
     {:else}
       <div
-        class="flex flex-col items-center justify-center py-20 text-white/30"
+        class="flex flex-col items-center justify-center py-20 text-on-surface-variant"
       >
         <span class="material-symbols-outlined text-6xl mb-4">group_off</span>
         <p class="text-lg font-bold">No users found</p>

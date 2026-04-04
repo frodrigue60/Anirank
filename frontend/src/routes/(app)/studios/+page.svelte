@@ -1,10 +1,9 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import CustomSelect from "$lib/components/CustomSelect.svelte";
   import InfiniteScroll from "$lib/components/InfiniteScroll.svelte";
   import api from "$lib/api";
-  import { Search, SortDesc } from "lucide-svelte";
+  import { Search } from "lucide-svelte";
   import SEO from "$lib/components/SEO.svelte";
 
   let { data }: { data: any } = $props();
@@ -41,7 +40,7 @@
     const url = new URL(page.url);
 
     const setParam = (key: string, val: string) => {
-      if (val && val !== "any") url.searchParams.set(key, val);
+      if (val) url.searchParams.set(key, val);
       else url.searchParams.delete(key);
     };
 
@@ -111,45 +110,54 @@
 <main class="flex-1 w-full max-w-[1440px] mx-auto px-6 py-12 space-y-4">
   <!-- Filter Row -->
   <section
-    class="relative z-40 flex flex-col gap-4 bg-surface-dark/30 p-4 rounded-3xl border border-white/5 shadow-2xl mb-10"
+    class="relative z-40 flex flex-col gap-4 bg-surface-container p-4 rounded-3xl border border-white/5 shadow-2xl mb-10"
   >
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
       <!-- Search -->
       <div class="lg:col-span-8 relative group">
         <label
           for="studio-search"
-          class="block text-[10px] uppercase font-black text-white/40 mb-2 ml-1 tracking-widest"
+          class="block text-[10px] uppercase font-black text-on-surface mb-2 ml-1 tracking-widest"
         >
           Search Studios
         </label>
         <div class="relative">
           <span
-            class="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-primary transition-colors"
+            class="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface/50 group-focus-within:text-primary transition-colors"
           >
             <Search size={20} />
           </span>
           <input
-            id="producer-search"
+            id="studio-search"
             type="text"
             bind:value={searchQuery}
             oninput={handleInput}
             onkeydown={handleKeydown}
-            class="w-full h-12 bg-surface-darker/50 border border-white/10 rounded-xl pl-12 pr-6 text-sm text-white focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 placeholder:text-white/20 transition-all"
+            class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-xl pl-12 pr-6 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 placeholder:text-on-surface/20 transition-all"
             placeholder="Search animation studios (e.g. MAPPA, Ufotable)..."
           />
         </div>
       </div>
 
       <!-- Sort -->
-      <div class="lg:col-span-4">
-        <CustomSelect
-          label="Sort"
+      <div class="lg:col-span-4 flex flex-col gap-2">
+        <label
+          for="sort-select"
+          class="block text-[10px] uppercase font-black text-on-surface mb-2 ml-1 tracking-widest"
+        >
+          Sort By
+        </label>
+        <select
+          id="sort-select"
           bind:value={selectedSort}
-          options={sortOptions}
-          placeholder="Any"
-          icon={SortDesc}
           onchange={updateFilters}
-        />
+          class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-xl px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
+        >
+          <option value="">Any</option>
+          {#each sortOptions as option}
+            <option value={option.value}>{option.label}</option>
+          {/each}
+        </select>
       </div>
     </div>
   </section>
@@ -157,11 +165,13 @@
   <!-- Title and Count -->
   <div class="flex items-center justify-between">
     <div>
-      <h2 class="text-2xl font-bold flex items-center gap-3">
+      <h2
+        class="text-2xl font-bold flex items-center gap-3 text-on-surface-variant"
+      >
         <span class="w-2 h-8 bg-primary rounded-full"></span>
         Studios
         {#if data.studios?.pagination?.total > 0}
-          <span class="text-white/30 font-normal text-lg ml-2"
+          <span class="text-on-surface-variant font-normal text-lg"
             >({data.studios.pagination.total.toLocaleString()})</span
           >
         {/if}
@@ -175,7 +185,7 @@
       {#each studios as studio}
         <a
           href="/studios/{studio.slug}"
-          class="group relative overflow-hidden rounded-xl bg-slate-800 aspect-video border border-transparent hover:border-primary/50 transition-all cursor-pointer shadow-lg shadow-black/20"
+          class="group relative overflow-hidden rounded-xl bg-surface-container aspect-video border border-transparent hover:border-primary/50 transition-all cursor-pointer shadow-lg shadow-black/20"
         >
           <!-- Background Image (Banner) -->
           <div
@@ -185,24 +195,24 @@
           ></div>
 
           <div
-            class="absolute inset-0 bg-linear-to-t from-background-dark/95 via-background-dark/40 to-transparent"
+            class="absolute inset-0 bg-linear-to-t from-surface-container via-surface-container/40 to-transparent"
           ></div>
 
           <div class="absolute bottom-0 left-0 right-0 p-6 flex flex-col gap-1">
             <h3
-              class="text-2xl font-bold text-white group-hover:text-primary transition-colors"
+              class="text-2xl font-bold text-on-surface group-hover:text-primary transition-colors"
             >
               {studio.name}
             </h3>
             <div
-              class="mt-4 flex items-center justify-between border-t border-white/10 pt-4"
+              class="flex items-center justify-between border-t border-white/10"
             >
               <div class="flex flex-col">
                 <span
-                  class="text-[10px] text-slate-400 uppercase font-bold tracking-wider"
+                  class="text-[10px] text-on-surface-variant uppercase font-bold tracking-wider"
                   >Produced</span
                 >
-                <span class="text-white text-sm font-semibold"
+                <span class="text-on-surface text-sm font-semibold"
                   >{studio.anime_count || 0} Series</span
                 >
               </div>
@@ -219,13 +229,18 @@
     />
   {:else}
     <div
-      class="text-center py-20 bg-surface-darker/30 rounded-3xl border-2 border-dashed border-white/5"
+      class="text-center py-20 bg-surface-container/30 rounded-3xl border-2 border-dashed border-white/5"
     >
-      <span class="material-symbols-outlined text-6xl text-white/10 mb-4 block"
+      <span
+        class="material-symbols-outlined text-6xl text-on-surface-variant opacity-20 mb-4 block"
         >search_off</span
       >
-      <h3 class="text-xl font-bold text-white/40">No studios found</h3>
-      <p class="text-white/20 mt-2">Try adjusting your search or filters</p>
+      <h3 class="text-xl font-bold text-on-surface-variant">
+        No studios found
+      </h3>
+      <p class="text-on-surface-variant opacity-40 mt-2">
+        Try adjusting your search or filters
+      </p>
     </div>
   {/if}
 </main>

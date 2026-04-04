@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { fade, scale } from "svelte/transition";
   import api from "$lib/api";
 
   let { show = $bindable(false) } = $props();
@@ -86,23 +87,23 @@
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
-      class="absolute inset-0 bg-background-dark/80"
+      class="absolute inset-0 bg-black/60 backdrop-blur-sm"
       onclick={closeModal}
+      transition:fade={{ duration: 200 }}
     ></div>
 
     <div
-      class="relative w-full max-w-2xl bg-surface-dark border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
+      class="relative w-full max-w-2xl bg-surface-container border border-outline-variant/10 rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
+      transition:scale={{ duration: 300, start: 0.95 }}
     >
       <!-- Search Input Header -->
-      <div class="p-4 border-b border-white/5 flex items-center gap-4">
-        <span class="material-symbols-outlined text-white/40text-[24px]"
-          >search</span
-        >
+      <div class="p-6 border-b border-outline-variant/10 flex items-center gap-4 bg-surface-container/50 backdrop-blur-md">
+        <span class="material-symbols-outlined text-primary text-[24px]">search</span>
         <input
           type="text"
           bind:value={query}
           placeholder="Search animes, artists, users..."
-          class="flex-1 bg-transparent border-none text-white text-lg focus:outline-none placeholder:text-white/30"
+          class="flex-1 bg-transparent border-none text-on-surface text-lg focus:outline-none placeholder:text-on-surface-variant/30 font-bold"
         />
         {#if isLoading}
           <div
@@ -111,7 +112,7 @@
         {:else if query.length > 0}
           <button
             onclick={() => (query = "")}
-            class="text-white/40 hover:text-white transition-colors"
+            class="w-8 h-8 rounded-full hover:bg-on-surface/5 flex items-center justify-center transition-colors text-on-surface-variant hover:text-on-surface"
           >
             <span class="material-symbols-outlined text-[20px]">close</span>
           </button>
@@ -119,52 +120,52 @@
       </div>
 
       <!-- Search Results -->
-      <div class="overflow-y-auto flex-1 p-4">
+      <div class="overflow-y-auto flex-1 p-6 custom-scrollbar">
         {#if query.trim().length < 3}
-          <div class="text-center py-8 text-white/40">
-            <span class="material-symbols-outlined text-[48px] mb-2 opacity-50"
+          <div class="text-center py-12 text-on-surface-variant">
+            <span class="material-symbols-outlined text-[48px] mb-4 opacity-20"
               >search</span
             >
-            <p>Type at least 3 characters to search</p>
+            <p class="text-sm font-bold uppercase tracking-widest opacity-50">Type at least 3 characters to search</p>
           </div>
         {:else if !isLoading && (results?.animes?.length || 0) === 0 && (results?.artists?.length || 0) === 0 && (results?.users?.length || 0) === 0 && (results?.songs?.length || 0) === 0}
-          <div class="text-center py-8 text-white/40">
-            <span class="material-symbols-outlined text-[48px] mb-2 opacity-50"
+          <div class="text-center py-12 text-on-surface-variant">
+            <span class="material-symbols-outlined text-[48px] mb-4 opacity-20"
               >sentiment_dissatisfied</span
             >
-            <p>No results found for "{query}"</p>
+            <p class="text-sm font-bold uppercase tracking-widest opacity-50">No results found for "{query}"</p>
           </div>
         {:else}
-          <div class="flex flex-col gap-6">
+          <div class="flex flex-col gap-8">
             <!-- Animes -->
             {#if results.animes && results.animes.length > 0}
               <div>
                 <h3
-                  class="text-xs font-bold text-white/50 uppercase tracking-wider mb-3 px-1"
+                  class="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-4 px-2"
                 >
                   Animes
                 </h3>
-                <div class="flex flex-col gap-1">
+                <div class="flex flex-col gap-2">
                   {#each results.animes.slice(0, 5) as anime}
                     <a
                       href="/animes/{anime.slug}"
                       onclick={closeModal}
-                      class="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors group"
+                      class="flex items-center gap-4 p-2 rounded-[1.25rem] hover:bg-surface-highest/50 transition-all group"
                     >
                       <img
                         src={anime.cover_url ||
                           "https://placehold.co/100x150/1e1e24/7f13ec?text=Anime"}
                         alt={anime.title}
                         title={anime.title}
-                        class="w-10 h-14 object-cover rounded bg-surface-darker"
+                        class="w-12 h-16 object-cover rounded-xl bg-surface-lowest shadow-lg shadow-black/20"
                       />
                       <div class="flex flex-col">
                         <span
-                          class="text-white font-medium group-hover:text-primary transition-colors line-clamp-1"
+                          class="text-on-surface font-black group-hover:text-primary transition-colors line-clamp-1"
                           >{anime.title}</span
                         >
                         {#if anime.year || anime.season}
-                          <span class="text-white/40 text-xs line-clamp-1"
+                          <span class="text-on-surface-variant/60 text-xs font-medium"
                             >{anime.season?.name} {anime.year?.name}</span
                           >
                         {/if}
@@ -175,119 +176,37 @@
               </div>
             {/if}
 
-            <!-- Artists -->
-            {#if results.artists && results.artists.length > 0}
-              <div>
-                <h3
-                  class="text-xs font-bold text-white/50 uppercase tracking-wider mb-3 px-1"
-                >
-                  Artists
-                </h3>
-                <div class="flex flex-col gap-1">
-                  {#each results.artists.slice(0, 5) as artist}
-                    <a
-                      href="/artists/{artist.slug}"
-                      onclick={closeModal}
-                      class="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors group"
-                    >
-                      <div
-                        class="w-10 h-10 rounded-full bg-surface-darker overflow-hidden flex items-center justify-center text-primary/50"
-                      >
-                        {#if artist.avatar_url}
-                          <img
-                            src={artist.avatar_url}
-                            alt={artist.name}
-                            title={artist.name}
-                            class="w-full h-full object-cover"
-                          />
-                        {:else}
-                          <span class="material-symbols-outlined text-[20px]"
-                            >person</span
-                          >
-                        {/if}
-                      </div>
-                      <span
-                        class="text-white font-medium group-hover:text-primary transition-colors"
-                        >{artist.name}</span
-                      >
-                    </a>
-                  {/each}
-                </div>
-              </div>
-            {/if}
-
-            <!-- Users -->
-            {#if results.users && results.users.length > 0}
-              <div>
-                <h3
-                  class="text-xs font-bold text-white/50 uppercase tracking-wider mb-3 px-1"
-                >
-                  Users
-                </h3>
-                <div class="flex flex-col gap-1">
-                  {#each results.users.slice(0, 5) as user}
-                    <a
-                      href="/users/{user.slug}"
-                      onclick={closeModal}
-                      class="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors group"
-                    >
-                      <div
-                        class="w-10 h-10 rounded-full bg-surface-darker overflow-hidden flex items-center justify-center text-primary/50"
-                      >
-                        {#if user.avatar_url}
-                          <img
-                            src={user.avatar_url}
-                            alt={user.name}
-                            title={user.name}
-                            class="w-full h-full object-cover"
-                          />
-                        {:else}
-                          <span class="material-symbols-outlined text-[20px]"
-                            >person</span
-                          >
-                        {/if}
-                      </div>
-                      <span
-                        class="text-white font-medium group-hover:text-primary transition-colors"
-                        >{user.name}</span
-                      >
-                    </a>
-                  {/each}
-                </div>
-              </div>
-            {/if}
-
             <!-- Songs -->
             {#if results.songs && results.songs.length > 0}
               <div>
                 <h3
-                  class="text-xs font-bold text-white/50 uppercase tracking-wider mb-3 px-1"
+                  class="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-4 px-2"
                 >
                   Songs
                 </h3>
-                <div class="flex flex-col gap-1">
+                <div class="flex flex-col gap-2">
                   {#each results.songs.slice(0, 5) as song}
                     <a
                       href="/songs/{song.anime?.slug}/{song.slug}"
                       onclick={closeModal}
-                      class="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors group"
+                      class="flex items-center gap-4 p-3 rounded-[1.25rem] hover:bg-surface-highest/50 transition-all group"
                     >
                       <div
-                        class="w-10 h-10 rounded bg-surface-darker flex items-center justify-center text-primary"
+                        class="w-12 h-12 rounded-xl bg-surface-lowest border border-outline-variant/10 flex items-center justify-center text-primary shadow-lg shadow-black/20"
                       >
-                        <span class="material-symbols-outlined text-[20px]"
+                        <span class="material-symbols-outlined text-[24px]"
                           >music_note</span
                         >
                       </div>
                       <div class="flex flex-col">
                         <span
-                          class="text-white font-medium group-hover:text-primary transition-colors line-clamp-1"
+                          class="text-on-surface font-black group-hover:text-primary transition-colors line-clamp-1"
                           >{song.song_romaji ||
                             song.song_en ||
                             "Untitled Song"}</span
                         >
                         {#if song.anime}
-                          <span class="text-white/40 text-xs line-clamp-1"
+                          <span class="text-on-surface-variant/60 text-xs font-medium"
                             >{song.type} - {song.anime.title}</span
                           >
                         {/if}
@@ -298,63 +217,121 @@
               </div>
             {/if}
 
-            <!-- Studios -->
-            {#if results.studios && results.studios.length > 0}
-              <div>
-                <h3
-                  class="text-xs font-bold text-white/50 uppercase tracking-wider mb-3 px-1"
-                >
-                  Studios
-                </h3>
-                <div class="flex flex-col gap-1">
-                  {#each results.studios.slice(0, 5) as studio}
-                    <a
-                      href="/studios/{studio.slug}"
-                      onclick={closeModal}
-                      class="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors group"
-                    >
-                      <div
-                        class="w-10 h-10 rounded bg-white/5 flex items-center justify-center overflow-hidden"
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <!-- Artists -->
+              {#if results.artists && results.artists.length > 0}
+                <div>
+                  <h3
+                    class="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-4 px-2"
+                  >
+                    Artists
+                  </h3>
+                  <div class="flex flex-col gap-2">
+                    {#each results.artists.slice(0, 5) as artist}
+                      <a
+                        href="/artists/{artist.slug}"
+                        onclick={closeModal}
+                        class="flex items-center gap-3 p-2 rounded-xl hover:bg-surface-highest/50 transition-all group"
                       >
-                        {#if studio.logo_url}
-                          <img
-                            src={studio.logo_url}
-                            alt={studio.name}
-                            title={studio.name}
-                            class="w-full h-full object-contain"
-                          />
-                        {:else}
-                          <span
-                            class="material-symbols-outlined text-[20px] text-white/20"
-                            >business</span
-                          >
-                        {/if}
-                      </div>
-                      <span
-                        class="text-white font-medium group-hover:text-primary transition-colors"
-                        >{studio.name}</span
-                      >
-                    </a>
-                  {/each}
+                        <div
+                          class="w-10 h-10 rounded-full border-2 border-outline-variant/10 bg-surface-lowest overflow-hidden flex items-center justify-center text-primary/50 group-hover:border-primary transition-all shadow-lg shadow-black/20"
+                        >
+                          {#if artist.avatar_url}
+                            <img
+                              src={artist.avatar_url}
+                              alt={artist.name}
+                              title={artist.name}
+                              class="w-full h-full object-cover"
+                            />
+                          {:else}
+                            <span class="material-symbols-outlined text-[20px]"
+                              >person</span
+                            >
+                          {/if}
+                        </div>
+                        <span
+                          class="text-on-surface font-bold group-hover:text-primary transition-colors"
+                          >{artist.name}</span
+                        >
+                      </a>
+                    {/each}
+                  </div>
                 </div>
-              </div>
-            {/if}
+              {/if}
+
+              <!-- Users -->
+              {#if results.users && results.users.length > 0}
+                <div>
+                  <h3
+                    class="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-4 px-2"
+                  >
+                    Users
+                  </h3>
+                  <div class="flex flex-col gap-2">
+                    {#each results.users.slice(0, 5) as user}
+                      <a
+                        href="/users/{user.slug}"
+                        onclick={closeModal}
+                        class="flex items-center gap-3 p-2 rounded-xl hover:bg-surface-highest/50 transition-all group"
+                      >
+                        <div
+                          class="w-10 h-10 rounded-full border-2 border-outline-variant/10 bg-surface-lowest overflow-hidden flex items-center justify-center text-primary/50 group-hover:border-primary transition-all shadow-lg shadow-black/20"
+                        >
+                          {#if user.avatar_url}
+                            <img
+                              src={user.avatar_url}
+                              alt={user.name}
+                              title={user.name}
+                              class="w-full h-full object-cover"
+                            />
+                          {:else}
+                            <span class="material-symbols-outlined text-[20px]"
+                              >person</span
+                            >
+                          {/if}
+                        </div>
+                        <span
+                          class="text-on-surface font-bold group-hover:text-primary transition-colors"
+                          >{user.name}</span
+                        >
+                      </a>
+                    {/each}
+                  </div>
+                </div>
+              {/if}
+            </div>
           </div>
         {/if}
       </div>
 
       <div
-        class="p-3 bg-surface-darker border-t border-white/5 flex items-center justify-between text-xs text-white/40"
+        class="p-4 bg-surface-container border-t border-outline-variant/10 flex items-center justify-between text-[10px] text-on-surface-variant font-black uppercase tracking-widest"
       >
-        <span class="flex items-center gap-1"
-          ><kbd class="bg-white/10 px-1.5 py-0.5 rounded border border-white/10"
+        <span class="flex items-center gap-2 opacity-50"
+          ><kbd class="bg-surface-highest px-2 py-1 rounded-lg border border-outline-variant/10"
             >ESC</kbd
           > to close</span
         >
-        <span class="flex items-center gap-1"
-          >Powered by <span class="font-bold text-primary">Anirank</span></span
+        <span class="flex items-center gap-2 opacity-50"
+          >Powered by <span class="text-primary">Anirank</span></span
         >
       </div>
     </div>
   </div>
 {/if}
+
+<style lang="postcss">
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--color-outline-variant, rgba(255, 255, 255, 0.1));
+    border-radius: 2px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--color-primary);
+  }
+</style>

@@ -64,7 +64,7 @@
       <!-- Featured Theme -->
       {#if homeData.featured_song}
         <section
-          class="relative w-full min-h-[400px] rounded-2xl overflow-hidden bg-surface-dark group"
+          class="group relative min-h-[400px] w-full overflow-hidden rounded-2xl bg-surface-container"
         >
           <div
             class="absolute inset-0 bg-cover bg-center opacity-40 transition-transform duration-700 group-hover:scale-105 group-hover:opacity-50"
@@ -72,29 +72,29 @@
               ?.banner_url ?? '/images/placeholders/default-banner.jpg'}');"
           ></div>
           <div
-            class="absolute inset-0 bg-linear-to-t from-background-dark via-background-dark/80 to-transparent sm:bg-linear-to-r"
+            class="absolute inset-0 bg-linear-to-t from-surface via-surface/40 to-transparent sm:bg-linear-to-r sm:from-surface sm:via-surface/80 sm:to-transparent"
           ></div>
           <div
             class="relative z-10 p-8 md:p-12 flex flex-col md:flex-row gap-8 items-center md:items-end w-full h-full"
           >
-            <div class="relative shrink-0 box-shadow-lg shadow-primary/80">
+            <div class="relative shrink-0 shadow-2xl">
               <div
-                class="w-48 h-48 md:w-64 md:h-64 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden relative border border-white/10"
+                class="relative h-48 w-48 overflow-hidden rounded-xl border border-outline-variant/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] md:h-64 md:w-64"
               >
                 <img
                   alt="Cover art for {homeData.featured_song.anime?.title ||
                     'featured theme'}"
                   title="Cover art for {homeData.featured_song.anime?.title ||
                     'featured theme'}"
-                  class="w-full h-full object-cover"
+                  class="h-full w-full object-cover"
                   src={homeData.featured_song.anime?.cover_url ??
                     "/images/placeholders/default.jpg"}
                 />
                 <div
-                  class="absolute bottom-0 inset-x-0 bg-linear-to-t from-black/90 via-black/40 to-transparent p-4 pt-12"
+                  class="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/90 via-black/40 to-transparent p-4 pt-12"
                 >
                   <div
-                    class="flex items-center gap-1 text-yellow-400 font-bold text-lg drop-shadow-md"
+                    class="flex items-center gap-1 text-lg font-bold text-yellow-400 drop-shadow-md"
                   >
                     <span class="material-symbols-outlined filled">star</span>
                     <span
@@ -107,10 +107,10 @@
               </div>
             </div>
             <div
-              class="flex flex-col gap-4 text-center md:text-left flex-1 pb-4"
+              class="flex flex-1 flex-col gap-4 pb-4 text-center md:text-left"
             >
               <div
-                class="inline-flex items-center gap-2 self-center md:self-start bg-primary/20 text-primary border border-primary/30 px-3 py-1.5 rounded-full shadow-lg shadow-primary/10"
+                class="inline-flex items-center gap-2 self-center rounded-full bg-primary/10 px-3 py-1.5 text-primary shadow-lg shadow-primary/5 md:self-start"
               >
                 <span class="material-symbols-outlined text-[16px] filled"
                   >auto_awesome</span
@@ -121,11 +121,11 @@
               </div>
               <div class="flex flex-col gap-1">
                 <h1
-                  class="text-3xl sm:text-4xl md:text-5xl font-black leading-tight tracking-tight text-white drop-shadow-lg line-clamp-2"
+                  class="line-clamp-2 text-3xl font-black leading-tight tracking-tight text-on-surface sm:text-4xl md:text-5xl"
                 >
                   {getSongName(homeData.featured_song)}
                 </h1>
-                <span class="font-medium text-white/90"
+                <span class="font-medium text-on-surface-variant"
                   >{homeData.featured_song.artists
                     ?.map((a: any) => a.name)
                     .join(", ") ?? "Unknown Artist"}</span
@@ -135,12 +135,12 @@
                 >
               </div>
               <div
-                class="flex items-center gap-4 mt-4 justify-center md:justify-start"
+                class="mt-4 flex items-center justify-center gap-4 md:justify-start"
               >
                 <a
                   href="/songs/{homeData.featured_song.anime?.slug}/{homeData
                     .featured_song.slug}"
-                  class="bg-primary hover:bg-primary-light text-white h-12 sm:h-14 px-8 sm:px-10 rounded-full font-bold flex items-center justify-center gap-2 transition-transform hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(127,19,236,0.3)]"
+                  class="flex h-12 items-center justify-center gap-2 rounded-full bg-linear-to-br from-primary to-primary-container px-8 text-lg font-bold text-white transition-all hover:scale-105 hover:shadow-lg hover:shadow-primary/20 active:scale-95 sm:h-14 sm:px-10"
                   title="Play featured theme: {getSongName(
                     homeData.featured_song,
                   )}"
@@ -149,7 +149,7 @@
                   <span class="material-symbols-outlined filled text-[24px]"
                     >play_arrow</span
                   >
-                  <span class="text-lg">Play Now</span>
+                  <span>Play Now</span>
                 </a>
               </div>
             </div>
@@ -160,14 +160,14 @@
       <!-- Weekly Rankings -->
       <section>
         <div
-          class="flex flex-col sm:flex-row sm:items-center justify-between mb-6 px-1 gap-4"
+          class="mb-6 flex flex-col gap-4 px-1 sm:flex-row sm:items-center justify-between"
         >
-          <h2 class="text-2xl font-bold tracking-tight flex items-center gap-2">
+          <h2 class="flex items-center gap-2 text-2xl font-bold tracking-tight">
             <span class="material-symbols-outlined text-primary"
               >leaderboard</span
             >
             <a
-              class="text-white/80 text-md hover:text-primary transition-colors"
+              class="text-on-surface hover:text-primary transition-colors"
               href="/songs/ranking"
               title="View full song rankings"
               aria-label="View all rankings">Weekly Anime Songs Ranking</a
@@ -177,9 +177,9 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <!-- Top Openings -->
           <div class="flex flex-col gap-4">
-            <div class="flex items-center justify-between mb-2">
+            <div class="mb-2 flex items-center justify-between">
               <span
-                class="text-white/50 text-xs font-bold uppercase tracking-wider"
+                class="text-xs font-bold uppercase tracking-wider text-on-surface-variant/60"
                 >Top Openings</span
               >
             </div>
@@ -187,34 +187,34 @@
               {#each homeData.weakly_ranking.op.slice(0, 3) as item, index}
                 <a
                   href="/songs/{item.anime?.slug}/{item.slug}"
-                  class="group relative bg-surface-darker p-4 rounded-xl hover:bg-surface-dark transition-colors border border-white/5 flex gap-4 items-center"
+                  class="group relative flex items-center gap-4 rounded-xl bg-surface-low p-4 transition-all hover:bg-surface-container"
                   title="View details for {getSongName(item)}"
                 >
                   <div
-                    class="relative w-20 h-20 shrink-0 rounded-lg overflow-hidden"
+                    class="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg"
                   >
                     <img
                       alt={getSongName(item)}
                       title={getSongName(item)}
-                      class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                       src={item.anime?.cover_url ??
                         "/images/placeholders/default.jpg"}
                     />
                     <div
-                      class="absolute top-1 left-1 bg-surface-darker text-white text-xs font-bold px-1.5 py-0.5 rounded shadow"
+                      class="absolute top-1 left-1 rounded bg-black/60 px-1.5 py-0.5 text-xs font-bold text-white shadow backdrop-blur-sm"
                     >
                       #{index + 1}
                     </div>
                   </div>
-                  <div class="flex-1 min-w-0">
+                  <div class="min-w-0 flex-1">
                     <div class="flex items-center justify-between">
                       <h3
-                        class="font-bold text-white truncate text-lg group-hover:text-primary transition-colors"
+                        class="truncate text-lg font-bold text-on-surface transition-colors group-hover:text-primary"
                       >
                         {getSongName(item)}
                       </h3>
                       <div
-                        class="flex items-center text-xs gap-1 bg-surface-dark px-2 py-0.5 rounded text-yellow-400 font-bold shrink-0 ml-2"
+                        class="ml-2 flex shrink-0 items-center gap-1 rounded-full bg-surface-highest px-2 py-0.5 text-xs font-bold text-rating-star"
                       >
                         <span class="material-symbols-outlined filled"
                           >star</span
@@ -222,10 +222,10 @@
                         {formatScore(item.average_rating)}
                       </div>
                     </div>
-                    <p class="text-sm text-primary font-medium truncate">
+                    <p class="truncate text-sm font-medium text-primary">
                       {item.anime?.title}
                     </p>
-                    <p class="text-xs text-white/50 truncate">
+                    <p class="truncate text-xs text-on-surface-variant">
                       {item.artists?.map((a: any) => a.name).join(", ") ??
                         "Unknown Artist"}
                     </p>
@@ -234,7 +234,7 @@
               {/each}
             {:else}
               <div
-                class="flex h-32 flex-col items-center justify-center rounded-xl border border-dashed border-white/10 bg-surface-darker text-white/40"
+                class="flex h-32 flex-col items-center justify-center rounded-xl bg-surface-low text-on-surface-variant/40"
               >
                 <span class="text-sm">No rankings available yet</span>
               </div>
@@ -242,9 +242,9 @@
           </div>
           <!-- Top Endings -->
           <div class="flex flex-col gap-4">
-            <div class="flex items-center justify-between mb-2">
+            <div class="mb-2 flex items-center justify-between">
               <span
-                class="text-white/50 text-xs font-bold uppercase tracking-wider"
+                class="text-xs font-bold uppercase tracking-wider text-on-surface-variant/60"
                 >Top Endings</span
               >
             </div>
@@ -252,46 +252,45 @@
               {#each homeData.weakly_ranking.ed.slice(0, 3) as item, index}
                 <a
                   href="/songs/{item.anime?.slug}/{item.slug}"
-                  class="group relative bg-surface-darker p-4 rounded-xl hover:bg-surface-dark transition-colors border border-white/5 flex gap-4 items-center"
+                  class="group relative flex items-center gap-4 rounded-xl bg-surface-low p-4 transition-all hover:bg-surface-container"
                   title="View details for {getSongName(item)}"
                 >
                   <div
-                    class="relative w-20 h-20 shrink-0 rounded-lg overflow-hidden"
+                    class="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg"
                   >
                     <img
                       alt={getSongName(item)}
                       title={getSongName(item)}
-                      class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                       src={item.anime?.cover_url ??
                         "/images/placeholders/default.jpg"}
                     />
                     <div
-                      class="absolute top-1 left-1 bg-surface-dark text-white text-xs font-bold px-1.5 py-0.5 rounded shadow border border-white/10"
+                      class="absolute top-1 left-1 rounded bg-black/60 px-1.5 py-0.5 text-xs font-bold text-white shadow backdrop-blur-sm"
                     >
                       #{index + 1}
                     </div>
                   </div>
-                  <div class="flex-1 min-w-0">
+                  <div class="min-w-0 flex-1">
                     <div class="flex items-center justify-between">
                       <h3
-                        class="font-bold text-white truncate text-lg group-hover:text-primary transition-colors"
+                        class="truncate text-lg font-bold text-on-surface transition-colors group-hover:text-primary"
                       >
                         {getSongName(item)}
                       </h3>
                       <div
-                        class="flex items-center gap-1 bg-surface-dark px-2 py-0.5 rounded text-yellow-400 text-xs font-bold shrink-0 ml-2"
+                        class="ml-2 flex shrink-0 items-center gap-1 rounded-full bg-surface-highest px-2 py-0.5 text-xs font-bold text-rating-star"
                       >
-                        <span
-                          class="material-symbols-outlined filled text-[14px]"
+                        <span class="material-symbols-outlined filled"
                           >star</span
                         >
                         {formatScore(item.average_rating)}
                       </div>
                     </div>
-                    <p class="text-sm text-primary font-medium truncate">
+                    <p class="truncate text-sm font-medium text-primary">
                       {item.anime?.title}
                     </p>
-                    <p class="text-xs text-white/50 truncate">
+                    <p class="truncate text-xs text-on-surface-variant">
                       {item.artists?.map((a: any) => a.name).join(", ") ??
                         "Unknown Artist"}
                     </p>
@@ -300,7 +299,7 @@
               {/each}
             {:else}
               <div
-                class="flex h-32 flex-col items-center justify-center rounded-xl border border-dashed border-white/10 bg-surface-darker text-white/40"
+                class="flex h-32 flex-col items-center justify-center rounded-xl bg-surface-low text-on-surface-variant/40"
               >
                 <span class="text-sm">No rankings available yet</span>
               </div>
@@ -310,33 +309,35 @@
       </section>
 
       <!-- Tabs Section (Carousels) -->
-      <section class="pb-12">
-        <div class="border-b border-white/5 mb-6 flex justify-between">
+      <section class="">
+        <div
+          class="flex justify-between border-b border-outline-variant/10 mb-4"
+        >
           <div class="flex gap-8">
             <button
               onclick={() => changeTab("recently")}
-              class="pb-4 border-b-2 font-medium text-sm tracking-wide transition-colors {activeTab ===
+              class="pb-4 text-sm font-medium tracking-wide transition-colors border-b-2 {activeTab ===
               'recently'
-                ? 'border-primary text-white font-bold'
-                : 'border-transparent text-white/40 hover:text-white'}"
+                ? 'border-primary text-on-surface font-bold'
+                : 'border-transparent text-on-surface-variant hover:text-on-surface'}"
             >
               New Releases
             </button>
             <button
               onclick={() => changeTab("popular")}
-              class="pb-4 border-b-2 font-medium text-sm tracking-wide transition-colors {activeTab ===
+              class="pb-4 text-sm font-medium tracking-wide transition-colors border-b-2 {activeTab ===
               'popular'
-                ? 'border-primary text-white font-bold'
-                : 'border-transparent text-white/40 hover:text-white'}"
+                ? 'border-primary text-on-surface font-bold'
+                : 'border-transparent text-on-surface-variant hover:text-on-surface'}"
             >
               Most Popular
             </button>
             <button
               onclick={() => changeTab("viewed")}
-              class="pb-4 border-b-2 font-medium text-sm tracking-wide transition-colors {activeTab ===
+              class="pb-4 text-sm font-medium tracking-wide transition-colors border-b-2 {activeTab ===
               'viewed'
-                ? 'border-primary text-white font-bold'
-                : 'border-transparent text-white/40 hover:text-white'}"
+                ? 'border-primary text-on-surface font-bold'
+                : 'border-transparent text-on-surface-variant hover:text-on-surface'}"
             >
               Most Viewed
             </button>
@@ -344,19 +345,23 @@
           <div class="flex items-center gap-2">
             <button
               onclick={scrollLeft}
-              class="p-1 rounded-md border border-white/10 hover:bg-white/10 transition-colors flex items-center justify-center"
+              class="group flex h-10 w-10 items-center justify-center rounded-full border border-outline-variant/10 bg-surface-highest/30 transition-all hover:border-primary/20 hover:bg-primary/10 active:scale-90"
               title="Scroll left"
               aria-label="Scroll carousel to the left"
             >
-              <span class="material-symbols-outlined text-md">arrow_back</span>
+              <span
+                class="material-symbols-outlined text-on-surface-variant/60 transition-colors group-hover:text-primary"
+                >arrow_back</span
+              >
             </button>
             <button
               onclick={scrollRight}
-              class="p-1 rounded-md border border-white/10 hover:bg-white/10 transition-colors flex items-center justify-center"
+              class="group flex h-10 w-10 items-center justify-center rounded-full border border-outline-variant/10 bg-surface-highest/30 transition-all hover:border-primary/20 hover:bg-primary/10 active:scale-90"
               title="Scroll right"
               aria-label="Scroll carousel to the right"
             >
-              <span class="material-symbols-outlined text-md"
+              <span
+                class="material-symbols-outlined text-on-surface-variant/60 transition-colors group-hover:text-primary"
                 >arrow_forward</span
               >
             </button>
@@ -377,22 +382,22 @@
                 title="View theme: {getSongName(song)}"
               >
                 <div
-                  class="aspect-2/3 rounded-lg overflow-hidden mb-3 relative bg-surface-darker"
+                  class="aspect-2/3 relative mb-3 overflow-hidden rounded-lg bg-surface-low"
                 >
                   <img
                     alt={getSongName(song)}
                     title={getSongName(song)}
-                    class="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
+                    class="h-full w-full object-cover transition-opacity group-hover:opacity-80"
                     src={song.anime?.cover_url ??
                       "/images/placeholders/default.jpg"}
                   />
                   <div
-                    class="absolute top-2 right-2 bg-black/70 px-1.5 py-0.5 rounded text-[10px] font-bold text-white border border-white/10 uppercase"
+                    class="absolute top-2 right-2 rounded border border-outline-variant/10 bg-black/60 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white"
                   >
                     {song.type ?? "type n/a"}
                   </div>
                   <div
-                    class="absolute bottom-2 left-2 bg-black/70 px-1.5 py-0.5 rounded text-xs font-bold text-yellow-400 flex items-center gap-0.5"
+                    class="absolute bottom-2 left-2 flex items-center gap-0.5 rounded bg-black/60 px-1.5 py-0.5 text-xs font-bold text-yellow-400"
                   >
                     <span class="material-symbols-outlined filled">star</span>
                     {formatScore(song.average_rating)}
@@ -400,11 +405,11 @@
                 </div>
                 <div class="flex flex-col">
                   <h4
-                    class="text-white font-semibold text-sm truncate group-hover:text-primary transition-colors"
+                    class="truncate text-sm font-semibold text-on-surface transition-colors group-hover:text-primary"
                   >
                     {getSongName(song)}
                   </h4>
-                  <p class="text-white/40 text-xs truncate">
+                  <p class="truncate text-xs text-on-surface-variant">
                     {song.anime?.title}
                   </p>
                 </div>
@@ -420,22 +425,22 @@
                 title="View theme: {getSongName(song)}"
               >
                 <div
-                  class="aspect-2/3 rounded-lg overflow-hidden mb-3 relative bg-surface-darker"
+                  class="aspect-2/3 relative mb-3 overflow-hidden rounded-lg bg-surface-low"
                 >
                   <img
                     alt={getSongName(song)}
                     title={getSongName(song)}
-                    class="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
+                    class="h-full w-full object-cover transition-opacity group-hover:opacity-80"
                     src={song.anime?.cover_url ??
                       "/images/placeholders/default.jpg"}
                   />
                   <div
-                    class="absolute top-2 right-2 bg-black/70 px-1.5 py-0.5 rounded text-[10px] font-bold text-white border border-white/10 uppercase"
+                    class="absolute top-2 right-2 rounded border border-outline-variant/10 bg-black/60 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white"
                   >
                     {song.type ?? "type n/a"}
                   </div>
                   <div
-                    class="absolute bottom-2 left-2 bg-black/70 px-1.5 py-0.5 rounded text-xs font-bold text-red-400 flex items-center gap-0.5"
+                    class="absolute bottom-2 left-2 flex items-center gap-0.5 rounded bg-black/60 px-1.5 py-0.5 text-xs font-bold text-red-500"
                   >
                     <span class="material-symbols-outlined filled"
                       >favorite</span
@@ -445,11 +450,11 @@
                 </div>
                 <div class="flex flex-col">
                   <h4
-                    class="text-white font-semibold text-sm truncate group-hover:text-primary transition-colors"
+                    class="truncate text-sm font-semibold text-on-surface transition-colors group-hover:text-primary"
                   >
                     {getSongName(song)}
                   </h4>
-                  <p class="text-white/40 text-xs truncate">
+                  <p class="truncate text-xs text-on-surface-variant">
                     {song.anime?.title}
                   </p>
                 </div>
@@ -465,22 +470,22 @@
                 title="View theme: {getSongName(song)}"
               >
                 <div
-                  class="aspect-2/3 rounded-lg overflow-hidden mb-3 relative bg-surface-darker"
+                  class="aspect-2/3 relative mb-3 overflow-hidden rounded-lg bg-surface-low"
                 >
                   <img
                     alt={getSongName(song)}
                     title={getSongName(song)}
-                    class="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
+                    class="h-full w-full object-cover transition-opacity group-hover:opacity-80"
                     src={song.anime?.cover_url ??
                       "/images/placeholders/default.jpg"}
                   />
                   <div
-                    class="absolute top-2 right-2 bg-black/70 px-1.5 py-0.5 rounded text-[10px] font-bold text-white border border-white/10 uppercase"
+                    class="absolute top-2 right-2 rounded border border-outline-variant/10 bg-black/60 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white"
                   >
                     {song.type ?? "type n/a"}
                   </div>
                   <div
-                    class="absolute bottom-2 left-2 bg-black/70 px-1.5 py-0.5 rounded text-xs font-bold text-blue-400 flex items-center gap-0.5"
+                    class="absolute bottom-2 left-2 flex items-center gap-0.5 rounded bg-black/60 px-1.5 py-0.5 text-xs font-bold text-blue-500"
                   >
                     <span class="material-symbols-outlined filled"
                       >visibility</span
@@ -490,11 +495,11 @@
                 </div>
                 <div class="flex flex-col">
                   <h4
-                    class="text-white font-semibold text-sm truncate group-hover:text-primary transition-colors"
+                    class="truncate text-sm font-semibold text-on-surface transition-colors group-hover:text-primary"
                   >
                     {getSongName(song)}
                   </h4>
-                  <p class="text-white/40 text-xs truncate">
+                  <p class="truncate text-xs text-on-surface-variant">
                     {song.anime?.title}
                   </p>
                 </div>
@@ -511,43 +516,57 @@
     <!-- Right Column (Sidebar) -->
     <aside class="lg:col-span-3 flex flex-col gap-8">
       <!-- Featured Artists -->
-      <div class="bg-surface-darker rounded-2xl p-6 border border-white/5">
-        <div class="flex items-center justify-between mb-6">
-          <h3 class="font-bold text-white text-lg">Featured Artists</h3>
+      <div
+        class="rounded-2xl bg-surface-low p-6 border border-outline-variant/10"
+      >
+        <div class="mb-6 flex items-center justify-between">
+          <h3 class="text-lg font-bold text-on-surface">Featured Artists</h3>
         </div>
         {#if homeData.featured_artists?.length > 0}
-          <div class="flex flex-col gap-5">
+          <div class="flex flex-col gap-1">
             {#each homeData.featured_artists as artist}
               <a
                 href="/artists/{artist.slug}"
-                class="flex items-center justify-between group"
+                class="group -mx-3 flex items-center justify-between rounded-xl px-3 py-2.5 transition-all hover:bg-surface-container"
                 title="View artist profile: {artist.name}"
               >
-                <div class="flex items-center gap-3 min-w-0">
+                <div class="flex min-w-0 items-center gap-3">
                   <div
-                    class="w-10 h-10 rounded-full overflow-hidden border-2 border-transparent group-hover:border-primary transition-colors flex items-center justify-center bg-primary/20 text-primary shrink-0"
+                    class="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-outline-variant/10 bg-surface-container transition-colors group-hover:border-primary/50"
                   >
                     <img
                       alt={artist.name}
                       title={artist.name}
-                      class="w-full h-full object-cover"
+                      class="h-full w-full object-cover transition-transform group-hover:scale-110"
                       src={artist.avatar_url ||
                         "/images/placeholders/default.jpg"}
                     />
                   </div>
-                  <div class="min-w-0">
+                  <div class="flex min-w-0 flex-col">
                     <h4
-                      class="text-sm font-bold text-white group-hover:text-primary transition-colors truncate"
+                      class="truncate text-sm font-bold text-on-surface transition-colors group-hover:text-primary"
                     >
                       {artist.name}
                     </h4>
+                    <span
+                      class="text-[10px] font-medium uppercase tracking-widest text-on-surface-variant/60"
+                    >
+                      {artist.enabled_songs || 0} Themes
+                    </span>
                   </div>
                 </div>
+                <span
+                  class="material-symbols-outlined translate-x-2 text-primary opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100"
+                >
+                  chevron_right
+                </span>
               </a>
             {/each}
           </div>
         {:else}
-          <div class="text-sm text-white/40">No artists featured.</div>
+          <div class="text-sm text-on-surface-variant/40">
+            No artists featured.
+          </div>
         {/if}
       </div>
       <!-- Announcements -->

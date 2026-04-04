@@ -111,19 +111,23 @@
   }
 </script>
 
-<div class="min-h-screen bg-surface-darker pt-24 pb-12">
+<div class="min-h-screen my-8">
   <div class="max-w-6xl mx-auto px-6">
-    <div class="flex gap-8 items-start">
+    <div class="grid grid-cols-12 gap-8">
       <!-- Sidebar -->
-      <div class="w-64 shrink-0 space-y-6 sticky top-24">
+      <div
+        class="shrink-0 space-y-6 h-fit bg-surface-container p-6 rounded-2xl col-span-12 lg:col-span-3"
+      >
         <div>
           <div class="flex items-center justify-between mb-4 px-2">
             <h2
-              class="text-sm font-bold text-slate-400 uppercase tracking-wider"
+              class="text-sm font-bold text-on-surface-variant uppercase tracking-wider"
             >
               Notifications
             </h2>
-            <button class="text-slate-500 hover:text-white transition-colors">
+            <button
+              class="text-on-surface-variant hover:text-on-surface transition-colors"
+            >
               <span class="material-symbols-outlined text-lg">settings</span>
             </button>
           </div>
@@ -133,15 +137,15 @@
                 onclick={() => !filter.disabled && setFilter(filter.value)}
                 class="w-full text-left px-4 py-2.5 rounded-xl transition-all font-medium flex items-center justify-between {filterType ===
                 filter.value
-                  ? 'bg-white/10 text-white shadow-sm'
-                  : 'text-slate-400 hover:bg-white/5 hover:text-white'} {filter.disabled
+                  ? 'bg-surface-highest text-on-surface shadow-sm'
+                  : 'text-on-surface-variant hover:bg-surface-highest hover:text-on-surface'} {filter.disabled
                   ? 'opacity-30 cursor-not-allowed'
                   : 'cursor-pointer'}"
               >
                 <span>{filter.label}</span>
                 {#if filter.value === "" && unreadCount > 0}
                   <span
-                    class="px-2 py-0.5 rounded-full bg-primary text-[10px] text-white font-bold"
+                    class="px-2 py-0.5 rounded-full bg-primary text-[10px] text-on-surface font-bold"
                     >{unreadCount}</span
                   >
                 {/if}
@@ -153,7 +157,7 @@
         {#if unreadCount > 0}
           <button
             onclick={markAllAsRead}
-            class="w-full py-3 rounded-xl bg-primary text-white font-bold text-sm shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
+            class="w-full py-3 rounded-xl bg-primary text-on-surface font-bold text-sm shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
           >
             Mark all as read
           </button>
@@ -161,23 +165,25 @@
       </div>
 
       <!-- Main Content -->
-      <div class="flex-1 min-w-0">
+      <div
+        class="flex-1 min-w-0 bg-surface-container rounded-2xl p-6 col-span-12 lg:col-span-9"
+      >
         {#if notifications.length === 0}
           <div
             class="p-20 rounded-3xl text-center border border-white/5 bg-white/2"
             in:fade
           >
             <div
-              class="w-20 h-20 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-6 text-white/20"
+              class="w-20 h-20 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-6 text-on-surface-variant"
             >
               <span class="material-symbols-outlined text-5xl"
                 >notifications_off</span
               >
             </div>
-            <h3 class="text-2xl font-bold text-white mb-2">
+            <h3 class="text-2xl font-bold text-on-surface mb-2">
               No notifications found
             </h3>
-            <p class="text-slate-400 max-w-xs mx-auto">
+            <p class="text-on-surface-variant max-w-xs mx-auto">
               {filterType
                 ? `You don't have any notifications for this filter.`
                 : "When people interact with you, you'll see it here."}
@@ -297,8 +303,8 @@
                   href="?page={i + 1}{filterType ? `&type=${filterType}` : ''}"
                   class="w-10 h-10 rounded-xl flex items-center justify-center font-bold transition-all {data.currentPage ===
                   i + 1
-                    ? 'bg-primary text-white'
-                    : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white'}"
+                    ? 'bg-primary text-on-surface'
+                    : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-on-surface'}"
                 >
                   {i + 1}
                 </a>

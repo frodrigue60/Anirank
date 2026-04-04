@@ -1,0 +1,13 @@
+{
+  "css.lint.unknownAtRules": "ignore",
+  "css.customData": [
+    ".vscode/tailwind-v4.custom-data.json"
+  ],
+  "editor.colorDecorators": true,
+  "files.associations": {
+    "*.css": "tailwindcss"
+  },
+  "editor.quickSuggestions": {
+    "strings": true
+  }
+}

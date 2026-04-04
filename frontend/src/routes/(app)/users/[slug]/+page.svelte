@@ -3,6 +3,7 @@
   import SEO from "$lib/components/SEO.svelte";
   import { page } from "$app/state";
   import snarkdown from "snarkdown";
+  import ArtistAvatarCard from "$lib/components/ArtistAvatarCard.svelte";
   const PUBLIC_API_URL =
     import.meta.env.VITE_API_URL || "http://localhost:8080/api";
 
@@ -27,7 +28,7 @@
 {#if data.profile.about}
   <section class="mb-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
     <div
-      class="bg-surface-dark border border-white/5 rounded-3xl p-8 shadow-2xl relative overflow-hidden group"
+      class="bg-surface-container border border-on-surface-variant/10 rounded-2xl p-8 shadow-2xl relative overflow-hidden group"
     >
       <div
         class="absolute top-0 left-0 w-1 h-full"
@@ -37,10 +38,11 @@
         class="text-sm font-black uppercase tracking-widest mb-4 flex items-center gap-2"
         style="color: {accentColor}"
       >
-        <span class="material-symbols-outlined text-sm">person</span>
         About Me
       </h3>
-      <div class="text-white/70 leading-relaxed text-sm font-medium markdown-content">
+      <div
+        class="text-on-surface-variant leading-relaxed text-sm font-medium markdown-content"
+      >
         {@html renderMarkdown(data.profile.about)}
       </div>
     </div>
@@ -48,10 +50,9 @@
 {/if}
 
 {#if data.initialSongs && data.initialSongs.length > 0}
-  <!-- Favorite Themes Section (Horizontal Cards) -->
   <section class="mb-12">
     <div class="flex items-center justify-between mb-6">
-      <h3 class="text-2xl font-bold text-slate-100 flex items-center gap-2">
+      <h3 class="text-2xl font-bold text-on-surface flex items-center gap-2">
         <span class="material-symbols-outlined" style="color: {accentColor}"
           >favorite</span
         >
@@ -75,7 +76,7 @@
   <!-- Favorite Artists Section (Circular) -->
   <section class="mb-12">
     <div class="flex items-center justify-between mb-6">
-      <h3 class="text-2xl font-bold text-slate-100 flex items-center gap-2">
+      <h3 class="text-2xl font-bold text-on-surface flex items-center gap-2">
         <span class="material-symbols-outlined" style="color: {accentColor}"
           >artist</span
         >
@@ -87,35 +88,11 @@
         style="color: {accentColor}">View All</a
       >
     </div>
-    <div class="flex-wrap gap-8 px-4 flex">
+    <div
+      class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-8 mb-12"
+    >
       {#each data.artists.slice(0, 6) as artist}
-        <a
-          href={`/artists/${artist.slug}`}
-          class="flex flex-col items-center group cursor-pointer"
-        >
-          <div
-            class="size-24 sm:size-28 rounded-full border-2 p-1 transition-all mb-3 bg-surface-darker/50"
-            style="border-color: {accentColor}4D; --hover-border: {accentColor}"
-            role="presentation"
-            onmouseenter={(e) =>
-              (e.currentTarget.style.borderColor = accentColor)}
-            onmouseleave={(e) =>
-              (e.currentTarget.style.borderColor = accentColor + "4D")}
-          >
-            <!-- svelte-ignore a11y_missing_attribute -->
-            <img
-              class="h-full w-full rounded-full object-cover grayscale group-hover:grayscale-0 transition-all duration-300"
-              data-alt="Portrait of a musician"
-              src={artist.avatar_url || "/images/placeholders/default.jpg"}
-            />
-          </div>
-          <h5 class="text-slate-100 font-bold text-center text-sm">
-            {artist.name || "Anonymous"}
-          </h5>
-          <p class="text-slate-500 text-xs mt-1">
-            {artist.enabled_songs || 0} Themes
-          </p>
-        </a>
+        <ArtistAvatarCard {artist} />
       {/each}
     </div>
   </section>
@@ -123,18 +100,18 @@
 
 {#if (!data.initialSongs || data.initialSongs.length === 0) && (!data.artists || data.artists.length === 0)}
   <div
-    class="py-20 flex flex-col items-center justify-center text-center space-y-4 rounded-4xl border border-white/5 bg-white/2"
+    class="py-20 flex flex-col items-center justify-center text-center space-y-4 rounded-4xl border border-on-surface-variant/10 bg-surface-container"
   >
     <div
-      class="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center text-white/20"
+      class="w-20 h-20 rounded-full bg-surface-highest flex items-center justify-center text-on-surface-variant/40"
     >
       <span class="material-symbols-outlined text-4xl">history</span>
     </div>
     <div>
-      <h3 class="text-xl font-bold text-white uppercase italic">
+      <h3 class="text-xl font-bold text-on-surface uppercase italic">
         Quiet Profile
       </h3>
-      <p class="text-sm text-white/40 max-w-xs mx-auto mt-2">
+      <p class="text-sm text-on-surface-variant max-w-xs mx-auto mt-2">
         This user hasn't added any favorites or recent activity yet.
       </p>
     </div>

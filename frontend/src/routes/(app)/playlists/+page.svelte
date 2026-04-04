@@ -82,26 +82,28 @@
 <main class="flex-1 w-full max-w-[1440px] mx-auto px-6 py-12">
   <!-- Header -->
   <div class="mb-10 text-center lg:text-left">
-    <h1 class="text-4xl font-black text-white mb-2 tracking-tight">
+    <h1 class="text-4xl font-black text-on-surface mb-2 tracking-tight">
       Public Playlists
     </h1>
-    <p class="text-slate-400 text-lg">Explore community curated collections</p>
+    <p class="text-on-surface-variant text-lg">
+      Explore community curated collections
+    </p>
   </div>
 
   <!-- Filter Row -->
   <section
-    class="relative z-40 flex flex-col gap-4 bg-surface-dark/30 p-4 rounded-3xl border border-white/5 shadow-2xl mb-10"
+    class="relative z-40 flex flex-col gap-4 bg-surface-container p-4 rounded-3xl border border-white/5 shadow-2xl mb-10"
   >
     <div class="relative group">
       <label
         for="playlist-search"
-        class="block text-[10px] uppercase font-black text-white/40 mb-2 ml-1 tracking-widest"
+        class="block text-[10px] uppercase font-black text-on-surface-variant mb-2 ml-1 tracking-widest"
       >
         Search Playlists
       </label>
       <div class="relative">
         <span
-          class="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-primary transition-colors"
+          class="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50 group-focus-within:text-primary transition-colors"
         >
           <Search size={20} />
         </span>
@@ -111,7 +113,7 @@
           bind:value={params.name}
           oninput={handleInput}
           onkeydown={handleKeydown}
-          class="w-full h-12 bg-surface-darker/50 border border-white/10 rounded-xl pl-12 pr-6 text-sm text-white focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 placeholder:text-white/20 transition-all"
+          class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-xl pl-12 pr-6 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 placeholder:text-on-surface-variant/20 transition-all"
           placeholder="Search playlists (e.g. My favorites, Top Openings)..."
         />
       </div>
@@ -124,7 +126,7 @@
       {#each playlists as playlist}
         <a
           href="/playlists/{playlist.id}"
-          class="group relative overflow-hidden rounded-xl bg-slate-800 aspect-video border border-transparent hover:border-primary/50 transition-all cursor-pointer shadow-lg shadow-black/20"
+          class="group relative overflow-hidden rounded-xl bg-surface-container aspect-video border border-transparent hover:border-primary/50 transition-all cursor-pointer shadow-lg shadow-black/20"
         >
           <!-- Background Image -->
           {#if playlist.banner_url}
@@ -138,34 +140,33 @@
             ></div>
           {/if}
           <div
-            class="absolute inset-0 bg-linear-to-t from-background-dark/95 via-background-dark/40 to-transparent"
+            class="absolute inset-0 bg-linear-to-t from-surface-container via-surface-container/60 to-transparent"
           ></div>
 
           <div class="absolute bottom-0 left-0 right-0 p-6 flex flex-col gap-1">
-            <div class="flex items-center gap-2 mb-1">
-              <User size={12} class="text-primary" />
-              <span
-                class="text-[10px] text-slate-400 uppercase font-black tracking-widest"
-              >
-                {playlist.user?.name || "User"}
-              </span>
-            </div>
             <h3
-              class="text-2xl font-bold text-white group-hover:text-primary transition-colors"
+              class="text-2xl font-bold text-on-surface group-hover:text-primary transition-colors line-clamp-1"
             >
               {playlist.name}
             </h3>
+            <span
+              class="text-[10px] text-on-surface-variant uppercase font-black tracking-widest"
+            >
+              By {playlist.user?.name || "User"}
+            </span>
 
             <div
-              class="mt-4 flex items-center justify-between border-t border-white/10 pt-4"
+              class="flex items-center justify-between border-t border-on-surface-variant/10 pt-4"
             >
-              <div class="flex items-center gap-2 text-white/60">
+              <div class="flex items-center gap-2 text-on-surface-variant/80">
                 <Music size={14} />
                 <span class="text-sm font-semibold"
                   >{playlist.song_count || 0} Songs</span
                 >
               </div>
-              <span class="text-xs text-slate-500">Public Collection</span>
+              <span class="text-xs text-on-surface-variant/40"
+                >Public Collection</span
+              >
             </div>
           </div>
         </a>
@@ -178,9 +179,13 @@
       onLoadMore={loadMore}
     />
   {:else}
-    <div class="text-center py-20">
-      <Search size={48} class="text-white/10 mx-auto mb-4" />
-      <p class="text-white/40">No playlists found matching your criteria.</p>
+    <div
+      class="text-center py-24 bg-surface-container/30 rounded-3xl border-2 border-dashed border-white/5"
+    >
+      <Search size={48} class="text-on-surface-variant/20 mx-auto mb-4" />
+      <p class="text-on-surface-variant/40">
+        No playlists found matching your criteria.
+      </p>
     </div>
   {/if}
 </main>

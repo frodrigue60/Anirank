@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { TournamentMatchup } from "$lib/types/tournament";
   import type { Song } from "$lib/types/song";
+  import { Play, VideoOff, CheckCircle2 } from "lucide-svelte";
 
   interface Props {
     matchup: TournamentMatchup;
@@ -46,333 +47,186 @@
       (v: any) => !!(v.video?.local_url || v.video?.embed_url),
     ) ?? false,
   );
+
+  // Helper for song names
+  function songDisplayName(song: Song | undefined) {
+    if (!song) return "Waiting...";
+    return song.song_romaji || song.song_en || song.song_jp || "Untitled";
+  }
 </script>
 
-<div class="matchup-card {matchup.is_active ? 'active' : 'inactive'}">
+<div
+  class="group relative flex flex-col gap-1 w-[320px] rounded-2xl p-1 transition-all duration-300
+  {matchup.is_active
+    ? 'bg-linear-to-b from-primary/30 to-transparent shadow-[0_0_20px_rgba(255,78,80,0.1)]'
+    : 'bg-white/5'}"
+>
+  <!-- Slot 1 -->
   <div
-    class="song-slot {matchup.winner_song_id &&
-    matchup.winner_song_id === matchup.song1_id
-      ? 'winner'
+    class="relative overflow-hidden rounded-xl bg-surface-container border border-white/5 p-4 flex flex-col gap-3 transition-all
+    {matchup.winner_song_id === matchup.song1_id
+      ? 'border-yellow-500/50 bg-yellow-500/5 ring-1 ring-yellow-500/20'
       : ''}"
   >
-    <div class="song-info">
-      <div class="song-header">
-        <span class="type-tag"
-          >{matchup.song1?.type || ""} {matchup.song1?.theme_num || ""}</span
-        >
-        {#if matchup.user_voted_song_id === matchup.song1_id}
-          <span class="voted-tag">Voted</span>
-        {/if}
-        <span class="name truncate" title={matchup.song1?.song_romaji}
-          >{matchup.song1?.song_romaji ||
-            matchup.song1?.song_en ||
-            matchup.song1?.song_jp ||
-            "Waiting..."}</span
-        >
-      </div>
-      {#if matchup.song1?.artists}
-        <div
-          class="artists truncate"
-          title={matchup.song1.artists.map((a) => a.name).join(", ")}
-        >
-          {#each matchup.song1.artists as artist, i}
-            <span
-              >{artist.name}{i < matchup.song1.artists.length - 1
-                ? ", "
-                : ""}</span
-            >
-          {/each}
-        </div>
-      {/if}
-      {#if matchup.song1?.anime}
-        <div class="anime-title truncate" title={matchup.song1.anime.title}>
-          <span class="text-xs opacity-50 italic"
-            >{matchup.song1.anime.title}</span
+    <div class="flex justify-between items-start gap-4">
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 mb-1">
+          <span
+            class="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/10"
           >
-        </div>
-      {/if}
-      {#if !matchup.is_active && totalVotes > 0}
-        <span class="votes">{matchup.song1_votes} ({song1Percent}%)</span>
-      {/if}
-    </div>
-    <div class="actions">
-      {#if matchup.song1}
-        <button
-          class="preview-btn"
-          onclick={() => onpreview?.(matchup.song1)}
-          disabled={!hasPreview1}
-          title={hasPreview1 ? "Preview" : "No preview available"}
-        >
-          <span class="material-symbols-outlined">
-            {hasPreview1 ? "play_arrow" : "videocam_off"}
+            {matchup.song1?.type || "OP"}
+            {matchup.song1?.theme_num || ""}
           </span>
-        </button>
-      {/if}
-      {#if canVote && matchup.is_active && matchup.song1_id}
-        <button
-          class="vote-btn"
-          onclick={() => handleVote(matchup.song1_id)}
-          disabled={loading || !!matchup.user_voted_song_id}
+          {#if matchup.user_voted_song_id === matchup.song1_id}
+            <span
+              class="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-green-500"
+            >
+              <CheckCircle2 size={10} />
+              Voted
+            </span>
+          {/if}
+        </div>
+        <h4
+          class="text-sm font-bold text-on-surface truncate group-hover:text-primary transition-colors"
+          title={songDisplayName(matchup.song1)}
         >
-          {matchup.user_voted_song_id ? "Voted" : "Vote"}
-        </button>
-      {/if}
+          {songDisplayName(matchup.song1)}
+        </h4>
+        <p class="text-[10px] text-on-surface-variant truncate opacity-60">
+          {#if matchup.song1?.artists}
+            {matchup.song1.artists.map((a) => a.name).join(", ")}
+          {:else}
+            Artists Info
+          {/if}
+        </p>
+      </div>
+
+      <div class="flex gap-2">
+        {#if matchup.song1}
+          <button
+            class="p-2 rounded-lg bg-surface-highest text-on-surface-variant hover:bg-primary hover:text-white transition-all disabled:opacity-20"
+            onclick={() => onpreview?.(matchup.song1)}
+            disabled={!hasPreview1}
+          >
+            {#if hasPreview1}
+              <Play size={14} fill="currentColor" />
+            {:else}
+              <VideoOff size={14} />
+            {/if}
+          </button>
+        {/if}
+      </div>
+    </div>
+
+    {#if !matchup.is_active && totalVotes > 0}
+      <div class="w-full h-1.5 bg-surface-highest rounded-full overflow-hidden">
+        <div class="h-full bg-yellow-500 transition-all duration-1000" style="width: {song1Percent}%"></div>
+      </div>
+      <div class="flex justify-between text-[10px] font-black text-on-surface-variant opacity-50 uppercase tracking-widest">
+        <span>{song1Percent}%</span>
+        <span>{matchup.song1_votes} Votes</span>
+      </div>
+    {/if}
+
+    {#if canVote && matchup.is_active && matchup.song1_id && !matchup.user_voted_song_id}
+      <button
+        class="w-full py-2 bg-primary text-white text-xs font-black uppercase tracking-widest rounded-lg hover:shadow-lg hover:shadow-primary/20 transition-all mt-1"
+        onclick={() => handleVote(matchup.song1_id)}
+        disabled={loading}
+      >
+        Vote
+      </button>
+    {/if}
+  </div>
+
+  <!-- Divider -->
+  <div class="flex items-center justify-center -my-3 relative z-10">
+    <div class="px-3 py-1 rounded-full bg-surface-highest border border-white/10 text-[9px] font-black text-on-surface-variant tracking-[0.2em] uppercase shadow-lg">
+      VS
     </div>
   </div>
 
-  <div class="vs-divider">VS</div>
-
+  <!-- Slot 2 -->
   <div
-    class="song-slot {matchup.winner_song_id &&
-    matchup.winner_song_id === matchup.song2_id
-      ? 'winner'
+    class="relative overflow-hidden rounded-xl bg-surface-container border border-white/5 p-4 flex flex-col gap-3 transition-all
+    {matchup.winner_song_id === matchup.song2_id
+      ? 'border-yellow-500/50 bg-yellow-500/5 ring-1 ring-yellow-500/20'
       : ''}"
   >
-    <div class="song-info">
-      <div class="song-header">
-        <span class="type-tag"
-          >{matchup.song2?.type || ""} {matchup.song2?.theme_num || ""}</span
-        >
-        {#if matchup.user_voted_song_id === matchup.song2_id}
-          <span class="voted-tag">Voted</span>
-        {/if}
-        <span class="name truncate" title={matchup.song2?.song_romaji}
-          >{matchup.song2?.song_romaji ||
-            matchup.song2?.song_en ||
-            matchup.song2?.song_jp ||
-            "Waiting..."}</span
-        >
-      </div>
-      {#if matchup.song2?.artists}
-        <div
-          class="artists truncate"
-          title={matchup.song2.artists.map((a) => a.name).join(", ")}
-        >
-          {#each matchup.song2.artists as artist, i}
-            <span
-              >{artist.name}{i < matchup.song2.artists.length - 1
-                ? ", "
-                : ""}</span
-            >
-          {/each}
-        </div>
-      {/if}
-      {#if matchup.song2?.anime}
-        <div class="anime-title truncate" title={matchup.song2.anime.title}>
-          <span class="text-xs opacity-50 italic"
-            >{matchup.song2.anime.title}</span
+    <div class="flex justify-between items-start gap-4">
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 mb-1">
+          <span
+            class="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/10"
           >
-        </div>
-      {/if}
-      {#if !matchup.is_active && totalVotes > 0}
-        <span class="votes">{matchup.song2_votes} ({song2Percent}%)</span>
-      {/if}
-    </div>
-    <div class="actions">
-      {#if matchup.song2}
-        <button
-          class="preview-btn"
-          onclick={() => onpreview?.(matchup.song2)}
-          disabled={!hasPreview2}
-          title={hasPreview2 ? "Preview" : "No preview available"}
-        >
-          <span class="material-symbols-outlined">
-            {hasPreview2 ? "play_arrow" : "videocam_off"}
+            {matchup.song2?.type || "ED"}
+            {matchup.song2?.theme_num || ""}
           </span>
-        </button>
-      {/if}
-      {#if canVote && matchup.is_active && matchup.song2_id}
-        <button
-          class="vote-btn"
-          onclick={() => handleVote(matchup.song2_id)}
-          disabled={loading || !!matchup.user_voted_song_id}
+          {#if matchup.user_voted_song_id === matchup.song2_id}
+            <span
+              class="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-green-500"
+            >
+              <CheckCircle2 size={10} />
+              Voted
+            </span>
+          {/if}
+        </div>
+        <h4
+          class="text-sm font-bold text-on-surface truncate group-hover:text-primary transition-colors"
+          title={songDisplayName(matchup.song2)}
         >
-          {matchup.user_voted_song_id ? "Voted" : "Vote"}
-        </button>
-      {/if}
+          {songDisplayName(matchup.song2)}
+        </h4>
+        <p class="text-[10px] text-on-surface-variant truncate opacity-60">
+          {#if matchup.song2?.artists}
+            {matchup.song2.artists.map((a) => a.name).join(", ")}
+          {:else}
+            Artists Info
+          {/if}
+        </p>
+      </div>
+
+      <div class="flex gap-2">
+        {#if matchup.song2}
+          <button
+            class="p-2 rounded-lg bg-surface-highest text-on-surface-variant hover:bg-primary hover:text-white transition-all disabled:opacity-20"
+            onclick={() => onpreview?.(matchup.song2)}
+            disabled={!hasPreview2}
+          >
+            {#if hasPreview2}
+              <Play size={14} fill="currentColor" />
+            {:else}
+              <VideoOff size={14} />
+            {/if}
+          </button>
+        {/if}
+      </div>
     </div>
+
+    {#if !matchup.is_active && totalVotes > 0}
+      <div class="w-full h-1.5 bg-surface-highest rounded-full overflow-hidden">
+        <div class="h-full bg-yellow-500 transition-all duration-1000" style="width: {song2Percent}%"></div>
+      </div>
+      <div class="flex justify-between text-[10px] font-black text-on-surface-variant opacity-50 uppercase tracking-widest">
+        <span>{song2Percent}%</span>
+        <span>{matchup.song2_votes} Votes</span>
+      </div>
+    {/if}
+
+    {#if canVote && matchup.is_active && matchup.song2_id && !matchup.user_voted_song_id}
+      <button
+        class="w-full py-2 bg-primary text-white text-xs font-black uppercase tracking-widest rounded-lg hover:shadow-lg hover:shadow-primary/20 transition-all mt-1"
+        onclick={() => handleVote(matchup.song2_id)}
+        disabled={loading}
+      >
+        Vote
+      </button>
+    {/if}
   </div>
 
   {#if matchup.ends_at && matchup.is_active}
-    <div class="timer">
-      Ends at: {new Date(matchup.ends_at).toLocaleString()}
+    <div class="text-[9px] font-black text-on-surface-variant/40 uppercase tracking-widest text-center mt-2 px-4 italic">
+      Ends {new Date(matchup.ends_at).toLocaleDateString()}
     </div>
   {/if}
 </div>
-
-<style>
-  .matchup-card {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    min-width: 320px;
-    transition: all 0.2s ease;
-  }
-
-  .matchup-card.active {
-    border-color: var(--primary-color, #ff4e50);
-    box-shadow: 0 0 15px rgba(255, 78, 80, 0.1);
-  }
-
-  .song-slot {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 16px;
-    border-radius: 8px;
-    background: rgba(0, 0, 0, 0.2);
-    gap: 12px;
-  }
-
-  .song-slot.winner {
-    background: rgba(255, 215, 0, 0.1);
-    border: 1px solid rgba(255, 215, 0, 0.3);
-  }
-
-  .song-info {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-width: 0;
-  }
-
-  .song-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .type-tag {
-    font-size: 0.65rem;
-    font-weight: 900;
-    text-transform: uppercase;
-    color: var(--primary-color, #ff4e50);
-    background: rgba(255, 78, 80, 0.1);
-    padding: 2px 6px;
-    border-radius: 4px;
-    white-space: nowrap;
-  }
-
-  .voted-tag {
-    font-size: 0.65rem;
-    font-weight: 900;
-    text-transform: uppercase;
-    color: #4caf50;
-    background: rgba(76, 175, 80, 0.1);
-    padding: 2px 6px;
-    border-radius: 4px;
-    white-space: nowrap;
-  }
-
-  .name {
-    font-weight: 700;
-    font-size: 0.95rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .artists {
-    font-size: 0.75rem;
-    opacity: 0.5;
-    margin-top: 2px;
-  }
-
-  .anime-title {
-    margin-top: 1px;
-    line-height: 1.2;
-  }
-
-  .truncate {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: block;
-  }
-
-  .votes {
-    font-size: 0.8rem;
-    opacity: 0.7;
-    margin-top: 4px;
-  }
-
-  .actions {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .vs-divider {
-    text-align: center;
-    font-weight: 800;
-    font-size: 0.8rem;
-    opacity: 0.5;
-    letter-spacing: 2px;
-  }
-
-  .vote-btn {
-    background: var(--primary-color, #ff4e50);
-    color: white;
-    border: none;
-    padding: 6px 14px;
-    border-radius: 6px;
-    font-size: 0.8rem;
-    font-weight: bold;
-    cursor: pointer;
-    transition: transform 0.1s;
-  }
-
-  .vote-btn:hover:not(:disabled) {
-    transform: scale(1.05);
-  }
-
-  .preview-btn {
-    background: rgba(255, 255, 255, 0.05);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .preview-btn:hover {
-    background: var(--primary-color, #ff4e50);
-    border-color: var(--primary-color, #ff4e50);
-  }
-
-  .preview-btn .material-symbols-outlined {
-    font-size: 18px;
-  }
-
-  .preview-btn:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-    background: rgba(255, 255, 255, 0.02);
-  }
-
-  .preview-btn:disabled:hover {
-    background: rgba(255, 255, 255, 0.02);
-    border-color: rgba(255, 255, 255, 0.1);
-  }
-
-  .vote-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .timer {
-    font-size: 0.75rem;
-    opacity: 0.6;
-    text-align: center;
-    margin-top: 4px;
-  }
-</style>

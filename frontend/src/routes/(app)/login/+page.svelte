@@ -113,39 +113,40 @@
   description="Sign in to your AniRank account to sync your favorite anime theme songs and participate in community rankings." 
 />
 
-<div class="min-h-[80vh] flex items-center justify-center p-4 py-20">
+<div class="min-h-[80vh] flex items-center justify-center p-4 py-24">
   <div
-    class="w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-dark-900 shadow-2xl transition-all"
+    class="w-full max-w-md overflow-hidden rounded-[2.5rem] border border-outline-variant/10 bg-surface-container shadow-2xl transition-all"
   >
-    <div class="p-8">
-      <div class="mb-8 text-center">
-        <div class="flex justify-start mb-6">
+    <div class="p-10">
+      <div class="mb-10 text-center">
+        <div class="flex justify-start mb-8">
           <a
             href="/"
-            class="flex items-center gap-2 text-sm text-white/40 hover:text-white transition-colors"
+            class="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-on-surface-variant/40 hover:text-primary transition-all group/back"
           >
-            <ArrowLeft size={16} />
+            <ArrowLeft size={14} class="transition-transform group-hover/back:-translate-x-1" />
             Back to home
           </a>
         </div>
-        <h2 class="text-3xl font-black text-white">Welcome Back</h2>
-        <p class="mt-2 text-sm text-white/50">
+        <h2 class="text-3xl font-black text-on-surface tracking-tighter">Welcome Back</h2>
+        <p class="mt-2 text-sm text-on-surface-variant/60 font-medium">
           Sign in to sync your favorite anime and lists.
         </p>
       </div>
 
       {#if errorMessage}
         <div
-          class="mb-6 rounded-lg bg-red-500/10 p-3 text-sm text-red-500 border border-red-500/20"
+          class="mb-8 rounded-2xl bg-red-500/5 p-4 text-[11px] font-black uppercase tracking-wider text-red-500 border border-red-500/10 text-center leading-tight flex items-center justify-center gap-2"
         >
+          <span class="material-symbols-outlined text-[16px]">error</span>
           {errorMessage}
         </div>
       {/if}
 
-      <form onsubmit={handleLogin} class="flex flex-col gap-4">
-        <div class="relative">
+      <form onsubmit={handleLogin} class="flex flex-col gap-5">
+        <div class="relative group">
           <div
-            class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-white/40"
+            class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-5 text-on-surface-variant/30 group-focus-within:text-primary transition-colors"
           >
             <Mail size={18} />
           </div>
@@ -154,12 +155,12 @@
             bind:value={email}
             required
             placeholder="Email Address"
-            class="w-full rounded-xl border border-white/5 bg-dark-800 py-3.5 pl-11 pr-4 text-white placeholder-white/40 transition-colors focus:border-primary-500 focus:bg-dark-700 focus:outline-none"
+            class="w-full rounded-2xl border border-outline-variant/10 bg-surface-highest/30 py-4 pl-12 pr-5 text-on-surface placeholder-on-surface-variant/30 font-medium transition-all focus:bg-surface-highest focus:ring-4 focus:ring-primary/5 focus:outline-none"
           />
         </div>
-        <div class="relative">
+        <div class="relative group">
           <div
-            class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-white/40"
+            class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-5 text-on-surface-variant/30 group-focus-within:text-primary transition-colors"
           >
             <Lock size={18} />
           </div>
@@ -168,14 +169,14 @@
             bind:value={password}
             required
             placeholder="Password"
-            class="w-full rounded-xl border border-white/5 bg-dark-800 py-3.5 pl-11 pr-4 text-white placeholder-white/40 transition-colors focus:border-primary-500 focus:bg-dark-700 focus:outline-none"
+            class="w-full rounded-2xl border border-outline-variant/10 bg-surface-highest/30 py-4 pl-12 pr-5 text-on-surface placeholder-on-surface-variant/30 font-medium transition-all focus:bg-surface-highest focus:ring-4 focus:ring-primary/5 focus:outline-none"
           />
         </div>
 
         <button
           type="submit"
           disabled={loading}
-          class="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 py-4 font-bold text-white transition-all hover:bg-primary-500 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+          class="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-4 font-black text-sm uppercase tracking-widest text-white transition-all hover:bg-primary/90 hover:scale-[1.02] shadow-xl shadow-primary/20 active:scale-95 disabled:opacity-50"
         >
           {#if loading}
             <Loader2 size={18} class="animate-spin" />
@@ -183,11 +184,11 @@
           Sign In
         </button>
       </form>
-      <div class="mt-4 mb-4 text-center text-sm text-white/40">
+      <div class="mt-6 mb-8 text-center text-xs font-medium text-on-surface-variant/40">
         Don't have an account?
         <a
           href="/register?redirect={encodeURIComponent(redirectTo)}"
-          class="font-bold text-primary-500 hover:text-primary-400 ml-1"
+          class="font-black text-primary hover:text-primary/80 ml-1 underline underline-offset-4 decoration-primary/20 hover:decoration-primary/50 transition-all"
         >
           Create one now
         </a>
@@ -198,17 +199,17 @@
           type="button"
           onclick={handleAnilistLogin}
           disabled={loading}
-          class="mt-2 flex w-full items-center justify-center gap-2 rounded-sm bg-[#02a9ff] py-3 font-bold text-white transition-all hover:bg-[#0290d9] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+          class="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#02a9ff] py-3.5 font-black text-[10px] uppercase tracking-widest text-white transition-all hover:bg-[#0290d9] hover:scale-[1.02] active:scale-95 disabled:opacity-50"
         >
-          Login with AniList
+          AniList
         </button>
         <button
           type="button"
           onclick={handleGoogleLogin}
           disabled={loading}
-          class="mt-2 flex w-full items-center justify-center gap-2 rounded-sm bg-white py-3 font-bold text-black transition-all hover:bg-gray-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+          class="flex w-full items-center justify-center gap-2 rounded-2xl bg-white border border-outline-variant/20 py-3.5 font-black text-[10px] uppercase tracking-widest text-black transition-all hover:bg-gray-50 hover:scale-[1.02] active:scale-95 disabled:opacity-50"
         >
-          Login with Google
+          Google
         </button>
       </div>
     </div>

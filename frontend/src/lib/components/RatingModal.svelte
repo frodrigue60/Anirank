@@ -95,35 +95,36 @@
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
-    class="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/80"
+    class="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
     onclick={handleClose}
     transition:fade={{ duration: 200 }}
   >
     <!-- Modal Content -->
     <div
-      class="modal-glass w-full max-w-md rounded-[2.5rem] overflow-hidden shadow-[0_32px_64px_-12px_rgba(0,0,0,0.5)] p-10 flex flex-col items-center text-center relative"
+      class="modal-glass w-full max-w-md rounded-[2.5rem] overflow-hidden shadow-2xl p-10 flex flex-col items-center text-center relative"
       onclick={(e) => e.stopPropagation()}
       transition:scale={{ duration: 300, start: 0.95 }}
     >
       <!-- Header -->
       <div class="w-full flex justify-between items-start mb-2 group">
         <div class="text-left">
-          <p
-            class="text-[10px] font-bold uppercase tracking-[0.2em] text-primary mb-1"
-          >
-            Rate this theme
-          </p>
-          <h3 class="text-2xl font-bold leading-tight tracking-tight">
+          <div class="flex items-center gap-2 text-primary mb-1">
+            <span class="material-symbols-outlined text-[14px]">star</span>
+            <p class="text-[10px] font-black uppercase tracking-[0.2em]">
+              Rate this theme
+            </p>
+          </div>
+          <h3 class="text-2xl font-bold leading-tight tracking-tight text-on-surface">
             {song.song_romaji || "Theme"}
           </h3>
-          <p class="text-sm text-white/50">
+          <p class="text-xs text-on-surface-variant mt-1 font-medium">
             {song.post?.title || "Anime"} • {song.type}
             {song.theme_num || ""}
           </p>
         </div>
         <button
           onclick={handleClose}
-          class="w-10 h-10 rounded-full hover:bg-white/5 flex items-center justify-center transition-colors text-white/40 hover:text-white"
+          class="w-10 h-10 rounded-full hover:bg-on-surface/5 flex items-center justify-center transition-colors text-on-surface-variant hover:text-on-surface"
         >
           <X size={20} />
         </button>
@@ -132,23 +133,23 @@
       {#if isSuccess}
         <div class="py-20 flex flex-col items-center space-y-4" in:scale>
           <div
-            class="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center text-green-500 mb-2"
+            class="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center text-green-500 mb-2 shadow-inner"
           >
             <CheckCircle2 size={48} />
           </div>
-          <h4 class="text-xl font-bold">Rating Submitted!</h4>
-          <p class="text-white/50">Your score has been saved.</p>
+          <h4 class="text-xl font-bold text-on-surface">Rating Submitted!</h4>
+          <p class="text-xs text-on-surface-variant font-medium">Your score has been saved.</p>
         </div>
       {:else}
         <!-- Score Display -->
         <div class="mt-8 mb-4">
           <div
-            class="text-[84px] font-bold leading-none tracking-tighter text-white drop-shadow-[0_0_15px_rgba(127,19,236,0.6)]"
+            class="score-text text-[84px] font-black leading-none tracking-tighter text-on-surface"
           >
             {displayValue}
           </div>
           <p
-            class="text-[10px] text-primary font-bold uppercase tracking-widest mt-2 bg-primary/10 px-3 py-1 rounded-full inline-block"
+            class="text-[10px] text-primary font-black uppercase tracking-widest mt-4 bg-primary/10 px-4 py-1.5 rounded-full inline-block"
           >
             {format === "POINT_5"
               ? "Classic Stars"
@@ -168,8 +169,8 @@
                   <Star
                     size={48}
                     class="{value / 20 > i
-                      ? 'text-primary fill-primary drop-shadow-[0_0_8px_rgba(127,19,236,0.6)]'
-                      : 'text-white/10'} transition-all"
+                      ? 'text-primary fill-primary drop-shadow-[0_0_12px_rgba(var(--color-primary-rgb),0.4)]'
+                      : 'text-on-surface-variant/10'} transition-all active:scale-95"
                   />
                   <!-- Invisible overlays for half/full stars -->
                   <div
@@ -194,41 +195,38 @@
                   min="0"
                   max="100"
                   bind:value
-                  class="rating-range w-full h-2.5 bg-white/10 rounded-full appearance-none cursor-pointer focus:outline-none"
+                  class="rating-range w-full h-2 rounded-full appearance-none cursor-pointer focus:outline-none"
                 />
-                <div class="flex justify-between mt-5 px-1">
-                  <span class="text-[11px] font-bold text-white/30">0</span>
-                  <span class="text-[11px] font-bold text-white/30">25</span>
-                  <span class="text-[11px] font-bold text-white/30">50</span>
-                  <span class="text-[11px] font-bold text-white/30">75</span>
-                  <span class="text-[11px] font-bold text-white/30">100</span>
+                <div class="flex justify-between mt-6 px-1">
+                  {#each [0, 25, 50, 75, 100] as mark}
+                     <span class="text-[10px] font-black tracking-tighter transition-colors {Math.abs(value-mark) < 5 ? 'text-primary' : 'text-on-surface-variant/30'}">{mark}</span>
+                  {/each}
                 </div>
               </div>
 
               {#if format === "POINT_10" || format === "POINT_10_DECIMAL"}
-                <div class="grid grid-cols-5 gap-2 w-full">
+                <div class="grid grid-cols-5 gap-2 w-full px-2">
                   {#each tenGrid as val}
                     <button
                       onclick={() => (value = val * 10)}
-                      class="py-2 rounded-full border transition-all text-xs font-bold {Math.round(
+                      class="py-3 rounded-2xl border transition-all text-xs font-black {Math.round(
                         value / 10,
                       ) === val
-                        ? 'bg-primary/20 border-primary/40 text-primary'
-                        : 'bg-white/5 border-white/5 text-white/60 hover:bg-white/15'}"
+                        ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20 scale-105'
+                        : 'bg-surface-highest border-outline-variant/10 text-on-surface-variant hover:text-on-surface hover:bg-surface-highest/80'}"
                     >
                       {val}
                     </button>
                   {/each}
                 </div>
               {:else if format === "POINT_100"}
-                <div class="grid grid-cols-4 gap-2 w-full">
+                <div class="grid grid-cols-4 gap-2 w-full px-2">
                   {#each hundredGrid as val}
                     <button
                       onclick={() => (value = val)}
-                      class="py-2.5 rounded-xl border transition-all text-sm font-bold {value ===
-                      val
-                        ? 'bg-primary/20 border-primary/40 text-primary'
-                        : 'bg-white/5 border-white/5 text-white/60 hover:bg-white/15'}"
+                      class="py-3 rounded-2xl border transition-all text-xs font-black {value === val
+                        ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20 scale-105'
+                        : 'bg-surface-highest border-outline-variant/10 text-on-surface-variant hover:text-on-surface hover:bg-surface-highest/80'}"
                     >
                       {val}
                     </button>
@@ -240,36 +238,37 @@
         </div>
 
         {#if errorMessage}
-          <p class="text-red-500 text-xs mb-4 font-medium">
+          <p class="text-red-500 text-[10px] font-black uppercase tracking-wider mb-6 leading-tight flex items-center justify-center gap-2">
+            <span class="material-symbols-outlined text-[14px]">error</span>
             {errorMessage}
           </p>
         {/if}
 
         <!-- Actions -->
-        <div class="w-full grid grid-cols-2 gap-4 mt-4">
+        <div class="w-full grid grid-cols-2 gap-4 mt-2">
           <button
             onclick={handleClose}
-            class="bg-white/5 hover:bg-white/10 text-white/70 hover:text-white py-4 rounded-2xl font-bold text-sm transition-all border border-white/5 active:scale-95"
+            class="bg-surface-highest hover:bg-surface-highest/80 text-on-surface-variant hover:text-on-surface py-4 rounded-2xl font-black text-sm transition-all border border-outline-variant/10 active:scale-95"
           >
             Cancel
           </button>
           <button
             onclick={handleSubmit}
             disabled={isSubmitting}
-            class="bg-primary hover:bg-primary/80 disabled:opacity-50 text-white py-4 rounded-2xl font-bold text-sm transition-all shadow-xl shadow-primary/30 flex items-center justify-center gap-2 active:scale-95"
+            class="bg-primary hover:bg-primary/90 disabled:opacity-50 text-white py-4 rounded-2xl font-black text-sm transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-2 active:scale-95"
           >
             {#if isSubmitting}
               <Loader2 class="animate-spin" size={18} />
-              Submitting...
+              Saving...
             {:else}
               Submit Rating
-              <Send size={18} />
+              <span class="material-symbols-outlined text-[18px]">send</span>
             {/if}
           </button>
         </div>
       {/if}
 
-      <p class="mt-8 text-[11px] text-white/30 font-medium italic">
+      <p class="mt-8 text-[10px] text-on-surface-variant/40 font-bold uppercase tracking-widest italic">
         {format === "POINT_5"
           ? "Score will be converted to decimal format."
           : "Granular scoring supported via the slider."}
@@ -280,16 +279,22 @@
 
 <style lang="postcss">
   .modal-glass {
-    background: rgba(25, 16, 34, 0.85);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--color-surface-container);
+    border: 1px solid var(--color-outline-variant, rgba(255, 255, 255, 0.1));
+  }
+
+  .score-text {
+    background: linear-gradient(135deg, var(--color-on-surface) 0%, var(--color-primary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 20px rgba(var(--color-primary-rgb), 0.2));
   }
 
   .rating-range::-webkit-slider-runnable-track {
-    background: linear-gradient(to right, #7f13ec, #a855f7);
+    background: var(--color-surface-highest);
     height: 8px;
     border-radius: 4px;
+    border: 1px solid var(--color-outline-variant);
   }
 
   .rating-range::-webkit-slider-thumb {
@@ -297,15 +302,20 @@
     height: 24px;
     width: 24px;
     border-radius: 50%;
-    background: #ffffff;
+    background: var(--color-primary);
     cursor: pointer;
-    margin-top: -8px;
-    box-shadow: 0 0 15px rgba(127, 19, 236, 0.5);
-    border: 2px solid #7f13ec;
-    transition: transform 0.1s ease;
+    margin-top: -9px;
+    box-shadow: 0 4px 12px rgba(var(--color-primary-rgb), 0.4);
+    border: 3px solid var(--color-surface-container);
+    transition: all 0.2s ease;
+  }
+
+  .rating-range::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 16px rgba(var(--color-primary-rgb), 0.5);
   }
 
   .rating-range::-webkit-slider-thumb:active {
-    transform: scale(1.1);
+    transform: scale(0.95);
   }
 </style>

@@ -74,20 +74,22 @@
     class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10"
   >
     <div>
-      <h1 class="text-4xl font-black tracking-tight mb-2 uppercase italic">
+      <h1
+        class="text-4xl font-black tracking-tight mb-2 uppercase italic text-on-surface"
+      >
         Global Leaderboard
       </h1>
     </div>
     <div class="flex flex-col gap-3">
       <div
-        class="flex items-center p-1 bg-surface-darker border border-white/5 rounded-xl w-fit"
+        class="flex items-center p-1 bg-surface-container border border-white/5 rounded-xl w-fit"
       >
         <button
           onclick={() => changeType("all")}
           class="px-6 py-2.5 rounded-lg font-bold text-sm transition-all {activeType ===
             'all' || !activeType
             ? 'bg-primary text-white shadow-lg'
-            : 'text-white/40 hover:text-white'}"
+            : 'text-on-surface/80 hover:text-on-surface'}"
         >
           All
         </button>
@@ -96,7 +98,7 @@
           class="px-6 py-2.5 rounded-lg font-bold text-sm transition-all {activeType ===
           'OP'
             ? 'bg-primary text-white shadow-lg'
-            : 'text-white/40 hover:text-white'}"
+            : 'text-on-surface/80 hover:text-on-surface'}"
         >
           Openings
         </button>
@@ -105,7 +107,7 @@
           class="px-6 py-2.5 rounded-lg font-bold text-sm transition-all {activeType ===
           'ED'
             ? 'bg-primary text-white shadow-lg'
-            : 'text-white/40 hover:text-white'}"
+            : 'text-on-surface/80 hover:text-on-surface'}"
         >
           Endings
         </button>

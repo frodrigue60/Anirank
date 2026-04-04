@@ -50,78 +50,99 @@
   }
 </script>
 
-<div class="relative group" onmousemove={handleMouseMove} onmouseleave={() => hoveredPoint = null} role="presentation">
-  <svg 
-    viewBox="0 0 {width} {height}" 
-    class="w-full h-auto overflow-visible"
-    preserveAspectRatio="none"
-  >
-    <defs>
-      <linearGradient id="gradient-{label}" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color={color} stop-opacity="0.2" />
-        <stop offset="100%" stop-color={color} stop-opacity="0" />
-      </linearGradient>
-    </defs>
-
-    <!-- Grid lines (simplified) -->
-    <line x1={padding.left} y1={height - padding.bottom} x2={width - padding.right} y2={height - padding.bottom} stroke="currentColor" stroke-opacity="0.05" />
-    
-    <!-- Area background -->
-    <path d={areaPath} fill="url(#gradient-{label})" class="transition-all duration-700" />
-    
-    <!-- Main Line -->
-    <path 
-      d={path} 
-      fill="none" 
-      stroke={color} 
-      stroke-width="3" 
-      stroke-linecap="round" 
-      stroke-linejoin="round"
-      class="transition-all duration-700"
-    />
-
-    <!-- Active Point & Tooltip Indicator -->
-    {#if hoveredPoint !== null && data[hoveredPoint]}
-      <line 
-        x1={x(hoveredPoint)} 
-        y1={padding.top} 
-        x2={x(hoveredPoint)} 
-        y2={height - padding.bottom} 
-        stroke={color} 
-        stroke-width="1" 
-        stroke-dasharray="4 4"
-        class="opacity-50"
-      />
-      <circle 
-        cx={x(hoveredPoint)} 
-        cy={y(data[hoveredPoint].count)} 
-        r="6" 
-        fill={color} 
-        stroke="white" 
-        stroke-width="2" 
-      />
-    {/if}
-  </svg>
-
-  <!-- Tooltip overlay (HTML for better styling) -->
-  {#if hoveredPoint !== null && data[hoveredPoint]}
-    <div 
-      class="absolute top-0 pointer-events-none bg-surface-dark border border-white/10 px-3 py-2 rounded-xl shadow-2xl z-20 -translate-x-1/2 -translate-y-full mb-4 transition-all duration-200"
-      style="left: {(x(hoveredPoint) / width) * 100}%; top: {y(data[hoveredPoint].count)}px"
+{#if data.length > 0}
+  <div class="relative group" onmousemove={handleMouseMove} onmouseleave={() => hoveredPoint = null} role="presentation">
+    <svg 
+      viewBox="0 0 {width} {height}" 
+      class="w-full h-auto overflow-visible"
+      preserveAspectRatio="none"
     >
-      <div class="text-[10px] text-white/40 font-black uppercase tracking-widest leading-none mb-1">
-        {data[hoveredPoint].date}
+      <defs>
+        <linearGradient id="gradient-{label}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="var(--color-primary)" stop-opacity="0.15" />
+          <stop offset="100%" stop-color="var(--color-primary)" stop-opacity="0" />
+        </linearGradient>
+      </defs>
+
+      <!-- Grid lines -->
+      <line 
+        x1={padding.left} 
+        y1={height - padding.bottom} 
+        x2={width - padding.right} 
+        y2={height - padding.bottom} 
+        stroke="var(--color-outline-variant)" 
+        stroke-opacity="0.1" 
+      />
+      
+      <!-- Area background -->
+      <path d={areaPath} fill="url(#gradient-{label})" class="transition-all duration-700" />
+      
+      <!-- Main Line -->
+      <path 
+        d={path} 
+        fill="none" 
+        stroke="var(--color-primary)" 
+        stroke-width="3" 
+        stroke-linecap="round" 
+        stroke-linejoin="round"
+        class="transition-all duration-700 chart-line"
+      />
+
+      <!-- Active Point & Tooltip Indicator -->
+      {#if hoveredPoint !== null && data[hoveredPoint]}
+        <line 
+          x1={x(hoveredPoint)} 
+          y1={padding.top} 
+          x2={x(hoveredPoint)} 
+          y2={height - padding.bottom} 
+          stroke="var(--color-primary)" 
+          stroke-width="1" 
+          stroke-dasharray="4 4"
+          class="opacity-30"
+        />
+        <circle 
+          cx={x(hoveredPoint)} 
+          cy={y(data[hoveredPoint].count)} 
+          r="6" 
+          fill="var(--color-primary)" 
+          stroke="var(--color-surface-container)" 
+          stroke-width="3" 
+          class="shadow-xl"
+        />
+      {/if}
+    </svg>
+
+    <!-- Tooltip overlay -->
+    {#if hoveredPoint !== null && data[hoveredPoint]}
+      <div 
+        class="absolute pointer-events-none bg-surface-container border border-outline-variant/10 px-4 py-3 rounded-2xl shadow-2xl z-20 -translate-x-1/2 -translate-y-[calc(100%+12px)] transition-all duration-200 backdrop-blur-md"
+        style="left: {(x(hoveredPoint) / width) * 100}%; top: {y(data[hoveredPoint].count)}px"
+      >
+        <div class="text-[9px] text-on-surface-variant/60 font-black uppercase tracking-[0.2em] leading-none mb-1.5 whitespace-nowrap">
+          {data[hoveredPoint].date}
+        </div>
+        <div class="text-sm font-black text-on-surface flex items-center gap-2.5 whitespace-nowrap">
+          <div class="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(var(--color-primary-rgb),0.4)]"></div>
+          {data[hoveredPoint].count} <span class="text-on-surface-variant font-bold">{label}</span>
+        </div>
       </div>
-      <div class="text-sm font-bold text-white flex items-center gap-2">
-        <span class="w-2 h-2 rounded-full" style="background-color: {color}"></span>
-        {data[hoveredPoint].count} {label}
-      </div>
+    {/if}
+  </div>
+{:else}
+  <div class="flex items-center justify-center py-12 text-on-surface-variant/20">
+    <div class="text-center">
+      <span class="material-symbols-outlined text-4xl mb-2 opacity-10">monitoring</span>
+      <p class="text-[10px] font-black uppercase tracking-widest">No data available</p>
     </div>
-  {/if}
-</div>
+  </div>
+{/if}
 
 <style>
   svg {
-    filter: drop-shadow(0 0 10px rgba(0,0,0,0.1));
+    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.05));
+  }
+  
+  .chart-line {
+    filter: drop-shadow(0 0 8px rgba(var(--color-primary-rgb), 0.2));
   }
 </style>

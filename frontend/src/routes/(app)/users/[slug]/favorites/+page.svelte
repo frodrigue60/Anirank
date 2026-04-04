@@ -20,7 +20,10 @@
 
   // Sync state if navigation happens
   $effect(() => {
-    if (_sourceSongs !== data.songs?.data && data.songs?.pagination?.current_page === 1) {
+    if (
+      _sourceSongs !== data.songs?.data &&
+      data.songs?.pagination?.current_page === 1
+    ) {
       _sourceSongs = data.songs?.data;
       songs = data.songs?.data || [];
       songsPage = data.songs?.pagination?.current_page || 1;
@@ -42,7 +45,8 @@
       const songsData = response.data.songs || response.data;
       if (songsData?.data) {
         songs = [...songs, ...songsData.data];
-        songsPage = songsData.pagination?.current_page || songsData.current_page;
+        songsPage =
+          songsData.pagination?.current_page || songsData.current_page;
         songsLastPage = songsData.pagination?.last_page || songsLastPage;
       }
     } catch (e) {
@@ -57,17 +61,17 @@
   {#if data.profile}
     <div class="flex items-center justify-between mb-12">
       <div>
-        <h3 class="text-3xl font-black text-white tracking-tight leading-tight">
+        <h3 class="text-3xl font-black text-on-surface tracking-tight leading-tight">
           Favorite <span class="text-primary italic">Themes</span>
         </h3>
-        <p class="text-white/40 mt-2 font-medium">
+        <p class="text-on-surface-variant mt-2 font-medium">
           All themes favorited by {data.profile.name}.
         </p>
       </div>
     </div>
 
     {#if songs.length > 0}
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
         {#each songs as song}
           <SongCard {song} />
         {/each}
@@ -80,7 +84,7 @@
       />
     {:else}
       <div
-        class="py-20 flex flex-col items-center justify-center text-center opacity-40"
+        class="py-20 flex flex-col items-center justify-center text-center text-on-surface-variant/40"
       >
         <Music size={80} strokeWidth={1} />
         <h2 class="text-2xl font-bold mt-6">No favorites found</h2>

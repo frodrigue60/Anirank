@@ -48,12 +48,12 @@
 <div class="space-y-8" in:fade>
   <div class="flex items-center justify-between">
     <div>
-      <h2 class="text-2xl font-black text-white tracking-tighter">Following</h2>
-      <p class="text-slate-400 text-sm mt-1">Users followed by this profile</p>
+      <h2 class="text-2xl font-black text-on-surface tracking-tighter">Following</h2>
+      <p class="text-on-surface-variant text-sm mt-1">Users followed by this profile</p>
     </div>
-    <div class="px-4 py-2 bg-white/5 rounded-lg border border-white/10">
+    <div class="px-4 py-2 bg-surface-highest rounded-lg border border-on-surface-variant/10">
       <span class="text-primary font-bold">{data.pagination.total}</span>
-      <span class="text-slate-400 text-sm ml-1">Following</span>
+      <span class="text-on-surface-variant text-sm ml-1 text-[10px] font-black uppercase tracking-widest">Following</span>
     </div>
   </div>
 
@@ -64,10 +64,10 @@
       {#each following as user}
         <a
           href={`/users/${user.slug}`}
-          class="group bg-white/5 rounded-2xl p-4 border border-white/5 hover:border-primary/30 transition-all hover:bg-white/10 flex items-center gap-4"
+          class="group bg-surface-container rounded-2xl p-4 border border-on-surface-variant/10 hover:border-primary/30 transition-all hover:bg-surface-highest flex items-center gap-4 shadow-sm"
         >
           <div
-            class="size-14 rounded-xl overflow-hidden bg-background-dark border border-white/10 group-hover:border-primary/50 transition-colors"
+            class="size-14 rounded-xl overflow-hidden bg-surface-low border border-on-surface-variant/10 group-hover:border-primary/50 transition-colors shadow-inner"
           >
             <img
               src={user.avatar_url || "/images/placeholders/default.jpg"}
@@ -77,14 +77,14 @@
           </div>
           <div class="flex-1 min-w-0">
             <h3
-              class="font-bold text-white group-hover:text-primary transition-colors truncate"
+              class="font-bold text-on-surface group-hover:text-primary transition-colors truncate"
             >
               {user.name}
             </h3>
-            <p class="text-slate-500 text-xs truncate">@{user.slug}</p>
+            <p class="text-on-surface-variant text-xs truncate font-medium">@{user.slug}</p>
           </div>
           <span
-            class="material-symbols-outlined text-slate-600 group-hover:text-primary transition-colors"
+            class="material-symbols-outlined text-on-surface-variant/30 group-hover:text-primary transition-colors"
           >
             chevron_right
           </span>
@@ -99,15 +99,15 @@
     />
   {:else}
     <div
-      class="py-20 text-center bg-white/5 rounded-3xl border border-dashed border-white/10"
+      class="py-20 text-center bg-surface-container rounded-3xl border border-on-surface-variant/10"
     >
       <div
-        class="size-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-500"
+        class="size-20 bg-surface-highest rounded-full flex items-center justify-center mx-auto mb-4 text-on-surface-variant/40"
       >
         <span class="material-symbols-outlined text-4xl">person_search</span>
       </div>
-      <h3 class="text-xl font-bold text-white">Not following anyone</h3>
-      <p class="text-slate-400 max-w-xs mx-auto mt-2">
+      <h3 class="text-xl font-bold text-on-surface tracking-tight">Not following anyone</h3>
+      <p class="text-on-surface-variant max-w-xs mx-auto mt-2 font-medium">
         When this user follows someone, they will appear here.
       </p>
     </div>

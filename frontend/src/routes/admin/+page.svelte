@@ -88,7 +88,10 @@
       toastState.addToast("Ranking snapshot completed successfully", "success");
     } catch (err: any) {
       console.error(err);
-      toastState.addToast(getApiErrorMessage(err, "Failed to update rankings"), "error");
+      toastState.addToast(
+        getApiErrorMessage(err, "Failed to update rankings"),
+        "error",
+      );
     } finally {
       isUpdating = false;
     }
@@ -101,7 +104,10 @@
       toastState.addToast("OG Image Cache flushed successfully", "success");
     } catch (err: any) {
       console.error(err);
-      toastState.addToast(getApiErrorMessage(err, "Failed to flush OG cache"), "error");
+      toastState.addToast(
+        getApiErrorMessage(err, "Failed to flush OG cache"),
+        "error",
+      );
     } finally {
       isFlushing = false;
     }
@@ -148,11 +154,13 @@
     if (!svgElement || chartData.length < 2) return;
     const rect = svgElement.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 800;
-    
+
     const padding = 20;
     const innerWidth = 800 - padding * 2;
-    const index = Math.round(((x - padding) / innerWidth) * (chartData.length - 1));
-    
+    const index = Math.round(
+      ((x - padding) / innerWidth) * (chartData.length - 1),
+    );
+
     if (index >= 0 && index < chartData.length) {
       hoverIndex = index;
     } else {
@@ -179,8 +187,11 @@
     return {
       x,
       y,
-      date: new Date(m.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
-      value: m.views_count.toLocaleString()
+      date: new Date(m.date).toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+      }),
+      value: m.views_count.toLocaleString(),
     };
   });
 </script>
@@ -189,7 +200,7 @@
   <title>Dashboard | Anirank Admin</title>
 </svelte:head>
 
-<div>
+<div class="">
   {#if data.error}
     <div
       class="mb-8 p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-400 flex items-center gap-3"
@@ -204,24 +215,24 @@
     {#each displayStats as stat}
       <a
         href={stat.link || "#"}
-        class="bg-anirank-card border border-white/5 rounded-xl p-4 relative overflow-hidden group transition-all hover:border-white/10 hover:bg-white/3"
+        class="bg-surface-container border border-white/5 rounded-xl p-4 relative overflow-hidden group transition-all hover:border-white/10 hover:bg-white/3"
       >
         <div
           class="absolute top-2 right-2 transition-transform duration-500 group-hover:scale-110"
         >
           <span
-            class="material-symbols-outlined text-2xl opacity-10 {stat.color.split(
+            class="material-symbols-outlined text-2xl {stat.color.split(
               ' ',
             )[1]}">{stat.icon}</span
           >
         </div>
         <p
-          class="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1 relative z-10"
+          class="text-[10px] font-bold uppercase tracking-wider text-on-surface mb-1 relative z-10"
         >
           {stat.name}
         </p>
         <div class="flex items-baseline gap-2 relative z-10">
-          <h3 class="text-2xl font-black text-white tracking-tight">
+          <h3 class="text-2xl font-black text-on-surface tracking-tight">
             {stat.value}
           </h3>
         </div>
@@ -230,10 +241,10 @@
   </div>
 
   <!-- Historical Traffic Chart -->
-  <div class="bg-anirank-card border border-white/5 rounded-2xl p-6 mb-8">
+  <div class="bg-surface-container border border-white/5 rounded-2xl p-6 mb-8">
     <div class="flex items-center justify-between mb-6">
       <div>
-        <h3 class="text-xl font-bold text-white">Historical Traffic</h3>
+        <h3 class="text-xl font-bold text-on-surface">Historical Traffic</h3>
         <p class="text-xs text-gray-400">
           Daily views across the platform (Last 30 days)
         </p>
@@ -241,7 +252,7 @@
       <div
         class="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/5"
       >
-        <div class="w-2 h-2 rounded-full bg-anirank-primary"></div>
+        <div class="w-2 h-2 rounded-full bg-primary"></div>
         <span
           class="text-[10px] font-bold text-gray-400 uppercase tracking-wider"
           >Views</span
@@ -337,15 +348,30 @@
 
         <!-- Tooltip -->
         {#if hoverPoint()}
-          <div 
-            class="absolute pointer-events-none bg-anirank-card border border-white/10 rounded-lg p-2 shadow-2xl z-50 transition-all duration-75"
-            style="left: {hoverPoint()!.x > 400 ? 'auto' : (hoverPoint()!.x / 800 * 100) + '%'}; 
-                   right: {hoverPoint()!.x > 400 ? (100 - (hoverPoint()!.x / 800 * 100)) + '%' : 'auto'}; 
+          <div
+            class="absolute pointer-events-none bg-surface-container border border-gray-500 rounded-lg p-2 shadow-2xl z-50 transition-all duration-75"
+            style="left: {hoverPoint()!.x > 400
+              ? 'auto'
+              : (hoverPoint()!.x / 800) * 100 + '%'}; 
+                   right: {hoverPoint()!.x > 400
+              ? 100 - (hoverPoint()!.x / 800) * 100 + '%'
+              : 'auto'}; 
                    top: {hoverPoint()!.y - 60}px;
-                   transform: translateX({hoverPoint()!.x > 400 ? '10px' : '-10px'});"
+                   transform: translateX({hoverPoint()!.x > 400
+              ? '10px'
+              : '-10px'});"
           >
-            <p class="text-[10px] font-bold text-gray-400 uppercase leading-none mb-1">{hoverPoint()!.date}</p>
-            <p class="text-xs font-black text-white leading-none">{hoverPoint()!.value} <span class="text-[10px] font-normal text-gray-500 uppercase">Views</span></p>
+            <p
+              class="text-[10px] font-bold text-gray-400 uppercase leading-none mb-1"
+            >
+              {hoverPoint()!.date}
+            </p>
+            <p class="text-xs font-black text-white leading-none">
+              {hoverPoint()!.value}
+              <span class="text-[10px] font-normal text-gray-500 uppercase"
+                >Views</span
+              >
+            </p>
           </div>
         {/if}
       </div>
@@ -371,9 +397,9 @@
   <!-- Recent Activity / Quick Actions -->
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <div
-      class="lg:col-span-2 bg-anirank-card border border-white/5 rounded-2xl p-6"
+      class="lg:col-span-2 bg-surface-container border border-white/5 rounded-2xl p-6"
     >
-      <h3 class="text-xl font-bold text-white mb-6">
+      <h3 class="text-xl font-bold text-on-surface mb-6">
         Recent Reports & Requests
       </h3>
 
@@ -448,14 +474,14 @@
       <div class="mt-6 text-center">
         <a
           href="/admin/reports"
-          class="text-sm font-medium text-anirank-primary hover:text-blue-400 transition-colors"
+          class="text-sm font-medium text-primary hover:text-blue-400 transition-colors"
           >View all pending items &rarr;</a
         >
       </div>
     </div>
 
-    <div class="bg-anirank-card border border-white/5 rounded-2xl p-6">
-      <h3 class="text-xl font-bold text-white mb-6">Quick Actions</h3>
+    <div class="bg-surface-container border border-white/5 rounded-2xl p-6">
+      <h3 class="text-xl font-bold text-on-surface mb-6">Quick Actions</h3>
       <div class="space-y-3">
         <a
           href="/admin/songs/create"
@@ -477,7 +503,7 @@
               /></svg
             >
           </div>
-          <span class="font-medium text-sm text-gray-200">Add New Song</span>
+          <span class="font-medium text-sm text-on-surface">Add New Song</span>
         </a>
         <button
           class="w-full flex items-center gap-3 p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors border border-transparent hover:border-white/10 text-left"
@@ -498,7 +524,7 @@
               /></svg
             >
           </div>
-          <span class="font-medium text-sm text-gray-200"
+          <span class="font-medium text-sm text-on-surface"
             >Sync with Anilist</span
           >
         </button>
@@ -542,7 +568,7 @@
               >
             {/if}
           </div>
-          <span class="font-medium text-sm text-gray-200"
+          <span class="font-medium text-sm text-on-surface"
             >{isUpdating ? "Updating..." : "Update Ranking Snapshot"}</span
           >
         </button>
@@ -576,7 +602,7 @@
               >
             {/if}
           </div>
-          <span class="font-medium text-sm text-gray-200"
+          <span class="font-medium text-sm text-on-surface"
             >{isFlushing ? "Flushing..." : "Flush OG Image Cache"}</span
           >
         </button>

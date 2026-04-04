@@ -1,52 +1,69 @@
 <script lang="ts">
-  import type { Tournament } from '$lib/types/tournament';
-  import type { Song } from '$lib/types/song';
-  import MatchupCard from './MatchupCard.svelte';
+  import type { Tournament } from "$lib/types/tournament";
+  import type { Song } from "$lib/types/song";
+  import MatchupCard from "./MatchupCard.svelte";
 
   interface Props {
     tournament: Tournament;
     userVotedMatchupIds?: number[];
     canVote?: boolean;
-    onvoteRequest?: (matchupId: number, songId: number, song: Song | undefined) => void;
+    onvoteRequest?: (
+      matchupId: number,
+      songId: number,
+      song: Song | undefined,
+    ) => void;
     onpreview?: (song: Song | undefined) => void;
   }
 
-  let { 
-    tournament, 
-    userVotedMatchupIds = [], 
+  let {
+    tournament,
+    userVotedMatchupIds = [],
     canVote = false,
     onvoteRequest,
-    onpreview
+    onpreview,
   }: Props = $props();
 
   // Group matchups by round
-  let rounds = $derived(tournament.matchups ? [...new Set(tournament.matchups.map(m => m.round))].sort((a, b) => b - a) : []);
+  let rounds = $derived(
+    tournament.matchups
+      ? [
+          ...new Set(tournament.matchups.map((m) => m.round)),
+        ].sort((a, b) => b - a)
+      : [],
+  );
 
   function getMatchupsForRound(round: number) {
-    return tournament.matchups?.filter(m => m.round === round).sort((a, b) => a.position - b.position) || [];
+    return (
+      tournament.matchups
+        ?.filter((m) => m.round === round)
+        .sort((a, b) => a.position - b.position) || []
+    );
   }
 </script>
 
-<div class="tournament-bracket">
-  <div class="rounds-container">
+<div class="w-full overflow-x-auto py-10 no-scrollbar">
+  <div class="flex gap-20 min-w-max pb-8 px-4">
     {#each rounds as round}
-      <div class="round-column">
-        <h3 class="round-title">
-          {#if round === 2}
-            Final
-          {:else if round === 4}
-            Semifinals
-          {:else if round === 8}
-            Quarterfinals
-          {:else}
-            Round of {round}
-          {/if}
-        </h3>
-        
-        <div class="matchups-list">
+      <div class="flex flex-col gap-8 min-w-[340px]">
+        <div class="flex flex-col items-center gap-1 mb-4">
+          <h3 class="text-xs font-black uppercase tracking-[0.3em] text-primary">
+            {#if round === 2}
+              Final
+            {:else if round === 4}
+              Semifinals
+            {:else if round === 8}
+              Quarterfinals
+            {:else}
+              Round of {round}
+            {/if}
+          </h3>
+          <div class="w-8 h-1 bg-primary/20 rounded-full"></div>
+        </div>
+
+        <div class="flex flex-col justify-around h-full gap-12">
           {#each getMatchupsForRound(round) as matchup}
-            <MatchupCard 
-              {matchup} 
+            <MatchupCard
+              {matchup}
               canVote={canVote && !userVotedMatchupIds.includes(matchup.id)}
               {onvoteRequest}
               {onpreview}
@@ -59,41 +76,12 @@
 </div>
 
 <style>
-  .tournament-bracket {
-    width: 100%;
-    overflow-x: auto;
-    padding: 20px 0;
+  /* Optional: hide scrollbars for cleaner look but keep scrolling functional */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
   }
-
-  .rounds-container {
-    display: flex;
-    gap: 40px;
-    min-width: max-content;
-    padding-bottom: 20px;
-  }
-
-  .round-column {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    min-width: 300px;
-  }
-
-  .round-title {
-    text-align: center;
-    font-size: 1.1rem;
-    font-weight: 700;
-    margin-bottom: 10px;
-    color: var(--primary-color, #ff4e50);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-  }
-
-  .matchups-list {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-around;
-    height: 100%;
-    gap: 30px;
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 </style>

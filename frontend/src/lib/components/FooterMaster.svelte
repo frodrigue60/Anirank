@@ -3,14 +3,14 @@
 </script>
 
 <footer
-  class="mt-20 border-t border-white/5 bg-surface-darker/50 relative overflow-hidden"
+  class="relative mt-20 overflow-hidden border-t border-outline-variant/10 bg-surface-low/50"
 >
   <!-- Decorative glow effect -->
   <div
-    class="absolute -top-24 -left-24 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none"
+    class="pointer-events-none absolute -top-24 -left-24 h-48 w-48 rounded-full bg-primary/5 blur-3xl"
   ></div>
   <div
-    class="absolute -bottom-24 -right-24 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none"
+    class="pointer-events-none absolute -bottom-24 -right-24 h-48 w-48 rounded-full bg-primary/5 blur-3xl"
   ></div>
 
   <div class="max-w-[1440px] mx-auto px-6 py-16 relative">
@@ -23,11 +23,11 @@
           title="AniRank Home"
           aria-label="Go to AniRank Home"
         >
-          <span class="text-2xl font-black tracking-tighter text-white"
+          <span class="text-2xl font-black tracking-tighter text-on-surface"
             >AniRank</span
           >
         </a>
-        <p class="max-w-xs text-sm leading-relaxed text-white/40">
+        <p class="max-w-xs text-sm leading-relaxed text-on-surface-variant">
           Discover, rate, and explore the best anime openings and endings from
           all your favorite series. Join our community of anime music
           enthusiasts.
@@ -35,7 +35,7 @@
         <div class="mt-8 flex items-center gap-4">
           <a
             href="https://x.com"
-            class="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 text-white/40 transition-all hover:bg-primary hover:text-white"
+            class="flex h-10 w-10 items-center justify-center rounded-full bg-surface-container text-on-surface-variant transition-all hover:bg-primary hover:text-white"
             title="Follow us on X (Twitter)"
             aria-label="Follow us on X (Twitter)"
           >
@@ -47,7 +47,7 @@
           </a>
           <a
             href="https://discord.gg/HBAxfsH4WZ"
-            class="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 text-white/40 transition-all hover:bg-primary hover:text-white"
+            class="flex h-10 w-10 items-center justify-center rounded-full bg-surface-container text-on-surface-variant transition-all hover:bg-primary hover:text-white"
             title="Join our Discord community"
             aria-label="Join our Discord community"
           >
@@ -60,7 +60,7 @@
           <!-- site stats -->
           <a
             href="/stats"
-            class="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 text-white/40 transition-all hover:bg-primary hover:text-white"
+            class="flex h-10 w-10 items-center justify-center rounded-full bg-surface-container text-on-surface-variant transition-all hover:bg-primary hover:text-white"
             title="View site statistics"
             aria-label="View site statistics"
           >
@@ -72,7 +72,7 @@
       <!-- Links Sections -->
       <div>
         <h4
-          class="mb-6 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-white"
+          class="mb-6 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-on-surface"
         >
           <span class="material-symbols-outlined text-primary text-[18px]"
             >info</span
@@ -83,35 +83,35 @@
           <li>
             <a
               href="/"
-              class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
+              class="text-sm font-medium text-on-surface-variant transition-colors hover:text-primary"
               title="Learn more about AniRank">About Us</a
             >
           </li>
           <li>
             <a
               href="/"
-              class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
+              class="text-sm font-medium text-on-surface-variant transition-colors hover:text-primary"
               title="Read our Cookie Policy">Cookie Policy</a
             >
           </li>
           <li>
             <a
               href="/"
-              class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
+              class="text-sm font-medium text-on-surface-variant transition-colors hover:text-primary"
               title="Read our Privacy Policy">Privacy Policy</a
             >
           </li>
           <li>
             <a
               href="/"
-              class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
+              class="text-sm font-medium text-on-surface-variant transition-colors hover:text-primary"
               title="Read our Terms and Conditions">Terms and Conditions</a
             >
           </li>
           <li>
             <a
               href="/"
-              class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
+              class="text-sm font-medium text-on-surface-variant transition-colors hover:text-primary"
               title="Read our DMCA Disclaimer">DMCA Disclaimer</a
             >
           </li>
@@ -120,7 +120,7 @@
 
       <div>
         <h4
-          class="mb-6 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-white"
+          class="mb-6 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-on-surface"
         >
           <span class="material-symbols-outlined text-primary text-[18px]"
             >explore</span
@@ -131,35 +131,35 @@
           <li>
             <a
               href="/animes"
-              class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
+              class="text-sm font-medium text-on-surface-variant transition-colors hover:text-primary"
               title="Browse Anime Series">Series</a
             >
           </li>
           <li>
             <a
               href="/artists"
-              class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
+              class="text-sm font-medium text-on-surface-variant transition-colors hover:text-primary"
               title="Browse Artists">Artists</a
             >
           </li>
           <li>
             <a
               href="/songs"
-              class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
+              class="text-sm font-medium text-on-surface-variant transition-colors hover:text-primary"
               title="Browse Themes and Songs">Themes</a
             >
           </li>
           <li>
             <a
               href="/studios"
-              class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
+              class="text-sm font-medium text-on-surface-variant transition-colors hover:text-primary"
               title="Browse Animation Studios">Studios</a
             >
           </li>
           <li>
             <a
               href="/producers"
-              class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
+              class="text-sm font-medium text-on-surface-variant transition-colors hover:text-primary"
               title="Browse Music Producers">Producers</a
             >
           </li>
@@ -168,7 +168,7 @@
 
       <div>
         <h4
-          class="mb-6 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-white"
+          class="mb-6 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-on-surface"
         >
           <span class="material-symbols-outlined text-primary text-[18px]"
             >help</span
@@ -179,28 +179,28 @@
           <li>
             <a
               href="/"
-              class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
+              class="text-sm font-medium text-on-surface-variant transition-colors hover:text-primary"
               title="Report an error">Report Error</a
             >
           </li>
           <li>
             <a
               href="/"
-              class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
+              class="text-sm font-medium text-on-surface-variant transition-colors hover:text-primary"
               title="Report abuse">Abuse</a
             >
           </li>
           <li>
             <a
               href="/"
-              class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
+              class="text-sm font-medium text-on-surface-variant transition-colors hover:text-primary"
               title="Contact us">Contact Us</a
             >
           </li>
           <li>
             <a
               href="/"
-              class="text-sm font-medium text-white/40 transition-colors hover:text-primary"
+              class="text-sm font-medium text-on-surface-variant transition-colors hover:text-primary"
               title="Get support">Support</a
             >
           </li>
@@ -209,13 +209,13 @@
     </div>
 
     <div
-      class="mt-16 flex flex-col items-center justify-between gap-4 border-t border-white/5 pt-8 md:flex-row"
+      class="mt-16 flex flex-col items-center justify-between gap-4 border-t border-outline-variant/10 pt-8 md:flex-row"
     >
-      <p class="text-xs font-medium text-white/20">
+      <p class="text-xs font-medium text-on-surface-variant/40">
         &copy; {currentYear} AniRank. All rights reserved.
       </p>
       <div class="flex items-center gap-6">
-        <span class="flex items-center gap-1 text-xs font-medium text-white/20">
+        <span class="flex items-center gap-1 text-xs font-medium text-on-surface-variant/40">
           Made with <span
             class="material-symbols-outlined text-primary text-[14px] filled"
             >favorite</span

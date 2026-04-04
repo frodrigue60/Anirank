@@ -3,18 +3,11 @@
   import { page } from "$app/state";
   import { configState } from "$lib/state/config.svelte";
   import SongCard from "$lib/components/SongCard.svelte";
-  import CustomSelect from "$lib/components/CustomSelect.svelte";
-  import {
-    Search,
-    Calendar,
-    Cloud,
-    Play,
-    ListFilter,
-    SortDesc,
-  } from "lucide-svelte";
+  import { Search } from "lucide-svelte";
   import api from "$lib/api";
   import { toastState } from "$lib/state/toast.svelte";
   import SEO from "$lib/components/SEO.svelte";
+  import { authState } from "$lib/state/auth.svelte";
   const PUBLIC_API_URL =
     import.meta.env.VITE_API_URL || "http://localhost:8080/api";
 
@@ -43,7 +36,7 @@
     const url = new URL(page.url);
 
     const setParam = (key: string, val: string) => {
-      if (val && val !== "any") url.searchParams.set(key, val);
+      if (val) url.searchParams.set(key, val);
       else url.searchParams.delete(key);
     };
 
@@ -76,26 +69,26 @@
   }
 
   const yearOptions = $derived([
-    { value: "any", label: "Any Year" },
+    /* { value: "any", label: "Any Year" }, */
     ...configState.years.map((y) => ({
       value: y.slug,
       label: y.name,
     })),
   ]);
   const seasonOptions = $derived([
-    { value: "any", label: "Any Season" },
+    /* { value: "any", label: "Any Season" }, */
     ...configState.seasons.map((s) => ({
       value: s.slug,
       label: s.name,
     })),
   ]);
   const typeOptions = [
-    { value: "any", label: "Any" },
+    /* { value: "any", label: "Any" }, */
     { value: "OP", label: "Opening" },
     { value: "ED", label: "Ending" },
   ];
   const sortOptions = [
-    { value: "any", label: "Recently Added" },
+    /* { value: "any", label: "Recently Added" }, */
     { value: "rating", label: "Top Rated" },
     { value: "rating_asc", label: "Least Rated" },
     { value: "most_popular", label: "Most Popular (Likes)" },
@@ -159,7 +152,7 @@
     selectedYear = "";
     selectedSeason = "";
     selectedType = "";
-    selectedSort = "any";
+    selectedSort = "";
     updateFilters();
   }
 
@@ -222,49 +215,59 @@
       </div>
       <div>
         <h2
-          class="text-2xl md:text-3xl font-black text-white mb-2 tracking-tight"
+          class="text-2xl md:text-3xl font-black text-on-surface mb-2 tracking-tight"
         >
           {artist.name}
         </h2>
         {#if artist.name_jp}
-          <p class="text-white/60 text-lg mb-2">{artist.name_jp}</p>
+          <p class="text-on-surface-variant text-lg mb-2">{artist.name_jp}</p>
         {/if}
         <p class="text-primary font-bold">Theme Songs Collection</p>
       </div>
       <div class="ms-auto">
-        <button
-          onclick={toggleFavorite}
-          class="flex items-center gap-2 px-4 py-2 rounded-xl border border-white/10 transition-all active:scale-95 {isFavorited
-            ? 'bg-red-500/20 border-red-500/50 text-red-500'
-            : 'text-white hover:bg-white/5'}"
-        >
-          <span
-            class="material-symbols-outlined {isFavorited
-              ? 'fill-current'
-              : ''}"
+        {#if authState.isAuthenticated}
+          <button
+            onclick={toggleFavorite}
+            class="flex items-center gap-2 px-4 py-2 rounded-xl border border-white/10 transition-all active:scale-95 {isFavorited
+              ? 'bg-red-500/20 border-red-500/50 text-red-500'
+              : 'text-white hover:bg-white/5'}"
           >
-            favorite
-          </span>
-          Favorite
-        </button>
+            <span
+              class="material-symbols-outlined {isFavorited
+                ? 'fill-current'
+                : ''}"
+            >
+              favorite
+            </span>
+            Favorite
+          </button>
+        {:else}
+          <a
+            href="/login"
+            class="flex items-center bg-red-500 border-red-400 text-white gap-2 px-4 py-2 rounded-xl border transition-all active:scale-95 hover:bg-red-500/20"
+          >
+            <span class="material-symbols-outlined">favorite</span>
+            Favorite
+          </a>
+        {/if}
       </div>
     </div>
 
     <!-- Filter Bar -->
     <section
-      class="relative z-40 bg-surface-dark/30 p-4 rounded-3xl border border-white/5 shadow-2xl mb-12"
+      class="relative z-40 bg-surface-container p-4 rounded-3xl border border-white/5 shadow-2xl mb-12"
     >
       <div class="flex flex-col gap-6">
         <div class="relative group">
           <label
             for="theme-search"
-            class="block text-[10px] uppercase font-black text-white/40 mb-2 ml-1 tracking-widest"
+            class="block text-[10px] uppercase font-black text-on-surface-variant mb-2 ml-1 tracking-widest"
           >
             Search Theme
           </label>
           <div class="relative">
             <span
-              class="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-primary transition-colors"
+              class="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-primary transition-colors"
             >
               <Search size={20} />
             </span>
@@ -273,56 +276,103 @@
               bind:value={searchTerm}
               oninput={handleInput}
               onkeydown={handleKeydown}
-              class="w-full h-12 bg-surface-darker/50 border border-white/10 rounded-xl pl-12 pr-6 text-sm text-white focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 placeholder:text-white/20 transition-all"
+              class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-xl pl-12 pr-6 text-sm text-white focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 placeholder:text-on-surface-variant transition-all"
               placeholder="Search for a song or anime title..."
               type="text"
             />
           </div>
         </div>
         <div class="flex flex-col lg:grid lg:grid-cols-4 gap-4">
-          <CustomSelect
-            label="Year"
-            bind:value={selectedYear}
-            options={yearOptions}
-            placeholder="All Years"
-            icon={Calendar}
-            onchange={updateFilters}
-          />
-          <CustomSelect
-            label="Season"
-            bind:value={selectedSeason}
-            options={seasonOptions}
-            placeholder="All Seasons"
-            icon={Cloud}
-            onchange={updateFilters}
-          />
-          <CustomSelect
-            label="Type"
-            bind:value={selectedType}
-            options={typeOptions}
-            placeholder="All Types"
-            icon={Play}
-            onchange={updateFilters}
-          />
-          <CustomSelect
-            label="Sort"
-            bind:value={selectedSort}
-            options={sortOptions}
-            placeholder="Any"
-            icon={SortDesc}
-            onchange={updateFilters}
-          />
+          <!-- Year Select -->
+          <div class="flex flex-col gap-2">
+            <label
+              for="year-select"
+              class="text-[10px] uppercase font-black text-on-surface-variant mb-0 ml-1 tracking-widest"
+              >Year</label
+            >
+            <select
+              id="year-select"
+              bind:value={selectedYear}
+              onchange={updateFilters}
+              class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-xl px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
+            >
+              <option value="">All Years</option>
+              {#each yearOptions as option}
+                <option value={option.value}>{option.label}</option>
+              {/each}
+            </select>
+          </div>
+
+          <!-- Season Select -->
+          <div class="flex flex-col gap-2">
+            <label
+              for="season-select"
+              class="text-[10px] uppercase font-black text-on-surface-variant mb-0 ml-1 tracking-widest"
+              >Season</label
+            >
+            <select
+              id="season-select"
+              bind:value={selectedSeason}
+              onchange={updateFilters}
+              class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-xl px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
+            >
+              <option value="">All Seasons</option>
+              {#each seasonOptions as option}
+                <option value={option.value}>{option.label}</option>
+              {/each}
+            </select>
+          </div>
+
+          <!-- Type Select -->
+          <div class="flex flex-col gap-2">
+            <label
+              for="type-select"
+              class="text-[10px] uppercase font-black text-on-surface-variant mb-0 ml-1 tracking-widest"
+              >Type</label
+            >
+            <select
+              id="type-select"
+              bind:value={selectedType}
+              onchange={updateFilters}
+              class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-xl px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
+            >
+              <option value="">All Types</option>
+              {#each typeOptions as option}
+                <option value={option.value}>{option.label}</option>
+              {/each}
+            </select>
+          </div>
+
+          <!-- Sort Select -->
+          <div class="flex flex-col gap-2">
+            <label
+              for="sort-select"
+              class="text-[10px] uppercase font-black text-on-surface-variant mb-0 ml-1 tracking-widest"
+              >Sort By</label
+            >
+            <select
+              id="sort-select"
+              bind:value={selectedSort}
+              onchange={updateFilters}
+              class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-xl px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
+            >
+              <option value="">Any</option>
+              {#each sortOptions as option}
+                <option value={option.value}>{option.label}</option>
+              {/each}
+            </select>
+          </div>
         </div>
       </div>
     </section>
 
     <div class="flex items-center justify-between mb-8">
       <div class="flex items-center">
-        <h2 class="text-2xl font-bold flex items-center gap-3">
+        <h2 class="text-2xl font-bold flex items-center gap-3 text-on-surface">
           <span class="w-2 h-8 bg-primary rounded-full"></span>
           Songs
           {#if data.songs?.length > 0}
-            <span class="text-white/30 font-normal text-lg ml-2"
+            <span class="text-on-surface-variant font-normal text-lg ml-2"
               >({data.songs.length.toLocaleString()})</span
             >
           {/if}
@@ -337,14 +387,16 @@
         {/each}
       {:else}
         <div
-          class="lg:col-span-2 text-center py-24 bg-surface-darker/30 rounded-3xl border-2 border-dashed border-white/5"
+          class="lg:col-span-2 text-center py-24 bg-surface-container/30 rounded-3xl border-2 border-dashed border-white/5"
         >
           <span
-            class="material-symbols-outlined text-6xl text-white/10 mb-4 block"
+            class="material-symbols-outlined text-6xl text-on-surface-variant opacity-20 mb-4 block"
             >music_off</span
           >
-          <h3 class="text-xl font-bold text-white/40">No themes found</h3>
-          <p class="text-white/20 mt-2">
+          <h3 class="text-xl font-bold text-on-surface-variant">
+            No themes found
+          </h3>
+          <p class="text-on-surface-variant opacity-40 mt-2">
             Try adjusting your filters or search query
           </p>
           <button

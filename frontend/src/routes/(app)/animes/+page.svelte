@@ -4,17 +4,9 @@
   import { page } from "$app/state";
   import { configState } from "$lib/state/config.svelte";
   import AnimeCard from "$lib/components/AnimeCard.svelte";
-  import CustomSelect from "$lib/components/CustomSelect.svelte";
   import InfiniteScroll from "$lib/components/InfiniteScroll.svelte";
   import api from "$lib/api";
-  import {
-    Search,
-    Calendar,
-    CloudSun,
-    Layout,
-    SortDesc,
-    Trash2,
-  } from "lucide-svelte";
+  import { Search } from "lucide-svelte";
   import SEO from "$lib/components/SEO.svelte";
 
   let { data } = $props();
@@ -164,20 +156,20 @@
   <div class="flex flex-col gap-4">
     <!-- Header/Filters Section -->
     <section
-      class="relative z-40 flex flex-col gap-4 bg-surface-dark/30 p-4 rounded-3xl border border-white/5 shadow-2xl"
+      class="relative z-40 flex flex-col gap-4 bg-surface-container p-4 rounded-3xl border border-white/5 shadow-2xl"
     >
       <div>
         <!-- search -->
         <div class="relative group">
           <label
             for="anime-search"
-            class="block text-[10px] uppercase font-black text-white/40 mb-2 ml-1 tracking-widest"
+            class="block text-[10px] uppercase font-black mb-2 ml-1 tracking-widest text-on-surface-variant"
           >
             Search Anime
           </label>
           <div class="relative">
             <span
-              class="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-primary transition-colors"
+              class="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-primary transition-colors"
             >
               <Search size={20} />
             </span>
@@ -186,68 +178,109 @@
               bind:value={searchTerm}
               oninput={handleInput}
               onkeydown={handleKeydown}
-              class="w-full h-12 bg-surface-darker/50 border border-white/10 rounded-xl pl-12 pr-6 text-sm text-white focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 placeholder:text-white/20 transition-all"
+              class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-xl pl-12 pr-6 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 placeholder:text-on-surface-variant transition-all"
               placeholder="What are you looking for?"
               type="text"
             />
           </div>
         </div>
       </div>
-      <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 items-end">
+      <div
+        class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 items-end"
+      >
         <!-- Year Select -->
-        <div class="">
-          <CustomSelect
-            label="Year"
+        <div class="flex flex-col gap-2">
+          <label
+            for="year-select"
+            class="text-[10px] uppercase font-black mb-0 ml-1 tracking-widest text-on-surface-variant"
+            >Year</label
+          >
+          <select
+            id="year-select"
             bind:value={selectedYear}
-            options={yearOptions}
-            placeholder="Any Year"
-            icon={Calendar}
             onchange={updateFilters}
-          />
+            class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-xl px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
+          >
+            {#each yearOptions as option}
+              <option value={option.value}>{option.label}</option>
+            {/each}
+          </select>
         </div>
 
         <!-- Season Select -->
-        <div class="">
-          <CustomSelect
-            label="Season"
+        <div class="flex flex-col gap-2">
+          <label
+            for="season-select"
+            class="text-[10px] uppercase font-black mb-0 ml-1 tracking-widest text-on-surface-variant"
+            >Season</label
+          >
+          <select
+            id="season-select"
             bind:value={selectedSeason}
-            options={seasonOptions}
-            placeholder="Any Season"
-            icon={CloudSun}
             onchange={updateFilters}
-          />
+            class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-xl px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
+          >
+            {#each seasonOptions as option}
+              <option value={option.value}>{option.label}</option>
+            {/each}
+          </select>
         </div>
 
         <!-- Format Select -->
-        <div class="">
-          <CustomSelect
-            label="Format"
+        <div class="flex flex-col gap-2">
+          <label
+            for="format-select"
+            class="text-[10px] uppercase font-black mb-0 ml-1 tracking-widest text-on-surface-variant"
+            >Format</label
+          >
+          <select
+            id="format-select"
             bind:value={selectedFormat}
-            options={formatOptions}
-            placeholder="Any Format"
-            icon={Layout}
             onchange={updateFilters}
-          />
+            class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-xl px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
+          >
+            {#each formatOptions as option}
+              <option value={option.value}>{option.label}</option>
+            {/each}
+          </select>
         </div>
-        <!-- select genres -->
-        <div class="">
-          <CustomSelect
-            label="Genres"
+
+        <!-- Genres Select -->
+        <div class="flex flex-col gap-2">
+          <label
+            for="genre-select"
+            class="text-[10px] uppercase font-black mb-0 ml-1 tracking-widest text-on-surface-variant"
+            >Genres</label
+          >
+          <select
+            id="genre-select"
             bind:value={selectedGenre}
-            options={genreOptions}
-            placeholder="Any Genre"
-            icon={Layout}
             onchange={updateFilters}
-          />
+            class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-xl px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
+          >
+            {#each genreOptions as option}
+              <option value={option.value}>{option.label}</option>
+            {/each}
+          </select>
         </div>
-        <div class="">
-          <CustomSelect
+
+        <!-- Sort Select -->
+        <div class="flex flex-col gap-2">
+          <label
+            for="sort-select"
+            class="text-[10px] uppercase font-black mb-0 ml-1 tracking-widest text-on-surface-variant"
+            >Sort By</label
+          >
+          <select
+            id="sort-select"
             bind:value={selectedSort}
-            options={sortOptions}
-            placeholder="Sort"
-            icon={SortDesc}
             onchange={updateFilters}
-          />
+            class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-xl px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
+          >
+            {#each sortOptions as option}
+              <option value={option.value}>{option.label}</option>
+            {/each}
+          </select>
         </div>
       </div>
     </section>
@@ -259,7 +292,9 @@
           <!-- Results count -->
           {#if totalAnimes > 0}
             <div class="mb-4 flex items-center justify-between">
-              <h3 class="text-xl font-bold flex items-center gap-3 text-white">
+              <h3
+                class="text-xl font-bold flex items-center gap-3 text-on-surface-variant"
+              >
                 <span class="w-2 h-6 bg-primary rounded-full"></span>
                 Results ({totalAnimes.toLocaleString()})
               </h3>
@@ -267,33 +302,32 @@
           {/if}
         </div>
 
-        <div class="flex items-center gap-2">
+        <div
+          class="flex items-center gap-2 bg-surface-container p-1 rounded-md"
+        >
           <button
             onclick={() => (viewType = "grid")}
-            class="flex items-center gap-2 bg-surface-dark p-1 rounded-md {viewType ===
-            'grid'
-              ? 'text-primary'
-              : 'text-white/60'}"
+            class="flex items-center gap-2 p-1 rounded-md {viewType === 'grid'
+              ? 'text-surface/80 bg-primary'
+              : 'text-on-surface-variant'}"
             title="Compact Grid"
           >
             <span class="material-symbols-outlined">grid_on</span>
           </button>
           <button
             onclick={() => (viewType = "card")}
-            class="flex items-center gap-2 bg-surface-dark p-1 rounded-md {viewType ===
-            'card'
-              ? 'text-primary'
-              : 'text-white/60'}"
+            class="flex items-center gap-2 p-1 rounded-md {viewType === 'card'
+              ? 'text-surface/80 bg-primary'
+              : 'text-on-surface-variant'}"
             title="Detailed Cards"
           >
             <span class="material-symbols-outlined">border_all</span>
           </button>
           <button
             onclick={() => (viewType = "list")}
-            class="flex items-center gap-2 bg-surface-dark p-1 rounded-md {viewType ===
-            'list'
-              ? 'text-primary'
-              : 'text-white/60'}"
+            class="flex items-center gap-2 p-1 rounded-md {viewType === 'list'
+              ? 'text-surface/80 bg-primary'
+              : 'text-on-surface-variant'}"
             title="List View"
           >
             <span class="material-symbols-outlined">list_alt</span>

@@ -3,9 +3,10 @@ import api from '$lib/api';
 
 export const load: PageLoad = async () => {
     try {
-        const res = await api.get('/init');
+        // Use the admin taxonomies endpoint to get IDs and full data
+        const res = await api.get('/admin/taxonomies/years');
         return {
-            years: res.data?.data?.years || []
+            years: res.data?.data || []
         };
     } catch (error) {
         console.error("Error loading admin years:", error);

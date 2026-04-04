@@ -18,12 +18,12 @@
   import api from "$lib/api";
   import type { Song, Artist, SongVariant as Variant } from "$lib/types/song";
   interface User {
-    badges: any;
+    badges?: any;
     uuid: string;
     name: string;
-    avatar_url: string;
-    score_format: string;
-    role: string;
+    avatar_url?: string;
+    score_format?: string;
+    role?: string;
   }
 
   interface Comment {
@@ -485,13 +485,13 @@
   type="music.song"
 />
 
-<main class="flex-1 w-full max-w-[1440px] mx-auto px-6 py-8 space-y-8">
+<main class="flex-1 w-full max-w-[1440px] mx-auto px-6 py-8 space-y-8 animate-in fade-in duration-700">
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-12">
     <!-- Main Content (Left) -->
-    <div class="lg:col-span-8 space-y-2">
+    <div class="lg:col-span-8 space-y-4">
       <!-- Video Player -->
       <div
-        class="relative w-full aspect-video rounded-3xl overflow-hidden bg-black video-shadow group border border-white/5"
+        class="relative w-full aspect-video rounded-3xl overflow-hidden bg-black video-shadow group border border-outline-variant/10 shadow-2xl"
       >
         {#if selectedVariant?.video}
           {#if selectedVariant.video.type === "embed"}
@@ -525,16 +525,16 @@
           <div
             class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center"
           >
-            <span class="material-symbols-outlined text-white/20 text-6xl mb-4"
+            <span class="material-symbols-outlined text-on-surface-variant/20 text-6xl mb-4"
               >videocam_off</span
             >
-            <span class="text-white/60 font-bold text-lg"
+            <span class="text-on-surface-variant/60 font-bold text-lg"
               >{(currentSong.song_variants?.length ?? 0) > 0
                 ? "No video available for this variant"
                 : "No video versions available for this theme song"}</span
             >
             {#if currentSong.song_variants?.length === 0}
-              <p class="text-white/30 text-sm mt-2 max-w-md">
+              <p class="text-on-surface-variant/30 text-sm mt-2 max-w-md">
                 We don't have a video file or embed for this theme yet. If you
                 have it, you can contribute it on our community server!
               </p>
@@ -543,12 +543,11 @@
         {/if}
       </div>
 
-      <!-- Song Info Header -->
-      <div class="space-y-2">
+      <div class="space-y-3">
         <div class="flex items-center gap-3">
-          <div class="flex bg-white/5 rounded-full p-1 border border-white/5">
+          <div class="flex bg-surface-highest rounded-full p-1 border border-on-surface-variant/10 shadow-sm">
             <span
-              class="px-3 py-1.5 rounded-full text-[10px] font-black bg-primary text-white uppercase tracking-wider"
+              class="px-3 py-1.5 rounded-full text-[10px] font-black bg-primary text-white uppercase tracking-widest"
             >
               {currentSong.type}
               {currentSong.theme_num || ""}
@@ -556,13 +555,13 @@
           </div>
           <!-- Version Selector -->
           {#if currentSong.song_variants && currentSong.song_variants.length > 1}
-            <div class="flex bg-white/5 rounded-full p-1 border border-white/5">
+            <div class="flex bg-surface-highest rounded-full p-1 border border-on-surface-variant/10 shadow-sm">
               {#each currentSong.song_variants as variant, i}
                 <button
                   class="px-3 py-1.5 rounded-full text-[10px] font-bold transition-all {selectedVariantIndex ===
                   i
-                    ? 'bg-primary text-white'
-                    : 'hover:bg-white/10 text-white/60'}"
+                    ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                    : 'hover:bg-on-surface-variant/10 text-on-surface-variant/60'}"
                   onclick={() => changeVariant(i)}
                   title="Select version {variant.version_number}"
                   aria-label="Select version {variant.version_number}"
@@ -573,28 +572,28 @@
             </div>
           {/if}
         </div>
-        <h1 class="text-2xl md:text-3xl font-black text-white tracking-tight">
+        <h1 class="text-2xl md:text-4xl font-black text-on-surface tracking-tight">
           {getSongName(currentSong)}
         </h1>
       </div>
-      <div class="space-x-2">
+      <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
         {#if currentSong.artists?.length}
           {#each currentSong.artists as artist}
             {#if artist?.status === false}
               <span
-                class="text-white/40 text-md font-bold uppercase tracking-wider"
+                class="text-on-surface-variant/40 text-sm font-bold uppercase tracking-widest"
                 >N/A</span
               >
             {:else}
               <a
                 href="/artists/{artist.slug}"
-                class="text-white/40 text-md font-bold uppercase tracking-wider"
+                class="text-on-surface-variant/60 text-sm font-bold uppercase tracking-widest hover:text-primary transition-colors"
                 title="View artist profile: {artist.name}">{artist.name}</a
               >
             {/if}
           {/each}
         {:else}
-          <span class="text-white/40 text-md font-bold uppercase tracking-wider"
+          <span class="text-on-surface-variant/40 text-sm font-bold uppercase tracking-widest"
             >Without artists</span
           >
         {/if}
@@ -602,7 +601,7 @@
       <div class="flex items-center gap-2">
         <a
           href="/animes/{currentSong.anime?.slug}"
-          class="text-white/40 hover:text-primary text-md font-medium transition-colors"
+          class="text-on-surface-variant/60 hover:text-primary text-sm font-black uppercase tracking-widest italic transition-colors"
           title="View anime: {currentSong.anime?.title}"
         >
           {currentSong.anime?.title}
@@ -611,20 +610,20 @@
 
       <!-- Meta Info Bar -->
       <div
-        class="bg-surface-dark rounded-2xl p-5 border border-white/10 flex flex-wrap items-center justify-between gap-6"
+        class="bg-surface-container rounded-2xl p-5 border border-outline-variant/10 flex flex-wrap items-center justify-between gap-6"
       >
         <div class="flex items-center gap-8">
           <!-- Integrated Views & Interactions -->
           <div class="flex flex-col min-w-[120px] max-w-[160px]">
-            <div class="text-sm text-white/90 tracking-wide mb-1">
+            <div class="text-sm text-on-surface font-medium tracking-wide mb-1">
               {currentSong.views.toLocaleString()} views
             </div>
 
             <div
-              class="h-[6px] w-full bg-[#d0b3e6] rounded-full overflow-hidden flex mb-1.5"
+              class="h-[6px] w-full bg-primary/20 rounded-full overflow-hidden flex mb-1.5"
             >
               <div
-                class="h-full bg-[#874fb3] transition-all duration-500 ease-out"
+                class="h-full bg-primary transition-all duration-500 ease-out"
                 style="width: {(currentSong.likes_count || 0) +
                   (currentSong.dislikes_count || 0) >
                 0
@@ -640,7 +639,7 @@
               <button
                 class="flex items-center gap-1 transition-colors {currentSong.is_liked
                   ? 'text-primary'
-                  : 'text-white/80 hover:text-white'}"
+                  : 'text-on-surface-variant hover:text-on-surface'}"
                 onclick={toggleLike}
                 title={currentSong.is_liked ? "Remove like" : "Like this theme"}
                 aria-label={currentSong.is_liked
@@ -660,7 +659,7 @@
               <button
                 class="flex items-center gap-1 transition-colors {currentSong.is_disliked
                   ? 'text-red-500'
-                  : 'text-white/80 hover:text-white'}"
+                  : 'text-on-surface-variant hover:text-on-surface'}"
                 onclick={toggleDislike}
                 title={currentSong.is_disliked
                   ? "Remove dislike"
@@ -681,16 +680,16 @@
             </div>
           </div>
 
-          <div class="h-10 w-px bg-white/10"></div>
+          <div class="h-10 w-px bg-outline-variant/20"></div>
 
           <button
             onclick={handleRatingClick}
-            class="flex flex-col items-start hover:bg-white/5 px-3 py-1.5 rounded-xl transition-all group active:scale-95"
+            class="flex flex-col items-start hover:bg-surface-highest px-3 py-1.5 rounded-xl transition-all group active:scale-95"
             title="Rate this theme"
             aria-label="Rate this theme"
           >
             <span
-              class="text-white/40 text-[10px] font-bold uppercase tracking-wider group-hover:text-primary transition-colors"
+              class="text-on-surface-variant/60 text-[10px] font-bold uppercase tracking-wider group-hover:text-primary transition-colors"
               >Rating</span
             >
             <div class="flex items-center gap-2">
@@ -710,9 +709,9 @@
 
         <div class="flex items-center gap-3">
           <button
-            class="w-10 h-10 flex items-center justify-center bg-white/5 hover:bg-white/10 border border-white/5 rounded-full transition-colors {currentSong.is_favorited
+            class="w-10 h-10 flex items-center justify-center bg-surface-highest hover:bg-primary/10 border border-outline-variant/10 rounded-full transition-colors {currentSong.is_favorited
               ? 'text-pink-500'
-              : 'text-white/60'}"
+              : 'text-on-surface-variant'}"
             onclick={toggleFavorite}
             title={currentSong.is_favorited
               ? "Remove from favorites"
@@ -728,7 +727,7 @@
             >
           </button>
           <button
-            class="w-10 h-10 flex items-center justify-center bg-white/5 hover:bg-white/10 border border-white/5 rounded-full transition-colors text-white/60 hover:text-primary"
+            class="w-10 h-10 flex items-center justify-center bg-surface-highest hover:bg-surface-lowest border border-outline-variant/10 rounded-full transition-colors text-on-surface-variant hover:text-primary"
             onclick={handlePlaylistClick}
             title="Add to Playlist"
             aria-label="Add this theme to a playlist"
@@ -738,9 +737,9 @@
             >
           </button>
           <button
-            class="w-10 h-10 flex items-center justify-center bg-white/5 hover:bg-white/10 border border-white/5 rounded-full transition-colors {currentSong.is_reported
+            class="w-10 h-10 flex items-center justify-center bg-surface-highest hover:bg-red-500/10 border border-outline-variant/10 rounded-full transition-colors {currentSong.is_reported
               ? 'text-red-500 opacity-50 cursor-not-allowed'
-              : 'text-white/60 hover:text-red-400'}"
+              : 'text-on-surface-variant hover:text-red-400'}"
             onclick={reportSong}
             disabled={currentSong.is_reported}
             title={currentSong.is_reported ? "Already reported" : "Report Song"}
@@ -789,7 +788,7 @@
               placeholder={authState.isAuthenticated
                 ? "Add a comment..."
                 : "Sign in to comment..."}
-              class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-primary transition-colors resize-none disabled:opacity-50"
+              class="w-full bg-surface-container border border-outline-variant/20 rounded-xl p-3 text-sm text-on-surface focus:outline-none focus:border-primary transition-colors resize-none disabled:opacity-50 shadow-inner"
               rows="2"
               disabled={!authState.isAuthenticated}
               aria-label="Add a new comment"
@@ -813,7 +812,7 @@
           {#each comments as comment (comment.uuid)}
             <div class="flex gap-4" id="comment-{comment.uuid}">
               <div
-                class="w-10 h-10 rounded-full bg-white/10 overflow-hidden shrink-0"
+                class="w-10 h-10 rounded-full bg-surface-highest overflow-hidden shrink-0 border border-outline-variant/10"
               >
                 <img
                   src={comment.user?.avatar_url ||
@@ -825,11 +824,11 @@
               </div>
               <div class="flex-1 space-y-2">
                 <div
-                  class="bg-white/5 border border-white/10 rounded-2xl rounded-tl-sm p-4"
+                  class="bg-surface-low border border-outline-variant/10 rounded-2xl rounded-tl-sm p-4"
                 >
                   <div class="flex justify-between items-start mb-1">
                     <div class="flex items-center gap-2">
-                      <span class="font-bold text-sm text-white/90"
+                      <span class="font-bold text-sm text-on-surface"
                         >{comment.user?.name || "Unknown User"}</span
                       >
                       {#if comment.user?.badges}
@@ -842,14 +841,14 @@
                           />
                         {/each}
                       {/if}
-                      <span class="text-xs text-white/40"
+                      <span class="text-xs text-on-surface-variant/40"
                         >{comment.created_at
                           ? new Date(comment.created_at).toLocaleDateString()
                           : "Just now"}</span
                       >
                     </div>
                   </div>
-                  <p class="text-sm text-white/80 whitespace-pre-wrap">
+                  <p class="text-sm text-on-surface-variant whitespace-pre-wrap">
                     {comment.content}
                   </p>
                 </div>
@@ -859,7 +858,7 @@
                       onclick={() => toggleCommentLike(comment.uuid)}
                       class="flex items-center gap-1 transition-colors {comment.is_liked
                         ? 'text-primary'
-                        : 'text-white/20 hover:text-white'}"
+                        : 'text-on-surface-variant/40 hover:text-on-surface'}"
                       title={comment.is_liked
                         ? "Unlike comment"
                         : "Like comment"}
@@ -878,7 +877,7 @@
                       onclick={() => toggleCommentDislike(comment.uuid)}
                       class="flex items-center gap-1 transition-colors {comment.is_disliked
                         ? 'text-red-500'
-                        : 'text-white/20 hover:text-white'}"
+                        : 'text-on-surface-variant/40 hover:text-on-surface'}"
                       title={comment.is_disliked
                         ? "Undislike comment"
                         : "Dislike comment"}
@@ -899,18 +898,18 @@
                           replyingToUuid === comment.uuid ? null : comment.uuid;
                         replyText = "";
                       }}
-                      class="text-white/40 hover:text-white tracking-wider transition-colors"
+                      class="text-on-surface-variant/60 hover:text-primary tracking-wider transition-colors flex items-center gap-1"
                       title="Reply to comment"
                       aria-label="Reply to comment"
                       >Reply
-                      <span class="material-symbols-outlined">reply</span>
+                      <span class="material-symbols-outlined text-[16px]">reply</span>
                     </button>
                   </div>
 
                   <div class="flex gap-2">
                     <button
                       onclick={() => openCommentReportModal(comment.uuid)}
-                      class="shrink-0 p-1 hover:bg-white/10 text-white/40 hover:text-white transition-colors"
+                      class="shrink-0 p-1 hover:bg-surface-highest text-on-surface-variant/40 hover:text-on-surface transition-colors rounded-lg"
                       title="Report Comment"
                       aria-label="Report comment"
                     >
@@ -922,7 +921,7 @@
                     {#if authState.user && (authState.user.uuid === comment.user?.uuid || authState.isAdmin)}
                       <button
                         onclick={() => deleteComment(comment.uuid)}
-                        class="text-white/20 hover:text-red-400 transition-colors"
+                        class="text-on-surface-variant/20 hover:text-red-400 transition-colors p-1"
                         title="Delete Comment"
                         aria-label="Delete comment"
                       >
@@ -941,14 +940,14 @@
                       <textarea
                         bind:value={replyText}
                         placeholder="Write a reply..."
-                        class="w-full bg-white/5 border border-white/10 rounded-xl p-2 text-sm text-white focus:outline-none focus:border-primary transition-colors resize-none"
+                        class="w-full bg-surface-container border border-outline-variant/10 rounded-xl p-2 text-sm text-on-surface focus:outline-none focus:border-primary transition-colors resize-none"
                         rows="1"
                         aria-label="Write a reply"
                       ></textarea>
                       <button
                         onclick={() => postReply(comment.uuid)}
                         disabled={!replyText.trim()}
-                        class="bg-white/10 hover:bg-primary text-white font-bold text-xs px-3 py-2 rounded-lg transition-colors disabled:opacity-50 shrink-0"
+                        class="bg-surface-highest hover:bg-primary hover:text-white text-on-surface font-bold text-xs px-3 py-2 rounded-lg transition-colors disabled:opacity-50 shrink-0"
                         title="Send reply"
                         aria-label="Send reply"
                       >
@@ -960,11 +959,11 @@
 
                 <!-- Replies List -->
                 {#if comment.replies && comment.replies.length > 0}
-                  <div class="space-y-3 mt-3 border-l-2 border-white/5 pl-4">
+                  <div class="space-y-3 mt-3 border-l-2 border-outline-variant/10 pl-4">
                     {#each comment.replies as reply (reply.uuid)}
                       <div class="flex gap-3" id="comment-{reply.uuid}">
                         <div
-                          class="w-8 h-8 rounded-full bg-white/10 overflow-hidden shrink-0"
+                          class="w-8 h-8 rounded-full bg-surface-highest overflow-hidden shrink-0 border border-outline-variant/10"
                         >
                           <img
                             src={reply.user?.avatar_url ||
@@ -976,11 +975,11 @@
                         </div>
                         <div class="flex-1 space-y-1">
                           <div
-                            class="bg-white/5 border border-white/10 rounded-2xl rounded-tl-sm p-3"
+                            class="bg-surface-container/50 border border-outline-variant/10 rounded-2xl rounded-tl-sm p-3"
                           >
                             <div class="flex justify-between items-start mb-1">
                               <div class="flex items-center gap-2">
-                                <span class="font-bold text-xs text-white/90"
+                                <span class="font-bold text-xs text-on-surface"
                                   >{reply.user?.name || "Unknown User"}</span
                                 >
                                 {#if reply.user?.badges}
@@ -995,7 +994,7 @@
                                     {/each}
                                   </div>
                                 {/if}
-                                <span class="text-[10px] text-white/40"
+                                <span class="text-[10px] text-on-surface-variant/40"
                                   >{reply.created_at
                                     ? new Date(
                                         reply.created_at,
@@ -1008,7 +1007,7 @@
                                   <button
                                     onclick={() =>
                                       deleteComment(reply.uuid, comment.uuid)}
-                                    class="text-white/20 hover:text-red-400 transition-colors"
+                                    class="text-on-surface-variant/20 hover:text-red-400 transition-colors"
                                     title="Delete Reply"
                                     aria-label="Delete reply"
                                   >
@@ -1021,7 +1020,7 @@
                                 <button
                                   onclick={() =>
                                     openCommentReportModal(reply.uuid)}
-                                  class="text-white/20 hover:text-primary transition-colors"
+                                  class="text-on-surface-variant/20 hover:text-primary transition-colors"
                                   title="Report Reply"
                                   aria-label="Report reply"
                                 >
@@ -1033,7 +1032,7 @@
                               </div>
                             </div>
                             <p
-                              class="text-[13px] text-white/80 whitespace-pre-wrap"
+                              class="text-[13px] text-on-surface-variant whitespace-pre-wrap"
                             >
                               {reply.content}
                             </p>
@@ -1043,7 +1042,7 @@
                                   toggleCommentLike(reply.uuid, comment.uuid)}
                                 class="flex items-center gap-1 transition-colors {reply.is_liked
                                   ? 'text-primary'
-                                  : 'text-white/20 hover:text-white'}"
+                                  : 'text-on-surface-variant/20 hover:text-on-surface'}"
                                 title={reply.is_liked
                                   ? "Unlike reply"
                                   : "Like reply"}
@@ -1065,7 +1064,7 @@
                                   toggleCommentDislike(reply.uuid, comment.uuid)}
                                 class="flex items-center gap-1 transition-colors {reply.is_disliked
                                   ? 'text-red-500'
-                                  : 'text-white/20 hover:text-white'}"
+                                  : 'text-on-surface-variant/20 hover:text-on-surface'}"
                               >
                                 <span
                                   class="material-symbols-outlined text-[14px] {reply.is_disliked
@@ -1088,11 +1087,11 @@
           {:else}
             <div class="text-center py-8">
               <span
-                class="material-symbols-outlined text-[48px] text-white/10 mb-2"
+                class="material-symbols-outlined text-[48px] text-on-surface-variant/10 mb-2"
                 >speaker_notes</span
               >
-              <p class="text-white/40 font-bold text-sm">No comments yet</p>
-              <p class="text-white/20 text-xs mt-1">
+              <p class="text-on-surface-variant/40 font-bold text-sm">No comments yet</p>
+              <p class="text-on-surface-variant/20 text-xs mt-1">
                 Be the first to share your thoughts on this song!
               </p>
             </div>
@@ -1105,7 +1104,7 @@
     <div class="lg:col-span-4 space-y-4">
       <div>
         <h2
-          class="text-lg font-bold flex items-center gap-2 mb-4 text-white/90"
+          class="text-lg font-bold flex items-center gap-2 mb-4 text-on-surface"
         >
           <span class="material-symbols-outlined text-primary text-[20px]"
             >playlist_play</span
@@ -1117,11 +1116,11 @@
         {#each relatedSongs as related}
           <a
             href="/songs/{currentSong.anime?.slug}/{related.slug}"
-            class="flex gap-3 group bg-white/0 hover:bg-white/5 p-2 rounded-xl transition-all"
+            class="flex gap-3 group bg-transparent hover:bg-surface-highest p-2 rounded-xl transition-all"
             title="View theme: {getSongName(related)}"
           >
             <div
-              class="w-32 aspect-video rounded-lg overflow-hidden shrink-0 border border-white/5"
+              class="w-32 aspect-video rounded-lg overflow-hidden shrink-0 border border-outline-variant/10"
             >
               <img
                 src={currentSong.anime?.cover_url ||
@@ -1150,18 +1149,18 @@
                 </span>
               </div>
               <h4
-                class="text-sm font-bold text-white group-hover:text-primary transition-colors line-clamp-1"
+                class="text-sm font-bold text-on-surface group-hover:text-primary transition-colors line-clamp-1"
               >
                 {getSongName(related)}
               </h4>
-              <p class="text-[10px] text-white/40 line-clamp-1">
+              <p class="text-[10px] text-on-surface-variant/40 line-clamp-1">
                 by {getSongArtistNames(related.artists)}
               </p>
             </div>
           </a>
         {:else}
           <div
-            class="text-center py-8 text-white/20 text-xs italic border border-dashed border-white/5 rounded-xl"
+            class="text-center py-8 text-on-surface-variant/20 text-xs italic border border-dashed border-outline-variant/10 rounded-xl"
           >
             No other themes found for this series.
           </div>

@@ -33,16 +33,16 @@
   }
 </script>
 
-<div class="min-h-screen bg-background-dark pt-12 pb-24 text-white">
+<div class="min-h-screen bg-surface pt-12 pb-24 text-on-surface">
   <div class="max-w-6xl mx-auto px-6">
     <!-- Header -->
     <div class="mb-12">
       <h1
-        class="text-4xl font-black tracking-tighter mb-2 animate-in fade-in slide-in-from-left-4"
+        class="text-4xl font-black tracking-tighter mb-2 animate-in fade-in slide-in-from-left-4 text-on-surface"
       >
         Site Statistics
       </h1>
-      <p class="text-white/40 text-lg font-medium">
+      <p class="text-on-surface-variant/60 text-lg font-medium">
         Platform growth and community engagement metrics over the last 30 days.
       </p>
     </div>
@@ -52,122 +52,108 @@
         class="flex flex-col items-center justify-center py-32 animate-pulse"
       >
         <div
-          class="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin mb-4"
+          class="w-12 h-12 border-4 border-outline-variant/20 border-t-primary rounded-full animate-spin mb-4"
         ></div>
-        <div class="text-sm font-black uppercase tracking-widest text-white/20">
+        <div class="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/20">
           Aggregating Data...
         </div>
       </div>
     {:else if error}
       <div
-        class="bg-red-500/10 border border-red-500/20 rounded-3xl p-12 text-center"
+        class="bg-red-500/5 border border-red-500/10 rounded-[2.5rem] p-12 text-center"
       >
-        <div class="text-red-500 font-bold mb-4">{error}</div>
+        <div class="text-red-500 font-bold mb-6">{error}</div>
         <button
           onclick={() => window.location.reload()}
-          class="bg-red-500 text-white px-8 py-3 rounded-xl font-bold text-sm uppercase tracking-widest"
-          >Retry</button
+          class="bg-red-500 hover:bg-red-600 text-white px-10 py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all active:scale-95"
+          >Retry Connection</button
         >
       </div>
     {:else if stats}
-      <!-- Overview Grid -->
-      <!-- <div class="grid grid-cols-2 md:grid-cols-5 gap-6 mb-12">
-        <div class="bg-surface-dark border border-white/5 p-6 rounded-3xl shadow-xl hover:scale-105 transition-transform duration-300">
-          <div class="text-primary mb-3"><Users size={24} /></div>
-          <div class="text-2xl font-black tracking-tighter">{formatNumber(stats.overviews.total_users)}</div>
-          <div class="text-[10px] font-black uppercase tracking-[0.2em] text-white/20">Total Users</div>
-        </div>
-        <div class="bg-surface-dark border border-white/5 p-6 rounded-3xl shadow-xl hover:scale-105 transition-transform duration-300">
-          <div class="text-blue-400 mb-3"><Tv size={24} /></div>
-          <div class="text-2xl font-black tracking-tighter">{formatNumber(stats.overviews.total_animes)}</div>
-          <div class="text-[10px] font-black uppercase tracking-[0.2em] text-white/20">Total Animes</div>
-        </div>
-        <div class="bg-surface-dark border border-white/5 p-6 rounded-3xl shadow-xl hover:scale-105 transition-transform duration-300">
-          <div class="text-purple-400 mb-3"><Music size={24} /></div>
-          <div class="text-2xl font-black tracking-tighter">{formatNumber(stats.overviews.total_songs)}</div>
-          <div class="text-[10px] font-black uppercase tracking-[0.2em] text-white/20">Total Songs</div>
-        </div>
-        <div class="bg-surface-dark border border-white/5 p-6 rounded-3xl shadow-xl hover:scale-105 transition-transform duration-300">
-          <div class="text-yellow-400 mb-3"><Star size={24} /></div>
-          <div class="text-2xl font-black tracking-tighter">{formatNumber(stats.overviews.total_ratings)}</div>
-          <div class="text-[10px] font-black uppercase tracking-[0.2em] text-white/20">Total Ratings</div>
-        </div>
-        <div class="bg-surface-dark border border-white/5 p-6 rounded-3xl shadow-xl hover:scale-105 transition-transform duration-300">
-          <div class="text-green-400 mb-3"><MessageSquare size={24} /></div>
-          <div class="text-2xl font-black tracking-tighter">{formatNumber(stats.overviews.total_comments)}</div>
-          <div class="text-[10px] font-black uppercase tracking-[0.2em] text-white/20">Total Comments</div>
-        </div>
-      </div> -->
+      <!-- Overview Grid (Optional refinement) -->
 
       <!-- Growth Charts Section -->
       <div class="grid grid-cols-1 gap-8 mb-12">
         <section
-          class="bg-surface-dark border border-white/5 rounded-3xl overflow-hidden shadow-2xl p-8"
+          class="bg-surface-container border border-outline-variant/10 rounded-[2.5rem] overflow-hidden shadow-2xl p-10"
         >
-          <div class="flex justify-between items-center mb-8">
-            <h2 class="text-lg font-bold flex items-center gap-2">
-              <TrendingUp size={18} class="text-primary" /> New Ratings
+          <div class="flex justify-between items-center mb-10">
+            <h2 class="text-xl font-black tracking-tight flex items-center gap-3 text-on-surface">
+              <div class="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                <TrendingUp size={20} />
+              </div>
+              New Ratings
             </h2>
             <div
-              class="text-[10px] font-black uppercase tracking-widest text-white/20 px-3 py-1 bg-white/5 rounded-full"
+              class="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/40 px-4 py-2 bg-surface-highest/50 rounded-full border border-outline-variant/5"
             >
               Last 30 Days
             </div>
           </div>
           <StatsChart
             data={stats.rating_growth}
-            color="#7f13ec"
+            color="var(--color-primary)"
             label="ratings"
           />
         </section>
 
         <section
-          class="bg-surface-dark border border-white/5 rounded-3xl overflow-hidden shadow-2xl p-8"
+          class="bg-surface-container border border-outline-variant/10 rounded-[2.5rem] overflow-hidden shadow-2xl p-10"
         >
-          <div class="flex justify-between items-center mb-8">
-            <h2 class="text-lg font-bold flex items-center gap-2">
-              <Users size={18} class="text-blue-400" /> New Users
+          <div class="flex justify-between items-center mb-10">
+            <h2 class="text-xl font-black tracking-tight flex items-center gap-3 text-on-surface">
+              <div class="w-10 h-10 rounded-2xl bg-secondary-container/10 flex items-center justify-center text-secondary-container">
+                <Users size={20} />
+              </div>
+              New Users
             </h2>
             <div
-              class="text-[10px] font-black uppercase tracking-widest text-white/20 px-3 py-1 bg-white/5 rounded-full"
+              class="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/40 px-4 py-2 bg-surface-highest/50 rounded-full border border-outline-variant/5"
             >
               Last 30 Days
             </div>
           </div>
-          <StatsChart data={stats.user_growth} color="#3db4f2" label="users" />
+          <StatsChart 
+            data={stats.user_growth} 
+            color="var(--color-secondary-container)" 
+            label="users" 
+          />
         </section>
       </div>
 
       <!-- Distribution Section -->
-      <div class="grid grid-cols-1 gap-8">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
         <section
-          class="bg-surface-dark border border-white/5 rounded-3xl overflow-hidden shadow-2xl p-8"
+          class="bg-surface-container border border-outline-variant/10 rounded-[2.5rem] overflow-hidden shadow-2xl p-10"
         >
-          <div class="flex justify-between items-center mb-8">
-            <h2 class="text-lg font-bold flex items-center gap-2">
-              <BarChart3 size={18} class="text-yellow-400" /> Score Distribution
+          <div class="flex justify-between items-center mb-10">
+            <h2 class="text-xl font-black tracking-tight flex items-center gap-3 text-on-surface">
+              <div class="w-10 h-10 rounded-2xl bg-rating-star/10 flex items-center justify-center text-rating-star">
+                <BarChart3 size={20} />
+              </div>
+              Score Distribution
             </h2>
           </div>
-          <div class="flex items-end gap-2 h-48 px-2">
+          <div class="flex items-end gap-2.5 h-64 px-2">
             {#each stats.score_distribution as point}
               {@const maxVal = Math.max(
                 ...stats.score_distribution.map((p: any) => p.value),
                 1,
               )}
               <div
-                class="flex-1 h-full flex flex-col justify-end items-center gap-2 group"
+                class="flex-1 h-full flex flex-col justify-end items-center gap-4 group"
               >
                 <div
-                  class="w-full bg-yellow-400/20 hover:bg-yellow-400/40 border-t border-yellow-400/30 rounded-t-lg transition-all duration-500 relative"
+                  class="w-full bg-rating-star/10 hover:bg-rating-star/20 border-t-2 border-rating-star/30 rounded-t-xl transition-all duration-500 relative cursor-pointer"
                   style="height: {(point.value / maxVal) * 100}%"
                 >
                   <div
-                    class="absolute -top-8 left-1/2 -translate-x-1/2 bg-surface-dark border border-white/10 px-2 py-1 rounded text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10"
+                    class="absolute -top-12 left-1/2 -translate-x-1/2 bg-surface-highest border border-outline-variant/20 px-3 py-1.5 rounded-xl text-[10px] font-black text-on-surface shadow-xl opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all whitespace-nowrap z-10 pointer-events-none"
                   >
                     {point.value} ratings
                   </div>
                 </div>
-                <span class="text-[10px] font-black uppercase text-white/20"
+                <span class="text-[9px] font-black uppercase tracking-tighter text-on-surface-variant/30 group-hover:text-on-surface transition-colors"
                   >{point.label}</span
                 >
               </div>
@@ -176,33 +162,36 @@
         </section>
 
         <section
-          class="bg-surface-dark border border-white/5 rounded-3xl overflow-hidden shadow-2xl p-8"
+          class="bg-surface-container border border-outline-variant/10 rounded-[2.5rem] overflow-hidden shadow-2xl p-10"
         >
-          <div class="flex justify-between items-center mb-8">
-            <h2 class="text-lg font-bold flex items-center gap-2">
-              <PieChart size={18} class="text-green-400" /> Level Distribution
+          <div class="flex justify-between items-center mb-10">
+            <h2 class="text-xl font-black tracking-tight flex items-center gap-3 text-on-surface">
+              <div class="w-10 h-10 rounded-2xl bg-green-500/10 flex items-center justify-center text-green-500">
+                <PieChart size={20} />
+              </div>
+              Level Distribution
             </h2>
           </div>
-          <div class="flex items-end gap-2 h-48 px-2">
+          <div class="flex items-end gap-2.5 h-64 px-2">
             {#each stats.level_distribution as point}
               {@const maxVal = Math.max(
                 ...stats.level_distribution.map((p: any) => p.value),
                 1,
               )}
               <div
-                class="flex-1 h-full flex flex-col justify-end items-center gap-2 group"
+                class="flex-1 h-full flex flex-col justify-end items-center gap-4 group"
               >
                 <div
-                  class="w-full bg-green-400/20 hover:bg-green-400/40 border-t border-green-400/30 rounded-t-lg transition-all duration-500 relative"
+                  class="w-full bg-green-500/10 hover:bg-green-500/20 border-t-2 border-green-500/30 rounded-t-xl transition-all duration-500 relative cursor-pointer"
                   style="height: {(point.value / maxVal) * 100}%"
                 >
                   <div
-                    class="absolute -top-8 left-1/2 -translate-x-1/2 bg-surface-dark border border-white/10 px-2 py-1 rounded text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10"
+                    class="absolute -top-12 left-1/2 -translate-x-1/2 bg-surface-highest border border-outline-variant/20 px-3 py-1.5 rounded-xl text-[10px] font-black text-on-surface shadow-xl opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all whitespace-nowrap z-10 pointer-events-none"
                   >
                     {point.value} users
                   </div>
                 </div>
-                <span class="text-[10px] font-black uppercase text-white/20"
+                <span class="text-[9px] font-black uppercase tracking-tighter text-on-surface-variant/30 group-hover:text-on-surface transition-colors"
                   >{point.label}</span
                 >
               </div>

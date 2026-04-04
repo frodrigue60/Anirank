@@ -3,10 +3,9 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import AnimeCard from "$lib/components/AnimeCard.svelte";
-  import CustomSelect from "$lib/components/CustomSelect.svelte";
   import InfiniteScroll from "$lib/components/InfiniteScroll.svelte";
   import api from "$lib/api";
-  import { Search, SortDesc } from "lucide-svelte";
+  import { Search } from "lucide-svelte";
   import SEO from "$lib/components/SEO.svelte";
 
   let { data }: { data: PageData } = $props();
@@ -41,7 +40,7 @@
     const url = new URL(page.url);
 
     const setParam = (key: string, val: string) => {
-      if (val && val !== "any") url.searchParams.set(key, val);
+      if (val) url.searchParams.set(key, val);
       else url.searchParams.delete(key);
     };
 
@@ -97,7 +96,6 @@
   }
 
   const sortOptions = [
-    { value: "any", label: "Alphabetical (A-Z)" },
     { value: "name_desc", label: "Alphabetical (Z-A)" },
     { value: "most_themes", label: "Most Themes" },
     { value: "least_themes", label: "Least Themes" },
@@ -112,15 +110,15 @@
 
 <main class="w-full max-w-[1440px] mx-auto px-6 py-8 space-y-4">
   <div class="text-center">
-    <h1 class="text-4xl md:text-5xl font-black text-white mb-4">
+    <h1 class="text-4xl md:text-5xl font-black text-on-surface mb-4">
       {studio.name}
     </h1>
-    <p class="text-white/60">Animes produced by {studio.name}</p>
+    <p class="text-on-surface-variant">Animes produced by {studio.name}</p>
   </div>
 
   <!-- Filter Bar -->
   <section
-    class="relative z-40 bg-surface-dark/30 p-4 rounded-3xl border border-white/5 shadow-2xl mx-auto"
+    class="relative z-40 bg-surface-container p-4 rounded-3xl border border-white/5 shadow-2xl mx-auto"
   >
     <div class="flex flex-col gap-6">
       <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
@@ -128,13 +126,13 @@
         <div class="md:col-span-8 relative group">
           <label
             for="anime-search"
-            class="block text-[10px] uppercase font-black text-white/40 mb-2 ml-1 tracking-widest"
+            class="block text-[10px] uppercase font-black text-on-surface-variant mb-2 ml-1 tracking-widest"
           >
             Search Anime
           </label>
           <div class="relative">
             <span
-              class="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-primary transition-colors"
+              class="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/80 group-focus-within:text-primary transition-colors"
             >
               <Search size={20} />
             </span>
@@ -143,7 +141,7 @@
               bind:value={searchTerm}
               oninput={handleInput}
               onkeydown={handleKeydown}
-              class="w-full h-12 bg-surface-darker/50 border border-white/10 rounded-xl pl-12 pr-6 text-sm text-white focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 placeholder:text-white/20 transition-all"
+              class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-xl pl-12 pr-6 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 placeholder:text-on-surface-variant/30 transition-all"
               placeholder="Search animes by title..."
               type="text"
             />
@@ -151,15 +149,24 @@
         </div>
 
         <!-- Sort -->
-        <div class="md:col-span-4">
-          <CustomSelect
-            label="Sort"
+        <div class="md:col-span-4 flex flex-col gap-2">
+          <label
+            for="sort-select"
+            class="block text-[10px] uppercase font-black text-on-surface-variant mb-0 ml-1 tracking-widest"
+          >
+            Sort By
+          </label>
+          <select
+            id="sort-select"
             bind:value={selectedSort}
-            options={sortOptions}
-            placeholder="Any"
-            icon={SortDesc}
             onchange={updateFilters}
-          />
+            class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-xl px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
+          >
+            <option value="">Alphabetical (A-Z)</option>
+            {#each sortOptions as option}
+              <option value={option.value}>{option.label}</option>
+            {/each}
+          </select>
         </div>
       </div>
     </div>
@@ -183,13 +190,16 @@
     />
   {:else}
     <div
-      class="text-center py-20 bg-surface-dark rounded-2xl border border-white/5"
+      class="text-center py-20 bg-surface-container/30 rounded-2xl border border-white/5"
     >
-      <span class="material-symbols-outlined text-6xl text-white/10 mb-4 block"
+      <span
+        class="material-symbols-outlined text-6xl text-on-surface-variant opacity-20 mb-4 block"
         >movie</span
       >
-      <h3 class="text-xl font-bold text-white/50 mb-2">No animes found</h3>
-      <p class="text-white/30 text-sm">
+      <h3 class="text-xl font-bold text-on-surface-variant opacity-50 mb-2">
+        No animes found
+      </h3>
+      <p class="text-on-surface-variant opacity-30 text-sm">
         There are no series associated with this studio.
       </p>
     </div>

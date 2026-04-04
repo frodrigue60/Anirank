@@ -21,32 +21,28 @@
   });
 </script>
 
-<div
-  class="flex h-screen bg-anirank-black text-gray-200 overflow-hidden font-sans"
->
+<div class="flex h-screen bg-surface text-on-surface overflow-hidden font-sans">
   <!-- Sidebar -->
   <aside
-    class="bg-anirank-card border-r border-anirank-divide shrink-0 transition-all duration-300 ease-in-out z-20"
+    class="bg-surface-container border-r border-gray-500 shrink-0 transition-all duration-300 ease-in-out z-20"
     class:w-64={isSidebarOpen}
     class:w-20={!isSidebarOpen}
   >
     <div
-      class="h-16 flex items-center justify-between px-4 border-b border-anirank-divide"
+      class="h-16 flex items-center justify-between px-4 border-b border-gray-500"
     >
       {#if isSidebarOpen}
         <a href="/admin" class="text-xl font-bold"> Admin Panel </a>
       {/if}
       <button
         onclick={toggleSidebar}
-        class="p-2 hover:bg-white/5 rounded-lg text-gray-400"
+        class="p-2 hover:bg-white/5 rounded-lg text-on-surface"
       >
         <span class="material-symbols-outlined">menu</span>
       </button>
     </div>
 
-    <nav
-      class="p-4 space-y-2 overflow-y-auto h-[calc(100vh-4rem)] custom-scrollbar"
-    >
+    <nav class="p-4 space-y-2 overflow-y-auto h-[calc(100vh-4rem)]">
       <ul class="space-y-1">
         <li>
           <a
@@ -354,27 +350,17 @@
   </aside>
 
   <!-- Main Content Area -->
-  <div class="flex-1 flex flex-col min-w-0 bg-[#0a0a0c]">
+  <div class="flex-1 flex flex-col min-w-0 bg-surface">
     <!-- Top Navbar -->
     <header
-      class="h-16 bg-anirank-card/80 border-b border-anirank-divide flex items-center justify-between px-6 z-10"
+      class="h-16 bg-surface-container border-b border-gray-500 flex items-center justify-between px-6 z-10"
     >
       <div class="flex items-center gap-4">
         <!-- Contextual Breadcrumbs could go here -->
       </div>
 
       <div class="flex items-center gap-4">
-        <!-- <div class="relative">
-          <button class="p-2 hover:bg-white/5 rounded-full relative">
-            <span class="material-symbols-outlined">notifications</span>
-            <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"
-            ></span>
-          </button>
-        </div> -->
-
-        <div
-          class="flex items-center gap-3 pl-4 border-l border-anirank-divide"
-        >
+        <div class="flex items-center gap-3 pl-4 border-l border-gray-500">
           <img
             src={authState.user?.avatar_url ||
               "/images/placeholders/default.jpg"}
@@ -382,8 +368,10 @@
             class="w-8 h-8 rounded-full object-cover ring-2 ring-white/10"
           />
           <div class="hidden md:block">
-            <p class="text-sm font-medium text-white">{authState.user?.name}</p>
-            <p class="text-xs text-gray-500 capitalize">
+            <p class="text-sm font-medium text-on-surface">
+              {authState.user?.name}
+            </p>
+            <p class="text-xs text-on-surface-variant capitalize">
               {authState.isAdmin ? "Administrator" : "Staff Member"}
             </p>
           </div>
@@ -392,28 +380,10 @@
     </header>
 
     <!-- Main Render Area -->
-    <main class="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar">
+    <main class="flex-1 overflow-y-auto p-4 md:p-6">
       <div class="max-w-7xl mx-auto space-y-6">
         {@render children()}
       </div>
     </main>
   </div>
 </div>
-
-<style>
-  /* Custom scrollbar for better admin feeling */
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.2);
-  }
-</style>

@@ -1,9 +1,10 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import api from '$lib/api';
-  import type { Tournament } from '$lib/types/tournament';
-  import InfiniteScroll from '$lib/components/InfiniteScroll.svelte';
-  import SEO from '$lib/components/SEO.svelte';
+  import { onMount } from "svelte";
+  import api from "$lib/api";
+  import type { Tournament } from "$lib/types/tournament";
+  import InfiniteScroll from "$lib/components/InfiniteScroll.svelte";
+  import SEO from "$lib/components/SEO.svelte";
+  import { Trophy, Users, Music } from "lucide-svelte";
 
   let tournaments = $state<Tournament[]>([]);
   let currentPage = $state(1);
@@ -12,7 +13,7 @@
 
   onMount(async () => {
     try {
-      const response = await api.get('/tournaments'); 
+      const response = await api.get("/tournaments");
       if (response.data.data) {
         tournaments = response.data.data;
         currentPage = response.data.pagination?.current_page || 1;
@@ -21,7 +22,7 @@
         tournaments = response.data; // Fallback if not paginated
       }
     } catch (error) {
-      console.error('Error fetching tournaments:', error);
+      console.error("Error fetching tournaments:", error);
     } finally {
       loading = false;
     }
@@ -33,8 +34,8 @@
     loading = true;
     try {
       const nextPage = currentPage + 1;
-      const response = await api.get('/tournaments', {
-        params: { page: nextPage }
+      const response = await api.get("/tournaments", {
+        params: { page: nextPage },
       });
 
       if (response.data.data) {
@@ -50,31 +51,109 @@
   }
 </script>
 
-<SEO 
-  title="Anime Theme Tournaments" 
-  description="Vote for your favorite anime openings and endings in our bracket-style tournaments on AniRank." 
+<SEO
+  title="Anime Theme Tournaments"
+  description="Vote for your favorite anime openings and endings in our bracket-style tournaments on AniRank."
 />
 
-<div class="container py-8">
-  <div class="header mb-8">
-    <h1 class="text-3xl font-bold">Anime Theme Tournaments</h1>
-    <p class="text-gray-400">Vote for your favorite openings and endings in our bracket-style tournaments.</p>
+<main class="flex-1 w-full max-w-[1440px] mx-auto px-6 py-12">
+  <!-- Header -->
+  <div class="mb-12 text-center lg:text-left">
+    <h1
+      class="text-4xl lg:text-5xl font-black text-on-surface mb-4 tracking-tight"
+    >
+      Anime Theme Tournaments
+    </h1>
+    <p class="text-on-surface-variant text-lg max-w-2xl">
+      Vote for your favorite openings and endings in our community-curated
+      bracket-style tournaments.
+    </p>
   </div>
 
   {#if tournaments.length === 0 && !loading}
-    <div class="empty-state">
-      <p>No tournaments currently available. Check back soon!</p>
+    <div
+      class="text-center py-24 bg-surface-container/30 rounded-3xl border-2 border-dashed border-white/5"
+    >
+      <Trophy size={48} class="text-on-surface-variant/20 mx-auto mb-4" />
+      <h3 class="text-xl font-bold text-on-surface-variant/50">
+        No tournaments currently available
+      </h3>
+      <p class="text-on-surface-variant/30 mt-2">
+        Check back soon for new events!
+      </p>
     </div>
   {:else}
-    <div class="tournament-grid">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {#each tournaments as tournament}
-        <a href="/tournaments/{tournament.slug}" class="tournament-card {tournament.status}">
-          <div class="status-badge">{tournament.status}</div>
-          <h2>{tournament.name}</h2>
-          <p>{tournament.description || 'No description available.'}</p>
-          <div class="meta">
-            <span>Size: {tournament.size} songs</span>
-            <span>Filter: {tournament.type_filter || 'All'}</span>
+        <a
+          href="/tournaments/{tournament.slug}"
+          class="group relative flex flex-col bg-surface-container rounded-3xl border border-on-surface-variant/10 hover:border-primary/50 transition-all duration-300 overflow-hidden shadow-lg shadow-black/20"
+        >
+          <!-- Status Badge -->
+          <div class="absolute top-4 right-4 z-10">
+            <span
+              class="px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg
+              {tournament.status === 'active' ? 'bg-primary text-white' : ''}
+              {tournament.status === 'completed'
+                ? 'bg-green-500 text-white'
+                : ''}
+              {tournament.status === 'draft'
+                ? 'bg-surface-highest text-on-surface-variant'
+                : ''}"
+            >
+              {tournament.status}
+            </span>
+          </div>
+
+          <div class="p-8 flex-1 flex flex-col">
+            <h2
+              class="text-2xl font-black text-on-surface group-hover:text-primary transition-colors mb-3 line-clamp-1"
+            >
+              {tournament.name}
+            </h2>
+            <p class="text-on-surface-variant text-sm line-clamp-2 mb-6 flex-1">
+              {tournament.description || "No description available."}
+            </p>
+
+            <div
+              class="flex items-center justify-between pt-6 border-t border-on-surface-variant/5 mt-auto"
+            >
+              <div class="flex items-center gap-4">
+                <div class="flex flex-col">
+                  <span
+                    class="text-[10px] text-on-surface-variant uppercase font-black tracking-widest opacity-40 mb-1"
+                    >Size</span
+                  >
+                  <div
+                    class="flex items-center gap-1.5 text-on-surface font-bold text-sm"
+                  >
+                    <Music size={14} class="text-primary/60" />
+                    {tournament.size} Songs
+                  </div>
+                </div>
+                <div class="flex flex-col">
+                  <span
+                    class="text-[10px] text-on-surface-variant uppercase font-black tracking-widest opacity-40 mb-1"
+                    >Filter</span
+                  >
+                  <div
+                    class="flex items-center gap-1.5 text-on-surface font-bold text-sm"
+                  >
+                    <Users size={14} class="text-primary/60" />
+                    {tournament.type_filter || "All"}
+                  </div>
+                </div>
+              </div>
+
+              <div
+                class="w-10 h-10 rounded-full bg-surface-highest flex items-center justify-center group-hover:bg-primary group-hover:scale-110 transition-all"
+              >
+                <span
+                  class="material-symbols-outlined text-on-surface group-hover:text-white transition-colors"
+                  >chevron_right</span
+                >
+              </div>
+            </div>
           </div>
         </a>
       {/each}
@@ -86,75 +165,4 @@
       onLoadMore={loadMore}
     />
   {/if}
-</div>
-
-<style>
-  .container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 20px;
-  }
-
-  .tournament-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 24px;
-  }
-
-  .tournament-card {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 16px;
-    padding: 24px;
-    text-decoration: none;
-    color: white;
-    transition: transform 0.2s, border-color 0.2s;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .tournament-card:hover {
-    transform: translateY(-5px);
-    border-color: var(--primary-color, #ff4e50);
-  }
-
-  .status-badge {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    font-size: 0.7rem;
-    padding: 4px 8px;
-    border-radius: 4px;
-    text-transform: uppercase;
-    font-weight: 800;
-    background: rgba(255, 255, 255, 0.1);
-  }
-
-  .active .status-badge {
-    background: #ff4e50;
-  }
-
-  .completed .status-badge {
-    background: #4caf50;
-  }
-
-  h2 {
-    font-size: 1.5rem;
-    margin-bottom: 12px;
-    padding-right: 60px;
-  }
-
-  p {
-    font-size: 0.9rem;
-    color: #aaa;
-    margin-bottom: 20px;
-    line-height: 1.5;
-  }
-
-  .meta {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.8rem;
-    opacity: 0.6;
-  }
-</style>
+</main>

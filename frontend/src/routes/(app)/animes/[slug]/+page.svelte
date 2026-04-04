@@ -68,16 +68,16 @@
           <div
             class="border-l-2 border-transparent hover:border-primary pl-3 transition-all duration-200"
           >
-            <span class="block text-xs text-white/40 mb-0.5">Format</span>
-            <span class="font-medium text-white"
+            <span class="block text-xs text-on-surface mb-0.5">Format</span>
+            <span class="font-medium text-on-surface-variant"
               >{anime.format?.name || "Unknown"}</span
             >
           </div>
           <div
             class="border-l-2 border-transparent hover:border-primary pl-3 transition-all duration-200"
           >
-            <span class="block text-xs text-white/40 mb-0.5">Season</span>
-            <span class="font-medium text-white"
+            <span class="block text-xs text-on-surface mb-0.5">Season</span>
+            <span class="font-medium text-on-surface-variant"
               >{anime.season?.name || "Unknown"}
               {anime.year?.name || "Unknown"}</span
             >
@@ -86,7 +86,7 @@
           <div
             class="border-l-2 border-transparent hover:border-primary pl-3 transition-all duration-200"
           >
-            <span class="block text-xs text-white/40 mb-0.5">Studio</span>
+            <span class="block text-xs text-on-surface mb-0.5">Studio</span>
             <div class="flex flex-wrap gap-1">
               {#if anime.studios?.length > 0}
                 {#each anime.studios as studio, index}
@@ -99,15 +99,15 @@
                   {index < anime.studios.length - 1 ? ", " : ""}
                 {/each}
               {:else}
-                <span class="font-medium text-white/60">Unknown</span>
+                <span class="font-medium text-on-surface-variant">Unknown</span>
               {/if}
             </div>
           </div>
           <div
             class="border-l-2 border-transparent hover:border-primary pl-3 transition-all duration-200"
           >
-            <span class="block text-xs text-white/40 mb-0.5">Producers</span>
-            <span class="font-medium text-white/80">
+            <span class="block text-xs text-on-surface mb-0.5">Producers</span>
+            <span class="font-medium text-on-surface-variant">
               {#if anime.producers?.length > 0}
                 {#each anime.producers as producer, index}
                   <a
@@ -119,7 +119,7 @@
                   {index < anime.producers.length - 1 ? ", " : ""}
                 {/each}
               {:else}
-                <span class="font-medium text-white/60">Unknown</span>
+                <span class="font-medium text-on-surface-variant">Unknown</span>
               {/if}
             </span>
           </div>
@@ -134,20 +134,20 @@
           <div class="flex flex-col gap-2">
             {#each anime.external_links as link}
               <a
-                class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-surface-dark hover:bg-surface-darker border border-white/5 hover:border-primary/30 transition-all text-sm group"
+                class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high border border-white/5 hover:border-primary/30 transition-all text-sm group"
                 href={link.url}
                 target="_blank"
                 title="Visit {link.name}"
               >
                 <span
-                  class="material-symbols-outlined text-white/40 group-hover:text-primary transition-colors text-lg"
+                  class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors text-lg"
                   >language</span
                 >
-                <span class="text-white/70 group-hover:text-white"
+                <span class="text-on-surface-variant group-hover:text-primary"
                   >{link.name}</span
                 >
                 <span
-                  class="material-symbols-outlined text-white/20 text-sm ml-auto"
+                  class="material-symbols-outlined text-on-surface-variant text-sm ml-auto"
                   >open_in_new</span
                 >
               </a>
@@ -165,7 +165,7 @@
         >
           <div>
             <h1
-              class="text-4xl md:text-6xl font-black tracking-tight text-white mb-2"
+              class="text-4xl md:text-6xl font-black tracking-tight text-on-surface mb-2"
             >
               {anime.title}
             </h1>
@@ -174,7 +174,7 @@
         <div class="flex flex-wrap gap-2">
           {#each anime.genres as genre}
             <span
-              class="px-3 py-1 rounded border border-white/10 text-white/60 text-xs font-medium bg-surface-dark"
+              class="px-3 py-1 rounded border border-white/10 text-on-surface-variant text-xs font-medium bg-surface-container"
               >{genre.name}</span
             >
           {/each}
@@ -182,18 +182,18 @@
       </div>
 
       <div class="space-y-4">
-        <h2 class="text-xl font-bold flex items-center gap-3 text-white">
+        <h2 class="text-xl font-bold flex items-center gap-3 text-on-surface">
           <span class="w-1.5 h-6 bg-primary rounded-full"></span>
           Synopsis
         </h2>
         <!-- svelte-ignore a11y_click_events_have_key_events -->
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
-          class="bg-[rgba(30,22,37,0.6)] border border-[rgba(127,19,236,0.15)] p-8 rounded-2xl cursor-pointer hover:bg-[rgba(40,30,50,0.7)] transition-all group relative overflow-hidden"
+          class="bg-surface-container border border-white/5 p-8 rounded-2xl cursor-pointer hover:bg-surface-container-high transition-all group relative overflow-hidden"
           onclick={() => (isExpanded = !isExpanded)}
         >
           <p
-            class="text-white/80 leading-relaxed text-lg font-body transition-all duration-300 {isExpanded
+            class="text-on-surface-variant leading-relaxed text-lg font-body transition-all duration-300 {isExpanded
               ? ''
               : 'line-clamp-4'}"
           >
@@ -202,7 +202,7 @@
 
           {#if !isExpanded && anime.description && anime.description.length > 200}
             <div
-              class="absolute bottom-0 left-0 w-full h-16 bg-linear-to-t from-[rgba(30,22,37,0.95)] via-[rgba(30,22,37,0.7)] to-transparent flex items-end justify-center pb-2 transition-opacity"
+              class="absolute bottom-0 left-0 w-full h-16 bg-linear-to-t from-surface-container via-surface-container-high to-transparent flex items-end justify-center pb-2 transition-opacity"
             >
               <span
                 class="text-primary font-bold text-xs uppercase tracking-widest flex items-center gap-1"
@@ -233,18 +233,18 @@
       <!-- Music Themes -->
       <div class="space-y-6 pt-4">
         <div class="flex items-center justify-between">
-          <h2 class="text-xl font-bold flex items-center gap-3 text-white">
+          <h2 class="text-xl font-bold flex items-center gap-3 text-on-surface">
             <span class="w-1.5 h-6 bg-primary rounded-full"></span>
             Music Themes
           </h2>
         </div>
         <div
-          class="bg-[rgba(30,22,37,0.6)] border border-[rgba(127,19,236,0.15)] rounded-2xl overflow-hidden"
+          class="bg-surface-container border border-white/5 rounded-2xl overflow-hidden"
         >
           <table class="w-full text-left border-collapse">
             <thead>
               <tr
-                class="border-b border-white/5 text-xs uppercase tracking-widest text-white/30"
+                class="border-b border-white/5 text-xs uppercase tracking-widest text-on-surface-variant"
               >
                 <th class="p-5 font-bold w-24">Type</th>
                 <th class="p-5 font-bold">Song Title</th>
@@ -256,26 +256,30 @@
             <tbody class="text-sm">
               {#each anime.songs as song}
                 <tr
-                  class="hover:bg-[rgba(127,19,236,0.05)] border-b border-white/5 group transition-colors"
+                  class="hover:bg-surface-container-high border-b border-white/5 group transition-colors"
                 >
                   <td class="p-5">
                     <span
                       class="inline-flex items-center justify-center px-2.5 py-1 rounded {song.type ===
                       'OP'
-                        ? 'bg-green-500/10 text-green-400 border-green-500/20'
-                        : 'bg-blue-500/10 text-blue-400 border-blue-500/20'} border text-[10px] font-bold"
+                        ? 'bg-green-500/10 text-green-400 border-green-500/40'
+                        : 'bg-blue-500/10 text-blue-400 border-blue-500/40'} border text-[10px] font-bold"
                       >{song.type}{song.theme_num}</span
                     >
                   </td>
                   <td class="p-5">
-                    <div class="font-bold text-white text-base">
-                      {song.song_romaji ||
-                        song.song_en ||
-                        song.song_jp ||
-                        "N/A"}
+                    <div
+                      class="font-bold text-on-surface text-base hover:text-primary transition-colors"
+                    >
+                      <a href="/songs/{anime.slug}/{song.slug}"
+                        >{song.song_romaji ||
+                          song.song_en ||
+                          song.song_jp ||
+                          "N/A"}</a
+                      >
                     </div>
                   </td>
-                  <td class="p-5 text-white/70">
+                  <td class="p-5 text-on-surface-variant">
                     {getSongArtistNames(song.artists)}
                   </td>
                   <td class="p-5 text-right">
@@ -284,7 +288,7 @@
                         class="material-symbols-outlined text-yellow-400 text-sm filled"
                         >star</span
                       >
-                      <span class="font-bold text-white text-lg"
+                      <span class="font-bold text-on-surface text-lg"
                         >{formatScore(song.average_rating)}</span
                       >
                     </div>
@@ -292,7 +296,7 @@
                   <td class="p-5 text-right">
                     <a
                       href="/songs/{anime.slug}/{song.slug}"
-                      class="w-8 h-8 rounded-full flex items-center justify-center text-white bg-primary hover:bg-primary/20 hover:text-white transition-colors"
+                      class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface bg-primary/20 hover:bg-primary hover:text-white/50 transition-colors"
                       title="Play theme: {song.song_romaji || song.song_en}"
                     >
                       <span class="material-symbols-outlined text-lg"

@@ -61,7 +61,9 @@
     <h2
       class="flex items-center gap-3 text-2xl font-black tracking-tight text-on-surface"
     >
-      <div class="bg-primary/10 w-10 h-10 rounded-2xl flex items-center justify-center text-primary">
+      <div
+        class="bg-primary/10 w-10 h-10 rounded-2xl flex items-center justify-center text-primary"
+      >
         <span class="material-symbols-outlined text-[20px]">forum</span>
       </div>
       What's Happening
@@ -70,7 +72,10 @@
       <a
         href="/interactions"
         class="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant transition-all hover:text-primary hover:translate-x-1"
-        >Explore Feed <span class="material-symbols-outlined align-middle ml-1 text-[12px]">arrow_forward</span></a
+        >Explore Feed <span
+          class="material-symbols-outlined align-middle ml-1 text-[12px]"
+          >arrow_forward</span
+        ></a
       >
     {/if}
   </div>
@@ -81,7 +86,9 @@
     {#if loading && activities.length === 0}
       {#each Array(recentOnly ? 4 : 8) as _}
         <div class="flex animate-pulse items-start gap-4 p-6">
-          <div class="h-16 w-12 shrink-0 rounded-xl bg-surface-highest/50"></div>
+          <div
+            class="h-16 w-12 shrink-0 rounded-xl bg-surface-highest/50"
+          ></div>
           <div class="flex flex-1 flex-col gap-3 justify-center">
             <div class="h-3 w-1/3 rounded-full bg-surface-highest/50"></div>
             <div class="h-5 w-2/3 rounded-full bg-surface-highest/50"></div>
@@ -90,10 +97,14 @@
       {/each}
     {:else if activities.length === 0}
       <div class="p-20 text-center flex flex-col items-center gap-4">
-        <div class="bg-on-surface-variant/5 w-16 h-16 rounded-full flex items-center justify-center text-on-surface-variant/20 mb-2">
-           <span class="material-symbols-outlined text-4xl">inbox</span>
+        <div
+          class="bg-on-surface-variant/5 w-16 h-16 rounded-full flex items-center justify-center text-on-surface-variant/20 mb-2"
+        >
+          <span class="material-symbols-outlined text-4xl">inbox</span>
         </div>
-        <div class="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/40">
+        <div
+          class="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/40"
+        >
           No activities to show
         </div>
       </div>
@@ -133,7 +144,8 @@
               <div
                 class="flex h-14 w-14 items-center justify-center rounded-xl border border-outline-variant/10 bg-surface-highest/30 shadow-inner"
               >
-                <span class="material-symbols-outlined text-on-surface-variant/20 text-3xl"
+                <span
+                  class="material-symbols-outlined text-on-surface-variant/20 text-3xl"
                   >interests</span
                 >
               </div>
@@ -159,14 +171,18 @@
             </div>
           </div>
 
-          <div class="flex-1 min-w-0 flex flex-col justify-center h-full self-center">
+          <div
+            class="flex-1 min-w-0 flex flex-col justify-center h-full self-center"
+          >
             <div class="flex flex-col">
               <span
                 class="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60 leading-tight mb-1"
               >
                 <span class="text-on-surface">{activity.user?.name}</span>
                 {#if type === "rate"}
-                  rated <span class="text-rating-star font-black">★ {activity.value}</span>
+                  rated <span class="text-rating-star font-black"
+                    >★ {activity.value}</span
+                  >
                 {:else if type === "favorite"}
                   added to <span class="text-red-500/80">Favorites</span>
                 {:else if type === "comment"}
@@ -183,36 +199,42 @@
               {#if isSong && target}
                 <a
                   href="/songs/{target.anime?.slug}/{target.slug}"
-                  class="flex flex-col truncate text-lg font-black tracking-tight text-on-surface group-hover:text-primary transition-colors"
+                  class="flex flex-col truncate text-lg font-bold tracking-tight text-on-surface group-hover:text-primary transition-colors"
                 >
                   <span class="truncate">{target.anime?.title}</span>
-                  <span class="text-xs font-bold text-on-surface-variant/40 leading-none"
+                  <span class="text-xs text-on-surface-variant/40 leading-none"
                     >{target.song_romaji || target.name}</span
                   >
                 </a>
               {:else if isArtist && target}
                 <a
                   href="/artists/{target.slug}"
-                  class="truncate text-lg font-black tracking-tight text-on-surface group-hover:text-primary transition-colors"
+                  class="truncate text-lg font-bold tracking-tight text-on-surface group-hover:text-primary transition-colors"
                 >
                   <span>{target.name}</span>
                 </a>
               {:else if isUser && target}
                 <a
                   href="/profile/{target.slug}"
-                  class="truncate text-lg font-black tracking-tight text-on-surface group-hover:text-primary transition-colors"
+                  class="truncate text-lg font-bold tracking-tight text-on-surface group-hover:text-primary transition-colors"
                 >
                   <span>{target.name}</span>
                 </a>
               {:else}
-                <span class="text-on-surface-variant/20 italic">Item unavailable</span>
+                <span class="text-on-surface-variant/20 italic"
+                  >Item unavailable</span
+                >
               {/if}
             </div>
           </div>
           <div class="flex flex-col items-end gap-2 shrink-0 self-center">
-             <span class="text-[10px] text-on-surface-variant/30 font-bold"
-              >{getTimeAgo(activity.created_at)}</span>
-             <span class="material-symbols-outlined text-on-surface-variant/10 text-[18px] transition-transform group-hover:translate-x-1 group-hover:text-primary/30">chevron_right</span>
+            <span class="text-[10px] text-on-surface-variant/30 font-bold"
+              >{getTimeAgo(activity.created_at)}</span
+            >
+            <span
+              class="material-symbols-outlined text-on-surface-variant/10 text-[18px] transition-transform group-hover:translate-x-1 group-hover:text-primary/30"
+              >chevron_right</span
+            >
           </div>
         </div>
       {/each}
@@ -230,8 +252,9 @@
         Previous
       </button>
       <div class="flex items-center gap-2">
-         <span class="w-8 h-px bg-outline-variant/20"></span>
-         <span class="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/40 whitespace-nowrap"
+        <span class="w-8 h-px bg-outline-variant/20"></span>
+        <span
+          class="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/40 whitespace-nowrap"
           >Page {page}</span
         >
         <span class="w-8 h-px bg-outline-variant/20"></span>

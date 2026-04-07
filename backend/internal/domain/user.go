@@ -34,6 +34,7 @@ type User struct {
 	FollowersCount int  `db:"followers_count" json:"followers_count"`
 	FollowingCount int  `db:"following_count" json:"following_count"`
 	RatingsCount   int  `db:"ratings_count" json:"ratings_count"`
+	CommentsCount  int  `db:"comments_count" json:"comments_count"`
 	IsFollowing    bool `db:"is_following" json:"is_following"`
 
 	// AniList Link
@@ -57,8 +58,6 @@ type User struct {
 
 type RankingUser struct {
 	User
-	RatingsCount  int `db:"ratings_count" json:"ratings_count"`
-	CommentsCount int `db:"comments_count" json:"comments_count"`
 }
 
 type Follow struct {

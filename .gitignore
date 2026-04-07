@@ -19,3 +19,9 @@ lia_slug_detail.json
 lia_slugs.json
 lia.json
 sora.json
+frontend.md
+.gitignore
+frontend/scripts/migrate_admin_legacy.js
+frontend/scripts/update_admin_styles.js
+frontend/svelte_check_out.txt
+frontend.md

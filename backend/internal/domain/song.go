@@ -58,6 +58,8 @@ type SongVariant struct {
 	YearID        uint64    `db:"year_id" json:"year_id"`
 	Spoiler       bool      `db:"spoiler" json:"spoiler"`
 	Status        bool      `db:"status" json:"status"`
+	CreatedAt     time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt     time.Time `db:"updated_at" json:"updated_at"`
 	AnimeThemesID *uint64   `db:"anime_themes_id" json:"animethemes_id,omitempty"`
 
 	// Computed for frontend

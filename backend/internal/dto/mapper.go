@@ -20,9 +20,12 @@ func ToUserMinimalDTO(u *domain.User) UserMinimalDTO {
 		Name:      u.Name,
 		Slug:      u.Slug,
 		AvatarUrl: u.AvatarUrl,
-		XP:        u.XP,
-		Level:     u.Level,
-		BannerUrl: u.BannerUrl,
+		XP:            u.XP,
+		Level:         u.Level,
+		RatingsCount:  u.RatingsCount,
+		CommentsCount: u.CommentsCount,
+		BannerUrl:     u.BannerUrl,
+		CreatedAt:     u.CreatedAt,
 	}
 }
 
@@ -52,7 +55,6 @@ func ToUserDTO(u *domain.User) UserDTO {
 		ProfileColor:    u.ProfileColor,
 		FollowersCount:  u.FollowersCount,
 		FollowingCount:  u.FollowingCount,
-		RatingsCount:    u.RatingsCount,
 		IsFollowing:     u.IsFollowing,
 		Roles:           roles,
 		Badges:          badges,
@@ -60,7 +62,6 @@ func ToUserDTO(u *domain.User) UserDTO {
 		AnilistUsername: u.AnilistUsername,
 		GoogleID:        u.GoogleID,
 		GoogleEmail:     u.GoogleEmail,
-		CreatedAt:       u.CreatedAt,
 	}
 }
 

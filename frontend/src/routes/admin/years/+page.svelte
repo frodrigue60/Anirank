@@ -103,12 +103,12 @@
 
 <div class="grid grid-cols-1 gap-6">
   <div
-    class="bg-surface-container border border-outline-variant/10 rounded-3xl overflow-hidden shadow-xl"
+    class="bg-surface-container border border-outline-variant rounded-3xl overflow-hidden shadow-xl"
   >
     <div class="overflow-x-auto">
       <table class="w-full text-left border-collapse">
         <thead>
-          <tr class="bg-surface-highest/50 border-b border-outline-variant/10">
+          <tr class="bg-surface-highest border-b border-outline-variant">
             <th
               class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant"
               >ID</th
@@ -129,7 +129,7 @@
         </thead>
         <tbody class="divide-y divide-outline-variant/5">
           {#each years as year (year.id)}
-            <tr class="hover:bg-primary/5 transition-colors group">
+            <tr class="hover:bg-primary-container transition-colors group">
               <td class="px-6 py-4">
                 <span class="text-xs font-mono text-on-surface-variant"
                   >#{year.id}</span
@@ -172,14 +172,14 @@
                 <div class="flex justify-end gap-2">
                   <button
                     onclick={() => editYear(year)}
-                    class="p-2 rounded-xl bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all shadow-sm"
+                    class="p-2 rounded-xl bg-primary/10 text-primary hover:bg-primary hover:text-on-surface transition-all shadow-sm"
                     title="Edit Year"
                   >
                     <span class="material-symbols-outlined text-sm">edit</span>
                   </button>
                   <button
                     onclick={() => deleteYear(year)}
-                    class="p-2 rounded-xl bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-all shadow-sm"
+                    class="p-2 rounded-xl bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-on-surface transition-all shadow-sm"
                     title="Delete Year"
                   >
                     <span class="material-symbols-outlined text-sm">delete</span
@@ -198,10 +198,10 @@
 <!-- Edit Modal -->
 {#if showEditModal && editingYear}
   <div
-    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in"
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 animate-in fade-in"
   >
     <div
-      class="bg-surface-container border border-outline-variant/20 rounded-[2.5rem] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
+      class="bg-surface-container border border-outline-variant rounded-[2.5rem] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
     >
       <div class="p-8">
         <div class="flex justify-between items-start mb-6">
@@ -229,11 +229,11 @@
               type="text"
               bind:value={editingYear.name}
               placeholder="e.g. 2024"
-              class="w-full bg-surface-low border border-outline-variant/20 rounded-2xl px-5 py-4 text-on-surface focus:outline-none focus:border-primary transition-all font-bold"
+              class="w-full bg-surface-low border border-outline-variant rounded-2xl px-5 py-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all font-bold"
             />
           </div>
 
-          <div class="flex items-center gap-3 p-4 bg-surface-low rounded-2xl border border-outline-variant/10">
+          <div class="flex items-center gap-3 p-4 bg-surface-low rounded-2xl border border-outline-variant">
             <label class="relative inline-flex items-center cursor-pointer">
               <input type="checkbox" bind:checked={editingYear.current} class="sr-only peer">
               <div class="w-11 h-6 bg-on-surface-variant/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:inset-s-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
@@ -255,7 +255,7 @@
           <button
             onclick={saveYear}
             disabled={isUpdating}
-            class="py-4 bg-primary text-white rounded-2xl font-bold shadow-lg shadow-primary/25 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
+            class="py-4 bg-primary text-on-surface rounded-2xl font-bold shadow-lg shadow-primary/25 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
           >
             {#if isUpdating}
               <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>

@@ -90,17 +90,17 @@
 
   <!-- Modal content -->
   <div
-    class="relative w-full max-w-md bg-[#1a1a24] border border-white/10 rounded-2xl shadow-2xl p-6"
+    class="relative w-full max-w-md bg-[#1a1a24] border border-outline-variant rounded-2xl shadow-2xl p-6"
   >
     <div class="flex items-center justify-between mb-6">
-      <h2 class="text-xl font-bold text-white">
+      <h2 class="text-xl font-bold text-on-surface">
         {badge ? "Edit Badge" : "Create Badge"}
       </h2>
       <button
         onclick={onclose}
         title="Close"
         aria-label="Close modal"
-        class="text-gray-400 hover:text-white transition-colors"
+        class="text-on-surface-variant/70 hover:text-on-surface transition-colors"
       >
         <svg
           class="w-6 h-6"
@@ -126,12 +126,12 @@
     <form onsubmit={handleSubmit} class="space-y-5">
       <!-- Icon Upload -->
       <div>
-        <label for="icon" class="block text-sm font-medium text-gray-300 mb-2"
+        <label for="icon" class="block text-sm font-medium text-on-surface-variant mb-2"
           >Badge Icon (PNG/JPEG)</label
         >
         <div class="flex items-center gap-4">
           <div
-            class="w-16 h-16 rounded-xl border border-white/10 bg-black/20 flex items-center justify-center overflow-hidden shrink-0"
+            class="w-16 h-16 rounded-xl border border-outline-variant bg-black/20 flex items-center justify-center overflow-hidden shrink-0"
           >
             {#if iconPreview}
               <img
@@ -141,7 +141,7 @@
               />
             {:else}
               <svg
-                class="w-6 h-6 text-gray-500"
+                class="w-6 h-6 text-on-surface-variant/40"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -160,7 +160,7 @@
               type="file"
               accept="image/png, image/jpeg, image/gif, image/webp"
               onchange={handleFileChange}
-              class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-anirank-primary/10 file:text-anirank-primary hover:file:bg-anirank-primary/20"
+              class="block w-full text-sm text-on-surface-variant/70 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
             />
           </div>
         </div>
@@ -170,7 +170,7 @@
       <div>
         <label
           for="name"
-          class="block text-sm font-medium text-gray-300 mb-1.5"
+          class="block text-sm font-medium text-on-surface-variant mb-1.5"
         >
           Name <span class="text-red-500">*</span>
         </label>
@@ -179,7 +179,7 @@
           id="name"
           bind:value={name}
           required
-          class="w-full px-4 py-2.5 rounded-xl bg-black/20 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-anirank-primary/50 transition-all"
+          class="w-full px-4 py-2.5 rounded-xl bg-black/20 border border-outline-variant text-on-surface placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
           placeholder="e.g., Early Bird"
         />
       </div>
@@ -188,7 +188,7 @@
       <div>
         <label
           for="description"
-          class="block text-sm font-medium text-gray-300 mb-1.5"
+          class="block text-sm font-medium text-on-surface-variant mb-1.5"
         >
           Description
         </label>
@@ -196,7 +196,7 @@
           id="description"
           bind:value={description}
           rows="3"
-          class="w-full px-4 py-2.5 rounded-xl bg-black/20 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-anirank-primary/50 transition-all resize-none"
+          class="w-full px-4 py-2.5 rounded-xl bg-black/20 border border-outline-variant text-on-surface placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all resize-none"
           placeholder="What is this badge for?"
         ></textarea>
       </div>
@@ -211,9 +211,9 @@
               class="sr-only peer"
             />
             <div
-              class="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-300 peer-checked:after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-anirank-primary"
+              class="w-11 h-6 bg-surface-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-300 peer-checked:after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"
             ></div>
-            <span class="ml-3 text-sm font-medium text-white">Active</span>
+            <span class="ml-3 text-sm font-medium text-on-surface">Active</span>
           </label>
         </div>
 
@@ -225,9 +225,9 @@
               class="sr-only peer"
             />
             <div
-              class="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-300 peer-checked:after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-500"
+              class="w-11 h-6 bg-surface-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-300 peer-checked:after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-500"
             ></div>
-            <span class="ml-3 text-sm font-medium text-white">Automatic</span>
+            <span class="ml-3 text-sm font-medium text-on-surface">Automatic</span>
           </label>
         </div>
       </div>
@@ -236,13 +236,13 @@
         <div class="space-y-4 p-4 rounded-xl bg-indigo-500/5 border border-indigo-500/10 animate-scale-in">
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label for="reqType" class="block text-sm font-medium text-gray-300 mb-1.5">
+              <label for="reqType" class="block text-sm font-medium text-on-surface-variant mb-1.5">
                 Type
               </label>
               <select
                 id="reqType"
                 bind:value={requirementType}
-                class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all [&>option]:bg-[#1a1a24]"
+                class="w-full px-3 py-2 rounded-lg bg-black/40 border border-outline-variant text-on-surface text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all [&>option]:bg-[#1a1a24]"
               >
                 <option value="level">Level</option>
                 <option value="ratings">Ratings</option>
@@ -251,7 +251,7 @@
               </select>
             </div>
             <div>
-              <label for="reqValue" class="block text-sm font-medium text-gray-300 mb-1.5">
+              <label for="reqValue" class="block text-sm font-medium text-on-surface-variant mb-1.5">
                 Value
               </label>
               <input
@@ -260,7 +260,7 @@
                 bind:value={requirementValue}
                 min="0"
                 disabled={requirementType === 'anilist'}
-                class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all disabled:opacity-30"
+                class="w-full px-3 py-2 rounded-lg bg-black/40 border border-outline-variant text-on-surface text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all disabled:opacity-30"
               />
             </div>
           </div>
@@ -280,19 +280,19 @@
 
       <!-- Actions -->
       <div
-        class="flex items-center justify-end gap-3 pt-4 border-t border-white/10"
+        class="flex items-center justify-end gap-3 pt-4 border-t border-outline-variant"
       >
         <button
           type="button"
           onclick={onclose}
-          class="px-5 py-2 rounded-xl text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+          class="px-5 py-2 rounded-xl text-sm font-medium text-on-surface-variant/70 hover:text-on-surface hover:bg-surface-highest transition-colors"
           disabled={loading}
         >
           Cancel
         </button>
         <button
           type="submit"
-          class="px-5 py-2 bg-anirank-primary hover:bg-anirank-primary/90 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center min-w-[100px]"
+          class="px-5 py-2 bg-primary hover:bg-primary/90 text-on-surface text-sm font-medium rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center min-w-[100px]"
           disabled={loading || !name}
         >
           {#if loading}

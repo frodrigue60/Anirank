@@ -66,7 +66,7 @@
     <a
       href="/admin/variants"
       aria-label="Back to Variants"
-      class="text-gray-400 hover:text-white transition-colors p-2 -ml-2 rounded-lg hover:bg-white/5"
+      class="text-on-surface-variant/70 hover:text-on-surface transition-colors p-2 -ml-2 rounded-lg hover:bg-surface-highest"
     >
       <svg
         class="w-5 h-5"
@@ -82,11 +82,11 @@
         />
       </svg>
     </a>
-    <h1 class="text-3xl font-bold tracking-tight text-white">
+    <h1 class="text-3xl font-bold tracking-tight text-on-surface">
       Create Song Variant
     </h1>
   </div>
-  <p class="text-gray-400 ml-10">Add a video source for a specific song.</p>
+  <p class="text-on-surface-variant/70 ml-10">Add a video source for a specific song.</p>
 </div>
 
 {#if errorMsg}
@@ -111,10 +111,10 @@
 
 <form onsubmit={handleSubmit} class="space-y-6 max-w-4xl">
   <!-- General Info -->
-  <div class="bg-anirank-card border border-white/5 rounded-2xl p-6">
-    <h2 class="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+  <div class="bg-surface-container border border-outline-variant rounded-2xl p-6">
+    <h2 class="text-xl font-semibold text-on-surface mb-6 flex items-center gap-2">
       <svg
-        class="w-5 h-5 text-gray-400"
+        class="w-5 h-5 text-on-surface-variant/70"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -133,7 +133,7 @@
         <div>
           <label
             for="song_id"
-            class="block text-sm font-medium text-gray-300 mb-1"
+            class="block text-sm font-medium text-on-surface-variant mb-1"
             >Song ID <span class="text-red-400">*</span></label
           >
           <input
@@ -142,7 +142,7 @@
             title="Song ID"
             bind:value={song_id}
             required
-            class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white placeholder-gray-500 focus:outline-none focus:border-anirank-primary transition-all"
+            class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface placeholder-gray-500 focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all"
             placeholder="e.g. 1"
           />
         </div>
@@ -156,10 +156,10 @@
                 class="sr-only peer"
               />
               <div
-                class="w-11 h-6 bg-white/10 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-anirank-primary"
+                class="w-11 h-6 bg-surface-highest rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"
               ></div>
             </div>
-            <span class="text-sm font-medium text-white">Contains Spoilers</span
+            <span class="text-sm font-medium text-on-surface">Contains Spoilers</span
             >
           </label>
         </div>
@@ -169,7 +169,7 @@
         <div>
           <label
             for="version_number"
-            class="block text-sm font-medium text-gray-300 mb-1"
+            class="block text-sm font-medium text-on-surface-variant mb-1"
             >Version Number</label
           >
           <input
@@ -177,13 +177,13 @@
             id="version_number"
             title="Version Number"
             bind:value={version_number}
-            class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white placeholder-gray-500 focus:outline-none focus:border-anirank-primary transition-all"
+            class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface placeholder-gray-500 focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all"
             placeholder="Auto-calculates if empty (e.g. 1, 2)"
           />
         </div>
 
         <div>
-          <label for="slug" class="block text-sm font-medium text-gray-300 mb-1"
+          <label for="slug" class="block text-sm font-medium text-on-surface-variant mb-1"
             >Slug</label
           >
           <input
@@ -191,7 +191,7 @@
             id="slug"
             title="Slug"
             bind:value={slug}
-            class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white placeholder-gray-500 focus:outline-none focus:border-anirank-primary transition-all font-mono text-sm"
+            class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface placeholder-gray-500 focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all font-mono text-sm"
             placeholder="Auto-calculates to v[version] if empty"
           />
         </div>
@@ -200,10 +200,10 @@
   </div>
 
   <!-- Video Info -->
-  <div class="bg-anirank-card border border-white/5 rounded-2xl p-6">
-    <h2 class="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+  <div class="bg-surface-container border border-outline-variant rounded-2xl p-6">
+    <h2 class="text-xl font-semibold text-on-surface mb-6 flex items-center gap-2">
       <svg
-        class="w-5 h-5 text-gray-400"
+        class="w-5 h-5 text-on-surface-variant/70"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -226,14 +226,14 @@
       <div>
         <label
           for="video_type"
-          class="block text-sm font-medium text-gray-300 mb-1"
+          class="block text-sm font-medium text-on-surface-variant mb-1"
           >Source Type</label
         >
         <select
           id="video_type"
           title="Video Type"
           bind:value={video_type}
-          class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-anirank-primary transition-all [&>option]:bg-anirank-card"
+          class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all [&>option]:bg-surface-container"
         >
           <option value="file">Direct File URL (MP4, WebM)</option>
           <option value="embed">Embed Code (YouTube, Custom)</option>
@@ -244,7 +244,7 @@
         <div>
           <label
             for="local_url"
-            class="block text-sm font-medium text-gray-300 mb-1"
+            class="block text-sm font-medium text-on-surface-variant mb-1"
             >Direct Video URL</label
           >
           <input
@@ -252,7 +252,7 @@
             id="local_url"
             title="Local URL"
             bind:value={local_url}
-            class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white placeholder-gray-500 focus:outline-none focus:border-anirank-primary transition-all"
+            class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface placeholder-gray-500 focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all"
             placeholder="https://example.com/video.webm"
           />
         </div>
@@ -260,7 +260,7 @@
         <div>
           <label
             for="embed_url"
-            class="block text-sm font-medium text-gray-300 mb-1"
+            class="block text-sm font-medium text-on-surface-variant mb-1"
             >Embed Code or URL</label
           >
           <textarea
@@ -268,7 +268,7 @@
             title="Embed URL or Code"
             bind:value={embed_url}
             rows="3"
-            class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white placeholder-gray-500 focus:outline-none focus:border-anirank-primary transition-all"
+            class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface placeholder-gray-500 focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all"
             placeholder="<iframe src='...'></iframe>"
           ></textarea>
         </div>
@@ -277,10 +277,10 @@
   </div>
 
   <!-- Taxonomies & Metadata -->
-  <div class="bg-anirank-card border border-white/5 rounded-2xl p-6">
-    <h2 class="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+  <div class="bg-surface-container border border-outline-variant rounded-2xl p-6">
+    <h2 class="text-xl font-semibold text-on-surface mb-6 flex items-center gap-2">
       <svg
-        class="w-5 h-5 text-gray-400"
+        class="w-5 h-5 text-on-surface-variant/70"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -293,21 +293,21 @@
       >
       Variant Taxonomy
     </h2>
-    <p class="text-sm text-gray-400 mb-4">
+    <p class="text-sm text-on-surface-variant/70 mb-4">
       You can optionally map this video to a specific timeframe if the visuals
       changed mid-season.
     </p>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
-        <label for="year" class="block text-sm font-medium text-gray-300 mb-1"
+        <label for="year" class="block text-sm font-medium text-on-surface-variant mb-1"
           >Override Year</label
         >
         <select
           id="year"
           title="Year"
           bind:value={year_id}
-          class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-anirank-primary transition-all [&>option]:bg-anirank-card"
+          class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all [&>option]:bg-surface-container"
         >
           <option value={0}>Inherit from Song</option>
           {#each config.years as year}
@@ -317,14 +317,14 @@
       </div>
 
       <div>
-        <label for="season" class="block text-sm font-medium text-gray-300 mb-1"
+        <label for="season" class="block text-sm font-medium text-on-surface-variant mb-1"
           >Override Season</label
         >
         <select
           id="season"
           title="Season"
           bind:value={season_id}
-          class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-anirank-primary transition-all [&>option]:bg-anirank-card"
+          class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all [&>option]:bg-surface-container"
         >
           <option value={0}>Inherit from Song</option>
           {#each config.seasons as season}
@@ -335,21 +335,21 @@
     </div>
   </div>
 
-  <div class="flex items-center justify-end gap-3 pt-4 border-t border-white/5">
+  <div class="flex items-center justify-end gap-3 pt-4 border-t border-outline-variant">
     <a
       href="/admin/variants"
-      class="px-5 py-2.5 text-sm font-medium text-gray-300 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl transition-colors"
+      class="px-5 py-2.5 text-sm font-medium text-on-surface-variant hover:text-on-surface bg-surface-highest hover:bg-surface-highest rounded-xl transition-colors"
     >
       Cancel
     </a>
     <button
       type="submit"
       disabled={loading || !song_id}
-      class="px-5 py-2.5 text-sm font-medium text-white bg-anirank-primary hover:bg-blue-600 rounded-xl transition-colors shadow-lg shadow-anirank-primary/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+      class="px-5 py-2.5 text-sm font-medium text-on-surface bg-primary hover:bg-primary-container rounded-xl transition-colors shadow-lg shadow-anirank-primary/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
     >
       {#if loading}
         <svg
-          class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+          class="animate-spin -ml-1 mr-2 h-4 w-4 text-on-surface"
           fill="none"
           viewBox="0 0 24 24"
           ><circle

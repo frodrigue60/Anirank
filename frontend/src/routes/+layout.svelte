@@ -9,6 +9,7 @@
   } from "$lib/state/auth.svelte";
   import api from "$lib/api";
   import ToastContainer from "$lib/components/ToastContainer.svelte";
+  import { themeState } from "$lib/state/theme.svelte";
 
   let { children } = $props();
 
@@ -27,6 +28,11 @@
       removeAuthToken();
       setUser(null);
     }
+  });
+
+  // Apply theme class to document element
+  $effect(() => {
+    themeState.apply();
   });
 </script>
 

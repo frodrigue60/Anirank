@@ -34,13 +34,13 @@
   <div class="flex items-center gap-4">
     <a
       href="/admin/reports/comments"
-      class="flex items-center justify-center w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all font-bold"
+      class="flex items-center justify-center w-10 h-10 rounded-xl bg-surface-highest hover:bg-surface-highest text-on-surface/60 hover:text-on-surface transition-all font-bold"
     >
       <span class="material-symbols-outlined">arrow_back</span>
     </a>
     <div>
       <div class="flex items-center gap-3">
-        <h1 class="text-3xl font-bold tracking-tight text-white/90">
+        <h1 class="text-3xl font-bold tracking-tight text-on-surface/90">
           Report #{report?.id}
         </h1>
         {#if report?.status === "pending"}
@@ -57,7 +57,7 @@
           </span>
         {/if}
       </div>
-      <p class="text-white/50 text-sm mt-1">
+      <p class="text-on-surface/50 text-sm mt-1">
         Reported on {new Date(report?.created_at).toLocaleString()}
       </p>
     </div>
@@ -66,21 +66,21 @@
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <!-- Main Info (Left Column) -->
     <div class="lg:col-span-2 space-y-6">
-      <div class="bg-anirank-card border border-white/5 rounded-2xl p-6 space-y-4">
-        <div class="flex items-center gap-3 border-b border-white/5 pb-4">
+      <div class="bg-surface-container border border-outline-variant rounded-2xl p-6 space-y-4">
+        <div class="flex items-center gap-3 border-b border-outline-variant pb-4">
           <span class="material-symbols-outlined text-blue-400 text-2xl">forum</span>
-          <h2 class="text-xl font-bold text-white">Reported Comment</h2>
+          <h2 class="text-xl font-bold text-on-surface">Reported Comment</h2>
         </div>
         
-        <div class="bg-black/20 rounded-xl p-4 text-white/80 whitespace-pre-wrap border-l-4 border-blue-600/50">
+        <div class="bg-black/20 rounded-xl p-4 text-on-surface/80 whitespace-pre-wrap border-l-4 border-blue-600/50">
           {report?.comment?.content || "Comment content not found"}
         </div>
         
-        <div class="pt-4 border-t border-white/5 space-y-2">
-          <h3 class="font-semibold text-white/60 uppercase text-xs tracking-wider">Reporter's Issue</h3>
-          <p class="text-lg font-bold text-white/90">{report?.title}</p>
+        <div class="pt-4 border-t border-outline-variant space-y-2">
+          <h3 class="font-semibold text-on-surface/60 uppercase text-xs tracking-wider">Reporter's Issue</h3>
+          <p class="text-lg font-bold text-on-surface/90">{report?.title}</p>
           {#if report?.content}
-            <p class="text-white/70 bg-white/5 rounded-lg p-3 text-sm">{report.content}</p>
+            <p class="text-on-surface/70 bg-surface-highest rounded-lg p-3 text-sm">{report.content}</p>
           {/if}
         </div>
       </div>
@@ -89,24 +89,24 @@
     <!-- Sidebar Info (Right Column) -->
     <div class="space-y-6">
       <!-- Reporter Info -->
-      <div class="bg-anirank-card border border-white/5 rounded-2xl p-6 space-y-4">
-        <h3 class="text-sm font-bold text-white/60 uppercase tracking-wider border-b border-white/5 pb-3">
+      <div class="bg-surface-container border border-outline-variant rounded-2xl p-6 space-y-4">
+        <h3 class="text-sm font-bold text-on-surface/60 uppercase tracking-wider border-b border-outline-variant pb-3">
           Reporter Details
         </h3>
         <div class="flex items-center gap-3">
-          <div class="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center shrink-0">
-            <span class="material-symbols-outlined text-white/40">person</span>
+          <div class="w-12 h-12 rounded-full bg-surface-highest flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-on-surface/40">person</span>
           </div>
           <div>
-            <p class="font-bold text-white/90">{report?.user?.name}</p>
-            <p class="text-xs text-white/50">ID: {report?.user?.id}</p>
+            <p class="font-bold text-on-surface/90">{report?.user?.name}</p>
+            <p class="text-xs text-on-surface/50">ID: {report?.user?.id}</p>
           </div>
         </div>
       </div>
 
       <!-- Actions -->
-      <div class="bg-anirank-card border border-white/5 rounded-2xl p-6 space-y-4">
-        <h3 class="text-sm font-bold text-white/60 uppercase tracking-wider border-b border-white/5 pb-3">
+      <div class="bg-surface-container border border-outline-variant rounded-2xl p-6 space-y-4">
+        <h3 class="text-sm font-bold text-on-surface/60 uppercase tracking-wider border-b border-outline-variant pb-3">
           Actions
         </h3>
         

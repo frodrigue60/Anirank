@@ -90,15 +90,15 @@
   class="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
 >
   <div>
-    <h1 class="text-3xl font-bold tracking-tight text-white mb-1">
+    <h1 class="text-3xl font-bold tracking-tight text-on-surface mb-1">
       Song Variants
     </h1>
-    <p class="text-gray-400">Manage video sources and versions for songs.</p>
+    <p class="text-on-surface-variant/70">Manage video sources and versions for songs.</p>
   </div>
 
   <a
     href="/admin/variants/create"
-    class="px-4 py-2 bg-anirank-primary hover:bg-blue-600 text-white font-medium rounded-xl transition-colors shadow-lg shadow-anirank-primary/20 flex items-center gap-2"
+    class="px-4 py-2 bg-primary hover:bg-primary-container text-on-surface font-medium rounded-xl transition-colors shadow-lg shadow-anirank-primary/20 flex items-center gap-2"
   >
     <span class="material-symbols-outlined">add</span>
     New Variant
@@ -123,14 +123,14 @@
     <div class="w-full sm:w-36">
       <label
         for="status"
-        class="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider"
+        class="block text-xs font-medium text-on-surface-variant/40 mb-1 uppercase tracking-wider"
         >Status</label
       >
       <select
         id="status"
         bind:value={statusFilter}
         onchange={handleSearch}
-        class="w-full bg-anirank-card border border-white/5 rounded-xl py-2 px-4 text-white focus:outline-none focus:border-anirank-primary focus:ring-1 focus:ring-anirank-primary transition-all appearance-none cursor-pointer"
+        class="w-full bg-surface-container border border-outline-variant rounded-xl py-2 px-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest focus:ring-4 focus:ring-primary/5 focus:outline-none transition-all appearance-none cursor-pointer"
       >
         <option value="">All Status</option>
         <option value="true">Active Only</option>
@@ -145,19 +145,19 @@
         statusFilter = "";
         handleSearch(null as any);
       }}
-      class="pb-3 text-gray-500 hover:text-white transition-colors text-sm"
+      class="pb-3 text-on-surface-variant/40 hover:text-on-surface transition-colors text-sm"
     >
       Reset
     </button>
   </div>
 </div>
 
-<div class="bg-anirank-card border border-white/5 rounded-2xl overflow-hidden">
+<div class="bg-surface-container border border-outline-variant rounded-2xl overflow-hidden">
   <div class="overflow-x-auto">
     <table class="w-full text-left border-collapse">
       <thead>
         <tr
-          class="bg-white/2 border-b border-white/5 text-sm uppercase tracking-wider text-gray-400 font-medium"
+          class="bg-white/2 border-b border-outline-variant text-sm uppercase tracking-wider text-on-surface-variant/70 font-medium"
         >
           <th class="py-4 px-6">ID</th>
           <th class="py-4 px-6">Song ID</th>
@@ -171,11 +171,11 @@
         {#each variants as variant (variant.id)}
           <tr class="hover:bg-white/2 transition-colors group">
             <!-- ID -->
-            <td class="py-4 px-6 whitespace-nowrap text-gray-400">
+            <td class="py-4 px-6 whitespace-nowrap text-on-surface-variant/70">
               #{variant.id}
             </td>
             <!-- Song ID -->
-            <td class="py-4 px-6 whitespace-nowrap text-white font-medium">
+            <td class="py-4 px-6 whitespace-nowrap text-on-surface font-medium">
               <a
                 href="/admin/songs/{variant.song_id}/edit"
                 class="hover:text-blue-400 hover:underline"
@@ -185,16 +185,16 @@
             </td>
             <!-- Version / Slug -->
             <td class="py-4 px-6 whitespace-nowrap">
-              <!-- <div class="text-white">v{variant.version_number}</div> -->
-              <div class="text-xs text-gray-500">{variant.slug}</div>
+              <!-- <div class="text-on-surface">v{variant.version_number}</div> -->
+              <div class="text-xs text-on-surface-variant/40">{variant.slug}</div>
             </td>
             <!-- Anime / Song -->
             <td class="py-4 px-6 whitespace-nowrap">
               <div class="flex flex-col max-w-[200px]">
-                <div class="text-white truncate">
+                <div class="text-on-surface truncate">
                   {variant.song.anime.title}
                 </div>
-                <div class="text-xs text-gray-500 truncate">
+                <div class="text-xs text-on-surface-variant/40 truncate">
                   {getSongName(variant.song)}
                 </div>
               </div>
@@ -231,7 +231,7 @@
             <td class="py-4 px-6 whitespace-nowrap text-right">
               <a
                 href="/admin/variants/{variant.id}/edit"
-                class="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors inline-block"
+                class="p-2 text-on-surface-variant/70 hover:text-on-surface hover:bg-surface-highest rounded-lg transition-colors inline-block"
                 title="Edit"
               >
                 <svg
@@ -251,7 +251,7 @@
           </tr>
         {:else}
           <tr>
-            <td colspan="6" class="py-12 text-center text-gray-500">
+            <td colspan="6" class="py-12 text-center text-on-surface-variant/40">
               No variants found matching your criteria.
             </td>
           </tr>
@@ -263,20 +263,20 @@
   <!-- Pagination -->
   {#if pagination && pagination.last_page > 1}
     <div
-      class="border-t border-white/5 px-6 py-4 flex items-center justify-between"
+      class="border-t border-outline-variant px-6 py-4 flex items-center justify-between"
     >
-      <p class="text-sm text-gray-400">
-        Showing page <span class="font-medium text-white"
+      <p class="text-sm text-on-surface-variant/70">
+        Showing page <span class="font-medium text-on-surface"
           >{pagination.current_page}</span
         >
-        of <span class="font-medium text-white">{pagination.last_page}</span>
+        of <span class="font-medium text-on-surface">{pagination.last_page}</span>
         ({pagination.total} total)
       </p>
       <div class="flex items-center gap-2">
         <button
           onclick={() => changePage(pagination.current_page - 1)}
           disabled={pagination.current_page === 1}
-          class="px-3 py-1.5 rounded-lg text-sm font-medium bg-white/5 text-gray-300 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          class="px-3 py-1.5 rounded-lg text-sm font-medium bg-surface-highest text-on-surface-variant hover:bg-surface-highest disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           Previous
         </button>
@@ -292,8 +292,8 @@
               onclick={() => changePage(pageNum)}
               class="w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition-colors {pageNum ===
               pagination.current_page
-                ? 'bg-anirank-primary text-white'
-                : 'text-gray-400 hover:bg-white/10 hover:text-white'}"
+                ? 'bg-primary text-on-surface'
+                : 'text-on-surface-variant/70 hover:bg-surface-highest hover:text-on-surface'}"
             >
               {pageNum}
             </button>
@@ -303,7 +303,7 @@
         <button
           onclick={() => changePage(pagination.current_page + 1)}
           disabled={pagination.current_page === pagination.last_page}
-          class="px-3 py-1.5 rounded-lg text-sm font-medium bg-white/5 text-gray-300 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          class="px-3 py-1.5 rounded-lg text-sm font-medium bg-surface-highest text-on-surface-variant hover:bg-surface-highest disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           Next
         </button>

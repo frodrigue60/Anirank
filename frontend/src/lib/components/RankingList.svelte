@@ -29,155 +29,168 @@
 <div
   class="bg-surface-container border border-white/5 rounded-2xl overflow-hidden mb-8"
 >
-  <div
-    class="grid grid-cols-[80px_1fr_120px_140px] gap-4 px-8 py-4 border-b border-white/5 text-[10px] font-black uppercase tracking-widest text-on-surface-variant"
-  >
-    <div class="text-center">Rank</div>
-    <div>Theme Info</div>
-    <div class="text-center">Score</div>
-    <div class="text-right">Actions</div>
-  </div>
-
-  <div class="flex flex-col">
-    {#if songs.length > 0}
-      {#each songs as item, index}
-        {@const rank = startIndex + index + 1}
-        {@const previousRank =
-          rankingType === "seasonal"
-            ? item.prev_seasonal_rank
-            : item.prev_main_rank}
-        {@const movement = getMovement(rank, previousRank)}
-        <div
-          class="ranking-row grid grid-cols-[80px_1fr_120px_140px] gap-4 px-8 py-5 items-center transition-colors border-b border-outline-variant/5 last:border-0 hover:bg-primary/5"
-        >
-          <div class="flex flex-col items-center gap-1">
-            <span
-              class="text-2xl font-black leading-none {rank <= 3
-                ? 'text-primary'
-                : 'text-on-surface/90'}"
-              >{rank.toString().padStart(2, "0")}</span
-            >
-
-            {#if movement === "up"}
-              <div
-                class="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-green-500/10 text-green-400"
-                title={`Previous rank: ${previousRank}`}
-              >
-                <span class="material-symbols-outlined text-[12px] font-black"
-                  >arrow_drop_up</span
-                >
-                <span class="text-[9px] font-black">{previousRank! - rank}</span
-                >
-              </div>
-            {:else if movement === "down"}
-              <div
-                class="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-red-500/10 text-red-400"
-                title={`Previous rank: ${previousRank}`}
-              >
-                <span class="material-symbols-outlined text-[12px] font-black"
-                  >arrow_drop_down</span
-                >
-                <span class="text-[9px] font-black">{rank - previousRank!}</span
-                >
-              </div>
-            {:else if movement === "stable"}
-              <div class="text-on-surface-variant/20 flex items-center">
-                <span class="material-symbols-outlined text-[14px]">remove</span
-                >
-              </div>
-            {:else if movement === "new"}
-              <span
-                class="text-[8px] font-black text-primary px-1.5 py-0.5 bg-primary/10 rounded uppercase tracking-tighter border border-primary/20"
-                >New</span
-              >
-            {/if}
-          </div>
-          <div class="flex items-center gap-6 min-w-0">
-            <div
-              class="w-16 h-auto aspect-12/18 rounded-lg overflow-hidden shrink-0 shadow-lg shadow-black/40 border border-white/10 relative"
-            >
-              <img
-                alt={getSongName(item)}
-                title={getSongName(item)}
-                class="w-full h-full object-cover"
-                src={item.anime?.cover_url ??
-                  "/images/placeholders/default.jpg"}
-              />
-              <!-- <div
-                class="absolute bottom-0 left-0 bg-black/80 px-1 py-0.1 rounded-tr-lg"
-              >
-                <span class="text-white/60 text-xs">{item.type}</span>
-              </div> -->
-            </div>
-            <div class="min-w-0 flex flex-col">
-              {#if true}
-                {@const songName = getSongName(item)}
-                {@const artistNames =
-                  item.artists?.map((a: any) => a.name).join(", ") ?? "Unknown"}
-                <h3
-                  class="text-lg font-bold text-on-surface truncate leading-tight"
-                  title={songName}
-                >
-                  {songName}
-                  <!-- <span class="text-white/60 text-xs">({item.type})</span> -->
-                </h3>
-                <span class="text-on-surface/80 truncate" title={artistNames}>
-                  {artistNames}
-                </span>
-                <span
-                  class="text-primary font-bold truncate"
-                  title={item.anime?.title}
-                >
-                  {item.anime?.title}
-                </span>
-              {/if}
-            </div>
-          </div>
-          <div class="text-center">
-            <div class="text-2xl font-black text-on-surface tracking-tight">
-              {formatScore(item.average_rating)}
-            </div>
-            <div
-              class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest"
-            >
-              Avg Rating
-            </div>
-            <div>
-              {#if item.user_rating}
-                <div class="text-xs">
-                  <span class="text-emerald-500/60 font-bold">Rated</span>
-                </div>
-              {:else}
-                <div class="text-xs">
-                  <span class="text-on-surface-variant opacity-50"
-                    >Not rated</span
-                  >
-                </div>
-              {/if}
-            </div>
-          </div>
-          <div class="flex items-center justify-end gap-2">
-            <a
-              href={`/songs/${item.anime?.slug}/${item.slug}`}
-              class="w-10 h-10 rounded-full flex items-center justify-center bg-primary/10 hover:bg-primary text-primary hover:text-white transition-all shadow-lg hover:shadow-primary/20"
-              title="Play theme"
-            >
-              <span class="material-symbols-outlined text-[20px]"
-                >play_arrow</span
-              >
-            </a>
-          </div>
-        </div>
-      {/each}
-
-      <InfiniteScroll {hasMore} {loading} {onLoadMore} />
-    {:else if !loading}
-      <div
-        class="flex flex-col items-center justify-center py-20 text-on-surface-variant opacity-30"
+  <table class="w-full border-collapse">
+    <thead>
+      <tr
+        class="border-b border-white/5 text-[10px] font-black uppercase tracking-widest text-on-surface-variant"
       >
-        <span class="material-symbols-outlined text-6xl mb-4">music_off</span>
-        <p class="text-lg font-bold">No themes found</p>
-      </div>
-    {/if}
-  </div>
+        <th class="w-20 py-4 pl-8 pr-2 text-center font-black">Rank</th>
+        <th class="py-4 px-2 text-left font-black">Theme Info</th>
+        <th class="w-[120px] py-4 px-2 text-center font-black">Score</th>
+        <th class="w-[140px] py-4 pl-2 pr-8 text-right font-black">Actions</th>
+      </tr>
+    </thead>
+
+    <tbody class="divide-y divide-white/5">
+      {#if songs.length > 0}
+        {#each songs as item, index}
+          {@const rank = startIndex + index + 1}
+          {@const previousRank =
+            rankingType === "seasonal"
+              ? item.prev_seasonal_rank
+              : item.prev_main_rank}
+          {@const movement = getMovement(rank, previousRank)}
+          <tr
+            class="ranking-row transition-colors hover:bg-primary/5"
+          >
+            <td class="py-5 pl-8 pr-2 text-center">
+              <div class="flex flex-col items-center gap-1">
+                <span
+                  class="text-2xl font-black leading-none {rank <= 3
+                    ? 'text-primary'
+                    : 'text-on-surface/90'}"
+                  >{rank.toString().padStart(2, "0")}</span
+                >
+
+                {#if movement === "up"}
+                  <div
+                    class="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-green-500/10 text-green-400"
+                    title={`Previous rank: ${previousRank}`}
+                  >
+                    <span class="material-symbols-outlined text-[12px] font-black"
+                      >arrow_drop_up</span
+                    >
+                    <span class="text-[9px] font-black">{previousRank! - rank}</span
+                    >
+                  </div>
+                {:else if movement === "down"}
+                  <div
+                    class="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-red-500/10 text-red-400"
+                    title={`Previous rank: ${previousRank}`}
+                  >
+                    <span class="material-symbols-outlined text-[12px] font-black"
+                      >arrow_drop_down</span
+                    >
+                    <span class="text-[9px] font-black">{rank - previousRank!}</span
+                    >
+                  </div>
+                {:else if movement === "stable"}
+                  <div class="text-on-surface-variant/20 flex items-center">
+                    <span class="material-symbols-outlined text-[14px]">remove</span
+                    >
+                  </div>
+                {:else if movement === "new"}
+                  <span
+                    class="text-[8px] font-black text-primary px-1.5 py-0.5 bg-primary/10 rounded uppercase tracking-tighter border border-primary/20"
+                    >New</span
+                  >
+                {/if}
+              </div>
+            </td>
+
+            <td class="py-5 px-2">
+              <div class="flex items-center gap-6 min-w-0">
+                <div
+                  class="w-16 h-auto aspect-12/18 rounded-lg overflow-hidden shrink-0 shadow-lg shadow-black/40 border border-white/10 relative"
+                >
+                  <img
+                    alt={getSongName(item)}
+                    title={getSongName(item)}
+                    class="w-full h-full object-cover"
+                    src={item.anime?.cover_url ??
+                      "/images/placeholders/default.jpg"}
+                  />
+                </div>
+                <div class="min-w-0 flex flex-col">
+                  {#if true}
+                    {@const songName = getSongName(item)}
+                    {@const artistNames =
+                      item.artists?.map((a: any) => a.name).join(", ") ?? "Unknown"}
+                    <h3
+                      class="text-lg font-bold text-on-surface truncate leading-tight"
+                      title={songName}
+                    >
+                      {songName}
+                    </h3>
+                    <span class="text-on-surface/80 truncate" title={artistNames}>
+                      {artistNames}
+                    </span>
+                    <span
+                      class="text-primary font-bold truncate"
+                      title={item.anime?.title}
+                    >
+                      {item.anime?.title}
+                    </span>
+                  {/if}
+                </div>
+              </div>
+            </td>
+
+            <td class="py-5 px-2 text-center">
+              <div class="text-2xl font-black text-on-surface tracking-tight">
+                {formatScore(item.average_rating)}
+              </div>
+              <div
+                class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest"
+              >
+                Avg Rating
+              </div>
+              <div>
+                {#if item.user_rating}
+                  <div class="text-xs">
+                    <span class="text-emerald-500/60 font-bold">Rated</span>
+                  </div>
+                {:else}
+                  <div class="text-xs">
+                    <span class="text-on-surface-variant opacity-50"
+                      >Not rated</span
+                    >
+                  </div>
+                {/if}
+              </div>
+            </td>
+
+            <td class="py-5 pl-2 pr-8 text-right">
+              <div class="flex items-center justify-end gap-2">
+                <a
+                  href={`/songs/${item.anime?.slug}/${item.slug}`}
+                  class="w-10 h-10 rounded-full flex items-center justify-center bg-primary/10 hover:bg-primary text-primary hover:text-white transition-all shadow-lg hover:shadow-primary/20"
+                  title="Play theme"
+                >
+                  <span class="material-symbols-outlined text-[20px]"
+                    >play_arrow</span
+                  >
+                </a>
+              </div>
+            </td>
+          </tr>
+        {/each}
+
+        <tr>
+          <td colspan="4" class="p-0">
+            <InfiniteScroll {hasMore} {loading} {onLoadMore} />
+          </td>
+        </tr>
+      {:else if !loading}
+        <tr>
+          <td colspan="4" class="py-20 text-on-surface-variant">
+            <div class="flex flex-col items-center justify-center opacity-30">
+              <span class="material-symbols-outlined text-6xl mb-4">music_off</span>
+              <p class="text-lg font-bold">No themes found</p>
+            </div>
+          </td>
+        </tr>
+      {/if}
+    </tbody>
+  </table>
 </div>

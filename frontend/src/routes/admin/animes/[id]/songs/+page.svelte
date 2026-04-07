@@ -47,19 +47,19 @@
   {/if}
 
   <div
-    class="bg-anirank-card border border-white/5 rounded-2xl overflow-hidden shadow-sm shadow-black/20"
+    class="bg-surface-container border border-outline-variant rounded-2xl overflow-hidden shadow-sm shadow-black/20"
   >
-    <div class="p-6 border-b border-white/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div class="p-6 border-b border-outline-variant flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
       <div>
-        <h2 class="text-xl font-semibold text-white">Songs Management</h2>
-        <p class="text-sm text-gray-400 mt-1">
+        <h2 class="text-xl font-semibold text-on-surface">Songs Management</h2>
+        <p class="text-sm text-on-surface-variant/70 mt-1">
           Manage themes, openings and endings for this anime.
         </p>
       </div>
       {#if !anime.season_id || !anime.year_id}
         <button
           disabled
-          class="text-sm px-4 py-2 bg-white/5 border border-white/10 text-gray-500 rounded-lg cursor-not-allowed flex items-center gap-2"
+          class="text-sm px-4 py-2 bg-surface-highest border border-outline-variant text-on-surface-variant/40 rounded-lg cursor-not-allowed flex items-center gap-2"
           title="Season and Year required"
         >
           <span class="material-symbols-outlined text-sm">add</span>
@@ -68,7 +68,7 @@
       {:else}
         <a
           href="/admin/songs/create?anime_id={anime.id}"
-          class="text-sm px-4 py-2 bg-anirank-primary hover:bg-blue-600 text-white rounded-lg transition-colors flex items-center gap-2 shadow-lg shadow-anirank-primary/20"
+          class="text-sm px-4 py-2 bg-primary hover:bg-primary-container text-on-surface rounded-lg transition-colors flex items-center gap-2 shadow-lg shadow-anirank-primary/20"
         >
           <span class="material-symbols-outlined text-sm">add</span>
           Add Song
@@ -78,9 +78,9 @@
 
     <div class="overflow-x-auto">
       {#if anime.songs && anime.songs.length > 0}
-        <table class="w-full text-left text-sm text-gray-300">
+        <table class="w-full text-left text-sm text-on-surface-variant">
           <thead
-            class="text-xs text-gray-400 uppercase bg-black/20 border-b border-white/5"
+            class="text-xs text-on-surface-variant/70 uppercase bg-black/20 border-b border-outline-variant"
           >
             <tr>
               <th class="px-6 py-4 font-semibold">Type</th>
@@ -103,20 +103,20 @@
                   </span>
                 </td>
                 <td
-                  class="px-6 py-4 font-medium text-white max-w-[250px] truncate"
+                  class="px-6 py-4 font-medium text-on-surface max-w-[250px] truncate"
                   title={song.song_romaji || song.song_jp || song.song_en}
                 >
                   <div class="flex flex-col">
-                    <span class="text-white"
+                    <span class="text-on-surface"
                       >{song.song_romaji || song.song_jp || song.song_en}</span
                     >
-                    <span class="text-[10px] text-gray-500 font-mono"
+                    <span class="text-[10px] text-on-surface-variant/40 font-mono"
                       >ID: #{song.id}</span
                     >
                   </div>
                 </td>
                 <td
-                  class="px-6 py-4 text-xs text-gray-500 max-w-[200px] truncate hidden md:table-cell"
+                  class="px-6 py-4 text-xs text-on-surface-variant/40 max-w-[200px] truncate hidden md:table-cell"
                   title={song.artists
                     ? song.artists.map((a: any) => a.name).join(", ")
                     : ""}
@@ -139,7 +139,7 @@
                   <div class="flex items-center justify-end gap-2">
                     <a
                       href="/admin/animes/{anime.id}/songs/{song.id}"
-                      class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all border border-emerald-500/20 hover:border-emerald-500"
+                      class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-on-surface transition-all border border-emerald-500/20 hover:border-emerald-500"
                       title="Variants"
                       >
                        <span class="material-symbols-outlined text-sm">video_library</span> 
@@ -147,7 +147,7 @@
                     >
                     <a
                       href="/admin/songs/{song.id}/edit"
-                      class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white transition-all border border-white/5 hover:border-white/10"
+                      class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-surface-highest text-on-surface-variant/70 hover:bg-surface-highest hover:text-on-surface transition-all border border-outline-variant hover:border-outline-variant"
                       title="Edit Song"
                       >
                        <span class="material-symbols-outlined text-sm">edit</span> 
@@ -155,7 +155,7 @@
                     >
                     <button
                       onclick={() => deleteSong(song.id)}
-                      class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-white/5 text-gray-400 hover:bg-rose-500/10 hover:text-rose-400 transition-all border border-white/5 hover:border-rose-500/20"
+                      class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-surface-highest text-on-surface-variant/70 hover:bg-rose-500/10 hover:text-rose-400 transition-all border border-outline-variant hover:border-rose-500/20"
                       title="Delete Song"
                       >
                        <span class="material-symbols-outlined text-sm">delete</span> 
@@ -169,15 +169,15 @@
         </table>
       {:else}
         <div class="px-6 py-16 flex flex-col items-center justify-center text-center">
-          <div class="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mb-4 border border-white/5">
-              <span class="material-symbols-outlined text-3xl text-gray-500">music_note</span>
+          <div class="w-16 h-16 bg-surface-highest rounded-2xl flex items-center justify-center mb-4 border border-outline-variant">
+              <span class="material-symbols-outlined text-3xl text-on-surface-variant/40">music_note</span>
           </div>
-          <h3 class="text-white font-medium mb-1">No songs registered</h3>
-          <p class="text-sm text-gray-500 max-w-sm mb-6">Create the first song for this anime, like an Opening or Ending theme.</p>
+          <h3 class="text-on-surface font-medium mb-1">No songs registered</h3>
+          <p class="text-sm text-on-surface-variant/40 max-w-sm mb-6">Create the first song for this anime, like an Opening or Ending theme.</p>
           {#if !anime.season_id || !anime.year_id}
             <button
               disabled
-              class="px-5 py-2.5 bg-white/5 border border-white/10 text-gray-500 rounded-xl text-sm font-medium cursor-not-allowed flex items-center gap-2"
+              class="px-5 py-2.5 bg-surface-highest border border-outline-variant text-on-surface-variant/40 rounded-xl text-sm font-medium cursor-not-allowed flex items-center gap-2"
             >
               <span class="material-symbols-outlined text-sm">add</span>
               Create First Song
@@ -185,7 +185,7 @@
           {:else}
             <a
               href="/admin/songs/create?anime_id={anime.id}"
-              class="px-5 py-2.5 bg-anirank-primary hover:bg-blue-600 text-white rounded-xl text-sm font-medium transition-colors shadow-lg shadow-anirank-primary/20 flex items-center gap-2"
+              class="px-5 py-2.5 bg-primary hover:bg-primary-container text-on-surface rounded-xl text-sm font-medium transition-colors shadow-lg shadow-anirank-primary/20 flex items-center gap-2"
             >
               <span class="material-symbols-outlined text-sm">add</span>
               Create First Song

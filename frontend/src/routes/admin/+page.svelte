@@ -215,7 +215,7 @@
     {#each displayStats as stat}
       <a
         href={stat.link || "#"}
-        class="bg-surface-container border border-white/5 rounded-xl p-4 relative overflow-hidden group transition-all hover:border-white/10 hover:bg-white/3"
+        class="bg-surface-container border border-outline-variant rounded-xl p-4 relative overflow-hidden group transition-all hover:border-outline-variant hover:bg-white/3"
       >
         <div
           class="absolute top-2 right-2 transition-transform duration-500 group-hover:scale-110"
@@ -241,20 +241,20 @@
   </div>
 
   <!-- Historical Traffic Chart -->
-  <div class="bg-surface-container border border-white/5 rounded-2xl p-6 mb-8">
+  <div class="bg-surface-container border border-outline-variant rounded-2xl p-6 mb-8">
     <div class="flex items-center justify-between mb-6">
       <div>
         <h3 class="text-xl font-bold text-on-surface">Historical Traffic</h3>
-        <p class="text-xs text-gray-400">
+        <p class="text-xs text-on-surface-variant/70">
           Daily views across the platform (Last 30 days)
         </p>
       </div>
       <div
-        class="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/5"
+        class="flex items-center gap-2 px-3 py-1 bg-surface-highest rounded-full border border-outline-variant"
       >
         <div class="w-2 h-2 rounded-full bg-primary"></div>
         <span
-          class="text-[10px] font-bold text-gray-400 uppercase tracking-wider"
+          class="text-[10px] font-bold text-on-surface-variant/70 uppercase tracking-wider"
           >Views</span
         >
       </div>
@@ -362,13 +362,13 @@
               : '-10px'});"
           >
             <p
-              class="text-[10px] font-bold text-gray-400 uppercase leading-none mb-1"
+              class="text-[10px] font-bold text-on-surface-variant/70 uppercase leading-none mb-1"
             >
               {hoverPoint()!.date}
             </p>
-            <p class="text-xs font-black text-white leading-none">
+            <p class="text-xs font-black text-on-surface leading-none">
               {hoverPoint()!.value}
-              <span class="text-[10px] font-normal text-gray-500 uppercase"
+              <span class="text-[10px] font-normal text-on-surface-variant/40 uppercase"
                 >Views</span
               >
             </p>
@@ -376,10 +376,10 @@
         {/if}
       </div>
       <div class="flex justify-between mt-4 px-5">
-        <span class="text-[10px] text-gray-500 font-bold uppercase"
+        <span class="text-[10px] text-on-surface-variant/40 font-bold uppercase"
           >{new Date(chartData[0].date).toLocaleDateString()}</span
         >
-        <span class="text-[10px] text-gray-500 font-bold uppercase"
+        <span class="text-[10px] text-on-surface-variant/40 font-bold uppercase"
           >{new Date(
             chartData[chartData.length - 1].date,
           ).toLocaleDateString()}</span
@@ -387,9 +387,9 @@
       </div>
     {:else}
       <div
-        class="h-[150px] flex items-center justify-center border border-dashed border-white/10 rounded-xl"
+        class="h-[150px] flex items-center justify-center border border-dashed border-outline-variant rounded-xl"
       >
-        <p class="text-sm text-gray-500">No traffic data available yet</p>
+        <p class="text-sm text-on-surface-variant/40">No traffic data available yet</p>
       </div>
     {/if}
   </div>
@@ -397,7 +397,7 @@
   <!-- Recent Activity / Quick Actions -->
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <div
-      class="lg:col-span-2 bg-surface-container border border-white/5 rounded-2xl p-6"
+      class="lg:col-span-2 bg-surface-container border border-outline-variant rounded-2xl p-6"
     >
       <h3 class="text-xl font-bold text-on-surface mb-6">
         Recent Reports & Requests
@@ -406,15 +406,15 @@
       <div class="space-y-4">
         {#if (data.stats?.recent_reports?.length || 0) === 0 && (data.stats?.recent_requests?.length || 0) === 0}
           <div
-            class="p-8 text-center bg-white/5 border border-dashed border-white/10 rounded-xl"
+            class="p-8 text-center bg-surface-highest border border-dashed border-outline-variant rounded-xl"
           >
-            <p class="text-sm text-gray-500">No pending items to review</p>
+            <p class="text-sm text-on-surface-variant/40">No pending items to review</p>
           </div>
         {/if}
 
         {#each data.stats?.recent_reports || [] as report}
           <div
-            class="p-4 rounded-xl bg-white/5 border border-white/5 flex items-start justify-between"
+            class="p-4 rounded-xl bg-surface-highest border border-outline-variant flex items-start justify-between"
           >
             <div class="flex gap-4">
               <div
@@ -423,10 +423,10 @@
                 <span class="material-symbols-outlined text-xl">report</span>
               </div>
               <div>
-                <p class="text-sm font-medium text-white">
+                <p class="text-sm font-medium text-on-surface">
                   {report.title}
                 </p>
-                <p class="text-xs text-gray-400 mt-1">
+                <p class="text-xs text-on-surface-variant/70 mt-1">
                   Reported by @{report.user?.name || "anonymous"} • {new Date(
                     report.created_at,
                   ).toLocaleDateString()}
@@ -435,7 +435,7 @@
             </div>
             <a
               href="/admin/reports/{report.id}"
-              class="text-xs font-semibold px-3 py-1 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors"
+              class="text-xs font-semibold px-3 py-1 bg-surface-highest hover:bg-white/20 rounded-lg text-on-surface transition-colors"
               >Review</a
             >
           </div>
@@ -443,7 +443,7 @@
 
         {#each data.stats?.recent_requests || [] as request}
           <div
-            class="p-4 rounded-xl bg-white/5 border border-white/5 flex items-start justify-between"
+            class="p-4 rounded-xl bg-surface-highest border border-outline-variant flex items-start justify-between"
           >
             <div class="flex gap-4">
               <div
@@ -452,10 +452,10 @@
                 <span class="material-symbols-outlined text-xl">help</span>
               </div>
               <div>
-                <p class="text-sm font-medium text-white">
+                <p class="text-sm font-medium text-on-surface">
                   {request.title}
                 </p>
-                <p class="text-xs text-gray-400 mt-1">
+                <p class="text-xs text-on-surface-variant/70 mt-1">
                   Request by @{request.user?.name || "anonymous"} • {new Date(
                     request.created_at,
                   ).toLocaleDateString()}
@@ -464,7 +464,7 @@
             </div>
             <a
               href="/admin/requests/{request.id}"
-              class="text-xs font-semibold px-3 py-1 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors"
+              class="text-xs font-semibold px-3 py-1 bg-surface-highest hover:bg-white/20 rounded-lg text-on-surface transition-colors"
               >Review</a
             >
           </div>
@@ -480,12 +480,12 @@
       </div>
     </div>
 
-    <div class="bg-surface-container border border-white/5 rounded-2xl p-6">
+    <div class="bg-surface-container border border-outline-variant rounded-2xl p-6">
       <h3 class="text-xl font-bold text-on-surface mb-6">Quick Actions</h3>
       <div class="space-y-3">
         <a
           href="/admin/songs/create"
-          class="flex items-center gap-3 p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors border border-transparent hover:border-white/10"
+          class="flex items-center gap-3 p-4 rounded-xl bg-surface-highest hover:bg-surface-highest transition-colors border border-transparent hover:border-outline-variant"
         >
           <div
             class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center"
@@ -506,7 +506,7 @@
           <span class="font-medium text-sm text-on-surface">Add New Song</span>
         </a>
         <button
-          class="w-full flex items-center gap-3 p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors border border-transparent hover:border-white/10 text-left"
+          class="w-full flex items-center gap-3 p-4 rounded-xl bg-surface-highest hover:bg-surface-highest transition-colors border border-transparent hover:border-outline-variant text-left"
         >
           <div
             class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center"
@@ -532,7 +532,7 @@
         <button
           onclick={handleSnapshot}
           disabled={isUpdating}
-          class="w-full flex items-center gap-3 p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors border border-transparent hover:border-white/10 text-left disabled:opacity-50 disabled:cursor-wait"
+          class="w-full flex items-center gap-3 p-4 rounded-xl bg-surface-highest hover:bg-surface-highest transition-colors border border-transparent hover:border-outline-variant text-left disabled:opacity-50 disabled:cursor-wait"
         >
           <div
             class="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center"
@@ -576,7 +576,7 @@
         <button
           onclick={handleFlushOG}
           disabled={isFlushing}
-          class="w-full flex items-center gap-3 p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors border border-transparent hover:border-white/10 text-left disabled:opacity-50 disabled:cursor-wait"
+          class="w-full flex items-center gap-3 p-4 rounded-xl bg-surface-highest hover:bg-surface-highest transition-colors border border-transparent hover:border-outline-variant text-left disabled:opacity-50 disabled:cursor-wait"
         >
           <div
             class="w-8 h-8 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center"

@@ -177,14 +177,14 @@
 
 <div class="relative w-full">
   <div
-    class="w-full bg-white/5 border border-white/10 rounded-xl p-2 text-white flex flex-wrap gap-2 items-center focus-within:border-anirank-primary transition-all min-h-[44px]"
+    class="w-full bg-surface-highest border border-outline-variant rounded-xl p-2 text-on-surface flex flex-wrap gap-2 items-center focus-within:border-primary transition-all min-h-[44px]"
   >
     {#each tags as tag, i}
       <div
         class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-sm font-medium border
           {tag.isKnown
-          ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
-          : 'bg-zinc-800 text-zinc-300 border-zinc-700'}"
+          ? 'bg-primary/10 text-primary border-primary/20'
+          : 'bg-surface-highest text-on-surface-variant border-outline-variant'}"
         title={tag.isKnown
           ? `Existing ${entityName}`
           : `New ${entityName} will be created`}
@@ -194,7 +194,7 @@
           type="button"
           aria-label="Remove tag"
           onclick={() => removeTag(i)}
-          class="hover:text-white transition-colors flex items-center justify-center opacity-70 hover:opacity-100"
+          class="hover:text-on-surface transition-colors flex items-center justify-center opacity-70 hover:opacity-100"
         >
           <svg
             class="w-3.5 h-3.5"
@@ -224,21 +224,21 @@
         if (suggestions.length > 0) showSuggestions = true;
       }}
       placeholder={tags.length === 0 ? placeholder : "Add more..."}
-      class="flex-1 min-w-[120px] bg-transparent outline-none placeholder-gray-500 text-sm py-1"
+      class="flex-1 min-w-[120px] bg-transparent outline-none placeholder-on-surface-variant/40 text-sm py-1"
     />
   </div>
 
   {#if isSearching}
     <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
       <div
-        class="animate-spin h-4 w-4 border-2 border-anirank-primary border-t-transparent rounded-full"
+        class="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"
       ></div>
     </div>
   {/if}
 
   {#if showSuggestions && suggestions.length > 0}
     <ul
-      class="absolute z-50 w-full mt-2 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl overflow-hidden"
+      class="absolute z-50 w-full mt-2 bg-surface-highest border border-outline-variant rounded-xl shadow-2xl overflow-hidden"
       onblur={() => setTimeout(() => (showSuggestions = false), 200)}
     >
       {#each suggestions as suggest, i}
@@ -248,9 +248,9 @@
             onclick={() => addTag(suggest.name, true)}
             class="w-full text-left px-4 py-3
                    {i === focusedIndex
-              ? 'bg-blue-600/20 text-blue-400'
-              : 'hover:bg-blue-600/20 hover:text-blue-400'} 
-                   transition-all flex items-center gap-3 border-b border-zinc-800/50 last:border-0"
+              ? 'bg-primary/20 text-primary'
+              : 'hover:bg-primary-container/20 hover:text-primary'} 
+                   transition-all flex items-center gap-3 border-b border-outline-variant last:border-0"
           >
             <span class="text-sm font-medium">{suggest.name}</span>
           </button>

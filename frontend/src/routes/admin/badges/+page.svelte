@@ -56,12 +56,12 @@
 <div class="space-y-6 animate-fade-in">
   <div class="flex items-center justify-between">
     <div>
-      <h1 class="text-2xl font-bold text-white">Badges</h1>
-      <p class="text-gray-400 mt-1">Manage user badges and achievements</p>
+      <h1 class="text-2xl font-bold text-on-surface">Badges</h1>
+      <p class="text-on-surface-variant/70 mt-1">Manage user badges and achievements</p>
     </div>
     <button
       onclick={openCreateModal}
-      class="px-4 py-2 bg-anirank-primary hover:bg-anirank-primary/90 text-white font-medium rounded-xl transition-colors flex items-center gap-2"
+      class="px-4 py-2 bg-primary hover:bg-primary/90 text-on-surface font-medium rounded-xl transition-colors flex items-center gap-2"
     >
       <svg
         class="w-5 h-5"
@@ -81,12 +81,12 @@
   </div>
 
   <div
-    class="bg-anirank-card border border-white/5 rounded-2xl overflow-hidden"
+    class="bg-surface-container border border-outline-variant rounded-2xl overflow-hidden"
   >
     <div class="overflow-x-auto">
-      <table class="w-full text-left text-sm text-gray-300">
+      <table class="w-full text-left text-sm text-on-surface-variant">
         <thead
-          class="bg-white/5 text-gray-400 text-xs uppercase tracking-wider"
+          class="bg-surface-highest text-on-surface-variant/70 text-xs uppercase tracking-wider"
         >
           <tr>
             <th class="px-6 py-4 font-medium">Icon</th>
@@ -109,11 +109,11 @@
                   class="w-10 h-10 object-contain rounded-md bg-black/20 p-1"
                 />
               </td>
-              <td class="px-6 py-4 font-medium text-white">
+              <td class="px-6 py-4 font-medium text-on-surface">
                 {badge.name}
               </td>
               <td
-                class="px-6 py-4 hidden md:table-cell max-w-[200px] truncate text-gray-400"
+                class="px-6 py-4 hidden md:table-cell max-w-[200px] truncate text-on-surface-variant/70"
               >
                 {badge.description || "-"}
               </td>
@@ -125,7 +125,7 @@
                     >
                       Auto
                     </span>
-                    <span class="text-[10px] text-gray-500 font-medium">
+                    <span class="text-[10px] text-on-surface-variant/40 font-medium">
                       {#if badge.requirement_type === "level"}
                         Level {badge.requirement_value}
                       {:else if badge.requirement_type === "ratings"}
@@ -139,7 +139,7 @@
                   </div>
                 {:else}
                   <span
-                    class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-white/5 text-gray-500 border border-white/10"
+                    class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-highest text-on-surface-variant/40 border border-outline-variant"
                   >
                     Manual
                   </span>
@@ -160,7 +160,7 @@
                 >
                   <button
                     onclick={() => openEditModal(badge)}
-                    class="p-2 hover:bg-white/10 text-gray-400 hover:text-white rounded-lg transition-colors"
+                    class="p-2 hover:bg-surface-highest text-on-surface-variant/70 hover:text-on-surface rounded-lg transition-colors"
                     title="Edit"
                   >
                     <svg
@@ -179,7 +179,7 @@
                   <button
                     onclick={() => deleteBadge(badge.admin_id)}
                     disabled={loadingDelete === badge.id}
-                    class="p-2 hover:bg-red-500/20 text-gray-400 hover:text-red-400 rounded-lg transition-colors disabled:opacity-50"
+                    class="p-2 hover:bg-red-500/20 text-on-surface-variant/70 hover:text-red-400 rounded-lg transition-colors disabled:opacity-50"
                     title="Delete"
                   >
                     {#if loadingDelete === badge.id}
@@ -222,7 +222,7 @@
             </tr>
           {:else}
             <tr>
-              <td colspan="5" class="px-6 py-12 text-center text-gray-500">
+              <td colspan="5" class="px-6 py-12 text-center text-on-surface-variant/40">
                 No badges found. Click "Add Badge" to create one.
               </td>
             </tr>

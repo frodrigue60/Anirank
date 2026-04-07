@@ -52,17 +52,17 @@
   class="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
 >
   <div>
-    <h1 class="text-3xl font-bold tracking-tight text-white mb-1">
+    <h1 class="text-3xl font-bold tracking-tight text-on-surface mb-1">
       Users & Access
     </h1>
-    <p class="text-gray-400">
+    <p class="text-on-surface-variant/70">
       Manage user accounts, enforce moderation, and update roles.
     </p>
   </div>
   <div>
     <button
       onclick={() => goto("/admin/users/create")}
-      class="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-colors border border-white/10 shrink-0"
+      class="px-4 py-2 bg-surface-highest hover:bg-surface-highest text-on-surface rounded-xl transition-colors border border-outline-variant shrink-0"
     >
       Create User
     </button>
@@ -71,11 +71,11 @@
 
 <!-- Filters & Search -->
 <div
-  class="bg-anirank-card border border-white/5 rounded-2xl p-4 mb-6 flex flex-col sm:flex-row gap-4"
+  class="bg-surface-container border border-outline-variant rounded-2xl p-4 mb-6 flex flex-col sm:flex-row gap-4"
 >
   <div class="relative flex-1">
     <svg
-      class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
+      class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/40"
       fill="none"
       stroke="currentColor"
       viewBox="0 0 24 24"
@@ -91,23 +91,23 @@
       bind:value={searchQuery}
       onkeydown={(e) => e.key === "Enter" && handleSearch()}
       placeholder="Search by username or email..."
-      class="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-10 pr-4 text-white focus:outline-none focus:border-anirank-primary transition-colors"
+      class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2 pl-10 pr-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-colors"
     />
   </div>
   <button
     onclick={handleSearch}
-    class="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-colors border border-white/10 shrink-0"
+    class="px-4 py-2 bg-surface-highest hover:bg-surface-highest text-on-surface rounded-xl transition-colors border border-outline-variant shrink-0"
   >
     Search Accounts
   </button>
 </div>
 
 <!-- Table -->
-<div class="bg-anirank-card border border-white/5 rounded-2xl overflow-hidden">
+<div class="bg-surface-container border border-outline-variant rounded-2xl overflow-hidden">
   <div class="overflow-x-auto">
-    <table class="w-full text-left text-sm text-gray-300">
+    <table class="w-full text-left text-sm text-on-surface-variant">
       <thead
-        class="text-xs text-gray-400 uppercase bg-white/5 border-b border-white/5"
+        class="text-xs text-on-surface-variant/70 uppercase bg-surface-highest border-b border-outline-variant"
       >
         <tr>
           <th class="px-6 py-4 font-semibold">User</th>
@@ -125,7 +125,7 @@
                   <img
                     src={user.avatar_url}
                     alt={user.name}
-                    class="w-10 h-10 rounded-full object-cover shadow-sm bg-white/5 border border-white/10"
+                    class="w-10 h-10 rounded-full object-cover shadow-sm bg-surface-highest border border-outline-variant"
                   />
                 {:else}
                   <div
@@ -135,20 +135,20 @@
                   </div>
                 {/if}
                 <div>
-                  <div class="font-bold text-white mb-0.5">
+                  <div class="font-bold text-on-surface mb-0.5">
                     <a
                       href="/admin/users/{user.id}"
-                      class="hover:text-anirank-primary transition-colors"
+                      class="hover:text-primary transition-colors"
                       >{user.name}</a
                     >
                   </div>
-                  <div class="text-xs text-gray-500 font-mono hidden sm:block">
+                  <div class="text-xs text-on-surface-variant/40 font-mono hidden sm:block">
                     ID: {user.id}
                   </div>
                 </div>
               </div>
             </td>
-            <td class="px-6 py-4 text-gray-400 text-sm">
+            <td class="px-6 py-4 text-on-surface-variant/70 text-sm">
               {new Date(user.created_at).toLocaleDateString()}
             </td>
             <td class="px-6 py-4 text-center">
@@ -162,7 +162,7 @@
               <div class="flex items-center justify-end gap-2">
                 <!-- <a
                   href="/admin/users/{user.id}"
-                  class="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors border border-transparent hover:border-white/10"
+                  class="p-2 text-on-surface-variant/70 hover:text-on-surface hover:bg-surface-highest rounded-lg transition-colors border border-transparent hover:border-outline-variant"
                   title="View Details"
                 >
                   <span class="material-symbols-outlined">visibility</span>
@@ -170,7 +170,7 @@
 
                 <a
                   href="/admin/users/{user.id}/edit"
-                  class="p-2 text-gray-400 hover:text-white hover:bg-emerald-500/10 rounded-lg transition-colors border border-transparent hover:border-emerald-500/10"
+                  class="p-2 text-on-surface-variant/70 hover:text-on-surface hover:bg-emerald-500/10 rounded-lg transition-colors border border-transparent hover:border-emerald-500/10"
                   title="Edit Profile"
                 >
                   <span class="material-symbols-outlined">edit</span>
@@ -189,7 +189,7 @@
           </tr>
         {:else}
           <tr>
-            <td colspan="4" class="px-6 py-12 text-center text-gray-500">
+            <td colspan="4" class="px-6 py-12 text-center text-on-surface-variant/40">
               No users found matching that search.
             </td>
           </tr>
@@ -201,16 +201,16 @@
   <!-- Pagination -->
   {#if data.pagination?.last_page > 1}
     <div
-      class="px-6 py-4 border-t border-white/5 flex items-center justify-between"
+      class="px-6 py-4 border-t border-outline-variant flex items-center justify-between"
     >
-      <div class="text-sm text-gray-400">
-        Showing <span class="font-medium text-white">{data.users.length}</span> items
+      <div class="text-sm text-on-surface-variant/70">
+        Showing <span class="font-medium text-on-surface">{data.users.length}</span> items
       </div>
       <div class="flex items-center gap-2">
         <button
           disabled={data.pagination.current_page === 1}
           onclick={() => changePage(data.pagination.current_page - 1)}
-          class="p-2 rounded-lg border border-white/10 text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/5 transition-colors"
+          class="p-2 rounded-lg border border-outline-variant text-on-surface-variant/70 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-highest transition-colors"
           aria-label="Previous Page"
         >
           <svg
@@ -226,14 +226,14 @@
             /></svg
           >
         </button>
-        <span class="text-sm text-gray-300 font-medium px-2"
+        <span class="text-sm text-on-surface-variant font-medium px-2"
           >Page {data.pagination.current_page} of {data.pagination
             .last_page}</span
         >
         <button
           disabled={data.pagination.current_page === data.pagination.last_page}
           onclick={() => changePage(data.pagination.current_page + 1)}
-          class="p-2 rounded-lg border border-white/10 text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/5 transition-colors"
+          class="p-2 rounded-lg border border-outline-variant text-on-surface-variant/70 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-highest transition-colors"
           aria-label="Next Page"
         >
           <svg

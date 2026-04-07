@@ -157,17 +157,17 @@
   class="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
 >
   <div>
-    <h1 class="text-3xl font-bold tracking-tight text-white mb-1">
+    <h1 class="text-3xl font-bold tracking-tight text-on-surface mb-1">
       Animes Catalog
     </h1>
-    <p class="text-gray-400">
+    <p class="text-on-surface-variant/70">
       Manage anime entries, statuses, and Anilist relationships.
     </p>
   </div>
 
   <a
     href="/admin/animes/create"
-    class="px-4 py-2 bg-anirank-primary hover:bg-blue-600 text-white font-medium rounded-xl transition-colors shadow-lg shadow-anirank-primary/20 flex items-center gap-2"
+    class="px-4 py-2 bg-primary hover:bg-primary-container text-on-surface font-medium rounded-xl transition-colors shadow-lg shadow-anirank-primary/20 flex items-center gap-2"
   >
     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
       ><path
@@ -183,7 +183,7 @@
 
 <!-- Search -->
 <div
-  class="bg-anirank-card border border-white/5 rounded-2xl p-4 mb-6 flex flex-col sm:flex-row gap-4"
+  class="bg-surface-container border border-outline-variant rounded-2xl p-4 mb-6 flex flex-col sm:flex-row gap-4"
 >
   <div class="relative flex-1">
     <input
@@ -191,14 +191,14 @@
       bind:value={searchQuery}
       onkeydown={(e) => e.key === "Enter" && handleSearch()}
       placeholder="Search by title..."
-      class="w-full bg-white/5 border border-white/10 rounded-xl p-2 text-white focus:outline-none focus:border-anirank-primary transition-colors"
+      class="w-full bg-surface-highest border border-outline-variant rounded-xl p-2 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-colors"
     />
   </div>
   <div class="flex-1 min-w-[150px]">
     <select
       bind:value={selectedYear}
       onchange={handleSearch}
-      class="w-full bg-white/5 border border-white/10 rounded-xl p-2 text-white focus:outline-none focus:border-anirank-primary transition-colors"
+      class="w-full bg-surface-highest border border-outline-variant rounded-xl p-2 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-colors"
     >
       <option value="">All Years</option>
       {#each years as y}
@@ -210,7 +210,7 @@
     <select
       bind:value={selectedSeason}
       onchange={handleSearch}
-      class="w-full bg-white/5 border border-white/10 rounded-xl p-2 text-white focus:outline-none focus:border-anirank-primary transition-colors"
+      class="w-full bg-surface-highest border border-outline-variant rounded-xl p-2 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-colors"
     >
       <option value="">All Seasons</option>
       {#each seasons as s}
@@ -222,7 +222,7 @@
     <select
       bind:value={selectedFormat}
       onchange={handleSearch}
-      class="w-full bg-white/5 border border-white/10 rounded-xl p-2 text-white focus:outline-none focus:border-anirank-primary transition-colors"
+      class="w-full bg-surface-highest border border-outline-variant rounded-xl p-2 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-colors"
     >
       <option value="">All Formats</option>
       {#each formats as f}
@@ -234,7 +234,7 @@
     <select
       bind:value={selectedStatus}
       onchange={handleSearch}
-      class="w-full bg-white/5 border border-white/10 rounded-xl p-2 text-white focus:outline-none focus:border-anirank-primary transition-colors"
+      class="w-full bg-surface-highest border border-outline-variant rounded-xl p-2 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-colors"
     >
       <option value="">All Status</option>
       <option value="true">Active</option>
@@ -244,7 +244,7 @@
   <div class="flex gap-2">
     <button
       onclick={handleSearch}
-      class="px-6 py-2 bg-anirank-primary hover:bg-blue-600 text-white rounded-xl transition-all font-medium border border-white/10"
+      class="px-6 py-2 bg-primary hover:bg-primary-container text-on-surface rounded-xl transition-all font-medium border border-outline-variant"
     >
       Filter
     </button>
@@ -252,15 +252,15 @@
 </div>
 
 <!-- Table -->
-<div class="bg-anirank-card border border-white/5 rounded-2xl overflow-hidden">
-  <div class="p-4 border-b border-white/5 flex items-center justify-between">
+<div class="bg-surface-container border border-outline-variant rounded-2xl overflow-hidden">
+  <div class="p-4 border-b border-outline-variant flex items-center justify-between">
     <div class="flex items-center gap-4">
-      <h2 class="text-xl font-semibold text-white">Animes</h2>
+      <h2 class="text-xl font-semibold text-on-surface">Animes</h2>
       {#if selectedIds.length > 0}
         <div
           class="flex items-center gap-2 animate-in fade-in slide-in-from-left-2"
         >
-          <span class="text-sm text-gray-400"
+          <span class="text-sm text-on-surface-variant/70"
             >{selectedIds.length} selected</span
           >
           <button
@@ -275,15 +275,15 @@
     </div>
   </div>
   <div class="overflow-x-auto">
-    <table class="w-full text-left text-sm text-gray-300">
+    <table class="w-full text-left text-sm text-on-surface-variant">
       <thead
-        class="text-xs text-gray-400 uppercase bg-white/5 border-b border-white/5"
+        class="text-xs text-on-surface-variant/70 uppercase bg-surface-highest border-b border-outline-variant"
       >
         <tr>
-          <th class="px-6 py-4 font-semibold text-gray-400">
+          <th class="px-6 py-4 font-semibold text-on-surface-variant/70">
             <input
               type="checkbox"
-              class="rounded border-white/10 bg-white/5 checked:bg-anirank-primary focus:ring-anirank-primary transition-all cursor-pointer"
+              class="rounded border-outline-variant bg-surface-highest checked:bg-primary focus:ring-primary transition-all cursor-pointer"
               onchange={toggleSelectAll}
               checked={selectedIds.length === animes.length &&
                 animes.length > 0}
@@ -300,10 +300,10 @@
       <tbody class="divide-y divide-white/5">
         {#each animes as anime}
           <tr class="hover:bg-white/2 transition-colors">
-            <td class="px-6 py-4 font-medium text-gray-500">
+            <td class="px-6 py-4 font-medium text-on-surface-variant/40">
               <input
                 type="checkbox"
-                class="rounded border-white/10 bg-white/5 checked:bg-anirank-primary focus:ring-anirank-primary transition-all cursor-pointer"
+                class="rounded border-outline-variant bg-surface-highest checked:bg-primary focus:ring-primary transition-all cursor-pointer"
                 checked={selectedIds.includes(anime.id)}
                 onchange={() => toggleSelection(anime.id)}
               />
@@ -317,12 +317,12 @@
             </td>
             <td class="px-6 py-4">
               <div
-                class="font-medium text-white line-clamp-1"
+                class="font-medium text-on-surface line-clamp-1"
                 title={anime.title}
               >
                 <a href="/admin/animes/{anime.id}">{anime.title}</a>
               </div>
-              <div class="text-xs text-gray-500 mt-1 flex gap-2">
+              <div class="text-xs text-on-surface-variant/40 mt-1 flex gap-2">
                 {#if anime.year?.name}<span>Year: {anime.year.name}</span>{/if}
                 {#if anime.season?.name}<span>Season: {anime.season.name}</span
                   >{/if}
@@ -333,7 +333,7 @@
               </div>
             </td>
             <td class="px-6 py-4">
-              <div class="text-xs text-gray-500 mt-1 flex gap-2">
+              <div class="text-xs text-on-surface-variant/40 mt-1 flex gap-2">
                 <span
                   class="text-blue-400 text-[10px] uppercase border border-blue-400/30 rounded px-1"
                   >{anime.songs_count}</span
@@ -364,28 +364,28 @@
               <div class="flex items-center justify-end gap-2 text-lg">
                 <a
                   href="/admin/songs?anime={anime.id}"
-                  class="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                  class="p-2 text-on-surface-variant/70 hover:text-on-surface hover:bg-surface-highest rounded-lg transition-colors"
                   title="Songs"
                 >
                   <span class="material-symbols-outlined">music_note</span>
                 </a>
                 <a
                   href="/admin/songs/create?anime={anime.id}"
-                  class="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                  class="p-2 text-on-surface-variant/70 hover:text-on-surface hover:bg-surface-highest rounded-lg transition-colors"
                   title="Add Song"
                 >
                   <span class="material-symbols-outlined">add</span>
                 </a>
                 <a
                   href="/admin/animes/{anime.id}/edit"
-                  class="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                  class="p-2 text-on-surface-variant/70 hover:text-on-surface hover:bg-surface-highest rounded-lg transition-colors"
                   title="Edit"
                 >
                   <span class="material-symbols-outlined">edit</span>
                 </a>
                 <button
                   onclick={() => handleDelete(anime.id, anime.title)}
-                  class="p-2 text-gray-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                  class="p-2 text-on-surface-variant/70 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
                   title="Delete"
                 >
                   <span class="material-symbols-outlined">delete</span>
@@ -395,7 +395,7 @@
           </tr>
         {:else}
           <tr>
-            <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+            <td colspan="6" class="px-6 py-12 text-center text-on-surface-variant/40">
               No animes found.
             </td>
           </tr>
@@ -407,17 +407,17 @@
   <!-- Pagination -->
   {#if pagination?.last_page > 1}
     <div
-      class="px-6 py-4 border-t border-white/5 flex items-center justify-between"
+      class="px-6 py-4 border-t border-outline-variant flex items-center justify-between"
     >
-      <div class="text-sm text-gray-400">
-        Showing <span class="font-medium text-white">{animes.length}</span> items
+      <div class="text-sm text-on-surface-variant/70">
+        Showing <span class="font-medium text-on-surface">{animes.length}</span> items
       </div>
       <div class="flex items-center gap-2">
         <button
           disabled={pagination.current_page === 1}
           onclick={() => changePage(pagination.current_page - 1)}
           aria-label="Previous Page"
-          class="p-2 rounded-lg border border-white/10 text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/5 transition-colors"
+          class="p-2 rounded-lg border border-outline-variant text-on-surface-variant/70 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-highest transition-colors"
         >
           <svg
             class="w-4 h-4"
@@ -432,14 +432,14 @@
             /></svg
           >
         </button>
-        <span class="text-sm text-gray-300 font-medium px-2"
+        <span class="text-sm text-on-surface-variant font-medium px-2"
           >Page {pagination.current_page} of {pagination.last_page}</span
         >
         <button
           disabled={pagination.current_page === pagination.last_page}
           onclick={() => changePage(pagination.current_page + 1)}
           aria-label="Next Page"
-          class="p-2 rounded-lg border border-white/10 text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/5 transition-colors"
+          class="p-2 rounded-lg border border-outline-variant text-on-surface-variant/70 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-highest transition-colors"
         >
           <svg
             class="w-4 h-4"

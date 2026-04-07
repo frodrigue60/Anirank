@@ -171,7 +171,7 @@
 
 <div class="relative w-full">
   <div
-    class="w-full bg-white/5 border border-white/10 rounded-xl p-2 text-white flex flex-wrap gap-2 items-center focus-within:border-anirank-primary transition-all min-h-[44px]"
+    class="w-full bg-surface-highest border border-outline-variant rounded-xl p-2 text-on-surface flex flex-wrap gap-2 items-center focus-within:border-primary transition-all min-h-[44px]"
   >
     <!-- Render Tags -->
     {#each tags as tag, i}
@@ -187,7 +187,7 @@
           type="button"
           aria-label="Remove tag"
           onclick={() => removeTag(i)}
-          class="hover:text-white transition-colors flex items-center justify-center opacity-70 hover:opacity-100"
+          class="hover:text-on-surface transition-colors flex items-center justify-center opacity-70 hover:opacity-100"
         >
           <svg
             class="w-3.5 h-3.5"
@@ -228,7 +228,7 @@
   {#if isSearching}
     <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
       <div
-        class="animate-spin h-4 w-4 border-2 border-anirank-primary border-t-transparent rounded-full"
+        class="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"
       ></div>
     </div>
   {/if}
@@ -247,7 +247,7 @@
             class="w-full text-left px-4 py-3
                    {i === focusedIndex
               ? 'bg-blue-600/20 text-blue-400'
-              : 'hover:bg-blue-600/20 hover:text-blue-400'} 
+              : 'hover:bg-primary-container/20 hover:text-blue-400'} 
                    transition-all flex items-center gap-3 border-b border-zinc-800/50 last:border-0"
           >
             <div class="flex flex-col">

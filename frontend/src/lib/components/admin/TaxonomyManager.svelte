@@ -123,24 +123,24 @@
 </script>
 
 <div
-  class="bg-anirank-card border border-white/5 rounded-2xl overflow-hidden flex-1 bg-white/2"
+  class="bg-surface-container border border-outline-variant rounded-2xl overflow-hidden flex-1 bg-white/2"
 >
   <div
-    class="p-4 border-b border-white/5 flex justify-between items-center bg-white/5"
+    class="p-4 border-b border-outline-variant flex justify-between items-center bg-surface-highest"
   >
-    <h2 class="font-bold text-white capitalize">{type}</h2>
+    <h2 class="font-bold text-on-surface capitalize">{type}</h2>
     <button
       onclick={openCreate}
-      class="px-3 py-1.5 bg-anirank-primary hover:bg-blue-600 text-white text-xs font-semibold rounded-lg transition-colors shadow-lg shadow-anirank-primary/20"
+      class="px-3 py-1.5 bg-primary hover:bg-primary-container text-on-surface text-xs font-semibold rounded-lg transition-colors shadow-lg shadow-anirank-primary/20"
     >
       Add New +
     </button>
   </div>
 
   <div class="overflow-x-auto">
-    <table class="w-full text-left text-sm text-gray-300">
+    <table class="w-full text-left text-sm text-on-surface-variant">
       <thead
-        class="text-xs text-gray-400 uppercase bg-white/5 border-b border-white/5"
+        class="text-xs text-on-surface-variant/70 uppercase bg-surface-highest border-b border-outline-variant"
       >
         <tr>
           <th class="px-6 py-3 font-semibold">ID</th>
@@ -153,11 +153,11 @@
         {#each items as item}
           <tr class="hover:bg-white/2 transition-colors">
             <!-- ID -->
-            <td class="px-6 py-3 font-medium text-gray-500"
+            <td class="px-6 py-3 font-medium text-on-surface-variant/40"
               >#{item.id || "-"}</td
             >
             <!-- Name -->
-            <td class="px-6 py-3 font-medium text-white">{item.name}</td>
+            <td class="px-6 py-3 font-medium text-on-surface">{item.name}</td>
             <!-- Slug / Meta -->
             <td class="px-6 py-3 font-mono text-xs text-blue-400">
               {#if item.slug}
@@ -167,7 +167,7 @@
                   onclick={() => toggleCurrent(item.id)}
                   class="{item.current
                     ? 'text-green-400'
-                    : 'text-gray-500'} hover:text-white transition-colors cursor-pointer"
+                    : 'text-on-surface-variant/40'} hover:text-on-surface transition-colors cursor-pointer"
                 >
                   Status: {item.current ? "Current" : "Past"}
                 </button>
@@ -193,7 +193,7 @@
           </tr>
         {:else}
           <tr>
-            <td colspan="4" class="px-6 py-8 text-center text-gray-500">
+            <td colspan="4" class="px-6 py-8 text-center text-on-surface-variant/40">
               No data available for this taxonomy.
             </td>
           </tr>
@@ -209,18 +209,18 @@
     class="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/80"
   >
     <div
-      class="bg-anirank-card border border-white/10 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200"
+      class="bg-surface-container border border-outline-variant rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200"
     >
       <div
-        class="px-6 py-4 border-b border-white/5 flex justify-between items-center"
+        class="px-6 py-4 border-b border-outline-variant flex justify-between items-center"
       >
-        <h3 class="text-lg font-bold text-white capitalize">
+        <h3 class="text-lg font-bold text-on-surface capitalize">
           {modalMode}
           {type.slice(0, -1)}
         </h3>
         <button
           onclick={() => (showModal = false)}
-          class="text-gray-400 hover:text-white transition-colors"
+          class="text-on-surface-variant/70 hover:text-on-surface transition-colors"
         >
           <span class="material-symbols-outlined">close</span>
         </button>
@@ -236,7 +236,7 @@
         <div>
           <label
             for="name"
-            class="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1.5"
+            class="block text-xs font-semibold text-on-surface-variant/70 uppercase tracking-widest mb-1.5"
             >Name</label
           >
           <input
@@ -245,7 +245,7 @@
             bind:value={formName}
             required
             placeholder="e.g. Action, Winter, 2024"
-            class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white placeholder-gray-500 focus:outline-none focus:border-anirank-primary transition-all text-sm"
+            class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface placeholder-gray-500 focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all text-sm"
           />
         </div>
 
@@ -253,7 +253,7 @@
           <div>
             <label
               for="slug"
-              class="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1.5"
+              class="block text-xs font-semibold text-on-surface-variant/70 uppercase tracking-widest mb-1.5"
               >Slug (Optional)</label
             >
             <input
@@ -261,7 +261,7 @@
               type="text"
               bind:value={formSlug}
               placeholder="Leave empty to auto-generate"
-              class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white placeholder-gray-500 focus:outline-none focus:border-anirank-primary transition-all font-mono text-sm"
+              class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface placeholder-gray-500 focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all font-mono text-sm"
             />
           </div>
         {:else}
@@ -270,9 +270,9 @@
               id="current"
               type="checkbox"
               bind:checked={formCurrent}
-              class="w-4 h-4 rounded border-white/10 bg-white/5 text-anirank-primary focus:ring-anirank-primary focus:ring-offset-zinc-900"
+              class="w-4 h-4 rounded border-outline-variant bg-surface-highest text-primary focus:ring-primary focus:ring-offset-zinc-900"
             />
-            <label for="current" class="text-sm font-medium text-gray-300"
+            <label for="current" class="text-sm font-medium text-on-surface-variant"
               >Mark as Current</label
             >
           </div>
@@ -282,14 +282,14 @@
           <button
             type="button"
             onclick={() => (showModal = false)}
-            class="flex-1 px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 font-medium transition-colors"
+            class="flex-1 px-4 py-2.5 rounded-xl bg-surface-highest hover:bg-surface-highest text-on-surface-variant font-medium transition-colors"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={isSubmitting || !formName}
-            class="flex-1 px-4 py-2.5 rounded-xl bg-anirank-primary hover:bg-blue-600 text-white font-bold transition-all disabled:opacity-50 shadow-lg shadow-anirank-primary/20"
+            class="flex-1 px-4 py-2.5 rounded-xl bg-primary hover:bg-primary-container text-on-surface font-bold transition-all disabled:opacity-50 shadow-lg shadow-anirank-primary/20"
           >
             {isSubmitting ? "Saving..." : "Save Changes"}
           </button>

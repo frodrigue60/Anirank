@@ -198,7 +198,7 @@
     <!-- svelte-ignore a11y_consider_explicit_label -->
     <a
       href="/admin/songs"
-      class="text-gray-400 hover:text-white transition-colors p-2 -ml-2 rounded-lg hover:bg-white/5"
+      class="text-on-surface-variant/70 hover:text-on-surface transition-colors p-2 -ml-2 rounded-lg hover:bg-surface-highest"
     >
       <svg
         class="w-5 h-5"
@@ -214,11 +214,11 @@
         />
       </svg>
     </a>
-    <h1 class="text-3xl font-bold tracking-tight text-white">
+    <h1 class="text-3xl font-bold tracking-tight text-on-surface">
       Create New Song
     </h1>
   </div>
-  <p class="text-gray-400 ml-10">
+  <p class="text-on-surface-variant/70 ml-10">
     Add a new opening, ending, or insert song to the catalog.
   </p>
 </div>
@@ -245,10 +245,10 @@
 
 <form onsubmit={handleSubmit} class="space-y-6 max-w-4xl">
   <!-- General Info -->
-  <div class="bg-anirank-card border border-white/5 rounded-2xl p-6">
-    <h2 class="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+  <div class="bg-surface-container border border-outline-variant rounded-2xl p-6">
+    <h2 class="text-xl font-semibold text-on-surface mb-6 flex items-center gap-2">
       <svg
-        class="w-5 h-5 text-gray-400"
+        class="w-5 h-5 text-on-surface-variant/70"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -324,7 +324,7 @@
                   bind:value={searchQuery}
                   oninput={debounceSearch}
                   onfocus={() => (showResults = searchResults.length > 0)}
-                  class="w-full bg-zinc-950/50 border border-zinc-800 rounded-xl py-3 px-11 text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all text-sm h-12"
+                  class="w-full bg-zinc-950/50 border border-zinc-800 rounded-xl py-3 px-11 text-on-surface placeholder-zinc-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all text-sm h-12"
                   placeholder="Search anime to link..."
                 />
                 <div
@@ -362,7 +362,7 @@
                       <button
                         type="button"
                         onclick={() => selectAnime(anime)}
-                        class="w-full text-left px-4 py-3 hover:bg-blue-600/20 hover:text-blue-400 transition-all flex items-center gap-3 border-b border-zinc-800/50 last:border-0"
+                        class="w-full text-left px-4 py-3 hover:bg-primary-container/20 hover:text-blue-400 transition-all flex items-center gap-3 border-b border-zinc-800/50 last:border-0"
                       >
                         <svg
                           class="w-4 h-4 text-zinc-500"
@@ -394,7 +394,7 @@
         </div>
 
         <div>
-          <label for="type" class="block text-sm font-medium text-gray-300 mb-1"
+          <label for="type" class="block text-sm font-medium text-on-surface-variant mb-1"
             >Song Type <span class="text-red-400">*</span></label
           >
           <select
@@ -402,7 +402,7 @@
             title="Song Type"
             bind:value={type}
             required
-            class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-anirank-primary transition-all [&>option]:bg-anirank-card"
+            class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all [&>option]:bg-surface-container"
           >
             <option value="OP">Opening (OP)</option>
             <option value="ED">Ending (ED)</option>
@@ -415,17 +415,17 @@
         <div>
           <label
             for="theme_num"
-            class="block text-sm font-medium text-gray-300 mb-1"
+            class="block text-sm font-medium text-on-surface-variant mb-1"
             >Theme Number</label
           >
           <input
             type="number"
             id="theme_num"
             bind:value={theme_num}
-            class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white placeholder-gray-500 focus:outline-none focus:border-anirank-primary transition-all"
+            class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface placeholder-gray-500 focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all"
             placeholder="Leave empty to auto-calculate (e.g. 1, 2)"
           />
-          <p class="text-xs text-gray-500 mt-1">
+          <p class="text-xs text-on-surface-variant/40 mt-1">
             Leave empty to auto-generate based on existing songs.
           </p>
         </div>
@@ -433,11 +433,11 @@
         <div>
           <label
             for="artists"
-            class="block text-sm font-medium text-gray-300 mb-1"
+            class="block text-sm font-medium text-on-surface-variant mb-1"
             >Artist Names</label
           >
           <ArtistTagsInput bind:value={artistsString} />
-          <p class="text-xs text-gray-500 mt-1">
+          <p class="text-xs text-on-surface-variant/40 mt-1">
             Type a name and press Enter, or paste a comma-separated list.
           </p>
         </div>
@@ -446,14 +446,14 @@
       <div>
         <label
           for="song_romaji"
-          class="block text-sm font-medium text-gray-300 mb-1"
+          class="block text-sm font-medium text-on-surface-variant mb-1"
           >Title (Romaji) <span class="text-red-400">*</span></label
         >
         <input
           type="text"
           id="song_romaji"
           bind:value={song_romaji}
-          class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white placeholder-gray-500 focus:outline-none focus:border-anirank-primary transition-all"
+          class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface placeholder-gray-500 focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all"
           placeholder="e.g. Gurenge"
         />
       </div>
@@ -461,14 +461,14 @@
       <div>
         <label
           for="song_en"
-          class="block text-sm font-medium text-gray-300 mb-1"
+          class="block text-sm font-medium text-on-surface-variant mb-1"
           >Title (English)</label
         >
         <input
           type="text"
           id="song_en"
           bind:value={song_en}
-          class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white placeholder-gray-500 focus:outline-none focus:border-anirank-primary transition-all"
+          class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface placeholder-gray-500 focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all"
           placeholder="e.g. Red Lotus"
         />
       </div>
@@ -476,25 +476,25 @@
       <div>
         <label
           for="song_jp"
-          class="block text-sm font-medium text-gray-300 mb-1"
+          class="block text-sm font-medium text-on-surface-variant mb-1"
           >Title (Japanese)</label
         >
         <input
           type="text"
           id="song_jp"
           bind:value={song_jp}
-          class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white placeholder-gray-500 focus:outline-none focus:border-anirank-primary transition-all"
+          class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface placeholder-gray-500 focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all"
           placeholder="e.g. 紅蓮の弓矢"
         />
       </div>
       <div>
-        <label for="status" class="block text-sm font-medium text-gray-300 mb-1"
+        <label for="status" class="block text-sm font-medium text-on-surface-variant mb-1"
           >Status</label
         >
         <select
           id="status"
           bind:value={status}
-          class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-anirank-primary transition-all [&>option]:bg-anirank-card"
+          class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all [&>option]:bg-surface-container"
         >
           <option value={true}>Active</option>
           <option value={false}>Inactive</option>
@@ -504,10 +504,10 @@
   </div>
 
   <!-- Taxonomies & Metadata -->
-  <div class="bg-anirank-card border border-white/5 rounded-2xl p-6">
-    <h2 class="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+  <div class="bg-surface-container border border-outline-variant rounded-2xl p-6">
+    <h2 class="text-xl font-semibold text-on-surface mb-6 flex items-center gap-2">
       <svg
-        class="w-5 h-5 text-gray-400"
+        class="w-5 h-5 text-on-surface-variant/70"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -520,20 +520,20 @@
       >
       Song Origin Taxonomy
     </h2>
-    <p class="text-sm text-gray-400 mb-4">
+    <p class="text-sm text-on-surface-variant/70 mb-4">
       You can optionally specify a Year or Season different from the base Anime,
       like for ending songs introduced mid-season.
     </p>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
-        <label for="year" class="block text-sm font-medium text-gray-300 mb-1"
+        <label for="year" class="block text-sm font-medium text-on-surface-variant mb-1"
           >Override Year</label
         >
         <select
           id="year"
           bind:value={year_id}
-          class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-anirank-primary transition-all [&>option]:bg-anirank-card"
+          class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all [&>option]:bg-surface-container"
         >
           <option value={0}>Inherit from Anime</option>
           {#each config.years as year}
@@ -543,13 +543,13 @@
       </div>
 
       <div>
-        <label for="season" class="block text-sm font-medium text-gray-300 mb-1"
+        <label for="season" class="block text-sm font-medium text-on-surface-variant mb-1"
           >Override Season</label
         >
         <select
           id="season"
           bind:value={season_id}
-          class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-anirank-primary transition-all [&>option]:bg-anirank-card"
+          class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all [&>option]:bg-surface-container"
         >
           <option value={0}>Inherit from Anime</option>
           {#each config.seasons as season}
@@ -560,21 +560,21 @@
     </div>
   </div>
 
-  <div class="flex items-center justify-end gap-3 pt-4 border-t border-white/5">
+  <div class="flex items-center justify-end gap-3 pt-4 border-t border-outline-variant">
     <a
       href="/admin/songs"
-      class="px-5 py-2.5 text-sm font-medium text-gray-300 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl transition-colors"
+      class="px-5 py-2.5 text-sm font-medium text-on-surface-variant hover:text-on-surface bg-surface-highest hover:bg-surface-highest rounded-xl transition-colors"
     >
       Cancel
     </a>
     <button
       type="submit"
       disabled={loading || !anime_id || (!song_romaji && !song_en && !song_jp)}
-      class="px-5 py-2.5 text-sm font-medium text-white bg-anirank-primary hover:bg-blue-600 rounded-xl transition-colors shadow-lg shadow-anirank-primary/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+      class="px-5 py-2.5 text-sm font-medium text-on-surface bg-primary hover:bg-primary-container rounded-xl transition-colors shadow-lg shadow-anirank-primary/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
     >
       {#if loading}
         <svg
-          class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+          class="animate-spin -ml-1 mr-2 h-4 w-4 text-on-surface"
           fill="none"
           viewBox="0 0 24 24"
           ><circle

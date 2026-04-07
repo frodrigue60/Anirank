@@ -81,7 +81,7 @@
   <!-- --- CARD VIEW (Detailed Card) --- -->
   <a
     href="/animes/{anime.slug}"
-    class="group block bg-surface-container hover:bg-surface-container-hover border border-white/5 hover:border-primary/20 rounded-2xl overflow-hidden transition-all duration-300 h-full"
+    class="group block bg-surface-container hover:bg-surface-highest rounded-2xl overflow-hidden transition-all duration-300 h-full"
   >
     <div class="flex flex-row h-full">
       <!-- Media Section -->
@@ -179,7 +179,7 @@
           <div class="flex flex-wrap gap-1 sm:gap-2">
             {#each anime.genres?.slice(0, 3) || [] as genre}
               <span
-                class="px-2 py-0.5 rounded-full bg-primary border border-white/10 text-on-primary text-[8px] sm:text-[10px] font-bold uppercase"
+                class="px-2 py-0.5 rounded-full bg-primary/20 border border-white/10 text-on-surface-variant text-[8px] sm:text-[10px] font-bold uppercase"
               >
                 {genre.name}
               </span>
@@ -193,7 +193,7 @@
   <!-- --- LIST VIEW (Horizontal Row) --- -->
   <a
     href="/animes/{anime.slug}"
-    class="group block bg-surface-container hover:bg-surface-container-hover border border-white/5 hover:border-primary/20 rounded-xl overflow-hidden transition-all duration-300"
+    class="group block bg-surface-container hover:bg-surface-highest rounded-xl overflow-hidden transition-all duration-300"
   >
     <div class="flex items-center h-20 sm:h-24 pr-4 sm:pr-8">
       <!-- Media Section -->

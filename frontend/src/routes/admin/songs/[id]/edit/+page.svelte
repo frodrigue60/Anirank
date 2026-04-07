@@ -166,8 +166,8 @@
 </svelte:head>
 
 <div class="mb-6">
-  <h2 class="text-xl font-bold text-white">Edit Song Information</h2>
-  <p class="text-xs text-gray-500">Update titles, artists, and general classification.</p>
+  <h2 class="text-xl font-bold text-on-surface">Edit Song Information</h2>
+  <p class="text-xs text-on-surface-variant/40">Update titles, artists, and general classification.</p>
 </div>
 
 {#if errorMsg}
@@ -192,10 +192,10 @@
 
 <form onsubmit={handleSubmit} class="space-y-6 max-w-4xl">
   <!-- General Info -->
-  <div class="bg-anirank-card border border-white/5 rounded-2xl p-6">
-    <h2 class="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+  <div class="bg-surface-container border border-outline-variant rounded-2xl p-6">
+    <h2 class="text-xl font-semibold text-on-surface mb-6 flex items-center gap-2">
       <svg
-        class="w-5 h-5 text-gray-400"
+        class="w-5 h-5 text-on-surface-variant/70"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -273,10 +273,10 @@
                   onfocus={() => (showResults = searchResults.length > 0)}
                   onblur={() => setTimeout(() => (showResults = false), 200)}
                   placeholder="Search for an anime..."
-                  class="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-11 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-anirank-primary focus:ring-1 focus:ring-anirank-primary transition-all group-hover:border-white/20"
+                  class="w-full bg-surface-highest border border-outline-variant rounded-xl py-3 pl-11 pr-4 text-on-surface placeholder-gray-500 focus:outline-none focus:border-primary/30 focus:bg-surface-highest focus:ring-4 focus:ring-primary/5 focus:outline-none transition-all group-hover:border-outline-variant"
                 />
                 <svg
-                  class="absolute left-4 top-3.5 w-5 h-5 text-gray-500"
+                  class="absolute left-4 top-3.5 w-5 h-5 text-on-surface-variant/40"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -290,7 +290,7 @@
                 {#if isSearching}
                   <div class="absolute right-4 top-3.5">
                     <div
-                      class="w-5 h-5 border-2 border-anirank-primary/30 border-t-anirank-primary rounded-full animate-spin"
+                      class="w-5 h-5 border-2 border-primary/30 border-t-anirank-primary rounded-full animate-spin"
                     ></div>
                   </div>
                 {/if}
@@ -301,32 +301,32 @@
 
               {#if showResults && searchResults.length > 0}
                 <div
-                  class="absolute z-50 w-full mt-2 bg-[#1a1c23] border border-white/10 rounded-xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto custom-scrollbar"
+                  class="absolute z-50 w-full mt-2 bg-[#1a1c23] border border-outline-variant rounded-xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto custom-scrollbar"
                 >
                   {#each searchResults as result}
                     <button
                       type="button"
-                      class="w-full text-left px-4 py-3 hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5 last:border-0"
+                      class="w-full text-left px-4 py-3 hover:bg-surface-highest transition-colors flex items-center gap-3 border-b border-outline-variant last:border-0"
                       onclick={() => selectAnime(result)}
                     >
                       {#if result.cover_url}
                         <img
                           src={result.cover_url || result.cover}
                           alt={result.title}
-                          class="w-8 h-12 object-cover rounded bg-white/10"
+                          class="w-8 h-12 object-cover rounded bg-surface-highest"
                         />
                       {:else}
                         <div
-                          class="w-8 h-12 rounded bg-white/10 shrink-0"
+                          class="w-8 h-12 rounded bg-surface-highest shrink-0"
                         ></div>
                       {/if}
                       <div>
                         <div
-                          class="text-white font-medium text-sm line-clamp-1"
+                          class="text-on-surface font-medium text-sm line-clamp-1"
                         >
                           {result.title}
                         </div>
-                        <div class="text-gray-500 text-xs mt-0.5">
+                        <div class="text-on-surface-variant/40 text-xs mt-0.5">
                           {result.format?.name || "Unknown Format"} • {result
                             .season?.name || "Unknown"}
                           {result.year?.name || ""}
@@ -337,7 +337,7 @@
                 </div>
               {:else if showResults && searchQuery.length >= 3 && !isSearching}
                 <div
-                  class="absolute z-50 w-full mt-2 bg-[#1a1c23] border border-white/10 rounded-xl shadow-2xl p-4 text-center text-gray-400 text-sm"
+                  class="absolute z-50 w-full mt-2 bg-[#1a1c23] border border-outline-variant rounded-xl shadow-2xl p-4 text-center text-on-surface-variant/70 text-sm"
                 >
                   No animes found.
                 </div>
@@ -347,7 +347,7 @@
         </div>
 
         <div>
-          <label for="type" class="block text-sm font-medium text-gray-300 mb-1"
+          <label for="type" class="block text-sm font-medium text-on-surface-variant mb-1"
             >Song Type <span class="text-red-400">*</span></label
           >
           <select
@@ -355,7 +355,7 @@
             title="Song Type"
             bind:value={type}
             required
-            class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-anirank-primary transition-all [&>option]:bg-anirank-card"
+            class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all [&>option]:bg-surface-container"
           >
             <option value="OP">Opening (OP)</option>
             <option value="ED">Ending (ED)</option>
@@ -368,7 +368,7 @@
         <div>
           <label
             for="theme_num"
-            class="block text-sm font-medium text-gray-300 mb-1"
+            class="block text-sm font-medium text-on-surface-variant mb-1"
             >Theme Number</label
           >
           <input
@@ -376,10 +376,10 @@
             id="theme_num"
             title="Theme Number"
             bind:value={theme_num}
-            class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white placeholder-gray-500 focus:outline-none focus:border-anirank-primary transition-all"
+            class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface placeholder-gray-500 focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all"
             placeholder="e.g. 1"
           />
-          <p class="text-xs text-gray-500 mt-1">
+          <p class="text-xs text-on-surface-variant/40 mt-1">
             Leave empty to auto-generate based on existing songs.
           </p>
         </div>
@@ -387,11 +387,11 @@
         <div>
           <label
             for="artists"
-            class="block text-sm font-medium text-gray-300 mb-1"
+            class="block text-sm font-medium text-on-surface-variant mb-1"
             >Artist Names</label
           >
           <ArtistTagsInput bind:value={artistsString} />
-          <p class="text-xs text-gray-500 mt-1">
+          <p class="text-xs text-on-surface-variant/40 mt-1">
             Type a name and press Enter, or paste a comma-separated list.
           </p>
         </div>
@@ -400,7 +400,7 @@
       <div>
         <label
           for="song_romaji"
-          class="block text-sm font-medium text-gray-300 mb-1"
+          class="block text-sm font-medium text-on-surface-variant mb-1"
           >Title (Romaji) <span class="text-red-400">*</span></label
         >
         <input
@@ -408,7 +408,7 @@
           id="song_romaji"
           title="Title Romaji"
           bind:value={song_romaji}
-          class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white placeholder-gray-500 focus:outline-none focus:border-anirank-primary transition-all"
+          class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface placeholder-gray-500 focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all"
           placeholder="e.g. Gurenge"
         />
       </div>
@@ -416,7 +416,7 @@
       <div>
         <label
           for="song_en"
-          class="block text-sm font-medium text-gray-300 mb-1"
+          class="block text-sm font-medium text-on-surface-variant mb-1"
           >Title (English)</label
         >
         <input
@@ -424,7 +424,7 @@
           id="song_en"
           title="Title English"
           bind:value={song_en}
-          class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white placeholder-gray-500 focus:outline-none focus:border-anirank-primary transition-all"
+          class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface placeholder-gray-500 focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all"
           placeholder="e.g. Red Lotus"
         />
       </div>
@@ -432,7 +432,7 @@
       <div>
         <label
           for="song_jp"
-          class="block text-sm font-medium text-gray-300 mb-1"
+          class="block text-sm font-medium text-on-surface-variant mb-1"
           >Title (Japanese)</label
         >
         <input
@@ -440,7 +440,7 @@
           id="song_jp"
           title="Title Japanese"
           bind:value={song_jp}
-          class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white placeholder-gray-500 focus:outline-none focus:border-anirank-primary transition-all"
+          class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface placeholder-gray-500 focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all"
           placeholder="e.g. 紅蓮華"
         />
       </div>
@@ -449,10 +449,10 @@
   </div>
 
   <!-- Taxonomies & Metadata -->
-  <div class="bg-anirank-card border border-white/5 rounded-2xl p-6">
-    <h2 class="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+  <div class="bg-surface-container border border-outline-variant rounded-2xl p-6">
+    <h2 class="text-xl font-semibold text-on-surface mb-6 flex items-center gap-2">
       <svg
-        class="w-5 h-5 text-gray-400"
+        class="w-5 h-5 text-on-surface-variant/70"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -465,21 +465,21 @@
       >
       Song Origin Taxonomy
     </h2>
-    <p class="text-sm text-gray-400 mb-4">
+    <p class="text-sm text-on-surface-variant/70 mb-4">
       You can optionally specify a Year or Season different from the base Anime,
       like for ending songs introduced mid-season.
     </p>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
-        <label for="year" class="block text-sm font-medium text-gray-300 mb-1"
+        <label for="year" class="block text-sm font-medium text-on-surface-variant mb-1"
           >Override Year</label
         >
         <select
           id="year"
           title="Year"
           bind:value={year_id}
-          class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-anirank-primary transition-all [&>option]:bg-anirank-card"
+          class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all [&>option]:bg-surface-container"
         >
           <option value={0}>Inherit from Anime</option>
           {#each config.years as year}
@@ -489,14 +489,14 @@
       </div>
 
       <div>
-        <label for="season" class="block text-sm font-medium text-gray-300 mb-1"
+        <label for="season" class="block text-sm font-medium text-on-surface-variant mb-1"
           >Override Season</label
         >
         <select
           id="season"
           title="Season"
           bind:value={season_id}
-          class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-anirank-primary transition-all [&>option]:bg-anirank-card"
+          class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all [&>option]:bg-surface-container"
         >
           <option value={0}>Inherit from Anime</option>
           {#each config.seasons as season}
@@ -507,21 +507,21 @@
     </div>
   </div>
 
-  <div class="flex items-center justify-end gap-3 pt-4 border-t border-white/5">
+  <div class="flex items-center justify-end gap-3 pt-4 border-t border-outline-variant">
     <a
       href="/admin/songs"
-      class="px-5 py-2.5 text-sm font-medium text-gray-300 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl transition-colors"
+      class="px-5 py-2.5 text-sm font-medium text-on-surface-variant hover:text-on-surface bg-surface-highest hover:bg-surface-highest rounded-xl transition-colors"
     >
       Cancel
     </a>
     <button
       type="submit"
       disabled={loading || !anime_id || (!song_romaji && !song_en && !song_jp)}
-      class="px-5 py-2.5 text-sm font-medium text-white bg-anirank-primary hover:bg-blue-600 rounded-xl transition-colors shadow-lg shadow-anirank-primary/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+      class="px-5 py-2.5 text-sm font-medium text-on-surface bg-primary hover:bg-primary-container rounded-xl transition-colors shadow-lg shadow-anirank-primary/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
     >
       {#if loading}
         <svg
-          class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+          class="animate-spin -ml-1 mr-2 h-4 w-4 text-on-surface"
           fill="none"
           viewBox="0 0 24 24"
           ><circle

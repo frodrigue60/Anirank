@@ -86,10 +86,10 @@
   class="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
 >
   <div>
-    <h1 class="text-3xl font-bold tracking-tight text-white mb-1">
+    <h1 class="text-3xl font-bold tracking-tight text-on-surface mb-1">
       Video Management
     </h1>
-    <p class="text-gray-400">
+    <p class="text-on-surface-variant/70">
       Review and moderate video sources across the platform.
     </p>
   </div>
@@ -98,7 +98,7 @@
 <div class="mb-6 flex flex-col gap-6">
   <!-- Filters Bar -->
   <div
-    class="flex flex-wrap gap-4 items-end bg-anirank-card/30 p-4 rounded-2xl border border-white/5"
+    class="flex flex-wrap gap-4 items-end bg-surface-container/30 p-4 rounded-2xl border border-outline-variant"
   >
     <!-- Anime Autocomplete -->
     <div class="w-full sm:w-72">
@@ -113,14 +113,14 @@
     <div class="w-full sm:w-40">
       <label
         for="status"
-        class="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider"
+        class="block text-xs font-medium text-on-surface-variant/40 mb-1 uppercase tracking-wider"
         >Status</label
       >
       <select
         id="status"
         bind:value={statusFilter}
         onchange={() => handleSearch()}
-        class="w-full bg-anirank-card border border-white/5 rounded-xl py-2 px-4 text-white focus:outline-none focus:border-anirank-primary focus:ring-1 focus:ring-anirank-primary transition-all appearance-none cursor-pointer"
+        class="w-full bg-surface-container border border-outline-variant rounded-xl py-2 px-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest focus:ring-4 focus:ring-primary/5 focus:outline-none transition-all appearance-none cursor-pointer"
       >
         <option value="">All Status</option>
         <option value="true">Active Only</option>
@@ -137,7 +137,7 @@
         url.search = "";
         goto(url.toString());
       }}
-      class="h-10 px-4 text-gray-500 hover:text-white transition-colors text-sm flex items-center"
+      class="h-10 px-4 text-on-surface-variant/40 hover:text-on-surface transition-colors text-sm flex items-center"
     >
       Reset Filters
     </button>
@@ -145,13 +145,13 @@
 </div>
 
 <div
-  class="bg-anirank-card border border-white/5 rounded-2xl overflow-hidden shadow-xl"
+  class="bg-surface-container border border-outline-variant rounded-2xl overflow-hidden shadow-xl"
 >
   <div class="overflow-x-auto">
     <table class="w-full text-left border-collapse">
       <thead>
         <tr
-          class="bg-white/2 border-b border-white/5 text-[10px] uppercase font-black tracking-widest text-white/40"
+          class="bg-white/2 border-b border-outline-variant text-[10px] uppercase font-black tracking-widest text-on-surface/40"
         >
           <th class="py-4 px-6 md:px-8">ID</th>
           <th class="py-4 px-6">Source</th>
@@ -165,7 +165,7 @@
         {#each videos as variant (variant.id)}
           <tr class="hover:bg-white/2 transition-colors group">
             <!-- ID -->
-            <td class="py-4 px-6 text-gray-500">#{variant.id}</td>
+            <td class="py-4 px-6 text-on-surface-variant/40">#{variant.id}</td>
             <!-- Source -->
             <td class="py-4 px-6 whitespace-nowrap">
               <span
@@ -179,8 +179,8 @@
             </td>
             <!-- Type / Vers -->
             <td class="py-4 px-6 whitespace-nowrap">
-              <div class="text-white font-medium">{variant.slug}</div>
-              <div class="text-[11px] text-gray-500 uppercase tracking-widest">
+              <div class="text-on-surface font-medium">{variant.slug}</div>
+              <div class="text-[11px] text-on-surface-variant/40 uppercase tracking-widest">
                 Version {variant.version_number}
               </div>
             </td>
@@ -188,13 +188,13 @@
             <td class="py-4 px-6">
               {#if variant.song?.anime}
                 <div
-                  class="text-white text-xs font-semibold truncate max-w-[200px]"
+                  class="text-on-surface text-xs font-semibold truncate max-w-[200px]"
                 >
                   {variant.song.anime.title}
                 </div>
               {/if}
               <div
-                class="text-[11px] text-gray-400 truncate max-w-[200px] flex flex-col"
+                class="text-[11px] text-on-surface-variant/70 truncate max-w-[200px] flex flex-col"
               >
                 {getSongName(variant.song)}
                 {variant.song.anime.title}
@@ -224,7 +224,7 @@
             <td class="py-4 px-6 whitespace-nowrap text-right">
               <a
                 href="/admin/variants/{variant.id}/edit"
-                class="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors inline-block text-xs font-bold border border-white/5"
+                class="px-3 py-1.5 bg-surface-highest hover:bg-surface-highest text-on-surface rounded-lg transition-colors inline-block text-xs font-bold border border-outline-variant"
               >
                 Manage
               </a>
@@ -235,7 +235,7 @@
             <td colspan="6" class="py-16 text-center">
               <div class="flex flex-col items-center gap-3">
                 <div
-                  class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-gray-400"
+                  class="w-12 h-12 rounded-full bg-surface-highest flex items-center justify-center text-on-surface-variant/70"
                 >
                   <svg
                     class="w-6 h-6"
@@ -250,7 +250,7 @@
                     /></svg
                   >
                 </div>
-                <p class="text-gray-500 text-sm">
+                <p class="text-on-surface-variant/40 text-sm">
                   No videos found matching your criteria.
                 </p>
               </div>
@@ -264,17 +264,17 @@
   <!-- Pagination -->
   {#if pagination && pagination.last_page > 1}
     <div
-      class="border-t border-white/5 px-6 py-4 flex items-center justify-between bg-white/1"
+      class="border-t border-outline-variant px-6 py-4 flex items-center justify-between bg-white/1"
     >
-      <div class="text-xs text-gray-500 font-medium">
-        Page <span class="text-white">{pagination.current_page}</span> of {pagination.last_page}
+      <div class="text-xs text-on-surface-variant/40 font-medium">
+        Page <span class="text-on-surface">{pagination.current_page}</span> of {pagination.last_page}
       </div>
       <div class="flex items-center gap-2">
         <button
           onclick={() => changePage(pagination.current_page - 1)}
           disabled={pagination.current_page === 1}
           aria-label="Previous Page"
-          class="p-2 rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white disabled:opacity-30 transition-all"
+          class="p-2 rounded-lg bg-surface-highest text-on-surface-variant/70 hover:bg-surface-highest hover:text-on-surface disabled:opacity-30 transition-all"
         >
           <svg
             class="w-4 h-4"
@@ -293,7 +293,7 @@
           onclick={() => changePage(pagination.current_page + 1)}
           disabled={pagination.current_page === pagination.last_page}
           aria-label="Next Page"
-          class="p-2 rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white disabled:opacity-30 transition-all"
+          class="p-2 rounded-lg bg-surface-highest text-on-surface-variant/70 hover:bg-surface-highest hover:text-on-surface disabled:opacity-30 transition-all"
         >
           <svg
             class="w-4 h-4"

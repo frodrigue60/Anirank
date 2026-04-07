@@ -58,20 +58,20 @@
   <div class="mb-8 flex items-center gap-4">
     <button
       onclick={() => history.back()}
-      class="p-2 hover:bg-white/5 rounded-xl text-gray-400 transition-colors"
+      class="p-2 hover:bg-surface-highest rounded-xl text-on-surface-variant/70 transition-colors"
     >
       <span class="material-symbols-outlined">arrow_back</span>
     </button>
     <div>
-      <h1 class="text-3xl font-bold tracking-tight text-white mb-1">
+      <h1 class="text-3xl font-bold tracking-tight text-on-surface mb-1">
         New Artist
       </h1>
-      <p class="text-gray-400">Add a new musical entity to the catalog.</p>
+      <p class="text-on-surface-variant/70">Add a new musical entity to the catalog.</p>
     </div>
   </div>
 
   <div
-    class="bg-anirank-card border border-white/5 rounded-3xl overflow-hidden"
+    class="bg-surface-container border border-outline-variant rounded-3xl overflow-hidden"
   >
     <div class="p-8">
       <form
@@ -85,7 +85,7 @@
           <div class="space-y-2">
             <label
               for="name"
-              class="block text-sm font-medium text-gray-400 px-1"
+              class="block text-sm font-medium text-on-surface-variant/70 px-1"
             >
               Primary Name
             </label>
@@ -94,7 +94,7 @@
               type="text"
               bind:value={name}
               placeholder="e.g. LiSA"
-              class="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-anirank-primary transition-colors h-14"
+              class="w-full bg-surface-highest border border-outline-variant rounded-2xl py-3 px-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-colors h-14"
               required
             />
           </div>
@@ -102,7 +102,7 @@
           <div class="space-y-2">
             <label
               for="name_jp"
-              class="block text-sm font-medium text-gray-400 px-1"
+              class="block text-sm font-medium text-on-surface-variant/70 px-1"
             >
               Japanese Name (Optional)
             </label>
@@ -111,13 +111,13 @@
               type="text"
               bind:value={name_jp}
               placeholder="e.g. リサ"
-              class="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-anirank-primary transition-colors h-14"
+              class="w-full bg-surface-highest border border-outline-variant rounded-2xl py-3 px-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-colors h-14"
             />
           </div>
           <div class="space-y-2">
             <label
               for="anilist_id"
-              class="block text-sm font-medium text-gray-400 px-1"
+              class="block text-sm font-medium text-on-surface-variant/70 px-1"
             >
               AniList ID (Optional)
             </label>
@@ -126,13 +126,13 @@
               type="text"
               bind:value={anilist_id}
               placeholder="e.g. 12345"
-              class="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-anirank-primary transition-colors h-14"
+              class="w-full bg-surface-highest border border-outline-variant rounded-2xl py-3 px-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-colors h-14"
             />
           </div>
           <div class="space-y-2">
             <label
               for="animethemes_id"
-              class="block text-sm font-medium text-gray-400 px-1"
+              class="block text-sm font-medium text-on-surface-variant/70 px-1"
             >
               AnimeThemes ID (Optional)
             </label>
@@ -141,7 +141,7 @@
               type="text"
               bind:value={animethemes_id}
               placeholder="e.g. 12345"
-              class="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-anirank-primary transition-colors h-14"
+              class="w-full bg-surface-highest border border-outline-variant rounded-2xl py-3 px-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-colors h-14"
             />
           </div>
         </div>
@@ -149,14 +149,14 @@
         <div class="space-y-2">
           <label
             for="status"
-            class="block text-sm font-medium text-gray-400 px-1"
+            class="block text-sm font-medium text-on-surface-variant/70 px-1"
           >
             Status
           </label>
           <select
             id="status"
             bind:value={status}
-            class="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-anirank-primary transition-colors h-14"
+            class="w-full bg-surface-highest border border-outline-variant rounded-2xl py-3 px-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-colors h-14"
           >
             <option value={true}>Active</option>
             <option value={false}>Inactive</option>
@@ -167,18 +167,18 @@
           <button
             type="button"
             onclick={() => history.back()}
-            class="px-6 py-3 bg-white/5 hover:bg-white/10 text-white font-medium rounded-2xl transition-colors h-14"
+            class="px-6 py-3 bg-surface-highest hover:bg-surface-highest text-on-surface font-medium rounded-2xl transition-colors h-14"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={isSubmitting}
-            class="px-8 py-3 bg-anirank-primary hover:bg-blue-600 disabled:bg-blue-600/50 disabled:cursor-not-allowed text-white font-bold rounded-2xl transition-all shadow-lg shadow-anirank-primary/20 flex items-center justify-center gap-2 h-14 min-w-[160px]"
+            class="px-8 py-3 bg-primary hover:bg-primary-container disabled:bg-blue-600/50 disabled:cursor-not-allowed text-on-surface font-bold rounded-2xl transition-all shadow-lg shadow-anirank-primary/20 flex items-center justify-center gap-2 h-14 min-w-[160px]"
           >
             {#if isSubmitting}
               <svg
-                class="animate-spin h-5 w-5 text-white"
+                class="animate-spin h-5 w-5 text-on-surface"
                 fill="none"
                 viewBox="0 0 24 24"
               >

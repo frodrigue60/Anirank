@@ -65,7 +65,7 @@
     <!-- svelte-ignore a11y_consider_explicit_label -->
     <button
       onclick={goBack}
-      class="text-gray-400 hover:text-white transition-colors p-2 -ml-2 rounded-lg hover:bg-white/5"
+      class="text-on-surface-variant/70 hover:text-on-surface transition-colors p-2 -ml-2 rounded-lg hover:bg-surface-highest"
     >
       <svg
         class="w-5 h-5"
@@ -81,7 +81,7 @@
         />
       </svg>
     </button>
-    <h1 class="text-3xl font-bold tracking-tight text-white flex-1">
+    <h1 class="text-3xl font-bold tracking-tight text-on-surface flex-1">
       {req ? req.title : "User Request"}
     </h1>
   </div>
@@ -94,17 +94,17 @@
     <p>Request not found.</p>
     <a
       href="/admin/requests"
-      class="text-white hover:underline text-sm font-medium">Back to List</a
+      class="text-on-surface hover:underline text-sm font-medium">Back to List</a
     >
   </div>
 {:else}
   <div class="max-w-4xl space-y-6">
     <div
-      class="bg-anirank-card border border-white/5 rounded-2xl overflow-hidden"
+      class="bg-surface-container border border-outline-variant rounded-2xl overflow-hidden"
     >
       <!-- Header -->
       <div
-        class="p-6 border-b border-white/5 flex flex-col md:flex-row gap-4 items-start justify-between"
+        class="p-6 border-b border-outline-variant flex flex-col md:flex-row gap-4 items-start justify-between"
       >
         <div class="flex items-center gap-4">
           <div
@@ -113,8 +113,8 @@
             {req.user?.name.charAt(0)}
           </div>
           <div>
-            <div class="font-medium text-white text-lg">{req.user?.name}</div>
-            <div class="text-sm text-gray-500">
+            <div class="font-medium text-on-surface text-lg">{req.user?.name}</div>
+            <div class="text-sm text-on-surface-variant/40">
               Submitted on {new Date(req.created_at).toLocaleString()}
             </div>
           </div>
@@ -133,11 +133,11 @@
           >
             <option
               value="pending"
-              class="bg-gray-800 text-white font-sans uppercase">pending</option
+              class="bg-gray-800 text-on-surface font-sans uppercase">pending</option
             >
             <option
               value="attended"
-              class="bg-gray-800 text-white font-sans uppercase"
+              class="bg-gray-800 text-on-surface font-sans uppercase"
               >attended</option
             >
           </select>
@@ -148,19 +148,19 @@
       <div class="p-6 space-y-6">
         <div>
           <h2
-            class="text-xl font-medium text-gray-400 uppercase tracking-widest mb-2"
+            class="text-xl font-medium text-on-surface-variant/70 uppercase tracking-widest mb-2"
           >
             {req.title}
           </h2>
         </div>
         <div>
           <h3
-            class="text-sm font-medium text-gray-400 uppercase tracking-widest mb-2"
+            class="text-sm font-medium text-on-surface-variant/70 uppercase tracking-widest mb-2"
           >
             Message
           </h3>
           <div
-            class="bg-white/5 border border-white/5 rounded-xl p-5 text-gray-300 leading-relaxed whitespace-pre-wrap"
+            class="bg-surface-highest border border-outline-variant rounded-xl p-5 text-on-surface-variant leading-relaxed whitespace-pre-wrap"
           >
             {req.content}
           </div>
@@ -169,7 +169,7 @@
 
       <!-- Actions Footer -->
       <div
-        class="p-6 bg-black/20 border-t border-white/5 flex items-center justify-end gap-3"
+        class="p-6 bg-black/20 border-t border-outline-variant flex items-center justify-end gap-3"
       >
         <button
           onclick={deleteRequest}

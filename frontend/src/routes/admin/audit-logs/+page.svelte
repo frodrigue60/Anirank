@@ -54,27 +54,27 @@
 </svelte:head>
 
 <div class="mb-8">
-  <h1 class="text-3xl font-bold tracking-tight text-white mb-1">Audit Logs</h1>
-  <p class="text-gray-400">
+  <h1 class="text-3xl font-bold tracking-tight text-on-surface mb-1">Audit Logs</h1>
+  <p class="text-on-surface-variant/70">
     Track all administrative actions and changes across the platform.
   </p>
 </div>
 
 <!-- Filters -->
 <div
-  class="bg-anirank-card border border-white/5 rounded-2xl p-4 mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4"
+  class="bg-surface-container border border-outline-variant rounded-2xl p-4 mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4"
 >
   <div>
     <label
       for="event"
-      class="block text-xs font-semibold text-gray-500 uppercase mb-2"
+      class="block text-xs font-semibold text-on-surface-variant/40 uppercase mb-2"
       >Event</label
     >
     <select
       id="event"
       bind:value={eventFilter}
       onchange={handleFilter}
-      class="w-full bg-white/5 border border-white/10 rounded-xl py-2 px-4 text-white focus:outline-none focus:border-anirank-primary transition-colors"
+      class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2 px-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-colors"
     >
       <option value="">All Events</option>
       <option value="created">Created</option>
@@ -86,14 +86,14 @@
   <div>
     <label
       for="type"
-      class="block text-xs font-semibold text-gray-500 uppercase mb-2"
+      class="block text-xs font-semibold text-on-surface-variant/40 uppercase mb-2"
       >Resource Type</label
     >
     <select
       id="type"
       bind:value={typeFilter}
       onchange={handleFilter}
-      class="w-full bg-white/5 border border-white/10 rounded-xl py-2 px-4 text-white focus:outline-none focus:border-anirank-primary transition-colors"
+      class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2 px-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-colors"
     >
       <option value="">All Types</option>
       <option value="user">User</option>
@@ -114,7 +114,7 @@
         typeFilter = "";
         handleFilter();
       }}
-      class="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-colors border border-white/10 w-full"
+      class="px-4 py-2 bg-surface-highest hover:bg-surface-highest text-on-surface rounded-xl transition-colors border border-outline-variant w-full"
     >
       Clear Filters
     </button>
@@ -122,7 +122,7 @@
 </div>
 
 <!-- Table -->
-<div class="bg-anirank-card border border-white/5 rounded-2xl overflow-hidden">
+<div class="bg-surface-container border border-outline-variant rounded-2xl overflow-hidden">
   {#if data.error}
     <div class="p-8 text-center">
       <div
@@ -131,15 +131,15 @@
         <span class="material-symbols-outlined text-sm">error</span>
         <span class="text-sm font-medium">{data.error}</span>
       </div>
-      <p class="text-gray-500 text-sm">
+      <p class="text-on-surface-variant/40 text-sm">
         Verifica tu conexión o permisos e intenta recargar la página.
       </p>
     </div>
   {:else}
     <div class="overflow-x-auto">
-      <table class="w-full text-left text-sm text-gray-300">
+      <table class="w-full text-left text-sm text-on-surface-variant">
         <thead
-          class="text-xs text-gray-400 uppercase bg-white/5 border-b border-white/5"
+          class="text-xs text-on-surface-variant/70 uppercase bg-surface-highest border-b border-outline-variant"
         >
           <tr>
             <th class="px-6 py-4 font-semibold w-10"></th>
@@ -170,7 +170,7 @@
               </td>
               <td class="px-6 py-4">
                 <div class="flex items-center gap-2">
-                  <span class="font-bold text-white"
+                  <span class="font-bold text-on-surface"
                     >{log.user?.name || `User ID: ${log.user_id}`}</span
                   >
                 </div>
@@ -179,31 +179,31 @@
                 <span
                   class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border {eventColors[
                     log.event
-                  ] || 'bg-gray-500/10 text-gray-400 border-gray-500/20'}"
+                  ] || 'bg-gray-500/10 text-on-surface-variant/70 border-gray-500/20'}"
                 >
                   {log.event}
                 </span>
               </td>
               <td class="px-6 py-4">
                 <div class="flex flex-col">
-                  <span class="text-white font-medium capitalize"
+                  <span class="text-on-surface font-medium capitalize"
                     >{log.auditable_type}</span
                   >
-                  <span class="text-xs text-gray-500"
+                  <span class="text-xs text-on-surface-variant/40"
                     >ID: {log.auditable_id}</span
                   >
                 </div>
               </td>
-              <td class="px-6 py-4 text-gray-400">
+              <td class="px-6 py-4 text-on-surface-variant/70">
                 {new Date(log.created_at).toLocaleString()}
               </td>
-              <!--  <td class="px-6 py-4 text-gray-500 font-mono text-xs">
+              <!--  <td class="px-6 py-4 text-on-surface-variant/40 font-mono text-xs">
               {log.ip_address || "Unknown"}
             </td> -->
               <td>
                 <a
                   href="/admin/audit-logs/{log.id}"
-                  class="px-4 py-2 bg-anirank-primary/10 hover:bg-anirank-primary/20 text-anirank-primary rounded-xl transition-colors border border-anirank-primary/20 text-xs font-bold flex items-center gap-2"
+                  class="px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl transition-colors border border-primary/20 text-xs font-bold flex items-center gap-2"
                 >
                   <span class="material-symbols-outlined text-sm"
                     >visibility</span
@@ -219,50 +219,50 @@
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <h4
-                        class="text-xs font-bold text-gray-500 uppercase mb-3"
+                        class="text-xs font-bold text-on-surface-variant/40 uppercase mb-3"
                         id="old-values-{log.id}"
                       >
                         Old Values
                       </h4>
                       <pre
                         aria-labelledby="old-values-{log.id}"
-                        class="bg-black/40 rounded-xl p-4 text-xs font-mono text-gray-400 overflow-x-auto max-h-60 custom-scrollbar border border-white/5 whitespace-pre-wrap">{formatJSON(
+                        class="bg-black/40 rounded-xl p-4 text-xs font-mono text-on-surface-variant/70 overflow-x-auto max-h-60 custom-scrollbar border border-outline-variant whitespace-pre-wrap">{formatJSON(
                           log.old_values,
                         )}</pre>
                     </div>
                     <div>
                       <h4
-                        class="text-xs font-bold text-gray-500 uppercase mb-3"
+                        class="text-xs font-bold text-on-surface-variant/40 uppercase mb-3"
                         id="new-values-{log.id}"
                       >
                         New Values
                       </h4>
                       <pre
                         aria-labelledby="new-values-{log.id}"
-                        class="bg-black/40 rounded-xl p-4 text-xs font-mono text-emerald-400/80 overflow-x-auto max-h-60 custom-scrollbar border border-white/5 whitespace-pre-wrap">{formatJSON(
+                        class="bg-black/40 rounded-xl p-4 text-xs font-mono text-emerald-400/80 overflow-x-auto max-h-60 custom-scrollbar border border-outline-variant whitespace-pre-wrap">{formatJSON(
                           log.new_values,
                         )}</pre>
                     </div>
                   </div>
                   <div
-                    class="mt-4 pt-4 border-t border-white/5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
+                    class="mt-4 pt-4 border-t border-outline-variant flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
                   >
                     <div class="flex flex-col gap-1">
                       <span
                         class="text-[10px] text-gray-600 uppercase font-bold"
                         >Metadata</span
                       >
-                      <span class="text-xs text-gray-500"
-                        ><b class="text-gray-400">URL:</b> {log.url}</span
+                      <span class="text-xs text-on-surface-variant/40"
+                        ><b class="text-on-surface-variant/70">URL:</b> {log.url}</span
                       >
-                      <span class="text-xs text-gray-500"
-                        ><b class="text-gray-400">Agent:</b>
+                      <span class="text-xs text-on-surface-variant/40"
+                        ><b class="text-on-surface-variant/70">Agent:</b>
                         {log.user_agent}</span
                       >
                     </div>
                     <a
                       href="/admin/audit-logs/{log.id}"
-                      class="px-4 py-2 bg-anirank-primary/10 hover:bg-anirank-primary/20 text-anirank-primary rounded-xl transition-colors border border-anirank-primary/20 text-xs font-bold flex items-center gap-2"
+                      class="px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl transition-colors border border-primary/20 text-xs font-bold flex items-center gap-2"
                     >
                       <span class="material-symbols-outlined text-sm"
                         >visibility</span
@@ -275,7 +275,7 @@
             {/if}
           {:else}
             <tr>
-              <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+              <td colspan="6" class="px-6 py-12 text-center text-on-surface-variant/40">
                 No audit logs found matching your filters.
               </td>
             </tr>
@@ -287,17 +287,17 @@
     <!-- Pagination -->
     {#if data.pagination?.last_page > 1}
       <div
-        class="px-6 py-4 border-t border-white/5 flex items-center justify-between"
+        class="px-6 py-4 border-t border-outline-variant flex items-center justify-between"
       >
-        <div class="text-sm text-gray-400">
-          Showing <span class="font-medium text-white">{data.logs.length}</span> items
+        <div class="text-sm text-on-surface-variant/70">
+          Showing <span class="font-medium text-on-surface">{data.logs.length}</span> items
         </div>
         <div class="flex items-center gap-2">
           <button
             disabled={data.pagination.current_page === 1}
             onclick={() => changePage(data.pagination.current_page - 1)}
             aria-label="Página anterior"
-            class="p-2 rounded-lg border border-white/10 text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/5 transition-colors"
+            class="p-2 rounded-lg border border-outline-variant text-on-surface-variant/70 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-highest transition-colors"
           >
             <svg
               class="w-4 h-4"
@@ -312,14 +312,14 @@
               /></svg
             >
           </button>
-          <span class="text-sm text-gray-300 font-medium px-2"
+          <span class="text-sm text-on-surface-variant font-medium px-2"
             >Page {data.pagination.current_page} of {data.pagination.last_page}</span
           >
           <button
             disabled={data.pagination.current_page === data.pagination.last_page}
             onclick={() => changePage(data.pagination.current_page + 1)}
             aria-label="Página siguiente"
-            class="p-2 rounded-lg border border-white/10 text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/5 transition-colors"
+            class="p-2 rounded-lg border border-outline-variant text-on-surface-variant/70 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-highest transition-colors"
           >
             <svg
               class="w-4 h-4"

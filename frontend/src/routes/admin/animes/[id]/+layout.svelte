@@ -33,7 +33,7 @@
     <a
       href="/admin/animes"
       aria-label="Back to Animes"
-      class="text-gray-400 hover:text-white transition-colors p-2 -ml-2 rounded-lg hover:bg-white/5"
+      class="text-on-surface-variant/70 hover:text-on-surface transition-colors p-2 -ml-2 rounded-lg hover:bg-surface-highest"
     >
       <svg
         class="w-5 h-5"
@@ -49,7 +49,7 @@
         />
       </svg>
     </a>
-    <h1 class="text-3xl font-bold tracking-tight text-white line-clamp-1">
+    <h1 class="text-3xl font-bold tracking-tight text-on-surface line-clamp-1">
       {anime.title}
     </h1>
     {#if anime.anilist_id}
@@ -74,25 +74,25 @@
       </a>
     {/if}
   </div>
-  <p class="text-gray-400 ml-10">Anime Management Hub</p>
+  <p class="text-on-surface-variant/70 ml-10">Anime Management Hub</p>
 </div>
 
 <!-- Tabs Navigation -->
 <div
-  class="flex items-center gap-2 border-b border-white/5 mb-8 overflow-x-auto pb-px"
+  class="flex items-center gap-2 border-b border-outline-variant mb-8 overflow-x-auto pb-px"
 >
   {#each tabs as tab}
     {@const active = tab.match($page.url.pathname)}
     <a
       href={tab.href}
       class="px-6 py-3 text-sm font-medium transition-all relative whitespace-nowrap {active
-        ? 'text-white'
-        : 'text-gray-400 hover:text-white'}"
+        ? 'text-on-surface'
+        : 'text-on-surface-variant/70 hover:text-on-surface'}"
     >
       {tab.label}
       {#if active}
         <div
-          class="absolute bottom-0 left-0 right-0 h-0.5 bg-anirank-primary rounded-full"
+          class="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full"
         ></div>
       {/if}
     </a>

@@ -11,7 +11,21 @@ By leveraging intentional asymmetry—such as offset headers and staggered grid 
 
 ## 2. Colors & Tonal Logic
 
-The palette is rooted in a "Hyper-Light" spectrum. We use a base of `#fff7ff` (Surface) to provide a warm, sophisticated ivory undertone that prevents the clinical "blue-light" fatigue of pure white.
+The palette is rooted in a "Vibrant Purple" spectrum with high contrast. We use a base of `#faf9fd` (Surface) to provide a pristine, slightly cool off-white background that ensures maximum readability.
+
+### Color Tokens (Opaque System)
+
+- **Surface:** `#faf9fd` (Base background)
+- **Surface Low:** `#f0ebf8` (Secondary backgrounds like sidebars)
+- **Surface Container:** `#e5def2` (Cards and content grouping)
+- **Surface Highest:** `#d8cdec` (Highest elevation/inputs)
+- **On Surface:** `#09070e` (Primary text)
+- **On Surface Variant:** `#3e3849` (Secondary text)
+- **Primary:** `#683bc9` (Brand actions)
+- **Primary Container:** `#7d4aeb` (Strong accents/Hover states)
+- **Secondary Container:** `#a788e9` (Soft accents/Badges)
+- **Outline Variant:** `#c4b9d8` (Subtle dividers/Borders)
+- **Rating Star:** `#f59e0b` (Rating indicators)
 
 ### The "No-Line" Rule
 
@@ -22,40 +36,19 @@ The palette is rooted in a "Hyper-Light" spectrum. We use a base of `#fff7ff` (S
 
 ### Surface Hierarchy & Nesting
 
-Depth is achieved through the physical stacking of tones.
+Depth is achieved through the physical stacking of solid tones. We avoid transparency or background blurs.
 
-- **Level 0 (Base):** `surface` (#fff7ff)
-- **Level 1 (Sections):** `surface-container-low` (#faf0ff)
-- **Level 2 (Cards/Modules):** `surface-container` (#f5eafa)
-- **Level 3 (Popovers/Modals):** `surface-container-highest` (#e9dfef)
-
-### The "Glass & Gradient" Rule
-
-To add soul to the "neon purple" accent, avoid flat applications on large surfaces.
-
-- **Signature Gradient:** Use a linear transition from `primary` (#6100ba) to `primary_container` (#7f13ec) at 135 degrees for primary CTAs.
-- **Glassmorphism:** Floating navigation or top-level headers should use `surface` at 80% opacity with a `24px` backdrop-blur. This allows the high-contrast content to "ghost" through the UI as the user scrolls.
-
----
-
-## 3. Typography: Spline Sans
-
-We use **Spline Sans** exclusively. It is a typeface that balances geometric precision with a professional, "sharp" editorial edge.
-
-- **Display (lg/md/sm):** Used for "Statement Content." Set with tight letter-spacing (-0.02em). These should often be placed with asymmetrical margins to create a custom editorial look.
-- **Headline & Title:** Use `on_surface` (#1e1924) for maximum contrast. These are your anchors.
-- **Body (lg/md):** Our primary reading grade. Ensure a generous line-height (1.6x) to maintain the "clean and modern" promise.
-- **Label (md/sm):** Reserved for metadata. Use `on_surface_variant` (#4c4355) to create a clear secondary tier of information.
-
----
+- **Level 0 (Base):** `surface` (#faf9fd)
+- **Level 1 (Sections):** `surface-low` (#f0ebf8)
+- **Level 2 (Cards/Modules):** `surface-container` (#e5def2)
+- **Level 3 (Popovers/Modals):** `surface-highest` (#d8cdec)
 
 ## 4. Elevation & Depth
 
-In this system, we do not "drop shadows"; we "emit light."
+In this system, we do not use drop shadows or glassmorphism. Hierarchy is created through solid color shifts.
 
-- **Tonal Layering:** Always attempt to solve hierarchy with a tone shift first. A `surface-container-lowest` card sitting on a `surface-container-low` background provides a crisp, "tucked-in" look.
-- **Ambient Shadows:** If a shadow is required for a floating state, use the `on_surface` color at 6% opacity with a 32px blur and 8px Y-offset. This mimics a soft, natural overhead gallery light.
-- **The Ghost Border Fallback:** For interactive inputs or accessibility-critical containers, use a "Ghost Border": `outline_variant` (#cec2d8) at **15% opacity**. Never use a 100% opaque border.
+- **Tonal Layering:** Hierarchy must be solved with a tone shift first. A `surface-container` card sitting on a `surface-low` background provides a clean, solid structure.
+- **Solid Borders:** For interactive inputs or critical containers, use a solid `outline_variant` (#c4b9d8). Avoid using low-opacity borders or blurs.
 
 ---
 
@@ -63,23 +56,23 @@ In this system, we do not "drop shadows"; we "emit light."
 
 ### Buttons
 
-- **Primary:** High-impact. Gradient of `primary` to `primary_container`. White text. Border-radius: `md` (0.375rem).
-- **Secondary:** Ghost style. `surface-container-highest` background with `on_primary_fixed_variant` (#6200bc) text. No border.
-- **Tertiary:** Text only. Bold `primary` (#6100ba) with a subtle `4px` bottom-padding underline that expands on hover.
+- **Primary:** High-impact. Solid `primary` background with White text. Border-radius: `md` (0.375rem).
+- **Secondary:** Solid `surface-highest` background with `primary` (#683bc9) text. No border.
+- **Tertiary:** Text only. Bold `primary` (#683bc9).
 
 ### Cards & Lists
 
-- **Forbid Dividers:** Do not use horizontal lines between list items. Use 16px–24px of vertical whitespace.
-- **List Interaction:** On hover, a list item should transition its background to `surface-container-low`.
+- **Forbid Dividers:** Do not use horizontal lines between list items. Use solid background shifts or 16px–24px of vertical whitespace.
+- **List Interaction:** On hover, a list item should transition its background to `surface-low`.
 
 ### Input Fields
 
-- **Style:** Minimalist. `surface-container-lowest` background with a `Ghost Border` (15% opacity `outline_variant`).
-- **Active State:** The border transitions to 100% opacity `primary_container` (#7f13ec) with a `2px` stroke.
+- **Style:** Minimalist. Solid `surface-highest` background with a solid `outline_variant` (#c4b9d8) border.
+- **Active State:** The border transitions to `primary` (#683bc9) with a `2px` stroke.
 
 ### Editorial Signature Components
 
-- **The "Pull-Quote" Module:** Large `headline-lg` text, center-aligned, with a `secondary_container` (#c297fd) vertical accent bar (4px width) to the left.
+- **The "Pull-Quote" Module:** Large `headline-lg` text with a `primary` (#683bc9) vertical accent bar (4px width) to the left.
 - **Staggered Image Mesh:** Images should not be uniform. Use a mix of `DEFAULT` (0.25rem) and `xl` (0.75rem) corner radii across an image set to create a curated, collage-like feel.
 
 ---
@@ -94,6 +87,7 @@ In this system, we do not "drop shadows"; we "emit light."
 
 ### Don’t
 
-- **Don’t** use pure black (#000) for text. Use `on_background` (#1e1924) to keep the contrast high but the "ink" sophisticated.
-- **Don’t** use "Card-in-Card" patterns with shadows. Use tonal shifts (e.g., a `surface-container-highest` card inside a `surface-container-low` section).
-- **Don’t** use standard 1px grey dividers. If you must separate, use a `surface-dim` (#e0d7e6) block of 8px height to create a "gutter" rather than a line.
+- **Don’t** use pure black (#000) for text. Use `on_surface` (#09070e) to keep the contrast high but sophisticated.
+- **Don’t** use transparency or glassmorphism (blur, opacity backgrounds). Every layer must be a solid color from the surface hierarchy.
+- **Don’t** use "Card-in-Card" patterns with shadows. Use tonal shifts (e.g., a `surface-container` card inside a `surface-low` section).
+- **Don’t** use standard 1px grey dividers. If you must separate, use a solid `outline_variant` line or simple whitespace.

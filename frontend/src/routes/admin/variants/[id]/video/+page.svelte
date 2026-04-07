@@ -91,8 +91,8 @@
 
 <div class="space-y-6">
   <div class="mb-6">
-    <h2 class="text-xl font-bold text-white">Video Source Management</h2>
-    <p class="text-xs text-gray-500">
+    <h2 class="text-xl font-bold text-on-surface">Video Source Management</h2>
+    <p class="text-xs text-on-surface-variant/40">
       Configure the streaming URL and player settings for this version.
     </p>
   </div>
@@ -290,7 +290,7 @@
           type="text"
           bind:value={embedCode}
           id="embed"
-          class="block w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all text-sm font-mono placeholder:text-zinc-600"
+          class="block w-full bg-zinc-900 border border-zinc-800 text-on-surface rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all text-sm font-mono placeholder:text-zinc-600"
           placeholder="Paste embed code or direct video URL..."
           oninput={() => {
             if (embedCode) videoFile = null;
@@ -306,11 +306,11 @@
         <button
           onclick={handleSave}
           disabled={loading}
-          class="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black py-4 px-6 rounded-2xl transition-all shadow-lg shadow-blue-900/20 active:scale-[0.98] flex items-center justify-center gap-3 text-[10px] uppercase tracking-widest group"
+          class="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-on-surface font-black py-4 px-6 rounded-2xl transition-all shadow-lg shadow-blue-900/20 active:scale-[0.98] flex items-center justify-center gap-3 text-[10px] uppercase tracking-widest group"
         >
           {#if loading}
             <svg
-              class="animate-spin h-4 w-4 text-white"
+              class="animate-spin h-4 w-4 text-on-surface"
               fill="none"
               viewBox="0 0 24 24"
             >

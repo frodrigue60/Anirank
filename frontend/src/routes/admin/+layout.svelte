@@ -36,7 +36,7 @@
       {/if}
       <button
         onclick={toggleSidebar}
-        class="p-2 hover:bg-white/5 rounded-lg text-on-surface"
+        class="p-2 hover:bg-surface-highest rounded-lg text-on-surface"
       >
         <span class="material-symbols-outlined">menu</span>
       </button>
@@ -47,7 +47,7 @@
         <li>
           <a
             href="/admin"
-            class="flex items-center p-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors {isSidebarOpen
+            class="flex items-center p-3 rounded-xl hover:bg-primary-container hover:text-primary transition-colors {isSidebarOpen
               ? ''
               : 'justify-center'}"
           >
@@ -59,7 +59,7 @@
         <!-- Content Group -->
         <li class="pt-4 pb-2">
           {#if isSidebarOpen}<span
-              class="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider"
+              class="px-3 text-xs font-semibold text-on-surface-variant/40 uppercase tracking-wider"
               >Catalog</span
             >{/if}
         </li>
@@ -67,7 +67,7 @@
         <li>
           <a
             href="/admin/animes"
-            class="flex items-center p-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors {isSidebarOpen
+            class="flex items-center p-3 rounded-xl hover:bg-primary-container hover:text-primary transition-colors {isSidebarOpen
               ? ''
               : 'justify-center'}"
           >
@@ -79,7 +79,7 @@
         <li>
           <a
             href="/admin/animes-autogen"
-            class="flex items-center p-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors {isSidebarOpen
+            class="flex items-center p-3 rounded-xl hover:bg-primary-container hover:text-primary transition-colors {isSidebarOpen
               ? ''
               : 'justify-center'}"
           >
@@ -92,7 +92,7 @@
           <!-- songs -->
           <a
             href="/admin/songs"
-            class="flex items-center p-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors {isSidebarOpen
+            class="flex items-center p-3 rounded-xl hover:bg-primary-container hover:text-primary transition-colors {isSidebarOpen
               ? ''
               : 'justify-center'}"
           >
@@ -104,7 +104,7 @@
           <!-- artists -->
           <a
             href="/admin/artists"
-            class="flex items-center p-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors {isSidebarOpen
+            class="flex items-center p-3 rounded-xl hover:bg-primary-container hover:text-primary transition-colors {isSidebarOpen
               ? ''
               : 'justify-center'}"
           >
@@ -117,7 +117,7 @@
         <!-- Events & Comm -->
         <li class="pt-4 pb-2">
           {#if isSidebarOpen}<span
-              class="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider"
+              class="px-3 text-xs font-semibold text-on-surface-variant/40 uppercase tracking-wider"
               >Events</span
             >{/if}
         </li>
@@ -125,7 +125,7 @@
           <!-- announcements -->
           <a
             href="/admin/announcements"
-            class="flex items-center p-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors {isSidebarOpen
+            class="flex items-center p-3 rounded-xl hover:bg-primary-container hover:text-primary transition-colors {isSidebarOpen
               ? ''
               : 'justify-center'}"
           >
@@ -140,7 +140,7 @@
           <!-- tournaments -->
           <a
             href="/admin/tournaments"
-            class="flex items-center p-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors {isSidebarOpen
+            class="flex items-center p-3 rounded-xl hover:bg-primary-container hover:text-primary transition-colors {isSidebarOpen
               ? ''
               : 'justify-center'}"
           >
@@ -152,7 +152,7 @@
 
         <li class="pt-4 pb-2">
           {#if isSidebarOpen}<span
-              class="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider"
+              class="px-3 text-xs font-semibold text-on-surface-variant/40 uppercase tracking-wider"
               >Moderation</span
             >{/if}
         </li>
@@ -161,7 +161,7 @@
           <!-- songs reports -->
           <a
             href="/admin/reports/songs"
-            class="flex items-center p-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors {isSidebarOpen
+            class="flex items-center p-3 rounded-xl hover:bg-primary-container hover:text-primary transition-colors {isSidebarOpen
               ? ''
               : 'justify-center'}"
           >
@@ -175,7 +175,7 @@
           <!-- comments reports -->
           <a
             href="/admin/reports/comments"
-            class="flex items-center p-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors {isSidebarOpen
+            class="flex items-center p-3 rounded-xl hover:bg-primary-container hover:text-primary transition-colors {isSidebarOpen
               ? ''
               : 'justify-center'}"
           >
@@ -189,7 +189,7 @@
           <!-- user reports -->
           <a
             href="/admin/reports/users"
-            class="flex items-center p-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors {isSidebarOpen
+            class="flex items-center p-3 rounded-xl hover:bg-primary-container hover:text-primary transition-colors {isSidebarOpen
               ? ''
               : 'justify-center'}"
           >
@@ -202,7 +202,7 @@
           <!-- requests -->
           <a
             href="/admin/requests"
-            class="flex items-center p-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors {isSidebarOpen
+            class="flex items-center p-3 rounded-xl hover:bg-primary-container hover:text-primary transition-colors {isSidebarOpen
               ? ''
               : 'justify-center'}"
           >
@@ -215,7 +215,7 @@
         <!-- Platform -->
         <li class="pt-4 pb-2">
           {#if isSidebarOpen}<span
-              class="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider"
+              class="px-3 text-xs font-semibold text-on-surface-variant/40 uppercase tracking-wider"
               >Platform</span
             >{/if}
         </li>
@@ -223,7 +223,7 @@
           <!-- users -->
           <a
             href="/admin/users"
-            class="flex items-center p-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors {isSidebarOpen
+            class="flex items-center p-3 rounded-xl hover:bg-primary-container hover:text-primary transition-colors {isSidebarOpen
               ? ''
               : 'justify-center'}"
           >
@@ -235,7 +235,7 @@
           <!-- audit logs -->
           <a
             href="/admin/audit-logs"
-            class="flex items-center p-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors {isSidebarOpen
+            class="flex items-center p-3 rounded-xl hover:bg-primary-container hover:text-primary transition-colors {isSidebarOpen
               ? ''
               : 'justify-center'}"
           >
@@ -248,7 +248,7 @@
           <!-- roles -->
           <a
             href="/admin/roles"
-            class="flex items-center p-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors {isSidebarOpen
+            class="flex items-center p-3 rounded-xl hover:bg-primary-container hover:text-primary transition-colors {isSidebarOpen
               ? ''
               : 'justify-center'}"
           >
@@ -260,7 +260,7 @@
           <!-- badges -->
           <a
             href="/admin/badges"
-            class="flex items-center p-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors {isSidebarOpen
+            class="flex items-center p-3 rounded-xl hover:bg-primary-container hover:text-primary transition-colors {isSidebarOpen
               ? ''
               : 'justify-center'}"
           >
@@ -272,7 +272,7 @@
         <!-- Metadata -->
         <li class="pt-4 pb-2">
           {#if isSidebarOpen}<span
-              class="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider"
+              class="px-3 text-xs font-semibold text-on-surface-variant/40 uppercase tracking-wider"
               >Metadata</span
             >{/if}
         </li>
@@ -281,7 +281,7 @@
           <!-- genres -->
           <a
             href="/admin/genres"
-            class="flex items-center p-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors {isSidebarOpen
+            class="flex items-center p-3 rounded-xl hover:bg-primary-container hover:text-primary transition-colors {isSidebarOpen
               ? ''
               : 'justify-center'}"
           >
@@ -294,7 +294,7 @@
           <!-- formats -->
           <a
             href="/admin/formats"
-            class="flex items-center p-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors {isSidebarOpen
+            class="flex items-center p-3 rounded-xl hover:bg-primary-container hover:text-primary transition-colors {isSidebarOpen
               ? ''
               : 'justify-center'}"
           >
@@ -310,7 +310,7 @@
           <!-- seasons -->
           <a
             href="/admin/seasons"
-            class="flex items-center p-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors {isSidebarOpen
+            class="flex items-center p-3 rounded-xl hover:bg-primary-container hover:text-primary transition-colors {isSidebarOpen
               ? ''
               : 'justify-center'}"
           >
@@ -323,7 +323,7 @@
           <!-- years -->
           <a
             href="/admin/years"
-            class="flex items-center p-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors {isSidebarOpen
+            class="flex items-center p-3 rounded-xl hover:bg-primary-container hover:text-primary transition-colors {isSidebarOpen
               ? ''
               : 'justify-center'}"
           >
@@ -336,7 +336,7 @@
           <!-- home -->
           <a
             href="/"
-            class="flex items-center p-3 rounded-xl hover:bg-white/5 text-gray-400 hover:text-white mt-8 transition-colors {isSidebarOpen
+            class="flex items-center p-3 rounded-xl hover:bg-surface-highest text-on-surface-variant/70 hover:text-on-surface mt-8 transition-colors {isSidebarOpen
               ? ''
               : 'justify-center'}"
           >

@@ -1,18 +1,18 @@
 @import "tailwindcss";
 
 :root {
-  /* Light Theme - Editorial Luminance */
-  --color-surface: #fff7ff;
-  --color-surface-low: #faf0ff;
-  --color-surface-container: #f5eafa;
-  --color-surface-highest: #e9dfef;
-  --color-on-surface: #1e1924;
-  --color-on-surface-variant: #4c4355;
-  --color-primary: #6100ba;
-  --color-primary-container: #7f13ec;
-  --color-outline-variant: #cec2d8;
-  --color-secondary-container: #c297fd;
-  --color-rating-star: #af860c;
+  /* Nordic Slate Theme */
+  --color-surface: #e2eeff;
+  --color-surface-low: #f1f5f9;
+  --color-surface-container: #ffffff;
+  --color-surface-highest: #cbd5e1;
+  --color-on-surface: #0f172a;
+  --color-on-surface-variant: #475569;
+  --color-primary: #1e293b; /* Azul Navy muy profundo */
+  --color-primary-container: #334155;
+  --color-secondary-container: #38bdf8; /* Cyan para acentos vivos */
+  --color-outline-variant: #e2e8f0;
+  --color-rating-star: #eab308;
 }
 
 .dark {
@@ -21,7 +21,7 @@
   --color-surface-low: #140d1e;
   --color-surface-container: #1a1228;
   --color-surface-highest: #261a38;
-  --color-on-surface: #ede6f2;
+  --color-on-surface: #d6cbdd;
   --color-on-surface-variant: #b1a6bc;
   --color-primary: #9d4edd;
   --color-primary-container: #7f13ec;
@@ -35,9 +35,9 @@
   --color-surface-low: #0a0a0a;
   --color-surface-container: #121212;
   --color-surface-highest: #1e1e1e;
-  --color-on-surface: #ffffff;
+  --color-on-surface: #ffffffe1;
   --color-on-surface-variant: #eeeeee;
-  --color-primary: #d0bcff;
+  --color-primary: #9c8dc0;
   --color-primary-container: #381e72;
   --color-outline-variant: #ffffff;
   --color-secondary-container: #03dac6;
@@ -87,20 +87,20 @@
   }
 }
 
-/* ::-webkit-scrollbar {
+::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #191022;
+  background: var(--color-surface-container);
 }
 ::-webkit-scrollbar-thumb {
-  background: #4a3b59;
+  background: var(--color-primary);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #6b5680;
-} */
+  background: var(--color-primary-container);
+}
 
 @utility markdown-content {
   & strong {

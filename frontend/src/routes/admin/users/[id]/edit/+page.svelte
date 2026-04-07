@@ -99,15 +99,15 @@
   <div class="flex items-center gap-4 mb-2">
     <a
       href="/admin/users"
-      class="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors border border-transparent hover:border-white/10"
+      class="p-2 text-on-surface-variant/70 hover:text-on-surface hover:bg-surface-highest rounded-lg transition-colors border border-transparent hover:border-outline-variant"
       title="Back to Users"
     >
       <span class="material-symbols-outlined text-xl">arrow_back</span>
     </a>
-    <h1 class="text-3xl font-bold tracking-tight text-white">Edit User</h1>
+    <h1 class="text-3xl font-bold tracking-tight text-on-surface">Edit User</h1>
   </div>
-  <p class="text-gray-400 pl-14">
-    Modify <span class="text-anirank-primary font-medium">{data.user.name}</span
+  <p class="text-on-surface-variant/70 pl-14">
+    Modify <span class="text-primary font-medium">{data.user.name}</span
     >'s profile details and account access privileges.
   </p>
 </div>
@@ -116,9 +116,9 @@
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <!-- Left Column: Basic Info -->
     <div class="space-y-6">
-      <div class="bg-anirank-card border border-white/5 rounded-2xl p-6">
+      <div class="bg-surface-container border border-outline-variant rounded-2xl p-6">
         <h2
-          class="text-lg font-semibold text-white border-b border-white/10 pb-3 mb-4"
+          class="text-lg font-semibold text-on-surface border-b border-outline-variant pb-3 mb-4"
         >
           Profile Details
         </h2>
@@ -128,7 +128,7 @@
           <div>
             <label
               for="name"
-              class="block text-sm font-medium text-gray-300 mb-1"
+              class="block text-sm font-medium text-on-surface-variant mb-1"
             >
               Username
             </label>
@@ -137,7 +137,7 @@
               id="name"
               bind:value={name}
               required
-              class="w-full bg-white/5 border border-white/10 rounded-xl py-2 px-4 text-white focus:outline-none focus:border-anirank-primary transition-colors"
+              class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2 px-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-colors"
             />
           </div>
 
@@ -145,7 +145,7 @@
           <div>
             <label
               for="email"
-              class="block text-sm font-medium text-gray-300 mb-1"
+              class="block text-sm font-medium text-on-surface-variant mb-1"
             >
               Email Address
             </label>
@@ -154,21 +154,21 @@
               id="email"
               bind:value={email}
               required
-              class="w-full bg-white/5 border border-white/10 rounded-xl py-2 px-4 text-white focus:outline-none focus:border-anirank-primary transition-colors focus:ring-1 focus:ring-anirank-primary/50"
+              class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2 px-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-colors focus:ring-4 focus:ring-primary/5 focus:outline-none/50"
             />
           </div>
         </div>
       </div>
 
       <!-- Password Reset Section -->
-      <div class="bg-anirank-card border border-rose-500/20 rounded-2xl p-6">
+      <div class="bg-surface-container border border-rose-500/20 rounded-2xl p-6">
         <h2
           class="text-lg font-semibold text-rose-400 border-b border-rose-500/10 pb-3 mb-4 flex items-center gap-2"
         >
           <span class="material-symbols-outlined">lock_reset</span>
           Security
         </h2>
-        <p class="text-sm text-gray-400 mb-4">
+        <p class="text-sm text-on-surface-variant/70 mb-4">
           If the user lost access to their account, you can generate a new
           temporary secure password for them.
         </p>
@@ -183,7 +183,7 @@
             <div
               class="flex items-center gap-3 mt-2"
             >
-              <div class="text-white font-mono bg-black/30 px-3 py-2 rounded-lg inline-block text-lg tracking-wider">
+              <div class="text-on-surface font-mono bg-black/30 px-3 py-2 rounded-lg inline-block text-lg tracking-wider">
                  {newPassword}
               </div>
               <button
@@ -195,7 +195,7 @@
                 Copy
               </button>
             </div>
-            <p class="text-xs text-gray-500 mt-2">
+            <p class="text-xs text-on-surface-variant/40 mt-2">
               Make sure to copy this password now, it won't be shown again.
             </p>
           </div>
@@ -223,9 +223,9 @@
     <!-- Right Column: RBAC & Rewards -->
     <div class="space-y-6">
       <!-- Roles Selection -->
-      <div class="bg-anirank-card border border-white/5 rounded-2xl p-6">
+      <div class="bg-surface-container border border-outline-variant rounded-2xl p-6">
         <h2
-          class="text-lg font-semibold text-white border-b border-white/10 pb-3 mb-4 flex items-center gap-2"
+          class="text-lg font-semibold text-on-surface border-b border-outline-variant pb-3 mb-4 flex items-center gap-2"
         >
           <span class="material-symbols-outlined text-rose-400"
             >shield_person</span
@@ -236,17 +236,17 @@
         <div class="space-y-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
           {#each data.allRoles as role}
             <label
-              class="flex items-center gap-3 p-3 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 transition-colors cursor-pointer {selectedRoleIds.includes(
+              class="flex items-center gap-3 p-3 rounded-xl border border-outline-variant bg-surface-highest hover:bg-surface-highest transition-colors cursor-pointer {selectedRoleIds.includes(
                 role.id,
               )
-                ? 'border-anirank-primary/50 bg-anirank-primary/10'
+                ? 'border-primary/50 bg-primary/10'
                 : ''}"
             >
               <div
-                class="relative flex items-center border border-white/20 rounded-md w-5 h-5 bg-black/20 overflow-hidden shrink-0 {selectedRoleIds.includes(
+                class="relative flex items-center border border-outline-variant rounded-md w-5 h-5 bg-black/20 overflow-hidden shrink-0 {selectedRoleIds.includes(
                   role.id,
                 )
-                  ? 'border-anirank-primary bg-anirank-primary'
+                  ? 'border-primary bg-primary'
                   : ''}"
               >
                 <input
@@ -256,14 +256,14 @@
                   onchange={() => toggleRole(role.id)}
                 />
                 {#if selectedRoleIds.includes(role.id)}
-                  <span class="material-symbols-outlined text-[16px] text-white"
+                  <span class="material-symbols-outlined text-[16px] text-on-surface"
                     >check</span
                   >
                 {/if}
               </div>
               <div>
-                <div class="text-sm font-medium text-white">{role.name}</div>
-                <div class="text-xs text-gray-500">{role.description}</div>
+                <div class="text-sm font-medium text-on-surface">{role.name}</div>
+                <div class="text-xs text-on-surface-variant/40">{role.description}</div>
               </div>
             </label>
           {/each}
@@ -271,9 +271,9 @@
       </div>
 
       <!-- Badges Selection -->
-      <div class="bg-anirank-card border border-white/5 rounded-2xl p-6">
+      <div class="bg-surface-container border border-outline-variant rounded-2xl p-6">
         <h2
-          class="text-lg font-semibold text-white border-b border-white/10 pb-3 mb-4 flex items-center gap-2"
+          class="text-lg font-semibold text-on-surface border-b border-outline-variant pb-3 mb-4 flex items-center gap-2"
         >
           <span class="material-symbols-outlined text-yellow-400"
             >military_tech</span
@@ -286,17 +286,17 @@
         >
           {#each data.allBadges as badge}
             <label
-              class="flex items-center gap-3 p-2 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 transition-colors cursor-pointer {selectedBadgeIds.includes(
+              class="flex items-center gap-3 p-2 rounded-xl border border-outline-variant bg-surface-highest hover:bg-surface-highest transition-colors cursor-pointer {selectedBadgeIds.includes(
                 badge.id,
               )
-                ? 'border-anirank-primary/50 bg-anirank-primary/10'
+                ? 'border-primary/50 bg-primary/10'
                 : ''}"
             >
               <div
-                class="relative flex items-center border border-white/20 rounded-md w-5 h-5 bg-black/20 overflow-hidden shrink-0 {selectedBadgeIds.includes(
+                class="relative flex items-center border border-outline-variant rounded-md w-5 h-5 bg-black/20 overflow-hidden shrink-0 {selectedBadgeIds.includes(
                   badge.id,
                 )
-                  ? 'border-anirank-primary bg-anirank-primary'
+                  ? 'border-primary bg-primary'
                   : ''}"
               >
                 <input
@@ -306,7 +306,7 @@
                   onchange={() => toggleBadge(badge.id)}
                 />
                 {#if selectedBadgeIds.includes(badge.id)}
-                  <span class="material-symbols-outlined text-[16px] text-white"
+                  <span class="material-symbols-outlined text-[16px] text-on-surface"
                     >check</span
                   >
                 {/if}
@@ -319,7 +319,7 @@
                     class="w-6 h-6 object-contain shrink-0"
                   />
                 {/if}
-                <div class="text-sm font-medium text-white truncate">
+                <div class="text-sm font-medium text-on-surface truncate">
                   {badge.name}
                 </div>
               </div>
@@ -332,11 +332,11 @@
 
   <!-- Form Actions -->
   <div
-    class="flex items-center justify-end gap-3 pt-6 border-t border-white/10"
+    class="flex items-center justify-end gap-3 pt-6 border-t border-outline-variant"
   >
     <a
       href="/admin/users"
-      class="px-5 py-2.5 rounded-xl border border-white/10 text-white hover:bg-white/5 transition-colors font-medium"
+      class="px-5 py-2.5 rounded-xl border border-outline-variant text-on-surface hover:bg-surface-highest transition-colors font-medium"
       onclick={(e) => {
         if (isSaving) e.preventDefault();
       }}
@@ -346,7 +346,7 @@
     <button
       type="submit"
       disabled={isSaving}
-      class="px-6 py-2.5 bg-anirank-primary hover:bg-anirank-secondary text-white rounded-xl transition-colors font-medium shadow-lg shadow-anirank-primary/20 disabled:opacity-70 flex items-center gap-2"
+      class="px-6 py-2.5 bg-primary hover:bg-anirank-secondary text-on-surface rounded-xl transition-colors font-medium shadow-lg shadow-anirank-primary/20 disabled:opacity-70 flex items-center gap-2"
     >
       {#if isSaving}
         <span

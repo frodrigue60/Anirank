@@ -31,7 +31,7 @@
 
 <!-- Hero Banner & Cover -->
 <div
-  class="relative w-full h-[250px] mb-20 rounded-3xl bg-zinc-900 border border-white/10 shadow-xl overflow-visible hidden md:block"
+  class="relative w-full h-[250px] mb-20 rounded-3xl bg-zinc-900 border border-outline-variant shadow-xl overflow-visible hidden md:block"
 >
   <div class="absolute inset-0 overflow-hidden rounded-3xl bg-zinc-950">
     {#if anime.banner_url}
@@ -69,7 +69,7 @@
       <div class="absolute top-3 right-3">
         <span
           class="px-2 py-1 text-[10px] font-bold rounded-lg {anime.status
-            ? 'bg-green-500 text-white'
+            ? 'bg-green-500 text-on-surface'
             : 'bg-zinc-800 text-zinc-400'} shadow-lg"
         >
           {anime.status ? "ACTIVE" : "INACTIVE"}
@@ -80,13 +80,13 @@
     <!-- Hub Header Title (Overlay on banner space) -->
     <div class="mb-4 flex-1">
       <div class="flex items-center gap-3">
-        <h2 class="text-2xl font-bold text-white drop-shadow-lg">
+        <h2 class="text-2xl font-bold text-on-surface drop-shadow-lg">
           {anime.title}
         </h2>
         <button
           onclick={updateAnimeData}
           disabled={isSyncing}
-          class="p-2 bg-white/10 hover:bg-white/20 border border-white/10 text-white rounded-lg transition-colors disabled:opacity-50"
+          class="p-2 bg-surface-highest hover:bg-white/20 border border-outline-variant text-on-surface rounded-lg transition-colors disabled:opacity-50"
           title="Sync from AniList"
         >
           <span
@@ -96,7 +96,7 @@
           >
         </button>
       </div>
-      <p class="text-gray-300 text-sm drop-shadow-md">
+      <p class="text-on-surface-variant text-sm drop-shadow-md">
         {anime.format?.name || "Unknown Format"} • {anime.season?.name || ""}
         {anime.year?.name || ""}
       </p>
@@ -109,14 +109,14 @@
   <div class="lg:col-span-3 space-y-8">
     <!-- Description -->
     <div
-      class="bg-anirank-card border border-white/5 rounded-2xl p-6 shadow-sm"
+      class="bg-surface-container border border-outline-variant rounded-2xl p-6 shadow-sm"
     >
-      <h2 class="text-xl font-semibold text-white mb-4">Synopsis</h2>
-      <div class="text-gray-300 leading-relaxed max-w-none text-sm space-y-4">
+      <h2 class="text-xl font-semibold text-on-surface mb-4">Synopsis</h2>
+      <div class="text-on-surface-variant leading-relaxed max-w-none text-sm space-y-4">
         {#if anime.description}
           {@html anime.description}
         {:else}
-          <p class="text-gray-500 italic">No description provided.</p>
+          <p class="text-on-surface-variant/40 italic">No description provided.</p>
         {/if}
       </div>
     </div>
@@ -125,30 +125,30 @@
   <!-- Sidebar Column -->
   <div class="space-y-6">
     <div
-      class="bg-anirank-card border border-white/5 rounded-2xl p-6 shadow-sm"
+      class="bg-surface-container border border-outline-variant rounded-2xl p-6 shadow-sm"
     >
       <h3
-        class="text-sm font-semibold text-white uppercase tracking-wider mb-4 border-b border-white/10 pb-2"
+        class="text-sm font-semibold text-on-surface uppercase tracking-wider mb-4 border-b border-outline-variant pb-2"
       >
         Information
       </h3>
 
       <dl class="space-y-4 text-sm">
         <div>
-          <dt class="text-gray-500 mb-1">Format</dt>
+          <dt class="text-on-surface-variant/40 mb-1">Format</dt>
           <dd class="text-gray-200 font-medium">
             {anime.format?.name || "Unknown"}
           </dd>
         </div>
         <div>
-          <dt class="text-gray-500 mb-1">Season</dt>
+          <dt class="text-on-surface-variant/40 mb-1">Season</dt>
           <dd class="text-gray-200 font-medium">
             {anime.season?.name || "Unknown"}
             {anime.year?.name || ""}
           </dd>
         </div>
         <div>
-          <dt class="text-gray-500 mb-1">Studios</dt>
+          <dt class="text-on-surface-variant/40 mb-1">Studios</dt>
           <dd class="text-gray-200 font-medium">
             {#if anime.studios && anime.studios.length > 0}
               {anime.studios.map((s: any) => s.name).join(", ")}
@@ -158,7 +158,7 @@
           </dd>
         </div>
         <div>
-          <dt class="text-gray-500 mb-1">Producers</dt>
+          <dt class="text-on-surface-variant/40 mb-1">Producers</dt>
           <dd class="text-gray-200 font-medium">
             {#if anime.producers && anime.producers.length > 0}
               {anime.producers.map((s: any) => s.name).join(", ")}
@@ -168,13 +168,13 @@
           </dd>
         </div>
         <div>
-          <dt class="text-gray-500 mb-1">Genres</dt>
+          <dt class="text-on-surface-variant/40 mb-1">Genres</dt>
           <dd class="text-gray-200 font-medium">
             {#if anime.genres && anime.genres.length > 0}
               <div class="flex flex-wrap gap-1 mt-1">
                 {#each anime.genres as genre}
                   <span
-                    class="px-2 py-0.5 bg-white/5 border border-white/10 rounded text-xs text-gray-300"
+                    class="px-2 py-0.5 bg-surface-highest border border-outline-variant rounded text-xs text-on-surface-variant"
                     >{genre.name}</span
                   >
                 {/each}
@@ -190,10 +190,10 @@
     <!-- External Links -->
     {#if anime.external_links && anime.external_links.length > 0}
       <div
-        class="bg-anirank-card border border-white/5 rounded-2xl p-6 shadow-sm flex flex-col gap-2"
+        class="bg-surface-container border border-outline-variant rounded-2xl p-6 shadow-sm flex flex-col gap-2"
       >
         <h3
-          class="text-sm font-semibold text-white uppercase tracking-wider mb-2 border-b border-white/10 pb-2"
+          class="text-sm font-semibold text-on-surface uppercase tracking-wider mb-2 border-b border-outline-variant pb-2"
         >
           External Links
         </h3>
@@ -202,10 +202,10 @@
             href={link.url}
             target="_blank"
             rel="noopener noreferrer"
-            class="flex items-center gap-2 p-2 hover:bg-white/5 rounded-lg transition-colors border border-transparent hover:border-white/10 group"
+            class="flex items-center gap-2 p-2 hover:bg-surface-highest rounded-lg transition-colors border border-transparent hover:border-outline-variant group"
           >
             <span
-              class="w-6 h-6 rounded bg-black/20 text-gray-400 flex items-center justify-center shrink-0 group-hover:text-blue-400 transition-colors"
+              class="w-6 h-6 rounded bg-black/20 text-on-surface-variant/70 flex items-center justify-center shrink-0 group-hover:text-blue-400 transition-colors"
             >
               <svg
                 class="w-3.5 h-3.5"
@@ -224,7 +224,7 @@
               >
             </span>
             <span
-              class="text-sm text-gray-300 group-hover:text-white transition-colors"
+              class="text-sm text-on-surface-variant group-hover:text-on-surface transition-colors"
               >{link.name}</span
             >
           </a>

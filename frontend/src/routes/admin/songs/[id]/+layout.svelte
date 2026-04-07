@@ -22,7 +22,7 @@
     <a
       href="/admin/songs"
       aria-label="Back to Songs"
-      class="text-gray-400 hover:text-white transition-colors p-2 -ml-2 rounded-lg hover:bg-white/5"
+      class="text-on-surface-variant/70 hover:text-on-surface transition-colors p-2 -ml-2 rounded-lg hover:bg-surface-highest"
     >
       <svg
         class="w-5 h-5"
@@ -38,7 +38,7 @@
         />
       </svg>
     </a>
-    <h1 class="text-3xl font-bold tracking-tight text-white line-clamp-1">
+    <h1 class="text-3xl font-bold tracking-tight text-on-surface line-clamp-1">
       {getSongName(song)}
     </h1>
     <span
@@ -49,9 +49,9 @@
   </div>
   
   {#if song.anime}
-    <div class="flex items-center gap-2 ml-10 text-sm text-gray-400">
+    <div class="flex items-center gap-2 ml-10 text-sm text-on-surface-variant/70">
         <span>From:</span>
-        <a href="/admin/animes/{song.anime.id}" class="text-anirank-primary hover:underline font-medium">
+        <a href="/admin/animes/{song.anime.id}" class="text-primary hover:underline font-medium">
             {song.anime.title}
         </a>
     </div>
@@ -59,16 +59,16 @@
 </div>
 
 <!-- Tabs Navigation -->
-<div class="flex items-center gap-2 border-b border-white/5 mb-8 overflow-x-auto pb-px">
+<div class="flex items-center gap-2 border-b border-outline-variant mb-8 overflow-x-auto pb-px">
   {#each tabs as tab}
     {@const active = tab.match($page.url.pathname)}
     <a
       href={tab.href}
-      class="px-6 py-3 text-sm font-medium transition-all relative whitespace-nowrap {active ? 'text-white' : 'text-gray-400 hover:text-white'}"
+      class="px-6 py-3 text-sm font-medium transition-all relative whitespace-nowrap {active ? 'text-on-surface' : 'text-on-surface-variant/70 hover:text-on-surface'}"
     >
       {tab.label}
       {#if active}
-        <div class="absolute bottom-0 left-0 right-0 h-0.5 bg-anirank-primary rounded-full"></div>
+        <div class="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full"></div>
       {/if}
     </a>
   {/each}

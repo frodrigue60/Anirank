@@ -127,7 +127,7 @@
   <div class="mb-8 flex items-center gap-4">
     <button
       onclick={() => history.back()}
-      class="p-2 hover:bg-white/5 rounded-xl text-gray-400 transition-colors"
+      class="p-2 hover:bg-surface-highest rounded-xl text-on-surface-variant/70 transition-colors"
       aria-label="Back"
     >
       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -140,21 +140,21 @@
       >
     </button>
     <div>
-      <h1 class="text-3xl font-bold tracking-tight text-white mb-1">
+      <h1 class="text-3xl font-bold tracking-tight text-on-surface mb-1">
         Edit Artist
       </h1>
-      <p class="text-gray-400">Modify artist details and visual identity.</p>
+      <p class="text-on-surface-variant/70">Modify artist details and visual identity.</p>
     </div>
   </div>
 
   {#if !artist.id}
     <div
-      class="bg-anirank-card border border-white/5 rounded-3xl p-12 text-center"
+      class="bg-surface-container border border-outline-variant rounded-3xl p-12 text-center"
     >
-      <p class="text-gray-400">Artist not found or error loading data.</p>
+      <p class="text-on-surface-variant/70">Artist not found or error loading data.</p>
       <button
         onclick={() => history.back()}
-        class="mt-4 text-anirank-primary hover:underline">Go back</button
+        class="mt-4 text-primary hover:underline">Go back</button
       >
     </div>
   {:else}
@@ -162,9 +162,9 @@
       <!-- Left: Form -->
       <div class="lg:col-span-2 space-y-8">
         <div
-          class="bg-anirank-card border border-white/5 rounded-3xl overflow-hidden p-8"
+          class="bg-surface-container border border-outline-variant rounded-3xl overflow-hidden p-8"
         >
-          <h2 class="text-xl font-semibold text-white mb-6">
+          <h2 class="text-xl font-semibold text-on-surface mb-6">
             General Information
           </h2>
           <form
@@ -178,7 +178,7 @@
               <div class="space-y-2">
                 <label
                   for="name"
-                  class="block text-sm font-medium text-gray-400 px-1"
+                  class="block text-sm font-medium text-on-surface-variant/70 px-1"
                 >
                   Primary Name
                 </label>
@@ -186,7 +186,7 @@
                   id="name"
                   type="text"
                   bind:value={artist.name}
-                  class="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-anirank-primary transition-colors h-14"
+                  class="w-full bg-surface-highest border border-outline-variant rounded-2xl py-3 px-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-colors h-14"
                   required
                 />
               </div>
@@ -194,7 +194,7 @@
               <div class="space-y-2">
                 <label
                   for="name_jp"
-                  class="block text-sm font-medium text-gray-400 px-1"
+                  class="block text-sm font-medium text-on-surface-variant/70 px-1"
                 >
                   Japanese Name (Optional)
                 </label>
@@ -202,13 +202,13 @@
                   id="name_jp"
                   type="text"
                   bind:value={artist.name_jp}
-                  class="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-anirank-primary transition-colors h-14"
+                  class="w-full bg-surface-highest border border-outline-variant rounded-2xl py-3 px-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-colors h-14"
                 />
               </div>
               <div class="space-y-2">
                 <label
                   for="anilist_id"
-                  class="block text-sm font-medium text-gray-400 px-1"
+                  class="block text-sm font-medium text-on-surface-variant/70 px-1"
                 >
                   AniList ID (Optional)
                 </label>
@@ -216,13 +216,13 @@
                   id="anilist_id"
                   type="text"
                   bind:value={artist.anilist_id}
-                  class="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-anirank-primary transition-colors h-14"
+                  class="w-full bg-surface-highest border border-outline-variant rounded-2xl py-3 px-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-colors h-14"
                 />
               </div>
               <div class="space-y-2">
                 <label
                   for="animethemes_id"
-                  class="block text-sm font-medium text-gray-400 px-1"
+                  class="block text-sm font-medium text-on-surface-variant/70 px-1"
                 >
                   AnimeThemes ID (Optional)
                 </label>
@@ -230,20 +230,20 @@
                   id="animethemes_id"
                   type="text"
                   bind:value={artist.animethemes_id}
-                  class="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-anirank-primary transition-colors h-14"
+                  class="w-full bg-surface-highest border border-outline-variant rounded-2xl py-3 px-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-colors h-14"
                 />
               </div>
               <div class="space-y-2">
                 <label
                   for="status"
-                  class="block text-sm font-medium text-gray-400 px-1"
+                  class="block text-sm font-medium text-on-surface-variant/70 px-1"
                 >
                   Status
                 </label>
                 <select
                   id="status"
                   bind:value={artist.status}
-                  class="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-anirank-primary transition-colors h-14"
+                  class="w-full bg-surface-highest border border-outline-variant rounded-2xl py-3 px-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-colors h-14"
                 >
                   <option value={true}>Active</option>
                   <option value={false}>Inactive</option>
@@ -255,18 +255,18 @@
               <button
                 type="button"
                 onclick={() => history.back()}
-                class="px-6 py-3 bg-white/5 hover:bg-white/10 text-white font-medium rounded-2xl transition-colors h-14"
+                class="px-6 py-3 bg-surface-highest hover:bg-surface-highest text-on-surface font-medium rounded-2xl transition-colors h-14"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                class="px-8 py-3 bg-anirank-primary hover:bg-blue-600 disabled:bg-blue-600/50 disabled:cursor-not-allowed text-white font-bold rounded-2xl transition-all shadow-lg shadow-anirank-primary/20 flex items-center justify-center gap-2 h-14 min-w-[180px]"
+                class="px-8 py-3 bg-primary hover:bg-primary-container disabled:bg-blue-600/50 disabled:cursor-not-allowed text-on-surface font-bold rounded-2xl transition-all shadow-lg shadow-anirank-primary/20 flex items-center justify-center gap-2 h-14 min-w-[180px]"
               >
                 {#if isSubmitting}
                   <svg
-                    class="animate-spin h-5 w-5 text-white"
+                    class="animate-spin h-5 w-5 text-on-surface"
                     fill="none"
                     viewBox="0 0 24 24"
                   >
@@ -296,13 +296,13 @@
 
       <!-- Right: Avatar Management -->
       <div class="space-y-8">
-        <div class="bg-anirank-card border border-white/5 rounded-3xl p-8">
-          <h2 class="text-xl font-semibold text-white mb-6">Artist Avatar</h2>
+        <div class="bg-surface-container border border-outline-variant rounded-3xl p-8">
+          <h2 class="text-xl font-semibold text-on-surface mb-6">Artist Avatar</h2>
 
           <div class="flex flex-col items-center">
             <div class="relative group mb-6">
               <div
-                class="w-48 h-48 rounded-full overflow-hidden border-4 border-white/5 bg-white/5 relative"
+                class="w-48 h-48 rounded-full overflow-hidden border-4 border-outline-variant bg-surface-highest relative"
               >
                 {#if previewUrl}
                   <img
@@ -335,7 +335,7 @@
                     class="absolute inset-0 bg-black/60 flex items-center justify-center"
                   >
                     <svg
-                      class="animate-spin h-8 w-8 text-anirank-primary"
+                      class="animate-spin h-8 w-8 text-primary"
                       fill="none"
                       viewBox="0 0 24 24"
                     >
@@ -359,7 +359,7 @@
 
               <label
                 for="avatar-input"
-                class="absolute bottom-2 right-2 p-3 bg-anirank-primary text-white rounded-full shadow-lg hover:bg-blue-600 cursor-pointer transition-colors border-4 border-[#0a0a0b]"
+                class="absolute bottom-2 right-2 p-3 bg-primary text-on-surface rounded-full shadow-lg hover:bg-primary-container cursor-pointer transition-colors border-4 border-[#0a0a0b]"
               >
                 <svg
                   class="w-5 h-5"
@@ -395,18 +395,18 @@
               <button
                 onclick={generateAvatar}
                 disabled={isGenerating || isSubmitting}
-                class="w-full py-3 bg-white/5 hover:bg-white/10 text-white rounded-2xl border border-white/10 transition-colors flex items-center justify-center gap-2"
+                class="w-full py-3 bg-surface-highest hover:bg-surface-highest text-on-surface rounded-2xl border border-outline-variant transition-colors flex items-center justify-center gap-2"
               >
                 Generate with Magic
               </button>
               <button
                 onclick={getAvatarFromAniList}
                 disabled={isGenerating || isSubmitting}
-                class="w-full py-3 bg-white/5 hover:bg-white/10 text-white rounded-2xl border border-white/10 transition-colors flex items-center justify-center gap-2"
+                class="w-full py-3 bg-surface-highest hover:bg-surface-highest text-on-surface rounded-2xl border border-outline-variant transition-colors flex items-center justify-center gap-2"
               >
                 Avatar from AT/AL
               </button>
-              <p class="text-gray-500 text-xs text-center">
+              <p class="text-on-surface-variant/40 text-xs text-center">
                 Tries to fetch the official avatar from AniList. If not found,
                 it keeps the current one or uses a placeholder.
               </p>

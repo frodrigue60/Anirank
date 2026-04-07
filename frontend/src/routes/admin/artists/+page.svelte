@@ -273,10 +273,10 @@
 
 <div class="mb-8 flex flex-col gap-4">
   <div class="me-auto">
-    <h1 class="text-3xl font-bold tracking-tight text-white mb-1">
+    <h1 class="text-3xl font-bold tracking-tight text-on-surface mb-1">
       Artists Catalog
     </h1>
-    <p class="text-gray-400">
+    <p class="text-on-surface-variant/70">
       Manage musical artists, bands, and their information.
     </p>
   </div>
@@ -285,10 +285,10 @@
     <button
       onclick={recountSongs}
       disabled={recountingSongs}
-      class="px-4 py-2 bg-primary hover:bg-primary/80 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-xl transition-colors shadow-lg shadow-anirank-primary/20 flex items-center gap-2"
+      class="px-4 py-2 bg-primary hover:bg-primary-container disabled:opacity-50 disabled:cursor-not-allowed text-on-surface font-medium rounded-xl transition-colors shadow-lg shadow-anirank-primary/20 flex items-center gap-2"
     >
       {#if recountingSongs}
-        <svg class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
+        <svg class="animate-spin h-5 w-5 text-on-surface" viewBox="0 0 24 24">
           <circle
             class="opacity-25"
             cx="12"
@@ -312,10 +312,10 @@
     <button
       onclick={mergeArtists}
       disabled={mergingArtists}
-      class="px-4 py-2 bg-primary hover:bg-primary/80 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-xl transition-colors shadow-lg shadow-anirank-primary/20 flex items-center gap-2"
+      class="px-4 py-2 bg-primary hover:bg-primary-container disabled:opacity-50 disabled:cursor-not-allowed text-on-surface font-medium rounded-xl transition-colors shadow-lg shadow-anirank-primary/20 flex items-center gap-2"
     >
       {#if mergingArtists}
-        <svg class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
+        <svg class="animate-spin h-5 w-5 text-on-surface" viewBox="0 0 24 24">
           <circle
             class="opacity-25"
             cx="12"
@@ -340,10 +340,10 @@
     <button
       onclick={generateAvatares}
       disabled={generatingAvatars}
-      class="px-4 py-2 bg-primary hover:bg-primary/80 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-xl transition-colors shadow-lg shadow-anirank-primary/20 flex items-center gap-2"
+      class="px-4 py-2 bg-primary hover:bg-primary-container disabled:opacity-50 disabled:cursor-not-allowed text-on-surface font-medium rounded-xl transition-colors shadow-lg shadow-anirank-primary/20 flex items-center gap-2"
     >
       {#if generatingAvatars}
-        <svg class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
+        <svg class="animate-spin h-5 w-5 text-on-surface" viewBox="0 0 24 24">
           <circle
             class="opacity-25"
             cx="12"
@@ -368,7 +368,7 @@
     <!-- create new artist -->
     <a
       href="/admin/artists/create"
-      class="px-4 py-2 bg-primary hover:bg-primary/80 text-white font-medium rounded-xl transition-colors shadow-lg shadow-anirank-primary/20 flex items-center gap-2"
+      class="px-4 py-2 bg-primary hover:bg-primary-container text-on-surface font-medium rounded-xl transition-colors shadow-lg shadow-anirank-primary/20 flex items-center gap-2"
     >
       + New Artist
     </a>
@@ -377,11 +377,11 @@
 
 <!-- Filters & Search -->
 <div
-  class="bg-anirank-card border border-white/5 rounded-2xl p-4 mb-6 flex flex-col sm:flex-row gap-4"
+  class="bg-surface-container border border-outline-variant rounded-2xl p-4 mb-6 flex flex-col sm:flex-row gap-4"
 >
   <div class="relative flex-1">
     <svg
-      class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
+      class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/40"
       fill="none"
       stroke="currentColor"
       viewBox="0 0 24 24"
@@ -398,12 +398,12 @@
       bind:value={searchQuery}
       onkeydown={(e) => e.key === "Enter" && handleSearch()}
       placeholder="Search artist name..."
-      class="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-10 pr-4 text-white focus:outline-none focus:border-anirank-primary transition-colors"
+      class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2 pl-10 pr-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-colors"
     />
   </div>
   <button
     onclick={handleSearch}
-    class="px-6 py-2 bg-primary hover:bg-primary/80 text-white rounded-xl transition-all font-medium border border-white/10"
+    class="px-6 py-2 bg-primary hover:bg-primary-container text-on-surface rounded-xl transition-all font-medium border border-outline-variant"
   >
     Search
   </button>
@@ -411,12 +411,12 @@
 
 {#if generatingAvatars || mergingArtists}
   <div
-    class="mt-6 p-4 bg-anirank-primary/10 border border-anirank-primary/20 rounded-xl animate-in fade-in slide-in-from-top-2 mb-6"
+    class="mt-6 p-4 bg-primary/10 border border-primary/20 rounded-xl animate-in fade-in slide-in-from-top-2 mb-6"
   >
     <div class="flex items-center gap-3">
       <div class="shrink-0">
         <svg
-          class="animate-spin h-5 w-5 text-anirank-primary"
+          class="animate-spin h-5 w-5 text-primary"
           fill="none"
           viewBox="0 0 24 24"
         >
@@ -436,39 +436,39 @@
         </svg>
       </div>
       <div class="flex-1 min-w-0">
-        <p class="text-sm font-medium text-white truncate">
+        <p class="text-sm font-medium text-on-surface truncate">
           {progressMessage}
         </p>
       </div>
     </div>
     <!-- Simple CSS progress bar (pulse) -->
-    <div class="mt-3 w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
+    <div class="mt-3 w-full bg-surface-highest rounded-full h-1.5 overflow-hidden">
       <div
-        class="bg-anirank-primary h-full rounded-full animate-pulse w-full"
+        class="bg-primary h-full rounded-full animate-pulse w-full"
       ></div>
     </div>
   </div>
 {/if}
 
 <!-- Table -->
-<div class="bg-anirank-card border border-white/5 rounded-2xl overflow-hidden">
-  <div class="p-4 border-b border-white/5 flex items-center justify-between">
-    <h2 class="text-xl font-semibold text-white">Artists</h2>
+<div class="bg-surface-container border border-outline-variant rounded-2xl overflow-hidden">
+  <div class="p-4 border-b border-outline-variant flex items-center justify-between">
+    <h2 class="text-xl font-semibold text-on-surface">Artists</h2>
     {#if selectedIds.length > 0}
-      <span class="text-sm text-gray-400">{selectedIds.length} selected</span>
+      <span class="text-sm text-on-surface-variant/70">{selectedIds.length} selected</span>
     {/if}
   </div>
 
   <div class="overflow-x-auto">
-    <table class="w-full text-left text-sm text-gray-300">
+    <table class="w-full text-left text-sm text-on-surface-variant">
       <thead
-        class="text-xs text-gray-400 uppercase bg-white/5 border-b border-white/5"
+        class="text-xs text-on-surface-variant/70 uppercase bg-surface-highest border-b border-outline-variant"
       >
         <tr>
           <th class="px-6 py-4 font-semibold">
             <input
               type="checkbox"
-              class="rounded border-white/10 bg-white/5 checked:bg-anirank-primary focus:ring-anirank-primary transition-all cursor-pointer"
+              class="rounded border-outline-variant bg-surface-highest checked:bg-primary focus:ring-primary transition-all cursor-pointer"
               onchange={toggleSelectAll}
               checked={selectedIds.length === artists.length &&
                 artists.length > 0}
@@ -487,14 +487,14 @@
             <td class="px-6 py-4">
               <input
                 type="checkbox"
-                class="rounded border-white/10 bg-white/5 checked:bg-anirank-primary focus:ring-anirank-primary transition-all cursor-pointer"
+                class="rounded border-outline-variant bg-surface-highest checked:bg-primary focus:ring-primary transition-all cursor-pointer"
                 checked={selectedIds.includes(artist.id)}
                 onchange={() => toggleSelection(artist.id)}
               />
             </td>
             <td class="px-6 py-4">
               <div
-                class="w-10 h-10 rounded-full bg-white/5 overflow-hidden border border-white/10"
+                class="w-10 h-10 rounded-full bg-surface-highest overflow-hidden border border-outline-variant"
               >
                 {#if artist.avatar_url}
                   <img
@@ -531,7 +531,7 @@
                 >
               </div>
               {#if artist.name_jp}
-                <div class="text-xs text-gray-500">{artist.name_jp}</div>
+                <div class="text-xs text-on-surface-variant/40">{artist.name_jp}</div>
               {/if}
             </td>
             <td class="px-6 py-4">
@@ -562,14 +562,14 @@
               <div class="flex items-center justify-end gap-2 text-lg">
                 <a
                   href="/admin/artists/{artist.id}/edit"
-                  class="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                  class="p-2 text-on-surface-variant/70 hover:text-on-surface hover:bg-surface-highest rounded-lg transition-colors"
                   title="Edit"
                 >
                   <span class="material-symbols-outlined">edit</span>
                 </a>
                 <button
                   onclick={() => handleDelete(artist.id, artist.name)}
-                  class="p-2 text-gray-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                  class="p-2 text-on-surface-variant/70 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
                   title="Delete"
                 >
                   <span class="material-symbols-outlined">delete</span>
@@ -579,7 +579,7 @@
           </tr>
         {:else}
           <tr>
-            <td colspan="6" class="px-6 py-12 text-center text-gray-500"
+            <td colspan="6" class="px-6 py-12 text-center text-on-surface-variant/40"
               >No artists found.</td
             >
           </tr>
@@ -591,17 +591,17 @@
   <!-- Pagination -->
   {#if pagination?.last_page > 1}
     <div
-      class="px-6 py-4 border-t border-white/5 flex items-center justify-between"
+      class="px-6 py-4 border-t border-outline-variant flex items-center justify-between"
     >
-      <div class="text-sm text-gray-400">
-        Showing <span class="font-medium text-white">{artists.length}</span> items
+      <div class="text-sm text-on-surface-variant/70">
+        Showing <span class="font-medium text-on-surface">{artists.length}</span> items
       </div>
       <div class="flex items-center gap-2">
         <button
           disabled={pagination.current_page === 1}
           onclick={() => changePage(pagination.current_page - 1)}
           aria-label="Previous Page"
-          class="p-2 rounded-lg border border-white/10 text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/5 transition-colors"
+          class="p-2 rounded-lg border border-outline-variant text-on-surface-variant/70 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-highest transition-colors"
         >
           <svg
             class="w-4 h-4"
@@ -617,14 +617,14 @@
             />
           </svg>
         </button>
-        <span class="text-sm text-gray-300 font-medium px-2"
+        <span class="text-sm text-on-surface-variant font-medium px-2"
           >Page {pagination.current_page} of {pagination.last_page}</span
         >
         <button
           disabled={pagination.current_page === pagination.last_page}
           onclick={() => changePage(pagination.current_page + 1)}
           aria-label="Next Page"
-          class="p-2 rounded-lg border border-white/10 text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/5 transition-colors"
+          class="p-2 rounded-lg border border-outline-variant text-on-surface-variant/70 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-highest transition-colors"
         >
           <svg
             class="w-4 h-4"

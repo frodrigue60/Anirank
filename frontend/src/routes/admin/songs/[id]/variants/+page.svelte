@@ -83,8 +83,8 @@
 <div class="space-y-6">
   <div class="flex items-center justify-between gap-4">
     <div>
-      <h2 class="text-xl font-bold text-white">Song Variants</h2>
-      <p class="text-xs text-gray-500">
+      <h2 class="text-xl font-bold text-on-surface">Song Variants</h2>
+      <p class="text-xs text-on-surface-variant/40">
         Version control and video sources for this theme.
       </p>
     </div>
@@ -113,7 +113,7 @@
       <button
         onclick={createVariant}
         disabled={loading}
-        class="px-4 py-2 bg-anirank-primary hover:bg-blue-600 text-white text-xs font-bold rounded-xl transition-all flex items-center gap-2"
+        class="px-4 py-2 bg-primary hover:bg-primary-container text-on-surface text-xs font-bold rounded-xl transition-all flex items-center gap-2"
       >
         <svg
           class="w-4 h-4"
@@ -184,7 +184,7 @@
   {/if}
 
   <div
-    class="bg-zinc-900/50 border border-zinc-800 rounded-3xl shadow-xl overflow-hidden text-white"
+    class="bg-zinc-900/50 border border-zinc-800 rounded-3xl shadow-xl overflow-hidden text-on-surface"
   >
     <div class="overflow-x-auto">
       <table class="w-full text-left border-collapse">
@@ -221,7 +221,7 @@
               <td class="px-6 py-4">
                 <div class="flex flex-col">
                   <span
-                    class="text-sm font-bold text-white group-hover:text-blue-400 transition-colors uppercase"
+                    class="text-sm font-bold text-on-surface group-hover:text-blue-400 transition-colors uppercase"
                   >
                     {variant.slug}
                   </span>
@@ -263,7 +263,7 @@
                 {#if variant.video}
                   <a
                     href="/admin/variants/{variant.id}/video"
-                    class="inline-flex items-center px-3 py-1 bg-emerald-500/10 text-emerald-500 text-[10px] font-black uppercase rounded-lg border border-emerald-500/20 hover:bg-emerald-500 hover:text-white transition-all tracking-widest"
+                    class="inline-flex items-center px-3 py-1 bg-emerald-500/10 text-emerald-500 text-[10px] font-black uppercase rounded-lg border border-emerald-500/20 hover:bg-emerald-500 hover:text-on-surface transition-all tracking-widest"
                   >
                     <svg
                       class="w-4 h-4 mr-1.5"
@@ -309,7 +309,7 @@
                   <!-- Edit Variant -->
                   <a
                     href="/admin/variants/{variant.id}/edit"
-                    class="p-2 bg-zinc-800 hover:bg-blue-600 text-zinc-400 hover:text-white rounded-lg transition-all border border-zinc-700 hover:border-blue-500"
+                    class="p-2 bg-zinc-800 hover:bg-primary-container text-zinc-400 hover:text-on-surface rounded-lg transition-all border border-zinc-700 hover:border-blue-500"
                     title="Edit Variant"
                   >
                     <svg
@@ -327,7 +327,7 @@
                   </a>
                   <a
                     href="/admin/variants/{variant.id}/video"
-                    class="p-2 bg-zinc-800 hover:bg-emerald-600 text-zinc-400 hover:text-white rounded-lg transition-all border border-zinc-700 hover:border-emerald-500"
+                    class="p-2 bg-zinc-800 hover:bg-emerald-600 text-zinc-400 hover:text-on-surface rounded-lg transition-all border border-zinc-700 hover:border-emerald-500"
                     title="Manage Video"
                   >
                     <svg
@@ -345,7 +345,7 @@
                   </a>
                   <button
                     onclick={() => deleteVariant(variant.id)}
-                    class="p-2 bg-zinc-800 hover:bg-red-600 text-zinc-400 hover:text-white rounded-lg transition-all border border-zinc-700 hover:border-red-500"
+                    class="p-2 bg-zinc-800 hover:bg-red-600 text-zinc-400 hover:text-on-surface rounded-lg transition-all border border-zinc-700 hover:border-red-500"
                     title="Delete Variant"
                   >
                     <svg
@@ -381,7 +381,7 @@
                     /></svg
                   >
                   <h3
-                    class="text-white font-bold uppercase tracking-widest text-sm"
+                    class="text-on-surface font-bold uppercase tracking-widest text-sm"
                   >
                     No Variants Found
                   </h3>

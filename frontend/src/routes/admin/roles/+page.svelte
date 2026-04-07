@@ -126,27 +126,27 @@
 </svelte:head>
 
 <div class="mb-8 overflow-hidden">
-  <h1 class="text-3xl font-bold tracking-tight text-white mb-2">Roles & Permissions</h1>
-  <p class="text-gray-400">Configure what each account can do within the system.</p>
+  <h1 class="text-3xl font-bold tracking-tight text-on-surface mb-2">Roles & Permissions</h1>
+  <p class="text-on-surface-variant/70">Configure what each account can do within the system.</p>
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
   <!-- ROLES LIST (Maestro) -->
   <div class="lg:col-span-1 space-y-3">
-    <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2 mb-2">System Roles</h2>
+    <h2 class="text-xs font-semibold text-on-surface-variant/40 uppercase tracking-wider px-2 mb-2">System Roles</h2>
     {#each roles as role, i}
       <button
         onclick={() => (selectedRoleIndex = i)}
         class="w-full flex items-center gap-3 p-4 rounded-2xl border transition-all text-left {selectedRoleIndex === i 
-          ? 'bg-white/10 border-white/20 ring-1 ring-white/10' 
-          : 'bg-anirank-card border-white/5 hover:bg-white/5 grayscale hover:grayscale-0'}"
+          ? 'bg-surface-highest border-outline-variant ring-1 ring-white/10' 
+          : 'bg-surface-container border-outline-variant hover:bg-surface-highest grayscale hover:grayscale-0'}"
       >
         <div class="w-10 h-10 rounded-xl bg-{getRoleColor(role.slug)}-500/20 text-{getRoleColor(role.slug)}-400 flex items-center justify-center shrink-0">
           <span class="font-bold text-lg">{role.name?.[0].toUpperCase()}</span>
         </div>
         <div class="overflow-hidden">
-          <div class="font-bold text-white text-sm truncate">{role.name}</div>
-          <div class="text-xs text-gray-400 truncate capitalize">{role.slug}</div>
+          <div class="font-bold text-on-surface text-sm truncate">{role.name}</div>
+          <div class="text-xs text-on-surface-variant/70 truncate capitalize">{role.slug}</div>
         </div>
       </button>
     {/each}
@@ -155,24 +155,24 @@
   <!-- PERMISSIONS MATRIX (Detalle) -->
   <div class="lg:col-span-3 space-y-6">
     {#if selectedRole}
-      <div class="bg-anirank-card border border-white/5 rounded-3xl overflow-hidden">
+      <div class="bg-surface-container border border-outline-variant rounded-3xl overflow-hidden">
         <!-- Role Info Header -->
-        <div class="p-6 border-b border-white/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white/[0.02]">
+        <div class="p-6 border-b border-outline-variant flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white/[0.02]">
           <div>
             <div class="flex items-center gap-2 mb-1">
-              <h2 class="text-2xl font-bold text-white capitalize">{selectedRole.name}</h2>
+              <h2 class="text-2xl font-bold text-on-surface capitalize">{selectedRole.name}</h2>
               <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-{getRoleColor(selectedRole.slug)}-500/20 text-{getRoleColor(selectedRole.slug)}-400 border border-{getRoleColor(selectedRole.slug)}-500/30">
                 {selectedRole.slug}
               </span>
             </div>
-            <p class="text-sm text-gray-400">{selectedRole.description || 'No description provided.'}</p>
+            <p class="text-sm text-on-surface-variant/70">{selectedRole.description || 'No description provided.'}</p>
           </div>
 
           {#if selectedRole.slug !== 'owner'}
             <button
               onclick={handleSave}
               disabled={isSaving}
-              class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20 flex items-center gap-2 text-sm"
+              class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-on-surface font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20 flex items-center gap-2 text-sm"
             >
               {#if isSaving}
                 <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -186,9 +186,9 @@
         </div>
 
         {#if selectedRole.slug === 'owner'}
-          <div class="p-8 text-center bg-rose-500/5 border-b border-white/5">
+          <div class="p-8 text-center bg-rose-500/5 border-b border-outline-variant">
             <div class="inline-flex p-3 rounded-full bg-rose-500/20 text-rose-400 mb-4 font-bold">Total Access (Locked)</div>
-            <p class="text-sm text-gray-400 max-w-lg mx-auto">
+            <p class="text-sm text-on-surface-variant/70 max-w-lg mx-auto">
               The <strong>Owner</strong> role has a hardcoded bypass in the backend for security and redundancy.
               Permissions for this role cannot be restricted through the UI.
             </p>
@@ -200,7 +200,7 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
             {#each Object.entries(groupedPermissions()) as [group, perms]}
               <div class="space-y-4">
-                <div class="flex items-center gap-2 pb-2 border-b border-white/5">
+                <div class="flex items-center gap-2 pb-2 border-b border-outline-variant">
                   <div class="p-1 px-1.5 rounded-md bg-indigo-500/20 text-indigo-400">
                     <span class="material-symbols-outlined text-sm! leading-none">{getResourceIcon(group)}</span>
                   </div>
@@ -213,16 +213,16 @@
                       disabled={selectedRole.slug === 'owner'}
                       class="w-full flex items-center justify-between p-3 rounded-xl border transition-all group {selectedPermissionIds.has(perm.id) 
                         ? 'bg-indigo-500/10 border-indigo-500/30' 
-                        : 'bg-white/[0.02] border-white/5 hover:border-white/20'}"
+                        : 'bg-white/[0.02] border-outline-variant hover:border-outline-variant'}"
                     >
                       <div class="flex flex-col items-start gap-0.5 text-left">
-                        <span class="text-sm font-semibold {selectedPermissionIds.has(perm.id) ? 'text-white' : 'text-gray-300'}">{perm.name}</span>
-                        <span class="text-[10px] text-gray-500 font-mono tracking-tighter uppercase">{perm.slug}</span>
+                        <span class="text-sm font-semibold {selectedPermissionIds.has(perm.id) ? 'text-on-surface' : 'text-on-surface-variant'}">{perm.name}</span>
+                        <span class="text-[10px] text-on-surface-variant/40 font-mono tracking-tighter uppercase">{perm.slug}</span>
                       </div>
                       
                       <div class="w-6 h-6 rounded-lg flex items-center justify-center transition-all {selectedPermissionIds.has(perm.id)
-                        ? 'bg-indigo-500 text-white' 
-                        : 'bg-white/5 text-gray-600 group-hover:bg-white/10'}">
+                        ? 'bg-indigo-500 text-on-surface' 
+                        : 'bg-surface-highest text-gray-600 group-hover:bg-surface-highest'}">
                         {#if selectedPermissionIds.has(perm.id)}
                           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
                         {:else}
@@ -238,7 +238,7 @@
         </div>
       </div>
     {:else}
-      <div class="h-64 flex items-center justify-center text-gray-500 animate-pulse bg-anirank-card rounded-3xl border border-white/5">
+      <div class="h-64 flex items-center justify-center text-on-surface-variant/40 animate-pulse bg-surface-container rounded-3xl border border-outline-variant">
         Select a role to manage its permissions
       </div>
     {/if}

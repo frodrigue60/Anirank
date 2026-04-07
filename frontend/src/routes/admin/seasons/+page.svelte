@@ -11,10 +11,10 @@
   class="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
 >
   <div>
-    <h1 class="text-3xl font-bold tracking-tight text-white mb-1">
+    <h1 class="text-3xl font-bold tracking-tight text-on-surface mb-1">
       Seasons Management
     </h1>
-    <p class="text-gray-400">
+    <p class="text-on-surface-variant/70">
       Manage anime seasons (Winter, Spring, Summer, Fall).
     </p>
   </div>

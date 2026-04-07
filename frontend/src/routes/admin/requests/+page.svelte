@@ -55,35 +55,35 @@
   class="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
 >
   <div>
-    <h1 class="text-3xl font-bold tracking-tight text-white mb-1">
+    <h1 class="text-3xl font-bold tracking-tight text-on-surface mb-1">
       User Requests
     </h1>
-    <p class="text-gray-400">
+    <p class="text-on-surface-variant/70">
       Manage catalog suggestions and general support tickets.
     </p>
   </div>
 </div>
 
-<div class="bg-anirank-card border border-white/5 rounded-2xl overflow-hidden">
+<div class="bg-surface-container border border-outline-variant rounded-2xl overflow-hidden">
   <div
-    class="p-4 border-b border-white/5 flex gap-2 overflow-x-auto custom-scrollbar"
+    class="p-4 border-b border-outline-variant flex gap-2 overflow-x-auto custom-scrollbar"
   >
     <button
       onclick={() => loadRequests("pending")}
       class="px-4 py-1.5 text-sm font-medium rounded-lg transition-colors {currentStatus ===
       'pending'
-        ? 'bg-white/10 text-white'
-        : 'hover:bg-white/5 text-gray-400'}">Pending</button
+        ? 'bg-surface-highest text-on-surface'
+        : 'hover:bg-surface-highest text-on-surface-variant/70'}">Pending</button
     >
     <button
       onclick={() => loadRequests("attended")}
       class="px-4 py-1.5 text-sm font-medium rounded-lg transition-colors {currentStatus ===
       'attended'
-        ? 'bg-white/10 text-white'
-        : 'hover:bg-white/5 text-gray-400'}">Attended</button
+        ? 'bg-surface-highest text-on-surface'
+        : 'hover:bg-surface-highest text-on-surface-variant/70'}">Attended</button
     >
     {#if loadingStatus}
-      <div class="flex items-center ml-2 text-gray-400">
+      <div class="flex items-center ml-2 text-on-surface-variant/70">
         <svg class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
           <circle
             class="opacity-25"
@@ -103,9 +103,9 @@
     {/if}
   </div>
 
-  <table class="w-full text-left text-sm text-gray-300">
+  <table class="w-full text-left text-sm text-on-surface-variant">
     <thead
-      class="text-xs text-gray-400 uppercase bg-white/5 border-b border-white/5"
+      class="text-xs text-on-surface-variant/70 uppercase bg-surface-highest border-b border-outline-variant"
     >
       <tr>
         <th class="px-6 py-4 font-semibold">ID</th>
@@ -118,7 +118,7 @@
     <tbody class="divide-y divide-white/5">
       {#each requests as req}
         <tr class="hover:bg-white/2 transition-colors">
-          <td class="px-6 py-4 font-medium text-gray-500">#{req.id}</td>
+          <td class="px-6 py-4 font-medium text-on-surface-variant/40">#{req.id}</td>
           <td class="px-6 py-4">
             <div class="flex items-center gap-2">
               <div
@@ -126,18 +126,18 @@
               >
                 {req.user?.name.charAt(0)}
               </div>
-              <span class="font-medium text-white">{req.user?.name}</span>
+              <span class="font-medium text-on-surface">{req.user?.name}</span>
             </div>
           </td>
           <td class="px-6 py-4">
-            <div class="font-medium text-white mb-1">
-              <a href="/admin/requests/{req.id}" class="hover:text-white"
+            <div class="font-medium text-on-surface mb-1">
+              <a href="/admin/requests/{req.id}" class="hover:text-on-surface"
                 >{req.title || "General Request"}</a
               >
             </div>
-            <div class="text-gray-400 text-xs line-clamp-2">{req.content}</div>
+            <div class="text-on-surface-variant/70 text-xs line-clamp-2">{req.content}</div>
           </td>
-          <td class="px-6 py-4 text-xs text-gray-500">
+          <td class="px-6 py-4 text-xs text-on-surface-variant/40">
             {new Date(req.created_at).toLocaleDateString()}
           </td>
           <td class="px-6 py-4 text-right">
@@ -152,7 +152,7 @@
         </tr>
       {:else}
         <tr>
-          <td colspan="5" class="px-6 py-12 text-center text-gray-500">
+          <td colspan="5" class="px-6 py-12 text-center text-on-surface-variant/40">
             No {currentStatus} requests.
           </td>
         </tr>

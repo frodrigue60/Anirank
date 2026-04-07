@@ -313,21 +313,21 @@
 
 <div class="space-y-8">
   <div
-    class="bg-anirank-card border border-white/5 rounded-3xl p-4 flex flex-wrap items-center gap-6 shadow-xl"
+    class="bg-surface-container border border-outline-variant rounded-3xl p-4 flex flex-wrap items-center gap-6 shadow-xl"
   >
     <div class="flex flex-col">
-      <span class="text-[10px] font-bold uppercase text-gray-500 tracking-wider"
+      <span class="text-[10px] font-bold uppercase text-on-surface-variant/40 tracking-wider"
         >External Services</span
       >
-      <h2 class="text-white font-bold">API Health Check</h2>
+      <h2 class="text-on-surface font-bold">API Health Check</h2>
     </div>
 
     <div class="flex flex-wrap items-center gap-3">
       <!-- Anilist Status -->
       <div
-        class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/40 border border-white/10"
+        class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/40 border border-outline-variant"
       >
-        <span class="text-xs font-bold text-gray-400">AniList</span>
+        <span class="text-xs font-bold text-on-surface-variant/70">AniList</span>
         {#if apiStatus.anilist.status === "loading"}
           <div class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>
         {:else if apiStatus.anilist.status === "online"}
@@ -353,9 +353,9 @@
 
       <!-- AnimeThemes Status -->
       <div
-        class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/40 border border-white/10"
+        class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/40 border border-outline-variant"
       >
-        <span class="text-xs font-bold text-gray-400">AnimeThemes</span>
+        <span class="text-xs font-bold text-on-surface-variant/70">AnimeThemes</span>
         {#if apiStatus.animethemes.status === "loading"}
           <div class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>
         {:else if apiStatus.animethemes.status === "online"}
@@ -381,7 +381,7 @@
 
       <button
         onclick={fetchApiStatus}
-        class="p-2 hover:bg-white/5 rounded-full transition-colors text-gray-400 hover:text-white"
+        class="p-2 hover:bg-surface-highest rounded-full transition-colors text-on-surface-variant/70 hover:text-on-surface"
         title="Check status now"
       >
         <span
@@ -410,11 +410,11 @@
     <!-- Section: AniList Tools -->
     <section class="space-y-6">
       <div class="px-1">
-        <h2 class="text-xl font-bold text-white leading-tight">
+        <h2 class="text-xl font-bold text-on-surface leading-tight">
           AniList Integration
         </h2>
         <p
-          class="text-xs text-gray-500 uppercase tracking-widest font-bold mt-1"
+          class="text-xs text-on-surface-variant/40 uppercase tracking-widest font-bold mt-1"
         >
           Metadata & Resource Discovery
         </p>
@@ -422,7 +422,7 @@
 
       <!-- Batch Import (AniList) -->
       <div
-        class="bg-anirank-card border border-white/5 rounded-3xl p-6 shadow-2xl relative overflow-hidden group"
+        class="bg-surface-container border border-outline-variant rounded-3xl p-6 shadow-2xl relative overflow-hidden group"
       >
         <div
           class="absolute top-0 right-0 p-8 opacity-5 -mr-4 -mt-4 group-hover:scale-110 transition-transform"
@@ -431,10 +431,10 @@
         </div>
 
         <div class="mb-6 relative">
-          <h3 class="text-lg font-bold text-white flex items-center gap-2">
+          <h3 class="text-lg font-bold text-on-surface flex items-center gap-2">
             Batch Seasonal Import
           </h3>
-          <p class="text-sm text-gray-400">
+          <p class="text-sm text-on-surface-variant/70">
             Fetch series data for a specific year and season.
           </p>
         </div>
@@ -444,14 +444,14 @@
             <div class="space-y-2">
               <label
                 for="batchYear"
-                class="text-[10px] font-bold uppercase text-gray-400 ml-1"
+                class="text-[10px] font-bold uppercase text-on-surface-variant/70 ml-1"
                 >Year</label
               >
               <select
                 id="batchYear"
                 bind:value={batchYear}
                 required
-                class="w-full bg-black/60 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-anirank-primary transition-all shadow-inner"
+                class="w-full bg-black/60 border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all shadow-inner"
               >
                 <option value={0}>Year</option>
                 {#each Array.from({ length: 77 }, (_, i) => new Date().getFullYear() + 1 - i) as year}
@@ -463,14 +463,14 @@
             <div class="space-y-2">
               <label
                 for="batchSeason"
-                class="text-[10px] font-bold uppercase text-gray-400 ml-1"
+                class="text-[10px] font-bold uppercase text-on-surface-variant/70 ml-1"
                 >Season</label
               >
               <select
                 id="batchSeason"
                 bind:value={batchSeason}
                 required
-                class="w-full bg-black/60 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-anirank-primary transition-all shadow-inner"
+                class="w-full bg-black/60 border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all shadow-inner"
               >
                 <option value="">Season</option>
                 <option value="WINTER">Winter</option>
@@ -483,14 +483,14 @@
             <div class="space-y-2">
               <label
                 for="batchFormat"
-                class="text-[10px] font-bold uppercase text-gray-400 ml-1"
+                class="text-[10px] font-bold uppercase text-on-surface-variant/70 ml-1"
                 >Format</label
               >
               <select
                 id="batchFormat"
                 bind:value={batchFormat}
                 required
-                class="w-full bg-black/60 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-anirank-primary transition-all shadow-inner"
+                class="w-full bg-black/60 border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all shadow-inner"
               >
                 <option value="">Format</option>
                 <option value="TV">TV</option>
@@ -506,7 +506,7 @@
           <button
             type="submit"
             disabled={isGenerating || apiStatus.anilist.status !== "online"}
-            class="w-full bg-blue-600 hover:bg-blue-600/80 disabled:bg-gray-700 py-3 rounded-xl text-white font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-anirank-primary/20"
+            class="w-full bg-blue-600 hover:bg-primary-container/80 disabled:bg-gray-700 py-3 rounded-xl text-on-surface font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-anirank-primary/20"
           >
             {#if isGenerating}
               <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24"
@@ -534,13 +534,13 @@
 
       <!-- Manual Search (AniList) -->
       <div
-        class="bg-anirank-card border border-white/5 rounded-3xl p-6 shadow-2xl"
+        class="bg-surface-container border border-outline-variant rounded-3xl p-6 shadow-2xl"
       >
         <div class="mb-4">
-          <h3 class="text-lg font-bold text-white flex items-center gap-2">
+          <h3 class="text-lg font-bold text-on-surface flex items-center gap-2">
             Focused AniList Search
           </h3>
-          <p class="text-sm text-gray-400">
+          <p class="text-sm text-on-surface-variant/70">
             Import a specific title by searching.
           </p>
         </div>
@@ -551,13 +551,13 @@
             required
             bind:value={anilistQuery}
             placeholder="Series title on AniList..."
-            class="flex-1 bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-anirank-primary transition-all"
+            class="flex-1 bg-black/60 border border-outline-variant rounded-xl px-4 py-3 text-on-surface placeholder-white/20 focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all"
           />
           <button
             type="submit"
             disabled={isSearchingAnilist ||
               apiStatus.anilist.status !== "online"}
-            class="px-6 bg-blue-600 hover:bg-blue-600/80 disabled:bg-gray-700 rounded-xl text-white font-bold transition-all flex items-center gap-2 shadow-lg shadow-anirank-primary/20"
+            class="px-6 bg-blue-600 hover:bg-primary-container/80 disabled:bg-gray-700 rounded-xl text-on-surface font-bold transition-all flex items-center gap-2 shadow-lg shadow-anirank-primary/20"
           >
             {#if isSearchingAnilist}
               <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24"
@@ -585,11 +585,11 @@
     <!-- Section: AnimeThemes Tools -->
     <section class="space-y-6">
       <div class="px-1">
-        <h2 class="text-xl font-bold text-white leading-tight">
+        <h2 class="text-xl font-bold text-on-surface leading-tight">
           AnimeThemes Integration
         </h2>
         <p
-          class="text-xs text-gray-500 uppercase tracking-widest font-bold mt-1"
+          class="text-xs text-on-surface-variant/40 uppercase tracking-widest font-bold mt-1"
         >
           Music Hydration & Synchro
         </p>
@@ -597,7 +597,7 @@
 
       <!-- Hydration (AnimeThemes) -->
       <div
-        class="bg-anirank-card border border-white/5 rounded-3xl p-6 shadow-2xl relative overflow-hidden group"
+        class="bg-surface-container border border-outline-variant rounded-3xl p-6 shadow-2xl relative overflow-hidden group"
       >
         <div
           class="absolute top-0 right-0 p-8 opacity-5 -mr-4 -mt-4 group-hover:scale-110 transition-transform"
@@ -608,8 +608,8 @@
         </div>
 
         <div class="mb-6 relative">
-          <h3 class="text-lg font-bold text-white">Seasonal Music Hydration</h3>
-          <p class="text-sm text-gray-400">
+          <h3 class="text-lg font-bold text-on-surface">Seasonal Music Hydration</h3>
+          <p class="text-sm text-on-surface-variant/70">
             Enrich existing animes with songs and variants.
           </p>
         </div>
@@ -619,14 +619,14 @@
             <div class="space-y-2">
               <label
                 for="atYear"
-                class="text-[10px] font-bold uppercase text-gray-400 ml-1"
+                class="text-[10px] font-bold uppercase text-on-surface-variant/70 ml-1"
                 >Year</label
               >
               <select
                 id="atYear"
                 bind:value={atYear}
                 required
-                class="w-full bg-black/60 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-purple-500 transition-all shadow-inner"
+                class="w-full bg-black/60 border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface focus:outline-none focus:border-purple-500 transition-all shadow-inner"
               >
                 <option value={0}>Year</option>
                 {#each Array.from({ length: 77 }, (_, i) => new Date().getFullYear() + 1 - i) as year}
@@ -638,14 +638,14 @@
             <div class="space-y-2">
               <label
                 for="atSeason"
-                class="text-[10px] font-bold uppercase text-gray-400 ml-1"
+                class="text-[10px] font-bold uppercase text-on-surface-variant/70 ml-1"
                 >Season</label
               >
               <select
                 id="atSeason"
                 bind:value={atSeason}
                 required
-                class="w-full bg-black/60 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-purple-500 transition-all shadow-inner"
+                class="w-full bg-black/60 border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface focus:outline-none focus:border-purple-500 transition-all shadow-inner"
               >
                 <option value="">Season</option>
                 <option value="WINTER">Winter</option>
@@ -659,7 +659,7 @@
           <button
             type="submit"
             disabled={isHydrating || apiStatus.animethemes.status !== "online"}
-            class="w-full bg-purple-600 hover:bg-purple-600/80 disabled:bg-gray-700 py-3 rounded-xl text-white font-bold transition-all flex items-center justify-center gap-2"
+            class="w-full bg-purple-600 hover:bg-purple-600/80 disabled:bg-gray-700 py-3 rounded-xl text-on-surface font-bold transition-all flex items-center justify-center gap-2"
           >
             {#if isHydrating}
               <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24"
@@ -708,12 +708,12 @@
                   ></path></svg
                 >
               </div>
-              <p class="text-sm font-medium text-white truncate">
+              <p class="text-sm font-medium text-on-surface truncate">
                 {progressMessage}
               </p>
             </div>
             <div
-              class="mt-3 w-full bg-white/5 rounded-full h-1 overflow-hidden"
+              class="mt-3 w-full bg-surface-highest rounded-full h-1 overflow-hidden"
             >
               <div class="bg-purple-500 h-full w-full animate-pulse"></div>
             </div>
@@ -723,13 +723,13 @@
 
       <!-- Manual Search (AnimeThemes) -->
       <div
-        class="bg-anirank-card border border-white/5 rounded-3xl p-6 shadow-2xl"
+        class="bg-surface-container border border-outline-variant rounded-3xl p-6 shadow-2xl"
       >
         <div class="mb-4">
-          <h3 class="text-lg font-bold text-white flex items-center gap-2">
+          <h3 class="text-lg font-bold text-on-surface flex items-center gap-2">
             Focused AnimeThemes Search
           </h3>
-          <p class="text-sm text-gray-400">
+          <p class="text-sm text-on-surface-variant/70">
             Import a specific title by searching on AnimeThemes.
           </p>
         </div>
@@ -739,13 +739,13 @@
             type="text"
             bind:value={animeThemesQuery}
             placeholder="Series title on AnimeThemes..."
-            class="flex-1 bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-purple-500 transition-all font-medium"
+            class="flex-1 bg-black/60 border border-outline-variant rounded-xl px-4 py-3 text-on-surface placeholder-white/20 focus:outline-none focus:border-purple-500 transition-all font-medium"
           />
           <button
             type="submit"
             disabled={isSearchingAnimeThemes ||
               apiStatus.animethemes.status !== "online"}
-            class="px-6 bg-purple-600 hover:bg-purple-600/80 disabled:bg-gray-700 rounded-xl text-white font-bold transition-all flex items-center gap-2"
+            class="px-6 bg-purple-600 hover:bg-purple-600/80 disabled:bg-gray-700 rounded-xl text-on-surface font-bold transition-all flex items-center gap-2"
           >
             {#if isSearchingAnimeThemes}
               <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24"
@@ -777,28 +777,28 @@
     class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 animate-in fade-in"
   >
     <div
-      class="bg-black border border-white/10 rounded-3xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden"
+      class="bg-black border border-outline-variant rounded-3xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden"
     >
       <!-- Header -->
       <div
-        class="p-6 border-b border-white/10 flex justify-between items-center bg-white/5"
+        class="p-6 border-b border-outline-variant flex justify-between items-center bg-surface-highest"
       >
         <div>
-          <h3 class="text-xl font-bold text-white flex items-center gap-2">
-            <span class="text-anirank-primary material-symbols-outlined"
+          <h3 class="text-xl font-bold text-on-surface flex items-center gap-2">
+            <span class="text-primary material-symbols-outlined"
               >cloud_download</span
             >
             AnimeThemes Results
           </h3>
-          <p class="text-sm text-gray-400">
-            Showing results for: <span class="text-white font-medium italic"
+          <p class="text-sm text-on-surface-variant/70">
+            Showing results for: <span class="text-on-surface font-medium italic"
               >"{animeThemesQuery}"</span
             >
           </p>
         </div>
         <button
           onclick={() => (showResultsModal = false)}
-          class="p-2 hover:bg-white/10 rounded-full transition-colors text-gray-400"
+          class="p-2 hover:bg-surface-highest rounded-full transition-colors text-on-surface-variant/70"
         >
           <span class="material-symbols-outlined">close</span>
         </button>
@@ -811,7 +811,7 @@
             <span class="material-symbols-outlined text-5xl text-gray-600 mb-2"
               >search_off</span
             >
-            <p class="text-gray-400">No results found on AnimeThemes.</p>
+            <p class="text-on-surface-variant/70">No results found on AnimeThemes.</p>
           </div>
         {:else}
           <div
@@ -823,8 +823,8 @@
                 class="flex flex-col gap-3 p-3 rounded-2xl border transition-all text-left group/card relative {selectedAnimeThemesIDs.has(
                   anime.id,
                 )
-                  ? 'bg-anirank-primary/20 border-anirank-primary shadow-lg shadow-anirank-primary/10'
-                  : 'bg-white/5 border-white/5 hover:border-white/20'}"
+                  ? 'bg-primary/20 border-primary shadow-lg shadow-anirank-primary/10'
+                  : 'bg-surface-highest border-outline-variant hover:border-outline-variant'}"
               >
                 <div
                   class="relative w-full aspect-2/3 shrink-0 rounded-xl overflow-hidden bg-black/40 shadow-inner"
@@ -850,10 +850,10 @@
 
                   {#if selectedAnimeThemesIDs.has(anime.id)}
                     <div
-                      class="absolute inset-0 bg-anirank-primary/40 flex items-center justify-center"
+                      class="absolute inset-0 bg-primary/40 flex items-center justify-center"
                     >
                       <span
-                        class="material-symbols-outlined text-white font-bold scale-125"
+                        class="material-symbols-outlined text-on-surface font-bold scale-125"
                         >check_circle</span
                       >
                     </div>
@@ -862,19 +862,19 @@
 
                 <div class="flex-1 min-w-0 px-1">
                   <h4
-                    class="font-bold text-white truncate text-sm"
+                    class="font-bold text-on-surface truncate text-sm"
                     title={anime.name}
                   >
                     {anime.name}
                   </h4>
                   <div class="flex flex-col mt-1">
                     <p
-                      class="text-[10px] text-gray-400 uppercase tracking-widest font-bold"
+                      class="text-[10px] text-on-surface-variant/70 uppercase tracking-widest font-bold"
                     >
                       {anime.season}
                       {anime.year}
                     </p>
-                    <p class="text-[10px] text-gray-500 font-medium mt-0.5">
+                    <p class="text-[10px] text-on-surface-variant/40 font-medium mt-0.5">
                       {anime.media_format || "TV"}
                     </p>
                   </div>
@@ -887,23 +887,23 @@
 
       <!-- Footer -->
       <div
-        class="p-6 border-t border-white/10 flex justify-between items-center bg-white/5"
+        class="p-6 border-t border-outline-variant flex justify-between items-center bg-surface-highest"
       >
-        <p class="text-sm text-gray-400">
-          <span class="text-white font-bold">{selectedAnimeThemesIDs.size}</span
+        <p class="text-sm text-on-surface-variant/70">
+          <span class="text-on-surface font-bold">{selectedAnimeThemesIDs.size}</span
           > selected
         </p>
         <div class="flex gap-3">
           <button
             onclick={() => (showResultsModal = false)}
-            class="px-6 py-2.5 rounded-xl text-white font-medium hover:bg-white/5 transition-colors"
+            class="px-6 py-2.5 rounded-xl text-on-surface font-medium hover:bg-surface-highest transition-colors"
           >
             Cancel
           </button>
           <button
             onclick={handleImportSelected}
             disabled={selectedAnimeThemesIDs.size === 0}
-            class="px-8 py-2.5 bg-anirank-primary hover:bg-blue-600 disabled:bg-gray-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-anirank-primary/20"
+            class="px-8 py-2.5 bg-primary hover:bg-primary-container disabled:bg-gray-700 text-on-surface font-bold rounded-xl transition-all shadow-lg shadow-anirank-primary/20"
           >
             Import Selected
           </button>
@@ -918,28 +918,28 @@
     class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 animate-in fade-in"
   >
     <div
-      class="bg-black border border-white/10 rounded-3xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden"
+      class="bg-black border border-outline-variant rounded-3xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden"
     >
       <!-- Header -->
       <div
-        class="p-6 border-b border-white/10 flex justify-between items-center bg-white/5"
+        class="p-6 border-b border-outline-variant flex justify-between items-center bg-surface-highest"
       >
         <div>
-          <h3 class="text-xl font-bold text-white flex items-center gap-2">
-            <span class="text-anirank-primary material-symbols-outlined"
+          <h3 class="text-xl font-bold text-on-surface flex items-center gap-2">
+            <span class="text-primary material-symbols-outlined"
               >search</span
             >
             AniList Results
           </h3>
-          <p class="text-sm text-gray-400">
-            Showing results for: <span class="text-white font-medium italic"
+          <p class="text-sm text-on-surface-variant/70">
+            Showing results for: <span class="text-on-surface font-medium italic"
               >"{anilistQuery}"</span
             >
           </p>
         </div>
         <button
           onclick={() => (showAnilistResultsModal = false)}
-          class="p-2 hover:bg-white/10 rounded-full transition-colors text-gray-400"
+          class="p-2 hover:bg-surface-highest rounded-full transition-colors text-on-surface-variant/70"
         >
           <span class="material-symbols-outlined">close</span>
         </button>
@@ -952,7 +952,7 @@
             <span class="material-symbols-outlined text-5xl text-gray-600 mb-2"
               >search_off</span
             >
-            <p class="text-gray-400">No results found on AniList.</p>
+            <p class="text-on-surface-variant/70">No results found on AniList.</p>
           </div>
         {:else}
           <div
@@ -964,8 +964,8 @@
                 class="flex flex-col gap-3 p-3 rounded-2xl border transition-all text-left group/card relative {selectedAnilistIDs.has(
                   anime.id,
                 )
-                  ? 'bg-anirank-primary/20 border-anirank-primary shadow-lg shadow-anirank-primary/10'
-                  : 'bg-white/5 border-white/5 hover:border-white/20'}"
+                  ? 'bg-primary/20 border-primary shadow-lg shadow-anirank-primary/10'
+                  : 'bg-surface-highest border-outline-variant hover:border-outline-variant'}"
               >
                 <div
                   class="relative w-full aspect-2/3 shrink-0 rounded-xl overflow-hidden bg-black/40 shadow-inner"
@@ -987,10 +987,10 @@
 
                   {#if selectedAnilistIDs.has(anime.id)}
                     <div
-                      class="absolute inset-0 bg-anirank-primary/40 flex items-center justify-center"
+                      class="absolute inset-0 bg-primary/40 flex items-center justify-center"
                     >
                       <span
-                        class="material-symbols-outlined text-white font-bold scale-125"
+                        class="material-symbols-outlined text-on-surface font-bold scale-125"
                         >check_circle</span
                       >
                     </div>
@@ -999,19 +999,19 @@
 
                 <div class="flex-1 min-w-0 px-1">
                   <h4
-                    class="font-bold text-white truncate text-sm"
+                    class="font-bold text-on-surface truncate text-sm"
                     title={anime.title.romaji}
                   >
                     {anime.title.romaji || anime.title.english}
                   </h4>
                   <div class="flex flex-col mt-1">
                     <p
-                      class="text-[10px] text-gray-400 uppercase tracking-widest font-bold"
+                      class="text-[10px] text-on-surface-variant/70 uppercase tracking-widest font-bold"
                     >
                       {anime.season || "N/A"}
                       {anime.seasonYear || ""}
                     </p>
-                    <p class="text-[10px] text-gray-500 font-medium mt-0.5">
+                    <p class="text-[10px] text-on-surface-variant/40 font-medium mt-0.5">
                       {anime.format || "TV"}
                     </p>
                   </div>
@@ -1024,22 +1024,22 @@
 
       <!-- Footer -->
       <div
-        class="p-6 border-t border-white/10 flex justify-between items-center bg-white/5"
+        class="p-6 border-t border-outline-variant flex justify-between items-center bg-surface-highest"
       >
-        <p class="text-sm text-gray-400">
-          <span class="text-white font-bold">{selectedAnilistIDs.size}</span> selected
+        <p class="text-sm text-on-surface-variant/70">
+          <span class="text-on-surface font-bold">{selectedAnilistIDs.size}</span> selected
         </p>
         <div class="flex gap-3">
           <button
             onclick={() => (showAnilistResultsModal = false)}
-            class="px-6 py-2.5 rounded-xl text-white font-medium hover:bg-white/5 transition-colors"
+            class="px-6 py-2.5 rounded-xl text-on-surface font-medium hover:bg-surface-highest transition-colors"
           >
             Cancel
           </button>
           <button
             onclick={handleAnilistImportSelected}
             disabled={selectedAnilistIDs.size === 0 || isImportingAnilist}
-            class="px-8 py-2.5 bg-anirank-primary hover:bg-blue-600 disabled:bg-gray-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-anirank-primary/20 flex items-center gap-2"
+            class="px-8 py-2.5 bg-primary hover:bg-primary-container disabled:bg-gray-700 text-on-surface font-bold rounded-xl transition-all shadow-lg shadow-anirank-primary/20 flex items-center gap-2"
           >
             {#if isImportingAnilist}
               <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">

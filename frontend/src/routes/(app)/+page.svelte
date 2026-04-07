@@ -71,8 +71,9 @@
             style="background-image: url('{homeData.featured_song.anime
               ?.banner_url ?? '/images/placeholders/default-banner.jpg'}');"
           ></div>
+          <!-- gradient -->
           <div
-            class="absolute inset-0 bg-linear-to-t from-surface via-surface/40 to-transparent sm:bg-linear-to-r sm:from-surface sm:via-surface/80 sm:to-transparent"
+            class="absolute inset-0 bg-linear-to-t from-surface/80 via-surface/40 to-transparent sm:bg-linear-to-r sm:from-surface/80 sm:via-surface/40 sm:to-transparent"
           ></div>
           <div
             class="relative z-10 p-8 md:p-12 flex flex-col md:flex-row gap-8 items-center md:items-end w-full h-full"
@@ -140,7 +141,7 @@
                 <a
                   href="/songs/{homeData.featured_song.anime?.slug}/{homeData
                     .featured_song.slug}"
-                  class="flex h-12 items-center justify-center gap-2 rounded-full bg-linear-to-br from-primary to-primary-container px-8 text-lg font-bold text-white transition-all hover:scale-105 hover:shadow-lg hover:shadow-primary/20 active:scale-95 sm:h-14 sm:px-10"
+                  class="flex h-12 items-center justify-center gap-2 rounded-full border border-outline-variant/20 bg-surface-container text-on-surface px-8 text-lg font-bold transition-all hover:scale-105 hover:shadow-lg hover:shadow-primary/20 active:scale-95 sm:h-14 sm:px-10"
                   title="Play featured theme: {getSongName(
                     homeData.featured_song,
                   )}"
@@ -179,7 +180,7 @@
           <div class="flex flex-col gap-4">
             <div class="mb-2 flex items-center justify-between">
               <span
-                class="text-xs font-bold uppercase tracking-wider text-on-surface-variant/60"
+                class="text-xs font-bold uppercase tracking-wider text-on-surface-variant"
                 >Top Openings</span
               >
             </div>
@@ -214,7 +215,7 @@
                         {getSongName(item)}
                       </h3>
                       <div
-                        class="ml-2 flex shrink-0 items-center gap-1 rounded-full bg-surface-highest px-2 py-0.5 text-xs font-bold text-rating-star"
+                        class="ml-2 flex shrink-0 items-center gap-1 rounded-full bg-primary/20 px-2 py-0.5 text-xs font-bold text-on-surface-variant"
                       >
                         <span class="material-symbols-outlined filled"
                           >star</span
@@ -244,7 +245,7 @@
           <div class="flex flex-col gap-4">
             <div class="mb-2 flex items-center justify-between">
               <span
-                class="text-xs font-bold uppercase tracking-wider text-on-surface-variant/60"
+                class="text-xs font-bold uppercase tracking-wider text-on-surface-variant"
                 >Top Endings</span
               >
             </div>
@@ -279,7 +280,7 @@
                         {getSongName(item)}
                       </h3>
                       <div
-                        class="ml-2 flex shrink-0 items-center gap-1 rounded-full bg-surface-highest px-2 py-0.5 text-xs font-bold text-rating-star"
+                        class="ml-2 flex shrink-0 items-center gap-1 rounded-full bg-primary/20 px-2 py-0.5 text-xs font-bold text-on-surface-variant"
                       >
                         <span class="material-symbols-outlined filled"
                           >star</span
@@ -350,7 +351,7 @@
               aria-label="Scroll carousel to the left"
             >
               <span
-                class="material-symbols-outlined text-on-surface-variant/60 transition-colors group-hover:text-primary"
+                class="material-symbols-outlined text-on-surface-variant transition-colors group-hover:text-primary"
                 >arrow_back</span
               >
             </button>
@@ -361,7 +362,7 @@
               aria-label="Scroll carousel to the right"
             >
               <span
-                class="material-symbols-outlined text-on-surface-variant/60 transition-colors group-hover:text-primary"
+                class="material-symbols-outlined text-on-surface-variant transition-colors group-hover:text-primary"
                 >arrow_forward</span
               >
             </button>
@@ -516,9 +517,7 @@
     <!-- Right Column (Sidebar) -->
     <aside class="lg:col-span-3 flex flex-col gap-8">
       <!-- Featured Artists -->
-      <div
-        class="rounded-2xl bg-surface-low p-6 border border-outline-variant/10"
-      >
+      <div class="rounded-2xl bg-surface-low p-6">
         <div class="mb-6 flex items-center justify-between">
           <h3 class="text-lg font-bold text-on-surface">Featured Artists</h3>
         </div>

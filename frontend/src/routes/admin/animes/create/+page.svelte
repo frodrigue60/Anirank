@@ -99,7 +99,7 @@
     <a
       href="/admin/animes"
       aria-label="Back to Animes"
-      class="text-gray-400 hover:text-white transition-colors p-2 -ml-2 rounded-lg hover:bg-white/5"
+      class="text-on-surface-variant/70 hover:text-on-surface transition-colors p-2 -ml-2 rounded-lg hover:bg-surface-highest"
     >
       <svg
         class="w-5 h-5"
@@ -115,11 +115,11 @@
         />
       </svg>
     </a>
-    <h1 class="text-3xl font-bold tracking-tight text-white">
+    <h1 class="text-3xl font-bold tracking-tight text-on-surface">
       Create New Anime
     </h1>
   </div>
-  <p class="text-gray-400 ml-10">Add a new anime entry to the catalog.</p>
+  <p class="text-on-surface-variant/70 ml-10">Add a new anime entry to the catalog.</p>
 </div>
 
 {#if errorMsg}
@@ -144,10 +144,10 @@
 
 <form onsubmit={handleSubmit} class="space-y-6 max-w-4xl">
   <!-- General Info -->
-  <div class="bg-anirank-card border border-white/5 rounded-2xl p-6">
-    <h2 class="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+  <div class="bg-surface-container border border-outline-variant rounded-2xl p-6">
+    <h2 class="text-xl font-semibold text-on-surface mb-6 flex items-center gap-2">
       <svg
-        class="w-5 h-5 text-gray-400"
+        class="w-5 h-5 text-on-surface-variant/70"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -163,7 +163,7 @@
 
     <div class="space-y-4">
       <div>
-        <label for="title" class="block text-sm font-medium text-gray-300 mb-1"
+        <label for="title" class="block text-sm font-medium text-on-surface-variant mb-1"
           >Title <span class="text-red-400">*</span></label
         >
         <input
@@ -171,7 +171,7 @@
           id="title"
           bind:value={title}
           required
-          class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white placeholder-gray-500 focus:outline-none focus:border-anirank-primary focus:ring-1 focus:ring-anirank-primary transition-all"
+          class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface placeholder-gray-500 focus:outline-none focus:border-primary/30 focus:bg-surface-highest focus:ring-4 focus:ring-primary/5 focus:outline-none transition-all"
           placeholder="e.g. Shingeki no Kyojin"
         />
       </div>
@@ -179,14 +179,14 @@
       <div>
         <label
           for="description"
-          class="block text-sm font-medium text-gray-300 mb-1"
+          class="block text-sm font-medium text-on-surface-variant mb-1"
           >Description</label
         >
         <textarea
           id="description"
           bind:value={description}
           rows="4"
-          class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white placeholder-gray-500 focus:outline-none focus:border-anirank-primary focus:ring-1 focus:ring-anirank-primary transition-all"
+          class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface placeholder-gray-500 focus:outline-none focus:border-primary/30 focus:bg-surface-highest focus:ring-4 focus:ring-primary/5 focus:outline-none transition-all"
           placeholder="Synopsis or brief description..."
         ></textarea>
       </div>
@@ -195,10 +195,10 @@
 
   <!-- Taxonomies & Metadata -->
   <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <div class="bg-anirank-card border border-white/5 rounded-2xl p-6">
-      <h2 class="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+    <div class="bg-surface-container border border-outline-variant rounded-2xl p-6">
+      <h2 class="text-xl font-semibold text-on-surface mb-6 flex items-center gap-2">
         <svg
-          class="w-5 h-5 text-gray-400"
+          class="w-5 h-5 text-on-surface-variant/70"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -216,7 +216,7 @@
         <div>
           <label
             for="studios"
-            class="block text-sm font-medium text-gray-300 mb-2">Studios</label
+            class="block text-sm font-medium text-on-surface-variant mb-2">Studios</label
           >
           <TagsInput
             endpoint="/admin/studios"
@@ -229,7 +229,7 @@
         <div>
           <label
             for="producers"
-            class="block text-sm font-medium text-gray-300 mb-2"
+            class="block text-sm font-medium text-on-surface-variant mb-2"
             >Producers</label
           >
           <TagsInput
@@ -243,7 +243,7 @@
         <div>
           <label
             for="genres"
-            class="block text-sm font-medium text-gray-300 mb-2">Genres</label
+            class="block text-sm font-medium text-on-surface-variant mb-2">Genres</label
           >
           <TagsInput
             endpoint="/admin/genres"
@@ -256,13 +256,13 @@
 
       <div class="space-y-4">
         <div>
-          <label for="year" class="block text-sm font-medium text-gray-300 mb-1"
+          <label for="year" class="block text-sm font-medium text-on-surface-variant mb-1"
             >Year</label
           >
           <select
             id="year"
             bind:value={year_id}
-            class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-anirank-primary transition-all [&>option]:bg-anirank-card"
+            class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all [&>option]:bg-surface-container"
           >
             <option value={0}>Select Year</option>
             {#each config.years as year}
@@ -274,12 +274,12 @@
         <div>
           <label
             for="season"
-            class="block text-sm font-medium text-gray-300 mb-1">Season</label
+            class="block text-sm font-medium text-on-surface-variant mb-1">Season</label
           >
           <select
             id="season"
             bind:value={season_id}
-            class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-anirank-primary transition-all [&>option]:bg-anirank-card"
+            class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all [&>option]:bg-surface-container"
           >
             <option value={0}>Select Season</option>
             {#each config.seasons as season}
@@ -291,12 +291,12 @@
         <div>
           <label
             for="format"
-            class="block text-sm font-medium text-gray-300 mb-1">Format</label
+            class="block text-sm font-medium text-on-surface-variant mb-1">Format</label
           >
           <select
             id="format"
             bind:value={format_id}
-            class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-anirank-primary transition-all [&>option]:bg-anirank-card"
+            class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all [&>option]:bg-surface-container"
           >
             <option value={0}>Select Format</option>
             {#each config.formats as format}
@@ -308,10 +308,10 @@
     </div>
 
     <!-- External & States -->
-    <div class="bg-anirank-card border border-white/5 rounded-2xl p-6">
-      <h2 class="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+    <div class="bg-surface-container border border-outline-variant rounded-2xl p-6">
+      <h2 class="text-xl font-semibold text-on-surface mb-6 flex items-center gap-2">
         <svg
-          class="w-5 h-5 text-gray-400"
+          class="w-5 h-5 text-on-surface-variant/70"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -329,7 +329,7 @@
         <div>
           <label
             for="anilist_id"
-            class="block text-sm font-medium text-gray-300 mb-1"
+            class="block text-sm font-medium text-on-surface-variant mb-1"
             >Anilist ID</label
           >
           <input
@@ -337,10 +337,10 @@
             id="anilist_id"
             title="Anilist ID"
             bind:value={anilist_id}
-            class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white placeholder-gray-500 focus:outline-none focus:border-anirank-primary transition-all"
+            class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface placeholder-gray-500 focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all"
             placeholder="e.g. 16498"
           />
-          <p class="text-xs text-gray-500 mt-1">
+          <p class="text-xs text-on-surface-variant/40 mt-1">
             Leave empty if it's a manual entry not tied to Anilist.
           </p>
         </div>
@@ -353,10 +353,10 @@
   </div>
 
   <!-- Assets -->
-  <div class="bg-anirank-card border border-white/5 rounded-2xl p-6">
-    <h2 class="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+  <div class="bg-surface-container border border-outline-variant rounded-2xl p-6">
+    <h2 class="text-xl font-semibold text-on-surface mb-6 flex items-center gap-2">
       <svg
-        class="w-5 h-5 text-gray-400"
+        class="w-5 h-5 text-on-surface-variant/70"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -373,19 +373,19 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <!-- Thumbnail -->
       <div>
-        <label for="cover" class="block text-sm font-medium text-gray-300 mb-2"
+        <label for="cover" class="block text-sm font-medium text-on-surface-variant mb-2"
           >Thumbnail (Cover)</label
         >
         <div class="flex items-center justify-center w-full">
           <label
             for="cover"
-            class="flex flex-col items-center justify-center w-full h-40 border-2 border-white/10 border-dashed rounded-xl cursor-pointer bg-white/5 hover:bg-white/10 hover:border-white/20 transition-all overflow-hidden relative"
+            class="flex flex-col items-center justify-center w-full h-40 border-2 border-outline-variant border-dashed rounded-xl cursor-pointer bg-surface-highest hover:bg-surface-highest hover:border-outline-variant transition-all overflow-hidden relative"
           >
             <div
               class="flex flex-col items-center justify-center pt-5 pb-6 px-4 text-center z-10"
             >
               <svg
-                class="w-8 h-8 mb-3 text-gray-400"
+                class="w-8 h-8 mb-3 text-on-surface-variant/70"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -396,16 +396,16 @@
                   d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
                 /></svg
               >
-              <p class="mb-1 text-sm text-gray-300">
+              <p class="mb-1 text-sm text-on-surface-variant">
                 <span class="font-semibold">Click to upload</span>
               </p>
-              <p class="text-xs text-gray-500">PNG, JPG up to 2MB</p>
+              <p class="text-xs text-on-surface-variant/40">PNG, JPG up to 2MB</p>
             </div>
             <!-- PREVIEW -->
             {#if coverFile}
               <div class="absolute inset-0 z-0 opacity-30 select-none">
                 <span
-                  class="absolute inset-0 flex items-center justify-center text-white bg-black/50 z-10 font-medium"
+                  class="absolute inset-0 flex items-center justify-center text-on-surface bg-black/50 z-10 font-medium"
                   >Selected</span
                 >
                 <img
@@ -428,19 +428,19 @@
 
       <!-- Banner -->
       <div>
-        <label for="banner" class="block text-sm font-medium text-gray-300 mb-2"
+        <label for="banner" class="block text-sm font-medium text-on-surface-variant mb-2"
           >Banner</label
         >
         <div class="flex items-center justify-center w-full">
           <label
             for="banner"
-            class="flex flex-col items-center justify-center w-full h-40 border-2 border-white/10 border-dashed rounded-xl cursor-pointer bg-white/5 hover:bg-white/10 hover:border-white/20 transition-all overflow-hidden relative"
+            class="flex flex-col items-center justify-center w-full h-40 border-2 border-outline-variant border-dashed rounded-xl cursor-pointer bg-surface-highest hover:bg-surface-highest hover:border-outline-variant transition-all overflow-hidden relative"
           >
             <div
               class="flex flex-col items-center justify-center pt-5 pb-6 px-4 text-center z-10"
             >
               <svg
-                class="w-8 h-8 mb-3 text-gray-400"
+                class="w-8 h-8 mb-3 text-on-surface-variant/70"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -451,16 +451,16 @@
                   d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                 /></svg
               >
-              <p class="mb-1 text-sm text-gray-300">
+              <p class="mb-1 text-sm text-on-surface-variant">
                 <span class="font-semibold">Click to upload</span>
               </p>
-              <p class="text-xs text-gray-500">Wide aspect ratio</p>
+              <p class="text-xs text-on-surface-variant/40">Wide aspect ratio</p>
             </div>
             <!-- PREVIEW -->
             {#if bannerFile}
               <div class="absolute inset-0 z-0 opacity-30 select-none">
                 <span
-                  class="absolute inset-0 flex items-center justify-center text-white bg-black/50 z-10 font-medium"
+                  class="absolute inset-0 flex items-center justify-center text-on-surface bg-black/50 z-10 font-medium"
                   >Selected</span
                 >
                 <img
@@ -483,21 +483,21 @@
     </div>
   </div>
 
-  <div class="flex items-center justify-end gap-3 pt-4 border-t border-white/5">
+  <div class="flex items-center justify-end gap-3 pt-4 border-t border-outline-variant">
     <a
       href="/admin/animes"
-      class="px-5 py-2.5 text-sm font-medium text-gray-300 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl transition-colors"
+      class="px-5 py-2.5 text-sm font-medium text-on-surface-variant hover:text-on-surface bg-surface-highest hover:bg-surface-highest rounded-xl transition-colors"
     >
       Cancel
     </a>
     <button
       type="submit"
       disabled={loading || !title}
-      class="px-5 py-2.5 text-sm font-medium text-white bg-anirank-primary hover:bg-blue-600 rounded-xl transition-colors shadow-lg shadow-anirank-primary/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+      class="px-5 py-2.5 text-sm font-medium text-on-surface bg-primary hover:bg-primary-container rounded-xl transition-colors shadow-lg shadow-anirank-primary/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
     >
       {#if loading}
         <svg
-          class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+          class="animate-spin -ml-1 mr-2 h-4 w-4 text-on-surface"
           fill="none"
           viewBox="0 0 24 24"
           ><circle

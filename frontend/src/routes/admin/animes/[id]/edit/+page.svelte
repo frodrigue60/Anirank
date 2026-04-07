@@ -6,6 +6,8 @@
   import { toastState } from "$lib/state/toast.svelte";
   import { getApiErrorMessage } from "$lib/api-errors";
   import type { PageData } from "./$types";
+  import { authState } from "$lib/state/auth.svelte";
+  import { Loader2 } from "lucide-svelte";
 
   let { data } = $props<{ data: PageData }>();
   // svelte-ignore state_referenced_locally
@@ -38,6 +40,20 @@
   // Existing images
   let coverPreview = $state(anime.cover_url || "");
   let bannerPreview = $state(anime.banner_url || "");
+
+  // Status Permissions
+  const canEditStatus = $derived.by(() => {
+    if (!authState.user || !authState.user.roles) return false;
+    return (authState.user.roles as any[]).some(
+      (r) =>
+        ["admin", "editor"].includes(r.name?.toLowerCase()) ||
+        ["admin", "editor"].includes(r.slug?.toLowerCase()),
+    );
+  });
+
+  // If the user can't edit status, ensure it remains in its current state or draft if new logic applies
+  // In edit mode, we don't automatically force to false unless we want to strip permissions.
+  // We'll just disable the input below.
 
   // UI State
   let loading = $state(false);
@@ -92,14 +108,23 @@
       });
 
       if (res.data.success || res.status === 200) {
-        toastState.addToast(res.data.message || "Anime updated successfully", "success");
+        toastState.addToast(
+          res.data.message || "Anime updated successfully",
+          "success",
+        );
         goto(`/admin/animes/${anime.id}`);
       } else {
-        toastState.addToast(res.data.message || "Failed to update anime", "error");
+        toastState.addToast(
+          res.data.message || "Failed to update anime",
+          "error",
+        );
       }
     } catch (err: any) {
       console.error(err);
-      toastState.addToast(getApiErrorMessage(err, "An error occurred while updating the anime"), "error");
+      toastState.addToast(
+        getApiErrorMessage(err, "An error occurred while updating the anime"),
+        "error",
+      );
     } finally {
       loading = false;
     }
@@ -110,69 +135,99 @@
   <title>Edit Anime | Admin</title>
 </svelte:head>
 
-<div class="mb-6">
-  <h2 class="text-xl font-bold text-white">Edit Anime Information</h2>
-  <p class="text-xs text-gray-500">Update general details, taxonomies and media assets.</p>
+<div class="mb-10">
+  <div class="flex items-center gap-4 mb-3">
+    <a
+      href="/admin/animes"
+      aria-label="Back to Animes"
+      class="text-on-surface-variant hover:text-primary transition-all p-2 -ml-2 rounded-xl hover:bg-primary-container group"
+    >
+      <span
+        class="material-symbols-outlined transition-transform group-hover:-translate-x-1"
+        >arrow_back</span
+      >
+    </a>
+    <h1 class="text-3xl font-black tracking-tighter text-on-surface uppercase">
+      Edit Anime
+    </h1>
+  </div>
+  <p class="text-on-surface-variant/60 font-medium ml-10">
+    Update general details, taxonomies and media assets.
+  </p>
 </div>
 
-
-<form onsubmit={handleSubmit} class="space-y-6 max-w-4xl">
+<form onsubmit={handleSubmit} class="space-y-8 max-w-5xl">
   <!-- General Info -->
-  <div class="bg-anirank-card border border-white/5 rounded-2xl p-6">
-    <h2 class="text-xl font-semibold text-white mb-6 flex items-center gap-2">
-      <svg
-        class="w-5 h-5 text-gray-400"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        ><path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-        /></svg
+  <div
+    class="bg-surface-container border border-outline-variant rounded-4xl p-8 shadow-sm"
+  >
+    <h2
+      class="text-xl font-black text-on-surface mb-8 flex items-center gap-3 uppercase tracking-tight"
+    >
+      <div
+        class="bg-primary/10 w-10 h-10 rounded-2xl flex items-center justify-center text-primary"
       >
+        <span class="material-symbols-outlined text-[20px]">info</span>
+      </div>
       General Information
     </h2>
 
-    <div class="space-y-4">
-      <div>
-        <label for="title" class="block text-sm font-medium text-gray-300 mb-1"
-          >Title <span class="text-red-400">*</span></label
+    <div class="space-y-6">
+      <div class="group">
+        <label
+          for="title"
+          class="block text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/40 mb-2 ml-1"
+          >Title <span class="text-red-500/60">*</span></label
         >
         <input
           type="text"
           id="title"
           bind:value={title}
           required
-          class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white placeholder-gray-500 focus:outline-none focus:border-anirank-primary focus:ring-1 focus:ring-anirank-primary transition-all"
+          class="bg-surface-highest border border-outline-variant rounded-2xl py-4 px-5 text-on-surface placeholder-on-surface-variant font-medium transition-all focus:bg-surface-highest focus:ring-4 focus:ring-primary/5 focus:outline-none"
+          placeholder="e.g. Shingeki no Kyojin"
         />
       </div>
 
-      <div>
+      <div class="group">
         <label
           for="description"
-          class="block text-sm font-medium text-gray-300 mb-1"
+          class="block text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/40 mb-2 ml-1"
           >Description</label
         >
         <textarea
           id="description"
           bind:value={description}
-          rows="4"
-          class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white placeholder-gray-500 focus:outline-none focus:border-anirank-primary focus:ring-1 focus:ring-anirank-primary transition-all"
+          rows="5"
+          class="w-full bg-surface-highest border border-outline-variant rounded-2xl py-4 px-5 text-on-surface placeholder-on-surface-variant/20 font-medium transition-all focus:bg-surface-highest focus:ring-4 focus:ring-primary/5 focus:outline-none resize-none"
+          placeholder="Synopsis or brief description..."
         ></textarea>
       </div>
     </div>
   </div>
 
   <!-- Taxonomies & Metadata -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <div class="bg-anirank-card border border-white/5 rounded-2xl p-6">
-      <div class="space-y-6">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <div
+      class="bg-surface-container border border-outline-variant rounded-4xl p-8 shadow-sm"
+    >
+      <h2
+        class="text-xl font-black text-on-surface mb-8 flex items-center gap-3 uppercase tracking-tight"
+      >
+        <div
+          class="bg-primary/10 w-10 h-10 rounded-2xl flex items-center justify-center text-primary"
+        >
+          <span class="material-symbols-outlined text-[20px]">category</span>
+        </div>
+        Taxonomy
+      </h2>
+
+      <div class="space-y-8">
         <div>
           <label
             for="studios"
-            class="block text-sm font-medium text-gray-300 mb-2">Studios</label
+            class="block text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/40 mb-3 ml-1"
+            >Studios</label
           >
           <TagsInput
             endpoint="/admin/studios"
@@ -185,7 +240,7 @@
         <div>
           <label
             for="producers"
-            class="block text-sm font-medium text-gray-300 mb-2"
+            class="block text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/40 mb-3 ml-1"
             >Producers</label
           >
           <TagsInput
@@ -199,7 +254,8 @@
         <div>
           <label
             for="genres"
-            class="block text-sm font-medium text-gray-300 mb-2">Genres</label
+            class="block text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/40 mb-3 ml-1"
+            >Genres</label
           >
           <TagsInput
             endpoint="/admin/genres"
@@ -210,15 +266,17 @@
         </div>
       </div>
 
-      <div class="space-y-4">
-        <div>
-          <label for="year" class="block text-sm font-medium text-gray-300 mb-1"
-            >Year</label
+      <div class="mt-10 space-y-5 pt-8 border-t border-outline-variant">
+        <div class="group">
+          <label
+            for="year"
+            class="block text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/40 mb-2 ml-1"
+            >Release Year</label
           >
           <select
             id="year"
             bind:value={year_id}
-            class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-anirank-primary transition-all [&>option]:bg-anirank-card"
+            class="w-full bg-surface-highest border border-outline-variant rounded-2xl py-4 px-5 text-on-surface font-medium transition-all focus:bg-surface-highest focus:ring-4 focus:ring-primary/5 focus:outline-none appearance-none"
           >
             <option value={0}>Select Year</option>
             {#each config.years as year}
@@ -227,15 +285,16 @@
           </select>
         </div>
 
-        <div>
+        <div class="group">
           <label
             for="season"
-            class="block text-sm font-medium text-gray-300 mb-1">Season</label
+            class="block text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/40 mb-2 ml-1"
+            >Season</label
           >
           <select
             id="season"
             bind:value={season_id}
-            class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-anirank-primary transition-all [&>option]:bg-anirank-card"
+            class="w-full bg-surface-highest border border-outline-variant rounded-2xl py-4 px-5 text-on-surface font-medium transition-all focus:bg-surface-highest focus:ring-4 focus:ring-primary/5 focus:outline-none appearance-none"
           >
             <option value={0}>Select Season</option>
             {#each config.seasons as season}
@@ -244,15 +303,16 @@
           </select>
         </div>
 
-        <div>
+        <div class="group">
           <label
             for="format"
-            class="block text-sm font-medium text-gray-300 mb-1">Format</label
+            class="block text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/40 mb-2 ml-1"
+            >Format</label
           >
           <select
             id="format"
             bind:value={format_id}
-            class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-anirank-primary transition-all [&>option]:bg-anirank-card"
+            class="w-full bg-surface-highest border border-outline-variant rounded-2xl py-4 px-5 text-on-surface font-medium transition-all focus:bg-surface-highest focus:ring-4 focus:ring-primary/5 focus:outline-none appearance-none"
           >
             <option value={0}>Select Format</option>
             {#each config.formats as format}
@@ -264,111 +324,159 @@
     </div>
 
     <!-- External & States -->
-    <div class="bg-anirank-card border border-white/5 rounded-2xl p-6">
-      <h2 class="text-xl font-semibold text-white mb-6 flex items-center gap-2">
-        <svg
-          class="w-5 h-5 text-gray-400"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          ><path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-          /></svg
+    <div class="space-y-8">
+      <div
+        class="bg-surface-container border border-outline-variant rounded-4xl p-8 shadow-sm"
+      >
+        <h2
+          class="text-xl font-black text-on-surface mb-8 flex items-center gap-3 uppercase tracking-tight"
         >
-        Connections & Status
-      </h2>
-
-      <div class="space-y-6">
-        <div>
-          <label
-            for="anilist_id"
-            class="block text-sm font-medium text-gray-300 mb-1"
-            >Anilist ID</label
+          <div
+            class="bg-primary/10 w-10 h-10 rounded-2xl flex items-center justify-center text-primary"
           >
-          <input
-            type="number"
-            id="anilist_id"
-            bind:value={anilist_id}
-            class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white placeholder-gray-500 focus:outline-none focus:border-anirank-primary transition-all"
-          />
-        </div>
+            <span class="material-symbols-outlined text-[20px]">link</span>
+          </div>
+          Connections & Status
+        </h2>
 
-        <div class="pt-2">
-          <label class="flex items-center gap-3 cursor-pointer">
-            <div class="relative">
-              <input
-                type="checkbox"
-                bind:checked={status}
-                class="sr-only peer"
-              />
-              <div
-                class="w-11 h-6 bg-white/10 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-anirank-primary"
-              ></div>
-            </div>
-            <span class="text-sm font-medium text-white"
-              >Publish Anime (Active)</span
+        <div class="space-y-8">
+          <div class="group">
+            <label
+              for="anilist_id"
+              class="block text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/40 mb-2 ml-1"
+              >Anilist ID</label
             >
-          </label>
-          <p class="text-xs text-gray-500 mt-2">
-            If unpublished, it will remain as a draft exclusively in the admin
-            panel.
-          </p>
+            <input
+              type="number"
+              id="anilist_id"
+              title="Anilist ID"
+              bind:value={anilist_id}
+              class="w-full bg-surface-highest border border-outline-variant rounded-2xl py-4 px-5 text-on-surface placeholder-on-surface-variant/20 font-medium transition-all focus:bg-surface-highest focus:ring-4 focus:ring-primary/5 focus:outline-none"
+              placeholder="e.g. 16498"
+            />
+            <p
+              class="text-[10px] font-bold text-on-surface-variant/30 mt-3 px-1"
+            >
+              Leave empty if it's a manual entry not tied to Anilist.
+            </p>
+          </div>
+
+          <div class="pt-4 border-t border-outline-variant">
+            <label
+              class="flex items-center gap-4 {canEditStatus
+                ? 'cursor-pointer'
+                : 'cursor-not-allowed opacity-50'} group/status"
+            >
+              <div class="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  bind:checked={status}
+                  disabled={!canEditStatus}
+                  class="sr-only peer"
+                />
+                <div
+                  class="w-14 h-7 bg-surface-highest border border-outline-variant rounded-full peer peer-checked:bg-primary/20 peer-checked:border-primary/30 transition-all duration-300 after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-on-surface-variant/20 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-7 peer-checked:after:bg-primary shadow-inner"
+                ></div>
+              </div>
+              <div class="flex flex-col">
+                <span
+                  class="text-[11px] font-black uppercase tracking-widest {status
+                    ? 'text-primary'
+                    : 'text-on-surface-variant/60'} transition-colors"
+                >
+                  {status
+                    ? "Published / Global Visibility"
+                    : "Draft / Private Entry"}
+                </span>
+                {#if !canEditStatus}
+                  <span
+                    class="text-[9px] font-bold text-amber-500/60 uppercase tracking-tight mt-0.5"
+                  >
+                    Requires moderator review before publishing
+                  </span>
+                {:else}
+                  <span
+                    class="text-[9px] font-bold text-on-surface-variant/20 uppercase tracking-tight mt-0.5"
+                  >
+                    Toggle visibility on the public catalog
+                  </span>
+                {/if}
+              </div>
+            </label>
+          </div>
         </div>
+      </div>
+
+      <div
+        class="bg-surface-container border border-outline-variant rounded-4xl p-8 shadow-sm overflow-hidden"
+      >
+        <h2
+          class="text-xl font-black text-on-surface mb-8 flex items-center gap-3 uppercase tracking-tight"
+        >
+          <div
+            class="bg-primary/10 w-10 h-10 rounded-2xl flex items-center justify-center text-primary"
+          >
+            <span class="material-symbols-outlined text-[20px]">image</span>
+          </div>
+          Quick Help
+        </h2>
+        <p
+          class="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant/40 leading-relaxed"
+        >
+          Ensure you have the <span class="text-primary">Anilist ID</span> ready for
+          automatic metadata hydration if available. High quality banners and covers
+          are recommended for the best display on the platform.
+        </p>
       </div>
     </div>
   </div>
 
   <!-- Assets -->
-  <div class="bg-anirank-card border border-white/5 rounded-2xl p-6">
-    <h2 class="text-xl font-semibold text-white mb-6 flex items-center gap-2">
-      <svg
-        class="w-5 h-5 text-gray-400"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        ><path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-        /></svg
+  <div
+    class="bg-surface-container border border-outline-variant rounded-4xl p-8 shadow-sm"
+  >
+    <h2
+      class="text-xl font-black text-on-surface mb-8 flex items-center gap-3 uppercase tracking-tight"
+    >
+      <div
+        class="bg-primary/10 w-10 h-10 rounded-2xl flex items-center justify-center text-primary"
       >
+        <span class="material-symbols-outlined text-[20px]">media_output</span>
+      </div>
       Media Assets
     </h2>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <!-- Cover -->
-      <div>
-        <label for="cover" class="block text-sm font-medium text-gray-300 mb-2"
-          >Cover Image</label
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <!-- Thumbnail -->
+      <div class="group">
+        <label
+          for="cover"
+          class="block text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/40 mb-3 ml-1"
+          >Thumbnail (Cover)</label
         >
         <div class="flex items-center justify-center w-full">
           <label
             for="cover"
-            class="flex flex-col items-center justify-center w-full h-40 border-2 border-white/10 border-dashed rounded-xl cursor-pointer bg-white/5 hover:bg-white/10 hover:border-white/20 transition-all overflow-hidden relative"
+            class="flex flex-col items-center justify-center w-full h-48 border-2 border-outline-variant border-dashed rounded-3xl cursor-pointer bg-surface-highest hover:bg-surface-highest hover:border-primary/30 transition-all overflow-hidden relative group/asset"
           >
             <div
-              class="flex flex-col items-center justify-center pt-5 pb-6 px-4 text-center z-10"
+              class="flex flex-col items-center justify-center pt-5 pb-6 px-6 text-center z-10 transition-transform group-hover/asset:scale-105"
             >
-              <svg
-                class="w-8 h-8 mb-3 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                ><path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                /></svg
+              <div
+                class="bg-on-surface-variant/5 w-12 h-12 rounded-2xl flex items-center justify-center text-on-surface-variant/30 mb-4"
               >
-              <p class="mb-1 text-sm text-gray-300">
-                <span class="font-semibold">Click to upload</span>
+                <span class="material-symbols-outlined text-3xl"
+                  >cloud_upload</span
+                >
+              </div>
+              <p
+                class="mb-1 text-[11px] font-black uppercase tracking-widest text-on-surface"
+              >
+                Click to upload
               </p>
-              <p class="text-xs text-gray-500">PNG, JPG up to 2MB</p>
+              <p class="text-[10px] font-bold text-on-surface-variant/30">
+                PNG, JPG up to 2MB
+              </p>
             </div>
             <!-- PREVIEW -->
             {#if coverPreview}
@@ -376,13 +484,29 @@
                 class="absolute inset-0 z-0 opacity-80 select-none bg-black/50"
               >
                 <span
-                  class="absolute inset-0 flex items-center justify-center text-white bg-black/60 z-10 font-medium opacity-0 hover:opacity-100 transition-opacity"
+                  class="absolute inset-0 flex items-center justify-center text-on-surface bg-black/60 z-10 font-medium opacity-0 group-hover/asset:opacity-100 transition-opacity uppercase tracking-widest text-[10px]"
                   >Change Image</span
                 >
                 <img
                   src={coverPreview}
                   alt="Preview"
                   class="w-full h-full object-cover"
+                />
+              </div>
+            {:else if coverFile}
+              <div class="absolute inset-0 z-0 select-none">
+                <div
+                  class="absolute inset-0 flex items-center justify-center bg-primary/80 z-10"
+                >
+                  <span
+                    class="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface"
+                    >Cover Selected</span
+                  >
+                </div>
+                <img
+                  src={URL.createObjectURL(coverFile)}
+                  alt="Preview"
+                  class="w-full h-full object-cover blur-[2px]"
                 />
               </div>
             {/if}
@@ -398,34 +522,34 @@
       </div>
 
       <!-- Banner -->
-      <div>
-        <label for="banner" class="block text-sm font-medium text-gray-300 mb-2"
+      <div class="group">
+        <label
+          for="banner"
+          class="block text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/40 mb-3 ml-1"
           >Banner</label
         >
         <div class="flex items-center justify-center w-full">
           <label
             for="banner"
-            class="flex flex-col items-center justify-center w-full h-40 border-2 border-white/10 border-dashed rounded-xl cursor-pointer bg-white/5 hover:bg-white/10 hover:border-white/20 transition-all overflow-hidden relative"
+            class="flex flex-col items-center justify-center w-full h-48 border-2 border-outline-variant border-dashed rounded-3xl cursor-pointer bg-surface-highest hover:bg-surface-highest hover:border-primary/30 transition-all overflow-hidden relative group/asset"
           >
             <div
-              class="flex flex-col items-center justify-center pt-5 pb-6 px-4 text-center z-10"
+              class="flex flex-col items-center justify-center pt-5 pb-6 px-6 text-center z-10 transition-transform group-hover/asset:scale-105"
             >
-              <svg
-                class="w-8 h-8 mb-3 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                ><path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                /></svg
+              <div
+                class="bg-on-surface-variant/5 w-12 h-12 rounded-2xl flex items-center justify-center text-on-surface-variant/30 mb-4"
               >
-              <p class="mb-1 text-sm text-gray-300">
-                <span class="font-semibold">Click to upload</span>
+                <span class="material-symbols-outlined text-3xl">landscape</span
+                >
+              </div>
+              <p
+                class="mb-1 text-[11px] font-black uppercase tracking-widest text-on-surface"
+              >
+                Click to upload
               </p>
-              <p class="text-xs text-gray-500">Wide aspect ratio</p>
+              <p class="text-[10px] font-bold text-on-surface-variant/30">
+                Wide aspect ratio
+              </p>
             </div>
             <!-- PREVIEW -->
             {#if bannerPreview}
@@ -433,13 +557,29 @@
                 class="absolute inset-0 z-0 opacity-80 select-none bg-black/50"
               >
                 <span
-                  class="absolute inset-0 flex items-center justify-center text-white bg-black/60 z-10 font-medium opacity-0 hover:opacity-100 transition-opacity"
+                  class="absolute inset-0 flex items-center justify-center text-on-surface bg-black/60 z-10 font-medium opacity-0 group-hover/asset:opacity-100 transition-opacity uppercase tracking-widest text-[10px]"
                   >Change Image</span
                 >
                 <img
                   src={bannerPreview}
                   alt="Preview"
                   class="w-full h-full object-cover"
+                />
+              </div>
+            {:else if bannerFile}
+              <div class="absolute inset-0 z-0 select-none">
+                <div
+                  class="absolute inset-0 flex items-center justify-center bg-primary/80 z-10"
+                >
+                  <span
+                    class="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface"
+                    >Banner Selected</span
+                  >
+                </div>
+                <img
+                  src={URL.createObjectURL(bannerFile)}
+                  alt="Preview"
+                  class="w-full h-full object-cover blur-[2px]"
                 />
               </div>
             {/if}
@@ -456,36 +596,22 @@
     </div>
   </div>
 
-  <div class="flex items-center justify-end gap-3 pt-4 border-t border-white/5">
+  <div
+    class="flex items-center justify-end gap-5 pt-10 border-t border-outline-variant"
+  >
     <a
       href="/admin/animes"
-      class="px-5 py-2.5 text-sm font-medium text-gray-300 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl transition-colors"
+      class="px-8 py-4 text-[11px] font-black uppercase tracking-widest text-on-surface-variant hover:text-on-surface transition-all"
     >
       Cancel
     </a>
     <button
       type="submit"
       disabled={loading || !title}
-      class="px-5 py-2.5 text-sm font-medium text-white bg-anirank-primary hover:bg-blue-600 rounded-xl transition-colors shadow-lg shadow-anirank-primary/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+      class="px-10 py-4 text-[11px] font-black uppercase tracking-widest text-on-surface bg-primary hover:bg-primary-container rounded-2xl transition-all shadow-xl shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3 active:scale-95"
     >
       {#if loading}
-        <svg
-          class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-          fill="none"
-          viewBox="0 0 24 24"
-          ><circle
-            class="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            stroke-width="4"
-          ></circle><path
-            class="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-          ></path></svg
-        >
+        <Loader2 class="animate-spin w-4 h-4" />
         Saving...
       {:else}
         Update Anime

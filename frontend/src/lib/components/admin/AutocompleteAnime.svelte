@@ -98,7 +98,7 @@
   {#if showLabel}
     <label
       for={id}
-      class="block text-[10px] uppercase font-black text-white/40 mb-2 ml-1 tracking-widest"
+      class="block text-[10px] uppercase font-black text-on-surface/40 mb-2 ml-1 tracking-widest"
       >Anime</label
     >
   {/if}
@@ -110,7 +110,7 @@
       oninput={handleInput}
       onfocus={() => search.length >= 2 && (isOpen = true)}
       {placeholder}
-      class="w-full h-12 bg-surface-darker/50 border border-white/10 rounded-xl px-4 text-sm text-white placeholder-white/30 focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer shadow-lg shadow-black/20"
+      class="w-full h-12 bg-surface-darker/50 border border-outline-variant rounded-xl px-4 text-sm text-on-surface placeholder-white/30 focus:outline-none focus:border-primary/30 focus:bg-surface-highest/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer shadow-lg shadow-black/20"
       autocomplete="off"
     />
     {#if loading}
@@ -124,25 +124,25 @@
 
   {#if isOpen && suggestions.length > 0}
     <div
-      class="absolute z-50 w-full mt-2 py-2 bg-surface-dark/95 border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden"
+      class="absolute z-50 w-full mt-2 py-2 bg-surface-dark/95 border border-outline-variant rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden"
     >
       <div class="max-h-60 overflow-y-auto custom-scrollbar">
         {#each suggestions as anime}
           <button
             type="button"
             onclick={() => select(anime)}
-            class="w-full px-4 py-3 text-left text-sm transition-all flex items-center justify-between group/opt text-white/60 hover:bg-white/5 hover:text-white"
+            class="w-full px-4 py-3 text-left text-sm transition-all flex items-center justify-between group/opt text-on-surface/60 hover:bg-surface-highest hover:text-on-surface"
           >
             <div class="flex flex-col">
               <span class="font-bold">{anime.title}</span>
               {#if anime.year || anime.season}
                 <span
-                  class="text-[10px] text-white/40 uppercase tracking-widest"
+                  class="text-[10px] text-on-surface/40 uppercase tracking-widest"
                   >{anime.season?.name || ""} {anime.year?.name || ""}</span
                 >
               {/if}
             </div>
-            <span class="text-[10px] text-white/20 font-mono"
+            <span class="text-[10px] text-on-surface/20 font-mono"
               >ID: {anime.id}</span
             >
           </button>

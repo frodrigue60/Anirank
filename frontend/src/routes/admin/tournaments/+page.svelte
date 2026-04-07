@@ -63,7 +63,7 @@
 <div class="admin-tournaments p-6">
   <div class="header flex justify-between items-center mb-8">
     <h1 class="text-2xl font-bold">Manage Tournaments</h1>
-    <a href="/admin/tournaments/create" class="bg-primary hover:opacity-90 text-white px-4 py-2 rounded-lg font-bold">
+    <a href="/admin/tournaments/create" class="bg-primary hover:opacity-90 text-on-surface px-4 py-2 rounded-lg font-bold">
       + New Tournament
     </a>
   </div>
@@ -74,7 +74,7 @@
     <div class="overflow-x-auto">
       <table class="w-full text-left">
         <thead>
-          <tr class="border-b border-white/10">
+          <tr class="border-b border-outline-variant">
             <th class="py-4 font-bold opacity-60">ID</th>
             <th class="py-4 font-bold opacity-60">Name</th>
             <th class="py-4 font-bold opacity-60">Status</th>
@@ -85,7 +85,7 @@
         </thead>
         <tbody>
           {#each tournaments as t}
-            <tr class="border-b border-white/5 hover:bg-white/5">
+            <tr class="border-b border-outline-variant hover:bg-surface-highest">
               <td class="py-4">#{t.id}</td>
               <td class="py-4">
                 <strong>{t.name}</strong>
@@ -116,13 +116,13 @@
                   {/if}
                   {#if t.status === 'draft' || t.status === 'completed'}
                     <button 
-                      class="text-xs bg-red-600/20 text-red-400 px-3 py-1 rounded font-bold hover:bg-red-600 hover:text-white transition-colors"
+                      class="text-xs bg-red-600/20 text-red-400 px-3 py-1 rounded font-bold hover:bg-red-600 hover:text-on-surface transition-colors"
                       on:click={() => handleDelete(t.id)}
                     >
                       Delete
                     </button>
                   {/if}
-                  <a href="/tournaments/{t.slug}" target="_blank" class="text-xs bg-white/10 px-3 py-1 rounded hover:bg-white/20">
+                  <a href="/tournaments/{t.slug}" target="_blank" class="text-xs bg-surface-highest px-3 py-1 rounded hover:bg-white/20">
                     Preview
                   </a>
                 </div>

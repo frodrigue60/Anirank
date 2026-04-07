@@ -83,17 +83,17 @@
   class="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
 >
   <div>
-    <h1 class="text-3xl font-bold tracking-tight text-white mb-1">
+    <h1 class="text-3xl font-bold tracking-tight text-on-surface mb-1">
       Songs Catalog
     </h1>
-    <p class="text-gray-400">
+    <p class="text-on-surface-variant/70">
       Manage anime themes (Openings, Endings, Inserts) and associations.
     </p>
   </div>
 
   <a
     href="/admin/songs/create"
-    class="px-4 py-2 bg-anirank-primary hover:bg-blue-600 text-white font-medium rounded-xl transition-colors shadow-lg shadow-anirank-primary/20 flex items-center gap-2"
+    class="px-4 py-2 bg-primary hover:bg-primary-container text-on-surface font-medium rounded-xl transition-colors shadow-lg shadow-anirank-primary/20 flex items-center gap-2"
   >
     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
       ><path
@@ -109,18 +109,18 @@
 
 <!-- Filters Bar -->
 <div
-  class="flex flex-wrap gap-4 items-end bg-anirank-card/30 p-4 rounded-2xl border border-white/5 mb-6"
+  class="flex flex-wrap gap-4 items-end bg-surface-container/30 p-4 rounded-2xl border border-outline-variant mb-6"
 >
   <!-- Search -->
   <div class="flex-1 min-w-[200px]">
     <label
       for="search"
-      class="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider"
+      class="block text-xs font-medium text-on-surface-variant/40 mb-1 uppercase tracking-wider"
       >Search Title</label
     >
     <div class="relative">
       <svg
-        class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
+        class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/40"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -137,7 +137,7 @@
         bind:value={searchQuery}
         onkeydown={(e) => e.key === "Enter" && handleSearch()}
         placeholder="Filter by title..."
-        class="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-9 pr-4 text-white focus:outline-none focus:border-anirank-primary transition-colors text-sm"
+        class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2 pl-9 pr-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-colors text-sm"
       />
     </div>
   </div>
@@ -146,7 +146,7 @@
   <div class="w-full sm:w-72">
     <label
       for="anime-filter"
-      class="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider"
+      class="block text-xs font-medium text-on-surface-variant/40 mb-1 uppercase tracking-wider"
       >Anime</label
     >
     <AutocompleteAnime
@@ -162,14 +162,14 @@
   <div class="w-full sm:w-40">
     <label
       for="status"
-      class="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider"
+      class="block text-xs font-medium text-on-surface-variant/40 mb-1 uppercase tracking-wider"
       >Status</label
     >
     <select
       id="status"
       bind:value={statusFilter}
       onchange={() => handleSearch()}
-      class="w-full bg-white/5 border border-white/10 rounded-xl py-2 px-3 text-white focus:outline-none focus:border-anirank-primary transition-colors text-sm appearance-none cursor-pointer"
+      class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2 px-3 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-colors text-sm appearance-none cursor-pointer"
     >
       <option value="">All Status</option>
       <option value="true">Active Only</option>
@@ -184,31 +184,31 @@
       statusFilter = "";
       handleSearch();
     }}
-    class="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-colors border border-white/10 text-sm font-medium h-[38px]"
+    class="px-4 py-2 bg-surface-highest hover:bg-surface-highest text-on-surface rounded-xl transition-colors border border-outline-variant text-sm font-medium h-[38px]"
   >
     Reset
   </button>
 </div>
 
 <!-- Table -->
-<div class="bg-anirank-card border border-white/5 rounded-2xl overflow-hidden">
-  <div class="p-4 border-b border-white/5 flex items-center justify-between">
-    <h2 class="text-xl font-semibold text-white">Songs</h2>
+<div class="bg-surface-container border border-outline-variant rounded-2xl overflow-hidden">
+  <div class="p-4 border-b border-outline-variant flex items-center justify-between">
+    <h2 class="text-xl font-semibold text-on-surface">Songs</h2>
     {#if selectedIds.length > 0}
-      <span class="text-sm text-gray-400">{selectedIds.length} selected</span>
+      <span class="text-sm text-on-surface-variant/70">{selectedIds.length} selected</span>
     {/if}
   </div>
 
   <div class="overflow-x-auto">
-    <table class="w-full text-left text-sm text-gray-300">
+    <table class="w-full text-left text-sm text-on-surface-variant">
       <thead
-        class="text-xs text-gray-400 uppercase bg-white/5 border-b border-white/5"
+        class="text-xs text-on-surface-variant/70 uppercase bg-surface-highest border-b border-outline-variant"
       >
         <tr>
           <th class="px-6 py-4 font-semibold">
             <input
               type="checkbox"
-              class="rounded border-white/10 bg-white/5 checked:bg-anirank-primary focus:ring-anirank-primary transition-all cursor-pointer"
+              class="rounded border-outline-variant bg-surface-highest checked:bg-primary focus:ring-primary transition-all cursor-pointer"
               onchange={toggleSelectAll}
               checked={selectedIds.length === songs.length && songs.length > 0}
             />
@@ -227,14 +227,14 @@
             <td class="px-6 py-4">
               <input
                 type="checkbox"
-                class="rounded border-white/10 bg-white/5 checked:bg-anirank-primary focus:ring-anirank-primary transition-all cursor-pointer"
+                class="rounded border-outline-variant bg-surface-highest checked:bg-primary focus:ring-primary transition-all cursor-pointer"
                 checked={selectedIds.includes(song.id)}
                 onchange={() => toggleSelection(song.id)}
               />
             </td>
             <td class="px-6 py-4">
               <div
-                class="font-medium text-white line-clamp-1"
+                class="font-medium text-on-surface line-clamp-1"
                 title={getSongName(song)}
               >
                 <a href="/admin/songs/{song.id}">
@@ -266,7 +266,7 @@
                       />
                     </svg>
                     <div
-                      class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10 border border-white/10"
+                      class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-on-surface text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10 border border-outline-variant"
                     >
                       Partial Availability: Some artists are inactive
                     </div>
@@ -276,7 +276,7 @@
             </td>
             <td class="px-6 py-4">
               <div
-                class="line-clamp-1 text-gray-400 max-w-[200px]"
+                class="line-clamp-1 text-on-surface-variant/70 max-w-[200px]"
                 title={song.anime?.title}
               >
                 {#if song.anime}
@@ -284,7 +284,7 @@
                     {song.anime.title}
                   </a>
                 {:else}
-                  <span class="text-gray-500">Unknown Anime</span>
+                  <span class="text-on-surface-variant/40">Unknown Anime</span>
                 {/if}
               </div>
             </td>
@@ -312,21 +312,21 @@
               <div class="flex items-center justify-end gap-2 text-lg">
                 <a
                   href="/admin/songs/{song.id}/variants"
-                  class="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                  class="p-2 text-on-surface-variant/70 hover:text-on-surface hover:bg-surface-highest rounded-lg transition-colors"
                   title="Variants"
                 >
                   <span class="material-symbols-outlined">video_library</span>
                 </a>
                 <a
                   href="/admin/songs/{song.id}/edit"
-                  class="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                  class="p-2 text-on-surface-variant/70 hover:text-on-surface hover:bg-surface-highest rounded-lg transition-colors"
                   title="Edit"
                 >
                   <span class="material-symbols-outlined">edit</span>
                 </a>
                 <button
                   onclick={() => handleDelete(song.id)}
-                  class="p-2 text-gray-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                  class="p-2 text-on-surface-variant/70 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
                   title="Delete"
                 >
                   <span class="material-symbols-outlined">delete</span>
@@ -336,7 +336,7 @@
           </tr>
         {:else}
           <tr>
-            <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+            <td colspan="6" class="px-6 py-12 text-center text-on-surface-variant/40">
               No songs found.
             </td>
           </tr>
@@ -348,17 +348,17 @@
   <!-- Pagination -->
   {#if pagination?.last_page > 1}
     <div
-      class="px-6 py-4 border-t border-white/5 flex items-center justify-between"
+      class="px-6 py-4 border-t border-outline-variant flex items-center justify-between"
     >
-      <div class="text-sm text-gray-400">
-        Showing <span class="font-medium text-white">{songs.length}</span> items
+      <div class="text-sm text-on-surface-variant/70">
+        Showing <span class="font-medium text-on-surface">{songs.length}</span> items
       </div>
       <div class="flex items-center gap-2">
         <button
           disabled={pagination.current_page === 1}
           onclick={() => changePage(pagination.current_page - 1)}
           aria-label="Previous Page"
-          class="p-2 rounded-lg border border-white/10 text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/5 transition-colors"
+          class="p-2 rounded-lg border border-outline-variant text-on-surface-variant/70 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-highest transition-colors"
         >
           <svg
             class="w-4 h-4"
@@ -373,14 +373,14 @@
             /></svg
           >
         </button>
-        <span class="text-sm text-gray-300 font-medium px-2"
+        <span class="text-sm text-on-surface-variant font-medium px-2"
           >Page {pagination.current_page} of {pagination.last_page}</span
         >
         <button
           disabled={pagination.current_page === pagination.last_page}
           onclick={() => changePage(pagination.current_page + 1)}
           aria-label="Next Page"
-          class="p-2 rounded-lg border border-white/10 text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/5 transition-colors"
+          class="p-2 rounded-lg border border-outline-variant text-on-surface-variant/70 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-highest transition-colors"
         >
           <svg
             class="w-4 h-4"

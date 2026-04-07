@@ -33,10 +33,10 @@
         class="sr-only peer"
       />
       <div
-        class="w-11 h-6 bg-white/10 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-anirank-primary"
+        class="w-11 h-6 bg-surface-highest rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"
       ></div>
     </div>
-    <span class="text-sm font-medium text-white">
+    <span class="text-sm font-medium text-on-surface">
       {status ? 'Published (Active)' : 'Draft (Inactive)'}
     </span>
   </label>
@@ -49,7 +49,7 @@
       As a Creator, your content will be reviewed before publishing.
     </p>
   {:else}
-    <p class="text-xs text-gray-500 mt-2">
+    <p class="text-xs text-on-surface-variant/40 mt-2">
       If unpublished, it will remain as a draft exclusively in the admin panel.
     </p>
   {/if}

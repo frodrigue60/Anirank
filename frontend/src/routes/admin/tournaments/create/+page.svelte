@@ -46,7 +46,7 @@
         type="text" 
         bind:value={name}
         placeholder="e.g. Best Opening Spring 2024"
-        class="w-full bg-white/5 border border-white/10 rounded-lg p-3 outline-none focus:border-primary"
+        class="w-full bg-surface-highest border border-outline-variant rounded-lg p-3 outline-none focus:border-primary/30 focus:bg-surface-highest"
         required
       />
     </div>
@@ -57,7 +57,7 @@
         id="desc"
         bind:value={description}
         placeholder="Describe the tournament..."
-        class="w-full bg-white/5 border border-white/10 rounded-lg p-3 outline-none focus:border-primary h-32"
+        class="w-full bg-surface-highest border border-outline-variant rounded-lg p-3 outline-none focus:border-primary/30 focus:bg-surface-highest h-32"
       ></textarea>
     </div>
 
@@ -67,7 +67,7 @@
         <select 
           id="size"
           bind:value={size}
-          class="w-full bg-white/5 border border-white/10 rounded-lg p-3 outline-none focus:border-primary"
+          class="w-full bg-surface-highest border border-outline-variant rounded-lg p-3 outline-none focus:border-primary/30 focus:bg-surface-highest"
         >
           <option value={8}>8 Songs</option>
           <option value={16}>16 Songs</option>
@@ -81,7 +81,7 @@
         <select 
           id="filter"
           bind:value={type_filter}
-          class="w-full bg-white/5 border border-white/10 rounded-lg p-3 outline-none focus:border-primary"
+          class="w-full bg-surface-highest border border-outline-variant rounded-lg p-3 outline-none focus:border-primary/30 focus:bg-surface-highest"
         >
           <option value="">All Types</option>
           <option value="OP">Openings Only</option>
@@ -93,14 +93,14 @@
     <div class="pt-4 flex gap-4">
       <button 
         type="submit" 
-        class="flex-1 bg-primary text-white font-bold py-3 rounded-xl hover:opacity-90 disabled:opacity-50"
+        class="flex-1 bg-primary text-on-surface font-bold py-3 rounded-xl hover:opacity-90 disabled:opacity-50"
         disabled={loading}
       >
         {loading ? 'Creating...' : 'Create Tournament'}
       </button>
       <a 
         href="/admin/tournaments" 
-        class="flex-1 bg-white/10 text-center font-bold py-3 rounded-xl hover:bg-white/20"
+        class="flex-1 bg-surface-highest text-center font-bold py-3 rounded-xl hover:bg-white/20"
       >
         Cancel
       </a>

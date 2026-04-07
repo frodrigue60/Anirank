@@ -188,8 +188,8 @@
           <div
             class="w-8 h-8 rounded-full flex items-center justify-center font-bold {step ===
             s
-              ? 'bg-primary text-white'
-              : 'bg-white/10 opacity-50'}"
+              ? 'bg-primary text-on-surface'
+              : 'bg-surface-highest opacity-50'}"
           >
             {s}
           </div>
@@ -199,7 +199,7 @@
             {s === 1 ? "Configuration" : s === 2 ? "Selection" : "Confirmation"}
           </span>
           {#if s < 3}
-            <div class="w-12 h-px bg-white/10"></div>
+            <div class="w-12 h-px bg-surface-highest"></div>
           {/if}
         </div>
       {/each}
@@ -269,7 +269,7 @@
         </div>
 
         <div
-          class="bg-white/5 rounded-2xl p-6 h-fit {method === 'manual'
+          class="bg-surface-highest rounded-2xl p-6 h-fit {method === 'manual'
             ? 'opacity-30 pointer-events-none'
             : ''}"
         >
@@ -282,7 +282,7 @@
               <select
                 id="year-select"
                 bind:value={selectedYear}
-                class="w-full bg-black/40 border border-white/10 rounded-lg p-3"
+                class="w-full bg-black/40 border border-outline-variant rounded-lg p-3"
               >
                 <option value={null}>Any Year</option>
                 {#each years as y}
@@ -297,7 +297,7 @@
               <select
                 id="season-select"
                 bind:value={selectedSeason}
-                class="w-full bg-black/40 border border-white/10 rounded-lg p-3"
+                class="w-full bg-black/40 border border-outline-variant rounded-lg p-3"
               >
                 <option value={null}>Any Season</option>
                 {#each seasons as s}
@@ -312,7 +312,7 @@
               <select
                 id="genre-select"
                 bind:value={selectedGenre}
-                class="w-full bg-black/40 border border-white/10 rounded-lg p-3"
+                class="w-full bg-black/40 border border-outline-variant rounded-lg p-3"
               >
                 <option value={null}>Any Genre</option>
                 {#each genres as g}
@@ -327,7 +327,7 @@
               <select
                 id="type-select"
                 bind:value={selectedType}
-                class="w-full bg-black/40 border border-white/10 rounded-lg p-3"
+                class="w-full bg-black/40 border border-outline-variant rounded-lg p-3"
               >
                 <option value={null}>Any Type</option>
                 <option value="op">Openings (OP)</option>
@@ -344,7 +344,7 @@
                 <button
                   class="flex-1 p-2 rounded-lg border {sort === 'rating'
                     ? 'border-primary bg-primary/20'
-                    : 'border-white/10 bg-white/5'}"
+                    : 'border-outline-variant bg-surface-highest'}"
                   on:click={() => (sort = "rating")}
                 >
                   Top Rated
@@ -352,7 +352,7 @@
                 <button
                   class="flex-1 p-2 rounded-lg border {sort === 'random'
                     ? 'border-primary bg-primary/20'
-                    : 'border-white/10 bg-white/5'}"
+                    : 'border-outline-variant bg-surface-highest'}"
                   on:click={() => (sort = "random")}
                 >
                   Random
@@ -365,7 +365,7 @@
 
       <div class="mt-12 flex justify-end">
         <button
-          class="bg-primary hover:scale-105 transition-transform text-white px-8 py-3 rounded-xl font-bold text-lg"
+          class="bg-primary hover:scale-105 transition-transform text-on-surface px-8 py-3 rounded-xl font-bold text-lg"
           on:click={nextStep}
         >
           Continue to Selection →
@@ -384,7 +384,7 @@
                 bind:value={searchQuery}
                 on:input={handleSearch}
                 placeholder="Search by song name, anime or artist..."
-                class="w-full bg-white/5 border border-white/10 rounded-2xl p-4 pl-12 text-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                class="w-full bg-surface-highest border border-outline-variant rounded-2xl p-4 pl-12 text-lg focus:border-primary/30 focus:bg-surface-highest focus:ring-4 focus:ring-primary/5 focus:outline-none outline-none transition-all"
               />
               <span
                 class="absolute left-4 top-1/2 -translate-y-1/2 opacity-40 text-xl"
@@ -393,14 +393,14 @@
             </div>
 
             <div
-              class="results-list bg-white/5 rounded-2xl overflow-hidden min-h-[400px]"
+              class="results-list bg-surface-highest rounded-2xl overflow-hidden min-h-[400px]"
             >
               {#if searching}
                 <div class="p-8 text-center opacity-50">Searching songs...</div>
               {:else if searchResults.length > 0}
                 {#each searchResults as song}
                   <div
-                    class="song-row p-4 border-b border-white/5 flex items-center gap-4 hover:bg-white/10 transition-colors"
+                    class="song-row p-4 border-b border-outline-variant flex items-center gap-4 hover:bg-surface-highest transition-colors"
                   >
                     <img
                       src={song.anime?.cover_url ||
@@ -417,7 +417,7 @@
                       <div class="font-bold flex items-center gap-2">
                         {song.song_romaji}
                         <span
-                          class="bg-white/10 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase"
+                          class="bg-surface-highest px-1.5 py-0.5 rounded text-[10px] font-bold uppercase"
                           >{song.type}{song.theme_num}</span
                         >
                       </div>
@@ -425,7 +425,7 @@
                         <div class="flex gap-1 mt-1">
                           {#each song.song_variants as variant}
                             <span
-                              class="text-[9px] opacity-40 bg-white/5 px-1 rounded"
+                              class="text-[9px] opacity-40 bg-surface-highest px-1 rounded"
                               >v{variant.version_number}</span
                             >
                           {/each}
@@ -434,7 +434,7 @@
                     </div>
                     <button
                       type="button"
-                      class="bg-white/10 hover:bg-white/20 p-2 rounded flex items-center justify-center w-10 h-10"
+                      class="bg-surface-highest hover:bg-white/20 p-2 rounded flex items-center justify-center w-10 h-10"
                       on:click={() => (previewSong = song)}
                       title="Preview song"
                       aria-label="Preview song"
@@ -443,7 +443,7 @@
                     </button>
                     <button
                       type="button"
-                      class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg font-bold disabled:opacity-30 h-10 min-w-[80px]"
+                      class="bg-primary hover:bg-primary-container text-on-surface px-4 py-2 rounded-lg font-bold disabled:opacity-30 h-10 min-w-[80px]"
                       on:click={() => addSong(song)}
                       disabled={selectedSongs.find((s) => s.id === song.id) !==
                         undefined}
@@ -468,7 +468,7 @@
 
           <!-- Right: Selection Bucket -->
           <div
-            class="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col h-[700px]"
+            class="bg-surface-highest border border-outline-variant rounded-2xl p-6 flex flex-col h-[700px]"
           >
             <div class="flex justify-between items-center mb-6">
               <h2 class="text-xl font-bold">Selected Themes</h2>
@@ -482,7 +482,7 @@
             <div class="flex-1 overflow-y-auto space-y-2 mb-6 scrollbar-thin">
               {#each selectedSongs as song, i}
                 <div
-                  class="flex items-center gap-3 p-3 bg-white/5 rounded-xl group"
+                  class="flex items-center gap-3 p-3 bg-surface-highest rounded-xl group"
                 >
                   <span class="text-xs opacity-30 w-4">{i + 1}</span>
                   <div class="flex-1 truncate">
@@ -516,7 +516,7 @@
             <div class="space-y-3">
               <button
                 type="button"
-                class="w-full bg-white/10 hover:bg-white/20 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2"
+                class="w-full bg-surface-highest hover:bg-white/20 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2"
                 on:click={saveProgress}
               >
                 💾 Save Progress
@@ -535,7 +535,7 @@
       {:else}
         <!-- Preview Case for Auto/Semi -->
         <div
-          class="text-center py-20 bg-white/5 rounded-3xl border border-dashed border-white/20"
+          class="text-center py-20 bg-surface-highest rounded-3xl border border-dashed border-outline-variant"
         >
           <div class="text-5xl mb-6">⚡</div>
           <h2 class="text-2xl font-bold mb-2">Ready to Generate</h2>
@@ -551,7 +551,7 @@
           <div class="flex justify-center gap-4">
             <button
               type="button"
-              class="px-8 py-3 rounded-xl border border-white/10 hover:bg-white/5"
+              class="px-8 py-3 rounded-xl border border-outline-variant hover:bg-surface-highest"
               on:click={prevStep}>Back</button
             >
             <button
@@ -568,21 +568,21 @@
       <div
         class="max-w-2xl mx-auto space-y-8 animate-in zoom-in-95 duration-500"
       >
-        <div class="bg-white/5 border border-white/10 rounded-3xl p-8">
+        <div class="bg-surface-highest border border-outline-variant rounded-3xl p-8">
           <h2 class="text-2xl font-bold mb-8 flex items-center gap-3">
             <span class="text-green-500">✅</span> Final Review
           </h2>
 
           <div class="space-y-6">
-            <div class="flex justify-between border-b border-white/5 pb-4">
+            <div class="flex justify-between border-b border-outline-variant pb-4">
               <span class="opacity-50">Tournament</span>
               <span class="font-bold">{tournament.name}</span>
             </div>
-            <div class="flex justify-between border-b border-white/5 pb-4">
+            <div class="flex justify-between border-b border-outline-variant pb-4">
               <span class="opacity-50">Size</span>
               <span class="font-bold">{tournament.size} Themes</span>
             </div>
-            <div class="flex justify-between border-b border-white/5 pb-4">
+            <div class="flex justify-between border-b border-outline-variant pb-4">
               <span class="opacity-50">Method</span>
               <span class="font-bold uppercase text-primary">{method}</span>
             </div>
@@ -617,7 +617,7 @@
 
           <p class="text-sm opacity-40 mt-8 leading-relaxed">
             By clicking start, the tournament status will change to <span
-              class="text-white">Active</span
+              class="text-on-surface">Active</span
             >. The first round matchups will be generated immediately and users
             can start voting.
           </p>
@@ -626,7 +626,7 @@
         <div class="flex items-center gap-4">
           <button
             type="button"
-            class="flex-1 py-4 rounded-2xl border border-white/10 hover:bg-white/5 font-bold transition-all"
+            class="flex-1 py-4 rounded-2xl border border-outline-variant hover:bg-surface-highest font-bold transition-all"
             on:click={prevStep}
             disabled={loading}
           >
@@ -634,7 +634,7 @@
           </button>
           <button
             type="button"
-            class="flex-2 py-4 rounded-2xl bg-primary text-white font-bold text-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
+            class="flex-2 py-4 rounded-2xl bg-primary text-on-surface font-bold text-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
             on:click={finalizeSeeding}
             disabled={loading}
           >
@@ -655,7 +655,7 @@
         aria-label="Close preview"
       >
         <div
-          class="bg-[#111] border border-white/10 rounded-3xl overflow-hidden max-w-2xl w-full shadow-2xl relative animate-in zoom-in-95 duration-300"
+          class="bg-[#111] border border-outline-variant rounded-3xl overflow-hidden max-w-2xl w-full shadow-2xl relative animate-in zoom-in-95 duration-300"
         >
           <button
             type="button"
@@ -719,12 +719,12 @@
                 </p>
                 <div class="flex flex-wrap gap-2">
                   <span
-                    class="text-xs bg-white/10 px-2 py-1 rounded uppercase tracking-wider font-bold"
+                    class="text-xs bg-surface-highest px-2 py-1 rounded uppercase tracking-wider font-bold"
                     >{previewSong.type}{previewSong.theme_num}</span
                   >
                   {#if previewSong.song_variants && previewSong.song_variants.length > 0}
                     <span
-                      class="text-xs bg-white/10 px-2 py-1 rounded uppercase tracking-wider font-bold"
+                      class="text-xs bg-surface-highest px-2 py-1 rounded uppercase tracking-wider font-bold"
                       >Version {previewSong.song_variants[0]
                         .version_number}</span
                     >
@@ -733,15 +733,15 @@
               </div>
             </div>
 
-            <div class="pt-4 border-t border-white/5 flex justify-center gap-4">
+            <div class="pt-4 border-t border-outline-variant flex justify-center gap-4">
               <button
                 type="button"
-                class="bg-white/10 hover:bg-white/20 text-white px-8 py-3 rounded-xl font-bold transition-all"
+                class="bg-surface-highest hover:bg-white/20 text-on-surface px-8 py-3 rounded-xl font-bold transition-all"
                 on:click={() => (previewSong = null)}>Close</button
               >
               <button
                 type="button"
-                class="bg-primary text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-[1.05] transition-all"
+                class="bg-primary text-on-surface px-8 py-3 rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-[1.05] transition-all"
                 on:click={() => {
                   if (previewSong) addSong(previewSong);
                   previewSong = null;
@@ -765,7 +765,7 @@
   .method-card {
     display: block;
     background: rgba(255, 255, 255, 0.03);
-    border: 1px border-white/5;
+    border: 1px border-outline-variant;
     padding: 1.5rem;
     border-radius: 1.25rem;
     cursor: pointer;

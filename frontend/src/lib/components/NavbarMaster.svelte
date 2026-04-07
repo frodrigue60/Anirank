@@ -331,7 +331,7 @@
                     class="flex w-full items-center gap-3 px-4 py-2 text-sm text-on-surface-variant transition-colors hover:bg-surface-low hover:text-primary"
                   >
                     <span class="material-symbols-outlined text-[18px]"
-                      >add_box</span
+                      >chat</span
                     > Request Song
                   </button>
                 </div>

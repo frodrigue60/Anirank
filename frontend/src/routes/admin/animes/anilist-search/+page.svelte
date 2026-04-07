@@ -180,13 +180,13 @@
   <div class="flex items-center gap-3">
     <a
       href="/admin/animes"
-      class="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors border border-white/10"
+      class="p-2 rounded-xl bg-surface-highest hover:bg-surface-highest text-on-surface/60 hover:text-on-surface transition-colors border border-outline-variant"
     >
       <span class="material-symbols-outlined text-lg">arrow_back</span>
     </a>
     <div>
-      <h1 class="text-2xl font-black text-white">AniList Search</h1>
-      <p class="text-white/40 text-sm">
+      <h1 class="text-2xl font-black text-on-surface">AniList Search</h1>
+      <p class="text-on-surface/40 text-sm">
         Select an anime to import it into the database
       </p>
     </div>
@@ -198,8 +198,8 @@
       disabled={allImportable.length === 0}
       class="px-4 py-2 rounded-xl text-sm font-bold transition-colors border
         {allSelected
-        ? 'bg-anirank-primary/20 text-anirank-primary border-anirank-primary/30'
-        : 'bg-white/5 text-white/60 border-white/10 hover:bg-white/10 hover:text-white'}"
+        ? 'bg-primary/20 text-primary border-primary/30'
+        : 'bg-surface-highest text-on-surface/60 border-outline-variant hover:bg-surface-highest hover:text-on-surface'}"
     >
       {allSelected ? "Deselect All" : "Select All"}
     </button>
@@ -210,20 +210,20 @@
 <form onsubmit={handleSearch} class="flex flex-col md:flex-row gap-3 mb-8">
   <div class="flex-1 relative">
     <span
-      class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-white/30"
+      class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface/30"
       >search</span
     >
     <input
       type="text"
       bind:value={searchInput}
       placeholder="Search anime on AniList..."
-      class="w-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-anirank-primary transition-colors"
+      class="w-full bg-surface-highest border border-outline-variant rounded-xl pl-12 pr-4 py-3 text-on-surface placeholder-white/30 focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-colors"
     />
   </div>
 
   <select
     bind:value={formatInput}
-    class="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-anirank-primary transition-colors appearance-none cursor-pointer min-w-[140px]"
+    class="bg-surface-highest border border-outline-variant rounded-xl px-4 py-3 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-colors appearance-none cursor-pointer min-w-[140px]"
   >
     {#each formats as fmt}
       <option value={fmt.value} class="bg-[#121214]">{fmt.label}</option>
@@ -232,26 +232,26 @@
 
   <button
     type="submit"
-    class="px-8 py-3 bg-anirank-primary hover:bg-anirank-primary/80 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-anirank-primary/10"
+    class="px-8 py-3 bg-primary hover:bg-primary/80 text-on-surface font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-anirank-primary/10"
   >
     Apply
   </button>
 </form>
 
 {#if data.q && results.length === 0}
-  <div class="text-center py-16 text-white/40">
+  <div class="text-center py-16 text-on-surface/40">
     <span class="material-symbols-outlined text-5xl mb-3 block">search_off</span
     >
-    No results found for "<span class="text-white/60">{data.q}</span>"
+    No results found for "<span class="text-on-surface/60">{data.q}</span>"
     {#if data.format}
-      with format <span class="text-white/60">{data.format}</span>
+      with format <span class="text-on-surface/60">{data.format}</span>
     {/if}
   </div>
 {:else if results.length > 0}
-  <p class="text-white/40 text-sm mb-4">
-    {results.length} results for "<span class="text-white/70">{data.q}</span>"
+  <p class="text-on-surface/40 text-sm mb-4">
+    {results.length} results for "<span class="text-on-surface/70">{data.q}</span>"
     {#if data.format}
-      in <span class="text-white/70">{data.format}</span>
+      in <span class="text-on-surface/70">{data.format}</span>
     {/if}
   </p>
   <div
@@ -261,10 +261,10 @@
       {@const alreadySaved = savedIds.has(media.id)}
       {@const isSelected = selectedIds.has(media.id)}
       <div
-        class="bg-anirank-card border rounded-2xl overflow-hidden group flex flex-col transition-all relative
+        class="bg-surface-container border rounded-2xl overflow-hidden group flex flex-col transition-all relative
           {isSelected
-          ? 'border-anirank-primary ring-1 ring-anirank-primary'
-          : 'border-white/5'}"
+          ? 'border-primary ring-1 ring-primary'
+          : 'border-outline-variant'}"
       >
         <!-- Selection checkbox (only if not saved) -->
         {#if !alreadySaved}
@@ -272,8 +272,8 @@
             onclick={() => toggleSelect(media.id)}
             class="absolute top-2 right-2 z-10 w-6 h-6 rounded-lg border transition-all flex items-center justify-center
               {isSelected
-              ? 'bg-anirank-primary border-anirank-primary text-white'
-              : 'bg-black/40 border-white/20 text-transparent hover:border-white/40'}"
+              ? 'bg-primary border-primary text-on-surface'
+              : 'bg-black/40 border-outline-variant text-transparent hover:border-white/40'}"
             aria-label={isSelected ? "Deselect anime" : "Select anime"}
           >
             <span class="material-symbols-outlined text-sm font-bold"
@@ -284,7 +284,7 @@
 
         <!-- Cover -->
         <button
-          class="relative aspect-2/3 overflow-hidden bg-white/5 cursor-pointer w-full text-left p-0 border-none"
+          class="relative aspect-2/3 overflow-hidden bg-surface-highest cursor-pointer w-full text-left p-0 border-none"
           onclick={() => !alreadySaved && toggleSelect(media.id)}
           disabled={alreadySaved}
           type="button"
@@ -298,14 +298,14 @@
             />
           {:else}
             <div
-              class="w-full h-full flex items-center justify-center text-white/20"
+              class="w-full h-full flex items-center justify-center text-on-surface/20"
             >
               <span class="material-symbols-outlined text-4xl">image</span>
             </div>
           {/if}
           <!-- Format badge -->
           <span
-            class="absolute top-2 left-2 px-2 py-0.5 bg-black/70 rounded text-[10px] font-bold text-white/80 uppercase tracking-wider"
+            class="absolute top-2 left-2 px-2 py-0.5 bg-black/70 rounded text-[10px] font-bold text-on-surface/80 uppercase tracking-wider"
           >
             {media.format ?? "?"}
           </span>
@@ -315,7 +315,7 @@
               class="absolute inset-0 bg-green-500/10 flex items-center justify-center"
             >
               <div
-                class="bg-green-500 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1 shadow-lg"
+                class="bg-green-500 text-on-surface px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1 shadow-lg"
               >
                 <span class="material-symbols-outlined text-sm">check</span>
                 Imported
@@ -326,11 +326,11 @@
 
         <!-- Info -->
         <div class="p-3 flex flex-col gap-1 flex-1">
-          <p class="text-white font-bold text-sm leading-tight line-clamp-2">
+          <p class="text-on-surface font-bold text-sm leading-tight line-clamp-2">
             {media.title?.romaji ?? media.title?.english ?? "Unknown Title"}
           </p>
           <div class="flex items-center justify-between">
-            <p class="text-white/40 text-xs">
+            <p class="text-on-surface/40 text-xs">
               {formatLabel(media.season, media.seasonYear)}
             </p>
           </div>
@@ -346,18 +346,18 @@
       transition:fly={{ y: 50, duration: 400 }}
     >
       <div
-        class="bg-[#121214] border border-anirank-primary/30 rounded-2xl p-4 shadow-2xl flex items-center justify-between gap-4"
+        class="bg-[#121214] border border-primary/30 rounded-2xl p-4 shadow-2xl flex items-center justify-between gap-4"
       >
         <div class="flex items-center gap-3">
           <div
-            class="bg-anirank-primary text-white w-10 h-10 rounded-xl flex items-center justify-center font-black shadow-lg shadow-anirank-primary/20"
+            class="bg-primary text-on-surface w-10 h-10 rounded-xl flex items-center justify-center font-black shadow-lg shadow-anirank-primary/20"
           >
             {selectedIds.size}
           </div>
           <div>
-            <p class="text-white font-bold text-sm">Titles selected</p>
+            <p class="text-on-surface font-bold text-sm">Titles selected</p>
             <p
-              class="text-white/40 text-[10px] uppercase tracking-wider font-bold"
+              class="text-on-surface/40 text-[10px] uppercase tracking-wider font-bold"
             >
               Ready to import
             </p>
@@ -368,14 +368,14 @@
           <button
             onclick={() => (selectedIds = new Set())}
             disabled={batchSaving}
-            class="px-4 py-2 rounded-xl text-white/60 hover:text-white hover:bg-white/5 transition-colors text-sm font-bold disabled:opacity-50"
+            class="px-4 py-2 rounded-xl text-on-surface/60 hover:text-on-surface hover:bg-surface-highest transition-colors text-sm font-bold disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             onclick={importSelected}
             disabled={batchSaving}
-            class="px-6 py-2.5 bg-anirank-primary hover:bg-anirank-primary/80 text-white font-bold rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-anirank-primary/10 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:scale-100"
+            class="px-6 py-2.5 bg-primary hover:bg-primary/80 text-on-surface font-bold rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-anirank-primary/10 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:scale-100"
           >
             {#if batchSaving}
               <svg

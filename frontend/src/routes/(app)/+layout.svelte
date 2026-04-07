@@ -6,9 +6,8 @@
 </script>
 
 <div
-  class="flex min-h-screen flex-col bg-dark-900 font-sans text-white/80 selection:bg-primary-500/30 selection:text-white"
+  class="flex min-h-screen flex-col bg-surface font-sans selection:bg-primary selection:text-white"
 >
-  <!-- Navbar -->
   <NavbarMaster />
   <main class="flex-1">
     {@render children()}

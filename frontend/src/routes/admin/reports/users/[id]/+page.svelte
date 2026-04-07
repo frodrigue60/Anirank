@@ -62,15 +62,15 @@
     <div class="flex items-center gap-4">
       <button
         onclick={() => goto("/admin/reports/users")}
-        class="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-gray-400 transition-all active:scale-95"
+        class="p-2 bg-surface-highest hover:bg-surface-highest rounded-xl text-on-surface-variant/70 transition-all active:scale-95"
       >
         <ArrowLeft size={20} />
       </button>
       <div>
-        <h1 class="text-3xl font-bold tracking-tight text-white">
-          User Report <span class="text-white/30">#{report?.id}</span>
+        <h1 class="text-3xl font-bold tracking-tight text-on-surface">
+          User Report <span class="text-on-surface/30">#{report?.id}</span>
         </h1>
-        <p class="text-gray-400 text-sm">Reviewing community conduct violation.</p>
+        <p class="text-on-surface-variant/70 text-sm">Reviewing community conduct violation.</p>
       </div>
     </div>
 
@@ -87,7 +87,7 @@
         <button
           onclick={resolveReport}
           disabled={isResolving || isDeleting}
-          class="flex-1 sm:flex-none px-6 py-2.5 bg-primary text-white hover:opacity-90 rounded-xl font-bold text-sm transition-all shadow-lg shadow-primary/20 disabled:opacity-50 flex items-center justify-center gap-2"
+          class="flex-1 sm:flex-none px-6 py-2.5 bg-primary text-on-surface hover:opacity-90 rounded-xl font-bold text-sm transition-all shadow-lg shadow-primary/20 disabled:opacity-50 flex items-center justify-center gap-2"
         >
           <CheckCircle size={16} />
           {isResolving ? "Resolving..." : "Mark as Resolved"}
@@ -97,7 +97,7 @@
   </div>
 
   {#if !report}
-    <div class="bg-anirank-card border border-white/5 rounded-3xl p-12 text-center text-gray-500">
+    <div class="bg-surface-container border border-outline-variant rounded-3xl p-12 text-center text-on-surface-variant/40">
       <ShieldAlert size={64} class="mx-auto mb-4 opacity-10" />
       <p>Report not found or failed to load.</p>
     </div>
@@ -106,9 +106,9 @@
       <!-- Main Content -->
       <div class="lg:col-span-2 space-y-6">
         <!-- Reason & Content -->
-        <div class="bg-anirank-card border border-white/5 rounded-3xl overflow-hidden shadow-xl">
-          <div class="p-5 border-b border-white/5 bg-white/2 flex justify-between items-center">
-            <h2 class="font-bold text-white flex items-center gap-2">
+        <div class="bg-surface-container border border-outline-variant rounded-3xl overflow-hidden shadow-xl">
+          <div class="p-5 border-b border-outline-variant bg-white/2 flex justify-between items-center">
+            <h2 class="font-bold text-on-surface flex items-center gap-2">
               <Flag size={18} class="text-primary" />
               Report Details
             </h2>
@@ -118,28 +118,28 @@
           </div>
           <div class="p-8">
             <div class="mb-6">
-              <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Reason Category</span>
-              <h3 class="text-2xl font-black text-white">{report.reason}</h3>
+              <span class="text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest block mb-1">Reason Category</span>
+              <h3 class="text-2xl font-black text-on-surface">{report.reason}</h3>
             </div>
             
-            <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest block mb-2">Description</span>
-            <div class="bg-black/40 rounded-2xl p-6 text-gray-300 leading-relaxed border border-white/5 whitespace-pre-wrap text-sm italic">
+            <span class="text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest block mb-2">Description</span>
+            <div class="bg-black/40 rounded-2xl p-6 text-on-surface-variant leading-relaxed border border-outline-variant whitespace-pre-wrap text-sm italic">
               "{report.content || 'No detailed description provided.'}"
             </div>
           </div>
         </div>
 
         <!-- Reported User Info -->
-        <div class="bg-anirank-card border border-white/5 rounded-3xl overflow-hidden shadow-xl">
-          <div class="p-5 border-b border-white/5 bg-white/2">
-            <h2 class="font-bold text-white flex items-center gap-2">
+        <div class="bg-surface-container border border-outline-variant rounded-3xl overflow-hidden shadow-xl">
+          <div class="p-5 border-b border-outline-variant bg-white/2">
+            <h2 class="font-bold text-on-surface flex items-center gap-2">
               <User size={18} class="text-rose-400" />
               Reported User
             </h2>
           </div>
           <div class="p-8">
-            <div class="flex items-center gap-6 bg-white/5 p-6 rounded-2xl border border-white/5">
-              <div class="size-20 rounded-full overflow-hidden border-2 border-white/10 shadow-2xl bg-black/50">
+            <div class="flex items-center gap-6 bg-surface-highest p-6 rounded-2xl border border-outline-variant">
+              <div class="size-20 rounded-full overflow-hidden border-2 border-outline-variant shadow-2xl bg-black/50">
                 {#if report.reported_user?.avatar_url}
                   <img src={report.reported_user.avatar_url} alt="" class="size-full object-cover" />
                 {:else}
@@ -150,15 +150,15 @@
               </div>
               <div class="flex-1">
                 <div class="flex items-center justify-between">
-                  <h4 class="text-xl font-black text-white">{report.reported_user?.name || 'Unknown User'}</h4>
-                  <a href="/users/{report.reported_user?.slug}" target="_blank" class="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-primary transition-all">
+                  <h4 class="text-xl font-black text-on-surface">{report.reported_user?.name || 'Unknown User'}</h4>
+                  <a href="/users/{report.reported_user?.slug}" target="_blank" class="p-2 bg-surface-highest hover:bg-surface-highest rounded-lg text-primary transition-all">
                     <ExternalLink size={18} />
                   </a>
                 </div>
-                <p class="text-sm text-gray-500 mt-1 font-mono">UUID: {report.reported_user?.uuid || 'N/A'}</p>
+                <p class="text-sm text-on-surface-variant/40 mt-1 font-mono">UUID: {report.reported_user?.uuid || 'N/A'}</p>
                 <div class="mt-4 flex gap-2">
-                  <span class="px-3 py-1 bg-white/5 rounded-full text-[10px] font-bold text-gray-400">LEVEL {report.reported_user?.level || 1}</span>
-                  <span class="px-3 py-1 bg-white/5 rounded-full text-[10px] font-bold text-gray-400">XP {report.reported_user?.xp || 0}</span>
+                  <span class="px-3 py-1 bg-surface-highest rounded-full text-[10px] font-bold text-on-surface-variant/70">LEVEL {report.reported_user?.level || 1}</span>
+                  <span class="px-3 py-1 bg-surface-highest rounded-full text-[10px] font-bold text-on-surface-variant/70">XP {report.reported_user?.xp || 0}</span>
                 </div>
               </div>
             </div>
@@ -169,16 +169,16 @@
       <!-- Sidebar -->
       <div class="space-y-6">
         <!-- Reporter Info -->
-        <div class="bg-anirank-card border border-white/5 rounded-3xl overflow-hidden shadow-xl">
-          <div class="p-5 border-b border-white/5 bg-white/2">
-            <h2 class="font-bold text-white flex items-center gap-2">
+        <div class="bg-surface-container border border-outline-variant rounded-3xl overflow-hidden shadow-xl">
+          <div class="p-5 border-b border-outline-variant bg-white/2">
+            <h2 class="font-bold text-on-surface flex items-center gap-2">
               <ShieldAlert size={18} class="text-blue-400" />
               Reporter
             </h2>
           </div>
           <div class="p-6">
             <div class="flex items-center gap-3 mb-6">
-              <div class="size-12 rounded-full overflow-hidden bg-white/5 border border-white/10">
+              <div class="size-12 rounded-full overflow-hidden bg-surface-highest border border-outline-variant">
                 {#if report.reporter_user?.avatar_url}
                   <img src={report.reporter_user.avatar_url} alt="" class="size-full object-cover" />
                 {:else}
@@ -188,20 +188,20 @@
                 {/if}
               </div>
               <div>
-                <a href="/users/{report.reporter_user?.slug}" target="_blank" class="font-black text-white hover:text-primary transition-colors">
+                <a href="/users/{report.reporter_user?.slug}" target="_blank" class="font-black text-on-surface hover:text-primary transition-colors">
                   {report.reporter_user?.name}
                 </a>
-                <p class="text-[10px] text-gray-500">ID: {report.reporter_user_id}</p>
+                <p class="text-[10px] text-on-surface-variant/40">ID: {report.reporter_user_id}</p>
               </div>
             </div>
 
-            <div class="space-y-4 pt-4 border-t border-white/5">
+            <div class="space-y-4 pt-4 border-t border-outline-variant">
               <div class="flex justify-between items-center text-xs">
-                <span class="text-gray-500 font-bold uppercase tracking-wider">Submitted</span>
-                <span class="text-gray-300 font-medium">{new Date(report.created_at).toLocaleDateString()}</span>
+                <span class="text-on-surface-variant/40 font-bold uppercase tracking-wider">Submitted</span>
+                <span class="text-on-surface-variant font-medium">{new Date(report.created_at).toLocaleDateString()}</span>
               </div>
               <div class="flex justify-between items-center text-xs">
-                <span class="text-gray-500 font-bold uppercase tracking-wider">Source</span>
+                <span class="text-on-surface-variant/40 font-bold uppercase tracking-wider">Source</span>
                 <span class="text-primary font-black uppercase tracking-widest">{report.source || 'WEB'}</span>
               </div>
             </div>
@@ -214,7 +214,7 @@
             <ShieldAlert size={14} />
             Admin Guidance
           </div>
-          <p class="text-xs text-white/50 leading-relaxed italic">
+          <p class="text-xs text-on-surface/50 leading-relaxed italic">
             "Before taking action, verify if the reported behavior violates current community guidelines. Punitive actions should be proportional to the offense."
           </p>
         </div>
@@ -224,7 +224,7 @@
 </div>
 
 <style lang="postcss">
-  :global(.bg-anirank-card) {
+  :global(.bg-surface-container) {
     background: rgba(13, 8, 18, 0.6);
     backdrop-filter: blur(20px);
   }

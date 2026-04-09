@@ -346,7 +346,7 @@
           <div class="flex items-center gap-2">
             <button
               onclick={scrollLeft}
-              class="group flex h-10 w-10 items-center justify-center rounded-full border border-outline-variant/10 bg-surface-container shadow-sm shadow-on-surface/5 transition-all hover:border-primary/20 hover:bg-primary/10 active:scale-90"
+              class="group m-1 flex h-10 w-10 items-center justify-center rounded-full border border-outline-variant/10 bg-surface-container shadow-sm shadow-on-surface/5 transition-all hover:border-primary/20 hover:bg-primary/10 active:scale-90"
               title="Scroll left"
               aria-label="Scroll carousel to the left"
             >
@@ -357,7 +357,7 @@
             </button>
             <button
               onclick={scrollRight}
-              class="group flex h-10 w-10 items-center justify-center rounded-full border border-outline-variant/10 bg-surface-container shadow-sm shadow-on-surface/5 transition-all hover:border-primary/20 hover:bg-primary/10 active:scale-90"
+              class="group m-1 flex h-10 w-10 items-center justify-center rounded-full border border-outline-variant/10 bg-surface-container shadow-sm shadow-on-surface/5 transition-all hover:border-primary/20 hover:bg-primary/10 active:scale-90"
               title="Scroll right"
               aria-label="Scroll carousel to the right"
             >

@@ -71,11 +71,6 @@
         title="AniRank Home"
         aria-label="Go to AniRank Home"
       >
-        <!-- <div
-          class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/40 group-hover:scale-105 transition-transform"
-        >
-          <span class="material-symbols-outlined text-[20px]">music_note</span>
-        </div> -->
         <span class="text-xl font-bold tracking-tight text-on-surface"
           >AniRank</span
         >
@@ -126,7 +121,7 @@
 
           {#if showDiscoverDropdown}
             <div
-              class="absolute left-0 top-full mt-3 w-48 overflow-hidden rounded-xl bg-surface-container py-1 shadow-2xl ring-1 ring-outline-variant/5"
+              class="absolute left-0 top-full mt-3 w-48 overflow-hidden rounded-md bg-surface-container py-1 shadow-2xl ring-1 ring-outline-variant/5"
             >
               <a
                 href="/animes"
@@ -280,7 +275,7 @@
 
           {#if showUserDropdown}
             <div
-              class="absolute right-0 top-full mt-3 w-56 overflow-hidden rounded-xl bg-surface-container py-1 shadow-2xl ring-1 ring-outline-variant/5"
+              class="absolute right-0 top-full mt-3 w-56 overflow-hidden rounded-md bg-surface-container py-1 shadow-2xl ring-1 ring-outline-variant/5"
             >
               {#if authState.isAuthenticated && authState.user}
                 <div class="border-b border-outline-variant/10 px-4 py-3">

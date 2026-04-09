@@ -206,7 +206,7 @@
           type="button"
           onclick={handleAnilistLogin}
           disabled={loading}
-          class="flex w-full items-center justify-center gap-2 rounded-sm shadow-sm bg-[#02a9ff] py-3.5 font-black text-[10px] uppercase tracking-widest text-white transition-all hover:bg-[#0290d9] hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+          class="flex w-full items-center justify-center gap-2 rounded-sm shadow-sm bg-[#02a9ff] hover:bg-[#0290d9] py-3.5 font-black text-[10px] uppercase tracking-widest text-white transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
         >
           AniList
         </button>
@@ -214,7 +214,7 @@
           type="button"
           onclick={handleGoogleLogin}
           disabled={loading}
-          class="flex w-full items-center justify-center gap-2 rounded-sm shadow-sm bg-surface hover:bg-surface-highest border border-outline-variant/20 py-3.5 font-black text-[10px] uppercase tracking-widest text-black transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+          class="flex w-full items-center justify-center gap-2 rounded-sm shadow-sm bg-white hover:bg-white/80 text-black border border-outline-variant py-3.5 font-black text-[10px] uppercase tracking-widest text-black transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
         >
           Google
         </button>

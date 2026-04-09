@@ -108,14 +108,14 @@
   }
 </script>
 
-<SEO 
-  title="Login" 
-  description="Sign in to your AniRank account to sync your favorite anime theme songs and participate in community rankings." 
+<SEO
+  title="Login"
+  description="Sign in to your AniRank account to sync your favorite anime theme songs and participate in community rankings."
 />
 
 <div class="min-h-[80vh] flex items-center justify-center p-4 py-24">
   <div
-    class="w-full max-w-md overflow-hidden rounded-[2.5rem] border border-outline-variant/10 bg-surface-container shadow-2xl transition-all"
+    class="w-full max-w-md overflow-hidden rounded-md border border-outline-variant/10 bg-surface-container shadow-2xl transition-all"
   >
     <div class="p-10">
       <div class="mb-10 text-center">
@@ -124,11 +124,16 @@
             href="/"
             class="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-on-surface-variant/40 hover:text-primary transition-all group/back"
           >
-            <ArrowLeft size={14} class="transition-transform group-hover/back:-translate-x-1" />
+            <ArrowLeft
+              size={14}
+              class="transition-transform group-hover/back:-translate-x-1"
+            />
             Back to home
           </a>
         </div>
-        <h2 class="text-3xl font-black text-on-surface tracking-tighter">Welcome Back</h2>
+        <h2 class="text-3xl font-black text-on-surface tracking-tighter">
+          Welcome Back
+        </h2>
         <p class="mt-2 text-sm text-on-surface-variant/60 font-medium">
           Sign in to sync your favorite anime and lists.
         </p>
@@ -136,7 +141,7 @@
 
       {#if errorMessage}
         <div
-          class="mb-8 rounded-2xl bg-red-500/5 p-4 text-[11px] font-black uppercase tracking-wider text-red-500 border border-red-500/10 text-center leading-tight flex items-center justify-center gap-2"
+          class="mb-8 rounded-md bg-red-500/5 p-4 text-[11px] font-black uppercase tracking-wider text-red-500 border border-red-500/10 text-center leading-tight flex items-center justify-center gap-2"
         >
           <span class="material-symbols-outlined text-[16px]">error</span>
           {errorMessage}
@@ -155,7 +160,7 @@
             bind:value={email}
             required
             placeholder="Email Address"
-            class="w-full rounded-2xl border border-outline-variant/10 bg-surface-highest/30 py-4 pl-12 pr-5 text-on-surface placeholder-on-surface-variant/30 font-medium transition-all focus:bg-surface-highest focus:ring-4 focus:ring-primary/5 focus:outline-none"
+            class="w-full rounded-sm border border-outline-variant/10 bg-surface-highest/30 py-4 pl-12 pr-5 text-on-surface placeholder-on-surface-variant/30 font-medium transition-all focus:bg-surface-highest focus:ring-4 focus:ring-primary/5 focus:outline-none"
           />
         </div>
         <div class="relative group">
@@ -169,14 +174,14 @@
             bind:value={password}
             required
             placeholder="Password"
-            class="w-full rounded-2xl border border-outline-variant/10 bg-surface-highest/30 py-4 pl-12 pr-5 text-on-surface placeholder-on-surface-variant/30 font-medium transition-all focus:bg-surface-highest focus:ring-4 focus:ring-primary/5 focus:outline-none"
+            class="w-full rounded-sm border border-outline-variant/10 bg-surface-highest/30 py-4 pl-12 pr-5 text-on-surface placeholder-on-surface-variant/30 font-medium transition-all focus:bg-surface-highest focus:ring-4 focus:ring-primary/5 focus:outline-none"
           />
         </div>
 
         <button
           type="submit"
           disabled={loading}
-          class="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-4 font-black text-sm uppercase tracking-widest text-white transition-all hover:bg-primary/90 hover:scale-[1.02] shadow-xl shadow-primary/20 active:scale-95 disabled:opacity-50"
+          class="mt-2 flex w-full items-center justify-center gap-2 rounded-sm bg-primary py-4 font-black text-sm uppercase tracking-widest text-white transition-all hover:bg-primary/90 hover:scale-[1.02] shadow-xl shadow-primary/20 active:scale-95 disabled:opacity-50"
         >
           {#if loading}
             <Loader2 size={18} class="animate-spin" />
@@ -184,7 +189,9 @@
           Sign In
         </button>
       </form>
-      <div class="mt-6 mb-8 text-center text-xs font-medium text-on-surface-variant/40">
+      <div
+        class="mt-6 mb-8 text-center text-xs font-medium text-on-surface-variant/40"
+      >
         Don't have an account?
         <a
           href="/register?redirect={encodeURIComponent(redirectTo)}"
@@ -199,7 +206,7 @@
           type="button"
           onclick={handleAnilistLogin}
           disabled={loading}
-          class="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#02a9ff] py-3.5 font-black text-[10px] uppercase tracking-widest text-white transition-all hover:bg-[#0290d9] hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+          class="flex w-full items-center justify-center gap-2 rounded-sm shadow-sm bg-[#02a9ff] py-3.5 font-black text-[10px] uppercase tracking-widest text-white transition-all hover:bg-[#0290d9] hover:scale-[1.02] active:scale-95 disabled:opacity-50"
         >
           AniList
         </button>
@@ -207,7 +214,7 @@
           type="button"
           onclick={handleGoogleLogin}
           disabled={loading}
-          class="flex w-full items-center justify-center gap-2 rounded-2xl bg-white border border-outline-variant/20 py-3.5 font-black text-[10px] uppercase tracking-widest text-black transition-all hover:bg-gray-50 hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+          class="flex w-full items-center justify-center gap-2 rounded-sm shadow-sm bg-surface hover:bg-surface-highest border border-outline-variant/20 py-3.5 font-black text-[10px] uppercase tracking-widest text-black transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
         >
           Google
         </button>

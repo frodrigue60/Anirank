@@ -6,7 +6,7 @@
 </script>
 
 <div
-  class="group relative overflow-hidden rounded-2xl h-48 transition-all duration-300 border border-primary/10 bg-surface-container hover:shadow-2xl hover:shadow-primary/20 hover:border-primary/30 hover:-translate-y-1"
+  class="group relative overflow-hidden rounded-md h-48 transition-all duration-300 bg-surface-container shadow-sm hover:shadow-2xl hover:-translate-y-1"
 >
   <!-- Background Banner -->
   <div
@@ -22,7 +22,7 @@
 
   <!-- Content -->
   <div class="relative h-full p-6 flex items-center justify-between">
-    <div class="space-y-1 pr-4 h-full">
+    <div class="space-y-1 pr-4 h-full flex flex-col justify-end">
       <div class="flex items-center gap-2 mb-2">
         <div
           class="inline-flex items-center px-2 py-0.5 rounded bg-primary text-[10px] font-black text-white uppercase tracking-wider shadow-lg"
@@ -32,8 +32,8 @@
         </div>
         <div
           class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black text-white uppercase tracking-wider shadow-lg {song.user_rating
-            ? 'bg-green-500/50'
-            : 'bg-slate-500/50 '}"
+            ? 'bg-green-500'
+            : 'bg-slate-400 '}"
         >
           {song.user_rating ? "Rated" : "Not rated"}
         </div>
@@ -68,7 +68,7 @@
     <div class="flex flex-col items-end gap-2 shrink-0 h-full">
       <!-- Rating -->
       <div
-        class="px-2 py-1 rounded-xl flex items-center gap-1.5 bg-surface text-on-surface"
+        class="px-2 py-1 rounded-xl flex items-center gap-1.5 text-yellow-500 drop-shadow"
         title="Average rating"
       >
         <span class="material-symbols-outlined text-sm filled">star</span>

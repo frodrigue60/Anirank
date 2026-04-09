@@ -59,10 +59,10 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
   onclick={closeDropdowns}
-  class="sticky top-0 z-50 bg-surface border-b border-outline-variant/10 w-full"
+  class="sticky top-0 z-50 bg-surface border-b border-outline-variant/10 w-full shadow-sm shadow-black/10"
 >
   <header
-    class="max-w-[1440px] mx-auto px-6 h-16 flex items-center justify-between gap-4 text-on-surface shadow-sm shadow-black/10"
+    class="max-w-[1440px] mx-auto px-6 h-16 flex items-center justify-between gap-4 text-on-surface"
   >
     <div class="flex items-center gap-10">
       <a

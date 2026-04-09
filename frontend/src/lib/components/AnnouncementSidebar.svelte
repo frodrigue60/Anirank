@@ -34,32 +34,32 @@
     info: {
       bg: "bg-blue-500/10",
       text: "text-blue-400",
-      border: "border-blue-500/30",
-      glow: "shadow-blue-500/20",
+      border: "border-blue-500/10",
+      glow: "shadow-sm",
     },
     success: {
       bg: "bg-green-500/10",
       text: "text-green-400",
-      border: "border-green-500/30",
-      glow: "shadow-green-500/20",
+      border: "border-green-500/10",
+      glow: "shadow-sm",
     },
     warning: {
       bg: "bg-yellow-500/10",
       text: "text-yellow-400",
-      border: "border-yellow-500/30",
-      glow: "shadow-yellow-500/20",
+      border: "border-yellow-500/10",
+      glow: "shadow-sm",
     },
     danger: {
       bg: "bg-red-500/10",
       text: "text-red-400",
-      border: "border-red-500/30",
-      glow: "shadow-red-500/20",
+      border: "border-red-500/10",
+      glow: "shadow-sm",
     },
     event: {
       bg: "bg-primary/10",
       text: "text-primary",
-      border: "border-primary/30",
-      glow: "shadow-primary/20",
+      border: "border-primary/10",
+      glow: "shadow-sm",
     },
   };
 </script>
@@ -72,9 +72,11 @@
         href={item.url}
         target={item.url?.startsWith("http") ? "_blank" : undefined}
         title={item.content}
-        class="group relative flex min-h-[150px] flex-col justify-end overflow-hidden rounded-2xl p-5 transition-all hover:scale-[1.02] active:scale-[0.98] border {typeConfig[
+        class="group relative flex min-h-[150px] flex-col justify-end overflow-hidden rounded-md p-5 transition-all hover:scale-[1.02] active:scale-[0.98] border {typeConfig[
           item.type
-        ]?.border || 'border-outline-variant/10'} {item.url ? 'cursor-pointer' : ''}"
+        ]?.border || 'border-outline-variant/10'} {item.url
+          ? 'cursor-pointer'
+          : ''}"
       >
         <!-- Background Image -->
         {#if item.image_url}
@@ -132,7 +134,7 @@
 
         <!-- Hover Glow -->
         <div
-          class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none shadow-[inset_0_0_20px_rgba(255,255,255,0.05)] {typeConfig[
+          class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none {typeConfig[
             item.type
           ]?.glow || ''}"
         ></div>

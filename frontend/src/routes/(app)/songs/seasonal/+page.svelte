@@ -86,11 +86,11 @@
     </div>
     <div class="flex flex-col gap-3">
       <div
-        class="flex items-center p-1 bg-surface-container border border-white/5 rounded-xl w-fit"
+        class="flex items-center p-1 bg-surface-highest border border-white/5 rounded-md w-fit"
       >
         <button
           onclick={() => changeType("all")}
-          class="px-6 py-2.5 rounded-lg font-bold text-sm transition-all {activeType ===
+          class="px-6 py-2.5 rounded-sm font-bold text-sm transition-all {activeType ===
             'all' || !activeType
             ? 'bg-primary text-white shadow-lg'
             : 'text-on-surface/80 hover:text-on-surface'}"
@@ -99,7 +99,7 @@
         </button>
         <button
           onclick={() => changeType("OP")}
-          class="px-6 py-2.5 rounded-lg font-bold text-sm transition-all {activeType ===
+          class="px-6 py-2.5 rounded-sm font-bold text-sm transition-all {activeType ===
           'OP'
             ? 'bg-primary text-white shadow-lg'
             : 'text-on-surface/80 hover:text-on-surface'}"
@@ -108,7 +108,7 @@
         </button>
         <button
           onclick={() => changeType("ED")}
-          class="px-6 py-2.5 rounded-lg font-bold text-sm transition-all {activeType ===
+          class="px-6 py-2.5 rounded-sm font-bold text-sm transition-all {activeType ===
           'ED'
             ? 'bg-primary text-white shadow-lg'
             : 'text-on-surface/80 hover:text-on-surface'}"

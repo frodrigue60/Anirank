@@ -103,7 +103,7 @@
   >
     <!-- Modal Content -->
     <div
-      class="modal-glass w-full max-w-sm rounded-[2.5rem] overflow-hidden shadow-2xl p-10 flex flex-col items-center text-center relative max-h-[90vh]"
+      class="modal-glass w-full max-w-sm rounded-md overflow-hidden shadow-2xl p-10 flex flex-col items-center text-center relative max-h-[90vh]"
       onclick={(e) => e.stopPropagation()}
       transition:scale={{ duration: 300, start: 0.95 }}
     >
@@ -111,12 +111,16 @@
       <div class="w-full flex justify-between items-start mb-6">
         <div class="text-left">
           <div class="flex items-center gap-2 text-primary mb-1">
-            <span class="material-symbols-outlined text-[14px]">library_music</span>
+            <span class="material-symbols-outlined text-[14px]"
+              >library_music</span
+            >
             <p class="text-[10px] font-black uppercase tracking-[0.2em]">
               Add to Collection
             </p>
           </div>
-          <h3 class="text-xl font-bold leading-tight tracking-tight text-on-surface">
+          <h3
+            class="text-xl font-bold leading-tight tracking-tight text-on-surface"
+          >
             Your Playlists
           </h3>
           <p class="text-xs text-on-surface-variant mt-1">
@@ -153,7 +157,9 @@
               <Music size={32} />
             </div>
             <div>
-              <p class="text-sm font-bold text-on-surface/80">No playlists found</p>
+              <p class="text-sm font-bold text-on-surface/80">
+                No playlists found
+              </p>
               <p class="text-xs text-on-surface-variant">
                 Create your first collection below.
               </p>
@@ -163,13 +169,15 @@
           {#each playlists as playlist}
             <button
               onclick={() => toggleSong(playlist)}
-              class="w-full group flex items-center justify-between p-4 rounded-2xl bg-surface-highest/40 border border-outline-variant/5 hover:bg-surface-highest/80 hover:border-outline-variant/10 transition-all text-left"
+              class="w-full group flex items-center justify-between p-4 rounded-sm bg-surface-highest/40 border border-outline-variant/5 hover:bg-surface-highest/80 hover:border-outline-variant/10 transition-all text-left"
             >
               <div class="flex items-center gap-4">
                 <div
-                  class="w-10 h-10 rounded-xl bg-surface-lowest flex items-center justify-center text-on-surface-variant/40 group-hover:text-primary transition-colors"
+                  class="w-10 h-10 rounded-sm bg-surface-lowest flex items-center justify-center text-on-surface-variant/40 group-hover:text-primary transition-colors"
                 >
-                  <span class="material-symbols-outlined text-[20px]">list_alt</span>
+                  <span class="material-symbols-outlined text-[20px]"
+                    >list_alt</span
+                  >
                 </div>
                 <div>
                   <h4
@@ -211,7 +219,7 @@
       <div class="w-full space-y-4">
         {#if successMessage}
           <div
-            class="bg-primary/10 border border-primary/20 rounded-xl p-3 flex items-center gap-3 text-primary"
+            class="bg-primary/10 border border-primary/20 rounded-sm p-3 flex items-center gap-3 text-primary"
             transition:slide
           >
             <CheckCircle2 size={16} />
@@ -221,7 +229,7 @@
 
         <button
           onclick={() => (showCreateModal = true)}
-          class="w-full bg-on-surface text-surface py-4 rounded-xl font-black text-sm transition-all flex items-center justify-center gap-2 hover:opacity-90 active:scale-95"
+          class="w-full bg-on-surface text-surface py-4 rounded-sm font-black text-sm transition-all flex items-center justify-center gap-2 hover:opacity-90 active:scale-95"
         >
           <span class="material-symbols-outlined text-[18px]">add</span>
           Create New Playlist

@@ -93,12 +93,16 @@
     ></div>
 
     <div
-      class="relative w-full max-w-2xl bg-surface-container border border-outline-variant/10 rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
+      class="relative w-full max-w-2xl bg-surface-container border border-outline-variant/10 rounded-md shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
       transition:scale={{ duration: 300, start: 0.95 }}
     >
       <!-- Search Input Header -->
-      <div class="p-6 border-b border-outline-variant/10 flex items-center gap-4 bg-surface-container/50 backdrop-blur-md">
-        <span class="material-symbols-outlined text-primary text-[24px]">search</span>
+      <div
+        class="p-6 border-b border-outline-variant/10 flex items-center gap-4 bg-surface-container/50 backdrop-blur-md"
+      >
+        <span class="material-symbols-outlined text-primary text-[24px]"
+          >search</span
+        >
         <input
           type="text"
           bind:value={query}
@@ -126,14 +130,18 @@
             <span class="material-symbols-outlined text-[48px] mb-4 opacity-20"
               >search</span
             >
-            <p class="text-sm font-bold uppercase tracking-widest opacity-50">Type at least 3 characters to search</p>
+            <p class="text-sm font-bold uppercase tracking-widest opacity-50">
+              Type at least 3 characters to search
+            </p>
           </div>
         {:else if !isLoading && (results?.animes?.length || 0) === 0 && (results?.artists?.length || 0) === 0 && (results?.users?.length || 0) === 0 && (results?.songs?.length || 0) === 0}
           <div class="text-center py-12 text-on-surface-variant">
             <span class="material-symbols-outlined text-[48px] mb-4 opacity-20"
               >sentiment_dissatisfied</span
             >
-            <p class="text-sm font-bold uppercase tracking-widest opacity-50">No results found for "{query}"</p>
+            <p class="text-sm font-bold uppercase tracking-widest opacity-50">
+              No results found for "{query}"
+            </p>
           </div>
         {:else}
           <div class="flex flex-col gap-8">
@@ -150,14 +158,14 @@
                     <a
                       href="/animes/{anime.slug}"
                       onclick={closeModal}
-                      class="flex items-center gap-4 p-2 rounded-[1.25rem] hover:bg-surface-highest/50 transition-all group"
+                      class="flex items-center gap-4 p-2 rounded-sm hover:bg-surface-highest/50 transition-all group"
                     >
                       <img
                         src={anime.cover_url ||
                           "https://placehold.co/100x150/1e1e24/7f13ec?text=Anime"}
                         alt={anime.title}
                         title={anime.title}
-                        class="w-12 h-16 object-cover rounded-xl bg-surface-lowest shadow-lg shadow-black/20"
+                        class="w-12 h-16 object-cover rounded-md bg-surface-lowest shadow-lg shadow-black/20"
                       />
                       <div class="flex flex-col">
                         <span
@@ -165,7 +173,8 @@
                           >{anime.title}</span
                         >
                         {#if anime.year || anime.season}
-                          <span class="text-on-surface-variant/60 text-xs font-medium"
+                          <span
+                            class="text-on-surface-variant/60 text-xs font-medium"
                             >{anime.season?.name} {anime.year?.name}</span
                           >
                         {/if}
@@ -189,10 +198,10 @@
                     <a
                       href="/songs/{song.anime?.slug}/{song.slug}"
                       onclick={closeModal}
-                      class="flex items-center gap-4 p-3 rounded-[1.25rem] hover:bg-surface-highest/50 transition-all group"
+                      class="flex items-center gap-4 p-3 rounded-md hover:bg-surface-highest/50 transition-all group"
                     >
                       <div
-                        class="w-12 h-12 rounded-xl bg-surface-lowest border border-outline-variant/10 flex items-center justify-center text-primary shadow-lg shadow-black/20"
+                        class="w-12 h-12 rounded-sm bg-surface-highest border border-outline-variant/10 flex items-center justify-center text-primary shadow-sm"
                       >
                         <span class="material-symbols-outlined text-[24px]"
                           >music_note</span
@@ -206,7 +215,8 @@
                             "Untitled Song"}</span
                         >
                         {#if song.anime}
-                          <span class="text-on-surface-variant/60 text-xs font-medium"
+                          <span
+                            class="text-on-surface-variant/60 text-xs font-medium"
                             >{song.type} - {song.anime.title}</span
                           >
                         {/if}
@@ -231,10 +241,10 @@
                       <a
                         href="/artists/{artist.slug}"
                         onclick={closeModal}
-                        class="flex items-center gap-3 p-2 rounded-xl hover:bg-surface-highest/50 transition-all group"
+                        class="flex items-center gap-3 p-2 rounded-sm hover:bg-surface-highest/50 transition-all group"
                       >
                         <div
-                          class="w-10 h-10 rounded-full border-2 border-outline-variant/10 bg-surface-lowest overflow-hidden flex items-center justify-center text-primary/50 group-hover:border-primary transition-all shadow-lg shadow-black/20"
+                          class="w-10 h-10 rounded-full border-2 border-outline-variant/10 bg-surface-highest overflow-hidden flex items-center justify-center text-primary/50 group-hover:border-primary transition-all shadow-sm"
                         >
                           {#if artist.avatar_url}
                             <img
@@ -272,10 +282,10 @@
                       <a
                         href="/users/{user.slug}"
                         onclick={closeModal}
-                        class="flex items-center gap-3 p-2 rounded-xl hover:bg-surface-highest/50 transition-all group"
+                        class="flex items-center gap-3 p-2 rounded-sm hover:bg-surface-highest/50 transition-all group"
                       >
                         <div
-                          class="w-10 h-10 rounded-full border-2 border-outline-variant/10 bg-surface-lowest overflow-hidden flex items-center justify-center text-primary/50 group-hover:border-primary transition-all shadow-lg shadow-black/20"
+                          class="w-10 h-10 rounded-full border-2 border-outline-variant/10 bg-surface-highest overflow-hidden flex items-center justify-center text-primary/50 group-hover:border-primary transition-all shadow-sm"
                         >
                           {#if user.avatar_url}
                             <img
@@ -308,7 +318,8 @@
         class="p-4 bg-surface-container border-t border-outline-variant/10 flex items-center justify-between text-[10px] text-on-surface-variant font-black uppercase tracking-widest"
       >
         <span class="flex items-center gap-2 opacity-50"
-          ><kbd class="bg-surface-highest px-2 py-1 rounded-lg border border-outline-variant/10"
+          ><kbd
+            class="bg-surface-highest px-2 py-1 rounded-sm border border-outline-variant/10"
             >ESC</kbd
           > to close</span
         >

@@ -49,7 +49,7 @@
     const url = new URL(page.url);
 
     const setParam = (key: string, val: string) => {
-      if (val && val !== "any") url.searchParams.set(key, val);
+      if (val) url.searchParams.set(key, val);
       else url.searchParams.delete(key);
     };
 
@@ -109,41 +109,36 @@
   }
 
   // Mapeo de opciones para CustomSelect
-  const yearOptions = $derived([
-    { value: "any", label: "Any Year" },
-    ...configState.years.map((y) => ({
+  const yearOptions = $derived(
+    configState.years.map((y) => ({
       value: y.slug,
       label: y.name,
     })),
-  ]);
-  const seasonOptions = $derived([
-    { value: "any", label: "Any Season" },
-    ...configState.seasons.map((s) => ({
+  );
+  const seasonOptions = $derived(
+    configState.seasons.map((s) => ({
       value: s.slug,
       label: s.name,
     })),
-  ]);
-  const formatOptions = $derived([
-    { value: "any", label: "Any" },
-    ...configState.formats.map((f) => ({
+  );
+  const formatOptions = $derived(
+    configState.formats.map((f) => ({
       value: f.slug,
       label: f.name,
     })),
-  ]);
+  );
   const sortOptions = [
-    { value: "any", label: "Any" },
     { value: "most_themes", label: "Most Themes" },
     { value: "least_themes", label: "Least Themes" },
     { value: "latest", label: "Recently Added" },
     { value: "title", label: "Alphabetical" },
   ];
-  const genreOptions = $derived([
-    { value: "any", label: "Any" },
-    ...configState.genres.map((g) => ({
+  const genreOptions = $derived(
+    configState.genres.map((g) => ({
       value: g.slug,
       label: g.name,
     })),
-  ]);
+  );
   let viewType = $state<"grid" | "card" | "list">("grid");
 </script>
 
@@ -156,10 +151,12 @@
   <div class="flex flex-col gap-4">
     <!-- Header/Filters Section -->
     <section
-      class="relative z-40 flex flex-col gap-4 bg-surface-container p-4 rounded-3xl border border-white/5 shadow-2xl"
+      class="relative z-40 flex flex-col gap-4 bg-surface-container p-4 rounded-md border border-white/5 shadow-sm"
     >
-      <div>
-        <!-- search -->
+      <div
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end"
+      >
+        <!-- Search -->
         <div class="relative group">
           <label
             for="anime-search"
@@ -178,16 +175,12 @@
               bind:value={searchTerm}
               oninput={handleInput}
               onkeydown={handleKeydown}
-              class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-xl pl-12 pr-6 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 placeholder:text-on-surface-variant transition-all"
+              class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-sm pl-12 pr-6 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 placeholder:text-on-surface-variant transition-all"
               placeholder="What are you looking for?"
               type="text"
             />
           </div>
         </div>
-      </div>
-      <div
-        class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 items-end"
-      >
         <!-- Year Select -->
         <div class="flex flex-col gap-2">
           <label
@@ -199,8 +192,9 @@
             id="year-select"
             bind:value={selectedYear}
             onchange={updateFilters}
-            class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-xl px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
+            class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-sm px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
           >
+            <option value="">All Years</option>
             {#each yearOptions as option}
               <option value={option.value}>{option.label}</option>
             {/each}
@@ -218,8 +212,9 @@
             id="season-select"
             bind:value={selectedSeason}
             onchange={updateFilters}
-            class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-xl px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
+            class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-sm px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
           >
+            <option value="">All Seasons</option>
             {#each seasonOptions as option}
               <option value={option.value}>{option.label}</option>
             {/each}
@@ -237,8 +232,9 @@
             id="format-select"
             bind:value={selectedFormat}
             onchange={updateFilters}
-            class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-xl px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
+            class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-sm px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
           >
+            <option value="">All Formats</option>
             {#each formatOptions as option}
               <option value={option.value}>{option.label}</option>
             {/each}
@@ -256,8 +252,9 @@
             id="genre-select"
             bind:value={selectedGenre}
             onchange={updateFilters}
-            class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-xl px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
+            class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-sm px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
           >
+            <option value="">All Genres</option>
             {#each genreOptions as option}
               <option value={option.value}>{option.label}</option>
             {/each}
@@ -275,8 +272,9 @@
             id="sort-select"
             bind:value={selectedSort}
             onchange={updateFilters}
-            class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-xl px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
+            class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-sm px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
           >
+            <option value="">Any</option>
             {#each sortOptions as option}
               <option value={option.value}>{option.label}</option>
             {/each}
@@ -287,27 +285,24 @@
 
     <!-- Results Section -->
     <section class="">
-      <div class="flex justify-between text-2xl gap-2 mb-4">
+      <div class="flex items-center justify-between text-2xl gap-2 mb-4">
         <div>
           <!-- Results count -->
           {#if totalAnimes > 0}
-            <div class="mb-4 flex items-center justify-between">
-              <h3
-                class="text-xl font-bold flex items-center gap-3 text-on-surface-variant"
-              >
-                <span class="w-2 h-6 bg-primary rounded-full"></span>
-                Results ({totalAnimes.toLocaleString()})
-              </h3>
-            </div>
+            <h3
+              class="text-xl font-bold flex items-center gap-3 text-on-surface-variant/80"
+            >
+              <span class="w-2 h-6 bg-on-surface-variant/80 rounded-full"
+              ></span>
+              Results ({totalAnimes.toLocaleString()})
+            </h3>
           {/if}
         </div>
 
-        <div
-          class="flex items-center gap-2 bg-surface-container p-1 rounded-md"
-        >
+        <div class="flex items-center gap-2 bg-surface-highest p-1 rounded-md">
           <button
             onclick={() => (viewType = "grid")}
-            class="flex items-center gap-2 p-1 rounded-md {viewType === 'grid'
+            class="flex items-center gap-2 p-1 rounded-sm {viewType === 'grid'
               ? 'text-surface/80 bg-primary'
               : 'text-on-surface-variant'}"
             title="Compact Grid"
@@ -316,7 +311,7 @@
           </button>
           <button
             onclick={() => (viewType = "card")}
-            class="flex items-center gap-2 p-1 rounded-md {viewType === 'card'
+            class="flex items-center gap-2 p-1 rounded-sm {viewType === 'card'
               ? 'text-surface/80 bg-primary'
               : 'text-on-surface-variant'}"
             title="Detailed Cards"
@@ -325,7 +320,7 @@
           </button>
           <button
             onclick={() => (viewType = "list")}
-            class="flex items-center gap-2 p-1 rounded-md {viewType === 'list'
+            class="flex items-center gap-2 p-1 rounded-sm {viewType === 'list'
               ? 'text-surface/80 bg-primary'
               : 'text-on-surface-variant'}"
             title="List View"
@@ -340,7 +335,7 @@
           class="grid gap-6 {viewType === 'grid'
             ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6'
             : viewType === 'card'
-              ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3'
+              ? 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3'
               : 'grid-cols-1'}"
         >
           {#each animes as anime (anime.slug)}
@@ -357,7 +352,7 @@
         />
       {:else}
         <div
-          class="flex flex-col items-center justify-center py-20 bg-surface-dark/30 rounded-3xl border border-dashed border-white/5"
+          class="flex flex-col items-center justify-center py-20 bg-surface-dark/30 rounded-md border border-dashed border-white/5"
         >
           <Search size={48} class="text-white/10 mb-4" />
           <h3 class="text-xl font-bold text-white mb-2">No results found</h3>

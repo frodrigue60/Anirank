@@ -64,7 +64,7 @@
       <!-- Featured Theme -->
       {#if homeData.featured_song}
         <section
-          class="group relative min-h-[400px] w-full overflow-hidden rounded-2xl bg-surface-container"
+          class="group relative min-h-[400px] w-full overflow-hidden rounded-md shadow-sm bg-surface-container"
         >
           <div
             class="absolute inset-0 bg-cover bg-center opacity-40 transition-transform duration-700 group-hover:scale-105 group-hover:opacity-50"
@@ -188,7 +188,7 @@
               {#each homeData.weakly_ranking.op.slice(0, 3) as item, index}
                 <a
                   href="/songs/{item.anime?.slug}/{item.slug}"
-                  class="group relative flex items-center gap-4 rounded-xl bg-surface-low p-4 transition-all hover:bg-surface-container"
+                  class="group relative flex items-center gap-4 rounded-md bg-surface-container p-4 transition-all hover:bg-primary/10 shadow-sm shadow-on-surface/5"
                   title="View details for {getSongName(item)}"
                 >
                   <div
@@ -235,7 +235,7 @@
               {/each}
             {:else}
               <div
-                class="flex h-32 flex-col items-center justify-center rounded-xl bg-surface-low text-on-surface-variant/40"
+                class="flex h-32 flex-col items-center justify-center rounded-sm bg-surface-low text-on-surface-variant/40"
               >
                 <span class="text-sm">No rankings available yet</span>
               </div>
@@ -253,11 +253,11 @@
               {#each homeData.weakly_ranking.ed.slice(0, 3) as item, index}
                 <a
                   href="/songs/{item.anime?.slug}/{item.slug}"
-                  class="group relative flex items-center gap-4 rounded-xl bg-surface-low p-4 transition-all hover:bg-surface-container"
+                  class="group relative flex items-center gap-4 rounded-md bg-surface-container p-4 transition-all hover:bg-primary/10 shadow-sm shadow-on-surface/5"
                   title="View details for {getSongName(item)}"
                 >
                   <div
-                    class="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg"
+                    class="relative h-20 w-20 shrink-0 overflow-hidden rounded-sm"
                   >
                     <img
                       alt={getSongName(item)}
@@ -346,7 +346,7 @@
           <div class="flex items-center gap-2">
             <button
               onclick={scrollLeft}
-              class="group flex h-10 w-10 items-center justify-center rounded-full border border-outline-variant/10 bg-surface-highest/30 transition-all hover:border-primary/20 hover:bg-primary/10 active:scale-90"
+              class="group flex h-10 w-10 items-center justify-center rounded-full border border-outline-variant/10 bg-surface-container shadow-sm shadow-on-surface/5 transition-all hover:border-primary/20 hover:bg-primary/10 active:scale-90"
               title="Scroll left"
               aria-label="Scroll carousel to the left"
             >
@@ -357,7 +357,7 @@
             </button>
             <button
               onclick={scrollRight}
-              class="group flex h-10 w-10 items-center justify-center rounded-full border border-outline-variant/10 bg-surface-highest/30 transition-all hover:border-primary/20 hover:bg-primary/10 active:scale-90"
+              class="group flex h-10 w-10 items-center justify-center rounded-full border border-outline-variant/10 bg-surface-container shadow-sm shadow-on-surface/5 transition-all hover:border-primary/20 hover:bg-primary/10 active:scale-90"
               title="Scroll right"
               aria-label="Scroll carousel to the right"
             >
@@ -383,7 +383,7 @@
                 title="View theme: {getSongName(song)}"
               >
                 <div
-                  class="aspect-2/3 relative mb-3 overflow-hidden rounded-lg bg-surface-low"
+                  class="aspect-2/3 relative mb-3 overflow-hidden rounded-md bg-surface-low"
                 >
                   <img
                     alt={getSongName(song)}
@@ -426,7 +426,7 @@
                 title="View theme: {getSongName(song)}"
               >
                 <div
-                  class="aspect-2/3 relative mb-3 overflow-hidden rounded-lg bg-surface-low"
+                  class="aspect-2/3 relative mb-3 overflow-hidden rounded-md bg-surface-low"
                 >
                   <img
                     alt={getSongName(song)}
@@ -471,7 +471,7 @@
                 title="View theme: {getSongName(song)}"
               >
                 <div
-                  class="aspect-2/3 relative mb-3 overflow-hidden rounded-lg bg-surface-low"
+                  class="aspect-2/3 relative mb-3 overflow-hidden rounded-md bg-surface-low"
                 >
                   <img
                     alt={getSongName(song)}
@@ -517,8 +517,8 @@
     <!-- Right Column (Sidebar) -->
     <aside class="lg:col-span-3 flex flex-col gap-8">
       <!-- Featured Artists -->
-      <div class="rounded-2xl bg-surface-low p-6">
-        <div class="mb-6 flex items-center justify-between">
+      <div class="rounded-sm bg-surface-container p-4 space-y-2 shadow-sm">
+        <div class="flex items-center justify-between">
           <h3 class="text-lg font-bold text-on-surface">Featured Artists</h3>
         </div>
         {#if homeData.featured_artists?.length > 0}
@@ -526,7 +526,7 @@
             {#each homeData.featured_artists as artist}
               <a
                 href="/artists/{artist.slug}"
-                class="group -mx-3 flex items-center justify-between rounded-xl px-3 py-2.5 transition-all hover:bg-surface-container"
+                class="group -mx-3 flex items-center justify-between rounded-sm px-3 py-2.5 transition-all hover:bg-surface"
                 title="View artist profile: {artist.name}"
               >
                 <div class="flex min-w-0 items-center gap-3">

@@ -11,7 +11,7 @@
 </script>
 
 <div
-  class="bg-surface-container border border-white/5 rounded-2xl overflow-hidden mb-8"
+  class="bg-surface-container border border-white/5 rounded-md overflow-hidden mb-8"
 >
   <table class="w-full border-collapse">
     <thead>

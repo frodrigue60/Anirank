@@ -182,7 +182,7 @@
 <div class="grid gap-8">
   <!-- Profile Color Section -->
   <section
-    class="bg-surface-container border border-white/5 rounded-3xl overflow-hidden shadow-2xl transition-all duration-500 animate-in fade-in slide-in-from-bottom-4"
+    class="bg-surface-container border border-white/5 rounded-md overflow-hidden shadow-sm transition-all duration-500 animate-in fade-in slide-in-from-bottom-4"
   >
     <div
       class="px-8 py-6 border-b border-white/5 bg-surface-highest flex justify-between items-center"
@@ -203,7 +203,7 @@
       <div class="flex flex-wrap gap-4">
         {#each ["#3db4f2", "#c063ff", "#4cca51", "#ef881a", "#e13333", "#fc9dd4", "#677b94"] as color}
           <button
-            class="w-12 h-12 rounded-xl border-2 transition-all hover:scale-110 shadow-lg {profileColor ===
+            class="w-12 h-12 rounded-sm border-2 transition-all hover:scale-110 shadow-sm {profileColor ===
             color
               ? 'border-secondary scale-110'
               : 'border-transparent hover:border-secondary'}"
@@ -213,7 +213,7 @@
           ></button>
         {/each}
         <button
-          class="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-on-surface hover:text-on-surface/40 group transition-all"
+          class="w-12 h-12 rounded-sm bg-white/5 border border-primary/20 flex items-center justify-center text-on-surface hover:text-on-surface/40 group transition-all"
           aria-label="Custom color locked"
           title="Custom colors available for supporters soon"
         >
@@ -231,7 +231,7 @@
 
   <!-- Site Theme Section -->
   <section
-    class="bg-surface-container border border-white/5 rounded-3xl overflow-hidden shadow-2xl transition-all duration-500 animate-in fade-in slide-in-from-bottom-5"
+    class="bg-surface-container border border-white/5 rounded-md overflow-hidden shadow-sm transition-all duration-500 animate-in fade-in slide-in-from-bottom-5"
   >
     <div
       class="px-8 py-6 border-b border-white/5 bg-surface-highest flex justify-between items-center"
@@ -242,12 +242,13 @@
     </div>
     <div class="p-8">
       <div class="flex gap-6">
+        <!-- light theme -->
         <button
           class="group flex flex-col items-center gap-3"
           onclick={() => handleThemeChange("light")}
         >
           <div
-            class="w-16 h-16 rounded-2xl bg-[#fff7ff] border-2 flex items-center justify-center text-[#1e1924] font-black text-2xl shadow-xl transition-all group-hover:scale-105 {theme ===
+            class="w-16 h-16 rounded-sm bg-[#fff7ff] border-2 flex items-center justify-center text-[#1e1924] font-black text-2xl shadow-sm transition-all group-hover:scale-105 {theme ===
             'light'
               ? 'border-primary ring-4 ring-primary/20'
               : 'border-transparent'}"
@@ -263,12 +264,13 @@
           >
         </button>
 
+        <!-- dark theme -->
         <button
           class="group flex flex-col items-center gap-3"
           onclick={() => handleThemeChange("dark")}
         >
           <div
-            class="w-16 h-16 rounded-2xl bg-[#0f0916] border-2 flex items-center justify-center text-[#ede6f2] font-black text-2xl shadow-xl transition-all group-hover:scale-105 {theme ===
+            class="w-16 h-16 rounded-sm bg-[#261A38] border-2 flex items-center justify-center text-[#ede6f2] font-black text-2xl shadow-sm transition-all group-hover:scale-105 {theme ===
             'dark'
               ? 'border-primary ring-4 ring-primary/20'
               : 'border-white/10'}"
@@ -284,12 +286,13 @@
           >
         </button>
 
+        <!-- contrast theme -->
         <button
           class="group flex flex-col items-center gap-3"
           onclick={() => handleThemeChange("contrast")}
         >
           <div
-            class="w-16 h-16 rounded-2xl bg-black border-2 flex flex-col items-center justify-center text-white font-black text-2xl shadow-xl transition-all group-hover:scale-105 relative overflow-hidden {theme ===
+            class="w-16 h-16 rounded-sm bg-black border-2 flex flex-col items-center justify-center text-white font-black text-2xl shadow-sm transition-all group-hover:scale-105 relative overflow-hidden {theme ===
             'contrast'
               ? 'border-primary ring-4 ring-primary/20'
               : 'border-white/10'}"
@@ -314,7 +317,7 @@
 
   <!-- About Section -->
   <section
-    class="bg-surface-container border border-white/5 rounded-3xl overflow-hidden shadow-2xl transition-all duration-500 animate-in fade-in slide-in-from-bottom-6"
+    class="bg-surface-container border border-white/5 rounded-md overflow-hidden shadow-sm transition-all duration-500 animate-in fade-in slide-in-from-bottom-6"
   >
     <div
       class="px-8 py-6 border-b border-white/5 bg-surface-highest flex justify-between items-center"
@@ -329,30 +332,16 @@
         </div>
       {/if}
     </div>
+    <!-- about markdown editor -->
     <div class="p-8 space-y-4">
       <div
-        class="w-full rounded-2xl bg-surface-low border border-white/5 p-4 min-h-[200px] flex flex-col focus-within:border-primary/30 transition-all shadow-inner"
+        class="w-full rounded-md bg-surface-low border border-white/5 p-4 min-h-[200px] flex flex-col focus-within:border-primary/30 transition-all shadow-inner"
       >
-        <div class="flex gap-4 mb-4 pb-4 border-b border-on-surface-variant/10 text-on-surface-variant">
-          <span
-            class="material-symbols-outlined text-xl hover:text-on-surface cursor-pointer transition-colors"
-            title="Bold">format_bold</span
-          >
-          <span
-            class="material-symbols-outlined text-xl hover:text-on-surface cursor-pointer transition-colors"
-            title="Italic">format_italic</span
-          >
-          <span
-            class="material-symbols-outlined text-xl hover:text-on-surface cursor-pointer transition-colors"
-            title="Link">link</span
-          >
-          <span
-            class="material-symbols-outlined text-xl hover:text-on-surface cursor-pointer transition-colors"
-            title="Image">image</span
-          >
-          <span
-            class="material-symbols-outlined text-xl hover:text-on-surface cursor-pointer transition-colors"
-            title="List">format_list_bulleted</span
+        <div
+          class="flex gap-4 mb-4 pb-4 border-b border-on-surface-variant/10 text-on-surface-variant"
+        >
+          <span class="text-[10px] font-black uppercase tracking-widest"
+            >Controls (WIP)</span
           >
         </div>
         <textarea
@@ -377,10 +366,12 @@
 
   <!-- Appearance Section -->
   <section
-    class="bg-surface-container border border-white/5 rounded-3xl overflow-hidden shadow-2xl transition-all duration-500 animate-in fade-in slide-in-from-bottom-7"
+    class="bg-surface-container border border-white/5 rounded-md overflow-hidden shadow-sm transition-all duration-500 animate-in fade-in slide-in-from-bottom-7"
   >
     <div class="px-8 py-6 border-b border-white/5 bg-surface-highest">
-      <h2 class="text-lg font-bold text-on-surface tracking-tight">Appearance</h2>
+      <h2 class="text-lg font-bold text-on-surface tracking-tight">
+        Appearance
+      </h2>
     </div>
 
     <div class="p-8 space-y-10">
@@ -391,7 +382,7 @@
           >Profile Banner</span
         >
         <div
-          class="relative group rounded-2xl overflow-hidden h-48 bg-surface-low border border-white/5"
+          class="relative group rounded-md overflow-hidden h-48 bg-surface-low border border-white/5"
         >
           {#if authState.user?.banner_url}
             <img
@@ -401,11 +392,11 @@
             />
           {:else}
             <div
-              class="w-full h-full flex flex-col items-center justify-center text-on-surface-variant/20 gap-2"
+              class="w-full h-full flex flex-col items-center justify-center bg-primary text-on-surface-variant/80 gap-2"
             >
               <ImageIcon size={48} strokeWidth={1} />
               <span
-                class="text-xs font-bold uppercase tracking-widest text-on-surface-variant/40"
+                class="text-xs font-bold uppercase tracking-widest text-on-surface-variant/80"
                 >No banner</span
               >
             </div>
@@ -414,7 +405,7 @@
             class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
           >
             <label
-              class="cursor-pointer bg-on-surface text-surface px-8 py-3 rounded-full font-black text-xs uppercase tracking-widest shadow-2xl hover:scale-105 transition-transform flex items-center gap-2"
+              class="cursor-pointer bg-on-surface text-surface px-8 py-3 rounded-sm font-black text-xs uppercase tracking-widest shadow-sm hover:scale-105 transition-transform flex items-center gap-2"
             >
               {#if isUploadingBanner}
                 <Loader2 class="animate-spin" size={16} />
@@ -433,7 +424,9 @@
             </label>
           </div>
         </div>
-        <p class="text-[10px] text-on-surface-variant mt-3 px-1 font-medium italic">
+        <p
+          class="text-[10px] text-on-surface-variant mt-3 px-1 font-medium italic"
+        >
           Optimal: 1700x330px. Max 6MB.
         </p>
       </div>
@@ -442,7 +435,7 @@
       <div class="flex flex-col sm:flex-row items-center gap-8">
         <div class="relative group">
           <div
-            class="w-32 h-32 rounded-full overflow-hidden border-4 border-surface-container bg-surface-low shadow-2xl relative"
+            class="w-32 h-32 rounded-md overflow-hidden border-4 border-surface-container bg-surface-low shadow-sm relative"
           >
             {#if authState.user?.avatar_url}
               <img
@@ -452,8 +445,7 @@
               />
             {:else}
               <img
-                src="https://ui-avatars.com/api/?name={authState.user
-                  ?.name}&background=7f13ec&color=fff&size=128"
+                src="/images/placeholders/default.jpg"
                 alt="Default Avatar"
                 class="w-full h-full object-cover"
               />
@@ -493,7 +485,9 @@
           <p class="text-sm text-on-surface-variant max-w-xs mt-1">
             Update your avatar to make your profile unique.
           </p>
-          <p class="text-[10px] text-on-surface-variant mt-2 font-medium italic">
+          <p
+            class="text-[10px] text-on-surface-variant mt-2 font-medium italic"
+          >
             Optimal: 230x230px. Max 3MB.
           </p>
         </div>
@@ -503,10 +497,12 @@
 
   <!-- Preferences Section -->
   <section
-    class="bg-surface-container border border-white/5 rounded-3xl overflow-hidden shadow-2xl transition-all duration-500 animate-in fade-in slide-in-from-bottom-8"
+    class="bg-surface-container border border-white/5 rounded-md overflow-hidden shadow-sm transition-all duration-500 animate-in fade-in slide-in-from-bottom-8"
   >
     <div class="px-8 py-6 border-b border-white/5 bg-surface-highest">
-      <h2 class="text-lg font-bold text-on-surface tracking-tight">Preferences</h2>
+      <h2 class="text-lg font-bold text-on-surface tracking-tight">
+        Preferences
+      </h2>
     </div>
 
     <div class="p-8 space-y-6">
@@ -520,7 +516,7 @@
           <select
             id="score-format"
             bind:value={scoreFormat}
-            class="w-full bg-surface-low border border-on-surface-variant/10 rounded-xl px-4 py-4 text-sm text-on-surface font-medium focus:outline-none focus:border-primary/50 transition-all appearance-none cursor-pointer"
+            class="w-full bg-surface-low border border-on-surface-variant/10 rounded-sm px-4 py-4 text-sm text-on-surface font-medium focus:outline-none focus:border-primary/50 transition-all appearance-none cursor-pointer"
           >
             {#each scoreFormats as format}
               <option value={format.id}>{format.name}</option>
@@ -534,7 +530,9 @@
             >
           </div>
         </div>
-        <p class="text-xs text-on-surface-variant mt-3 leading-relaxed font-medium">
+        <p
+          class="text-xs text-on-surface-variant mt-3 leading-relaxed font-medium"
+        >
           Choose how scores and ratings are displayed throughout the site. This
           affects both your votes and the average ratings you see.
         </p>
@@ -544,7 +542,7 @@
         <button
           onclick={saveSettings}
           disabled={isSavingSettings}
-          class="bg-primary hover:opacity-90 disabled:opacity-50 text-white px-10 py-4 rounded-xl font-black text-xs uppercase tracking-[0.15em] transition-all shadow-lg shadow-primary/20 flex items-center gap-3 active:scale-95"
+          class="bg-primary hover:opacity-90 disabled:opacity-50 text-white px-10 py-4 rounded-sm font-black text-xs uppercase tracking-[0.15em] transition-all shadow-sm shadow-primary/20 flex items-center gap-3 active:scale-95"
         >
           {#if isSavingSettings}
             <Loader2 class="animate-spin" size={18} />
@@ -558,10 +556,3 @@
     </div>
   </section>
 </div>
-
-<style lang="postcss">
-  select option {
-    background: var(--color-surface-low);
-    color: var(--color-on-surface);
-  }
-</style>

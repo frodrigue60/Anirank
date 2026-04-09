@@ -79,7 +79,7 @@
   }
 </script>
 
-<main class="flex-1 w-full max-w-[1440px] mx-auto px-6 py-12">
+<main class="flex-1 w-full max-w-[1440px] mx-auto px-6 space-y-6 py-6">
   <!-- Header -->
   <div class="mb-10 text-center lg:text-left">
     <h1 class="text-4xl font-black text-on-surface mb-2 tracking-tight">
@@ -120,13 +120,28 @@
     </div>
   </section>
 
+  <!-- Title and Count -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h2
+        class="text-2xl font-bold flex items-center gap-3 text-on-surface-variant/80"
+      >
+        <span class="w-2 h-8 bg-on-surface-variant/80 rounded-full"></span>
+        Playlists
+        {#if data.playlists?.pagination?.total > 0}
+          ({data.playlists.pagination.total.toLocaleString()})
+        {/if}
+      </h2>
+    </div>
+  </div>
+
   <!-- Playlist Grid -->
   {#if playlists.length > 0}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {#each playlists as playlist}
         <a
           href="/playlists/{playlist.id}"
-          class="group relative overflow-hidden rounded-xl bg-surface-container aspect-video border border-transparent hover:border-primary/50 transition-all cursor-pointer shadow-lg shadow-black/20"
+          class="group relative overflow-hidden rounded-xl bg-surface-container aspect-video border border-transparent hover:border-primary/50 transition-all cursor-pointer shadow-sm"
         >
           <!-- Background Image -->
           {#if playlist.banner_url}

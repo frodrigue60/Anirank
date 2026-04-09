@@ -83,7 +83,7 @@
   >
     <!-- Modal Content -->
     <div
-      class="modal-glass w-full max-w-sm rounded-[2.5rem] overflow-hidden shadow-2xl p-10 flex flex-col items-center text-center relative"
+      class="modal-glass w-full max-w-sm rounded-md overflow-hidden shadow-2xl p-10 flex flex-col items-center text-center relative"
       onclick={(e) => e.stopPropagation()}
       transition:scale={{ duration: 300, start: 0.95 }}
     >
@@ -96,7 +96,9 @@
               Report Issue
             </p>
           </div>
-          <h3 class="text-xl font-bold leading-tight tracking-tight text-on-surface">
+          <h3
+            class="text-xl font-bold leading-tight tracking-tight text-on-surface"
+          >
             Help us improve
           </h3>
           <p class="text-xs text-on-surface-variant mt-1">
@@ -136,15 +138,19 @@
               <select
                 id="report-title"
                 bind:value={title}
-                class="w-full bg-surface-highest border border-outline-variant/10 rounded-xl px-4 py-3 text-sm text-on-surface focus:outline-none focus:border-primary/30 transition-all appearance-none cursor-pointer group-hover:bg-surface-highest/80"
+                class="w-full bg-surface-highest border border-outline-variant/10 rounded-sm px-4 py-3 text-sm text-on-surface focus:outline-none focus:border-primary/30 transition-all appearance-none cursor-pointer group-hover:bg-surface-highest/80"
               >
                 <option value="" disabled selected>Select a reason...</option>
                 {#each reportingReasons as reason}
                   <option value={reason}>{reason}</option>
                 {/each}
               </select>
-              <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant/40 group-hover:text-primary transition-colors">
-                <span class="material-symbols-outlined text-[18px]">expand_more</span>
+              <div
+                class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant/40 group-hover:text-primary transition-colors"
+              >
+                <span class="material-symbols-outlined text-[18px]"
+                  >expand_more</span
+                >
               </div>
             </div>
           </div>
@@ -161,12 +167,14 @@
               id="report-content"
               bind:value={content}
               placeholder="Please provide more information..."
-              class="w-full bg-surface-highest border border-outline-variant/10 rounded-xl px-4 py-3 text-sm text-on-surface focus:outline-none focus:border-primary/30 transition-all min-h-[100px] resize-none hover:bg-surface-highest/80"
+              class="w-full bg-surface-highest border border-outline-variant/10 rounded-sm px-4 py-3 text-sm text-on-surface focus:outline-none focus:border-primary/30 transition-all min-h-[100px] resize-none hover:bg-surface-highest/80"
             ></textarea>
           </div>
 
           {#if errorMessage}
-            <p class="text-red-500 text-[10px] font-bold px-1 leading-tight flex items-center gap-1.5">
+            <p
+              class="text-red-500 text-[10px] font-bold px-1 leading-tight flex items-center gap-1.5"
+            >
               <span class="material-symbols-outlined text-[14px]">error</span>
               {errorMessage}
             </p>
@@ -176,7 +184,7 @@
           <button
             onclick={handleSubmit}
             disabled={isSubmitting}
-            class="w-full bg-primary hover:bg-primary/90 disabled:opacity-50 text-white py-4 rounded-xl font-black text-sm transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 active:scale-95 mt-2"
+            class="w-full bg-primary hover:bg-primary/90 disabled:opacity-50 text-white py-4 rounded-sm font-black text-sm transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 active:scale-95 mt-2"
           >
             {#if isSubmitting}
               <Loader2 class="animate-spin" size={18} />

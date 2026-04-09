@@ -155,9 +155,7 @@
                 </span>
               </td>
               <td class="px-6 py-4 text-right">
-                <div
-                  class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
+                <div class="flex items-center justify-end gap-2">
                   <button
                     onclick={() => openEditModal(badge)}
                     class="p-2 hover:bg-surface-highest text-on-surface-variant/70 hover:text-on-surface rounded-lg transition-colors"

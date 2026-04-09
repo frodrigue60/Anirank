@@ -9,7 +9,7 @@ export const load: PageLoad = async ({ params, url }) => {
             year: url.searchParams.get('year') || '',
             season: url.searchParams.get('season') || '',
             type: url.searchParams.get('type') || '',
-            sort: url.searchParams.get('sort') || 'recent'
+            sort: url.searchParams.get('sort') || ''
         };
 
         const cleanParams = Object.fromEntries(

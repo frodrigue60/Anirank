@@ -101,7 +101,7 @@
   >
     <!-- Modal Content -->
     <div
-      class="modal-glass w-full max-w-md rounded-[2.5rem] overflow-hidden shadow-2xl p-10 flex flex-col items-center text-center relative"
+      class="modal-glass w-full max-w-md rounded-md overflow-hidden shadow-2xl p-10 flex flex-col items-center text-center relative"
       onclick={(e) => e.stopPropagation()}
       transition:scale={{ duration: 300, start: 0.95 }}
     >
@@ -114,7 +114,9 @@
               Rate this theme
             </p>
           </div>
-          <h3 class="text-2xl font-bold leading-tight tracking-tight text-on-surface">
+          <h3
+            class="text-2xl font-bold leading-tight tracking-tight text-on-surface"
+          >
             {song.song_romaji || "Theme"}
           </h3>
           <p class="text-xs text-on-surface-variant mt-1 font-medium">
@@ -138,7 +140,9 @@
             <CheckCircle2 size={48} />
           </div>
           <h4 class="text-xl font-bold text-on-surface">Rating Submitted!</h4>
-          <p class="text-xs text-on-surface-variant font-medium">Your score has been saved.</p>
+          <p class="text-xs text-on-surface-variant font-medium">
+            Your score has been saved.
+          </p>
         </div>
       {:else}
         <!-- Score Display -->
@@ -199,7 +203,13 @@
                 />
                 <div class="flex justify-between mt-6 px-1">
                   {#each [0, 25, 50, 75, 100] as mark}
-                     <span class="text-[10px] font-black tracking-tighter transition-colors {Math.abs(value-mark) < 5 ? 'text-primary' : 'text-on-surface-variant/30'}">{mark}</span>
+                    <span
+                      class="text-[10px] font-black tracking-tighter transition-colors {Math.abs(
+                        value - mark,
+                      ) < 5
+                        ? 'text-primary'
+                        : 'text-on-surface-variant/30'}">{mark}</span
+                    >
                   {/each}
                 </div>
               </div>
@@ -209,7 +219,7 @@
                   {#each tenGrid as val}
                     <button
                       onclick={() => (value = val * 10)}
-                      class="py-3 rounded-2xl border transition-all text-xs font-black {Math.round(
+                      class="py-3 rounded-sm border transition-all text-xs font-black {Math.round(
                         value / 10,
                       ) === val
                         ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20 scale-105'
@@ -224,7 +234,8 @@
                   {#each hundredGrid as val}
                     <button
                       onclick={() => (value = val)}
-                      class="py-3 rounded-2xl border transition-all text-xs font-black {value === val
+                      class="py-3 rounded-sm border transition-all text-xs font-black {value ===
+                      val
                         ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20 scale-105'
                         : 'bg-surface-highest border-outline-variant/10 text-on-surface-variant hover:text-on-surface hover:bg-surface-highest/80'}"
                     >
@@ -238,7 +249,9 @@
         </div>
 
         {#if errorMessage}
-          <p class="text-red-500 text-[10px] font-black uppercase tracking-wider mb-6 leading-tight flex items-center justify-center gap-2">
+          <p
+            class="text-red-500 text-[10px] font-black uppercase tracking-wider mb-6 leading-tight flex items-center justify-center gap-2"
+          >
             <span class="material-symbols-outlined text-[14px]">error</span>
             {errorMessage}
           </p>
@@ -248,14 +261,14 @@
         <div class="w-full grid grid-cols-2 gap-4 mt-2">
           <button
             onclick={handleClose}
-            class="bg-surface-highest hover:bg-surface-highest/80 text-on-surface-variant hover:text-on-surface py-4 rounded-2xl font-black text-sm transition-all border border-outline-variant/10 active:scale-95"
+            class="bg-surface-highest hover:bg-surface-highest/80 text-on-surface-variant hover:text-on-surface py-4 rounded-sm font-black text-sm transition-all border border-outline-variant/10 active:scale-95"
           >
             Cancel
           </button>
           <button
             onclick={handleSubmit}
             disabled={isSubmitting}
-            class="bg-primary hover:bg-primary/90 disabled:opacity-50 text-white py-4 rounded-2xl font-black text-sm transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-2 active:scale-95"
+            class="bg-primary hover:bg-primary/90 disabled:opacity-50 text-white py-4 rounded-sm font-black text-sm transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-2 active:scale-95"
           >
             {#if isSubmitting}
               <Loader2 class="animate-spin" size={18} />
@@ -268,7 +281,9 @@
         </div>
       {/if}
 
-      <p class="mt-8 text-[10px] text-on-surface-variant/40 font-bold uppercase tracking-widest italic">
+      <p
+        class="mt-8 text-[10px] text-on-surface-variant/40 font-bold uppercase tracking-widest italic"
+      >
         {format === "POINT_5"
           ? "Score will be converted to decimal format."
           : "Granular scoring supported via the slider."}
@@ -284,7 +299,11 @@
   }
 
   .score-text {
-    background: linear-gradient(135deg, var(--color-on-surface) 0%, var(--color-primary) 100%);
+    background: linear-gradient(
+      135deg,
+      var(--color-on-surface) 0%,
+      var(--color-primary) 100%
+    );
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     filter: drop-shadow(0 0 20px rgba(var(--color-primary-rgb), 0.2));

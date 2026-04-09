@@ -1,87 +1,108 @@
 <script lang="ts">
-  import { toastState } from "$lib/state/toast.svelte";
-  import { getApiErrorMessage } from "$lib/api-errors";
   import api from "$lib/api";
 
   let { data } = $props();
-  let years = $state<any[]>([]);
 
-  // Sync prop to state
-  $effect(() => {
-    years = data.years || [];
-  });
+  // Local State
+  let items = $state<any[]>(data.years || []);
+  let errorMsg = $state("");
 
   // Modal State
-  let editingYear = $state<any>(null);
-  let showEditModal = $state(false);
-  let isUpdating = $state(false);
+  let showModal = $state(false);
+  let modalMode = $state<"create" | "edit">("create");
+  let editingItem = $state<any>(null);
 
-  async function toggleStatus(year: any) {
-    try {
-      await api.patch(`/admin/taxonomies/years/${year.id}/current`);
+  // Form State
+  let formName = $state("");
+  let formCurrent = $state(false);
+  let isSubmitting = $state(false);
 
-      // Update local state: only one can be current
-      const newCurrent = !year.current;
-      years = years.map((y: any) => ({
-        ...y,
-        current:
-          y.id === year.id ? newCurrent : newCurrent ? false : y.current,
-      }));
-
-      toastState.addToast(
-        `Year ${year.name} set as ${newCurrent ? "current" : "default"}`,
-        "success",
-      );
-    } catch (err) {
-      toastState.addToast(
-        getApiErrorMessage(err, "Failed to update status"),
-        "error",
-      );
-    }
+  function openCreate() {
+    modalMode = "create";
+    editingItem = null;
+    formName = "";
+    formCurrent = false;
+    errorMsg = "";
+    showModal = true;
   }
 
-  function editYear(year: any) {
-    editingYear = { ...year };
-    showEditModal = true;
+  function openEdit(item: any) {
+    modalMode = "edit";
+    editingItem = item;
+    formName = item.name;
+    formCurrent = !!item.current;
+    errorMsg = "";
+    showModal = true;
   }
 
-  async function saveYear() {
-    if (!editingYear) return;
-    isUpdating = true;
+  async function handleSubmit(e: Event) {
+    e.preventDefault();
+    isSubmitting = true;
+    errorMsg = "";
+
+    const payload = {
+      name: formName,
+      current: formCurrent,
+    };
+
     try {
-      await api.put(`/admin/taxonomies/years/${editingYear.id}`, {
-        name: editingYear.name,
-        current: editingYear.current,
-      });
-
-      // Update local state
-      years = years.map((y: any) => (y.id === editingYear.id ? editingYear : y));
-
-      toastState.addToast("Year updated successfully", "success");
-      showEditModal = false;
-    } catch (err) {
-      toastState.addToast(
-        getApiErrorMessage(err, "Failed to update year"),
-        "error",
-      );
+      if (modalMode === "create") {
+        const res = await api.post("/admin/taxonomies/years", payload);
+        if (res.data?.data) {
+          if (formCurrent) {
+            items = items.map(i => ({ ...i, current: false }));
+          }
+          items = [res.data.data, ...items];
+        }
+      } else {
+        const res = await api.put(
+          `/admin/taxonomies/years/${editingItem.id}`,
+          payload,
+        );
+        if (res.data) {
+          if (formCurrent) {
+            items = items.map(i => ({ ...i, current: i.id === editingItem.id }));
+          } else {
+            const index = items.findIndex((i) => i.id === editingItem.id);
+            if (index !== -1) {
+              items[index] = { ...items[index], ...payload };
+            }
+          }
+        }
+      }
+      showModal = false;
+    } catch (err: any) {
+      console.error(err);
+      errorMsg = err.response?.data?.message || "Failed to save year";
     } finally {
-      isUpdating = false;
+      isSubmitting = false;
     }
   }
 
-  async function deleteYear(year: any) {
-    if (!confirm(`Are you sure you want to delete the year ${year.name}?`))
-      return;
+  async function toggleCurrent(id: number) {
+    try {
+      const res = await api.patch(`/admin/taxonomies/years/${id}/current`);
+      if (res.data) {
+        items = items.map((i) => ({
+          ...i,
+          current: i.id === id,
+        }));
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert(err.response?.data?.message || "Failed to change status");
+    }
+  }
+
+  async function handleDelete(id: number) {
+    if (!confirm("Are you sure you want to delete this year?")) return;
 
     try {
-      await api.delete(`/admin/taxonomies/years/${year.id}`);
-      years = years.filter((y: any) => y.id !== year.id);
-      toastState.addToast("Year deleted successfully", "success");
-    } catch (err) {
-      toastState.addToast(
-        getApiErrorMessage(err, "Failed to delete year"),
-        "error",
-      );
+      await api.delete(`/admin/taxonomies/years/${id}`);
+      items = items.filter((i) => i.id !== id);
+    } catch (err: any) {
+      console.error(err);
+      alert(err.response?.data?.message || "Delete failed");
     }
   }
 </script>
@@ -90,102 +111,97 @@
   <title>Years | Admin</title>
 </svelte:head>
 
-<div
-  class="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
->
-  <div>
-    <h1 class="text-3xl font-bold tracking-tight text-on-surface mb-1">
-      Years Management
-    </h1>
-    <p class="text-on-surface-variant">Manage release years for content.</p>
+<div class="space-y-6 animate-fade-in">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-on-surface">Release Years</h1>
+      <p class="text-on-surface-variant/70 mt-1">Manage content release chronology</p>
+    </div>
+    <button
+      onclick={openCreate}
+      class="px-4 py-2 bg-primary hover:bg-primary/90 text-on-surface font-medium rounded-xl transition-colors flex items-center gap-2"
+    >
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+      </svg>
+      Add Year
+    </button>
   </div>
-</div>
 
-<div class="grid grid-cols-1 gap-6">
-  <div
-    class="bg-surface-container border border-outline-variant rounded-3xl overflow-hidden shadow-xl"
-  >
+  <div class="bg-surface-container border border-outline-variant rounded-2xl overflow-hidden">
     <div class="overflow-x-auto">
-      <table class="w-full text-left border-collapse">
-        <thead>
-          <tr class="bg-surface-highest border-b border-outline-variant">
-            <th
-              class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant"
-              >ID</th
-            >
-            <th
-              class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant"
-              >Release Year</th
-            >
-            <th
-              class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant text-center"
-              >Status</th
-            >
-            <th
-              class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant text-right"
-              >Actions</th
-            >
+      <table class="w-full text-left text-sm text-on-surface-variant">
+        <thead class="bg-surface-highest text-on-surface-variant/70 text-xs uppercase tracking-wider">
+          <tr>
+            <th class="px-6 py-4 font-medium">ID</th>
+            <th class="px-6 py-4 font-medium">Year</th>
+            <th class="px-6 py-4 font-medium">Status</th>
+            <th class="px-6 py-4 font-medium text-right">Actions</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-outline-variant/5">
-          {#each years as year (year.id)}
-            <tr class="hover:bg-primary-container transition-colors group">
-              <td class="px-6 py-4">
-                <span class="text-xs font-mono text-on-surface-variant"
-                  >#{year.id}</span
-                >
-              </td>
+        <tbody class="divide-y divide-white/5">
+          {#each items as item}
+            <tr class="hover:bg-white/2 transition-colors group">
+              <td class="px-6 py-4 font-mono text-xs opacity-40">#{item.id}</td>
               <td class="px-6 py-4">
                 <div class="flex items-center gap-3">
-                  <div
-                    class="w-10 h-10 rounded-xl bg-surface-highest flex items-center justify-center text-primary font-black shadow-inner"
-                  >
-                    {year.name && year.name.toString().length >= 2 ? year.name.toString().slice(-2) : '??'}
+                  <div class="w-8 h-8 rounded-lg bg-surface-highest flex items-center justify-center text-primary font-bold text-xs">
+                    {item.name.toString().slice(-2)}
                   </div>
-                  <span class="text-lg font-bold text-on-surface"
-                    >{year.name}</span
-                  >
+                  <span class="font-bold text-on-surface">{item.name}</span>
                 </div>
               </td>
               <td class="px-6 py-4">
-                <div class="flex justify-center">
-                  <button
-                    onclick={() => toggleStatus(year)}
-                    class="flex items-center gap-2 px-3 py-1.5 rounded-full transition-all {year.current
-                      ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
-                      : 'bg-on-surface-variant/10 text-on-surface-variant border border-transparent hover:border-on-surface-variant/20'}"
+                {#if item.current}
+                  <button 
+                    onclick={() => toggleCurrent(item.id)}
+                    aria-label="Toggle active status"
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 text-primary border border-primary/20 text-[10px] font-bold uppercase tracking-wider"
                   >
-                    <span
-                      class="material-symbols-outlined text-sm {year.current
-                        ? 'filled'
-                        : ''}"
-                    >
-                      {year.current ? "star" : "star_outline"}
-                    </span>
-                    <span class="text-[10px] font-bold uppercase"
-                      >{year.current ? "Current" : "Default"}</span
-                    >
+                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24">
+                      <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                    </svg>
+                    Primary Year
+                  </button>
+                {:else}
+                  <button 
+                    onclick={() => toggleCurrent(item.id)}
+                    aria-label="Set as primary"
+                    class="inline-flex items-center px-2.5 py-1 rounded-lg bg-surface-highest text-on-surface-variant/40 hover:text-primary transition-colors text-[10px] font-bold uppercase tracking-wider border border-outline-variant"
+                  >
+                    Set Primary
+                  </button>
+                {/if}
+              </td>
+              <td class="px-6 py-4 text-right">
+                <div class="flex items-center justify-end gap-2">
+                  <button
+                    onclick={() => openEdit(item)}
+                    aria-label="Edit year"
+                    title="Edit year"
+                    class="p-2 hover:bg-surface-highest text-on-surface-variant/70 hover:text-on-surface rounded-lg transition-colors"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                  </button>
+                  <button
+                    onclick={() => handleDelete(item.id)}
+                    aria-label="Delete year"
+                    title="Delete year"
+                    class="p-2 hover:bg-red-500/20 text-on-surface-variant/70 hover:text-red-400 rounded-lg transition-colors"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
                   </button>
                 </div>
               </td>
-              <td class="px-6 py-4">
-                <div class="flex justify-end gap-2">
-                  <button
-                    onclick={() => editYear(year)}
-                    class="p-2 rounded-xl bg-primary/10 text-primary hover:bg-primary hover:text-on-surface transition-all shadow-sm"
-                    title="Edit Year"
-                  >
-                    <span class="material-symbols-outlined text-sm">edit</span>
-                  </button>
-                  <button
-                    onclick={() => deleteYear(year)}
-                    class="p-2 rounded-xl bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-on-surface transition-all shadow-sm"
-                    title="Delete Year"
-                  >
-                    <span class="material-symbols-outlined text-sm">delete</span
-                    >
-                  </button>
-                </div>
+            </tr>
+          {:else}
+            <tr>
+              <td colspan="4" class="px-6 py-12 text-center text-on-surface-variant/40 italic">
+                No years defined. Click "Add Year" to create one.
               </td>
             </tr>
           {/each}
@@ -195,75 +211,67 @@
   </div>
 </div>
 
-<!-- Edit Modal -->
-{#if showEditModal && editingYear}
-  <div
-    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 animate-in fade-in"
-  >
-    <div
-      class="bg-surface-container border border-outline-variant rounded-[2.5rem] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
-    >
-      <div class="p-8">
-        <div class="flex justify-between items-start mb-6">
+{#if showModal}
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+    <div class="bg-surface-container border border-outline-variant rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
+      <div class="px-6 py-4 border-b border-outline-variant flex justify-between items-center">
+        <h2 class="text-lg font-bold text-on-surface">
+          {modalMode === 'create' ? 'Add' : 'Edit'} Year
+        </h2>
+        <button onclick={() => (showModal = false)} class="text-on-surface-variant/70 hover:text-on-surface" aria-label="Close modal">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <form onsubmit={handleSubmit} class="p-6 space-y-4">
+        {#if errorMsg}
+          <div class="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-400">
+            {errorMsg}
+          </div>
+        {/if}
+
+        <div class="space-y-1.5">
+          <label for="name" class="text-xs font-medium text-on-surface-variant/70 uppercase tracking-widest ml-1">Year Value</label>
+          <input
+            id="name"
+            type="text"
+            bind:value={formName}
+            required
+            placeholder="e.g. 1998, 2024"
+            class="w-full bg-surface-highest border border-outline-variant rounded-xl px-4 py-2.5 text-on-surface focus:outline-none focus:border-primary/50 transition-all text-sm font-bold"
+          />
+        </div>
+
+        <div class="flex items-center gap-3 p-4 bg-surface-highest rounded-2xl border border-outline-variant group cursor-pointer" onclick={() => formCurrent = !formCurrent}>
+          <label class="relative inline-flex items-center cursor-pointer pointer-events-none">
+            <input type="checkbox" bind:checked={formCurrent} class="sr-only peer">
+            <div class="w-11 h-6 bg-on-surface-variant/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:inset-s-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+          </label>
           <div>
-            <h3 class="text-2xl font-black text-on-surface">Edit Year</h3>
-            <p class="text-on-surface-variant text-sm">Modify year parameters</p>
-          </div>
-          <button
-            onclick={() => (showEditModal = false)}
-            class="p-2 hover:bg-surface-highest rounded-full transition-colors text-on-surface-variant"
-          >
-            <span class="material-symbols-outlined">close</span>
-          </button>
-        </div>
-
-        <div class="space-y-6">
-          <div class="space-y-2">
-            <label
-              for="editName"
-              class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant ml-1"
-              >Year Name</label
-            >
-            <input
-              id="editName"
-              type="text"
-              bind:value={editingYear.name}
-              placeholder="e.g. 2024"
-              class="w-full bg-surface-low border border-outline-variant rounded-2xl px-5 py-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all font-bold"
-            />
-          </div>
-
-          <div class="flex items-center gap-3 p-4 bg-surface-low rounded-2xl border border-outline-variant">
-            <label class="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" bind:checked={editingYear.current} class="sr-only peer">
-              <div class="w-11 h-6 bg-on-surface-variant/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:inset-s-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-            </label>
-            <div>
-              <span class="text-sm font-bold text-on-surface">Mark as Current</span>
-              <p class="text-[10px] text-on-surface-variant">Sets this year as the primary system year.</p>
-            </div>
+            <span class="text-sm font-bold text-on-surface">Primary System Year</span>
+            <p class="text-[10px] text-on-surface-variant">Sets this year as the main reference.</p>
           </div>
         </div>
 
-        <div class="mt-8 grid grid-cols-2 gap-4">
+        <div class="pt-4 flex gap-3">
           <button
-            onclick={() => (showEditModal = false)}
-            class="py-4 rounded-2xl text-on-surface font-bold hover:bg-surface-highest transition-all"
+            type="button"
+            onclick={() => (showModal = false)}
+            class="flex-1 px-4 py-2.5 rounded-xl bg-surface-highest hover:bg-surface-highest/80 text-on-surface-variant font-medium transition-colors"
           >
             Cancel
           </button>
           <button
-            onclick={saveYear}
-            disabled={isUpdating}
-            class="py-4 bg-primary text-on-surface rounded-2xl font-bold shadow-lg shadow-primary/25 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
+            type="submit"
+            disabled={isSubmitting || !formName}
+            class="flex-1 px-4 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-on-surface font-bold transition-all disabled:opacity-50"
           >
-            {#if isUpdating}
-              <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-            {/if}
-            Save Changes
+            {isSubmitting ? 'Saving...' : 'Save Year'}
           </button>
         </div>
-      </div>
+      </form>
     </div>
   </div>
 {/if}

@@ -7,7 +7,7 @@ export const load: PageLoad = async ({ params, url }) => {
         const queryParams = {
             page: url.searchParams.get('page') || 1,
             name: url.searchParams.get('name') || '',
-            sort: url.searchParams.get('sort') || 'title'
+            sort: url.searchParams.get('sort') || ''
         };
         const cleanParams = Object.fromEntries(
             Object.entries(queryParams).filter(([_, v]) => v !== '')

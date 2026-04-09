@@ -68,27 +68,23 @@
     }
   }
 
-  const yearOptions = $derived([
-    /* { value: "any", label: "Any Year" }, */
-    ...configState.years.map((y) => ({
+  const yearOptions = $derived(
+    configState.years.map((y) => ({
       value: y.slug,
       label: y.name,
     })),
-  ]);
-  const seasonOptions = $derived([
-    /* { value: "any", label: "Any Season" }, */
-    ...configState.seasons.map((s) => ({
+  );
+  const seasonOptions = $derived(
+    configState.seasons.map((s) => ({
       value: s.slug,
       label: s.name,
     })),
-  ]);
+  );
   const typeOptions = [
-    /* { value: "any", label: "Any" }, */
     { value: "OP", label: "Opening" },
     { value: "ED", label: "Ending" },
   ];
   const sortOptions = [
-    /* { value: "any", label: "Recently Added" }, */
     { value: "rating", label: "Top Rated" },
     { value: "rating_asc", label: "Least Rated" },
     { value: "most_popular", label: "Most Popular (Likes)" },
@@ -228,9 +224,9 @@
         {#if authState.isAuthenticated}
           <button
             onclick={toggleFavorite}
-            class="flex items-center gap-2 px-4 py-2 rounded-xl border border-white/10 transition-all active:scale-95 {isFavorited
-              ? 'bg-red-500/20 border-red-500/50 text-red-500'
-              : 'text-white hover:bg-white/5'}"
+            class="flex items-center gap-2 px-4 py-2 rounded-sm border border-white/10 transition-all active:scale-95 cursor-pointer {isFavorited
+              ? 'bg-red-500 border-red-500 text-white'
+              : 'bg-primary text-white hover:bg-primary/80'}"
           >
             <span
               class="material-symbols-outlined {isFavorited
@@ -255,9 +251,10 @@
 
     <!-- Filter Bar -->
     <section
-      class="relative z-40 bg-surface-container p-4 rounded-3xl border border-white/5 shadow-2xl mb-12"
+      class="relative z-40 bg-surface-container p-4 rounded-md border border-white/5 shadow-sm mb-6"
     >
-      <div class="flex flex-col gap-6">
+      <div class="flex flex-col lg:grid lg:grid-cols-4 gap-4">
+        <!-- Search -->
         <div class="relative group">
           <label
             for="theme-search"
@@ -276,105 +273,103 @@
               bind:value={searchTerm}
               oninput={handleInput}
               onkeydown={handleKeydown}
-              class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-xl pl-12 pr-6 text-sm text-white focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 placeholder:text-on-surface-variant transition-all"
+              class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-sm pl-12 pr-6 text-sm text-white focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 placeholder:text-on-surface-variant transition-all"
               placeholder="Search for a song or anime title..."
               type="text"
             />
           </div>
         </div>
-        <div class="flex flex-col lg:grid lg:grid-cols-4 gap-4">
-          <!-- Year Select -->
-          <div class="flex flex-col gap-2">
-            <label
-              for="year-select"
-              class="text-[10px] uppercase font-black text-on-surface-variant mb-0 ml-1 tracking-widest"
-              >Year</label
-            >
-            <select
-              id="year-select"
-              bind:value={selectedYear}
-              onchange={updateFilters}
-              class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-xl px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
-            >
-              <option value="">All Years</option>
-              {#each yearOptions as option}
-                <option value={option.value}>{option.label}</option>
-              {/each}
-            </select>
-          </div>
+        <!-- Year Select -->
+        <div class="flex flex-col gap-2">
+          <label
+            for="year-select"
+            class="text-[10px] uppercase font-black text-on-surface-variant mb-0 ml-1 tracking-widest"
+            >Year</label
+          >
+          <select
+            id="year-select"
+            bind:value={selectedYear}
+            onchange={updateFilters}
+            class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-sm px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
+          >
+            <option value="">All Years</option>
+            {#each yearOptions as option}
+              <option value={option.value}>{option.label}</option>
+            {/each}
+          </select>
+        </div>
 
-          <!-- Season Select -->
-          <div class="flex flex-col gap-2">
-            <label
-              for="season-select"
-              class="text-[10px] uppercase font-black text-on-surface-variant mb-0 ml-1 tracking-widest"
-              >Season</label
-            >
-            <select
-              id="season-select"
-              bind:value={selectedSeason}
-              onchange={updateFilters}
-              class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-xl px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
-            >
-              <option value="">All Seasons</option>
-              {#each seasonOptions as option}
-                <option value={option.value}>{option.label}</option>
-              {/each}
-            </select>
-          </div>
+        <!-- Season Select -->
+        <div class="flex flex-col gap-2">
+          <label
+            for="season-select"
+            class="text-[10px] uppercase font-black text-on-surface-variant mb-0 ml-1 tracking-widest"
+            >Season</label
+          >
+          <select
+            id="season-select"
+            bind:value={selectedSeason}
+            onchange={updateFilters}
+            class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-sm px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
+          >
+            <option value="">All Seasons</option>
+            {#each seasonOptions as option}
+              <option value={option.value}>{option.label}</option>
+            {/each}
+          </select>
+        </div>
 
-          <!-- Type Select -->
-          <div class="flex flex-col gap-2">
-            <label
-              for="type-select"
-              class="text-[10px] uppercase font-black text-on-surface-variant mb-0 ml-1 tracking-widest"
-              >Type</label
-            >
-            <select
-              id="type-select"
-              bind:value={selectedType}
-              onchange={updateFilters}
-              class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-xl px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
-            >
-              <option value="">All Types</option>
-              {#each typeOptions as option}
-                <option value={option.value}>{option.label}</option>
-              {/each}
-            </select>
-          </div>
+        <!-- Type Select -->
+        <div class="flex flex-col gap-2">
+          <label
+            for="type-select"
+            class="text-[10px] uppercase font-black text-on-surface-variant mb-0 ml-1 tracking-widest"
+            >Type</label
+          >
+          <select
+            id="type-select"
+            bind:value={selectedType}
+            onchange={updateFilters}
+            class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-sm px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
+          >
+            <option value="">All Types</option>
+            {#each typeOptions as option}
+              <option value={option.value}>{option.label}</option>
+            {/each}
+          </select>
+        </div>
 
-          <!-- Sort Select -->
-          <div class="flex flex-col gap-2">
-            <label
-              for="sort-select"
-              class="text-[10px] uppercase font-black text-on-surface-variant mb-0 ml-1 tracking-widest"
-              >Sort By</label
-            >
-            <select
-              id="sort-select"
-              bind:value={selectedSort}
-              onchange={updateFilters}
-              class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-xl px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
-            >
-              <option value="">Any</option>
-              {#each sortOptions as option}
-                <option value={option.value}>{option.label}</option>
-              {/each}
-            </select>
-          </div>
+        <!-- Sort Select -->
+        <div class="flex flex-col gap-2">
+          <label
+            for="sort-select"
+            class="text-[10px] uppercase font-black text-on-surface-variant mb-0 ml-1 tracking-widest"
+            >Sort By</label
+          >
+          <select
+            id="sort-select"
+            bind:value={selectedSort}
+            onchange={updateFilters}
+            class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-sm px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
+          >
+            <option value="">Any</option>
+            {#each sortOptions as option}
+              <option value={option.value}>{option.label}</option>
+            {/each}
+          </select>
         </div>
       </div>
     </section>
 
     <div class="flex items-center justify-between mb-8">
       <div class="flex items-center">
-        <h2 class="text-2xl font-bold flex items-center gap-3 text-on-surface">
-          <span class="w-2 h-8 bg-primary rounded-full"></span>
+        <h2
+          class="text-2xl font-bold flex items-center gap-3 text-on-surface-variant/80"
+        >
+          <span class="w-2 h-8 bg-on-surface-variant/80 rounded-full"></span>
           Songs
           {#if data.songs?.length > 0}
-            <span class="text-on-surface-variant font-normal text-lg ml-2"
-              >({data.songs.length.toLocaleString()})</span
-            >
+            ({data.songs.length.toLocaleString()})
           {/if}
         </h2>
       </div>
@@ -387,7 +382,7 @@
         {/each}
       {:else}
         <div
-          class="lg:col-span-2 text-center py-24 bg-surface-container/30 rounded-3xl border-2 border-dashed border-white/5"
+          class="lg:col-span-2 text-center py-24 bg-surface-container/30 rounded-md border-2 border-dashed border-white/5"
         >
           <span
             class="material-symbols-outlined text-6xl text-on-surface-variant opacity-20 mb-4 block"
@@ -415,7 +410,7 @@
         <button
           onclick={() => goToPage(data.pagination.current_page - 1)}
           disabled={data.pagination.current_page === 1}
-          class="w-10 h-10 rounded-xl bg-background-dark/50 border border-white/5 flex items-center justify-center text-white hover:bg-surface-dark transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          class="w-10 h-10 rounded-md bg-background-dark/50 border border-white/5 flex items-center justify-center text-white hover:bg-surface-dark transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           title="Go to previous page"
         >
           <span class="material-symbols-outlined">chevron_left</span>
@@ -427,7 +422,7 @@
           {:else}
             <button
               onclick={() => goToPage(p)}
-              class="w-10 h-10 rounded-xl font-bold text-sm transition-all {data
+              class="w-10 h-10 rounded-md font-bold text-sm transition-all {data
                 .pagination.current_page === p
                 ? 'bg-primary text-white shadow-lg shadow-primary/30'
                 : 'bg-background-dark/50 border border-white/5 text-white/60 hover:text-white hover:bg-surface-dark'}"
@@ -441,7 +436,7 @@
         <button
           onclick={() => goToPage(data.pagination.current_page + 1)}
           disabled={data.pagination.current_page === data.pagination.last_page}
-          class="w-10 h-10 rounded-xl bg-background-dark/50 border border-white/5 flex items-center justify-center text-white hover:bg-surface-dark transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          class="w-10 h-10 rounded-md bg-background-dark/50 border border-white/5 flex items-center justify-center text-white hover:bg-surface-dark transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           title="Go to next page"
         >
           <span class="material-symbols-outlined">chevron_right</span>
@@ -450,6 +445,3 @@
     {/if}
   {/if}
 </main>
-
-<style>
-</style>

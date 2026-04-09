@@ -31,7 +31,7 @@
     <aside class="lg:col-span-3 space-y-8">
       <div class="flex flex-col space-y-2">
         <div
-          class="relative rounded-xl overflow-hidden shadow-2xl shadow-primary/10 border border-white/5 group"
+          class="relative rounded-md overflow-hidden shadow-2xl shadow-primary/10 border border-white/5 group"
         >
           <img
             alt="Cover art for {anime.title}"
@@ -49,7 +49,7 @@
             href="https://anilist.co/anime/{anime.anilist_id}"
             target="_blank"
             title="Track {anime.title} on AniList"
-            class="w-full bg-primary hover:bg-primary/80 text-white font-bold py-2.5 rounded-lg transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 text-sm"
+            class="w-full bg-primary hover:bg-primary/80 text-white font-bold py-2.5 rounded-sm transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 text-sm"
           >
             Track on AniList
           </a>
@@ -134,7 +134,7 @@
           <div class="flex flex-col gap-2">
             {#each anime.external_links as link}
               <a
-                class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high border border-white/5 hover:border-primary/30 transition-all text-sm group"
+                class="flex items-center gap-3 px-3 py-2.5 rounded-sm bg-surface-container hover:bg-surface-container-high border border-white/5 hover:border-primary/30 transition-all text-sm group"
                 href={link.url}
                 target="_blank"
                 title="Visit {link.name}"
@@ -160,12 +160,10 @@
     <!-- Main Content -->
     <section class="lg:col-span-9 space-y-10">
       <div class="flex flex-col gap-6">
-        <div
-          class="flex flex-col md:flex-row md:items-end justify-between gap-4"
-        >
+        <div class="flex flex-col md:flex-row md:items-end justify-between">
           <div>
             <h1
-              class="text-4xl md:text-6xl font-black tracking-tight text-on-surface mb-2"
+              class="text-4xl md:text-6xl font-black tracking-tight text-on-surface"
             >
               {anime.title}
             </h1>
@@ -174,7 +172,7 @@
         <div class="flex flex-wrap gap-2">
           {#each anime.genres as genre}
             <span
-              class="px-3 py-1 rounded border border-white/10 text-on-surface-variant text-xs font-medium bg-surface-container"
+              class="px-3 py-1 rounded-full border border-white/10 text-on-surface-variant text-xs font-medium bg-surface-container"
               >{genre.name}</span
             >
           {/each}
@@ -189,7 +187,7 @@
         <!-- svelte-ignore a11y_click_events_have_key_events -->
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
-          class="bg-surface-container border border-white/5 p-8 rounded-2xl cursor-pointer hover:bg-surface-container-high transition-all group relative overflow-hidden"
+          class="bg-surface-container border border-white/5 p-8 rounded-md cursor-pointer hover:bg-surface-container-high transition-all group relative overflow-hidden"
           onclick={() => (isExpanded = !isExpanded)}
         >
           <p
@@ -239,12 +237,12 @@
           </h2>
         </div>
         <div
-          class="bg-surface-container border border-white/5 rounded-2xl overflow-hidden"
+          class="bg-surface-container border border-white/5 rounded-md overflow-hidden"
         >
           <table class="w-full text-left border-collapse">
             <thead>
               <tr
-                class="border-b border-white/5 text-xs uppercase tracking-widest text-on-surface-variant"
+                class="border-b border-primary/10 text-xs uppercase tracking-widest text-on-surface-variant"
               >
                 <th class="p-5 font-bold w-24">Type</th>
                 <th class="p-5 font-bold">Song Title</th>
@@ -256,7 +254,7 @@
             <tbody class="text-sm">
               {#each anime.songs as song}
                 <tr
-                  class="hover:bg-surface-container-high border-b border-white/5 group transition-colors"
+                  class="hover:bg-primary/10 border-b border-primary/10 group transition-colors"
                 >
                   <td class="p-5">
                     <span

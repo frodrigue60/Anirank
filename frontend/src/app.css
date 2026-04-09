@@ -2,17 +2,17 @@
 
 :root {
   /* Nordic Slate Theme */
-  --color-surface: #e2eeff;
-  --color-surface-low: #f1f5f9;
-  --color-surface-container: #ffffff;
-  --color-surface-highest: #cbd5e1;
-  --color-on-surface: #0f172a;
-  --color-on-surface-variant: #475569;
-  --color-primary: #1e293b; /* Azul Navy muy profundo */
-  --color-primary-container: #334155;
-  --color-secondary-container: #38bdf8; /* Cyan para acentos vivos */
-  --color-outline-variant: #e2e8f0;
-  --color-rating-star: #eab308;
+  --color-surface: #e2eeff; /* primary background color */
+  --color-surface-low: #f1f5f9; /* secondary background color */
+  --color-surface-container: #ffffff; /* container background color */
+  --color-surface-highest: #cbd5e1; /* highest background color */
+  --color-on-surface: #0f172a; /* primary text color */
+  --color-on-surface-variant: #475569; /* secondary text color */
+  --color-primary: #1e293b; /* primary color */
+  --color-primary-container: #334155; /* primary container color */
+  --color-secondary-container: #38bdf8; /* secondary container color */
+  --color-outline-variant: #e2e8f0; /* outline variant color */
+  --color-rating-star: #eab308; /* rating star color */
 }
 
 .dark {

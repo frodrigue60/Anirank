@@ -110,14 +110,14 @@
 <main class="flex-1 w-full max-w-[1440px] mx-auto px-6 py-12 space-y-4">
   <!-- Filter Row -->
   <section
-    class="relative z-40 flex flex-col gap-4 bg-surface-container p-4 rounded-3xl border border-white/5 shadow-2xl mb-10"
+    class="relative z-40 flex flex-col gap-4 bg-surface-container p-4 rounded-md border border-white/5 shadow-sm mb-10"
   >
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
       <!-- Search -->
-      <div class="lg:col-span-8 relative group">
+      <div class="lg:col-span-9 relative group">
         <label
           for="studio-search"
-          class="block text-[10px] uppercase font-black text-on-surface mb-2 ml-1 tracking-widest"
+          class="block text-[10px] uppercase font-black text-on-surface-variant mb-2 ml-1 tracking-widest"
         >
           Search Studios
         </label>
@@ -133,17 +133,17 @@
             bind:value={searchQuery}
             oninput={handleInput}
             onkeydown={handleKeydown}
-            class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-xl pl-12 pr-6 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 placeholder:text-on-surface/20 transition-all"
+            class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-sm pl-12 pr-6 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 placeholder:text-on-surface/20 transition-all"
             placeholder="Search animation studios (e.g. MAPPA, Ufotable)..."
           />
         </div>
       </div>
 
       <!-- Sort -->
-      <div class="lg:col-span-4 flex flex-col gap-2">
+      <div class="lg:col-span-3 flex flex-col gap-2">
         <label
           for="sort-select"
-          class="block text-[10px] uppercase font-black text-on-surface mb-2 ml-1 tracking-widest"
+          class="block text-[10px] uppercase font-black text-on-surface-variant mb-2 ml-1 tracking-widest"
         >
           Sort By
         </label>
@@ -151,7 +151,7 @@
           id="sort-select"
           bind:value={selectedSort}
           onchange={updateFilters}
-          class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-xl px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
+          class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-sm px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
         >
           <option value="">Any</option>
           {#each sortOptions as option}
@@ -166,14 +166,12 @@
   <div class="flex items-center justify-between">
     <div>
       <h2
-        class="text-2xl font-bold flex items-center gap-3 text-on-surface-variant"
+        class="text-2xl font-bold flex items-center gap-3 text-on-surface-variant/80"
       >
-        <span class="w-2 h-8 bg-primary rounded-full"></span>
+        <span class="w-2 h-8 bg-on-surface-variant/80 rounded-full"></span>
         Studios
         {#if data.studios?.pagination?.total > 0}
-          <span class="text-on-surface-variant font-normal text-lg"
-            >({data.studios.pagination.total.toLocaleString()})</span
-          >
+          ({data.studios.pagination.total.toLocaleString()})
         {/if}
       </h2>
     </div>
@@ -185,7 +183,7 @@
       {#each studios as studio}
         <a
           href="/studios/{studio.slug}"
-          class="group relative overflow-hidden rounded-xl bg-surface-container aspect-video border border-transparent hover:border-primary/50 transition-all cursor-pointer shadow-lg shadow-black/20"
+          class="group relative overflow-hidden rounded-md bg-surface-container aspect-video transition-all cursor-pointer shadow-sm border border-surface hover:border-primary/50"
         >
           <!-- Background Image (Banner) -->
           <div

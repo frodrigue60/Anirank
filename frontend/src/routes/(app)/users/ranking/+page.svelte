@@ -80,11 +80,10 @@
       <h1
         class="text-4xl font-black tracking-tight mb-2 uppercase italic text-on-surface flex items-center gap-4"
       >
-        <span class="w-3 h-12 bg-primary transform -skew-x-12"></span>
         User Leaderboard
       </h1>
       <p
-        class="text-on-surface-variant font-bold uppercase tracking-widest text-xs ml-7"
+        class="text-on-surface-variant font-bold uppercase tracking-widest text-xs"
       >
         The most active members of our community
       </p>
@@ -92,11 +91,11 @@
 
     <div class="flex flex-col gap-3">
       <div
-        class="flex items-center p-1 bg-surface-container border border-white/5 rounded-xl w-fit"
+        class="flex items-center p-1 bg-surface-highest border border-white/5 rounded-md w-fit"
       >
         <button
           onclick={() => changeSort("xp")}
-          class="px-6 py-2.5 rounded-lg font-bold text-sm transition-all {activeSort ===
+          class="px-6 py-2.5 rounded-sm font-bold text-sm transition-all {activeSort ===
           'xp'
             ? 'bg-primary text-white shadow-lg'
             : 'text-on-surface-variant hover:text-on-surface'}"
@@ -105,7 +104,7 @@
         </button>
         <button
           onclick={() => changeSort("ratings")}
-          class="px-6 py-2.5 rounded-lg font-bold text-sm transition-all {activeSort ===
+          class="px-6 py-2.5 rounded-sm font-bold text-sm transition-all {activeSort ===
           'ratings'
             ? 'bg-primary text-white shadow-lg'
             : 'text-on-surface-variant hover:text-on-surface'}"
@@ -114,7 +113,7 @@
         </button>
         <button
           onclick={() => changeSort("comments")}
-          class="px-6 py-2.5 rounded-lg font-bold text-sm transition-all {activeSort ===
+          class="px-6 py-2.5 rounded-sm font-bold text-sm transition-all {activeSort ===
           'comments'
             ? 'bg-primary text-white shadow-lg'
             : 'text-on-surface-variant hover:text-on-surface'}"

@@ -26,7 +26,7 @@
   <div class="group flex flex-col gap-3 cursor-pointer">
     <a
       href="/animes/{anime.slug}"
-      class="relative aspect-2/3 rounded-2xl overflow-hidden card-shadow group block"
+      class="relative aspect-2/3 rounded-md shadow-sm overflow-hidden card-shadow group block"
       title="View details for {anime.title}"
     >
       <img
@@ -81,7 +81,7 @@
   <!-- --- CARD VIEW (Detailed Card) --- -->
   <a
     href="/animes/{anime.slug}"
-    class="group block bg-surface-container hover:bg-surface-highest rounded-2xl overflow-hidden transition-all duration-300 h-full"
+    class="group block bg-surface-container shadow-sm hover:bg-surface-highest rounded-md overflow-hidden transition-all duration-300 h-full"
   >
     <div class="flex flex-row h-full">
       <!-- Media Section -->
@@ -179,7 +179,7 @@
           <div class="flex flex-wrap gap-1 sm:gap-2">
             {#each anime.genres?.slice(0, 3) || [] as genre}
               <span
-                class="px-2 py-0.5 rounded-full bg-primary/20 border border-white/10 text-on-surface-variant text-[8px] sm:text-[10px] font-bold uppercase"
+                class="px-2 py-0.5 rounded-full bg-surface-highest/60 border border-on-surface-variant/5 text-on-surface-variant text-[8px] sm:text-[10px] font-bold uppercase tracking-wider"
               >
                 {genre.name}
               </span>
@@ -193,7 +193,7 @@
   <!-- --- LIST VIEW (Horizontal Row) --- -->
   <a
     href="/animes/{anime.slug}"
-    class="group block bg-surface-container hover:bg-surface-highest rounded-xl overflow-hidden transition-all duration-300"
+    class="group block bg-surface-container hover:bg-surface-highest rounded-md shadow-sm overflow-hidden transition-all duration-300"
   >
     <div class="flex items-center h-20 sm:h-24 pr-4 sm:pr-8">
       <!-- Media Section -->
@@ -210,21 +210,33 @@
         class="flex-1 flex items-center justify-between min-w-0 pl-4 sm:pl-6 gap-6"
       >
         <!-- Title & Genres -->
-        <div class="flex-1 min-w-0">
+        <div class="flex-1 min-w-0 space-y-2">
           <h3
             class="text-base sm:text-lg font-bold text-on-surface group-hover:text-primary transition-colors truncate"
           >
             {anime.title}
           </h3>
-          <div class="flex-wrap gap-2 mt-1 flex">
+          <div class="flex items-center gap-1.5 flex-wrap px-1">
+            {#if anime.studios?.length > 0}
+              {#each anime.studios.slice(0, 3) as studio, i}
+                <span
+                  class="text-[10px] italic text-on-surface-variant font-medium uppercase tracking-wider"
+                >
+                  {studio.name}
+                </span>
+                {#if i < Math.min(anime.studios.length, 3) - 1}
+                  <span class="text-[10px] text-on-surface-variant">•</span>
+                {/if}
+              {/each}
+            {/if}
+          </div>
+          <div class="flex items-center gap-2 flex-wrap mt-1 mb-1">
             {#each anime.genres?.slice(0, 3) || [] as genre}
               <span
-                class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest"
-                >{genre.name}</span
+                class="px-2 py-0.5 rounded-full bg-surface-highest/60 text-[10px] font-bold text-on-surface-variant uppercase tracking-wider border border-on-surface-variant/5"
               >
-              {#if genre !== anime.genres[2] && genre !== anime.genres[anime.genres.length - 1]}
-                <span class="text-[10px] text-on-surface-variant">•</span>
-              {/if}
+                {genre.name}
+              </span>
             {/each}
           </div>
         </div>
@@ -249,7 +261,7 @@
             </span>
           {/if}
           <span
-            class="text-[10px] sm:text-xs text-on-surface-variant flex items-center gap-1.5"
+            class="text-[10px] font-medium sm:text-xs text-on-surface-variant flex items-center gap-1.5"
           >
             {anime.songs_count || 0} Themes
           </span>

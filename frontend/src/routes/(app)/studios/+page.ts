@@ -4,7 +4,7 @@ import api from '$lib/api';
 export const load: PageLoad = async ({ url }) => {
     const params = {
         name: url.searchParams.get('name') || '',
-        sort: url.searchParams.get('sort') || 'name_asc',
+        sort: url.searchParams.get('sort') || '',
         page: url.searchParams.get('page') || 1
     };
 

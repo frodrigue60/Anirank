@@ -149,9 +149,10 @@
 <main class="max-w-[1440px] mx-auto px-6 py-10 space-y-4">
   <!-- Filter Bar -->
   <section
-    class="relative z-40 bg-surface-container p-4 rounded-3xl border border-white/5 shadow-2xl"
+    class="relative z-40 bg-surface-container p-4 rounded-md border border-white/5 shadow-sm"
   >
-    <div class="flex flex-col gap-6">
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <!-- Search -->
       <div class="relative group">
         <label
           for="song-search"
@@ -170,122 +171,119 @@
             bind:value={searchTerm}
             oninput={handleInput}
             onkeydown={handleKeydown}
-            class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-xl pl-12 pr-6 text-sm text-on-surface focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 placeholder:text-on-surface-variant transition-all"
+            class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-sm pl-12 pr-6 text-sm text-on-surface focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 placeholder:text-on-surface-variant transition-all"
             placeholder="Search for a song or anime..."
             type="text"
           />
         </div>
       </div>
+      <!-- Year Select -->
+      <div class="flex flex-col gap-2">
+        <label
+          for="year-select"
+          class="text-[10px] uppercase font-black text-on-surface-variant mb-0 ml-1 tracking-widest"
+          >Year</label
+        >
+        <select
+          id="year-select"
+          bind:value={selectedYear}
+          onchange={updateFilters}
+          class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-sm px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
+        >
+          <option value="">All Years</option>
+          {#each yearOptions as option}
+            <option value={option.value}>{option.label}</option>
+          {/each}
+        </select>
+      </div>
 
-      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        <!-- Year Select -->
-        <div class="flex flex-col gap-2">
-          <label
-            for="year-select"
-            class="text-[10px] uppercase font-black text-on-surface-variant mb-0 ml-1 tracking-widest"
-            >Year</label
-          >
-          <select
-            id="year-select"
-            bind:value={selectedYear}
-            onchange={updateFilters}
-            class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-xl px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
-          >
-            <option value="">All Years</option>
-            {#each yearOptions as option}
-              <option value={option.value}>{option.label}</option>
-            {/each}
-          </select>
-        </div>
+      <!-- Season Select -->
+      <div class="flex flex-col gap-2">
+        <label
+          for="season-select"
+          class="text-[10px] uppercase font-black text-on-surface-variant mb-0 ml-1 tracking-widest"
+          >Season</label
+        >
+        <select
+          id="season-select"
+          bind:value={selectedSeason}
+          onchange={updateFilters}
+          class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-sm px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
+        >
+          <option value="">All Seasons</option>
+          {#each seasonOptions as option}
+            <option value={option.value}>{option.label}</option>
+          {/each}
+        </select>
+      </div>
 
-        <!-- Season Select -->
-        <div class="flex flex-col gap-2">
-          <label
-            for="season-select"
-            class="text-[10px] uppercase font-black text-on-surface-variant mb-0 ml-1 tracking-widest"
-            >Season</label
-          >
-          <select
-            id="season-select"
-            bind:value={selectedSeason}
-            onchange={updateFilters}
-            class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-xl px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
-          >
-            <option value="">All Seasons</option>
-            {#each seasonOptions as option}
-              <option value={option.value}>{option.label}</option>
-            {/each}
-          </select>
-        </div>
+      <!-- Genre Select -->
+      <div class="flex flex-col gap-2">
+        <label
+          for="genre-select"
+          class="text-[10px] uppercase font-black text-on-surface-variant mb-0 ml-1 tracking-widest"
+          >Genre</label
+        >
+        <select
+          id="genre-select"
+          bind:value={selectedGenre}
+          onchange={updateFilters}
+          class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-sm px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
+        >
+          <option value="">All Genres</option>
+          {#each genreOptions as option}
+            <option value={option.value}>{option.label}</option>
+          {/each}
+        </select>
+      </div>
 
-        <!-- Genre Select -->
-        <div class="flex flex-col gap-2">
-          <label
-            for="genre-select"
-            class="text-[10px] uppercase font-black text-on-surface-variant mb-0 ml-1 tracking-widest"
-            >Genre</label
-          >
-          <select
-            id="genre-select"
-            bind:value={selectedGenre}
-            onchange={updateFilters}
-            class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-xl px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
-          >
-            <option value="">All Genres</option>
-            {#each genreOptions as option}
-              <option value={option.value}>{option.label}</option>
-            {/each}
-          </select>
-        </div>
+      <!-- Type Select -->
+      <div class="flex flex-col gap-2">
+        <label
+          for="type-select"
+          class="text-[10px] uppercase font-black text-on-surface-variant mb-0 ml-1 tracking-widest"
+          >Type</label
+        >
+        <select
+          id="type-select"
+          bind:value={selectedType}
+          onchange={updateFilters}
+          class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-sm px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
+        >
+          <option value="">All Types</option>
+          {#each typeOptions as option}
+            <option value={option.value}>{option.label}</option>
+          {/each}
+        </select>
+      </div>
 
-        <!-- Type Select -->
-        <div class="flex flex-col gap-2">
-          <label
-            for="type-select"
-            class="text-[10px] uppercase font-black text-on-surface-variant mb-0 ml-1 tracking-widest"
-            >Type</label
-          >
-          <select
-            id="type-select"
-            bind:value={selectedType}
-            onchange={updateFilters}
-            class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-xl px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
-          >
-            <option value="">All Types</option>
-            {#each typeOptions as option}
-              <option value={option.value}>{option.label}</option>
-            {/each}
-          </select>
-        </div>
-
-        <!-- Sort Select -->
-        <div class="flex flex-col gap-2">
-          <label
-            for="sort-select"
-            class="text-[10px] uppercase font-black text-on-surface-variant mb-0 ml-1 tracking-widest"
-            >Sort By</label
-          >
-          <select
-            id="sort-select"
-            bind:value={selectedSort}
-            onchange={updateFilters}
-            class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-xl px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
-          >
-            <option value="">Recently Added</option>
-            {#each sortOptions as option}
-              <option value={option.value}>{option.label}</option>
-            {/each}
-          </select>
-        </div>
+      <!-- Sort Select -->
+      <div class="flex flex-col gap-2">
+        <label
+          for="sort-select"
+          class="text-[10px] uppercase font-black text-on-surface-variant mb-0 ml-1 tracking-widest"
+          >Sort By</label
+        >
+        <select
+          id="sort-select"
+          bind:value={selectedSort}
+          onchange={updateFilters}
+          class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-sm px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
+        >
+          <option value="">Any</option>
+          {#each sortOptions as option}
+            <option value={option.value}>{option.label}</option>
+          {/each}
+        </select>
       </div>
     </div>
   </section>
 
   <div class="flex items-center justify-between">
     <h3
-      class="text-xl font-bold flex items-center gap-3 text-on-surface-variant"
+      class="text-xl font-bold flex items-center gap-3 text-on-surface-variant/80"
     >
-      <span class="w-2 h-6 bg-primary rounded-full"></span>
+      <span class="w-2 h-6 bg-on-surface-variant/80 rounded-full"></span>
       {#if totalSongs > 0}
         Results ({totalSongs.toLocaleString()})
       {:else}

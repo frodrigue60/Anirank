@@ -80,7 +80,7 @@
   >
     <!-- Modal Content -->
     <div
-      class="modal-glass w-full max-w-sm rounded-[2.5rem] overflow-hidden shadow-2xl p-10 flex flex-col items-center text-center relative"
+      class="modal-glass w-full max-w-sm rounded-md overflow-hidden shadow-2xl p-10 flex flex-col items-center text-center relative"
       onclick={(e) => e.stopPropagation()}
       transition:scale={{ duration: 300, start: 0.95 }}
     >
@@ -88,12 +88,15 @@
       <div class="w-full flex justify-between items-start mb-6">
         <div class="text-left">
           <div class="flex items-center gap-2 text-primary mb-1">
-            <span class="material-symbols-outlined text-[14px]">music_note</span>
+            <span class="material-symbols-outlined text-[14px]">music_note</span
+            >
             <p class="text-[10px] font-black uppercase tracking-[0.2em]">
               Request Theme
             </p>
           </div>
-          <h3 class="text-xl font-bold leading-tight tracking-tight text-on-surface">
+          <h3
+            class="text-xl font-bold leading-tight tracking-tight text-on-surface"
+          >
             Missing a theme?
           </h3>
           <p class="text-xs text-on-surface-variant mt-1">
@@ -134,7 +137,7 @@
               type="text"
               bind:value={title}
               placeholder="e.g. Oshi no Ko - Idol"
-              class="w-full bg-surface-highest border border-outline-variant/10 rounded-xl px-4 py-3 text-sm text-on-surface focus:outline-none focus:border-primary/30 transition-all hover:bg-surface-highest/80"
+              class="w-full bg-surface-highest border border-outline-variant/10 rounded-sm px-4 py-3 text-sm text-on-surface focus:outline-none focus:border-primary/30 transition-all hover:bg-surface-highest/80"
             />
           </div>
 
@@ -149,12 +152,14 @@
               id="request-content"
               bind:value={content}
               placeholder="Add links or specific details about the request..."
-              class="w-full bg-surface-highest border border-outline-variant/10 rounded-xl px-4 py-3 text-sm text-on-surface focus:outline-none focus:border-primary/30 transition-all min-h-[100px] resize-none hover:bg-surface-highest/80"
+              class="w-full bg-surface-highest border border-outline-variant/10 rounded-sm px-4 py-3 text-sm text-on-surface focus:outline-none focus:border-primary/30 transition-all min-h-[100px] resize-none hover:bg-surface-highest/80"
             ></textarea>
           </div>
 
           {#if errorMessage}
-            <p class="text-red-500 text-[10px] font-bold px-1 leading-tight flex items-center gap-1.5">
+            <p
+              class="text-red-500 text-[10px] font-bold px-1 leading-tight flex items-center gap-1.5"
+            >
               <span class="material-symbols-outlined text-[14px]">error</span>
               {errorMessage}
             </p>
@@ -164,7 +169,7 @@
           <button
             onclick={handleSubmit}
             disabled={isSubmitting}
-            class="w-full bg-primary hover:bg-primary/90 disabled:opacity-50 text-white py-4 rounded-xl font-black text-sm transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 active:scale-95"
+            class="w-full bg-primary hover:bg-primary/90 disabled:opacity-50 text-white py-4 rounded-sm font-black text-sm transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 active:scale-95"
           >
             {#if isSubmitting}
               <Loader2 class="animate-spin" size={18} />

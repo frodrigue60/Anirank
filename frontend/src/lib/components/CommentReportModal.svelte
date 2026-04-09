@@ -81,7 +81,7 @@
   >
     <!-- Modal Content -->
     <div
-      class="modal-glass w-full max-w-sm rounded-[2.5rem] overflow-hidden shadow-2xl p-10 flex flex-col items-center text-center relative"
+      class="modal-glass w-full max-w-sm rounded-md overflow-hidden shadow-2xl p-10 flex flex-col items-center text-center relative"
       onclick={(e) => e.stopPropagation()}
       transition:scale={{ duration: 300, start: 0.95 }}
     >
@@ -136,7 +136,7 @@
               <select
                 id="report-title-comment"
                 bind:value={title}
-                class="w-full bg-surface-highest border border-outline-variant/10 rounded-xl px-4 py-3 text-sm text-on-surface focus:outline-none focus:border-primary/30 transition-all appearance-none cursor-pointer group-hover:bg-surface-highest/80"
+                class="w-full bg-surface-highest border border-outline-variant/10 rounded-sm px-4 py-3 text-sm text-on-surface focus:outline-none focus:border-primary/30 transition-all appearance-none cursor-pointer group-hover:bg-surface-highest/80"
               >
                 <option value="" disabled selected>Select a reason...</option>
                 {#each reportingReasons as reason}
@@ -165,7 +165,7 @@
               id="report-content-comment"
               bind:value={content}
               placeholder="Please provide any additional context..."
-              class="w-full bg-surface-highest border border-outline-variant/10 rounded-xl px-4 py-3 text-sm text-on-surface focus:outline-none focus:border-primary/30 transition-all min-h-[100px] resize-none hover:bg-surface-highest/80"
+              class="w-full bg-surface-highest border border-outline-variant/10 rounded-sm px-4 py-3 text-sm text-on-surface focus:outline-none focus:border-primary/30 transition-all min-h-[100px] resize-none hover:bg-surface-highest/80"
             ></textarea>
           </div>
 
@@ -182,7 +182,7 @@
           <button
             onclick={handleSubmit}
             disabled={isSubmitting}
-            class="w-full bg-primary hover:bg-primary/90 disabled:opacity-50 text-white py-4 rounded-xl font-black text-sm transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 active:scale-95 mt-2"
+            class="w-full bg-primary hover:bg-primary/90 disabled:opacity-50 text-white py-4 rounded-sm font-black text-sm transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 active:scale-95 mt-2"
           >
             {#if isSubmitting}
               <Loader2 class="animate-spin" size={18} />

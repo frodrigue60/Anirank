@@ -95,7 +95,6 @@
   }
 
   const sortOptions = [
-    { value: "any", label: "Any" },
     { value: "most_themes", label: "Most Themes" },
     { value: "least_themes", label: "Least Themes" },
     { value: "name_asc", label: "A - Z" },
@@ -112,7 +111,7 @@
   <div class="flex flex-col gap-4">
     <!-- Search and Filters Section -->
     <section
-      class="relative z-40 flex flex-col gap-4 bg-surface-container p-4 rounded-3xl border border-white/5 shadow-2xl"
+      class="relative z-40 flex flex-col gap-4 bg-surface-container p-4 rounded-md border border-white/5 shadow-sm"
     >
       <div class="flex items-end gap-4">
         <!-- Search -->
@@ -134,7 +133,7 @@
               bind:value={searchQuery}
               oninput={handleInput}
               onkeydown={handleKeydown}
-              class="w-full h-12 bg-surface-container border border-on-surface-variant/20 rounded-xl pl-12 pr-6 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 placeholder:text-on-surface-variant transition-all"
+              class="w-full h-12 bg-surface-container border border-on-surface-variant/20 rounded-sm pl-12 pr-6 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 placeholder:text-on-surface-variant transition-all"
               placeholder="Who are you looking for?"
               type="text"
             />
@@ -153,8 +152,9 @@
             id="sort-select"
             bind:value={selectedSort}
             onchange={updateFilters}
-            class="w-full h-12 bg-surface-container border border-on-surface-variant/20 rounded-xl px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
+            class="w-full h-12 bg-surface-container border border-on-surface-variant/20 rounded-sm px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
           >
+            <option value="">Any</option>
             {#each sortOptions as option}
               <option value={option.value}>{option.label}</option>
             {/each}
@@ -166,13 +166,13 @@
     <!-- Artists Grid -->
     <section class="">
       <div class="flex items-center justify-between mb-8">
-        <h2 class="text-2xl font-bold flex items-center gap-3 text-on-surface">
-          <span class="w-2 h-8 bg-primary rounded-full"></span>
+        <h2
+          class="text-2xl font-bold flex items-center gap-3 text-on-surface-variant/80"
+        >
+          <span class="w-2 h-8 bg-on-surface-variant/80 rounded-full"></span>
           Artists
           {#if data.artistsData?.pagination?.total > 0}
-            <span class="text-on-surface-variant font-normal text-lg ml-2"
-              >({data.artistsData.pagination.total.toLocaleString()})</span
-            >
+            ({data.artistsData.pagination.total.toLocaleString()})
           {/if}
         </h2>
       </div>

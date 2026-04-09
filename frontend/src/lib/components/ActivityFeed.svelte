@@ -61,9 +61,7 @@
     <h2
       class="flex items-center gap-3 text-2xl font-black tracking-tight text-on-surface"
     >
-      <div
-        class="bg-primary/10 w-10 h-10 rounded-2xl flex items-center justify-center text-primary"
-      >
+      <div class="w-10 h-10 flex items-center justify-center text-primary">
         <span class="material-symbols-outlined text-[20px]">forum</span>
       </div>
       What's Happening
@@ -81,11 +79,13 @@
   </div>
 
   <div
-    class="divide-y divide-outline-variant/5 overflow-hidden rounded-[2.5rem] border border-outline-variant/10 bg-surface-container/30 shadow-2xl shadow-black/5"
+    class="divide-y divide-outline-variant/5 overflow-hidden rounded-md shadow-sm"
   >
     {#if loading && activities.length === 0}
       {#each Array(recentOnly ? 4 : 8) as _}
-        <div class="flex animate-pulse items-start gap-4 p-6">
+        <div
+          class="flex animate-pulse items-start gap-4 p-6 bg-surface-container"
+        >
           <div
             class="h-16 w-12 shrink-0 rounded-xl bg-surface-highest/50"
           ></div>
@@ -96,7 +96,9 @@
         </div>
       {/each}
     {:else if activities.length === 0}
-      <div class="p-20 text-center flex flex-col items-center gap-4">
+      <div
+        class="p-20 text-center flex flex-col items-center gap-4 bg-surface-container"
+      >
         <div
           class="bg-on-surface-variant/5 w-16 h-16 rounded-full flex items-center justify-center text-on-surface-variant/20 mb-2"
         >
@@ -117,7 +119,7 @@
         {@const isUser = type === "follow"}
 
         <div
-          class="group flex cursor-pointer items-start gap-5 p-6 transition-all hover:bg-surface-highest/40"
+          class="group flex cursor-pointer items-start gap-5 p-6 transition-all bg-surface-container hover:bg-primary/10"
         >
           <div class="relative shrink-0">
             <!-- Target Cover -->
@@ -126,23 +128,23 @@
                 src={target.anime?.cover_url ||
                   "/images/placeholders/default.jpg"}
                 alt={target.anime?.title}
-                class="h-20 w-14 rounded-xl object-cover border border-outline-variant/10 shadow-lg"
+                class="h-20 w-14 rounded-md object-cover border border-outline-variant/10 shadow-lg"
               />
             {:else if isArtist && target}
               <img
                 src={target.avatar_url || "/images/placeholders/default.jpg"}
                 alt={target.name}
-                class="h-20 w-14 rounded-xl object-cover border border-outline-variant/10 shadow-lg"
+                class="h-20 w-14 rounded-md object-cover border border-outline-variant/10 shadow-lg"
               />
             {:else if isUser && target}
               <img
                 src={target.avatar_url || "/images/placeholders/default.jpg"}
                 alt={target.name}
-                class="w-14 h-14 rounded-xl object-cover border border-outline-variant/10 shadow-lg"
+                class="w-14 h-14 rounded-md object-cover border border-outline-variant/10 shadow-lg"
               />
             {:else}
               <div
-                class="flex h-14 w-14 items-center justify-center rounded-xl border border-outline-variant/10 bg-surface-highest/30 shadow-inner"
+                class="flex h-14 w-14 items-center justify-center rounded-md border border-outline-variant/10 bg-surface-highest/30 shadow-inner"
               >
                 <span
                   class="material-symbols-outlined text-on-surface-variant/20 text-3xl"
@@ -162,11 +164,11 @@
                   class="w-full h-full object-cover"
                 />
               {:else}
-                <div
-                  class="w-full h-full flex items-center justify-center bg-primary text-[11px] font-black text-white"
-                >
-                  {activity.user?.name?.charAt(0) || "U"}
-                </div>
+                <img
+                  src={"/images/placeholders/default.jpg"}
+                  alt={activity.user.name}
+                  class="w-full h-full object-cover"
+                />
               {/if}
             </div>
           </div>

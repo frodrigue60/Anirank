@@ -74,11 +74,11 @@
             </a>
           </div>
           <div
-            class="flex items-center gap-1 bg-surface-container/50 p-1.5 rounded-2xl border border-outline-variant/10 w-fit"
+            class="flex items-center gap-1 bg-surface-highest p-1.5 rounded-md border border-outline-variant/10 w-fit"
           >
             <button
               onclick={() => themeState.set("light")}
-              class="p-1.5 rounded-xl transition-all {themeState.current ===
+              class="px-2 py-1 rounded-sm transition-all {themeState.current ===
               'light'
                 ? 'bg-surface shadow-sm text-primary scale-110 border border-outline-variant/10'
                 : 'text-on-surface-variant/40 hover:text-on-surface-variant'}"
@@ -90,7 +90,7 @@
             </button>
             <button
               onclick={() => themeState.set("dark")}
-              class="p-1.5 rounded-xl transition-all {themeState.current ===
+              class="px-2 py-1 rounded-sm transition-all {themeState.current ===
               'dark'
                 ? 'bg-surface shadow-sm text-primary scale-110 border border-outline-variant/10'
                 : 'text-on-surface-variant/40 hover:text-on-surface-variant'}"
@@ -102,7 +102,7 @@
             </button>
             <button
               onclick={() => themeState.set("contrast")}
-              class="p-1.5 rounded-xl transition-all {themeState.current ===
+              class="px-2 py-1 rounded-sm transition-all {themeState.current ===
               'contrast'
                 ? 'bg-surface shadow-sm text-primary scale-110 border border-outline-variant/10'
                 : 'text-on-surface-variant/40 hover:text-on-surface-variant'}"

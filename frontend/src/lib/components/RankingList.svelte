@@ -27,12 +27,12 @@
 </script>
 
 <div
-  class="bg-surface-container border border-white/5 rounded-2xl overflow-hidden mb-8"
+  class="bg-surface-container shadow-sm border border-primary/10 rounded-md overflow-hidden mb-8"
 >
   <table class="w-full border-collapse">
     <thead>
       <tr
-        class="border-b border-white/5 text-[10px] font-black uppercase tracking-widest text-on-surface-variant"
+        class="border-b border-primary/10 bg-surface-highest text-[10px] font-black uppercase tracking-widest text-on-surface-variant"
       >
         <th class="w-20 py-4 pl-8 pr-2 text-center font-black">Rank</th>
         <th class="py-4 px-2 text-left font-black">Theme Info</th>
@@ -41,7 +41,7 @@
       </tr>
     </thead>
 
-    <tbody class="divide-y divide-white/5">
+    <tbody class="divide-y divide-primary/10">
       {#if songs.length > 0}
         {#each songs as item, index}
           {@const rank = startIndex + index + 1}
@@ -50,9 +50,7 @@
               ? item.prev_seasonal_rank
               : item.prev_main_rank}
           {@const movement = getMovement(rank, previousRank)}
-          <tr
-            class="ranking-row transition-colors hover:bg-primary/5"
-          >
+          <tr class="transition-colors hover:bg-surface">
             <td class="py-5 pl-8 pr-2 text-center">
               <div class="flex flex-col items-center gap-1">
                 <span
@@ -67,10 +65,12 @@
                     class="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-green-500/10 text-green-400"
                     title={`Previous rank: ${previousRank}`}
                   >
-                    <span class="material-symbols-outlined text-[12px] font-black"
+                    <span
+                      class="material-symbols-outlined text-[12px] font-black"
                       >arrow_drop_up</span
                     >
-                    <span class="text-[9px] font-black">{previousRank! - rank}</span
+                    <span class="text-[9px] font-black"
+                      >{previousRank! - rank}</span
                     >
                   </div>
                 {:else if movement === "down"}
@@ -78,15 +78,18 @@
                     class="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-red-500/10 text-red-400"
                     title={`Previous rank: ${previousRank}`}
                   >
-                    <span class="material-symbols-outlined text-[12px] font-black"
+                    <span
+                      class="material-symbols-outlined text-[12px] font-black"
                       >arrow_drop_down</span
                     >
-                    <span class="text-[9px] font-black">{rank - previousRank!}</span
+                    <span class="text-[9px] font-black"
+                      >{rank - previousRank!}</span
                     >
                   </div>
                 {:else if movement === "stable"}
                   <div class="text-on-surface-variant/20 flex items-center">
-                    <span class="material-symbols-outlined text-[14px]">remove</span
+                    <span class="material-symbols-outlined text-[14px]"
+                      >remove</span
                     >
                   </div>
                 {:else if movement === "new"}
@@ -101,7 +104,7 @@
             <td class="py-5 px-2">
               <div class="flex items-center gap-6 min-w-0">
                 <div
-                  class="w-16 h-auto aspect-12/18 rounded-lg overflow-hidden shrink-0 shadow-lg shadow-black/40 border border-white/10 relative"
+                  class="w-16 h-auto aspect-12/18 rounded-lg overflow-hidden shrink-0 shadow-lg shadow-black/40 border border-primary/10 relative"
                 >
                   <img
                     alt={getSongName(item)}
@@ -115,14 +118,18 @@
                   {#if true}
                     {@const songName = getSongName(item)}
                     {@const artistNames =
-                      item.artists?.map((a: any) => a.name).join(", ") ?? "Unknown"}
+                      item.artists?.map((a: any) => a.name).join(", ") ??
+                      "Unknown"}
                     <h3
                       class="text-lg font-bold text-on-surface truncate leading-tight"
                       title={songName}
                     >
                       {songName}
                     </h3>
-                    <span class="text-on-surface/80 truncate" title={artistNames}>
+                    <span
+                      class="text-on-surface/80 truncate"
+                      title={artistNames}
+                    >
                       {artistNames}
                     </span>
                     <span
@@ -185,7 +192,9 @@
         <tr>
           <td colspan="4" class="py-20 text-on-surface-variant">
             <div class="flex flex-col items-center justify-center opacity-30">
-              <span class="material-symbols-outlined text-6xl mb-4">music_off</span>
+              <span class="material-symbols-outlined text-6xl mb-4"
+                >music_off</span
+              >
               <p class="text-lg font-bold">No themes found</p>
             </div>
           </td>

@@ -14,6 +14,9 @@ const api = axios.create({
     Accept: "application/json",
     "Content-Type": "application/json",
   },
+  withCredentials: true,
+  xsrfCookieName: "csrf_token",
+  xsrfHeaderName: "X-CSRF-Token",
 });
 
 // Interceptor de Petición para inyectar token local

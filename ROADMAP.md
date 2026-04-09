@@ -100,9 +100,9 @@
 ### Security Hardening
 - ✅ UUID-only external API (no sequential ID leakage)
 - ✅ Empty UUID guard in AuthMiddleware (prevents 500 from stale tokens)
-- 🔲 **Rate limiting** on sensitive routes (login, register, OAuth callbacks) — no limiter currently
-- 🔲 **CSRF protection** audit for state-mutating endpoints
-- 🔲 **Input sanitization** review for comment/about text fields (XSS vectors)
+- ✅ **Rate limiting** on sensitive routes (login, register, OAuth callbacks)
+- ✅ **CSRF protection** audit for state-mutating endpoints
+- ✅ **Input sanitization** review for comment/about text fields (XSS vectors)
 
 ### Email Infrastructure
 - 🔲 **SMTP integration** (Resend / Postmark / Brevo) for transactional emails

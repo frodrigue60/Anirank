@@ -9,6 +9,7 @@ import (
 
 	"anirank/api/internal/domain"
 	"anirank/api/internal/infrastructure"
+	"anirank/api/internal/infrastructure/security"
 )
 
 type AnnouncementUsecase struct {
@@ -56,10 +57,12 @@ func (u *AnnouncementUsecase) GetCount(ctx context.Context, filters domain.Annou
 }
 
 func (u *AnnouncementUsecase) Create(ctx context.Context, a *domain.Announcement) error {
+	a.Content = security.SanitizeHTMLPtr(a.Content)
 	return u.repo.Create(ctx, a)
 }
 
 func (u *AnnouncementUsecase) Update(ctx context.Context, a *domain.Announcement) error {
+	a.Content = security.SanitizeHTMLPtr(a.Content)
 	return u.repo.Update(ctx, a)
 }
 

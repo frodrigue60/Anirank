@@ -3,6 +3,7 @@ package interaction
 import (
 	"anirank/api/internal/domain"
 	"anirank/api/internal/infrastructure"
+	"anirank/api/internal/infrastructure/security"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -194,7 +195,7 @@ func (u *InteractionUsecase) SongComment(ctx context.Context, userID, entityID u
 	comment := &domain.Comment{
 		ParentID: parentID,
 		UserID:   userID,
-		Content:  content,
+		Content:  security.SanitizeStrict(content),
 	}
 
 	if entityType == "song" || entityType == "App\\Models\\Song" {

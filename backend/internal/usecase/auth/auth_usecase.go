@@ -16,6 +16,7 @@ import (
 	"anirank/api/internal/infrastructure"
 	"anirank/api/internal/infrastructure/anilist"
 	"anirank/api/internal/infrastructure/google"
+	"anirank/api/internal/infrastructure/security"
 	"anirank/api/internal/pkg/avatar"
 	"anirank/api/internal/pkg/crypto"
 	"anirank/api/internal/pkg/utils"
@@ -261,7 +262,7 @@ func (u *AuthUsecase) UpdateProfile(ctx context.Context, userID uint64, about, p
 	}
 
 	if about != nil {
-		user.About = about
+		user.About = security.SanitizeStrictPtr(about)
 	}
 	if profileColor != nil {
 		user.ProfileColor = profileColor

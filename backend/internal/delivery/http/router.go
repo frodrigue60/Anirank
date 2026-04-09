@@ -44,7 +44,8 @@ func SetupPublicRoutes(app *fiber.App,
 	statsUsecase domain.StatsUsecase,
 	ogGenerator *og.Generator,
 	shareHandler *v1.ShareHandler,
-	seoHandler *v1.SEOHandler) {
+	seoHandler *v1.SEOHandler,
+	storage fiber.Storage) {
 
 	// Core Repositories
 	songRepo := postgres.NewSongRepository(db)
@@ -97,15 +98,20 @@ func SetupPublicRoutes(app *fiber.App,
 	api.Get("/swagger/*", swagger.HandlerDefault)
 
 	// --- PUBLIC ROUTES ---
+	authLimiter := middleware.NewAuthLimiter(storage)
+	csrfMiddleware := middleware.NewCSRFMiddleware(storage)
+
+	// Apply CSRF to all API routes
+	api.Use(csrfMiddleware)
 
 	// Auth
-	api.Post("/login", authHandler.Login)
-	api.Post("/register", authHandler.Register)
+	api.Post("/login", authLimiter, authHandler.Login)
+	api.Post("/register", authLimiter, authHandler.Register)
 	api.Get("/auth/google/login", authHandler.GoogleLogin)
-	api.Post("/auth/google/login-callback", authHandler.GoogleLoginCallback)
+	api.Post("/auth/google/login-callback", authLimiter, authHandler.GoogleLoginCallback)
 	api.Get("/auth/anilist/login", authHandler.AnilistLogin)
-	api.Post("/auth/anilist/login-callback", authHandler.AnilistLoginCallback)
-	api.Post("/auth/anilist/register", authHandler.AnilistRegister)
+	api.Post("/auth/anilist/login-callback", authLimiter, authHandler.AnilistLoginCallback)
+	api.Post("/auth/anilist/register", authLimiter, authHandler.AnilistRegister)
 
 	// Init data for SPA
 	api.Get("/init", discoveryHandler.Init)

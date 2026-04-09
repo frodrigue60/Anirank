@@ -29,6 +29,8 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/storage/memory/v2"
+	"github.com/gofiber/storage/redis/v3"
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
 )
@@ -139,6 +141,19 @@ func main() {
 		appCache = cache.NewNoOpCache()
 	}
 
+	// --- 1.6 Setup Rate Limiting Storage (Resilience Shield) ---
+	var limitStorage fiber.Storage
+	if redisURL != "" {
+		limitStorage = redis.New(redis.Config{
+			URL:   redisURL,
+			Reset: false,
+		})
+		log.Println("✅ Rate Limiter: Redis storage initialized")
+	} else {
+		limitStorage = memory.New()
+		log.Println("⚠️ Rate Limiter: Redis not found, falling back to Memory storage")
+	}
+
 	// 2. Dependency Injection: Services & Usecases
 	jwtService := auth.NewJWTService()
 
@@ -189,9 +204,10 @@ func main() {
 	}
 
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: allowOrigins,
-		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
-		AllowMethods: "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+		AllowOrigins:     allowOrigins,
+		AllowHeaders:     "Origin, Content-Type, Accept, Authorization, X-CSRF-Token",
+		AllowMethods:     "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+		AllowCredentials: true,
 	}))
 
 	app.Use(middleware.RequestLogger())
@@ -201,7 +217,7 @@ func main() {
 	statsUsecase := public.NewStatsUsecase(statsRepo, appCache)
 
 	// 4. Register Routes
-	http.SetupPublicRoutes(app, db, discoveryUsecase, animeUsecase, searchUsecase, catalogUsecase, authUsecase, interactionUsecase, playlistUsecase, adminUsecase, moderationUsecase, tournamentUsecase, auditUsecase, jwtService, storageService, mediaService, xpUsecase, activityUsecase, statsUsecase, ogGenerator, shareHandler, seoHandler)
+	http.SetupPublicRoutes(app, db, discoveryUsecase, animeUsecase, searchUsecase, catalogUsecase, authUsecase, interactionUsecase, playlistUsecase, adminUsecase, moderationUsecase, tournamentUsecase, auditUsecase, jwtService, storageService, mediaService, xpUsecase, activityUsecase, statsUsecase, ogGenerator, shareHandler, seoHandler, limitStorage)
 
 	// Run Server
 	log.Printf("Starting server on port %s...", appPort)

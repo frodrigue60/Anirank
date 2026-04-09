@@ -13,6 +13,7 @@ import (
 	"anirank/api/internal/domain"
 	"anirank/api/internal/infrastructure"
 	"anirank/api/internal/infrastructure/anilist"
+	"anirank/api/internal/infrastructure/security"
 	"anirank/api/internal/pkg/avatar"
 	"anirank/api/internal/pkg/rbac"
 	"anirank/api/internal/pkg/utils"
@@ -164,6 +165,9 @@ func (u *ContentAdminUsecase) CreateAnime(ctx context.Context, anime *domain.Ani
 	// Role-based status control
 	u.validateStatusPermissions(meta.Role, &anime.Status, true)
 
+	// Sanitize description
+	anime.Description = security.SanitizeHTMLPtr(anime.Description)
+
 	if err := u.animeRepo.Create(ctx, anime); err != nil {
 		return err
 	}
@@ -204,6 +208,9 @@ func (u *ContentAdminUsecase) UpdateAnime(ctx context.Context, anime *domain.Ani
 	if err := u.validateStatusPermissions(meta.Role, &anime.Status, false); err != nil {
 		return err
 	}
+
+	// Sanitize description
+	anime.Description = security.SanitizeHTMLPtr(anime.Description)
 
 	if err := u.animeRepo.Update(ctx, anime); err != nil {
 		return err
@@ -578,6 +585,9 @@ func (u *ContentAdminUsecase) SyncAnime(ctx context.Context, id uint64, meta dom
 	}
 
 	existing, _ := u.animeRepo.GetByID(ctx, anime.ID)
+	// Sanitize description
+	anime.Description = security.SanitizeHTMLPtr(anime.Description)
+
 	if err := u.animeRepo.Update(ctx, anime); err != nil {
 		return err
 	}

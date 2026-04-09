@@ -43,13 +43,13 @@
       >
         {#if anime.format?.name}
           <span
-            class="bg-black/60 text-white px-2 py-1 rounded-md text-[10px] font-bold shadow-sm border border-white/10"
+            class="bg-black/60 text-white px-2 py-1 rounded-sm text-[10px] font-bold shadow-sm border border-white/10"
           >
             {anime.format.name}
           </span>
         {/if}
         <span
-          class="bg-primary/40 text-white px-2 py-1 rounded-md text-[10px] font-bold shadow-sm flex items-center gap-1 border border-primary/20"
+          class="bg-primary/40 text-white px-2 py-1 rounded-sm text-[10px] font-bold shadow-sm flex items-center gap-1 border border-primary/20"
         >
           {anime.songs_count || 0} Themes
         </span>
@@ -58,7 +58,7 @@
       {#if anime.status}
         <div class="absolute top-3 left-3">
           <div
-            class="w-3 h-3 rounded-full border-2 border-surface-darker {statusColors[
+            class="w-3 h-3 rounded-sm border-2 border-surface-darker {statusColors[
               anime.status as keyof typeof statusColors
             ] || 'bg-gray-400'}"
           ></div>
@@ -179,7 +179,7 @@
           <div class="flex flex-wrap gap-1 sm:gap-2">
             {#each anime.genres?.slice(0, 3) || [] as genre}
               <span
-                class="px-2 py-0.5 rounded-full bg-surface-highest/60 border border-on-surface-variant/5 text-on-surface-variant text-[8px] sm:text-[10px] font-bold uppercase tracking-wider"
+                class="px-2 py-0.5 rounded-sm bg-surface-highest/60 border border-on-surface-variant/5 text-on-surface-variant text-[8px] sm:text-[10px] font-bold uppercase tracking-wider"
               >
                 {genre.name}
               </span>
@@ -233,7 +233,7 @@
           <div class="flex items-center gap-2 flex-wrap mt-1 mb-1">
             {#each anime.genres?.slice(0, 3) || [] as genre}
               <span
-                class="px-2 py-0.5 rounded-full bg-surface-highest/60 text-[10px] font-bold text-on-surface-variant uppercase tracking-wider border border-on-surface-variant/5"
+                class="px-2 py-0.5 rounded-sm bg-surface-highest/60 text-[10px] font-bold text-on-surface-variant uppercase tracking-wider border border-on-surface-variant/5"
               >
                 {genre.name}
               </span>
@@ -293,11 +293,11 @@
             </span>
             {#if anime.status === "FINISHED"}
               <span
-                class="w-1.5 h-1.5 rounded-full bg-green-500 shadow-sm shadow-green-500/50"
+                class="w-1.5 h-1.5 rounded-sm bg-green-500 shadow-sm shadow-green-500/50"
               ></span>
             {:else if anime.status === "RELEASING"}
               <span
-                class="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"
+                class="w-1.5 h-1.5 rounded-sm bg-blue-500 shadow-sm shadow-blue-500/50"
               ></span>
             {/if}
           </div>

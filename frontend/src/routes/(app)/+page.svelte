@@ -141,7 +141,7 @@
                 <a
                   href="/songs/{homeData.featured_song.anime?.slug}/{homeData
                     .featured_song.slug}"
-                  class="flex h-12 items-center justify-center gap-2 rounded-full border border-outline-variant/20 bg-surface-container text-on-surface px-8 text-lg font-bold transition-all hover:scale-105 hover:shadow-lg hover:shadow-primary/20 active:scale-95 sm:h-14 sm:px-10"
+                  class="flex h-12 items-center justify-center gap-2 rounded-sm border border-outline-variant/20 bg-surface-container text-on-surface px-8 text-lg font-bold transition-all hover:scale-105 hover:shadow-lg hover:shadow-primary/20 active:scale-95 sm:h-14 sm:px-10"
                   title="Play featured theme: {getSongName(
                     homeData.featured_song,
                   )}"
@@ -215,7 +215,7 @@
                         {getSongName(item)}
                       </h3>
                       <div
-                        class="ml-2 flex shrink-0 items-center gap-1 rounded-full bg-primary/20 px-2 py-0.5 text-xs font-bold text-on-surface-variant"
+                        class="ml-2 flex shrink-0 items-center gap-1 rounded-sm bg-primary/20 px-1 py-0.5 text-xs font-bold text-on-surface-variant"
                       >
                         <span class="material-symbols-outlined filled"
                           >star</span
@@ -280,7 +280,7 @@
                         {getSongName(item)}
                       </h3>
                       <div
-                        class="ml-2 flex shrink-0 items-center gap-1 rounded-full bg-primary/20 px-2 py-0.5 text-xs font-bold text-on-surface-variant"
+                        class="ml-2 flex shrink-0 items-center gap-1 rounded-sm bg-primary/20 px-1 py-0.5 text-xs font-bold text-on-surface-variant"
                       >
                         <span class="material-symbols-outlined filled"
                           >star</span
@@ -346,7 +346,7 @@
           <div class="flex items-center gap-2">
             <button
               onclick={scrollLeft}
-              class="group m-1 flex h-10 w-10 items-center justify-center rounded-full border border-outline-variant/10 bg-surface-container shadow-sm shadow-on-surface/5 transition-all hover:border-primary/20 hover:bg-primary/10 active:scale-90"
+              class="group flex h-10 w-10 items-center justify-center rounded-sm border border-outline-variant/10 bg-surface-container shadow-sm shadow-on-surface/5 transition-all hover:border-primary/20 hover:bg-primary/10 active:scale-90"
               title="Scroll left"
               aria-label="Scroll carousel to the left"
             >
@@ -357,7 +357,7 @@
             </button>
             <button
               onclick={scrollRight}
-              class="group m-1 flex h-10 w-10 items-center justify-center rounded-full border border-outline-variant/10 bg-surface-container shadow-sm shadow-on-surface/5 transition-all hover:border-primary/20 hover:bg-primary/10 active:scale-90"
+              class="group flex h-10 w-10 items-center justify-center rounded-sm border border-outline-variant/10 bg-surface-container shadow-sm shadow-on-surface/5 transition-all hover:border-primary/20 hover:bg-primary/10 active:scale-90"
               title="Scroll right"
               aria-label="Scroll carousel to the right"
             >

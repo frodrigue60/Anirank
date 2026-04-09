@@ -30,8 +30,12 @@ func AuthMiddleware(jwtService *auth.JWTService, userRepo domain.UserRepository)
 			return domain.NewAppError(401, "Invalid or expired token", nil)
 		}
 
-		// EXTRA SECURITY: Verify user exists in DB (Critical after DB wipes)
-		_, err = userRepo.GetByID(c.Context(), claims.UserID)
+		if claims.UserUUID == "" {
+			return domain.NewAppError(401, "Invalid token payload: missing user identifier. Please re-login.", nil)
+		}
+
+		// EXTRA SECURITY: Verify user exists in DB and get numeric ID from UUID
+		user, err := userRepo.GetByUUID(c.Context(), claims.UserUUID)
 		if err != nil {
 			if err == domain.ErrNotFound {
 				return domain.NewAppError(401, "Session belongs to a non-existent user. Please re-login.", nil)
@@ -40,7 +44,9 @@ func AuthMiddleware(jwtService *auth.JWTService, userRepo domain.UserRepository)
 		}
 
 		// Store user info in Context Locals for downstream handlers
-		c.Locals("user_id", claims.UserID)
+		// Keep user_id (numeric) for internal operations, add user_uuid for frontend logic if needed
+		c.Locals("user_id", user.ID)
+		c.Locals("user_uuid", user.UUID)
 		c.Locals("user_roles", claims.Roles)
 
 		return c.Next()
@@ -48,7 +54,7 @@ func AuthMiddleware(jwtService *auth.JWTService, userRepo domain.UserRepository)
 }
 
 // OptionalAuthMiddleware parses JWT if present, but allows request to continue if not
-func OptionalAuthMiddleware(jwtService *auth.JWTService) fiber.Handler {
+func OptionalAuthMiddleware(jwtService *auth.JWTService, userRepo domain.UserRepository) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		authHeader := c.Get("Authorization")
 		if authHeader == "" {
@@ -58,9 +64,13 @@ func OptionalAuthMiddleware(jwtService *auth.JWTService) fiber.Handler {
 		parts := strings.Split(authHeader, " ")
 		if len(parts) == 2 && parts[0] == "Bearer" {
 			tokenString := parts[1]
-			if claims, err := jwtService.ValidateToken(tokenString); err == nil {
-				c.Locals("user_id", claims.UserID)
-				c.Locals("user_roles", claims.Roles)
+			if claims, err := jwtService.ValidateToken(tokenString); err == nil && claims.UserUUID != "" {
+				// We need the numeric ID for many optional filters, so we do a quick lookup
+				if user, uErr := userRepo.GetByUUID(c.Context(), claims.UserUUID); uErr == nil {
+					c.Locals("user_id", user.ID)
+					c.Locals("user_uuid", user.UUID)
+					c.Locals("user_roles", claims.Roles)
+				}
 			}
 		}
 

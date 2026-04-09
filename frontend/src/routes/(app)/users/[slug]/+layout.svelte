@@ -184,7 +184,7 @@
           {#if isOwnProfile}
             <a
               href="/settings"
-              class="flex items-center justify-center gap-2 px-6 h-11 rounded-xl bg-surface-highest/50 hover:bg-surface-highest text-on-surface border border-on-surface-variant/10 transition-all font-bold text-sm"
+              class="flex items-center justify-center gap-2 px-6 h-11 rounded-sm bg-surface-highest/50 hover:bg-surface-highest text-on-surface border border-on-surface-variant/10 transition-all font-bold text-sm"
             >
               <span class="material-symbols-outlined text-sm">settings</span>
               Edit Profile
@@ -193,7 +193,7 @@
             <button
               onclick={handleFollow}
               disabled={isProcessing}
-              class="flex items-center justify-center gap-2 px-8 h-11 rounded-xl font-bold text-sm transition-all shadow-lg {isFollowing
+              class="flex items-center justify-center gap-2 px-8 h-11 rounded-sm font-bold text-sm transition-all shadow-lg {isFollowing
                 ? 'bg-surface-highest text-on-surface hover:bg-surface-highest/80'
                 : 'text-white hover:opacity-90 shadow-lg'}"
               style={!isFollowing
@@ -211,13 +211,22 @@
               {/if}
               {isFollowing ? "Unfollow" : "Follow"}
             </button>
-            <button
-              onclick={() => (showReportModal = true)}
-              class="flex items-center justify-center size-11 rounded-xl bg-surface-highest/50 hover:bg-surface-highest border border-on-surface-variant/10 text-on-surface transition-all"
-              title="Report User"
-            >
-              <span class="material-symbols-outlined">report</span>
-            </button>
+            {#if authState.isAuthenticated}
+              <button
+                onclick={() => (showReportModal = true)}
+                class="flex items-center justify-center size-11 rounded-sm bg-red-500/50 hover:bg-red-500 border border-on-surface-variant/10 text-on-surface transition-all"
+                title="Report User"
+              >
+                <span class="material-symbols-outlined">report</span>
+              </button>
+            {:else}
+              <a
+                href="/login"
+                class="flex items-center justify-center size-11 rounded-sm bg-red-500/50 hover:bg-red-500 border border-on-surface-variant/10 text-on-surface transition-all"
+              >
+                <span class="material-symbols-outlined text-sm">report</span>
+              </a>
+            {/if}
           {/if}
         </div>
       </div>

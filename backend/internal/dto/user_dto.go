@@ -41,7 +41,6 @@ type UserDTO struct {
 type AuthUserDTO struct {
 	UserDTO
 	Email         string  `json:"email"`
-	ScoreFormatID *uint64 `json:"score_format_id,omitempty"`
 	ScoreFormat   *string `json:"score_format,omitempty"`
 }
 

@@ -4,7 +4,6 @@ import (
 	"anirank/api/internal/domain"
 	"anirank/api/internal/usecase/auth"
 	"anirank/api/internal/usecase/public"
-	"strconv"
 	"time"
 )
 
@@ -73,7 +72,6 @@ func ToAuthUserDTO(u *domain.User) AuthUserDTO {
 	return AuthUserDTO{
 		UserDTO:       ToUserDTO(u),
 		Email:         u.Email,
-		ScoreFormatID: u.ScoreFormatID,
 		ScoreFormat:   u.ScoreFormat,
 	}
 }
@@ -639,7 +637,7 @@ func ToTournamentMatchupDTO(m *domain.TournamentMatchup) TournamentMatchupDTO {
 
 func ToAnnouncementDTO(a domain.Announcement) AnnouncementDTO {
 	return AnnouncementDTO{
-		ID:        strconv.FormatUint(a.ID, 10),
+		ID:        a.Title, // Use Title as a non-sequential identifier for now
 		Title:     a.Title,
 		Content:   a.Content,
 		Type:      a.Type,
@@ -657,9 +655,6 @@ func ToNotificationDTO(n domain.Notification) NotificationDTO {
 	var subjectID *string
 	if n.SubjectUUID != nil {
 		subjectID = n.SubjectUUID
-	} else if n.SubjectID != nil {
-		idStr := strconv.FormatUint(*n.SubjectID, 10)
-		subjectID = &idStr
 	}
 
 	return NotificationDTO{

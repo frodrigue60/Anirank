@@ -92,7 +92,7 @@ func (u *AuthUsecase) Login(ctx context.Context, email, password string) (*AuthT
 	}
 
 	// Generate standard token
-	token, err := u.jwtService.GenerateToken(user.ID, roleSlugs)
+	token, err := u.jwtService.GenerateToken(user.UUID, roleSlugs)
 	if err != nil {
 		return nil, domain.NewAppError(500, "Could not generate authentication token", err)
 	}
@@ -145,7 +145,10 @@ func (u *AuthUsecase) Register(ctx context.Context, name, email, password string
 		return nil, domain.NewAppError(500, "Failed to create user account", err)
 	}
 
-	token, _ := u.jwtService.GenerateToken(newUser.ID, []string{"user"}) // New users are strictly basic tier
+	token, err := u.jwtService.GenerateToken(newUser.UUID, []string{"user"}) // New users are strictly basic tier
+	if err != nil {
+		return nil, domain.NewAppError(500, "Could not generate authentication token", err)
+	}
 
 	newUser.Password = ""
 
@@ -483,11 +486,12 @@ func (u *AuthUsecase) LoginWithGoogle(ctx context.Context, code, redirectURI str
 				user, err = u.userRepo.GetByEmail(ctx, googleUser.Email)
 				if err != nil {
 					if err == domain.ErrNotFound {
-						return nil, domain.NewAppError(http.StatusUnauthorized, "Account not found. Please register first or link your Google account in settings.", nil)
+						// 4. Auto-register if not found by Google ID or Email
+						return u.autoRegisterGoogleUser(ctx, googleUser, tokenResp)
 					}
 					return nil, domain.NewAppError(http.StatusInternalServerError, "Database error", err)
 				}
-
+				
 				// Automatically link the Google ID to this user
 				user.GoogleID = &googleUser.Sub
 				user.GoogleEmail = &googleUser.Email
@@ -524,7 +528,7 @@ func (u *AuthUsecase) LoginWithGoogle(ctx context.Context, code, redirectURI str
 	}
 	user.Roles = roles
 
-	token, err := u.jwtService.GenerateToken(user.ID, roleSlugs)
+	token, err := u.jwtService.GenerateToken(user.UUID, roleSlugs)
 	if err != nil {
 		return nil, domain.NewAppError(http.StatusInternalServerError, "Failed to generate token", err)
 	}
@@ -564,7 +568,19 @@ func (u *AuthUsecase) LoginWithAnilist(ctx context.Context, code string) (*AuthT
 	user, err := u.userRepo.GetByAnilistID(ctx, anilistUser.ID)
 	if err != nil {
 		if err == domain.ErrNotFound {
-			return nil, domain.NewAppError(http.StatusUnauthorized, "No AniRank account linked to this AniList profile. Register with email first, then link AniList in Settings.", nil)
+			// Instead of code reuse, we generate a short-lived temp token with the anilist data
+			claims := map[string]interface{}{
+				"anilist_id":   anilistUser.ID,
+				"anilist_name": anilistUser.Name,
+				"access_token": tokenResp.AccessToken,
+				"refresh_token": tokenResp.RefreshToken,
+				"expires_in":   tokenResp.ExpiresIn,
+				"type":         "anilist_registration",
+			}
+			tempToken, _ := u.jwtService.GenerateTempToken(claims, 15*time.Minute)
+			
+			// Returning the temp token in a custom app error or data
+			return nil, domain.NewAppError(428, tempToken, nil)
 		}
 		return nil, domain.NewAppError(http.StatusInternalServerError, "Database error", err)
 	}
@@ -611,7 +627,7 @@ func (u *AuthUsecase) LoginWithAnilist(ctx context.Context, code string) (*AuthT
 	_ = u.xpUsecase.CheckDailyLogin(ctx, user.ID)
 	user, _ = u.userRepo.GetByID(ctx, user.ID)
 
-	token, err := u.jwtService.GenerateToken(user.ID, roleSlugs)
+	token, err := u.jwtService.GenerateToken(user.UUID, roleSlugs)
 	if err != nil {
 		return nil, domain.NewAppError(http.StatusInternalServerError, "Could not generate authentication token", err)
 	}
@@ -626,5 +642,113 @@ func (u *AuthUsecase) LoginWithAnilist(ctx context.Context, code string) (*AuthT
 	return &AuthTokenResponse{
 		Token: token,
 		User:  user,
+	}, nil
+}
+
+func (u *AuthUsecase) autoRegisterGoogleUser(ctx context.Context, googleUser *google.GoogleUser, tokenResp *google.TokenResponse) (*AuthTokenResponse, error) {
+	// Generate random password for DB requirements (never used for real login)
+	dummyPass, _ := bcrypt.GenerateFromPassword([]byte(uuid.New().String()), bcrypt.DefaultCost)
+	sFormat := "POINT_10"
+
+	newUser := &domain.User{
+		UUID:        uuid.New().String(),
+		Name:        googleUser.Name,
+		Email:       googleUser.Email,
+		Password:    string(dummyPass),
+		ScoreFormat: &sFormat,
+		GoogleID:    &googleUser.Sub,
+		GoogleEmail: &googleUser.Email,
+	}
+
+	slug := u.generateUniqueUserSlug(ctx, googleUser.Name)
+	newUser.Slug = &slug
+
+	// Encrypt tokens
+	encryptedAccess, _ := crypto.Encrypt(tokenResp.AccessToken, u.encryptionKey)
+	newUser.GoogleAccessToken = &encryptedAccess
+	if tokenResp.RefreshToken != "" {
+		encryptedRefresh, _ := crypto.Encrypt(tokenResp.RefreshToken, u.encryptionKey)
+		newUser.GoogleRefreshToken = &encryptedRefresh
+	}
+	expiresAt := time.Now().Add(time.Duration(tokenResp.ExpiresIn) * time.Second)
+	newUser.GoogleTokenExpiresAt = &expiresAt
+
+	if err := u.userRepo.Create(ctx, newUser); err != nil {
+		return nil, domain.NewAppError(http.StatusInternalServerError, "Failed to create account during Google registration", err)
+	}
+
+	// Generate avatar in background
+	go u.GenerateUserAvatar(context.Background(), newUser.ID, newUser.Name)
+
+	token, _ := u.jwtService.GenerateToken(newUser.UUID, []string{"user"})
+
+	newUser.Password = ""
+	u.enrichUserImages(newUser)
+
+	return &AuthTokenResponse{
+		Token: token,
+		User:  newUser,
+	}, nil
+}
+
+func (u *AuthUsecase) RegisterWithAnilist(ctx context.Context, tempToken, email string) (*AuthTokenResponse, error) {
+	claims, err := u.jwtService.ValidateTempToken(tempToken)
+	if err != nil || claims["type"] != "anilist_registration" {
+		return nil, domain.NewAppError(http.StatusBadRequest, "Invalid or expired registration session", err)
+	}
+
+	anilistID := uint64(claims["anilist_id"].(float64))
+	anilistName := claims["anilist_name"].(string)
+	accessToken := claims["access_token"].(string)
+	refreshToken := claims["refresh_token"].(string)
+	expiresIn := int(claims["expires_in"].(float64))
+
+	// Check if email already exists
+	existing, _ := u.userRepo.GetByEmail(ctx, email)
+	if existing != nil {
+		return nil, domain.NewAppError(http.StatusConflict, "A user with this email already exists. Please login and link your account in settings.", nil)
+	}
+
+	dummyPass, _ := bcrypt.GenerateFromPassword([]byte(uuid.New().String()), bcrypt.DefaultCost)
+	sFormat := "POINT_10"
+
+	newUser := &domain.User{
+		UUID:            uuid.New().String(),
+		Name:            anilistName,
+		Email:           email,
+		Password:        string(dummyPass),
+		ScoreFormat:     &sFormat,
+		AnilistID:       &anilistID,
+		AnilistUsername: &anilistName,
+	}
+
+	slug := u.generateUniqueUserSlug(ctx, anilistName)
+	newUser.Slug = &slug
+
+	encryptedAccess, _ := crypto.Encrypt(accessToken, u.encryptionKey)
+	newUser.AnilistAccessToken = &encryptedAccess
+	if refreshToken != "" {
+		encryptedRefresh, _ := crypto.Encrypt(refreshToken, u.encryptionKey)
+		newUser.AnilistRefreshToken = &encryptedRefresh
+	}
+	expiresAt := time.Now().Add(time.Duration(expiresIn) * time.Second)
+	newUser.AnilistTokenExpiresAt = &expiresAt
+
+	if err := u.userRepo.Create(ctx, newUser); err != nil {
+		return nil, domain.NewAppError(http.StatusInternalServerError, "Failed to create account during AniList registration", err)
+	}
+
+	// Automatic Badge Check
+	_ = u.badgeUsecase.CheckAndAwardBadges(ctx, newUser.ID, "anilist")
+
+	go u.GenerateUserAvatar(context.Background(), newUser.ID, newUser.Name)
+
+	token, _ := u.jwtService.GenerateToken(newUser.UUID, []string{"user"})
+	newUser.Password = ""
+	u.enrichUserImages(newUser)
+
+	return &AuthTokenResponse{
+		Token: token,
+		User:  newUser,
 	}, nil
 }

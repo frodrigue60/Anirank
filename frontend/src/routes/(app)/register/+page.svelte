@@ -8,6 +8,7 @@
     ArrowLeft,
   } from "lucide-svelte";
   import api from "$lib/api";
+  import { getApiErrorMessage } from "$lib/api-errors";
   import { goto } from "$app/navigation";
   import { onMount } from "svelte";
   import { page } from "$app/state";
@@ -57,6 +58,30 @@
         "Registration failed. Please check your data.";
     } finally {
       loading = false;
+    }
+  }
+
+  async function handleGoogleLogin() {
+    try {
+      const response = await api.get("/auth/google/login");
+      const url = response.data.data?.url || response.data.url;
+      if (url) {
+        window.location.href = url;
+      }
+    } catch (error: unknown) {
+      errorMessage = getApiErrorMessage(error, "Failed to initiate Google login.");
+    }
+  }
+
+  async function handleAnilistLogin() {
+    try {
+      const response = await api.get("/auth/anilist/login");
+      const url = response.data.data?.url || response.data.url;
+      if (url) {
+        window.location.href = url;
+      }
+    } catch (error: unknown) {
+      errorMessage = getApiErrorMessage(error, "Failed to initiate AniList login.");
     }
   }
 </script>
@@ -180,6 +205,36 @@
         >
           Sign in instead
         </a>
+      </div>
+
+      <div class="relative mb-8">
+        <div class="absolute inset-0 flex items-center">
+          <div class="w-full border-t border-outline-variant/10"></div>
+        </div>
+        <div class="relative flex justify-center text-[10px] font-black uppercase tracking-widest leading-none">
+          <span class="bg-surface-container px-4 text-on-surface-variant/30">
+            Or join with
+          </span>
+        </div>
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-4">
+        <button
+          type="button"
+          onclick={handleAnilistLogin}
+          disabled={loading}
+          class="flex w-full items-center justify-center gap-2 rounded-sm shadow-sm bg-[#02a9ff] hover:bg-[#0290d9] py-3.5 font-black text-[10px] uppercase tracking-widest text-white transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+        >
+          AniList
+        </button>
+        <button
+          type="button"
+          onclick={handleGoogleLogin}
+          disabled={loading}
+          class="flex w-full items-center justify-center gap-2 rounded-sm shadow-sm bg-white hover:bg-white/80 text-black border border-outline-variant py-3.5 font-black text-[10px] uppercase tracking-widest text-black transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+        >
+          Google
+        </button>
       </div>
     </div>
   </div>

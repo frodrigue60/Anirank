@@ -473,6 +473,25 @@ func (h *AuthHandler) AnilistLoginCallback(c *fiber.Ctx) error {
 	})
 }
 
+func (h *AuthHandler) AnilistRegister(c *fiber.Ctx) error {
+	var req struct {
+		TempToken string `json:"tempToken"`
+		Email     string `json:"email"`
+	}
+	if err := c.BodyParser(&req); err != nil {
+		return domain.NewAppError(fiber.StatusBadRequest, "Invalid request body", err)
+	}
+
+	res, err := h.usecase.RegisterWithAnilist(c.Context(), req.TempToken, req.Email)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{
+		"data": dto.ToAuthResponseDTO(res),
+	})
+}
+
 func (h *AuthHandler) getGoogleLoginRedirectURI() string {
 	redirectURI := os.Getenv("GOOGLE_LOGIN_REDIRECT_URL")
 	if redirectURI != "" {

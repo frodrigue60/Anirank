@@ -28,7 +28,7 @@
 {#if data.profile.about}
   <section class="mb-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
     <div
-      class="bg-surface-container border border-on-surface-variant/10 rounded-2xl p-8 shadow-2xl relative overflow-hidden group"
+      class="bg-surface-container border border-on-surface-variant/10 rounded-md p-8 shadow-2xl relative overflow-hidden group"
     >
       <div
         class="absolute top-0 left-0 w-1 h-full"

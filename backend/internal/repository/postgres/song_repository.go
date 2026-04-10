@@ -139,11 +139,16 @@ func (r *songRepository) GetPaginated(ctx context.Context, limit, offset int, fi
 		args = append(args, filters.Type)
 		i++
 	}
+	if filters.Format != "" && filters.Format != "any" {
+		whereClauses = append(whereClauses, fmt.Sprintf("a.format_id IN (SELECT id FROM formats WHERE slug = $%d)", i))
+		args = append(args, filters.Format)
+		i++
+	}
 	if filters.Search != "" {
-		whereClauses = append(whereClauses, fmt.Sprintf("(s.song_romaji ILIKE $%d OR s.song_jp ILIKE $%d OR s.song_en ILIKE $%d OR a.title ILIKE $%d)", i, i+1, i+2, i+3))
+		whereClauses = append(whereClauses, fmt.Sprintf("(s.song_romaji ILIKE $%d OR s.song_jp ILIKE $%d OR s.song_en ILIKE $%d OR a.title ILIKE $%d OR s.id IN (SELECT song_id FROM artist_song asong JOIN artists art ON asong.artist_id = art.id WHERE asong.song_id = s.id AND art.name ILIKE $%d))", i, i+1, i+2, i+3, i+4))
 		searchTerm := "%" + filters.Search + "%"
-		args = append(args, searchTerm, searchTerm, searchTerm, searchTerm)
-		i += 4
+		args = append(args, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm)
+		i += 5
 	}
 	if filters.AnimeID > 0 {
 		whereClauses = append(whereClauses, fmt.Sprintf("s.anime_id = $%d", i))
@@ -264,11 +269,16 @@ func (r *songRepository) Count(ctx context.Context, filters domain.SongFilters) 
 		args = append(args, filters.Type)
 		i++
 	}
+	if filters.Format != "" && filters.Format != "any" {
+		whereClauses = append(whereClauses, fmt.Sprintf("a.format_id IN (SELECT id FROM formats WHERE slug = $%d)", i))
+		args = append(args, filters.Format)
+		i++
+	}
 	if filters.Search != "" {
-		whereClauses = append(whereClauses, fmt.Sprintf("(s.song_romaji ILIKE $%d OR s.song_jp ILIKE $%d OR s.song_en ILIKE $%d OR a.title ILIKE $%d)", i, i+1, i+2, i+3))
+		whereClauses = append(whereClauses, fmt.Sprintf("(s.song_romaji ILIKE $%d OR s.song_jp ILIKE $%d OR s.song_en ILIKE $%d OR a.title ILIKE $%d OR s.id IN (SELECT song_id FROM artist_song asong JOIN artists art ON asong.artist_id = art.id WHERE asong.song_id = s.id AND art.name ILIKE $%d))", i, i+1, i+2, i+3, i+4))
 		searchTerm := "%" + filters.Search + "%"
-		args = append(args, searchTerm, searchTerm, searchTerm, searchTerm)
-		i += 4
+		args = append(args, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm)
+		i += 5
 	}
 	if filters.AnimeID > 0 {
 		whereClauses = append(whereClauses, fmt.Sprintf("s.anime_id = $%d", i))
@@ -527,6 +537,12 @@ func (r *songRepository) GetByArtistID(ctx context.Context, artistID uint64, lim
 		i++
 	}
 
+	if filters.Format != "" && filters.Format != "any" {
+		whereClauses = append(whereClauses, fmt.Sprintf("a.format_id IN (SELECT id FROM formats WHERE slug = $%d)", i))
+		args = append(args, filters.Format)
+		i++
+	}
+
 	if filters.Search != "" {
 		whereClauses = append(whereClauses, fmt.Sprintf("(s.song_romaji ILIKE $%d OR s.song_jp ILIKE $%d OR s.song_en ILIKE $%d)", i, i+1, i+2))
 		searchTerm := "%" + filters.Search + "%"
@@ -613,6 +629,12 @@ func (r *songRepository) CountByArtistID(ctx context.Context, artistID uint64, f
 	if filters.Type != "" && filters.Type != "any" {
 		whereClauses = append(whereClauses, fmt.Sprintf("s.type = $%d", i))
 		args = append(args, filters.Type)
+		i++
+	}
+
+	if filters.Format != "" && filters.Format != "any" {
+		whereClauses = append(whereClauses, fmt.Sprintf("a.format_id IN (SELECT id FROM formats WHERE slug = $%d)", i))
+		args = append(args, filters.Format)
 		i++
 	}
 	if filters.Search != "" {

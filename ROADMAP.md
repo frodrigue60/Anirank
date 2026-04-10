@@ -124,10 +124,10 @@
 - ✅ Notification preferences (opt-out per notification type)
 
 ### Search
-- 🔲 Full-text search upgrade (PostgreSQL `tsvector` or Meilisearch integration)
-  - Currently: `ILIKE` substring match, no ranking by relevance
-- 🔲 Filters on song search (by type, format, season, year, artist)
-- 🔲 Search history (client-side, localStorage)
+- ✅ Full-text search upgrade (PostgreSQL `tsvector`)
+  - Implemented via unified search index with GIN indexing and relevance ranking (`ts_rank`).
+- ✅ Filters on song search (by type, format, season, year, artist)
+- ✅ Search history (client-side, localStorage)
 
 ### Performance
 - 🔲 API response caching strategy (define TTLs per endpoint in Redis)

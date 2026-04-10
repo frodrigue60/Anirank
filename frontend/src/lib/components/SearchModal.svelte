@@ -2,6 +2,14 @@
   import { onMount } from "svelte";
   import { fade, scale } from "svelte/transition";
   import api from "$lib/api";
+  import {
+    getSearchHistory,
+    saveToSearchHistory,
+    removeFromSearchHistory,
+    clearSearchHistory,
+    type HistoryItem,
+  } from "$lib/utils/history";
+  import { goto } from "$app/navigation";
 
   let { show = $bindable(false) } = $props();
 
@@ -22,6 +30,11 @@
   });
   let isLoading = $state(false);
   let searchTimeout: ReturnType<typeof setTimeout>;
+  let recentSearches: HistoryItem[] = $state([]);
+
+  onMount(() => {
+    recentSearches = getSearchHistory();
+  });
 
   function handleSearch() {
     if (searchTimeout) clearTimeout(searchTimeout);
@@ -72,9 +85,61 @@
   }
 
   function onKeydown(e: KeyboardEvent) {
+    if (e.key === "Enter" && query.trim().length >= 3) {
+      recentSearches = saveToSearchHistory({
+        id: `query:${query.trim().toLowerCase()}`,
+        type: "query",
+        label: query.trim(),
+        slug: query.trim(),
+      });
+      handleSearch();
+    }
     if (e.key === "Escape") {
       closeModal();
     }
+  }
+
+  function handleHistoryItemClick(item: HistoryItem) {
+    if (item.type === "query") {
+      query = item.label;
+      recentSearches = saveToSearchHistory(item);
+      handleSearch();
+    } else {
+      let url = "";
+      switch (item.type) {
+        case "anime":
+          url = `/animes/${item.slug}`;
+          break;
+        case "artist":
+          url = `/artists/${item.slug}`;
+          break;
+        case "user":
+          url = `/users/${item.slug}`;
+          break;
+        case "song":
+          url = `/songs/${item.animeSlug}/${item.slug}`;
+          break;
+      }
+      if (url) {
+        recentSearches = saveToSearchHistory(item);
+        goto(url);
+        closeModal();
+      }
+    }
+  }
+
+  function handleDeleteHistory(id: string) {
+    recentSearches = removeFromSearchHistory(id);
+  }
+
+  function handleClearAllHistory() {
+    clearSearchHistory();
+    recentSearches = [];
+  }
+
+  function handleResultClick(item: HistoryItem) {
+    recentSearches = saveToSearchHistory(item);
+    closeModal();
   }
 </script>
 
@@ -126,14 +191,85 @@
       <!-- Search Results -->
       <div class="overflow-y-auto flex-1 p-6 custom-scrollbar">
         {#if query.trim().length < 3}
-          <div class="text-center py-12 text-on-surface-variant">
-            <span class="material-symbols-outlined text-[48px] mb-4 opacity-20"
-              >search</span
-            >
-            <p class="text-sm font-bold uppercase tracking-widest opacity-50">
-              Type at least 3 characters to search
-            </p>
-          </div>
+          {#if recentSearches.length > 0}
+            <div class="flex flex-col gap-4">
+              <div class="flex items-center justify-between px-2">
+                <h3
+                  class="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em]"
+                >
+                  Recent Searches
+                </h3>
+                <button
+                  onclick={handleClearAllHistory}
+                  class="text-[10px] font-black text-primary uppercase tracking-widest hover:underline"
+                >
+                  Clear All
+                </button>
+              </div>
+              <div class="flex flex-col gap-1">
+                {#each recentSearches as item}
+                  <div class="group flex items-center justify-between gap-2">
+                    <button
+                      onclick={() => handleHistoryItemClick(item)}
+                      class="flex-1 flex items-center gap-3 p-2 rounded-md hover:bg-surface-highest/50 transition-all text-left group"
+                    >
+                      <div
+                        class="w-10 h-10 rounded-sm flex items-center justify-center bg-surface-lowest border border-outline-variant/10 overflow-hidden"
+                      >
+                        {#if item.image}
+                          <img
+                            src={item.image}
+                            alt=""
+                            class="w-full h-full object-cover"
+                          />
+                        {:else}
+                          <span
+                            class="material-symbols-outlined text-[20px] text-on-surface-variant/40"
+                          >
+                            {#if item.type === "query"}history
+                            {:else if item.type === "anime"}tv
+                            {:else if item.type === "artist"}person
+                            {:else if item.type === "user"}person
+                            {:else if item.type === "song"}music_note{/if}
+                          </span>
+                        {/if}
+                      </div>
+                      <div class="flex flex-col min-w-0">
+                        <span
+                          class="text-on-surface font-bold group-hover:text-primary transition-colors truncate"
+                          >{item.label}</span
+                        >
+                        {#if item.description}
+                          <span
+                            class="text-[10px] text-on-surface-variant/50 uppercase font-black tracking-widest truncate"
+                            >{item.description}</span
+                          >
+                        {/if}
+                      </div>
+                    </button>
+                    <button
+                      onclick={() => handleDeleteHistory(item.id)}
+                      class="w-10 h-10 flex items-center justify-center text-on-surface-variant/40 hover:text-red-500 transition-colors"
+                      title="Remove from history"
+                    >
+                      <span class="material-symbols-outlined text-[18px]"
+                        >close</span
+                      >
+                    </button>
+                  </div>
+                {/each}
+              </div>
+            </div>
+          {:else}
+            <div class="text-center py-12 text-on-surface-variant">
+              <span class="material-symbols-outlined text-[48px] mb-4 opacity-20"
+                >search</span
+              >
+              <p class="text-sm font-bold uppercase tracking-widest opacity-50">
+                Type at least 3 characters to search
+              </p>
+            </div>
+          {/if}
         {:else if !isLoading && (results?.animes?.length || 0) === 0 && (results?.artists?.length || 0) === 0 && (results?.users?.length || 0) === 0 && (results?.songs?.length || 0) === 0}
           <div class="text-center py-12 text-on-surface-variant">
             <span class="material-symbols-outlined text-[48px] mb-4 opacity-20"
@@ -157,7 +293,15 @@
                   {#each results.animes.slice(0, 5) as anime}
                     <a
                       href="/animes/{anime.slug}"
-                      onclick={closeModal}
+                      onclick={() =>
+                        handleResultClick({
+                          id: `anime:${anime.slug}`,
+                          type: "anime",
+                          label: anime.title,
+                          description: `${anime.season?.name || ""} ${anime.year?.name || ""}`,
+                          slug: anime.slug,
+                          image: anime.cover_url,
+                        })}
                       class="flex items-center gap-4 p-2 rounded-sm hover:bg-surface-highest/50 transition-all group"
                     >
                       <img
@@ -197,7 +341,16 @@
                   {#each results.songs.slice(0, 5) as song}
                     <a
                       href="/songs/{song.anime?.slug}/{song.slug}"
-                      onclick={closeModal}
+                      onclick={() =>
+                        handleResultClick({
+                          id: `song:${song.slug}`,
+                          type: "song",
+                          label:
+                            song.song_romaji || song.song_en || "Untitled Song",
+                          description: `${song.type} - ${song.anime?.title || ""}`,
+                          slug: song.slug,
+                          animeSlug: song.anime?.slug,
+                        })}
                       class="flex items-center gap-4 p-3 rounded-md hover:bg-surface-highest/50 transition-all group"
                     >
                       <div
@@ -240,8 +393,15 @@
                     {#each results.artists.slice(0, 5) as artist}
                       <a
                         href="/artists/{artist.slug}"
-                        onclick={closeModal}
                         class="flex items-center gap-3 p-2 rounded-sm hover:bg-surface-highest/50 transition-all group"
+                        onclick={() =>
+                          handleResultClick({
+                            id: `artist:${artist.slug}`,
+                            type: "artist",
+                            label: artist.name,
+                            slug: artist.slug,
+                            image: artist.avatar_url,
+                          })}
                       >
                         <div
                           class="w-10 h-10 rounded-full border-2 border-outline-variant/10 bg-surface-highest overflow-hidden flex items-center justify-center text-primary/50 group-hover:border-primary transition-all shadow-sm"
@@ -281,7 +441,14 @@
                     {#each results.users.slice(0, 5) as user}
                       <a
                         href="/users/{user.slug}"
-                        onclick={closeModal}
+                        onclick={() =>
+                          handleResultClick({
+                            id: `user:${user.slug}`,
+                            type: "user",
+                            label: user.name,
+                            slug: user.slug,
+                            image: user.avatar_url,
+                          })}
                         class="flex items-center gap-3 p-2 rounded-sm hover:bg-surface-highest/50 transition-all group"
                       >
                         <div

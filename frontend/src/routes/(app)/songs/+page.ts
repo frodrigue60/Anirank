@@ -8,6 +8,7 @@ export const load: PageLoad = async ({ url }) => {
         season: url.searchParams.get('season') || '',
         genre: url.searchParams.get('genre') || '',
         type: url.searchParams.get('type') || '',
+        format: url.searchParams.get('format') || '',
         sort: url.searchParams.get('sort') || '',
         page: url.searchParams.get('page') || 1
     };

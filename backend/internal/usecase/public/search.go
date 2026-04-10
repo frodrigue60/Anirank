@@ -6,8 +6,6 @@ import (
 
 	"anirank/api/internal/domain"
 	"anirank/api/internal/infrastructure"
-
-	"golang.org/x/sync/errgroup"
 )
 
 type SearchResult struct {
@@ -19,39 +17,14 @@ type SearchResult struct {
 }
 
 type SearchUsecase struct {
-	animeRepo    domain.AnimeRepository
-	songRepo     domain.SongRepository
-	artistRepo   domain.ArtistRepository
-	taxonomyRepo domain.TaxonomyRepository
-	userRepo     domain.UserRepository
-	storage      infrastructure.StorageService
+	searchRepo domain.SearchRepository
+	storage    infrastructure.StorageService
 }
 
-// Interface extensions needed for searching
-type SearchableAnimeRepo interface {
-	Search(ctx context.Context, term string, limit int) ([]domain.Anime, error)
-}
-type SearchableSongRepo interface {
-	Search(ctx context.Context, term string, limit int) ([]domain.Song, error)
-}
-type SearchableArtistRepo interface {
-	Search(ctx context.Context, term string, limit int) ([]domain.Artist, error)
-}
-type SearchableTaxonomyRepo interface {
-	SearchStudios(ctx context.Context, term string, limit int) ([]domain.Studio, error)
-}
-type SearchableUserRepo interface {
-	Search(ctx context.Context, term string, limit int) ([]domain.User, error)
-}
-
-func NewSearchUsecase(ar domain.AnimeRepository, sr domain.SongRepository, artistR domain.ArtistRepository, tr domain.TaxonomyRepository, ur domain.UserRepository, storage infrastructure.StorageService) *SearchUsecase {
+func NewSearchUsecase(searchRepo domain.SearchRepository, storage infrastructure.StorageService) *SearchUsecase {
 	return &SearchUsecase{
-		animeRepo:    ar,
-		songRepo:     sr,
-		artistRepo:   artistR,
-		taxonomyRepo: tr,
-		userRepo:     ur,
-		storage:      storage,
+		searchRepo: searchRepo,
+		storage:    storage,
 	}
 }
 
@@ -60,91 +33,88 @@ func (u *SearchUsecase) GlobalSearch(ctx context.Context, term string) (*SearchR
 		return nil, domain.NewAppError(400, "Search term must be at least 3 characters", nil)
 	}
 
-	termWrapped := "%" + term + "%" // Prepare for LIKE query
-
-	var result SearchResult
-	g, gCtx := errgroup.WithContext(ctx)
-	limit := 10 // Max results per category
-
-	g.Go(func() error {
-		if repo, ok := u.animeRepo.(SearchableAnimeRepo); ok {
-			res, err := repo.Search(gCtx, termWrapped, limit)
-			result.Animes = res
-			return err
-		}
-		return nil
-	})
-
-	g.Go(func() error {
-		if repo, ok := u.songRepo.(SearchableSongRepo); ok {
-			res, err := repo.Search(gCtx, termWrapped, limit)
-			result.Songs = res
-			return err
-		}
-		return nil
-	})
-
-	g.Go(func() error {
-		if repo, ok := u.artistRepo.(SearchableArtistRepo); ok {
-			res, err := repo.Search(gCtx, termWrapped, limit)
-			result.Artists = res
-			return err
-		}
-		return nil
-	})
-
-	g.Go(func() error {
-		if repo, ok := u.taxonomyRepo.(SearchableTaxonomyRepo); ok {
-			res, err := repo.SearchStudios(gCtx, termWrapped, limit)
-			result.Studios = res
-			return err
-		}
-		return nil
-	})
-
-	g.Go(func() error {
-		if repo, ok := u.userRepo.(SearchableUserRepo); ok {
-			res, err := repo.Search(gCtx, termWrapped, limit)
-			result.Users = res
-			return err
-		}
-		return nil
-	})
-
-	if err := g.Wait(); err != nil {
+	// 1. Performing a single unified query (limit 50 to have enough variety)
+	items, err := u.searchRepo.GlobalSearch(ctx, term, 50)
+	if err != nil {
 		return nil, domain.NewAppError(500, "Global search failed", err)
 	}
 
-	// Resolve URLs
-	for i := range result.Animes {
-		if result.Animes[i].Cover != nil {
-			url := u.storage.GetURL(*result.Animes[i].Cover)
-			result.Animes[i].CoverUrl = &url
-		}
-		if result.Animes[i].Banner != nil {
-			url := u.storage.GetURL(*result.Animes[i].Banner)
-			result.Animes[i].BannerUrl = &url
-		}
-	}
+	var result SearchResult
+	// Initialize slices to avoid nulls in JSON
+	result.Animes = []domain.Anime{}
+	result.Songs = []domain.Song{}
+	result.Artists = []domain.Artist{}
+	result.Studios = []domain.Studio{}
+	result.Users = []domain.User{}
 
-	for i := range result.Artists {
-		if result.Artists[i].Avatar != nil {
-			url := u.storage.GetURL(*result.Artists[i].Avatar)
-			result.Artists[i].AvatarUrl = &url
+	// 2. Mapping flat list to categories
+	for _, item := range items {
+		// Resolve image URL if present
+		var imgUrl *string
+		if item.ImageURL != nil {
+			url := u.storage.GetURL(*item.ImageURL)
+			imgUrl = &url
 		}
-	}
 
-	for i := range result.Users {
-		if result.Users[i].Avatar != nil {
-			url := u.storage.GetURL(*result.Users[i].Avatar)
-			result.Users[i].AvatarUrl = &url
-		}
-	}
+		switch item.ItemType {
+		case "anime":
+			result.Animes = append(result.Animes, domain.Anime{
+				UUID:     item.ItemUUID,
+				Title:    item.Title,
+				Slug:     item.Slug,
+				CoverUrl: imgUrl,
+			})
+		case "song":
+			// We need to reconstruct enough of the Song struct for the frontend
+			// Note: subtitle usually contains "Song Type - Anime Title"
+			// slug usually contains "anime-slug/song-slug" if we want direct links
+			
+			// For now, we split the slug if it contains a slash
+			songSlug := item.Slug
+			animeSlug := ""
+			if strings.Contains(item.Slug, "/") {
+				parts := strings.Split(item.Slug, "/")
+				animeSlug = parts[0]
+				songSlug = parts[1]
+			}
 
-	for i := range result.Studios {
-		if result.Studios[i].Logo != nil {
-			url := u.storage.GetURL(*result.Studios[i].Logo)
-			result.Studios[i].LogoUrl = &url
+			songType := ""
+			if item.Subtitle != nil {
+				songType = strings.Replace(*item.Subtitle, "Song • ", "", 1)
+			}
+
+			// Copy title to local variable to take pointer
+			songTitle := item.Title
+
+			result.Songs = append(result.Songs, domain.Song{
+				UUID:        item.ItemUUID,
+				SongRomaji:  &songTitle,
+				Slug:        songSlug,
+				Type:        songType,
+				Anime:       &domain.Anime{Slug: animeSlug},
+			})
+		case "artist":
+			result.Artists = append(result.Artists, domain.Artist{
+				UUID:      item.ItemUUID,
+				Name:      item.Title,
+				Slug:      item.Slug,
+				AvatarUrl: imgUrl,
+			})
+		case "studio":
+			result.Studios = append(result.Studios, domain.Studio{
+				UUID:    item.ItemUUID,
+				Name:    item.Title,
+				Slug:    item.Slug,
+				LogoUrl: imgUrl,
+			})
+		case "user":
+			userSlug := item.Slug
+			result.Users = append(result.Users, domain.User{
+				UUID:      item.ItemUUID,
+				Name:      item.Title,
+				Slug:      &userSlug,
+				AvatarUrl: imgUrl,
+			})
 		}
 	}
 

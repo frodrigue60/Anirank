@@ -15,6 +15,7 @@
   let selectedSeason = $state("");
   let selectedGenre = $state("");
   let selectedType = $state("");
+  let selectedFormat = $state("");
   let selectedSort = $state("");
 
   // svelte-ignore state_referenced_locally
@@ -34,6 +35,7 @@
     selectedSeason = data.params.season || "";
     selectedGenre = data.params.genre || "";
     selectedType = data.params.type || "";
+    selectedFormat = data.params.format || "";
     selectedSort = data.params.sort || "";
 
     // Reset infinite scroll on data change (filters)
@@ -64,6 +66,7 @@
     setParam("season", selectedSeason);
     setParam("genre", selectedGenre);
     setParam("type", selectedType);
+    setParam("format", selectedFormat);
     setParam("sort", selectedSort);
 
     url.searchParams.set("page", "1");
@@ -138,7 +141,17 @@
   const sortOptions = [
     { value: "rating", label: "Top Rated" },
     { value: "rating_asc", label: "Least Rated" },
+    { value: "recently_added", label: "Recently Added" },
+    { value: "favorites", label: "Most Favorited" },
+    { value: "views", label: "Most Viewed" },
   ];
+
+  const formatOptions = $derived([
+    ...configState.formats.map((f) => ({
+      value: f.slug,
+      label: f.name,
+    })),
+  ]);
 </script>
 
 <SEO
@@ -172,7 +185,7 @@
             oninput={handleInput}
             onkeydown={handleKeydown}
             class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-sm pl-12 pr-6 text-sm text-on-surface focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 placeholder:text-on-surface-variant transition-all"
-            placeholder="Search for a song or anime..."
+            placeholder="Search theme or artist..."
             type="text"
           />
         </div>
@@ -252,6 +265,26 @@
         >
           <option value="">All Types</option>
           {#each typeOptions as option}
+            <option value={option.value}>{option.label}</option>
+          {/each}
+        </select>
+      </div>
+
+      <!-- Format Select -->
+      <div class="flex flex-col gap-2">
+        <label
+          for="format-select"
+          class="text-[10px] uppercase font-black text-on-surface-variant mb-0 ml-1 tracking-widest"
+          >Format</label
+        >
+        <select
+          id="format-select"
+          bind:value={selectedFormat}
+          onchange={updateFilters}
+          class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-sm px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
+        >
+          <option value="">All Formats</option>
+          {#each formatOptions as option}
             <option value={option.value}>{option.label}</option>
           {/each}
         </select>

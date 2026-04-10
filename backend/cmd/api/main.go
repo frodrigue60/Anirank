@@ -104,6 +104,7 @@ func main() {
 	jobsRepo := postgres.NewJobsRepository(db)
 	adminRepo := postgres.NewAdminRepository(db)
 	xpRepo := postgres.NewXPRepository(db)
+	searchRepo := postgres.NewSearchRepository(db)
 
 	// Setup S3 Storage
 	s3Access := os.Getenv("S3_ACCESS_KEY")
@@ -163,7 +164,7 @@ func main() {
 
 	discoveryUsecase := public.NewDiscoveryUsecase(taxonomyRepo)
 	animeUsecase := public.NewAnimeUsecase(animeRepo, songRepo, mediaService)
-	searchUsecase := public.NewSearchUsecase(animeRepo, songRepo, artistRepo, taxonomyRepo, userRepo, storageService)
+	searchUsecase := public.NewSearchUsecase(searchRepo, storageService)
 	catalogUsecase := public.NewCatalogUsecase(animeRepo, songRepo, artistRepo, taxonomyRepo, userRepo, playlistRepo, interactionRepo, moderationRepo, anilistClient, mediaService, appCache, os.Getenv("ENCRYPTION_KEY"))
 	
 	badgeRepo := postgres.NewBadgeRepository(db)

@@ -120,6 +120,7 @@ type SongFilters struct {
 	Genre    string
 	Status   *bool
 	Type     string
+	Format   string
 	Sort     string
 	IsAdmin  bool
 }

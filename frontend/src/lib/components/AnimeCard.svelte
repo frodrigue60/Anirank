@@ -1,7 +1,7 @@
 <script lang="ts">
   import { getFormattedScore } from "$lib/song-utils";
   import { authState } from "$lib/state/auth.svelte";
-  import { Plus, Check, Play } from "lucide-svelte";
+  import { getSrcset } from "$lib/utils/image";
 
   let { anime, view = "grid" } = $props<{
     anime: any;
@@ -34,6 +34,8 @@
         title={anime.title}
         class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
         src={anime.cover_url ?? "/images/placeholders/default.jpg"}
+        srcset={getSrcset(anime.cover_sources)}
+        sizes="(max-width: 640px) 150px, (max-width: 1024px) 200px, 300px"
         loading="lazy"
       />
       <div
@@ -89,6 +91,8 @@
       <div class="relative w-28 sm:w-40 aspect-2/3 shrink-0 overflow-hidden">
         <img
           src={anime.cover_url ?? "/images/placeholders/default.jpg"}
+          srcset={getSrcset(anime.cover_sources)}
+          sizes="(max-width: 640px) 112px, 160px"
           alt={anime.title}
           class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
           loading="lazy"
@@ -202,6 +206,8 @@
       <div class="h-full aspect-2/3 shrink-0 overflow-hidden">
         <img
           src={anime.cover_url ?? "/images/placeholders/default.jpg"}
+          srcset={getSrcset(anime.cover_sources)}
+          sizes="80px"
           alt={anime.title}
           class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
           loading="lazy"

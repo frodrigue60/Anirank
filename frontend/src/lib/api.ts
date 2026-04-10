@@ -19,12 +19,25 @@ const api = axios.create({
   xsrfHeaderName: "X-CSRF-Token",
 });
 
-// Interceptor de Petición para inyectar token local
+// Interceptor de Petición para inyectar tokens
 api.interceptors.request.use((config) => {
   const token = getAuthToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  // Extraer token CSRF manualmente de las cookies para asegurar su envío
+  if (typeof document !== "undefined") {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; csrf_token=`);
+    if (parts.length === 2) {
+      const csrfToken = parts.pop()?.split(";").shift();
+      if (csrfToken) {
+        config.headers["X-CSRF-Token"] = csrfToken;
+      }
+    }
+  }
+
   return config;
 });
 

@@ -113,7 +113,7 @@
 ### Frontend Polish
 - 🚧 Border radius unification (Editorial system: `rounded-sm` standard, see `DESIGN.md`)
 - 🔲 Skeleton loading states across all data-fetching views
-- 🔲 Error boundary pages (404 Not Found, 500 Server Error) with branded design
+- ✅ Error boundary pages (404 Not Found, 500 Server Error) with branded design
 - 🔲 Toast notification system audit (ensure all async actions provide feedback)
 - 🔲 Empty state illustrations for search, playlists, anime list
 - 🔲 Responsive audit on tablet breakpoints (iPad landscape)
@@ -201,7 +201,7 @@
 
 | Priority | Issue | Location |
 |----------|-------|----------|
-| 🔴 High | No rate limiting on auth routes | `backend/internal/delivery/http/router.go` |
+| ✅ Done | Rate limiting implemented for Auth and Public API routes | `middleware/rate_limiter.go` |
 | 🔴 High | No SMTP — password reset broken for native accounts | `backend/internal/usecase/auth/` |
 | 🟡 Medium | No automated tests anywhere in the project | All |
 | 🟡 Medium | Offset pagination on large tables (songs, anime) will degrade | `repository/postgres/` |

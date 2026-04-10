@@ -1,6 +1,7 @@
 <script lang="ts">
   import { getSongName, getFormattedScore } from "$lib/song-utils";
   import { authState } from "$lib/state/auth.svelte";
+  import { getSrcset } from "$lib/utils/image";
 
   let { song } = $props();
 </script>
@@ -13,6 +14,8 @@
     src={song.anime?.banner_url ||
       song.anime?.cover_url ||
       "/images/placeholders/default-banner.jpg"}
+    srcset={getSrcset(song.anime?.banner_sources ?? song.anime?.cover_sources)}
+    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 600px"
     alt=""
     class="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105 brightness-50"
     loading="lazy"

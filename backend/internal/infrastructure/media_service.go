@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"image"
 	"image/jpeg"
 	"image/png"
 	"io"
 	"os"
 	"strings"
 
+	"anirank/api/internal/domain"
 	"anirank/api/internal/pkg/imageutil"
 	"github.com/google/uuid"
 )
@@ -20,7 +22,17 @@ type MediaService interface {
 	GeneratePath(prefix string, id uint64, ext string) string
 	UploadImage(ctx context.Context, prefix string, id uint64, file io.Reader, size int64, contentType string) (string, string, error)
 	UploadImageOptimized(ctx context.Context, prefix string, id uint64, file io.Reader, options ImageOptions) (string, string, error)
+	UploadWithResolutions(ctx context.Context, prefix string, id uint64, file io.Reader, preset ResolutionPreset) (string, string, error)
+	GetImageSources(path string) []domain.ImageSource
 }
+
+type ResolutionPreset string
+
+const (
+	PresetSquare    ResolutionPreset = "square"    // 128, 400
+	PresetPoster    ResolutionPreset = "poster"    // 240x360, 600x900
+	PresetLandscape ResolutionPreset = "landscape" // 640x360, 1280x720
+)
 
 type ImageOptions struct {
 	Width   int
@@ -122,4 +134,108 @@ func (s *mediaService) UploadImageOptimized(ctx context.Context, prefix string, 
 	}
 
 	return filename, s.storage.GetURL(filename), nil
+}
+
+func (s *mediaService) UploadWithResolutions(ctx context.Context, prefix string, id uint64, file io.Reader, preset ResolutionPreset) (string, string, error) {
+	// 1. Decode original
+	originalImg, _, err := imageutil.Decode(file)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to decode original: %w", err)
+	}
+
+	// Define resolutions based on preset
+	var resolutions []int
+	isSquare := preset == PresetSquare
+
+	switch preset {
+	case PresetSquare:
+		resolutions = []int{128, 400}
+	case PresetPoster:
+		resolutions = []int{240, 600}
+	case PresetLandscape:
+		resolutions = []int{640, 1280}
+	default:
+		resolutions = []int{600}
+	}
+
+	// 2. Upload Original (as JPEG for compatibility fallback)
+	var buf bytes.Buffer
+	if err := jpeg.Encode(&buf, originalImg, &jpeg.Options{Quality: 90}); err != nil {
+		return "", "", fmt.Errorf("failed to encode original fallback: %w", err)
+	}
+	originalPath := s.GeneratePath(prefix, id, "jpg")
+	_, err = s.storage.UploadFile(ctx, originalPath, bytes.NewReader(buf.Bytes()), int64(buf.Len()), "image/jpeg")
+	if err != nil {
+		return "", "", fmt.Errorf("failed to upload original: %w", err)
+	}
+
+	// 3. Generate and Upload AVIF versions
+	// Path example: path/to/image.jpg -> path/to/image_sm.avif
+	pathWithoutExt := strings.TrimSuffix(originalPath, ".jpg")
+
+	for _, w := range resolutions {
+		var suffix string
+		var resized image.Image
+
+		// Logic for suffixes and resizing
+		if w <= 300 {
+			suffix = "_sm"
+		} else if w <= 800 {
+			suffix = "_md"
+		} else {
+			suffix = "_lg"
+		}
+
+		if isSquare {
+			resized = imageutil.Fill(originalImg, w, w)
+		} else if preset == PresetPoster {
+			resized = imageutil.Resize(originalImg, w, int(float64(w)*1.5))
+		} else {
+			resized = imageutil.Resize(originalImg, w, 0) // Preserve aspect ratio
+		}
+
+		avifData, err := imageutil.EncodeAVIF(resized, 65) // Quality 65 for AVIF is very good
+		if err != nil {
+			continue // Skip failed resolutions but keep going
+		}
+
+		resPath := pathWithoutExt + suffix + ".avif"
+		_, _ = s.storage.UploadFile(ctx, resPath, bytes.NewReader(avifData), int64(len(avifData)), "image/avif")
+	}
+
+	return originalPath, s.storage.GetURL(originalPath), nil
+}
+
+func (s *mediaService) GetImageSources(path string) []domain.ImageSource {
+	if path == "" || strings.HasPrefix(path, "http") {
+		return nil
+	}
+
+	// Deterministic mapping: we expect _sm, _md, _lg to exist if the original is there
+	pathWithoutExt := strings.TrimSuffix(path, ".jpg")
+
+	// Check what kind of path it is to determine width labels
+	isSquare := strings.Contains(path, "avatars") || strings.Contains(path, "users")
+	isPoster := strings.Contains(path, "covers")
+
+	sources := []domain.ImageSource{}
+
+	// Define expected sizes based on path
+	var sizes map[string]int
+	if isSquare {
+		sizes = map[string]int{"_sm": 128, "_md": 400}
+	} else if isPoster {
+		sizes = map[string]int{"_sm": 240, "_md": 600}
+	} else {
+		sizes = map[string]int{"_md": 640, "_lg": 1280}
+	}
+
+	for suffix, width := range sizes {
+		sources = append(sources, domain.ImageSource{
+			URL:   s.storage.GetURL(pathWithoutExt + suffix + ".avif"),
+			Width: width,
+		})
+	}
+
+	return sources
 }

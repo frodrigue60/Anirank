@@ -92,6 +92,8 @@ type Artist struct {
 	AvatarUrl *string `db:"-" json:"avatar_url,omitempty"`
 	LatestBanner *string `db:"banner" json:"-"`
 	LatestBannerUrl *string `db:"-" json:"latest_banner_url,omitempty"`
+	AvatarSources []ImageSource `db:"-" json:"avatar_sources,omitempty"`
+	BannerSources []ImageSource `db:"-" json:"banner_sources,omitempty"`
 
 	// Computed
 	SongsCount     int    `db:"songs_count" json:"songs_count"`

@@ -1,11 +1,17 @@
 package dto
 
+import (
+	"anirank/api/internal/domain"
+)
+
 type AnimeMinimalDTO struct {
 	AnilistID  *int64     `json:"anilist_id"`
 	Title      string     `json:"title"`
 	Slug       string     `json:"slug"`
 	CoverUrl   *string    `json:"cover_url"`
+	CoverSources []domain.ImageSource `json:"cover_sources,omitempty"`
 	BannerUrl  *string    `json:"banner_url"`
+	BannerSources []domain.ImageSource `json:"banner_sources,omitempty"`
 	SongsCount    int        `json:"songs_count"`
 	EnabledSongs  int        `json:"enabled_songs"`
 	DisabledSongs int        `json:"disabled_songs"`
@@ -33,7 +39,9 @@ type SongAnimeDTO struct {
 	Title     string  `json:"title"`
 	Slug      string  `json:"slug"`
 	CoverUrl  string  `json:"cover_url"`
+	CoverSources []domain.ImageSource `json:"cover_sources,omitempty"`
 	BannerUrl *string `json:"banner_url"`
+	BannerSources []domain.ImageSource `json:"banner_sources,omitempty"`
 	AnilistID *int64  `json:"anilist_id"`
 }
 

@@ -18,6 +18,8 @@ type Anime struct {
 	Banner      *string `db:"banner" json:"banner"`
 	CoverUrl    *string `db:"-" json:"cover_url,omitempty"`
 	BannerUrl   *string `db:"-" json:"banner_url,omitempty"`
+	CoverSources []ImageSource `db:"-" json:"cover_sources,omitempty"`
+	BannerSources []ImageSource `db:"-" json:"banner_sources,omitempty"`
 	YearID      uint64  `json:"year_id" db:"year_id" form:"year_id"`
 	SeasonID    uint64  `json:"season_id" db:"season_id" form:"season_id"`
 	FormatID    uint64  `json:"format_id" db:"format_id" form:"format_id"`

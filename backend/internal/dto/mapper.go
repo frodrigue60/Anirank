@@ -14,16 +14,18 @@ func ToUserMinimalDTO(u *domain.User) UserMinimalDTO {
 		return UserMinimalDTO{}
 	}
 	return UserMinimalDTO{
-		ID:        u.UUID,
-		UUID:      u.UUID,
-		Name:      u.Name,
-		Slug:      u.Slug,
-		AvatarUrl: u.AvatarUrl,
+		ID:            u.UUID,
+		UUID:          u.UUID,
+		Name:          u.Name,
+		Slug:          u.Slug,
+		AvatarUrl:     u.AvatarUrl,
+		AvatarSources: u.AvatarSources,
 		XP:            u.XP,
 		Level:         u.Level,
 		RatingsCount:  u.RatingsCount,
 		CommentsCount: u.CommentsCount,
 		BannerUrl:     u.BannerUrl,
+		BannerSources: u.BannerSources,
 		CreatedAt:     u.CreatedAt,
 	}
 }
@@ -100,11 +102,13 @@ func ToSongMinimalDTO(s *domain.Song) SongMinimalDTO {
 			coverUrl = *s.Anime.CoverUrl
 		}
 		anime = &SongAnimeDTO{
-			Title:     s.Anime.Title,
-			Slug:      s.Anime.Slug,
-			CoverUrl:  coverUrl,
-			BannerUrl: s.Anime.BannerUrl,
-			AnilistID: s.Anime.AnilistID,
+			Title:         s.Anime.Title,
+			Slug:          s.Anime.Slug,
+			CoverUrl:      coverUrl,
+			CoverSources:  s.Anime.CoverSources,
+			BannerUrl:     s.Anime.BannerUrl,
+			BannerSources: s.Anime.BannerSources,
+			AnilistID:     s.Anime.AnilistID,
 		}
 	}
 
@@ -186,6 +190,9 @@ func ToArtistMinimalDTO(a *domain.Artist) ArtistMinimalDTO {
 		NameJP:        a.NameJP,
 		Slug:          a.Slug,
 		AvatarUrl:     a.AvatarUrl,
+		AvatarSources: a.AvatarSources,
+		BannerUrl:     a.LatestBannerUrl,
+		BannerSources: a.BannerSources,
 		EnabledSongs:  a.EnabledSongs,
 		DisabledSongs: a.DisabledSongs,
 	}
@@ -197,7 +204,6 @@ func ToArtistDTO(a *domain.Artist) ArtistDTO {
 	}
 	return ArtistDTO{
 		ArtistMinimalDTO: ToArtistMinimalDTO(a),
-		BannerUrl:        a.LatestBannerUrl,
 		FavoritesCount:   a.FavoritesCount,
 		IsFavorited:      a.IsFavorited,
 	}
@@ -285,7 +291,9 @@ func ToAnimeMinimalDTO(a *domain.Anime) AnimeMinimalDTO {
 		Title:         a.Title,
 		Slug:          a.Slug,
 		CoverUrl:      a.CoverUrl,
+		CoverSources:  a.CoverSources,
 		BannerUrl:     a.BannerUrl,
+		BannerSources: a.BannerSources,
 		SongsCount:    a.EnabledSongs, // Abstract as only enabled songs for public
 		EnabledSongs:  a.EnabledSongs,
 		DisabledSongs: a.DisabledSongs,

@@ -215,6 +215,13 @@ func (u *AuthUsecase) enrichUserImages(user *domain.User) {
 	}
 	user.AvatarUrl = u.media.Resolve(user.Avatar)
 	user.BannerUrl = u.media.Resolve(user.Banner)
+
+	if user.Avatar != nil {
+		user.AvatarSources = u.media.GetImageSources(*user.Avatar)
+	}
+	if user.Banner != nil {
+		user.BannerSources = u.media.GetImageSources(*user.Banner)
+	}
 }
 
 func (u *AuthUsecase) UpdateAvatar(ctx context.Context, userID uint64, file io.Reader, size int64, contentType string) (string, error) {
@@ -222,7 +229,7 @@ func (u *AuthUsecase) UpdateAvatar(ctx context.Context, userID uint64, file io.R
 		return "", domain.NewAppError(500, "Storage service is not configured", nil)
 	}
 
-	path, url, err := u.media.UploadImage(ctx, "users/avatars", userID, file, size, contentType)
+	path, url, err := u.media.UploadWithResolutions(ctx, "users/avatars", userID, file, infrastructure.PresetSquare)
 	if err != nil {
 		return "", domain.NewAppError(500, "Failed to upload avatar", err)
 	}
@@ -239,7 +246,7 @@ func (u *AuthUsecase) UpdateBanner(ctx context.Context, userID uint64, file io.R
 		return "", domain.NewAppError(500, "Storage service is not configured", nil)
 	}
 
-	path, url, err := u.media.UploadImage(ctx, "users/banners", userID, file, size, contentType)
+	path, url, err := u.media.UploadWithResolutions(ctx, "users/banners", userID, file, infrastructure.PresetLandscape)
 	if err != nil {
 		return "", domain.NewAppError(500, "Failed to upload banner", err)
 	}

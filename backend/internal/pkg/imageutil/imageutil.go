@@ -94,6 +94,14 @@ func Resize(img image.Image, width, height int) image.Image {
 	return dst
 }
 
+// Fill resizes and crops the image to fill the target width and height.
+func Fill(img image.Image, width, height int) image.Image {
+	g := gift.New(gift.ResizeToFill(width, height, gift.LanczosResampling, gift.CenterAnchor))
+	dst := image.NewRGBA(g.Bounds(img.Bounds()))
+	g.Draw(dst, img)
+	return dst
+}
+
 // EncodeAVIF encodes the image into AVIF format.
 func EncodeAVIF(img image.Image, quality int) ([]byte, error) {
 	var buf bytes.Buffer

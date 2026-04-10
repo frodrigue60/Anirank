@@ -1,19 +1,24 @@
 package dto
 
-import "time"
+import (
+	"anirank/api/internal/domain"
+	"time"
+)
 
 type UserMinimalDTO struct {
-	ID        string  `json:"id"`
-	UUID      string  `json:"uuid"`
-	Name      string  `json:"name"`
-	Slug      *string `json:"slug"`
-	AvatarUrl *string `json:"avatar_url,omitempty"`
-	XP            uint64    `json:"xp"`
-	Level         uint32    `json:"level"`
-	RatingsCount  int       `json:"ratings_count"`
-	CommentsCount int       `json:"comments_count"`
-	BannerUrl     *string   `json:"banner_url,omitempty"`
-	CreatedAt     time.Time `json:"created_at"`
+	ID            string               `json:"id"`
+	UUID          string               `json:"uuid"`
+	Name          string               `json:"name"`
+	Slug          *string              `json:"slug"`
+	AvatarUrl     *string              `json:"avatar_url,omitempty"`
+	AvatarSources []domain.ImageSource `json:"avatar_sources,omitempty"`
+	XP            uint64               `json:"xp"`
+	Level         uint32               `json:"level"`
+	RatingsCount  int                  `json:"ratings_count"`
+	CommentsCount int                  `json:"comments_count"`
+	BannerUrl     *string              `json:"banner_url,omitempty"`
+	BannerSources []domain.ImageSource `json:"banner_sources,omitempty"`
+	CreatedAt     time.Time            `json:"created_at"`
 }
 
 type BadgeDTO struct {

@@ -20,6 +20,8 @@ type User struct {
 	AvatarUrl       *string    `db:"-" json:"avatar_url,omitempty"`
 	Banner          *string    `db:"banner" json:"-"`
 	BannerUrl       *string    `db:"-" json:"banner_url,omitempty"`
+	AvatarSources   []ImageSource `db:"-" json:"avatar_sources,omitempty"`
+	BannerSources   []ImageSource `db:"-" json:"banner_sources,omitempty"`
 	RememberToken   *string    `db:"remember_token" json:"-"`
 	XP              uint64     `db:"xp" json:"xp"`
 	Level           uint32     `db:"level" json:"level"`

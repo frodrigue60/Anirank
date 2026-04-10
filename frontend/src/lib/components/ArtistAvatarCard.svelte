@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { getSrcset } from "$lib/utils/image";
   let { artist } = $props();
 </script>
 
@@ -13,6 +14,8 @@
       title="Avatar for {artist.name}"
       class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
       src={artist.avatar_url || "/images/placeholders/default.jpg"}
+      srcset={getSrcset(artist.avatar_sources)}
+      sizes="(max-width: 640px) 120px, 180px"
       loading="lazy"
     />
     <div

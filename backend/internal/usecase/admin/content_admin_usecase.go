@@ -243,8 +243,7 @@ func (u *ContentAdminUsecase) HandleAnimeImages(c *fiber.Ctx, anime *domain.Anim
 	if fileHeader, err := c.FormFile("cover"); err == nil {
 		if file, err := fileHeader.Open(); err == nil {
 			defer file.Close()
-			contentType := fileHeader.Header.Get("Content-Type")
-			if _, url, err := u.mediaService.UploadImage(c.Context(), "animes/covers", anime.ID, file, fileHeader.Size, contentType); err == nil {
+			if _, url, err := u.mediaService.UploadWithResolutions(c.Context(), "animes/covers", anime.ID, file, infrastructure.PresetPoster); err == nil {
 				anime.Cover = &url
 				_ = u.animeRepo.Update(c.Context(), anime)
 			}
@@ -255,8 +254,7 @@ func (u *ContentAdminUsecase) HandleAnimeImages(c *fiber.Ctx, anime *domain.Anim
 	if fileHeader, err := c.FormFile("banner"); err == nil {
 		if file, err := fileHeader.Open(); err == nil {
 			defer file.Close()
-			contentType := fileHeader.Header.Get("Content-Type")
-			if _, url, err := u.mediaService.UploadImage(c.Context(), "animes/banners", anime.ID, file, fileHeader.Size, contentType); err == nil {
+			if _, url, err := u.mediaService.UploadWithResolutions(c.Context(), "animes/banners", anime.ID, file, infrastructure.PresetLandscape); err == nil {
 				anime.Banner = &url
 				_ = u.animeRepo.Update(c.Context(), anime)
 			}
@@ -325,9 +323,11 @@ func (u *ContentAdminUsecase) ResolveAnimeURLs(a *domain.Anime) {
 	}
 	if a.Cover != nil && *a.Cover != "" {
 		a.CoverUrl = u.mediaService.Resolve(a.Cover)
+		a.CoverSources = u.mediaService.GetImageSources(*a.Cover)
 	}
 	if a.Banner != nil && *a.Banner != "" {
 		a.BannerUrl = u.mediaService.Resolve(a.Banner)
+		a.BannerSources = u.mediaService.GetImageSources(*a.Banner)
 	}
 }
 
@@ -343,6 +343,11 @@ func (u *ContentAdminUsecase) ResolveArtistURLs(a *domain.Artist) {
 	}
 	if a.Avatar != nil && *a.Avatar != "" {
 		a.AvatarUrl = u.mediaService.Resolve(a.Avatar)
+		a.AvatarSources = u.mediaService.GetImageSources(*a.Avatar)
+	}
+	if a.LatestBanner != nil && *a.LatestBanner != "" {
+		a.LatestBannerUrl = u.mediaService.Resolve(a.LatestBanner)
+		a.BannerSources = u.mediaService.GetImageSources(*a.LatestBanner)
 	}
 }
 
@@ -2495,7 +2500,7 @@ func (u *ContentAdminUsecase) UploadArtistAvatar(ctx context.Context, artistID u
 		return err
 	}
 
-	_, url, err := u.mediaService.UploadImage(ctx, "artists", artistID, file, size, contentType)
+	_, url, err := u.mediaService.UploadWithResolutions(ctx, "artists", artistID, file, infrastructure.PresetSquare)
 	if err != nil {
 		return err
 	}

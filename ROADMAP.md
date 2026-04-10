@@ -146,9 +146,9 @@
 
 ### Performance
 
-- 🔲 API response caching strategy (define TTLs per endpoint in Redis)
+- ✅ API response caching strategy (Redis-backed with per-endpoint TTLs and bypass logic)
 - ✅ Image lazy loading on all catalog grids and components (Artist/Song/Anime cards)
-- 🔲 `srcset` support for dynamic resolutions (requires backend thumbnail generation)
+- ✅ `srcset` support for dynamic resolutions (backend thumbnail generation via `MediaService`)
 - 🔲 Pagination cursor-based migration for large datasets (currently offset-based)
 - 🔲 Database index audit (cover common WHERE/ORDER BY patterns)
 

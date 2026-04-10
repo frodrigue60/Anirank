@@ -16,6 +16,7 @@ import (
 	"anirank/api/internal/usecase/tournament"
 	"anirank/api/internal/usecase/announcement"
 	"anirank/api/internal/usecase/notification"
+	"time"
 	_ "anirank/api/docs" // Import swagger docs
 
 	"github.com/gofiber/fiber/v2"
@@ -116,10 +117,10 @@ func SetupPublicRoutes(app *fiber.App,
 	api.Post("/auth/anilist/register", authLimiter, authHandler.AnilistRegister)
 
 	// Init data for SPA
-	api.Get("/init", discoveryHandler.Init)
+	api.Get("/init", middleware.NewResponseCache(storage, 5*time.Minute), discoveryHandler.Init)
 
 	// Site Statistics
-	api.Get("/site-statistics", statsHandler.GetSiteStats)
+	api.Get("/site-statistics", middleware.NewResponseCache(storage, 5*time.Minute), statsHandler.GetSiteStats)
 
 	catalogApi := api.Group("", publicLimiter)
 
@@ -127,20 +128,20 @@ func SetupPublicRoutes(app *fiber.App,
 	catalogApi.Get("/search", searchHandler.Search)
 
 	// Anime Endpoints
-	catalogApi.Get("/animes", animeHandler.Index)
-	catalogApi.Get("/animes/:slug", animeHandler.Show)
+	catalogApi.Get("/animes", middleware.NewResponseCache(storage, 5*time.Minute), animeHandler.Index)
+	catalogApi.Get("/animes/:slug", middleware.NewResponseCache(storage, 5*time.Minute), animeHandler.Show)
 
 	// Catalog: Songs
-	catalogApi.Get("/songs", middleware.OptionalAuthMiddleware(jwtService, userRepo), catalogHandler.SongIndex)
-	catalogApi.Get("/songs/ranking/:type", middleware.OptionalAuthMiddleware(jwtService, userRepo), catalogHandler.SongRanking)
-	catalogApi.Get("/songs/:uuid/comments", middleware.OptionalAuthMiddleware(jwtService, userRepo), interactionHandler.GetSongComments)
-	catalogApi.Get("/songs/:anime_slug/:song_slug", middleware.OptionalAuthMiddleware(jwtService, userRepo), catalogHandler.SongShow)
-	catalogApi.Get("/animes/:anime_slug/songs/:song_slug", middleware.OptionalAuthMiddleware(jwtService, userRepo), catalogHandler.SongShow)
+	catalogApi.Get("/songs", middleware.OptionalAuthMiddleware(jwtService, userRepo), middleware.NewResponseCache(storage, 5*time.Minute), catalogHandler.SongIndex)
+	catalogApi.Get("/songs/ranking/:type", middleware.OptionalAuthMiddleware(jwtService, userRepo), middleware.NewResponseCache(storage, 5*time.Minute), catalogHandler.SongRanking)
+	catalogApi.Get("/songs/:uuid/comments", middleware.OptionalAuthMiddleware(jwtService, userRepo), middleware.NewResponseCache(storage, 5*time.Minute), interactionHandler.GetSongComments)
+	catalogApi.Get("/songs/:anime_slug/:song_slug", middleware.OptionalAuthMiddleware(jwtService, userRepo), middleware.NewResponseCache(storage, 5*time.Minute), catalogHandler.SongShow)
+	catalogApi.Get("/animes/:anime_slug/songs/:song_slug", middleware.OptionalAuthMiddleware(jwtService, userRepo), middleware.NewResponseCache(storage, 5*time.Minute), catalogHandler.SongShow)
 
 	// Catalog: Artists
-	catalogApi.Get("/artists", catalogHandler.ArtistIndex)
-	catalogApi.Get("/artists/:slug", middleware.OptionalAuthMiddleware(jwtService, userRepo), catalogHandler.ArtistShow)
-	catalogApi.Get("/artists/:slug/songs", middleware.OptionalAuthMiddleware(jwtService, userRepo), catalogHandler.ArtistShow)
+	catalogApi.Get("/artists", middleware.NewResponseCache(storage, 5*time.Minute), catalogHandler.ArtistIndex)
+	catalogApi.Get("/artists/:slug", middleware.OptionalAuthMiddleware(jwtService, userRepo), middleware.NewResponseCache(storage, 5*time.Minute), catalogHandler.ArtistShow)
+	catalogApi.Get("/artists/:slug/songs", middleware.OptionalAuthMiddleware(jwtService, userRepo), middleware.NewResponseCache(storage, 5*time.Minute), catalogHandler.ArtistShow)
 
 	// Catalog: Studios
 	catalogApi.Get("/studios", catalogHandler.StudioIndex)
@@ -154,7 +155,7 @@ func SetupPublicRoutes(app *fiber.App,
 	catalogApi.Get("/users/ranking", catalogHandler.UserRanking)
 	catalogApi.Get("/users/:slug", middleware.OptionalAuthMiddleware(jwtService, userRepo), catalogHandler.UserProfile)
 	// Catalog: Home
-	catalogApi.Get("/home", middleware.OptionalAuthMiddleware(jwtService, userRepo), catalogHandler.Home)
+	catalogApi.Get("/home", middleware.OptionalAuthMiddleware(jwtService, userRepo), middleware.NewResponseCache(storage, 5*time.Minute), catalogHandler.Home)
 
 	// Catalog: Playlists
 	catalogApi.Get("/playlists", middleware.OptionalAuthMiddleware(jwtService, userRepo), catalogHandler.PlaylistIndex)

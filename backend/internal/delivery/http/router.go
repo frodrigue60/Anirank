@@ -99,6 +99,7 @@ func SetupPublicRoutes(app *fiber.App,
 
 	// --- PUBLIC ROUTES ---
 	authLimiter := middleware.NewAuthLimiter(storage)
+	publicLimiter := middleware.NewPublicApiLimiter(storage)
 	csrfMiddleware := middleware.NewCSRFMiddleware(storage)
 
 	// Apply CSRF to all API routes
@@ -119,45 +120,47 @@ func SetupPublicRoutes(app *fiber.App,
 	// Site Statistics
 	api.Get("/site-statistics", statsHandler.GetSiteStats)
 
+	catalogApi := api.Group("", publicLimiter)
+
 	// Global Search Engine
-	api.Get("/search", searchHandler.Search)
+	catalogApi.Get("/search", searchHandler.Search)
 
 	// Anime Endpoints
-	api.Get("/animes", animeHandler.Index)
-	api.Get("/animes/:slug", animeHandler.Show)
+	catalogApi.Get("/animes", animeHandler.Index)
+	catalogApi.Get("/animes/:slug", animeHandler.Show)
 
 	// Catalog: Songs
-	api.Get("/songs", middleware.OptionalAuthMiddleware(jwtService, userRepo), catalogHandler.SongIndex)
-	api.Get("/songs/ranking/:type", middleware.OptionalAuthMiddleware(jwtService, userRepo), catalogHandler.SongRanking)
-	api.Get("/songs/:uuid/comments", middleware.OptionalAuthMiddleware(jwtService, userRepo), interactionHandler.GetSongComments)
-	api.Get("/songs/:anime_slug/:song_slug", middleware.OptionalAuthMiddleware(jwtService, userRepo), catalogHandler.SongShow)
-	api.Get("/animes/:anime_slug/songs/:song_slug", middleware.OptionalAuthMiddleware(jwtService, userRepo), catalogHandler.SongShow)
+	catalogApi.Get("/songs", middleware.OptionalAuthMiddleware(jwtService, userRepo), catalogHandler.SongIndex)
+	catalogApi.Get("/songs/ranking/:type", middleware.OptionalAuthMiddleware(jwtService, userRepo), catalogHandler.SongRanking)
+	catalogApi.Get("/songs/:uuid/comments", middleware.OptionalAuthMiddleware(jwtService, userRepo), interactionHandler.GetSongComments)
+	catalogApi.Get("/songs/:anime_slug/:song_slug", middleware.OptionalAuthMiddleware(jwtService, userRepo), catalogHandler.SongShow)
+	catalogApi.Get("/animes/:anime_slug/songs/:song_slug", middleware.OptionalAuthMiddleware(jwtService, userRepo), catalogHandler.SongShow)
 
 	// Catalog: Artists
-	api.Get("/artists", catalogHandler.ArtistIndex)
-	api.Get("/artists/:slug", middleware.OptionalAuthMiddleware(jwtService, userRepo), catalogHandler.ArtistShow)
-	api.Get("/artists/:slug/songs", middleware.OptionalAuthMiddleware(jwtService, userRepo), catalogHandler.ArtistShow)
+	catalogApi.Get("/artists", catalogHandler.ArtistIndex)
+	catalogApi.Get("/artists/:slug", middleware.OptionalAuthMiddleware(jwtService, userRepo), catalogHandler.ArtistShow)
+	catalogApi.Get("/artists/:slug/songs", middleware.OptionalAuthMiddleware(jwtService, userRepo), catalogHandler.ArtistShow)
 
 	// Catalog: Studios
-	api.Get("/studios", catalogHandler.StudioIndex)
-	api.Get("/studios/:slug", catalogHandler.StudioShow)
+	catalogApi.Get("/studios", catalogHandler.StudioIndex)
+	catalogApi.Get("/studios/:slug", catalogHandler.StudioShow)
 
 	// Catalog: Producers
-	api.Get("/producers", catalogHandler.ProducerIndex)
-	api.Get("/producers/:slug", catalogHandler.ProducerShow)
+	catalogApi.Get("/producers", catalogHandler.ProducerIndex)
+	catalogApi.Get("/producers/:slug", catalogHandler.ProducerShow)
 
 	// Catalog: Users
-	api.Get("/users/ranking", catalogHandler.UserRanking)
-	api.Get("/users/:slug", middleware.OptionalAuthMiddleware(jwtService, userRepo), catalogHandler.UserProfile)
+	catalogApi.Get("/users/ranking", catalogHandler.UserRanking)
+	catalogApi.Get("/users/:slug", middleware.OptionalAuthMiddleware(jwtService, userRepo), catalogHandler.UserProfile)
 	// Catalog: Home
-	api.Get("/home", middleware.OptionalAuthMiddleware(jwtService, userRepo), catalogHandler.Home)
+	catalogApi.Get("/home", middleware.OptionalAuthMiddleware(jwtService, userRepo), catalogHandler.Home)
 
 	// Catalog: Playlists
-	api.Get("/playlists", middleware.OptionalAuthMiddleware(jwtService, userRepo), catalogHandler.PlaylistIndex)
+	catalogApi.Get("/playlists", middleware.OptionalAuthMiddleware(jwtService, userRepo), catalogHandler.PlaylistIndex)
 
 	// Sitemap
-	api.Get("/catalog/sitemap", catalogHandler.GetSitemap)
-	api.Get("/catalog/sitemap.xml", catalogHandler.GetSitemapXML)
+	catalogApi.Get("/catalog/sitemap", catalogHandler.GetSitemap)
+	catalogApi.Get("/catalog/sitemap.xml", catalogHandler.GetSitemapXML)
 
 	// Activity Feed
 	api.Get("/activities", activityHandler.Index)

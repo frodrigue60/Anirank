@@ -31,3 +31,26 @@ func NewAuthLimiter(storage fiber.Storage) fiber.Handler {
 		Storage: storage,
 	})
 }
+
+// NewPublicApiLimiter creates a rate limiter for public catalog endpoints.
+// Limits requests to 60 per minute per IP to prevent scraping and abuse.
+func NewPublicApiLimiter(storage fiber.Storage) fiber.Handler {
+	return limiter.New(limiter.Config{
+		Max:               60,
+		Expiration:        1 * time.Minute,
+		KeyGenerator:      func(c *fiber.Ctx) string {
+			ip := c.Get("CF-Connecting-IP")
+			if ip == "" {
+				ip = c.Get("X-Forwarded-For")
+			}
+			if ip == "" {
+				ip = c.IP()
+			}
+			return ip
+		},
+		LimitReached: func(c *fiber.Ctx) error {
+			return domain.NewAppError(429, "Too many requests. Please slow down and try again.", nil)
+		},
+		Storage: storage,
+	})
+}

@@ -16,21 +16,21 @@ type InteractionUsecase struct {
 	interactionRepo  domain.InteractionRepository
 	commentRepo      domain.CommentRepository
 	userRepo         domain.UserRepository
-	notificationRepo domain.NotificationRepository
-	songRepo         domain.SongRepository
-	animeRepo        domain.AnimeRepository
-	mediaService     infrastructure.MediaService
-	xpUsecase        domain.XPUsecase
-	activityUsecase  domain.ActivityUsecase
-	badgeUsecase     domain.BadgeUsecase
-	artistRepo       domain.ArtistRepository
+	notificationUsecase domain.NotificationUsecase
+	songRepo            domain.SongRepository
+	animeRepo           domain.AnimeRepository
+	mediaService        infrastructure.MediaService
+	xpUsecase           domain.XPUsecase
+	activityUsecase     domain.ActivityUsecase
+	badgeUsecase        domain.BadgeUsecase
+	artistRepo          domain.ArtistRepository
 }
 
 func NewInteractionUsecase(
 	ir domain.InteractionRepository,
 	cr domain.CommentRepository,
 	ur domain.UserRepository,
-	nr domain.NotificationRepository,
+	nu domain.NotificationUsecase,
 	sr domain.SongRepository,
 	ar domain.AnimeRepository,
 	atr domain.ArtistRepository,
@@ -40,17 +40,17 @@ func NewInteractionUsecase(
 	bu domain.BadgeUsecase,
 ) *InteractionUsecase {
 	return &InteractionUsecase{
-		interactionRepo:  ir,
-		commentRepo:      cr,
-		userRepo:         ur,
-		notificationRepo: nr,
-		songRepo:         sr,
-		animeRepo:        ar,
-		artistRepo:       atr,
-		mediaService:     ms,
-		xpUsecase:        xu,
-		activityUsecase:  au,
-		badgeUsecase:     bu,
+		interactionRepo:     ir,
+		commentRepo:         cr,
+		userRepo:            ur,
+		notificationUsecase: nu,
+		songRepo:            sr,
+		animeRepo:           ar,
+		artistRepo:          atr,
+		mediaService:        ms,
+		xpUsecase:           xu,
+		activityUsecase:     au,
+		badgeUsecase:        bu,
 	}
 }
 
@@ -272,7 +272,7 @@ func (u *InteractionUsecase) SongComment(ctx context.Context, userID, entityID u
 				SubjectType: &subjectType,
 				Data:        dataJSON,
 			}
-			_ = u.notificationRepo.Create(ctx, notif)
+			_ = u.notificationUsecase.Create(ctx, notif)
 		}
 	}
 
@@ -488,7 +488,7 @@ func (u *InteractionUsecase) FollowUser(ctx context.Context, followerID uint64, 
 			SubjectType: &subjectType,
 			Data:        dataJSON,
 		}
-		err := u.notificationRepo.Create(ctx, notif)
+		err := u.notificationUsecase.Create(ctx, notif)
 		
 		// Log Activity
 		val := fmt.Sprintf("%d", followedID)

@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 )
+
 
 type notificationRepository struct {
 	db *sqlx.DB
@@ -111,4 +113,34 @@ func (r *notificationRepository) GetUnreadCount(ctx context.Context, userID uint
 	query := "SELECT COUNT(*) FROM notifications WHERE user_id = $1 AND read_at IS NULL AND deleted_at IS NULL"
 	err := r.db.GetContext(ctx, &count, query, userID)
 	return count, err
+}
+
+func (r *notificationRepository) GetSettings(ctx context.Context, userID uint64) (*domain.NotificationSettings, error) {
+	var settings domain.NotificationSettings
+	query := `SELECT user_id, settings, created_at, updated_at FROM user_notification_settings WHERE user_id = $1`
+	err := r.db.GetContext(ctx, &settings, query, userID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			// Return default settings if not found
+			defaultSettings := json.RawMessage(`{"social_follow":true,"comment_reply":true,"user_request_feedback":true}`)
+			return &domain.NotificationSettings{
+				UserID:   userID,
+				Settings: defaultSettings,
+			}, nil
+		}
+		return nil, err
+	}
+	return &settings, nil
+}
+
+func (r *notificationRepository) UpdateSettings(ctx context.Context, userID uint64, settings json.RawMessage) error {
+	query := `
+		INSERT INTO user_notification_settings (user_id, settings, created_at, updated_at)
+		VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		ON CONFLICT (user_id) DO UPDATE SET 
+			settings = EXCLUDED.settings,
+			updated_at = CURRENT_TIMESTAMP
+	`
+	_, err := r.db.ExecContext(ctx, query, userID, string(settings))
+	return err
 }

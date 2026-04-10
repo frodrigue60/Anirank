@@ -120,9 +120,8 @@
 - 🔲 Accessibility pass (keyboard navigation, ARIA labels, focus rings)
 
 ### Notifications
-- 🔲 **Real-time delivery** via Server-Sent Events (SSE) or WebSockets
-  - Currently: pull-only (user must refresh to see new notifications)
-- 🔲 Notification preferences (opt-out per notification type)
+- ✅ **Real-time delivery** via Server-Sent Events (SSE)
+- ✅ Notification preferences (opt-out per notification type)
 
 ### Search
 - 🔲 Full-text search upgrade (PostgreSQL `tsvector` or Meilisearch integration)

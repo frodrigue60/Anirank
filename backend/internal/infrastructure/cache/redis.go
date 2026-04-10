@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"anirank/api/internal/domain"
 	"context"
 	"encoding/json"
 	"time"
@@ -57,4 +58,45 @@ func (c *RedisCache) Delete(ctx context.Context, key string) error {
 
 func (c *RedisCache) IsAvailable() bool {
 	return true
+}
+
+type RedisSubscriber struct {
+	pubsub *redis.PubSub
+	ch     chan domain.PubSubMessage
+}
+
+func (r *RedisSubscriber) Channel() <-chan domain.PubSubMessage {
+	return r.ch
+}
+
+func (r *RedisSubscriber) Close() error {
+	return r.pubsub.Close()
+}
+
+func (c *RedisCache) Publish(ctx context.Context, channel string, message interface{}) error {
+	data, err := json.Marshal(message)
+	if err != nil {
+		return err
+	}
+	return c.client.Publish(ctx, channel, data).Err()
+}
+
+func (c *RedisCache) Subscribe(ctx context.Context, channel string) (domain.Subscriber, error) {
+	ps := c.client.Subscribe(ctx, channel)
+	sub := &RedisSubscriber{
+		pubsub: ps,
+		ch:     make(chan domain.PubSubMessage),
+	}
+
+	go func() {
+		defer close(sub.ch)
+		for msg := range ps.Channel() {
+			sub.ch <- domain.PubSubMessage{
+				Channel: msg.Channel,
+				Payload: msg.Payload,
+			}
+		}
+	}()
+
+	return sub, nil
 }

@@ -1,8 +1,19 @@
 <script lang="ts">
   import NavbarMaster from "$lib/components/NavbarMaster.svelte";
   import FooterMaster from "$lib/components/FooterMaster.svelte";
+  import { authState } from "$lib/state/auth.svelte";
+  import { notificationState } from "$lib/state/notifications.svelte";
 
   let { children } = $props();
+
+  $effect(() => {
+    // Only connect the SSE tunnel if the user is authenticated
+    if (authState.isAuthenticated) {
+      notificationState.init();
+    } else {
+      notificationState.disconnect();
+    }
+  });
 </script>
 
 <div

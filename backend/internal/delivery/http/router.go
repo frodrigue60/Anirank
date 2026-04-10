@@ -45,7 +45,8 @@ func SetupPublicRoutes(app *fiber.App,
 	ogGenerator *og.Generator,
 	shareHandler *v1.ShareHandler,
 	seoHandler *v1.SEOHandler,
-	storage fiber.Storage) {
+	storage fiber.Storage,
+	appCache domain.Cache) {
 
 	// Core Repositories
 	songRepo := postgres.NewSongRepository(db)
@@ -56,6 +57,7 @@ func SetupPublicRoutes(app *fiber.App,
 	commentRepo := postgres.NewCommentRepository(db)
 	interactionRepo := postgres.NewInteractionRepository(db)
 	notificationRepo := postgres.NewNotificationRepository(db)
+	notificationUsecase := notification.NewNotificationUsecase(notificationRepo, appCache)
 
 	// HTTP Handlers
 	discoveryHandler := v1.NewDiscoveryHandler(discoveryUsecase)
@@ -67,7 +69,7 @@ func SetupPublicRoutes(app *fiber.App,
 	badgeRepo := postgres.NewBadgeRepository(db)
 	badgeUsecase := admin.NewBadgeUsecase(badgeRepo, userRepo, interactionRepo, commentRepo, storageService, auditLogUsecase)
 
-	interactionUsecase = interaction.NewInteractionUsecase(interactionRepo, commentRepo, userRepo, notificationRepo, songRepo, animeRepo, artistRepo, mediaService, xpUsecase, activityUsecase, badgeUsecase)
+	interactionUsecase = interaction.NewInteractionUsecase(interactionRepo, commentRepo, userRepo, notificationUsecase, songRepo, animeRepo, artistRepo, mediaService, xpUsecase, activityUsecase, badgeUsecase)
 	interactionHandler := v1.NewInteractionHandler(interactionUsecase, activityUsecase, songRepo, userRepo, animeRepo, artistRepo, commentRepo)
 	playlistHandler := v1.NewPlaylistHandler(playlistUsecase, playlistRepo, songRepo, userRepo)
 	adminHandler := v1.NewAdminHandler(adminUsecase, songRepo, userRepo, animeRepo, artistRepo, playlistRepo)
@@ -82,7 +84,6 @@ func SetupPublicRoutes(app *fiber.App,
 
 	activityHandler := v1.NewActivityHandler(activityUsecase)
 
-	notificationUsecase := notification.NewNotificationUsecase(notificationRepo)
 	notificationHandler := v1.NewNotificationHandler(notificationUsecase)
 
 	statsHandler := v1.NewStatsHandler(statsUsecase)
@@ -240,11 +241,16 @@ func SetupPublicRoutes(app *fiber.App,
 	protected.Get("/users/:id/is-following", interactionHandler.IsFollowing)
 
 	// Notifications
+	protected.Get("/notifications/stream", notificationHandler.Stream)
 	protected.Get("/notifications", notificationHandler.Index)
 	protected.Put("/notifications/:id/read", notificationHandler.MarkAsRead)
 	protected.Post("/notifications/read-all", notificationHandler.MarkAllAsRead)
 	protected.Delete("/notifications/:id", notificationHandler.Delete)
 	protected.Get("/notifications/unread-count", notificationHandler.GetUnreadCount)
+
+	// Settings (Categorized under notifications as they are specific to them)
+	protected.Get("/settings/notifications", notificationHandler.GetSettings)
+	protected.Put("/settings/notifications", notificationHandler.UpdateSettings)
 
 	// --- PROTECTED PLAYLISTS ---
 	protected.Get("/me/playlists", playlistHandler.GetMyPlaylists)

@@ -9,13 +9,13 @@ import (
 )
 
 type ModerationUsecase struct {
-	repo             domain.ModerationRepository
-	notificationRepo domain.NotificationRepository
-	mediaService     infrastructure.MediaService
+	repo                domain.ModerationRepository
+	notificationUsecase domain.NotificationUsecase
+	mediaService        infrastructure.MediaService
 }
 
-func NewModerationUsecase(repo domain.ModerationRepository, nr domain.NotificationRepository, ms infrastructure.MediaService) *ModerationUsecase {
-	return &ModerationUsecase{repo: repo, notificationRepo: nr, mediaService: ms}
+func NewModerationUsecase(repo domain.ModerationRepository, nu domain.NotificationUsecase, ms infrastructure.MediaService) *ModerationUsecase {
+	return &ModerationUsecase{repo: repo, notificationUsecase: nu, mediaService: ms}
 }
 
 // ---- User Facing (Create) ----
@@ -156,7 +156,7 @@ func (u *ModerationUsecase) UpdateUserRequestStatus(ctx context.Context, request
 			SubjectType: &subjectType,
 			Data:        dataJSON,
 		}
-		_ = u.notificationRepo.Create(ctx, notif)
+		_ = u.notificationUsecase.Create(ctx, notif)
 	}
 
 	return nil

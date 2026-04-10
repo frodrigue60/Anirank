@@ -1,8 +1,8 @@
 <script lang="ts">
   import { authState, logout } from "$lib/state/auth.svelte";
+  import { notificationState } from "$lib/state/notifications.svelte";
   import { page } from "$app/state";
   import { goto } from "$app/navigation";
-  import api from "$lib/api";
   import SearchModal from "$lib/components/SearchModal.svelte";
   import RequestModal from "$lib/components/RequestModal.svelte";
 
@@ -11,26 +11,6 @@
   let showMobileMenu = $state(false);
   let showSearchModal = $state(false);
   let showRequestModal = $state(false);
-
-  let unreadCount = $state(0);
-
-  async function fetchUnreadCount() {
-    if (!authState.isAuthenticated) return;
-    try {
-      const response = await api.get("/notifications");
-      unreadCount = response.data.unread_count || 0;
-    } catch (error) {
-      console.error("Error fetching notifications:", error);
-    }
-  }
-
-  $effect(() => {
-    if (authState.isAuthenticated) {
-      fetchUnreadCount();
-      const interval = setInterval(fetchUnreadCount, 60000); // Check every minute
-      return () => clearInterval(interval);
-    }
-  });
 
   // function to close dropdowns when clicking outside
   function closeDropdowns() {
@@ -217,7 +197,7 @@
             >notifications</span
           >
 
-          {#if unreadCount > 0}
+          {#if notificationState.unreadCount > 0}
             <span
               class="absolute top-2.5 right-2.5 w-2 h-2 bg-primary rounded-full border border-surface"
             ></span>

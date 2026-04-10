@@ -23,6 +23,7 @@ import (
 	"anirank/api/internal/usecase/moderation"
 	"anirank/api/internal/usecase/playlist"
 	"anirank/api/internal/usecase/public"
+	"anirank/api/internal/usecase/notification"
 	"anirank/api/internal/usecase/tournament"
 
 	"anirank/api/internal/infrastructure/cache"
@@ -168,11 +169,12 @@ func main() {
 	badgeRepo := postgres.NewBadgeRepository(db)
 	auditUsecase := audit.NewAuditLogUsecase(auditRepo)
 	badgeUsecase := admin.NewBadgeUsecase(badgeRepo, userRepo, interactionRepo, commentRepo, storageService, auditUsecase)
+	notificationUsecase := notification.NewNotificationUsecase(notificationRepo, appCache)
 
 	xpUsecase := usecase.NewXPUsecase(xpRepo, userRepo, badgeUsecase)
 	activityUsecase := usecase.NewActivityUsecase(postgres.NewActivityRepository(db), userRepo, songRepo, artistRepo, mediaService)
 	authUsecase := auth.NewAuthUsecase(userRepo, jwtService, storageService, mediaService, xpUsecase, badgeUsecase, anilistClient, googleClient, os.Getenv("ENCRYPTION_KEY"))
-	interactionUsecase := interaction.NewInteractionUsecase(interactionRepo, commentRepo, userRepo, notificationRepo, songRepo, animeRepo, artistRepo, mediaService, xpUsecase, activityUsecase, badgeUsecase)
+	interactionUsecase := interaction.NewInteractionUsecase(interactionRepo, commentRepo, userRepo, notificationUsecase, songRepo, animeRepo, artistRepo, mediaService, xpUsecase, activityUsecase, badgeUsecase)
 	playlistUsecase := playlist.NewPlaylistUsecase(playlistRepo, songRepo, animeRepo, interactionRepo, mediaService, xpUsecase, userRepo)
 
 	userAdminUsecase := admin.NewUserAdminUsecase(userRepo, mediaService, auditUsecase)
@@ -185,7 +187,7 @@ func main() {
 	seoUsecase := public.NewSEOUsecase(animeRepo, songRepo, artistRepo, userRepo, playlistRepo, ogGenerator.GetVersion)
 	seoHandler := v1.NewSEOHandler(seoUsecase)
 
-	moderationUsecase := moderation.NewModerationUsecase(moderationRepo, notificationRepo, mediaService)
+	moderationUsecase := moderation.NewModerationUsecase(moderationRepo, notificationUsecase, mediaService)
 	tournamentUsecase := tournament.NewTournamentUsecase(tournamentRepo, songRepo, animeRepo, storageService)
 
 	// --- 1.5 Start Background Cron Scheduler ---
@@ -217,7 +219,7 @@ func main() {
 	statsUsecase := public.NewStatsUsecase(statsRepo, appCache)
 
 	// 4. Register Routes
-	http.SetupPublicRoutes(app, db, discoveryUsecase, animeUsecase, searchUsecase, catalogUsecase, authUsecase, interactionUsecase, playlistUsecase, adminUsecase, moderationUsecase, tournamentUsecase, auditUsecase, jwtService, storageService, mediaService, xpUsecase, activityUsecase, statsUsecase, ogGenerator, shareHandler, seoHandler, limitStorage)
+	http.SetupPublicRoutes(app, db, discoveryUsecase, animeUsecase, searchUsecase, catalogUsecase, authUsecase, interactionUsecase, playlistUsecase, adminUsecase, moderationUsecase, tournamentUsecase, auditUsecase, jwtService, storageService, mediaService, xpUsecase, activityUsecase, statsUsecase, ogGenerator, shareHandler, seoHandler, limitStorage, appCache)
 
 	// Run Server
 	log.Printf("Starting server on port %s...", appPort)

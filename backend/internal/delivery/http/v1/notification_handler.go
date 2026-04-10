@@ -2,7 +2,11 @@ package v1
 
 import (
 	"anirank/api/internal/dto"
+	"bufio"
+	"encoding/json"
+	"fmt"
 	"strconv"
+	"time"
 
 	"anirank/api/internal/domain"
 
@@ -86,4 +90,76 @@ func (h *NotificationHandler) GetUnreadCount(c *fiber.Ctx) error {
 			"count": count,
 		},
 	})
+}
+
+func (h *NotificationHandler) Stream(c *fiber.Ctx) error {
+	c.Set("Content-Type", "text/event-stream")
+	c.Set("Cache-Control", "no-cache")
+	c.Set("Connection", "keep-alive")
+	c.Set("Transfer-Encoding", "chunked")
+
+	userID := c.Locals("user_id").(uint64)
+
+	sub, err := h.usecase.SubscribeToStream(c.Context(), userID)
+	if err != nil {
+		return err
+	}
+
+	c.Context().SetBodyStreamWriter(func(w *bufio.Writer) {
+		defer sub.Close()
+
+		ticker := time.NewTicker(20 * time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case msg, ok := <-sub.Channel():
+				if !ok {
+					return
+				}
+				fmt.Fprintf(w, "event: message\ndata: %s\n\n", msg.Payload)
+				if err := w.Flush(); err != nil {
+					return
+				}
+			case <-ticker.C:
+				fmt.Fprintf(w, ": ping\n\n")
+				if err := w.Flush(); err != nil {
+					return
+				}
+			}
+		}
+	})
+
+	return nil
+}
+
+func (h *NotificationHandler) GetSettings(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(uint64)
+
+	settings, err := h.usecase.GetSettings(c.Context(), userID)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{
+		"data": settings,
+	})
+}
+
+func (h *NotificationHandler) UpdateSettings(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(uint64)
+
+	var payload struct {
+		Settings json.RawMessage `json:"settings"`
+	}
+
+	if err := c.BodyParser(&payload); err != nil {
+		return domain.NewAppError(400, "Invalid settings payload", err)
+	}
+
+	if err := h.usecase.UpdateSettings(c.Context(), userID, payload.Settings); err != nil {
+		return err
+	}
+
+	return c.SendStatus(200)
 }

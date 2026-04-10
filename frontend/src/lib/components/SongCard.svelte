@@ -9,12 +9,14 @@
   class="group relative overflow-hidden rounded-md h-48 transition-all duration-300 bg-surface-container shadow-sm hover:shadow-2xl hover:-translate-y-1"
 >
   <!-- Background Banner -->
-  <div
-    class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
-    style="background-image: url('{song.anime?.banner_url ||
+  <img
+    src={song.anime?.banner_url ||
       song.anime?.cover_url ||
-      '/images/placeholders/default-banner.jpg'}'); filter: brightness(0.5);"
-  ></div>
+      "/images/placeholders/default-banner.jpg"}
+    alt=""
+    class="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105 brightness-50"
+    loading="lazy"
+  />
   <!-- Gradient Overlay -->
   <div
     class="absolute inset-0 bg-linear-to-r from-surface-container via-surface-container/65 to-transparent"

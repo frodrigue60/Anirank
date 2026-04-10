@@ -221,6 +221,7 @@
                             src={item.image}
                             alt=""
                             class="w-full h-full object-cover"
+                            loading="lazy"
                           />
                         {:else}
                           <span
@@ -310,6 +311,7 @@
                         alt={anime.title}
                         title={anime.title}
                         class="w-12 h-16 object-cover rounded-md bg-surface-lowest shadow-lg shadow-black/20"
+                        loading="lazy"
                       />
                       <div class="flex flex-col">
                         <span
@@ -412,6 +414,7 @@
                               alt={artist.name}
                               title={artist.name}
                               class="w-full h-full object-cover"
+                              loading="lazy"
                             />
                           {:else}
                             <span class="material-symbols-outlined text-[20px]"
@@ -460,6 +463,7 @@
                               alt={user.name}
                               title={user.name}
                               class="w-full h-full object-cover"
+                              loading="lazy"
                             />
                           {:else}
                             <span class="material-symbols-outlined text-[20px]"

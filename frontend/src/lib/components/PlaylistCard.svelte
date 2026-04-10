@@ -29,11 +29,13 @@
   class="group relative bg-surface-dark/30 rounded-md border border-white/5 p-5 hover:bg-surface-dark/50 transition-all flex flex-col gap-4 overflow-hidden aspect-video"
 >
   <!-- Background Image -->
-  <div
-    class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
-    style="background-image: url('{playlist.banner_url ||
-      'https://placehold.co/1280x720/2a2136/white?text=No+Songs'}'); filter:brightness(0.5)"
-  ></div>
+  <img
+    src={playlist.banner_url ||
+      "https://placehold.co/1280x720/2a2136/white?text=No+Songs"}
+    alt=""
+    class="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105 brightness-50"
+    loading="lazy"
+  />
 
   <div
     class="absolute inset-0 bg-linear-to-t from-black via-black/40 to-transparent"

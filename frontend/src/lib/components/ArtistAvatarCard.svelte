@@ -13,6 +13,7 @@
       title="Avatar for {artist.name}"
       class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
       src={artist.avatar_url || "/images/placeholders/default.jpg"}
+      loading="lazy"
     />
     <div
       class="absolute inset-0 bg-linear-to-t from-primary/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"

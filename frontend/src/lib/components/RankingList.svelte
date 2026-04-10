@@ -112,6 +112,7 @@
                     class="w-full h-full object-cover"
                     src={item.anime?.cover_url ??
                       "/images/placeholders/default.jpg"}
+                    loading="lazy"
                   />
                 </div>
                 <div class="min-w-0 flex flex-col">

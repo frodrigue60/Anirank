@@ -333,7 +333,7 @@
       {/each}
     {:else}
       <div
-        class="lg:col-span-2 text-center py-24 bg-surface-container/30 rounded-3xl border-2 border-dashed border-white/5"
+        class="lg:col-span-2 text-center py-24 bg-surface-container/30 rounded-md border-2 border-dashed border-white/5"
       >
         <span
           class="material-symbols-outlined text-6xl text-on-surface-variant opacity-20 mb-4 block"

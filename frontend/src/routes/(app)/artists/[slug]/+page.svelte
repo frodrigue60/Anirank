@@ -240,7 +240,7 @@
         {:else}
           <a
             href="/login"
-            class="flex items-center bg-red-500 border-red-400 text-white gap-2 px-4 py-2 rounded-xl border transition-all active:scale-95 hover:bg-red-500/20"
+            class="flex items-center bg-red-500 border-red-500/30 text-white gap-2 px-4 py-2 rounded-sm border transition-all active:scale-95 hover:bg-red-500/30"
           >
             <span class="material-symbols-outlined">favorite</span>
             Favorite

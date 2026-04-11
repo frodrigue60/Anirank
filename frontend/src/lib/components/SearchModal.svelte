@@ -211,7 +211,7 @@
                   <div class="group flex items-center justify-between gap-2">
                     <button
                       onclick={() => handleHistoryItemClick(item)}
-                      class="flex-1 flex items-center gap-3 p-2 rounded-md hover:bg-surface-highest/50 transition-all text-left group"
+                      class="flex-1 flex items-center gap-3 p-2 rounded-sm hover:bg-surface-highest/50 transition-all text-left group"
                     >
                       <div
                         class="w-10 h-10 rounded-sm flex items-center justify-center bg-surface-lowest border border-outline-variant/10 overflow-hidden"
@@ -310,7 +310,7 @@
                           "https://placehold.co/100x150/1e1e24/7f13ec?text=Anime"}
                         alt={anime.title}
                         title={anime.title}
-                        class="w-12 h-16 object-cover rounded-md bg-surface-lowest shadow-lg shadow-black/20"
+                        class="w-12 h-16 object-cover rounded-sm bg-surface-lowest shadow-lg shadow-black/20"
                         loading="lazy"
                       />
                       <div class="flex flex-col">
@@ -353,7 +353,7 @@
                           slug: song.slug,
                           animeSlug: song.anime?.slug,
                         })}
-                      class="flex items-center gap-4 p-3 rounded-md hover:bg-surface-highest/50 transition-all group"
+                      class="flex items-center gap-4 p-3 rounded-sm hover:bg-surface-highest/50 transition-all group"
                     >
                       <div
                         class="w-12 h-12 rounded-sm bg-surface-highest border border-outline-variant/10 flex items-center justify-center text-primary shadow-sm"

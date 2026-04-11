@@ -258,7 +258,7 @@
                 >
                   <td class="p-5">
                     <span
-                      class="inline-flex items-center justify-center px-2.5 py-1 rounded {song.type ===
+                      class="inline-flex items-center justify-center px-2.5 py-1 rounded-sm {song.type ===
                       'OP'
                         ? 'bg-green-500/10 text-green-400 border-green-500/40'
                         : 'bg-blue-500/10 text-blue-400 border-blue-500/40'} border text-[10px] font-bold"

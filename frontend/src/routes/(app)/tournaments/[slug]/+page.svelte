@@ -194,7 +194,7 @@
 
             <a
               href={`/songs/${tournament.winner?.anime?.slug}/${tournament.winner?.slug}`}
-              class="group relative w-full max-w-[700px] aspect-21/9 rounded-4xl overflow-hidden bg-surface-container border border-yellow-500/20 shadow-[0_0_50px_rgba(234,179,8,0.1)] hover:scale-[1.02] transition-all duration-500"
+              class="group relative w-full max-w-[700px] aspect-21/9 rounded-md overflow-hidden bg-surface-container border border-yellow-500/20 shadow-[0_0_50px_rgba(234,179,8,0.1)] hover:scale-[1.02] transition-all duration-500"
             >
               <div
                 class="absolute inset-0 bg-cover bg-center group-hover:scale-110 transition-transform duration-700"
@@ -239,7 +239,7 @@
 
               <!-- Decoration -->
               <div
-                class="absolute -inset-px border-2 border-yellow-500/10 rounded-4xl pointer-events-none"
+                class="absolute -inset-px border-2 border-yellow-500/10 rounded-md pointer-events-none"
               ></div>
             </a>
           </div>
@@ -285,7 +285,7 @@
     ></div>
 
     <div
-      class="relative w-full max-w-[1100px] bg-surface-container rounded-4xl border border-white/5 overflow-hidden shadow-2xl scale-in animate-in zoom-in-95 duration-300"
+      class="relative w-full max-w-[1100px] bg-surface-container rounded-md border border-white/5 overflow-hidden shadow-2xl scale-in animate-in zoom-in-95 duration-300"
     >
       <button
         class="absolute top-6 right-6 z-20 w-12 h-12 flex items-center justify-center rounded-full bg-black/40 text-white hover:bg-primary transition-all"
@@ -349,11 +349,11 @@
 
               {#if (previewSong.song_variants?.length ?? 0) > 1}
                 <div
-                  class="flex gap-1 bg-surface-highest p-1 rounded-xl border border-white/5"
+                  class="flex gap-1 bg-surface-highest p-1 rounded-md border border-white/5"
                 >
                   {#each previewSong.song_variants || [] as v, i}
                     <button
-                      class="px-3 py-1.5 rounded-lg text-[10px] font-black tracking-widest transition-all
+                      class="px-3 py-1.5 rounded-sm text-[10px] font-black tracking-widest transition-all
                       {selectedVariantIndex === i
                         ? 'bg-primary text-white shadow-lg shadow-primary/20'
                         : 'text-on-surface-variant hover:text-on-surface'}"
@@ -398,7 +398,7 @@
     role="dialog"
   >
     <div
-      class="w-full max-w-[440px] bg-surface-container rounded-4xl border border-white/5 p-10 shadow-2xl scale-in animate-in zoom-in-95 duration-200"
+      class="w-full max-w-[440px] bg-surface-container rounded-md border border-white/5 p-10 shadow-2xl scale-in animate-in zoom-in-95 duration-200"
     >
       <div class="flex flex-col items-center text-center gap-6">
         <div
@@ -419,13 +419,13 @@
 
         <div class="flex w-full gap-3 mt-4">
           <button
-            class="flex-1 py-4 bg-surface-highest text-on-surface-variant font-black uppercase tracking-widest text-xs rounded-2xl border border-white/5 hover:bg-surface-highest/80 transition-all"
+            class="flex-1 py-4 bg-surface-highest text-on-surface-variant font-black uppercase tracking-widest text-xs rounded-sm border border-white/5 hover:bg-surface-highest/80 transition-all"
             onclick={() => (confirmingVote = null)}
           >
             Cancel
           </button>
           <button
-            class="flex-1 py-4 bg-primary text-white font-black uppercase tracking-widest text-xs rounded-2xl shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all disabled:opacity-50"
+            class="flex-1 py-4 bg-primary text-white font-black uppercase tracking-widest text-xs rounded-sm shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all disabled:opacity-50"
             onclick={executeVote}
             disabled={loading}
           >

@@ -351,7 +351,7 @@
     </p>
     <a
       href="/"
-      class="mt-8 bg-primary hover:bg-primary/80 text-white px-8 py-3.5 rounded-xl font-bold text-sm transition-all shadow-lg shadow-primary/20"
+      class="mt-8 bg-primary hover:bg-primary/80 text-white px-8 py-3.5 rounded-sm font-bold text-sm transition-all shadow-lg shadow-primary/20"
     >
       Back to Home
     </a>

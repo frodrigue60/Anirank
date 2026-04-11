@@ -116,7 +116,7 @@
     <div class="grid grid-cols-12 gap-8">
       <!-- Sidebar -->
       <div
-        class="shrink-0 space-y-6 h-fit bg-surface-container p-6 rounded-2xl col-span-12 lg:col-span-3"
+        class="shrink-0 space-y-6 h-fit bg-surface-container p-4 rounded-md col-span-12 lg:col-span-3"
       >
         <div>
           <div class="flex items-center justify-between mb-4 px-2">
@@ -135,7 +135,7 @@
             {#each filters as filter}
               <button
                 onclick={() => !filter.disabled && setFilter(filter.value)}
-                class="w-full text-left px-4 py-2.5 rounded-xl transition-all font-medium flex items-center justify-between {filterType ===
+                class="w-full text-left px-4 py-2.5 rounded-sm transition-all font-medium flex items-center justify-between {filterType ===
                 filter.value
                   ? 'bg-surface-highest text-on-surface shadow-sm'
                   : 'text-on-surface-variant hover:bg-surface-highest hover:text-on-surface'} {filter.disabled
@@ -157,7 +157,7 @@
         {#if unreadCount > 0}
           <button
             onclick={markAllAsRead}
-            class="w-full py-3 rounded-xl bg-primary text-on-surface font-bold text-sm shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
+            class="w-full py-3 rounded-sm bg-primary text-on-surface font-bold text-sm shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
           >
             Mark all as read
           </button>
@@ -166,15 +166,15 @@
 
       <!-- Main Content -->
       <div
-        class="flex-1 min-w-0 bg-surface-container rounded-2xl p-6 col-span-12 lg:col-span-9"
+        class="flex-1 min-w-0 bg-surface-container rounded-md p-6 col-span-12 lg:col-span-9"
       >
         {#if notifications.length === 0}
           <div
-            class="p-20 rounded-3xl text-center border border-white/5 bg-white/2"
+            class="p-20 rounded-md text-center border border-white/5 bg-white/2"
             in:fade
           >
             <div
-              class="w-20 h-20 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-6 text-on-surface-variant"
+              class="w-20 h-20 rounded-md bg-white/5 flex items-center justify-center mx-auto mb-6 text-on-surface-variant"
             >
               <span class="material-symbols-outlined text-5xl"
                 >notifications_off</span
@@ -193,14 +193,14 @@
           <div class="space-y-3">
             {#each notifications as notification, i (notification.id)}
               <div
-                class="group relative p-5 rounded-2xl border transition-all {notification.read_at
+                class="group relative p-5 rounded-sm border transition-all {notification.read_at
                   ? 'bg-white/2 border-white/5 opacity-80'
                   : 'bg-white/5 border-primary/20 shadow-lg shadow-primary/5'}"
                 in:fly={{ y: 20, delay: i * 30 }}
               >
                 <div class="flex gap-5 items-center">
                   <div
-                    class="shrink-0 w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden {getNotificationColor(
+                    class="shrink-0 w-12 h-12 rounded-md flex items-center justify-center overflow-hidden {getNotificationColor(
                       notification.type,
                     )}"
                   >
@@ -282,7 +282,7 @@
 
                   {#if notification.data.anime_cover}
                     <div
-                      class="shrink-0 w-16 h-20 rounded-lg overflow-hidden border border-white/10 ml-2"
+                      class="shrink-0 w-16 h-20 rounded-sm overflow-hidden border border-white/10 ml-2"
                     >
                       <img
                         src={notification.data.anime_cover}
@@ -301,7 +301,7 @@
               {#each Array(data.lastPage) as _, i}
                 <a
                   href="?page={i + 1}{filterType ? `&type=${filterType}` : ''}"
-                  class="w-10 h-10 rounded-xl flex items-center justify-center font-bold transition-all {data.currentPage ===
+                  class="w-10 h-10 rounded-sm flex items-center justify-center font-bold transition-all {data.currentPage ===
                   i + 1
                     ? 'bg-primary text-on-surface'
                     : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-on-surface'}"

@@ -100,7 +100,7 @@
 
 {#if (!data.initialSongs || data.initialSongs.length === 0) && (!data.artists || data.artists.length === 0)}
   <div
-    class="py-20 flex flex-col items-center justify-center text-center space-y-4 rounded-4xl border border-on-surface-variant/10 bg-surface-container"
+    class="py-20 flex flex-col items-center justify-center text-center space-y-4 rounded-md border border-on-surface-variant/10 bg-surface-container"
   >
     <div
       class="w-20 h-20 rounded-full bg-surface-highest flex items-center justify-center text-on-surface-variant/40"

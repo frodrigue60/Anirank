@@ -183,7 +183,7 @@
       {#each studios as studio}
         <a
           href="/studios/{studio.slug}"
-          class="group relative overflow-hidden rounded-md bg-surface-container aspect-video transition-all cursor-pointer shadow-sm border border-surface hover:border-primary/50"
+          class="group relative overflow-hidden rounded-sm bg-surface-container aspect-video transition-all cursor-pointer shadow-sm border border-surface hover:border-primary/50"
         >
           <!-- Background Image (Banner) -->
           <div
@@ -227,7 +227,7 @@
     />
   {:else}
     <div
-      class="text-center py-20 bg-surface-container/30 rounded-3xl border-2 border-dashed border-white/5"
+      class="text-center py-20 bg-surface-container/30 rounded-md border-2 border-dashed border-white/5"
     >
       <span
         class="material-symbols-outlined text-6xl text-on-surface-variant opacity-20 mb-4 block"

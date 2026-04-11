@@ -366,7 +366,7 @@
       class="w-[60%] flex flex-col p-6 overflow-y-auto border-r border-white/5 bg-linear-to-b from-background-dark to-surface-darker"
     >
       <div
-        class="relative aspect-video rounded-2xl overflow-hidden bg-black shadow-2xl mb-6 group neon-border"
+        class="relative aspect-video rounded-md overflow-hidden bg-black shadow-2xl mb-6 group neon-border"
       >
         {#if selectedVariant?.video}
           {#if selectedVariant.video.type === "embed"}
@@ -453,7 +453,7 @@
         </div>
 
         <div
-          class="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10"
+          class="flex items-center justify-between p-4 rounded-md bg-white/5 border border-white/10"
         >
           <div class="flex items-center gap-6">
             <button
@@ -571,7 +571,7 @@
           <!-- svelte-ignore a11y_click_events_have_key_events -->
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <div
-            class="group flex items-center gap-4 p-3 rounded-xl transition-all cursor-pointer justify-between {currentSong?.id ===
+            class="group flex items-center gap-4 p-3 rounded-md transition-all cursor-pointer justify-between {currentSong?.id ===
             song.id
               ? 'bg-primary/10 border border-primary/30'
               : 'hover:bg-white/5 border border-transparent hover:border-white/5'}"
@@ -663,7 +663,7 @@
         <div class="flex items-center gap-4 shrink-0">
           <button
             onclick={toggleShuffle}
-            class="w-12 h-12 rounded-xl bg-surface-dark border border-white/10 flex items-center justify-center hover:bg-white/5 transition-colors {isShuffle
+            class="w-12 h-12 rounded-sm bg-surface-dark border border-white/10 flex items-center justify-center hover:bg-white/5 transition-colors {isShuffle
               ? 'text-primary'
               : 'text-white/60 hover:text-white'}"
             title="Shuffle"
@@ -672,7 +672,7 @@
           </button>
           <button
             onclick={playPrev}
-            class="w-12 h-12 rounded-xl bg-surface-dark border border-white/10 flex items-center justify-center hover:bg-white/5 text-white/60 hover:text-white transition-colors"
+            class="w-12 h-12 rounded-sm bg-surface-dark border border-white/10 flex items-center justify-center hover:bg-white/5 text-white/60 hover:text-white transition-colors"
           >
             <span class="material-symbols-outlined text-[24px]"
               >skip_previous</span
@@ -680,7 +680,7 @@
           </button>
           <button
             onclick={togglePlay}
-            class="w-12 h-12 rounded-xl bg-primary flex items-center justify-center hover:bg-primary/80 shadow-lg shadow-primary/20 text-white transition-all transform hover:scale-105 active:scale-95"
+            class="w-12 h-12 rounded-sm bg-primary flex items-center justify-center hover:bg-primary/80 shadow-lg shadow-primary/20 text-white transition-all transform hover:scale-105 active:scale-95"
           >
             {#if isPaused}
               <span class="material-symbols-outlined text-[24px]"
@@ -692,7 +692,7 @@
           </button>
           <button
             onclick={playNext}
-            class="w-12 h-12 rounded-xl bg-surface-dark border border-white/10 flex items-center justify-center hover:bg-white/5 text-white/60 hover:text-white transition-colors"
+            class="w-12 h-12 rounded-sm bg-surface-dark border border-white/10 flex items-center justify-center hover:bg-white/5 text-white/60 hover:text-white transition-colors"
           >
             <span class="material-symbols-outlined text-[24px]">skip_next</span>
           </button>
@@ -863,7 +863,7 @@
           <!-- svelte-ignore a11y_click_events_have_key_events -->
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <div
-            class="group flex items-center gap-3 p-2.5 rounded-xl transition-all cursor-pointer {currentSong?.id ===
+            class="group flex items-center gap-3 p-2.5 rounded-md transition-all cursor-pointer {currentSong?.id ===
             song.id
               ? 'bg-primary/10 border border-primary/30'
               : 'border border-transparent active:bg-white/5'}"

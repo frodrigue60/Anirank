@@ -72,7 +72,7 @@
 
   {#if tournaments.length === 0 && !loading}
     <div
-      class="text-center py-24 bg-surface-container/30 rounded-3xl border-2 border-dashed border-white/5"
+      class="text-center py-24 bg-surface-container/30 rounded-md border-2 border-dashed border-white/5"
     >
       <Trophy size={48} class="text-on-surface-variant/20 mx-auto mb-4" />
       <h3 class="text-xl font-bold text-on-surface-variant/50">
@@ -87,7 +87,7 @@
       {#each tournaments as tournament}
         <a
           href="/tournaments/{tournament.slug}"
-          class="group relative flex flex-col bg-surface-container rounded-3xl border border-on-surface-variant/10 hover:border-primary/50 transition-all duration-300 overflow-hidden shadow-lg shadow-black/20"
+          class="group relative flex flex-col bg-surface-container rounded-sm border border-on-surface-variant/10 hover:border-primary/50 transition-all duration-300 overflow-hidden shadow-lg shadow-black/20"
         >
           <!-- Status Badge -->
           <div class="absolute top-4 right-4 z-10">

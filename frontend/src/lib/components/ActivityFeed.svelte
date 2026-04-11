@@ -87,7 +87,7 @@
           class="flex animate-pulse items-start gap-4 p-6 bg-surface-container"
         >
           <div
-            class="h-16 w-12 shrink-0 rounded-xl bg-surface-highest/50"
+            class="h-16 w-12 shrink-0 rounded-md bg-surface-highest/50"
           ></div>
           <div class="flex flex-1 flex-col gap-3 justify-center">
             <div class="h-3 w-1/3 rounded-full bg-surface-highest/50"></div>
@@ -128,23 +128,23 @@
                 src={target.anime?.cover_url ||
                   "/images/placeholders/default.jpg"}
                 alt={target.anime?.title}
-                class="h-20 w-14 rounded-md object-cover border border-outline-variant/10 shadow-lg"
+                class="h-20 w-14 rounded-sm object-cover border border-outline-variant/10 shadow-lg"
               />
             {:else if isArtist && target}
               <img
                 src={target.avatar_url || "/images/placeholders/default.jpg"}
                 alt={target.name}
-                class="h-20 w-14 rounded-md object-cover border border-outline-variant/10 shadow-lg"
+                class="h-20 w-14 rounded-sm object-cover border border-outline-variant/10 shadow-lg"
               />
             {:else if isUser && target}
               <img
                 src={target.avatar_url || "/images/placeholders/default.jpg"}
                 alt={target.name}
-                class="w-14 h-14 rounded-md object-cover border border-outline-variant/10 shadow-lg"
+                class="w-14 h-14 rounded-sm object-cover border border-outline-variant/10 shadow-lg"
               />
             {:else}
               <div
-                class="flex h-14 w-14 items-center justify-center rounded-md border border-outline-variant/10 bg-surface-highest/30 shadow-inner"
+                class="flex h-14 w-14 items-center justify-center rounded-sm border border-outline-variant/10 bg-surface-highest/30 shadow-inner"
               >
                 <span
                   class="material-symbols-outlined text-on-surface-variant/20 text-3xl"

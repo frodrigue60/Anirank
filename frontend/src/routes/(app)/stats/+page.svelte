@@ -60,12 +60,12 @@
       </div>
     {:else if error}
       <div
-        class="bg-red-500/5 border border-red-500/10 rounded-[2.5rem] p-12 text-center"
+        class="bg-red-500/5 border border-red-500/10 rounded-md p-12 text-center"
       >
         <div class="text-red-500 font-bold mb-6">{error}</div>
         <button
           onclick={() => window.location.reload()}
-          class="bg-red-500 hover:bg-red-600 text-white px-10 py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all active:scale-95"
+          class="bg-red-500 hover:bg-red-600 text-white px-10 py-4 rounded-sm font-black text-sm uppercase tracking-widest transition-all active:scale-95"
           >Retry Connection</button
         >
       </div>
@@ -75,11 +75,11 @@
       <!-- Growth Charts Section -->
       <div class="grid grid-cols-1 gap-8 mb-12">
         <section
-          class="bg-surface-container border border-outline-variant/10 rounded-[2.5rem] overflow-hidden shadow-2xl p-10"
+          class="bg-surface-container border border-outline-variant/10 rounded-md overflow-hidden shadow-2xl p-10"
         >
           <div class="flex justify-between items-center mb-10">
             <h2 class="text-xl font-black tracking-tight flex items-center gap-3 text-on-surface">
-              <div class="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+              <div class="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center text-primary">
                 <TrendingUp size={20} />
               </div>
               New Ratings
@@ -98,11 +98,11 @@
         </section>
 
         <section
-          class="bg-surface-container border border-outline-variant/10 rounded-[2.5rem] overflow-hidden shadow-2xl p-10"
+          class="bg-surface-container border border-outline-variant/10 rounded-md overflow-hidden shadow-2xl p-10"
         >
           <div class="flex justify-between items-center mb-10">
             <h2 class="text-xl font-black tracking-tight flex items-center gap-3 text-on-surface">
-              <div class="w-10 h-10 rounded-2xl bg-secondary-container/10 flex items-center justify-center text-secondary-container">
+              <div class="w-10 h-10 rounded-md bg-secondary-container/10 flex items-center justify-center text-secondary-container">
                 <Users size={20} />
               </div>
               New Users
@@ -124,11 +124,11 @@
       <!-- Distribution Section -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
         <section
-          class="bg-surface-container border border-outline-variant/10 rounded-[2.5rem] overflow-hidden shadow-2xl p-10"
+          class="bg-surface-container border border-outline-variant/10 rounded-md overflow-hidden shadow-2xl p-10"
         >
           <div class="flex justify-between items-center mb-10">
             <h2 class="text-xl font-black tracking-tight flex items-center gap-3 text-on-surface">
-              <div class="w-10 h-10 rounded-2xl bg-rating-star/10 flex items-center justify-center text-rating-star">
+              <div class="w-10 h-10 rounded-md bg-rating-star/10 flex items-center justify-center text-rating-star">
                 <BarChart3 size={20} />
               </div>
               Score Distribution
@@ -144,11 +144,11 @@
                 class="flex-1 h-full flex flex-col justify-end items-center gap-4 group"
               >
                 <div
-                  class="w-full bg-rating-star/10 hover:bg-rating-star/20 border-t-2 border-rating-star/30 rounded-t-xl transition-all duration-500 relative cursor-pointer"
+                  class="w-full bg-rating-star/10 hover:bg-rating-star/20 border-t-2 border-rating-star/30 rounded-t-md transition-all duration-500 relative cursor-pointer"
                   style="height: {(point.value / maxVal) * 100}%"
                 >
                   <div
-                    class="absolute -top-12 left-1/2 -translate-x-1/2 bg-surface-highest border border-outline-variant/20 px-3 py-1.5 rounded-xl text-[10px] font-black text-on-surface shadow-xl opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all whitespace-nowrap z-10 pointer-events-none"
+                    class="absolute -top-12 left-1/2 -translate-x-1/2 bg-surface-highest border border-outline-variant/20 px-3 py-1.5 rounded-md text-[10px] font-black text-on-surface shadow-xl opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all whitespace-nowrap z-10 pointer-events-none"
                   >
                     {point.value} ratings
                   </div>
@@ -162,11 +162,11 @@
         </section>
 
         <section
-          class="bg-surface-container border border-outline-variant/10 rounded-[2.5rem] overflow-hidden shadow-2xl p-10"
+          class="bg-surface-container border border-outline-variant/10 rounded-md overflow-hidden shadow-2xl p-10"
         >
           <div class="flex justify-between items-center mb-10">
             <h2 class="text-xl font-black tracking-tight flex items-center gap-3 text-on-surface">
-              <div class="w-10 h-10 rounded-2xl bg-green-500/10 flex items-center justify-center text-green-500">
+              <div class="w-10 h-10 rounded-md bg-green-500/10 flex items-center justify-center text-green-500">
                 <PieChart size={20} />
               </div>
               Level Distribution
@@ -182,11 +182,11 @@
                 class="flex-1 h-full flex flex-col justify-end items-center gap-4 group"
               >
                 <div
-                  class="w-full bg-green-500/10 hover:bg-green-500/20 border-t-2 border-green-500/30 rounded-t-xl transition-all duration-500 relative cursor-pointer"
+                  class="w-full bg-green-500/10 hover:bg-green-500/20 border-t-2 border-green-500/30 rounded-t-md transition-all duration-500 relative cursor-pointer"
                   style="height: {(point.value / maxVal) * 100}%"
                 >
                   <div
-                    class="absolute -top-12 left-1/2 -translate-x-1/2 bg-surface-highest border border-outline-variant/20 px-3 py-1.5 rounded-xl text-[10px] font-black text-on-surface shadow-xl opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all whitespace-nowrap z-10 pointer-events-none"
+                    class="absolute -top-12 left-1/2 -translate-x-1/2 bg-surface-highest border border-outline-variant/20 px-3 py-1.5 rounded-md text-[10px] font-black text-on-surface shadow-xl opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all whitespace-nowrap z-10 pointer-events-none"
                   >
                     {point.value} users
                   </div>

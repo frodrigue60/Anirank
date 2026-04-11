@@ -101,7 +101,7 @@
 
           {#if showDiscoverDropdown}
             <div
-              class="absolute left-0 top-full mt-3 w-48 overflow-hidden rounded-md bg-surface-container py-1 shadow-2xl ring-1 ring-outline-variant/5"
+              class="absolute left-0 top-full mt-3 w-48 overflow-hidden rounded-md bg-surface-container py-1 shadow-md shadow-black ring-1 ring-outline-variant/5"
             >
               <a
                 href="/animes"
@@ -255,7 +255,7 @@
 
           {#if showUserDropdown}
             <div
-              class="absolute right-0 top-full mt-3 w-56 overflow-hidden rounded-md bg-surface-container py-1 shadow-2xl ring-1 ring-outline-variant/5"
+              class="absolute right-0 top-full mt-3 w-56 overflow-hidden rounded-md bg-surface-container py-1 shadow-md shadow-black ring-1 ring-outline-variant/5"
             >
               {#if authState.isAuthenticated && authState.user}
                 <div class="border-b border-outline-variant/10 px-4 py-3">
@@ -397,7 +397,7 @@
       <nav class="flex-1 space-y-2 overflow-y-auto px-4 py-6">
         <a
           href="/songs/seasonal"
-          class="flex items-center gap-3 rounded-xl px-4 py-3 text-on-surface-variant transition-all hover:bg-surface-low hover:text-on-surface"
+          class="flex items-center gap-3 rounded-sm px-4 py-3 text-on-surface-variant transition-all hover:bg-surface-low hover:text-on-surface"
         >
           <span class="material-symbols-outlined text-[18px]"
             >calendar_month</span
@@ -405,49 +405,49 @@
         </a>
         <a
           href="/songs/ranking"
-          class="flex items-center gap-3 rounded-xl px-4 py-3 text-on-surface-variant transition-all hover:bg-surface-low hover:text-on-surface"
+          class="flex items-center gap-3 rounded-sm px-4 py-3 text-on-surface-variant transition-all hover:bg-surface-low hover:text-on-surface"
         >
           <span class="material-symbols-outlined text-[18px]">leaderboard</span>
           <span class="text-sm font-medium">Ranking</span>
         </a>
         <a
           href="/animes"
-          class="flex items-center gap-3 rounded-xl px-4 py-3 text-on-surface-variant transition-all hover:bg-surface-low hover:text-on-surface"
+          class="flex items-center gap-3 rounded-sm px-4 py-3 text-on-surface-variant transition-all hover:bg-surface-low hover:text-on-surface"
         >
           <span class="material-symbols-outlined text-[18px]">tv</span>
           <span class="text-sm font-medium">Animes</span>
         </a>
         <a
           href="/users/ranking"
-          class="flex items-center gap-3 rounded-xl px-4 py-3 text-on-surface-variant transition-all hover:bg-surface-low hover:text-on-surface"
+          class="flex items-center gap-3 rounded-sm px-4 py-3 text-on-surface-variant transition-all hover:bg-surface-low hover:text-on-surface"
         >
           <span class="material-symbols-outlined text-[18px]">leaderboard</span>
           <span class="text-sm font-medium">User Ranking</span>
         </a>
         <a
           href="/artists"
-          class="flex items-center gap-3 rounded-xl px-4 py-3 text-on-surface-variant transition-all hover:bg-surface-low hover:text-on-surface"
+          class="flex items-center gap-3 rounded-sm px-4 py-3 text-on-surface-variant transition-all hover:bg-surface-low hover:text-on-surface"
         >
           <span class="material-symbols-outlined text-[18px]">group</span>
           <span class="text-sm font-medium">Artists</span>
         </a>
         <a
           href="/themes"
-          class="flex items-center gap-3 rounded-xl px-4 py-3 text-on-surface-variant transition-all hover:bg-surface-low hover:text-on-surface"
+          class="flex items-center gap-3 rounded-sm px-4 py-3 text-on-surface-variant transition-all hover:bg-surface-low hover:text-on-surface"
         >
           <span class="material-symbols-outlined text-[18px]">music_note</span>
           <span class="text-sm font-medium">Themes</span>
         </a>
         <a
           href="/studios"
-          class="flex items-center gap-3 rounded-xl px-4 py-3 text-on-surface-variant transition-all hover:bg-surface-low hover:text-on-surface"
+          class="flex items-center gap-3 rounded-sm px-4 py-3 text-on-surface-variant transition-all hover:bg-surface-low hover:text-on-surface"
         >
           <span class="material-symbols-outlined text-[18px]">movie</span>
           <span class="text-sm font-medium">Studios</span>
         </a>
         <a
           href="/producers"
-          class="flex items-center gap-3 rounded-xl px-4 py-3 text-on-surface-variant transition-all hover:bg-surface-low hover:text-on-surface"
+          class="flex items-center gap-3 rounded-sm px-4 py-3 text-on-surface-variant transition-all hover:bg-surface-low hover:text-on-surface"
         >
           <span class="material-symbols-outlined text-[18px]"
             >theater_comedy</span

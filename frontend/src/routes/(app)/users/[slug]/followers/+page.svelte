@@ -64,10 +64,10 @@
       {#each followers as user}
         <a
           href={`/users/${user.slug}`}
-          class="group bg-surface-container p-4 rounded-2xl border border-on-surface-variant/10 hover:border-primary/30 transition-all hover:bg-surface-highest flex items-center gap-4 shadow-sm"
+          class="group bg-surface-container p-4 rounded-sm border border-on-surface-variant/10 hover:border-primary/30 transition-all hover:bg-surface-highest flex items-center gap-4 shadow-sm"
         >
           <div
-            class="size-14 rounded-xl overflow-hidden bg-surface-low border border-on-surface-variant/10 group-hover:border-primary/50 transition-colors shadow-inner"
+            class="size-14 rounded-md overflow-hidden bg-surface-low border border-on-surface-variant/10 group-hover:border-primary/50 transition-colors shadow-inner"
           >
             <img
               src={user.avatar_url || "/images/placeholders/default.jpg"}
@@ -99,7 +99,7 @@
     />
   {:else}
     <div
-      class="py-20 text-center bg-surface-container rounded-3xl border border-on-surface-variant/10"
+      class="py-20 text-center bg-surface-container rounded-md border border-on-surface-variant/10"
     >
       <div
         class="size-20 bg-surface-highest rounded-full flex items-center justify-center mx-auto mb-4 text-on-surface-variant/40"

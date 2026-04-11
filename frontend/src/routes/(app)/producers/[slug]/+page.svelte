@@ -118,7 +118,7 @@
 
   <!-- Filter Bar -->
   <section
-    class="relative z-40 bg-surface-container p-4 rounded-3xl border border-white/5 shadow-2xl mx-auto"
+    class="relative z-40 bg-surface-container p-4 rounded-md border border-white/5 shadow-2xl mx-auto"
   >
     <div class="flex flex-col gap-6">
       <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
@@ -141,7 +141,7 @@
               bind:value={searchTerm}
               oninput={handleInput}
               onkeydown={handleKeydown}
-              class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-xl pl-12 pr-6 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 placeholder:text-on-surface-variant/30 transition-all"
+              class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-sm pl-12 pr-6 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 placeholder:text-on-surface-variant/30 transition-all"
               placeholder="Search animes by title..."
               type="text"
             />
@@ -160,7 +160,7 @@
             id="sort-select"
             bind:value={selectedSort}
             onchange={updateFilters}
-            class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-xl px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
+            class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-sm px-4 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
           >
             <option value="">Any</option>
             {#each sortOptions as option}
@@ -205,7 +205,7 @@
     />
   {:else}
     <div
-      class="text-center py-20 bg-surface-container/30 rounded-2xl border border-white/5"
+      class="text-center py-20 bg-surface-container/30 rounded-md border border-white/5"
     >
       <span
         class="material-symbols-outlined text-6xl text-on-surface-variant opacity-20 mb-4 block"

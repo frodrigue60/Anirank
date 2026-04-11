@@ -91,9 +91,9 @@
               {#each section.items as item}
                 <a
                   href={item.path}
-                  class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group {activePath ===
+                  class="w-full flex items-center gap-3 px-4 py-3 rounded-sm transition-all duration-200 group border border-transparent {activePath ===
                   item.path
-                    ? 'bg-primary/5 text-primary border border-primary/10 shadow-[0_0_20px_rgba(127,19,236,0.1)]'
+                    ? 'bg-surface-highest text-primary shadow-sm border-primary/5'
                     : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-highest'}"
                 >
                   <item.icon

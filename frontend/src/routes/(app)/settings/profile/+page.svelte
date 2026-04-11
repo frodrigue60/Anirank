@@ -1,5 +1,6 @@
 <script lang="ts">
   import { authState, setUser } from "$lib/state/auth.svelte";
+  import { themeState, type Theme } from "$lib/state/theme.svelte";
   import api from "$lib/api";
   import { toastState } from "$lib/state/toast.svelte";
   import { Camera, Image as ImageIcon, Save, Loader2 } from "lucide-svelte";
@@ -7,7 +8,6 @@
   let scoreFormat = $state(authState.user?.score_format_id || 1);
   let profileColor = $state(authState.user?.profile_color || "#3db4f2");
   let about = $state(authState.user?.about || "");
-  let theme = $state("dark");
   let isUploadingAvatar = $state(false);
   let isUploadingBanner = $state(false);
   let isSavingSettings = $state(false);
@@ -28,21 +28,8 @@
     }
   });
 
-  $effect(() => {
-    const savedTheme = localStorage.getItem("site-theme") || "dark";
-    theme = savedTheme;
-    applyTheme(savedTheme);
-  });
-
-  function applyTheme(t: string) {
-    document.documentElement.classList.remove("light", "dark", "contrast");
-    document.documentElement.classList.add(t);
-  }
-
-  function handleThemeChange(newTheme: string) {
-    theme = newTheme;
-    localStorage.setItem("site-theme", newTheme);
-    applyTheme(newTheme);
+  function handleThemeChange(newTheme: Theme) {
+    themeState.set(newTheme);
     toastState.addToast(`Theme changed to ${newTheme}`, "success");
   }
 
@@ -248,7 +235,7 @@
           onclick={() => handleThemeChange("light")}
         >
           <div
-            class="w-16 h-16 rounded-sm bg-[#fff7ff] border-2 flex items-center justify-center text-[#1e1924] font-black text-2xl shadow-sm transition-all group-hover:scale-105 {theme ===
+            class="w-16 h-16 rounded-sm bg-[#fff7ff] border-2 flex items-center justify-center text-[#1e1924] font-black text-2xl shadow-sm transition-all group-hover:scale-105 {themeState.current ===
             'light'
               ? 'border-primary ring-4 ring-primary/20'
               : 'border-transparent'}"
@@ -257,7 +244,7 @@
             A
           </div>
           <span
-            class="text-[10px] font-black uppercase tracking-widest {theme ===
+            class="text-[10px] font-black uppercase tracking-widest {themeState.current ===
             'light'
               ? 'text-on-surface'
               : 'text-on-surface-variant'}">Light</span
@@ -270,7 +257,7 @@
           onclick={() => handleThemeChange("dark")}
         >
           <div
-            class="w-16 h-16 rounded-sm bg-[#261A38] border-2 flex items-center justify-center text-[#ede6f2] font-black text-2xl shadow-sm transition-all group-hover:scale-105 {theme ===
+            class="w-16 h-16 rounded-sm bg-[#261A38] border-2 flex items-center justify-center text-[#ede6f2] font-black text-2xl shadow-sm transition-all group-hover:scale-105 {themeState.current ===
             'dark'
               ? 'border-primary ring-4 ring-primary/20'
               : 'border-white/10'}"
@@ -279,7 +266,7 @@
             A
           </div>
           <span
-            class="text-[10px] font-black uppercase tracking-widest {theme ===
+            class="text-[10px] font-black uppercase tracking-widest {themeState.current ===
             'dark'
               ? 'text-on-surface'
               : 'text-on-surface-variant'}">Dark</span
@@ -292,7 +279,7 @@
           onclick={() => handleThemeChange("contrast")}
         >
           <div
-            class="w-16 h-16 rounded-sm bg-black border-2 flex flex-col items-center justify-center text-white font-black text-2xl shadow-sm transition-all group-hover:scale-105 relative overflow-hidden {theme ===
+            class="w-16 h-16 rounded-sm bg-black border-2 flex flex-col items-center justify-center text-white font-black text-2xl shadow-sm transition-all group-hover:scale-105 relative overflow-hidden {themeState.current ===
             'contrast'
               ? 'border-primary ring-4 ring-primary/20'
               : 'border-white/10'}"
@@ -305,7 +292,7 @@
             <span class="relative z-10 text-white">A</span>
           </div>
           <span
-            class="text-[10px] font-black uppercase tracking-widest {theme ===
+            class="text-[10px] font-black uppercase tracking-widest {themeState.current ===
             'contrast'
               ? 'text-on-surface'
               : 'text-on-surface-variant'}">Contrast</span
@@ -472,7 +459,7 @@
           </div>
           {#if isUploadingAvatar}
             <div
-              class="absolute inset-0 rounded-full bg-surface-low/80 flex items-center justify-center"
+              class="absolute inset-0 rounded-md bg-surface-low/80 flex items-center justify-center"
             >
               <Loader2 class="animate-spin text-primary" size={24} />
             </div>

@@ -124,7 +124,7 @@
 
 ### Frontend Polish
 
-- 🚧 Border radius unification (Editorial system: `rounded-sm` standard, see `DESIGN.md`) only public side
+- ✅ **Border radius unification** (Editorial system: `rounded-sm` standard, see `DESIGN.md`) only public side
 - 🔲 Skeleton loading states across all data-fetching views
 - ✅ Error boundary pages (404 Not Found, 500 Server Error) with branded design
 - 🔲 Toast notification system audit (ensure all async actions provide feedback)
@@ -232,4 +232,4 @@
 | 🟡 Medium | Offset pagination on large tables (songs, anime) will degrade                   | `repository/postgres/`           |
 | 🟡 Medium | `ILIKE` search will slow on large datasets                                      | `search_usecase.go`              |
 | 🟢 Low    | `product_roadmap.md` in root is now superseded by this file                     | Root                             |
-| 🟢 Low    | Several `rounded-xl` / `rounded-full` inconsistencies remain in non-index pages | `frontend/src/`                  |
+| ✅ Done   | Several `rounded-xl` / `rounded-full` inconsistencies remain in non-index pages | `frontend/src/`                  |

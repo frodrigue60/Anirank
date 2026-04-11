@@ -3,7 +3,7 @@ import { browser } from "$app/environment";
 export type Theme = "light" | "dark" | "contrast";
 
 export class ThemeState {
-    current = $state<Theme>("light");
+    current = $state<Theme>("dark");
 
     constructor() {
         if (browser) {

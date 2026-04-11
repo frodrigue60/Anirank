@@ -181,7 +181,7 @@
       {#each producers as producer}
         <a
           href="/producers/{producer.slug}"
-          class="group relative overflow-hidden rounded-md bg-surface border border-surface hover:border-primary/50 aspect-video transition-all cursor-pointer shadow-sm"
+          class="group relative overflow-hidden rounded-sm bg-surface border border-surface hover:border-primary/50 aspect-video transition-all cursor-pointer shadow-sm"
         >
           <!-- Background Image (Banner) -->
           <div
@@ -225,7 +225,7 @@
     />
   {:else}
     <div
-      class="text-center py-20 bg-surface-container/30 rounded-3xl border-2 border-dashed border-white/5"
+      class="text-center py-20 bg-surface-container/30 rounded-md border-2 border-dashed border-white/5"
     >
       <span
         class="material-symbols-outlined text-6xl text-on-surface-variant opacity-20 mb-4 block"

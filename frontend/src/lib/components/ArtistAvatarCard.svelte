@@ -29,7 +29,7 @@
       title="View artist profile: {artist.name}">{artist.name}</a
     >
     <div
-      class="mt-1.5 inline-flex items-center px-3 py-1 rounded-full bg-primary/20 text-primary text-[11px] font-bold border border-primary/20"
+      class="mt-1.5 inline-flex items-center px-3 py-1 rounded-sm bg-primary/20 text-primary text-[11px] font-bold border border-primary/20"
     >
       {artist.enabled_songs || 0} Themes
     </div>

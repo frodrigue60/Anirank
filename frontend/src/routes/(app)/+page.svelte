@@ -80,7 +80,7 @@
           >
             <div class="relative shrink-0 shadow-2xl">
               <div
-                class="relative h-48 w-48 overflow-hidden rounded-xl border border-outline-variant/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] md:h-64 md:w-64"
+                class="relative h-48 w-48 overflow-hidden rounded-md border border-outline-variant/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] md:h-64 md:w-64"
               >
                 <img
                   alt="Cover art for {homeData.featured_song.anime?.title ||
@@ -188,12 +188,12 @@
               {#each homeData.weakly_ranking.op.slice(0, 3) as item, index}
                 <a
                   href="/songs/{item.anime?.slug}/{item.slug}"
-                  class="group relative flex items-center gap-4 rounded-md bg-surface-container p-4 transition-all hover:bg-primary/10 shadow-sm shadow-on-surface/5"
+                  class="group relative flex items-center gap-4 rounded-sm bg-surface-container p-4 transition-all hover:bg-primary/10 shadow-sm shadow-on-surface/5"
                   title="View details for {getSongName(item)}"
                 >
-                  <div
-                    class="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg"
-                  >
+                    <div
+                      class="relative h-20 w-20 shrink-0 overflow-hidden rounded-md"
+                    >
                     <img
                       alt={getSongName(item)}
                       title={getSongName(item)}
@@ -201,11 +201,11 @@
                       src={item.anime?.cover_url ??
                         "/images/placeholders/default.jpg"}
                     />
-                    <div
-                      class="absolute top-1 left-1 rounded bg-black/60 px-1.5 py-0.5 text-xs font-bold text-white shadow backdrop-blur-sm"
-                    >
-                      #{index + 1}
-                    </div>
+                      <div
+                        class="absolute top-1 left-1 rounded-sm bg-black/60 px-1.5 py-0.5 text-xs font-bold text-white shadow backdrop-blur-sm"
+                      >
+                        #{index + 1}
+                      </div>
                   </div>
                   <div class="min-w-0 flex-1">
                     <div class="flex items-center justify-between">
@@ -235,7 +235,7 @@
               {/each}
             {:else}
               <div
-                class="flex h-32 flex-col items-center justify-center rounded-sm bg-surface-low text-on-surface-variant/40"
+                class="flex h-32 flex-col items-center justify-center rounded-md bg-surface-low text-on-surface-variant/40"
               >
                 <span class="text-sm">No rankings available yet</span>
               </div>
@@ -253,12 +253,12 @@
               {#each homeData.weakly_ranking.ed.slice(0, 3) as item, index}
                 <a
                   href="/songs/{item.anime?.slug}/{item.slug}"
-                  class="group relative flex items-center gap-4 rounded-md bg-surface-container p-4 transition-all hover:bg-primary/10 shadow-sm shadow-on-surface/5"
+                  class="group relative flex items-center gap-4 rounded-sm bg-surface-container p-4 transition-all hover:bg-primary/10 shadow-sm shadow-on-surface/5"
                   title="View details for {getSongName(item)}"
                 >
-                  <div
-                    class="relative h-20 w-20 shrink-0 overflow-hidden rounded-sm"
-                  >
+                    <div
+                      class="relative h-20 w-20 shrink-0 overflow-hidden rounded-md"
+                    >
                     <img
                       alt={getSongName(item)}
                       title={getSongName(item)}
@@ -266,11 +266,11 @@
                       src={item.anime?.cover_url ??
                         "/images/placeholders/default.jpg"}
                     />
-                    <div
-                      class="absolute top-1 left-1 rounded bg-black/60 px-1.5 py-0.5 text-xs font-bold text-white shadow backdrop-blur-sm"
-                    >
-                      #{index + 1}
-                    </div>
+                      <div
+                        class="absolute top-1 left-1 rounded-sm bg-black/60 px-1.5 py-0.5 text-xs font-bold text-white shadow backdrop-blur-sm"
+                      >
+                        #{index + 1}
+                      </div>
                   </div>
                   <div class="min-w-0 flex-1">
                     <div class="flex items-center justify-between">
@@ -300,7 +300,7 @@
               {/each}
             {:else}
               <div
-                class="flex h-32 flex-col items-center justify-center rounded-xl bg-surface-low text-on-surface-variant/40"
+                class="flex h-32 flex-col items-center justify-center rounded-md bg-surface-low text-on-surface-variant/40"
               >
                 <span class="text-sm">No rankings available yet</span>
               </div>
@@ -393,12 +393,12 @@
                       "/images/placeholders/default.jpg"}
                   />
                   <div
-                    class="absolute top-2 right-2 rounded border border-outline-variant/10 bg-black/60 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white"
+                    class="absolute top-2 right-2 rounded-sm border border-outline-variant/10 bg-black/60 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white"
                   >
                     {song.type ?? "type n/a"}
                   </div>
                   <div
-                    class="absolute bottom-2 left-2 flex items-center gap-0.5 rounded bg-black/60 px-1.5 py-0.5 text-xs font-bold text-yellow-400"
+                    class="absolute bottom-2 left-2 flex items-center gap-0.5 rounded-sm bg-black/60 px-1.5 py-0.5 text-xs font-bold text-yellow-400"
                   >
                     <span class="material-symbols-outlined filled">star</span>
                     {formatScore(song.average_rating)}
@@ -436,12 +436,12 @@
                       "/images/placeholders/default.jpg"}
                   />
                   <div
-                    class="absolute top-2 right-2 rounded border border-outline-variant/10 bg-black/60 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white"
+                    class="absolute top-2 right-2 rounded-sm border border-outline-variant/10 bg-black/60 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white"
                   >
                     {song.type ?? "type n/a"}
                   </div>
                   <div
-                    class="absolute bottom-2 left-2 flex items-center gap-0.5 rounded bg-black/60 px-1.5 py-0.5 text-xs font-bold text-red-500"
+                    class="absolute bottom-2 left-2 flex items-center gap-0.5 rounded-sm bg-black/60 px-1.5 py-0.5 text-xs font-bold text-red-500"
                   >
                     <span class="material-symbols-outlined filled"
                       >favorite</span
@@ -481,12 +481,12 @@
                       "/images/placeholders/default.jpg"}
                   />
                   <div
-                    class="absolute top-2 right-2 rounded border border-outline-variant/10 bg-black/60 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white"
+                    class="absolute top-2 right-2 rounded-sm border border-outline-variant/10 bg-black/60 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white"
                   >
                     {song.type ?? "type n/a"}
                   </div>
                   <div
-                    class="absolute bottom-2 left-2 flex items-center gap-0.5 rounded bg-black/60 px-1.5 py-0.5 text-xs font-bold text-blue-500"
+                    class="absolute bottom-2 left-2 flex items-center gap-0.5 rounded-sm bg-black/60 px-1.5 py-0.5 text-xs font-bold text-blue-500"
                   >
                     <span class="material-symbols-outlined filled"
                       >visibility</span
@@ -517,7 +517,7 @@
     <!-- Right Column (Sidebar) -->
     <aside class="lg:col-span-3 flex flex-col gap-8">
       <!-- Featured Artists -->
-      <div class="rounded-sm bg-surface-container p-4 space-y-2 shadow-sm">
+      <div class="rounded-md bg-surface-container p-4 space-y-2 shadow-sm">
         <div class="flex items-center justify-between">
           <h3 class="text-lg font-bold text-on-surface">Featured Artists</h3>
         </div>

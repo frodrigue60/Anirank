@@ -107,14 +107,14 @@
             type="text"
             bind:value={searchQuery}
             placeholder="Search playlists..."
-            class="w-full bg-surface-low border border-on-surface-variant/10 rounded-2xl py-4 pl-12 pr-6 text-on-surface placeholder:text-on-surface-variant/40 focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all font-medium"
+            class="w-full bg-surface-low border border-on-surface-variant/10 rounded-md py-4 pl-12 pr-6 text-on-surface placeholder:text-on-surface-variant/40 focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all font-medium"
           />
         </div>
 
         {#if isOwner}
           <button
             onclick={() => (showCreateModal = true)}
-            class="bg-primary hover:opacity-90 text-white px-8 py-4 rounded-2xl text-sm font-black uppercase tracking-widest transition-all flex items-center gap-2 whitespace-nowrap shadow-lg shadow-primary/20 active:scale-95"
+            class="bg-primary hover:opacity-90 text-white px-8 py-4 rounded-sm text-sm font-black uppercase tracking-widest transition-all flex items-center gap-2 whitespace-nowrap shadow-lg shadow-primary/20 active:scale-95"
           >
             <span class="material-symbols-outlined text-sm font-black">add</span>
             New Playlist

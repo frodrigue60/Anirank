@@ -92,7 +92,7 @@
 
   <!-- Filter Row -->
   <section
-    class="relative z-40 flex flex-col gap-4 bg-surface-container p-4 rounded-3xl border border-white/5 shadow-2xl mb-10"
+    class="relative z-40 flex flex-col gap-4 bg-surface-container p-4 rounded-md border border-white/5 shadow-2xl mb-10"
   >
     <div class="relative group">
       <label
@@ -113,7 +113,7 @@
           bind:value={params.name}
           oninput={handleInput}
           onkeydown={handleKeydown}
-          class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-xl pl-12 pr-6 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 placeholder:text-on-surface-variant/20 transition-all"
+          class="w-full h-12 bg-surface-container border border-on-surface-variant/10 rounded-sm pl-12 pr-6 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 placeholder:text-on-surface-variant/20 transition-all"
           placeholder="Search playlists (e.g. My favorites, Top Openings)..."
         />
       </div>
@@ -141,7 +141,7 @@
       {#each playlists as playlist}
         <a
           href="/playlists/{playlist.id}"
-          class="group relative overflow-hidden rounded-xl bg-surface-container aspect-video border border-transparent hover:border-primary/50 transition-all cursor-pointer shadow-sm"
+          class="group relative overflow-hidden rounded-sm bg-surface-container aspect-video border border-transparent hover:border-primary/50 transition-all cursor-pointer shadow-sm"
         >
           <!-- Background Image -->
           {#if playlist.banner_url}
@@ -195,7 +195,7 @@
     />
   {:else}
     <div
-      class="text-center py-24 bg-surface-container/30 rounded-3xl border-2 border-dashed border-white/5"
+      class="text-center py-24 bg-surface-container/30 rounded-md border-2 border-dashed border-white/5"
     >
       <Search size={48} class="text-on-surface-variant/20 mx-auto mb-4" />
       <p class="text-on-surface-variant/40">

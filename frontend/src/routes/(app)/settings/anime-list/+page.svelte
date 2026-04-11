@@ -16,7 +16,7 @@
   class="flex flex-col items-center justify-center py-32 text-center animate-in fade-in zoom-in-95 duration-500"
 >
   <div
-    class="w-20 h-20 rounded-3xl bg-white/5 flex items-center justify-center mb-6 border border-white/5"
+    class="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mb-6 border border-white/5"
   >
     <span class="material-symbols-outlined text-4xl text-white/10"
       >construction</span

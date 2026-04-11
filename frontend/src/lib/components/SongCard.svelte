@@ -30,13 +30,13 @@
     <div class="space-y-1 pr-4 h-full flex flex-col justify-end">
       <div class="flex items-center gap-2 mb-2">
         <div
-          class="inline-flex items-center px-2 py-0.5 rounded bg-primary text-[10px] font-black text-white uppercase tracking-wider shadow-lg"
+          class="inline-flex items-center px-2 py-0.5 rounded-sm bg-primary text-[10px] font-black text-white uppercase tracking-wider shadow-lg"
         >
           {song.type}
           {song.number || ""}
         </div>
         <div
-          class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black text-white uppercase tracking-wider shadow-lg {song.user_rating
+          class="inline-flex items-center px-2 py-0.5 rounded-sm text-[10px] font-black text-white uppercase tracking-wider shadow-lg {song.user_rating
             ? 'bg-green-500'
             : 'bg-slate-400 '}"
         >
@@ -73,7 +73,7 @@
     <div class="flex flex-col items-end gap-2 shrink-0 h-full">
       <!-- Rating -->
       <div
-        class="px-2 py-1 rounded-xl flex items-center gap-1.5 text-yellow-500 drop-shadow"
+        class="px-2 py-1 rounded-sm flex items-center gap-1.5 text-yellow-500 drop-shadow"
         title="Average rating"
       >
         <span class="material-symbols-outlined text-sm filled">star</span>

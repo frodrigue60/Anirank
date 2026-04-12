@@ -491,6 +491,8 @@ func (h *AdminHandler) BatchFetchAnimes(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"message": "Batch fetch started"})
 }
 
+
+
 func (h *AdminHandler) SyncAnime(c *fiber.Ctx) error {
 	id, err := h.resolveID(c, "anime")
 	if err != nil {
@@ -549,6 +551,23 @@ func (h *AdminHandler) GetLatestSongNumber(c *fiber.Ctx) error {
 	}
 	animeID, _ := strconv.ParseUint(animeIDStr, 10, 64)
 	songType := c.Query("type")
+	typeIDStr := c.Query("type_id")
+
+	if typeIDStr != "" && typeIDStr != "0" {
+		typeID, err := strconv.ParseUint(typeIDStr, 10, 64)
+		if err == nil {
+			// Find slug for this typeID to keep the usecase clean (it expects slug)
+			types, _ := h.songRepo.GetSongTypes(c.Context())
+			for _, t := range types {
+				if t.ID != nil && *t.ID == typeID {
+					if t.Slug != nil {
+						songType = *t.Slug
+					}
+					break
+				}
+			}
+		}
+	}
 
 	number, err := h.usecase.GetNextSongNumber(c.Context(), animeID, songType)
 	if err != nil {
@@ -573,11 +592,22 @@ func (h *AdminHandler) GetSong(c *fiber.Ctx) error {
 func (h *AdminHandler) CreateSong(c *fiber.Ctx) error {
 	var req struct {
 		domain.Song
+		TypeIDRaw interface{} `json:"type_id"`
 		ArtistIDs  []uint64 `json:"artist_ids"`
 		ArtistsStr string   `json:"artists_string"`
 	}
+
 	if err := c.BodyParser(&req); err != nil {
 		return domain.NewAppError(400, "Invalid payload", err)
+	}
+
+	// Resolve TypeID if provided as string/UUID
+	if req.TypeIDRaw != nil {
+		typeIDStr := fmt.Sprintf("%v", req.TypeIDRaw)
+		resolvedID, err := h.resolveTypeID(c.Context(), typeIDStr)
+		if err == nil {
+			req.Song.TypeID = resolvedID
+		}
 	}
 
 	if err := h.usecase.CreateSong(c.Context(), &req.Song, h.getAuditMetadata(c)); err != nil {
@@ -605,6 +635,7 @@ func (h *AdminHandler) UpdateSong(c *fiber.Ctx) error {
 	}
 	var req struct {
 		domain.Song
+		TypeIDRaw interface{} `json:"type_id"`
 		ArtistIDs  []uint64 `json:"artist_ids"`
 		ArtistsStr string   `json:"artists_string"`
 	}
@@ -612,6 +643,15 @@ func (h *AdminHandler) UpdateSong(c *fiber.Ctx) error {
 		return domain.NewAppError(400, "Invalid payload", err)
 	}
 	req.Song.ID = id
+
+	// Resolve TypeID if provided as string/UUID
+	if req.TypeIDRaw != nil {
+		typeIDStr := fmt.Sprintf("%v", req.TypeIDRaw)
+		resolvedID, err := h.resolveTypeID(c.Context(), typeIDStr)
+		if err == nil {
+			req.Song.TypeID = resolvedID
+		}
+	}
 
 	if err := h.usecase.UpdateSong(c.Context(), &req.Song, h.getAuditMetadata(c)); err != nil {
 		return err
@@ -629,6 +669,30 @@ func (h *AdminHandler) UpdateSong(c *fiber.Ctx) error {
 		"message": "Song updated successfully",
 		"data":    req.Song,
 	})
+}
+
+func (h *AdminHandler) resolveTypeID(ctx context.Context, uuidOrID string) (*uint64, error) {
+	if uuidOrID == "" || uuidOrID == "0" {
+		return nil, nil
+	}
+
+	// Try to parse as uint64 first
+	if id, err := strconv.ParseUint(uuidOrID, 10, 64); err == nil {
+		return &id, nil
+	}
+
+	// Try to resolve as UUID
+	types, err := h.songRepo.GetSongTypes(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, t := range types {
+		if t.UUID != nil && *t.UUID == uuidOrID {
+			return t.ID, nil
+		}
+	}
+
+	return nil, fmt.Errorf("song type not found: %s", uuidOrID)
 }
 
 func (h *AdminHandler) DeleteSong(c *fiber.Ctx) error {
@@ -979,6 +1043,14 @@ func (h *AdminHandler) GetYears(c *fiber.Ctx) error {
 		return err
 	}
 	return c.JSON(fiber.Map{"data": years})
+}
+
+func (h *AdminHandler) GetSongTypes(c *fiber.Ctx) error {
+	types, err := h.usecase.GetSongTypes(c.Context())
+	if err != nil {
+		return err
+	}
+	return c.JSON(fiber.Map{"data": types})
 }
 
 func (h *AdminHandler) CreateYear(c *fiber.Ctx) error {

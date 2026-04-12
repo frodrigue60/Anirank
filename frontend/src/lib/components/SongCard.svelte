@@ -32,8 +32,8 @@
         <div
           class="inline-flex items-center px-2 py-0.5 rounded-sm bg-primary text-[10px] font-black text-white uppercase tracking-wider shadow-lg"
         >
-          {song.type}
-          {song.number || ""}
+          {song.song_type?.slug || song.type}
+          {song.theme_num || ""}
         </div>
         <div
           class="inline-flex items-center px-2 py-0.5 rounded-sm text-[10px] font-black text-white uppercase tracking-wider shadow-lg {song.user_rating

@@ -51,12 +51,18 @@ func (h *DiscoveryHandler) Init(c *fiber.Ctx) error {
 		genreDTOs[i] = dto.ToGenreDTO(&g)
 	}
 
+	songTypeDTOs := make([]dto.SongTypeDTO, len(data.SongTypes))
+	for i, st := range data.SongTypes {
+		songTypeDTOs[i] = dto.ToSongTypeDTO(&st)
+	}
+
 	return c.JSON(fiber.Map{
 		"data": dto.InitDataDTO{
-			Years:   yearDTOs,
-			Seasons: seasonDTOs,
-			Formats: formatDTOs,
-			Genres:  genreDTOs,
+			Years:     yearDTOs,
+			Seasons:   seasonDTOs,
+			Formats:   formatDTOs,
+			Genres:    genreDTOs,
+			SongTypes: songTypeDTOs,
 		},
 	})
 }

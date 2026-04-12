@@ -491,7 +491,7 @@
   title="{getSongName(currentSong)} - {currentSong.anime?.title} - AniRank"
   description="Listen to and rate '{getSongName(
     currentSong,
-  )}' ({currentSong.type}{currentSong.theme_num || ''}) by {getSongArtistNames(
+  )}' ({currentSong.song_type?.name || currentSong.type}{currentSong.theme_num || ''}) by {getSongArtistNames(
     currentSong.artists,
   )} from the anime {currentSong.anime?.title}."
   image={`${PUBLIC_API_URL}/og/song/${currentSong.anime?.slug}/${currentSong.slug}`}
@@ -562,16 +562,17 @@
       <div class="space-y-4">
         <div class="space-y-2">
           <div class="flex items-center gap-3">
-            <!-- <div
-            class="flex bg-surface-highest rounded-full p-1 border border-on-surface-variant/10 shadow-sm"
-          >
-            <span
-              class="px-3 py-1.5 rounded-full text-[10px] font-black bg-primary text-white uppercase tracking-widest"
+            <div
+              class="flex bg-surface-highest rounded-full p-1 border border-on-surface-variant/10 shadow-sm"
             >
-              {currentSong.type}
-              {currentSong.theme_num || ""}
-            </span>
-          </div> -->
+              <span
+                class="px-3 py-1.5 rounded-full text-[10px] font-black bg-primary text-white uppercase tracking-widest"
+                title={currentSong.song_type?.description}
+              >
+                {currentSong.song_type?.name || currentSong.type}
+                {currentSong.theme_num || ""}
+              </span>
+            </div>
             <!-- Version Selector -->
             {#if currentSong.song_variants && currentSong.song_variants.length > 1}
               <div

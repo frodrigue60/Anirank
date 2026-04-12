@@ -13,6 +13,7 @@ type Song struct {
 	SongEN        *string   `db:"song_en" json:"song_en"`
 	ThemeNum      string    `db:"theme_num" json:"theme_num"`
 	Type          string    `db:"type" json:"type"`
+	TypeID        *uint64   `db:"type_id" json:"type_id"`
 	Slug          string    `db:"slug" json:"slug"`
 	AnimeID       uint64    `db:"anime_id" json:"anime_id"`
 	SeasonID      uint64    `db:"season_id" json:"season_id"`
@@ -41,10 +42,20 @@ type Song struct {
 
 	// Relations
 	Anime    *Anime        `db:"anime" json:"anime,omitempty"`
+	SongType *SongType     `db:"song_type" json:"song_type,omitempty"`
 	Season   *Season       `db:"-" json:"season,omitempty"`
 	Year     *Year         `db:"-" json:"year,omitempty"`
 	Variants []SongVariant `db:"-" json:"song_variants,omitempty"`
 	Artists  []Artist      `db:"-" json:"artists,omitempty"`
+}
+
+type SongType struct {
+	ID          *uint64    `db:"id" json:"id"`
+	UUID        *string    `db:"uuid" json:"uuid"`
+	Name        *string    `db:"name" json:"name"`
+	Slug        *string    `db:"slug" json:"slug"`
+	Description *string   `db:"description" json:"description"`
+	CreatedAt   *time.Time `db:"created_at" json:"created_at"`
 }
 
 type SongVariant struct {
@@ -121,6 +132,7 @@ type SongFilters struct {
 	Season   string
 	Genre    string
 	Status   *bool
+	TypeID   uint64
 	Type     string
 	Format   string
 	Sort     string
@@ -158,6 +170,9 @@ type SongRepository interface {
 
 	// Sitemap
 	GetPublicSlugs(ctx context.Context) ([]SitemapItem, error)
+
+	// Taxonomy
+	GetSongTypes(ctx context.Context) ([]SongType, error)
 }
 
 type SongVariantRepository interface {

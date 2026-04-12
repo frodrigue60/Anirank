@@ -372,6 +372,7 @@ func SetupPublicRoutes(app *fiber.App,
 	adminOnly.Get("/years", adminHandler.GetYears)
 	adminOnly.Get("/seasons", adminHandler.GetSeasons)
 	adminOnly.Get("/formats", adminHandler.GetFormats)
+	adminOnly.Get("/song-types", adminHandler.GetSongTypes)
 
 	// Years
 	adminOnly.Get("/taxonomies/years", adminHandler.GetYears)

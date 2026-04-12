@@ -12,6 +12,9 @@ class NotificationsState {
   async init() {
     if (typeof window === "undefined" || this.isConnected) return;
     
+    const token = getAuthToken();
+    if (!token) return;
+    
     // Initial fetch of unread count
     try {
       const res = await api.get("/notifications/unread-count");
@@ -57,6 +60,7 @@ class NotificationsState {
       signal: this.abortController.signal,
       onopen: async (response) => {
         if (response.ok && response.headers.get("content-type")?.includes("text/event-stream")) {
+          this.isConnected = true;
           return; // everything's good
         } else if (response.status >= 400 && response.status < 500 && response.status !== 429) {
           // Client-side errors are usually non-retriable
@@ -93,8 +97,6 @@ class NotificationsState {
         console.error("SSE Error:", err);
       }
     });
-
-    this.isConnected = true;
   }
 
   disconnect() {

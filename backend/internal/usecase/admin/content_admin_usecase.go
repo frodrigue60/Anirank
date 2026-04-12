@@ -2465,6 +2465,10 @@ func (u *ContentAdminUsecase) GetYears(ctx context.Context) ([]domain.Year, erro
 	return u.taxonomyRepo.GetAllYears(ctx)
 }
 
+func (u *ContentAdminUsecase) GetSongTypes(ctx context.Context) ([]domain.SongType, error) {
+	return u.songRepo.GetSongTypes(ctx)
+}
+
 func (u *ContentAdminUsecase) CreateSeason(ctx context.Context, season *domain.Season, meta domain.AuditMetadata) error {
 	if err := u.taxonomyRepo.CreateSeason(ctx, season); err != nil {
 		return err

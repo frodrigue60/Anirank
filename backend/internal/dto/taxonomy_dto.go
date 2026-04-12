@@ -22,8 +22,9 @@ type GenreDTO struct {
 }
 
 type InitDataDTO struct {
-	Years   []YearDTO   `json:"years"`
-	Seasons []SeasonDTO `json:"seasons"`
-	Formats []FormatDTO `json:"formats"`
-	Genres  []GenreDTO  `json:"genres"`
+	Years     []YearDTO     `json:"years"`
+	Seasons   []SeasonDTO   `json:"seasons"`
+	Formats   []FormatDTO   `json:"formats"`
+	Genres    []GenreDTO    `json:"genres"`
+	SongTypes []SongTypeDTO `json:"song_types"`
 }

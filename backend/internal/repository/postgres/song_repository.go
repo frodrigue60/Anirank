@@ -23,9 +23,12 @@ func NewSongRepository(db *sqlx.DB) domain.SongRepository {
 func (r *songRepository) GetByID(ctx context.Context, id uint64) (*domain.Song, error) {
 	var s domain.Song
 	query := `
-		SELECT s.*, a.id AS "anime.id", a.uuid AS "anime.uuid", a.title AS "anime.title", a.slug AS "anime.slug", a.cover AS "anime.cover"
+		SELECT s.*, 
+		       a.id AS "anime.id", a.uuid AS "anime.uuid", a.title AS "anime.title", a.slug AS "anime.slug", a.cover AS "anime.cover",
+		       st.id AS "song_type.id", st.uuid AS "song_type.uuid", st.name AS "song_type.name", st.slug AS "song_type.slug", st.description AS "song_type.description"
 		FROM songs s 
 		LEFT JOIN animes a ON s.anime_id = a.id
+		LEFT JOIN song_types st ON s.type_id = st.id
 		WHERE s.id = $1
 	`
 	err := r.db.GetContext(ctx, &s, query, id)
@@ -41,9 +44,12 @@ func (r *songRepository) GetByID(ctx context.Context, id uint64) (*domain.Song, 
 func (r *songRepository) GetByUUID(ctx context.Context, uuid string) (*domain.Song, error) {
 	var s domain.Song
 	query := `
-		SELECT s.*, a.id AS "anime.id", a.uuid AS "anime.uuid", a.title AS "anime.title", a.slug AS "anime.slug", a.cover AS "anime.cover"
+		SELECT s.*, 
+		       a.id AS "anime.id", a.uuid AS "anime.uuid", a.title AS "anime.title", a.slug AS "anime.slug", a.cover AS "anime.cover",
+		       st.id AS "song_type.id", st.uuid AS "song_type.uuid", st.name AS "song_type.name", st.slug AS "song_type.slug", st.description AS "song_type.description"
 		FROM songs s 
 		LEFT JOIN animes a ON s.anime_id = a.id
+		LEFT JOIN song_types st ON s.type_id = st.id
 		WHERE s.uuid = $1
 	`
 	err := r.db.GetContext(ctx, &s, query, uuid)
@@ -58,7 +64,13 @@ func (r *songRepository) GetByUUID(ctx context.Context, uuid string) (*domain.So
 
 func (r *songRepository) GetBySlug(ctx context.Context, slug string) (*domain.Song, error) {
 	var s domain.Song
-	query := "SELECT s.* FROM songs s WHERE s.slug = $1"
+	query := `
+		SELECT s.*,
+		       st.id AS "song_type.id", st.uuid AS "song_type.uuid", st.name AS "song_type.name", st.slug AS "song_type.slug", st.description AS "song_type.description"
+		FROM songs s 
+		LEFT JOIN song_types st ON s.type_id = st.id
+		WHERE s.slug = $1
+	`
 	err := r.db.GetContext(ctx, &s, query, slug)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -71,7 +83,13 @@ func (r *songRepository) GetBySlug(ctx context.Context, slug string) (*domain.So
 
 func (r *songRepository) GetByAnimeIDAndSlug(ctx context.Context, animeID uint64, slug string) (*domain.Song, error) {
 	var s domain.Song
-	query := "SELECT s.* FROM songs s WHERE s.anime_id = $1 AND s.slug = $2"
+	query := `
+		SELECT s.*,
+		       st.id AS "song_type.id", st.uuid AS "song_type.uuid", st.name AS "song_type.name", st.slug AS "song_type.slug", st.description AS "song_type.description"
+		FROM songs s 
+		LEFT JOIN song_types st ON s.type_id = st.id
+		WHERE s.anime_id = $1 AND s.slug = $2
+	`
 	err := r.db.GetContext(ctx, &s, query, animeID, slug)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -86,9 +104,11 @@ func (r *songRepository) GetPaginated(ctx context.Context, limit, offset int, fi
 	var songs []domain.Song
 	query := `
 		SELECT s.*, 
+		       st.id AS "song_type.id", st.uuid AS "song_type.uuid", st.name AS "song_type.name", st.slug AS "song_type.slug", st.description AS "song_type.description",
 		       EXISTS (SELECT 1 FROM artist_song asong JOIN artists art ON asong.artist_id = art.id WHERE asong.song_id = s.id AND art.status = false) as partial_artist_inactive
 		FROM songs s
 		JOIN animes a ON s.anime_id = a.id
+		LEFT JOIN song_types st ON s.type_id = st.id
 	`
 	var args []interface{}
 	var whereClauses []string
@@ -134,8 +154,12 @@ func (r *songRepository) GetPaginated(ctx context.Context, limit, offset int, fi
 		}
 	}
 
-	if filters.Type != "" && filters.Type != "any" {
-		whereClauses = append(whereClauses, fmt.Sprintf("s.type = $%d", i))
+	if filters.TypeID > 0 {
+		whereClauses = append(whereClauses, fmt.Sprintf("s.type_id = $%d", i))
+		args = append(args, filters.TypeID)
+		i++
+	} else if filters.Type != "" && filters.Type != "any" {
+		whereClauses = append(whereClauses, fmt.Sprintf("st.slug = $%d", i))
 		args = append(args, filters.Type)
 		i++
 	}
@@ -220,6 +244,7 @@ func (r *songRepository) Count(ctx context.Context, filters domain.SongFilters) 
 		SELECT COUNT(*) 
 		FROM songs s
 		JOIN animes a ON s.anime_id = a.id
+		LEFT JOIN song_types st ON s.type_id = st.id
 	`
 	var args []interface{}
 	var whereClauses []string
@@ -264,8 +289,12 @@ func (r *songRepository) Count(ctx context.Context, filters domain.SongFilters) 
 		}
 	}
 
-	if filters.Type != "" && filters.Type != "any" {
-		whereClauses = append(whereClauses, fmt.Sprintf("s.type = $%d", i))
+	if filters.TypeID > 0 {
+		whereClauses = append(whereClauses, fmt.Sprintf("s.type_id = $%d", i))
+		args = append(args, filters.TypeID)
+		i++
+	} else if filters.Type != "" && filters.Type != "any" {
+		whereClauses = append(whereClauses, fmt.Sprintf("st.slug = $%d", i))
 		args = append(args, filters.Type)
 		i++
 	}
@@ -300,9 +329,14 @@ func (r *songRepository) Count(ctx context.Context, filters domain.SongFilters) 
 }
 
 func (r *songRepository) Create(ctx context.Context, song *domain.Song) error {
+	// Legacy fallback: if type_id is missing but type is present, try to map it
+	if (song.TypeID == nil || *song.TypeID == 0) && song.Type != "" {
+		_ = r.db.GetContext(ctx, &song.TypeID, "SELECT id FROM song_types WHERE slug = $1 OR name = $1 LIMIT 1", song.Type)
+	}
+
 	query := `
-		INSERT INTO songs (song_romaji, song_jp, song_en, uuid, theme_num, type, slug, anime_id, season_id, year_id, views, status, anime_themes_id, created_at, updated_at) 
-		VALUES (:song_romaji, :song_jp, :song_en, :uuid, :theme_num, :type, :slug, :anime_id, :season_id, :year_id, :views, :status, :anime_themes_id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		INSERT INTO songs (song_romaji, song_jp, song_en, uuid, theme_num, type, type_id, slug, anime_id, season_id, year_id, views, status, anime_themes_id, created_at, updated_at) 
+		VALUES (:song_romaji, :song_jp, :song_en, :uuid, :theme_num, :type, :type_id, :slug, :anime_id, :season_id, :year_id, :views, :status, :anime_themes_id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 		RETURNING id
 	`
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
@@ -314,10 +348,15 @@ func (r *songRepository) Create(ctx context.Context, song *domain.Song) error {
 }
 
 func (r *songRepository) Update(ctx context.Context, song *domain.Song) error {
+	// Legacy fallback: if type_id is missing but type is present, try to map it
+	if (song.TypeID == nil || *song.TypeID == 0) && song.Type != "" {
+		_ = r.db.GetContext(ctx, &song.TypeID, "SELECT id FROM song_types WHERE slug = $1 OR name = $1 LIMIT 1", song.Type)
+	}
+
 	query := `
 		UPDATE songs 
 		SET song_romaji = :song_romaji, song_jp = :song_jp, song_en = :song_en, 
-		    theme_num = :theme_num, type = :type, slug = :slug, anime_id = :anime_id, 
+		    theme_num = :theme_num, type = :type, type_id = :type_id, slug = :slug, anime_id = :anime_id, 
 		    season_id = :season_id, year_id = :year_id, views = :views, status = :status, 
 		    anime_themes_id = :anime_themes_id, updated_at = CURRENT_TIMESTAMP
 		WHERE id = :id
@@ -451,11 +490,13 @@ func (r *songRepository) GetByAnimeID(ctx context.Context, animeID uint64) ([]do
 		SELECT s.*, 
 		       s.average_score, 
 		       s.favorites_count,
+		       st.id AS "song_type.id", st.uuid AS "song_type.uuid", st.name AS "song_type.name", st.slug AS "song_type.slug", st.description AS "song_type.description",
 		       EXISTS (SELECT 1 FROM artist_song asong JOIN artists art ON asong.artist_id = art.id WHERE asong.song_id = s.id AND art.status = false) as partial_artist_inactive
 		FROM songs s
 		JOIN animes a ON s.anime_id = a.id
+		LEFT JOIN song_types st ON s.type_id = st.id
 		WHERE s.anime_id = $1 AND a.status = true AND s.status = true
-		ORDER BY s.type ASC, s.theme_num ASC
+		ORDER BY s.type_id ASC, s.theme_num ASC
 	`
 	err := r.db.SelectContext(ctx, &songs, query, animeID)
 	if songs == nil {
@@ -468,7 +509,13 @@ func (r *songRepository) GetMany(ctx context.Context, ids []uint64) ([]domain.So
 	if len(ids) == 0 {
 		return []domain.Song{}, nil
 	}
-	query, args, err := sqlx.In("SELECT s.*, s.average_score, s.favorites_count FROM songs s WHERE s.id IN (?)", ids)
+	query, args, err := sqlx.In(`
+		SELECT s.*, s.average_score, s.favorites_count,
+		       st.id AS "song_type.id", st.uuid AS "song_type.uuid", st.name AS "song_type.name", st.slug AS "song_type.slug", st.description AS "song_type.description"
+		FROM songs s 
+		LEFT JOIN song_types st ON s.type_id = st.id
+		WHERE s.id IN (?)
+	`, ids)
 	if err != nil {
 		return nil, err
 	}
@@ -484,10 +531,12 @@ func (r *songRepository) GetMany(ctx context.Context, ids []uint64) ([]domain.So
 func (r *songRepository) GetByArtistID(ctx context.Context, artistID uint64, limit, offset int, filters domain.SongFilters) ([]domain.Song, error) {
 	var songs []domain.Song
 	query := `
-		SELECT s.*, s.average_score, s.favorites_count 
+		SELECT s.*, s.average_score, s.favorites_count,
+		       st.id AS "song_type.id", st.uuid AS "song_type.uuid", st.name AS "song_type.name", st.slug AS "song_type.slug", st.description AS "song_type.description"
 		FROM songs s
 		JOIN artist_song asng ON s.id = asng.song_id
 		JOIN animes a ON s.anime_id = a.id
+		LEFT JOIN song_types st ON s.type_id = st.id
 	`
 	var args []interface{}
 	var whereClauses []string
@@ -665,9 +714,11 @@ func (r *songRepository) GetFavoritesByUserID(ctx context.Context, userID uint64
 	// GROUP BY ... ORDER BY f.created_at under PostgreSQL rules.
 	query := `
 		SELECT s.*, 
-		       s.average_score, s.favorites_count 
+		       s.average_score, s.favorites_count,
+		       st.id AS "song_type.id", st.uuid AS "song_type.uuid", st.name AS "song_type.name", st.slug AS "song_type.slug", st.description AS "song_type.description"
 		FROM songs s
 		JOIN song_user f ON s.id = f.song_id
+		LEFT JOIN song_types st ON s.type_id = st.id
 		WHERE f.user_id = $1
 		ORDER BY f.created_at DESC
 		LIMIT $2 OFFSET $3
@@ -690,11 +741,13 @@ func (r *songRepository) GetRanking(ctx context.Context, rankingType, songType s
 			SELECT s.*, 
 				s.average_score,
 				s.favorites_count,
-				s.prev_seasonal_rank as prev_rank
+				s.prev_seasonal_rank as prev_rank,
+				st.id AS "song_type.id", st.uuid AS "song_type.uuid", st.name AS "song_type.name", st.slug AS "song_type.slug", st.description AS "song_type.description"
 			FROM songs s
 			JOIN animes a ON s.anime_id = a.id
 			JOIN seasons se ON s.season_id = se.id
 			JOIN years y ON s.year_id = y.id
+			LEFT JOIN song_types st ON s.type_id = st.id
 			WHERE se.current = true AND y.current = true AND a.status = true AND s.status = true
 		`
 	} else {
@@ -702,9 +755,11 @@ func (r *songRepository) GetRanking(ctx context.Context, rankingType, songType s
 			SELECT s.*, 
 				s.average_score,
 				s.favorites_count,
-				s.prev_main_rank as prev_rank
+				s.prev_main_rank as prev_rank,
+				st.id AS "song_type.id", st.uuid AS "song_type.uuid", st.name AS "song_type.name", st.slug AS "song_type.slug", st.description AS "song_type.description"
 			FROM songs s
 			JOIN animes a ON s.anime_id = a.id
+			LEFT JOIN song_types st ON s.type_id = st.id
 			WHERE a.status = true AND s.status = true
 		`
 	}
@@ -742,6 +797,7 @@ func (r *songRepository) CountRanking(ctx context.Context, rankingType, songType
 			JOIN animes a ON s.anime_id = a.id
 			JOIN seasons se ON s.season_id = se.id
 			JOIN years y ON s.year_id = y.id
+			LEFT JOIN song_types st ON s.type_id = st.id
 			WHERE se.current = true AND y.current = true AND a.status = true AND s.status = true
 		`
 	default: // global
@@ -749,6 +805,7 @@ func (r *songRepository) CountRanking(ctx context.Context, rankingType, songType
 			SELECT COUNT(*) 
 			FROM songs s
 			JOIN animes a ON s.anime_id = a.id
+			LEFT JOIN song_types st ON s.type_id = st.id
 			WHERE a.status = true AND s.status = true
 		`
 	}
@@ -772,10 +829,12 @@ func (r *songRepository) Search(ctx context.Context, term string, limit int) ([]
 	var songs []domain.Song
 	query := `
 		SELECT 
-			s.id, s.uuid, s.song_romaji, s.song_jp, s.song_en, s.slug, s.type, s.theme_num,
-			a.id AS "anime.id", a.uuid AS "anime.uuid", a.title AS "anime.title", a.slug AS "anime.slug"
+			s.id, s.uuid, s.song_romaji, s.song_jp, s.song_en, s.slug, s.theme_num,
+			a.id AS "anime.id", a.uuid AS "anime.uuid", a.title AS "anime.title", a.slug AS "anime.slug",
+			st.id AS "song_type.id", st.uuid AS "song_type.uuid", st.name AS "song_type.name", st.slug AS "song_type.slug", st.description AS "song_type.description"
 		FROM songs s
 		JOIN animes a ON s.anime_id = a.id
+		LEFT JOIN song_types st ON s.type_id = st.id
 		WHERE (s.song_romaji ILIKE $1 OR s.song_jp ILIKE $2 OR s.song_en ILIKE $3) AND a.status = true AND s.status = true
 		ORDER BY s.created_at DESC
 		LIMIT $4
@@ -819,4 +878,14 @@ func (r *songRepository) GetPublicSlugs(ctx context.Context) ([]domain.SitemapIt
 	`
 	err := r.db.SelectContext(ctx, &items, query)
 	return items, err
+}
+
+func (r *songRepository) GetSongTypes(ctx context.Context) ([]domain.SongType, error) {
+	var types []domain.SongType
+	query := `SELECT id, uuid, name, slug, description FROM song_types ORDER BY name ASC`
+	err := r.db.SelectContext(ctx, &types, query)
+	if types == nil {
+		types = []domain.SongType{}
+	}
+	return types, err
 }

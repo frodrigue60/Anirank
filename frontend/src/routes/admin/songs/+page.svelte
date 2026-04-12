@@ -3,6 +3,7 @@
   import { getSongName } from "$lib/song-utils";
   import api from "$lib/api";
   import AutocompleteAnime from "$lib/components/admin/AutocompleteAnime.svelte";
+  import { configState } from "$lib/state/config.svelte";
   import { toastState } from "$lib/state/toast.svelte";
 
   let { data } = $props();
@@ -17,20 +18,23 @@
   let animeIdInput = $state(data.filters.anime || "");
   // svelte-ignore state_referenced_locally
   let statusFilter = $state(data.filters.status || "");
+  // svelte-ignore state_referenced_locally
+  let typeFilter = $state(data.filters.type || "");
 
   $effect(() => {
     searchQuery = data.filters.search || "";
     animeIdInput = data.filters.anime || "";
     statusFilter = data.filters.status || "";
+    typeFilter = data.filters.type || "";
   });
 
   function handleSearch() {
-    goto(`/admin/songs?search=${searchQuery}&anime=${animeIdInput}&status=${statusFilter}&page=1`, { keepFocus: true });
+    goto(`/admin/songs?search=${searchQuery}&anime=${animeIdInput}&status=${statusFilter}&type=${typeFilter}&page=1`, { keepFocus: true });
   }
 
   function changePage(newPage: number) {
     if (newPage >= 1 && newPage <= pagination.last_page) {
-      goto(`/admin/songs?search=${searchQuery}&anime=${animeIdInput}&status=${statusFilter}&page=${newPage}`);
+      goto(`/admin/songs?search=${searchQuery}&anime=${animeIdInput}&status=${statusFilter}&type=${typeFilter}&page=${newPage}`);
     }
   }
 
@@ -177,11 +181,32 @@
     </select>
   </div>
 
+  <!-- Type -->
+  <div class="w-full sm:w-40">
+    <label
+      for="type-filter"
+      class="block text-xs font-medium text-on-surface-variant/40 mb-1 uppercase tracking-wider"
+      >Type</label
+    >
+    <select
+      id="type-filter"
+      bind:value={typeFilter}
+      onchange={() => handleSearch()}
+      class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2 px-3 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-colors text-sm appearance-none cursor-pointer"
+    >
+      <option value="">All Types</option>
+      {#each configState.songTypes as type}
+        <option value={type.slug}>{type.name}</option>
+      {/each}
+    </select>
+  </div>
+
   <button
     onclick={() => {
       searchQuery = "";
       animeIdInput = "";
       statusFilter = "";
+      typeFilter = "";
       handleSearch();
     }}
     class="px-4 py-2 bg-surface-highest hover:bg-surface-highest text-on-surface rounded-xl transition-colors border border-outline-variant text-sm font-medium h-[38px]"

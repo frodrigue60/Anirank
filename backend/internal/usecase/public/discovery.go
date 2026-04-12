@@ -9,19 +9,22 @@ import (
 )
 
 type InitData struct {
-	Years   []domain.Year   `json:"years"`
-	Seasons []domain.Season `json:"seasons"`
-	Formats []domain.Format `json:"formats"`
-	Genres  []domain.Genre  `json:"genres"`
+	Years     []domain.Year     `json:"years"`
+	Seasons   []domain.Season   `json:"seasons"`
+	Formats   []domain.Format   `json:"formats"`
+	Genres    []domain.Genre    `json:"genres"`
+	SongTypes []domain.SongType `json:"song_types"`
 }
 
 type DiscoveryUsecase struct {
 	taxonomyRepo domain.TaxonomyRepository
+	songRepo     domain.SongRepository
 }
 
-func NewDiscoveryUsecase(tr domain.TaxonomyRepository) *DiscoveryUsecase {
+func NewDiscoveryUsecase(tr domain.TaxonomyRepository, sr domain.SongRepository) *DiscoveryUsecase {
 	return &DiscoveryUsecase{
 		taxonomyRepo: tr,
+		songRepo:     sr,
 	}
 }
 
@@ -52,6 +55,12 @@ func (u *DiscoveryUsecase) GetInitData(ctx context.Context) (*InitData, error) {
 	g.Go(func() error {
 		genres, err := u.taxonomyRepo.GetAllGenres(gCtx)
 		data.Genres = genres
+		return err
+	})
+
+	g.Go(func() error {
+		types, err := u.songRepo.GetSongTypes(gCtx)
+		data.SongTypes = types
 		return err
 	})
 

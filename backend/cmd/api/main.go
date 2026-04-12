@@ -162,7 +162,7 @@ func main() {
 	anilistClient := anilist.NewClient()
 	googleClient := google.NewClient()
 
-	discoveryUsecase := public.NewDiscoveryUsecase(taxonomyRepo)
+	discoveryUsecase := public.NewDiscoveryUsecase(taxonomyRepo, songRepo)
 	animeUsecase := public.NewAnimeUsecase(animeRepo, songRepo, mediaService)
 	searchUsecase := public.NewSearchUsecase(searchRepo, storageService)
 	catalogUsecase := public.NewCatalogUsecase(animeRepo, songRepo, artistRepo, taxonomyRepo, userRepo, playlistRepo, interactionRepo, moderationRepo, anilistClient, mediaService, appCache, os.Getenv("ENCRYPTION_KEY"))

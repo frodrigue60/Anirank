@@ -7,6 +7,7 @@ export interface Song {
     song_en: string;
     song_jp: string;
     type: string;
+    song_type?: SongType;
     theme_num: string;
     slug: string;
     anime_id: number;
@@ -64,4 +65,11 @@ export interface SongVariantVideo {
     type: 'file' | 'embed';
     embed_url?: string;
     local_url?: string;
+}
+
+export interface SongType {
+    id: string;
+    name: string;
+    slug: string;
+    description?: string;
 }

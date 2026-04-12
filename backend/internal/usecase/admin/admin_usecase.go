@@ -412,6 +412,10 @@ func (u *AdminUsecase) GetFormats(ctx context.Context) ([]domain.Format, error) 
 	return u.contentAdmin.GetFormats(ctx)
 }
 
+func (u *AdminUsecase) GetSongTypes(ctx context.Context) ([]domain.SongType, error) {
+	return u.contentAdmin.GetSongTypes(ctx)
+}
+
 func (u *AdminUsecase) CreateGenre(ctx context.Context, genre *domain.Genre, meta domain.AuditMetadata) error {
 	if err := u.contentAdmin.CreateGenre(ctx, genre, meta); err != nil {
 		return err

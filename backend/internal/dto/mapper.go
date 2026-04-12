@@ -117,6 +117,17 @@ func ToSongMinimalDTO(s *domain.Song) SongMinimalDTO {
 		artists = append(artists, ToArtistMinimalDTO(&a))
 	}
 
+	var typeID uint64
+	if s.TypeID != nil {
+		typeID = *s.TypeID
+	}
+
+	var songType *SongTypeDTO
+	if s.SongType != nil {
+		st := ToSongTypeDTO(s.SongType)
+		songType = &st
+	}
+
 	res := SongMinimalDTO{
 		ID:             s.UUID,
 		SongRomaji:     s.SongRomaji,
@@ -124,12 +135,17 @@ func ToSongMinimalDTO(s *domain.Song) SongMinimalDTO {
 		SongJP:         s.SongJP,
 		Slug:           s.Slug,
 		Type:           s.Type,
+		SongType:       songType,
 		AverageRating:  s.AverageRating,
 		Artists:        artists,
 		Anime:          anime,
 		FavoritesCount: s.FavoritesCount,
 		Views:          s.Views,
 		UserRating:     s.UserRating,
+		TypeID:         typeID,
+		AnimeID:        s.AnimeID,
+		YearID:         s.YearID,
+		SeasonID:       s.SeasonID,
 	}
 
 	if s.PrevMainRank != nil {
@@ -142,6 +158,32 @@ func ToSongMinimalDTO(s *domain.Song) SongMinimalDTO {
 	}
 
 	return res
+}
+
+func ToSongTypeDTO(st *domain.SongType) SongTypeDTO {
+	if st == nil {
+		return SongTypeDTO{}
+	}
+
+	id := ""
+	if st.UUID != nil {
+		id = *st.UUID
+	}
+	name := ""
+	if st.Name != nil {
+		name = *st.Name
+	}
+	slug := ""
+	if st.Slug != nil {
+		slug = *st.Slug
+	}
+
+	return SongTypeDTO{
+		ID:          id,
+		Name:        name,
+		Slug:        slug,
+		Description: st.Description,
+	}
 }
 
 func ToSongDTO(s *domain.Song) SongDTO {

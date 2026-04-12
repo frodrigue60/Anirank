@@ -3,6 +3,7 @@
   import { goto } from "$app/navigation";
   import RankingList from "$lib/components/RankingList.svelte";
   import axios from "$lib/api";
+  import { configState } from "$lib/state/config.svelte";
 
   let { data } = $props();
 
@@ -97,24 +98,16 @@
         >
           All
         </button>
-        <button
-          onclick={() => changeType("OP")}
-          class="px-6 py-2.5 rounded-sm font-bold text-sm transition-all {activeType ===
-          'OP'
-            ? 'bg-primary text-white shadow-lg'
-            : 'text-on-surface/80 hover:text-on-surface'}"
-        >
-          Openings
-        </button>
-        <button
-          onclick={() => changeType("ED")}
-          class="px-6 py-2.5 rounded-sm font-bold text-sm transition-all {activeType ===
-          'ED'
-            ? 'bg-primary text-white shadow-lg'
-            : 'text-on-surface/80 hover:text-on-surface'}"
-        >
-          Endings
-        </button>
+        {#each configState.songTypes as type}
+          <button
+            onclick={() => changeType(type.slug)}
+            class="px-6 py-2.5 rounded-sm font-bold text-sm transition-all {activeType === type.slug
+              ? 'bg-primary text-white shadow-lg'
+              : 'text-on-surface/80 hover:text-on-surface'}"
+          >
+            {type.name}s
+          </button>
+        {/each}
       </div>
     </div>
   </div>

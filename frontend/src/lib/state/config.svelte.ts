@@ -9,12 +9,14 @@ export const configState = $state<{
     seasons: TaxonomyItem[];
     formats: TaxonomyItem[];
     genres: TaxonomyItem[];
+    songTypes: TaxonomyItem[];
     loading: boolean;
 }>({
     years: [],
     seasons: [],
     formats: [],
     genres: [],
+    songTypes: [],
     loading: true
 });
 
@@ -26,5 +28,6 @@ export function setConfig(payload: any) {
     configState.seasons = data.seasons || [];
     configState.formats = data.formats || [];
     configState.genres = data.genres || [];
+    configState.songTypes = data.song_types || [];
     configState.loading = false;
 }

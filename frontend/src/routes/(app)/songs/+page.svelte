@@ -132,12 +132,12 @@
       label: g.name,
     })),
   ]);
-  const typeOptions = [
-    { value: "OP", label: "Opening" },
-    { value: "ED", label: "Ending" },
-    { value: "INS", label: "Insert" },
-    { value: "Other", label: "Other" },
-  ];
+  const typeOptions = $derived([
+    ...configState.songTypes.map((st) => ({
+      value: st.slug,
+      label: st.name,
+    })),
+  ]);
   const sortOptions = [
     { value: "rating", label: "Top Rated" },
     { value: "rating_asc", label: "Least Rated" },

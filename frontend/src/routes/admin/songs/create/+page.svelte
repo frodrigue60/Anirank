@@ -10,7 +10,17 @@
   // Form State
   let anime_id = $state<number | null>(null);
   let selectedAnimeTitle = $state("");
+  let type_id = $state(0);
   let type = $state("OP");
+
+  $effect(() => {
+    if (type_id) {
+      const st = config.songTypes.find((t) => t.id === type_id.toString());
+      if (st) type = st.slug;
+    } else {
+      type = "OP";
+    }
+  });
   let theme_num = $state("");
   let song_romaji = $state("");
   let song_en = $state("");
@@ -148,6 +158,7 @@
       const payload = {
         anime_id,
         type,
+        type_id: type_id || 0,
         theme_num, // Send as string/mixed, backend handles it
         song_romaji,
         song_en,
@@ -398,16 +409,18 @@
             >Song Type <span class="text-red-400">*</span></label
           >
           <select
-            id="type"
+            id="type_id"
             title="Song Type"
-            bind:value={type}
+            bind:value={type_id}
             required
             class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all [&>option]:bg-surface-container"
           >
-            <option value="OP">Opening (OP)</option>
-            <option value="ED">Ending (ED)</option>
-            <option value="INS">Insert Song (INS)</option>
+            <option value={0} disabled selected>Select a type...</option>
+            {#each config.songTypes as t}
+              <option value={t.id}>{t.name}</option>
+            {/each}
           </select>
+          <input type="hidden" name="type" bind:value={type} />
         </div>
       </div>
 

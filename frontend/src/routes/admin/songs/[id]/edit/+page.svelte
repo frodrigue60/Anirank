@@ -16,7 +16,15 @@
   // Form State
   let anime_id = $state<number | null>(song.anime_id);
   let selectedAnimeTitle = $state(song.anime?.title || "");
+  let type_id = $state(song.type_id || 0);
   let type = $state(song.type || "OP");
+
+  $effect(() => {
+    if (type_id) {
+      const st = config.songTypes.find((t) => t.id === type_id.toString());
+      if (st) type = st.slug;
+    }
+  });
   let theme_num = $state(song.theme_num || "");
   let song_romaji = $state(song.song_romaji || "");
   let song_en = $state(song.song_en || "");
@@ -130,6 +138,7 @@
       const payload = {
         anime_id,
         type,
+        type_id: type_id || 0,
         theme_num: theme_num ? theme_num.toString() : "",
         song_romaji,
         song_en,
@@ -351,16 +360,18 @@
             >Song Type <span class="text-red-400">*</span></label
           >
           <select
-            id="type"
+            id="type_id"
             title="Song Type"
-            bind:value={type}
+            bind:value={type_id}
             required
             class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all [&>option]:bg-surface-container"
           >
-            <option value="OP">Opening (OP)</option>
-            <option value="ED">Ending (ED)</option>
-            <option value="INS">Insert Song (INS)</option>
+            <option value={0} disabled selected>Select a type...</option>
+            {#each config.songTypes as t}
+              <option value={t.id}>{t.name}</option>
+            {/each}
           </select>
+          <input type="hidden" name="type" bind:value={type} />
         </div>
       </div>
 

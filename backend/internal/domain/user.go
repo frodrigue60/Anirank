@@ -39,23 +39,21 @@ type User struct {
 	CommentsCount  int  `db:"comments_count" json:"comments_count"`
 	IsFollowing    bool `db:"is_following" json:"is_following"`
 
-	// AniList Link
-	AnilistID             *uint64    `db:"anilist_id" json:"anilist_id,omitempty"`
-	AnilistUsername       *string    `db:"anilist_username" json:"anilist_username,omitempty"`
-	AnilistAccessToken    *string    `db:"anilist_access_token" json:"-"`
-	AnilistRefreshToken   *string    `db:"anilist_refresh_token" json:"-"`
-	AnilistTokenExpiresAt *time.Time `db:"anilist_token_expires_at" json:"-"`
-
-	// Google Link
-	GoogleID             *string    `db:"google_id" json:"google_id,omitempty"`
-	GoogleEmail          *string    `db:"google_email" json:"google_email,omitempty"`
-	GoogleAccessToken    *string    `db:"google_access_token" json:"-"`
-	GoogleRefreshToken   *string    `db:"google_refresh_token" json:"-"`
-	GoogleTokenExpiresAt *time.Time `db:"google_token_expires_at" json:"-"`
-	
 	// Profile customization
 	About        *string `db:"about" json:"about,omitempty"`
 	ProfileColor *string `db:"profile_color" json:"profile_color,omitempty"`
+
+	// Normalized Social Identities
+	SocialIdentities []UserSocialIdentity `db:"-" json:"social_identities,omitempty"`
+}
+
+func (u *User) GetSocialID(provider string) *string {
+	for _, si := range u.SocialIdentities {
+		if si.Provider == provider {
+			return &si.ProviderID
+		}
+	}
+	return nil
 }
 
 type RankingUser struct {
@@ -114,6 +112,12 @@ type UserRepository interface {
 	Create(ctx context.Context, user *User) error
 	Update(ctx context.Context, user *User) error
 	Delete(ctx context.Context, id uint64) error
+
+	// Social Identities
+	GetSocialIdentity(ctx context.Context, provider, providerID string) (*UserSocialIdentity, error)
+	GetSocialIdentitiesByUserID(ctx context.Context, userID uint64) ([]UserSocialIdentity, error)
+	SaveSocialIdentity(ctx context.Context, identity *UserSocialIdentity) error
+	DeleteSocialIdentity(ctx context.Context, userID uint64, provider string) error
 
 	SetImage(ctx context.Context, userID uint64, imageType, imagePath string) error
 	UpdateScoreFormat(ctx context.Context, userID uint64, format string) error

@@ -50,19 +50,28 @@ func ToUserDTO(u *domain.User) UserDTO {
 		roles = append(roles, r.Slug)
 	}
 
+	identities := make([]UserSocialIdentityDTO, 0)
+	for _, si := range u.SocialIdentities {
+		username := ""
+		if si.ProviderUsername != nil {
+			username = *si.ProviderUsername
+		}
+		identities = append(identities, UserSocialIdentityDTO{
+			Provider:         si.Provider,
+			ProviderUsername: username,
+		})
+	}
+
 	return UserDTO{
-		UserMinimalDTO:  ToUserMinimalDTO(u),
-		About:           u.About,
-		ProfileColor:    u.ProfileColor,
-		FollowersCount:  u.FollowersCount,
-		FollowingCount:  u.FollowingCount,
-		IsFollowing:     u.IsFollowing,
-		Roles:           roles,
-		Badges:          badges,
-		AnilistID:       u.AnilistID,
-		AnilistUsername: u.AnilistUsername,
-		GoogleID:        u.GoogleID,
-		GoogleEmail:     u.GoogleEmail,
+		UserMinimalDTO:   ToUserMinimalDTO(u),
+		About:            u.About,
+		ProfileColor:     u.ProfileColor,
+		FollowersCount:   u.FollowersCount,
+		FollowingCount:   u.FollowingCount,
+		IsFollowing:      u.IsFollowing,
+		Roles:            roles,
+		Badges:           badges,
+		SocialIdentities: identities,
 	}
 }
 

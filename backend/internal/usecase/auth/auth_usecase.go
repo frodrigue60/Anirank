@@ -15,6 +15,7 @@ import (
 	"anirank/api/internal/domain"
 	"anirank/api/internal/infrastructure"
 	"anirank/api/internal/infrastructure/anilist"
+	"anirank/api/internal/infrastructure/discord"
 	"anirank/api/internal/infrastructure/google"
 	"anirank/api/internal/infrastructure/security"
 	"anirank/api/internal/pkg/avatar"
@@ -34,10 +35,11 @@ type AuthUsecase struct {
 	badgeUsecase  domain.BadgeUsecase
 	anilist       *anilist.Client
 	google        *google.Client
+	discord       *discord.Client
 	encryptionKey string
 }
 
-func NewAuthUsecase(userRepo domain.UserRepository, jwtService *JWTService, storage infrastructure.StorageService, media infrastructure.MediaService, xu domain.XPUsecase, bu domain.BadgeUsecase, ac *anilist.Client, gc *google.Client, eKey string) *AuthUsecase {
+func NewAuthUsecase(userRepo domain.UserRepository, jwtService *JWTService, storage infrastructure.StorageService, media infrastructure.MediaService, xu domain.XPUsecase, bu domain.BadgeUsecase, ac *anilist.Client, gc *google.Client, dc *discord.Client, eKey string) *AuthUsecase {
 	return &AuthUsecase{
 		userRepo:      userRepo,
 		jwtService:    jwtService,
@@ -47,6 +49,7 @@ func NewAuthUsecase(userRepo domain.UserRepository, jwtService *JWTService, stor
 		badgeUsecase:  bu,
 		anilist:       ac,
 		google:        gc,
+		discord:       dc,
 		encryptionKey: eKey,
 	}
 }
@@ -389,24 +392,17 @@ func (u *AuthUsecase) LinkAnilist(ctx context.Context, userID uint64, code strin
 
 	expiresAt := time.Now().Add(time.Duration(tokenResp.ExpiresIn) * time.Second)
 
-	// 4. Update user record
-	user, err := u.userRepo.GetByID(ctx, userID)
-	if err != nil {
-		if err == domain.ErrNotFound {
-			return domain.NewAppError(http.StatusUnauthorized, "User account not found. Your session may be stale. Please log out and log in again.", nil)
-		}
-		return err
+	// 4. Save social identity
+	identity := &domain.UserSocialIdentity{
+		UserID:           userID,
+		Provider:         "anilist",
+		ProviderID:       fmt.Sprintf("%d", anilistUser.ID),
+		ProviderUsername: &anilistUser.Name,
+		AccessToken:      &encryptedAccess,
+		RefreshToken:     &encryptedRefresh,
+		ExpiresAt:        &expiresAt,
 	}
-
-	user.AnilistID = &anilistUser.ID
-	user.AnilistUsername = &anilistUser.Name
-	user.AnilistAccessToken = &encryptedAccess
-	if encryptedRefresh != "" {
-		user.AnilistRefreshToken = &encryptedRefresh
-	}
-	user.AnilistTokenExpiresAt = &expiresAt
-
-	if err := u.userRepo.Update(ctx, user); err != nil {
+	if err := u.userRepo.SaveSocialIdentity(ctx, identity); err != nil {
 		return err
 	}
 
@@ -449,24 +445,17 @@ func (u *AuthUsecase) LinkGoogle(ctx context.Context, userID uint64, code string
 
 	expiresAt := time.Now().Add(time.Duration(tokenResp.ExpiresIn) * time.Second)
 
-	// 4. Update user record
-	user, err := u.userRepo.GetByID(ctx, userID)
-	if err != nil {
-		if err == domain.ErrNotFound {
-			return domain.NewAppError(http.StatusUnauthorized, "User account not found. Your session may be stale. Please log out and log in again.", nil)
-		}
-		return err
+	// 4. Save social identity
+	identity := &domain.UserSocialIdentity{
+		UserID:           userID,
+		Provider:         "google",
+		ProviderID:       googleUser.Sub,
+		ProviderUsername: &googleUser.Email,
+		AccessToken:      &encryptedAccess,
+		RefreshToken:     &encryptedRefresh,
+		ExpiresAt:        &expiresAt,
 	}
-
-	user.GoogleID = &googleUser.Sub
-	user.GoogleEmail = &googleUser.Email
-	user.GoogleAccessToken = &encryptedAccess
-	if encryptedRefresh != "" {
-		user.GoogleRefreshToken = &encryptedRefresh
-	}
-	user.GoogleTokenExpiresAt = &expiresAt
-
-	return u.userRepo.Update(ctx, user)
+	return u.userRepo.SaveSocialIdentity(ctx, identity)
 }
 
 func (u *AuthUsecase) LoginWithGoogle(ctx context.Context, code, redirectURI string) (*AuthTokenResponse, error) {
@@ -500,21 +489,25 @@ func (u *AuthUsecase) LoginWithGoogle(ctx context.Context, code, redirectURI str
 					return nil, domain.NewAppError(http.StatusInternalServerError, "Database error", err)
 				}
 				
-				// Automatically link the Google ID to this user
-				user.GoogleID = &googleUser.Sub
-				user.GoogleEmail = &googleUser.Email
-
-				// Update tokens for future sync
+				// Automatically link the Google ID to this user using the new table
 				encryptedAccess, _ := crypto.Encrypt(tokenResp.AccessToken, u.encryptionKey)
-				user.GoogleAccessToken = &encryptedAccess
+				encryptedRefresh := ""
 				if tokenResp.RefreshToken != "" {
-					encryptedRefresh, _ := crypto.Encrypt(tokenResp.RefreshToken, u.encryptionKey)
-					user.GoogleRefreshToken = &encryptedRefresh
+					encryptedRefresh, _ = crypto.Encrypt(tokenResp.RefreshToken, u.encryptionKey)
 				}
 				expiresAt := time.Now().Add(time.Duration(tokenResp.ExpiresIn) * time.Second)
-				user.GoogleTokenExpiresAt = &expiresAt
 
-				if err := u.userRepo.Update(ctx, user); err != nil {
+				identity := &domain.UserSocialIdentity{
+					UserID:           user.ID,
+					Provider:         "google",
+					ProviderID:       googleUser.Sub,
+					ProviderUsername: &googleUser.Email,
+					AccessToken:      &encryptedAccess,
+					RefreshToken:     &encryptedRefresh,
+					ExpiresAt:        &expiresAt,
+				}
+
+				if err := u.userRepo.SaveSocialIdentity(ctx, identity); err != nil {
 					log.Printf("Failed to update user google info during login: %v", err)
 				}
 			} else {
@@ -607,16 +600,18 @@ func (u *AuthUsecase) LoginWithAnilist(ctx context.Context, code string) (*AuthT
 	}
 	expiresAt := time.Now().Add(time.Duration(tokenResp.ExpiresIn) * time.Second)
 
-	user.AnilistID = &anilistUser.ID
-	user.AnilistUsername = &anilistUser.Name
-	user.AnilistAccessToken = &encryptedAccess
-	if encryptedRefresh != "" {
-		user.AnilistRefreshToken = &encryptedRefresh
+	identity := &domain.UserSocialIdentity{
+		UserID:           user.ID,
+		Provider:         "anilist",
+		ProviderID:       fmt.Sprintf("%d", anilistUser.ID),
+		ProviderUsername: &anilistUser.Name,
+		AccessToken:      &encryptedAccess,
+		RefreshToken:     &encryptedRefresh,
+		ExpiresAt:        &expiresAt,
 	}
-	user.AnilistTokenExpiresAt = &expiresAt
 
-	if err := u.userRepo.Update(ctx, user); err != nil {
-		return nil, domain.NewAppError(http.StatusInternalServerError, "Failed to update user", err)
+	if err := u.userRepo.SaveSocialIdentity(ctx, identity); err != nil {
+		return nil, domain.NewAppError(http.StatusInternalServerError, "Failed to update user identity", err)
 	}
 
 	// Automatic Badge Check
@@ -664,25 +659,35 @@ func (u *AuthUsecase) autoRegisterGoogleUser(ctx context.Context, googleUser *go
 		Email:       googleUser.Email,
 		Password:    string(dummyPass),
 		ScoreFormat: &sFormat,
-		GoogleID:    &googleUser.Sub,
-		GoogleEmail: &googleUser.Email,
 	}
 
 	slug := u.generateUniqueUserSlug(ctx, googleUser.Name)
 	newUser.Slug = &slug
 
-	// Encrypt tokens
-	encryptedAccess, _ := crypto.Encrypt(tokenResp.AccessToken, u.encryptionKey)
-	newUser.GoogleAccessToken = &encryptedAccess
-	if tokenResp.RefreshToken != "" {
-		encryptedRefresh, _ := crypto.Encrypt(tokenResp.RefreshToken, u.encryptionKey)
-		newUser.GoogleRefreshToken = &encryptedRefresh
-	}
-	expiresAt := time.Now().Add(time.Duration(tokenResp.ExpiresIn) * time.Second)
-	newUser.GoogleTokenExpiresAt = &expiresAt
-
 	if err := u.userRepo.Create(ctx, newUser); err != nil {
 		return nil, domain.NewAppError(http.StatusInternalServerError, "Failed to create account during Google registration", err)
+	}
+
+	// 5. Save social identity
+	encryptedAccess, _ := crypto.Encrypt(tokenResp.AccessToken, u.encryptionKey)
+	encryptedRefresh := ""
+	if tokenResp.RefreshToken != "" {
+		encryptedRefresh, _ = crypto.Encrypt(tokenResp.RefreshToken, u.encryptionKey)
+	}
+	expiresAt := time.Now().Add(time.Duration(tokenResp.ExpiresIn) * time.Second)
+
+	identity := &domain.UserSocialIdentity{
+		UserID:           newUser.ID,
+		Provider:         "google",
+		ProviderID:       googleUser.Sub,
+		ProviderUsername: &googleUser.Email,
+		AccessToken:      &encryptedAccess,
+		RefreshToken:     &encryptedRefresh,
+		ExpiresAt:        &expiresAt,
+	}
+
+	if err := u.userRepo.SaveSocialIdentity(ctx, identity); err != nil {
+		log.Printf("Failed to save google identity after auto-registration: %v", err)
 	}
 
 	// Generate avatar in background
@@ -721,29 +726,40 @@ func (u *AuthUsecase) RegisterWithAnilist(ctx context.Context, tempToken, email 
 	sFormat := "POINT_10"
 
 	newUser := &domain.User{
-		UUID:            uuid.New().String(),
-		Name:            anilistName,
-		Email:           email,
-		Password:        string(dummyPass),
-		ScoreFormat:     &sFormat,
-		AnilistID:       &anilistID,
-		AnilistUsername: &anilistName,
+		UUID:        uuid.New().String(),
+		Name:        anilistName,
+		Email:       email,
+		Password:    string(dummyPass),
+		ScoreFormat: &sFormat,
 	}
 
 	slug := u.generateUniqueUserSlug(ctx, anilistName)
 	newUser.Slug = &slug
 
-	encryptedAccess, _ := crypto.Encrypt(accessToken, u.encryptionKey)
-	newUser.AnilistAccessToken = &encryptedAccess
-	if refreshToken != "" {
-		encryptedRefresh, _ := crypto.Encrypt(refreshToken, u.encryptionKey)
-		newUser.AnilistRefreshToken = &encryptedRefresh
-	}
-	expiresAt := time.Now().Add(time.Duration(expiresIn) * time.Second)
-	newUser.AnilistTokenExpiresAt = &expiresAt
-
 	if err := u.userRepo.Create(ctx, newUser); err != nil {
 		return nil, domain.NewAppError(http.StatusInternalServerError, "Failed to create account during AniList registration", err)
+	}
+
+	// 5. Save social identity
+	encryptedAccess, _ := crypto.Encrypt(accessToken, u.encryptionKey)
+	encryptedRefresh := ""
+	if refreshToken != "" {
+		encryptedRefresh, _ = crypto.Encrypt(refreshToken, u.encryptionKey)
+	}
+	expiresAt := time.Now().Add(time.Duration(expiresIn) * time.Second)
+
+	identity := &domain.UserSocialIdentity{
+		UserID:           newUser.ID,
+		Provider:         "anilist",
+		ProviderID:       fmt.Sprintf("%d", anilistID),
+		ProviderUsername: &anilistName,
+		AccessToken:      &encryptedAccess,
+		RefreshToken:     &encryptedRefresh,
+		ExpiresAt:        &expiresAt,
+	}
+
+	if err := u.userRepo.SaveSocialIdentity(ctx, identity); err != nil {
+		log.Printf("Failed to save anilist identity after registration: %v", err)
 	}
 
 	// Automatic Badge Check
@@ -759,4 +775,201 @@ func (u *AuthUsecase) RegisterWithAnilist(ctx context.Context, tempToken, email 
 		Token: token,
 		User:  newUser,
 	}, nil
+}
+
+func (u *AuthUsecase) discordRedirectURI() string {
+	if ur := strings.TrimSpace(os.Getenv("DISCORD_REDIRECT_URL")); ur != "" {
+		return ur
+	}
+	base := strings.TrimRight(strings.TrimSpace(os.Getenv("APP_URL")), "/")
+	if base == "" {
+		return ""
+	}
+	return base + "/settings/account"
+}
+
+func (u *AuthUsecase) discordLoginRedirectURI() string {
+	if ur := strings.TrimSpace(os.Getenv("DISCORD_LOGIN_REDIRECT_URL")); ur != "" {
+		return ur
+	}
+	base := strings.TrimRight(strings.TrimSpace(os.Getenv("APP_URL")), "/")
+	if base == "" {
+		return ""
+	}
+	return base + "/login"
+}
+
+func (u *AuthUsecase) DiscordAuthURL(state string) (string, error) {
+	clientID := os.Getenv("DISCORD_CLIENT_ID")
+	redirectURI := ""
+	if state == "discord_login" {
+		redirectURI = u.discordLoginRedirectURI()
+	} else {
+		redirectURI = u.discordRedirectURI()
+	}
+
+	if clientID == "" || redirectURI == "" {
+		return "", fmt.Errorf("discord OAuth client ID or redirect URI not configured")
+	}
+
+	scope := "identify email"
+	authURL := fmt.Sprintf(
+		"https://discord.com/api/oauth2/authorize?client_id=%s&redirect_uri=%s&response_type=code&scope=%s&state=%s",
+		url.QueryEscape(clientID),
+		url.QueryEscape(redirectURI),
+		url.QueryEscape(scope),
+		url.QueryEscape(state),
+	)
+	return authURL, nil
+}
+
+func (u *AuthUsecase) LinkDiscord(ctx context.Context, userID uint64, code string) error {
+	clientID := os.Getenv("DISCORD_CLIENT_ID")
+	clientSecret := os.Getenv("DISCORD_CLIENT_SECRET")
+	redirectURI := u.discordRedirectURI()
+
+	tokenResp, err := u.discord.ExchangeCode(ctx, clientID, clientSecret, redirectURI, code)
+	if err != nil {
+		return domain.NewAppError(http.StatusBadRequest, "Failed to exchange Discord code", err)
+	}
+
+	discordUser, err := u.discord.GetUserInfo(ctx, tokenResp.AccessToken)
+	if err != nil {
+		return domain.NewAppError(http.StatusInternalServerError, "Failed to fetch Discord profile", err)
+	}
+
+	encryptedAccess, _ := crypto.Encrypt(tokenResp.AccessToken, u.encryptionKey)
+	var encryptedRefresh *string
+	if tokenResp.RefreshToken != "" {
+		ref, _ := crypto.Encrypt(tokenResp.RefreshToken, u.encryptionKey)
+		encryptedRefresh = &ref
+	}
+	expiresAt := time.Now().Add(time.Duration(tokenResp.ExpiresIn) * time.Second)
+
+	identity := &domain.UserSocialIdentity{
+		UserID:           userID,
+		Provider:         domain.ProviderDiscord,
+		ProviderID:       discordUser.ID,
+		ProviderUsername: &discordUser.Username,
+		AccessToken:      &encryptedAccess,
+		RefreshToken:     encryptedRefresh,
+		ExpiresAt:        &expiresAt,
+	}
+
+	return u.userRepo.SaveSocialIdentity(ctx, identity)
+}
+
+func (u *AuthUsecase) LoginWithDiscord(ctx context.Context, code string) (*AuthTokenResponse, error) {
+	clientID := os.Getenv("DISCORD_CLIENT_ID")
+	clientSecret := os.Getenv("DISCORD_CLIENT_SECRET")
+	redirectURI := u.discordLoginRedirectURI()
+
+	tokenResp, err := u.discord.ExchangeCode(ctx, clientID, clientSecret, redirectURI, code)
+	if err != nil {
+		return nil, domain.NewAppError(http.StatusBadRequest, "Failed to exchange Discord code", err)
+	}
+
+	discordUser, err := u.discord.GetUserInfo(ctx, tokenResp.AccessToken)
+	if err != nil {
+		return nil, domain.NewAppError(http.StatusInternalServerError, "Failed to fetch Discord profile", err)
+	}
+
+	// 1. Find identity
+	identity, err := u.userRepo.GetSocialIdentity(ctx, domain.ProviderDiscord, discordUser.ID)
+	var user *domain.User
+	if err != nil {
+		if err == domain.ErrNotFound {
+			// 2. Try by email if discord is verified
+			if discordUser.Verified {
+				user, err = u.userRepo.GetByEmail(ctx, discordUser.Email)
+				if err != nil && err != domain.ErrNotFound {
+					return nil, domain.NewAppError(http.StatusInternalServerError, "Database error", err)
+				}
+			}
+
+			if user == nil {
+				// 3. Auto-register
+				user, err = u.autoRegisterDiscordUser(ctx, discordUser)
+				if err != nil {
+					return nil, err
+				}
+			}
+		} else {
+			return nil, domain.NewAppError(http.StatusInternalServerError, "Database error", err)
+		}
+	} else {
+		user, err = u.userRepo.GetByID(ctx, identity.UserID)
+		if err != nil {
+			return nil, domain.NewAppError(http.StatusInternalServerError, "Database error", err)
+		}
+	}
+
+	// Update identity with latest tokens
+	encryptedAccess, _ := crypto.Encrypt(tokenResp.AccessToken, u.encryptionKey)
+	var encryptedRefresh *string
+	if tokenResp.RefreshToken != "" {
+		ref, _ := crypto.Encrypt(tokenResp.RefreshToken, u.encryptionKey)
+		encryptedRefresh = &ref
+	}
+	expiresAt := time.Now().Add(time.Duration(tokenResp.ExpiresIn) * time.Second)
+
+	newIdentity := &domain.UserSocialIdentity{
+		UserID:           user.ID,
+		Provider:         domain.ProviderDiscord,
+		ProviderID:       discordUser.ID,
+		ProviderUsername: &discordUser.Username,
+		AccessToken:      &encryptedAccess,
+		RefreshToken:     encryptedRefresh,
+		ExpiresAt:        &expiresAt,
+	}
+	_ = u.userRepo.SaveSocialIdentity(ctx, newIdentity)
+
+	// 5. Generate JWT
+	roleSlugs := []string{}
+	roles, _ := u.userRepo.GetRolesByUserID(ctx, user.ID)
+	for _, r := range roles {
+		roleSlugs = append(roleSlugs, r.Slug)
+	}
+	if len(roleSlugs) == 0 {
+		roleSlugs = append(roleSlugs, "user")
+	}
+	user.Roles = roles
+
+	token, err := u.jwtService.GenerateToken(user.UUID, roleSlugs)
+	if err != nil {
+		return nil, domain.NewAppError(http.StatusInternalServerError, "Failed to generate token", err)
+	}
+
+	user.Password = ""
+	u.enrichUserImages(user)
+
+	return &AuthTokenResponse{
+		Token: token,
+		User:  user,
+	}, nil
+}
+
+func (u *AuthUsecase) autoRegisterDiscordUser(ctx context.Context, discordUser *discord.DiscordUser) (*domain.User, error) {
+	dummyPass, _ := bcrypt.GenerateFromPassword([]byte(uuid.New().String()), bcrypt.DefaultCost)
+	sFormat := "POINT_10"
+
+	newUser := &domain.User{
+		UUID:        uuid.New().String(),
+		Name:        discordUser.Username,
+		Email:       discordUser.Email,
+		Password:    string(dummyPass),
+		ScoreFormat: &sFormat,
+	}
+
+	slug := u.generateUniqueUserSlug(ctx, discordUser.Username)
+	newUser.Slug = &slug
+
+	if err := u.userRepo.Create(ctx, newUser); err != nil {
+		return nil, domain.NewAppError(http.StatusInternalServerError, "Failed to create account during Discord registration", err)
+	}
+
+	// Generate avatar in background
+	go u.GenerateUserAvatar(context.Background(), newUser.ID, newUser.Name)
+
+	return newUser, nil
 }

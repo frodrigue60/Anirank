@@ -492,6 +492,80 @@ func (h *AuthHandler) AnilistRegister(c *fiber.Ctx) error {
 	})
 }
 
+func (h *AuthHandler) DiscordLink(c *fiber.Ctx) error {
+	authURL, err := h.usecase.DiscordAuthURL("discord_link")
+	if err != nil {
+		return domain.NewAppError(500, "Discord OAuth: "+err.Error(), nil)
+	}
+	return c.JSON(fiber.Map{
+		"data": fiber.Map{
+			"url": authURL,
+		},
+	})
+}
+
+func (h *AuthHandler) DiscordCallback(c *fiber.Ctx) error {
+	userID, ok := c.Locals("user_id").(uint64)
+	if !ok {
+		return domain.NewAppError(401, "Unauthorized", nil)
+	}
+
+	var req struct {
+		Code string `json:"code"`
+	}
+	if err := c.BodyParser(&req); err != nil {
+		return domain.NewAppError(400, "Invalid JSON body", err)
+	}
+
+	if req.Code == "" {
+		return domain.NewAppError(422, "code is required", nil)
+	}
+
+	if err := h.usecase.LinkDiscord(c.Context(), userID, req.Code); err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{
+		"data": fiber.Map{
+			"message": "Discord account linked successfully",
+		},
+	})
+}
+
+func (h *AuthHandler) DiscordLogin(c *fiber.Ctx) error {
+	authURL, err := h.usecase.DiscordAuthURL("discord_login")
+	if err != nil {
+		return domain.NewAppError(500, "Discord OAuth: "+err.Error(), nil)
+	}
+	return c.JSON(fiber.Map{
+		"data": fiber.Map{
+			"url": authURL,
+		},
+	})
+}
+
+func (h *AuthHandler) DiscordLoginCallback(c *fiber.Ctx) error {
+	var req struct {
+		Code string `json:"code"`
+	}
+	if err := c.BodyParser(&req); err != nil {
+		return domain.NewAppError(400, "Invalid JSON body", err)
+	}
+
+	if req.Code == "" {
+		return domain.NewAppError(422, "code is required", nil)
+	}
+
+	res, err := h.usecase.LoginWithDiscord(c.Context(), req.Code)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{
+		"data": dto.ToAuthResponseDTO(res),
+	})
+}
+
 func (h *AuthHandler) getGoogleLoginRedirectURI() string {
 	redirectURI := os.Getenv("GOOGLE_LOGIN_REDIRECT_URL")
 	if redirectURI != "" {

@@ -28,19 +28,21 @@ type BadgeDTO struct {
 	IconUrl     *string `json:"icon_url,omitempty"`
 }
 
+type UserSocialIdentityDTO struct {
+	Provider         string `json:"provider"`
+	ProviderUsername string `json:"provider_username"`
+}
+
 type UserDTO struct {
 	UserMinimalDTO
-	About        *string  `json:"about,omitempty"`
-	ProfileColor   *string    `json:"profile_color,omitempty"`
-	FollowersCount int        `json:"followers_count"`
-	FollowingCount int        `json:"following_count"`
-	IsFollowing    bool       `json:"is_following"`
-	Roles          []string   `json:"roles,omitempty"`
-	Badges         []BadgeDTO `json:"badges,omitempty"`
-	AnilistID      *uint64    `json:"anilist_id,omitempty"`
-	AnilistUsername *string    `json:"anilist_username,omitempty"`
-	GoogleID       *string    `json:"google_id,omitempty"`
-	GoogleEmail    *string    `json:"google_email,omitempty"`
+	About            *string                 `json:"about,omitempty"`
+	ProfileColor     *string                 `json:"profile_color,omitempty"`
+	FollowersCount   int                     `json:"followers_count"`
+	FollowingCount   int                     `json:"following_count"`
+	IsFollowing      bool                    `json:"is_following"`
+	Roles            []string                `json:"roles,omitempty"`
+	Badges           []BadgeDTO              `json:"badges,omitempty"`
+	SocialIdentities []UserSocialIdentityDTO `json:"social_identities,omitempty"`
 }
 
 type AuthUserDTO struct {

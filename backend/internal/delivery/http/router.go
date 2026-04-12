@@ -115,6 +115,8 @@ func SetupPublicRoutes(app *fiber.App,
 	api.Get("/auth/anilist/login", authHandler.AnilistLogin)
 	api.Post("/auth/anilist/login-callback", authLimiter, authHandler.AnilistLoginCallback)
 	api.Post("/auth/anilist/register", authLimiter, authHandler.AnilistRegister)
+	api.Get("/auth/discord/login", authHandler.DiscordLogin)
+	api.Post("/auth/discord/login-callback", authLimiter, authHandler.DiscordLoginCallback)
 
 	// Init data for SPA
 	api.Get("/init", middleware.NewResponseCache(storage, 5*time.Minute), discoveryHandler.Init)
@@ -231,6 +233,11 @@ func SetupPublicRoutes(app *fiber.App,
 	// Google Link
 	protected.Get("/auth/google/link", authHandler.GoogleLink)
 	protected.Post("/auth/google/callback", authHandler.GoogleCallback)
+
+	// Discord Link
+	protected.Get("/auth/discord/link", authHandler.DiscordLink)
+	protected.Post("/auth/discord/callback", authHandler.DiscordCallback)
+
 	protected.Post("/interactions/ratings", interactionHandler.Rate)
 	protected.Post("/interactions/reactions", interactionHandler.React)
 	protected.Post("/interactions/favorites", interactionHandler.ToggleFavorite)

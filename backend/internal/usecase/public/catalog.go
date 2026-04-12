@@ -499,12 +499,15 @@ func (u *CatalogUsecase) GetUserAnilistList(ctx context.Context, slug string, st
 		return nil, 0, domain.NewAppError(404, "User not found", err)
 	}
 
-	if user.AnilistID == nil {
+	anilistID := user.GetSocialID("anilist")
+	if anilistID == nil {
 		return nil, 0, domain.NewAppError(400, "User has not linked AniList", nil)
 	}
 
 	// Fetch from AniList
-	anilistResp, err := u.anilistClient.GetUserMediaList(ctx, int64(*user.AnilistID), status, page, limit)
+	var alID int64
+	fmt.Sscanf(*anilistID, "%d", &alID)
+	anilistResp, err := u.anilistClient.GetUserMediaList(ctx, alID, status, page, limit)
 	if err != nil {
 		return nil, 0, domain.NewAppError(500, "Failed to fetch AniList data", err)
 	}

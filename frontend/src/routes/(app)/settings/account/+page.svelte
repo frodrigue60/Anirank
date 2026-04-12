@@ -22,19 +22,19 @@
     }
 
     const code = page.url.searchParams.get("code");
-    if (code) {
-      // Check if it's a Google callback (state or just try)
-      // For simplicity, we can try to guess or use a state param.
-      // But since we are only linking here, we can try one and then the other,
-      // or check the URL for breadcrumbs.
-      // Usually, Google returns 'scope' or other params.
-      const isGoogle = page.url.searchParams.has("scope");
+    const state = page.url.searchParams.get("state");
 
+    if (code) {
       try {
-        if (isGoogle) {
+        if (state === "discord_link") {
+          await api.post("/auth/discord/callback", { code });
+          toastState.addToast("Discord account linked successfully!", "success");
+        } else if (page.url.searchParams.has("scope")) {
+          // Google fallback
           await api.post("/auth/google/callback", { code });
           toastState.addToast("Google account linked successfully!", "success");
         } else {
+          // Anilist fallback
           await api.post("/auth/anilist/callback", { code });
           toastState.addToast(
             "Anilist account linked successfully!",
@@ -91,6 +91,21 @@
     }
   }
 
+  async function handleDiscordLink() {
+    try {
+      const response = await api.get("/auth/discord/link");
+      const url = response.data.data?.url || response.data.url;
+      if (url) {
+        window.location.href = url;
+      }
+    } catch (err: unknown) {
+      toastState.addToast(
+        getApiErrorMessage(err, "Failed to get Discord link."),
+        "error",
+      );
+    }
+  }
+
   function handleResetPassword() {
     toastState.addToast("Password reset email sent (WIP)!", "info");
   }
@@ -104,6 +119,12 @@
       toastState.addToast("Account deletion request sent (WIP)!", "info");
     }
   }
+
+  // Derived social identity helpers
+  const getIdentity = (provider: string) => 
+    authState.user?.social_identities?.find(s => s.provider === provider);
+  
+  const isLinked = (provider: string) => !!getIdentity(provider);
 </script>
 
 <div class="mb-10">
@@ -140,10 +161,10 @@
           </div>
           <div>
             <h3 class="text-sm font-bold text-on-surface">Anilist</h3>
-            {#if authState.user?.anilist_username}
+            {#if isLinked("anilist")}
               <p class="text-xs text-on-surface-variant">
                 Linked as <span class="text-primary font-bold"
-                  >{authState.user.anilist_username}</span
+                  >{getIdentity("anilist")?.provider_username}</span
                 >
               </p>
             {:else}
@@ -153,12 +174,11 @@
         </div>
         <button
           onclick={handleAnilistLink}
-          class="px-5 py-2 rounded-sm font-bold text-xs uppercase tracking-widest transition-all {authState
-            .user?.anilist_id
+          class="px-5 py-2 rounded-sm font-bold text-xs uppercase tracking-widest transition-all {isLinked("anilist")
             ? 'bg-surface-highest text-on-surface-variant/40 border border-on-surface-variant/10'
             : 'bg-[#02a9ff] text-white shadow-sm shadow-[#02a9ff]/20 hover:scale-105 active:scale-95'}"
         >
-          {authState.user?.anilist_id ? "Synced" : "Sync account"}
+          {isLinked("anilist") ? "Synced" : "Sync account"}
         </button>
       </div>
 
@@ -191,10 +211,10 @@
           </div>
           <div>
             <h3 class="text-sm font-bold text-on-surface">Google</h3>
-            {#if authState.user?.google_email}
+            {#if isLinked("google")}
               <p class="text-xs text-on-surface-variant">
                 Linked as <span class="text-primary font-bold"
-                  >{authState.user.google_email}</span
+                  >{getIdentity("google")?.provider_username}</span
                 >
               </p>
             {:else}
@@ -204,12 +224,49 @@
         </div>
         <button
           onclick={handleGoogleSync}
-          class="px-5 py-2 rounded-sm font-bold text-xs uppercase tracking-widest transition-all {authState
-            .user?.google_id
+          class="px-5 py-2 rounded-sm font-bold text-xs uppercase tracking-widest transition-all {isLinked("google")
             ? 'bg-surface-highest text-on-surface-variant/40 border border-on-surface-variant/10'
             : 'bg-on-surface text-surface hover:scale-105 active:scale-95 shadow-sm shadow-black/20'}"
         >
-          {authState.user?.google_id ? "Synced" : "Sync account"}
+          {isLinked("google") ? "Synced" : "Sync account"}
+        </button>
+      </div>
+
+      <!-- Discord -->
+      <div
+        class="flex items-center justify-between p-4 rounded-md bg-surface-container border border-on-surface-variant/10"
+      >
+        <div class="flex items-center gap-4">
+          <div
+            class="w-12 h-12 rounded-md bg-[#5865F2]/10 flex items-center justify-center border border-[#5865F2]/20"
+          >
+            <svg class="w-6 h-6 text-[#5865F2]" viewBox="0 0 24 24">
+              <path
+                fill="currentColor"
+                d="M19.27 4.57c-1.51-.7-3.14-1.21-4.85-1.5-.21.38-.45.8-.62 1.2-1.84-.28-3.66-.28-5.47 0-.17-.4-.41-.82-.63-1.2-1.71.29-3.34.8-4.85 1.5C.3 9.08-.32 13.5.12 17.87c2.03 1.5 3.99 2.41 5.91 3.01.48-.65.9-1.35 1.26-2.09-.69-.26-1.35-.58-1.97-.96.16-.12.33-.25.48-.38 3.73 1.73 7.78 1.73 11.41 0 .16.13.32.26.48.38-.62.38-1.28.7-1.97.96.36.74.78 1.44 1.26 2.09 1.92-.6 3.88-1.51 5.91-3.01.52-5.1-.86-9.5-2.88-13.3zM8.02 15.33c-1.18 0-2.15-1.08-2.15-2.42 0-1.33.95-2.42 2.15-2.42 1.21 0 2.17 1.08 2.15 2.42 0 1.33-.94 2.42-2.15 2.42zm7.97 0c-1.18 0-2.15-1.08-2.15-2.42 0-1.33.95-2.42 2.15-2.42 1.21 0 2.17 1.08 2.15 2.42 0 1.33-.94 2.42-2.15 2.42z"
+              />
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-on-surface">Discord</h3>
+            {#if isLinked("discord")}
+              <p class="text-xs text-on-surface-variant">
+                Linked as <span class="text-primary font-bold"
+                  >{getIdentity("discord")?.provider_username}</span
+                >
+              </p>
+            {:else}
+              <p class="text-xs text-on-surface-variant">Not linked</p>
+            {/if}
+          </div>
+        </div>
+        <button
+          onclick={handleDiscordLink}
+          class="px-5 py-2 rounded-sm font-bold text-xs uppercase tracking-widest transition-all {isLinked("discord")
+            ? 'bg-surface-highest text-on-surface-variant/40 border border-on-surface-variant/10'
+            : 'bg-[#5865F2] text-white hover:scale-105 active:scale-95 shadow-sm shadow-[#5865F2]/20'}"
+        >
+          {isLinked("discord") ? "Synced" : "Sync account"}
         </button>
       </div>
     </div>

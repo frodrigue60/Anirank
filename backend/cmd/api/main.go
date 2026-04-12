@@ -11,6 +11,7 @@ import (
 	"anirank/api/internal/domain"
 	"anirank/api/internal/infrastructure"
 	"anirank/api/internal/infrastructure/anilist"
+	"anirank/api/internal/infrastructure/discord"
 	"anirank/api/internal/infrastructure/google"
 	"anirank/api/internal/infrastructure/og"
 	"anirank/api/internal/jobs"
@@ -161,6 +162,7 @@ func main() {
 
 	anilistClient := anilist.NewClient()
 	googleClient := google.NewClient()
+	discordClient := discord.NewClient()
 
 	discoveryUsecase := public.NewDiscoveryUsecase(taxonomyRepo, songRepo)
 	animeUsecase := public.NewAnimeUsecase(animeRepo, songRepo, mediaService)
@@ -174,7 +176,7 @@ func main() {
 
 	xpUsecase := usecase.NewXPUsecase(xpRepo, userRepo, badgeUsecase)
 	activityUsecase := usecase.NewActivityUsecase(postgres.NewActivityRepository(db), userRepo, songRepo, artistRepo, mediaService)
-	authUsecase := auth.NewAuthUsecase(userRepo, jwtService, storageService, mediaService, xpUsecase, badgeUsecase, anilistClient, googleClient, os.Getenv("ENCRYPTION_KEY"))
+	authUsecase := auth.NewAuthUsecase(userRepo, jwtService, storageService, mediaService, xpUsecase, badgeUsecase, anilistClient, googleClient, discordClient, os.Getenv("ENCRYPTION_KEY"))
 	interactionUsecase := interaction.NewInteractionUsecase(interactionRepo, commentRepo, userRepo, notificationUsecase, songRepo, animeRepo, artistRepo, mediaService, xpUsecase, activityUsecase, badgeUsecase)
 	playlistUsecase := playlist.NewPlaylistUsecase(playlistRepo, songRepo, animeRepo, interactionRepo, mediaService, xpUsecase, userRepo)
 

@@ -205,7 +205,7 @@ func (u *BadgeUsecase) CheckAndAwardBadges(ctx context.Context, userID uint64, t
 			}
 		case "anilist":
 			user, err := u.userRepo.GetByID(ctx, userID)
-			if err == nil && user.AnilistID != nil {
+			if err == nil && user.GetSocialID("anilist") != nil {
 				shouldAward = true
 			}
 		case "comments":

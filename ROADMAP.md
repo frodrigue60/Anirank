@@ -161,10 +161,22 @@
 
 ### Quality & Testing
 
-- 🔲 **Integration tests** for auth usecase (login, register, OAuth flows)
-- 🔲 **Handler tests** for protected routes (auth middleware behavior)
-- 🔲 **DTO mapper tests** (ensure no numeric ID leaks in serialization)
+- 🔲 **Integration tests** for auth usecase
+  - Validate full registration/login lifecycle including password hashing and JWT generation.
+  - Mock OAuth provider responses to verify `anilist`, `google`, and `discord` identity persistence.
+  - Test token encryption/decryption for social access tokens.
+- 🔲 **Handler tests** for protected routes
+  - Verify `AuthMiddleware` correctly extracts and validates UUIDs from JWTs.
+  - Ensure `OptionalAuthMiddleware` behaves as expected when no token is present.
+  - Test endpoint responses for unauthorized (401) and forbidden (403) access attempts.
+- 🔲 **DTO mapper tests**
+  - **Critical**: Verify that `ToUserDTO` and `ToUserMinimalDTO` never include the numeric `ID` field.
+  - Ensure all relationships (Badges, Roles) are correctly mapped to their public DTO equivalents.
+  - Validate that `UserSocialIdentity` objects are correctly hydrated for the API.
 - 🔲 **Frontend component tests** (Vitest + Svelte Testing Library)
+  - Test reactive states in Svelte 5 runes (e.g., `authState` updates after login).
+  - Verify UI behavior in `AccountSettings` (showing/hiding "Synced" buttons based on `social_identities`).
+  - Unit test shared utility components for accessibility and premium visual states.
 - 🔲 CI pipeline (GitHub Actions: lint + test on PR)
 
 ---
@@ -173,8 +185,9 @@
 
 ### Social & Community
 
-- 🔲 **Profile themes / palette switcher** — per-user CSS accent color (roses, blues, greens)
-- 🔲 **Discord account linking** — social identity and future role sync
+- ✅ **Profile themes / palette switcher** — per-user CSS accent color (roses, blues, greens)
+
+- ✅ **Discord account linking** — social identity and future role sync
 - 🔲 **Comment reactions** (emoji reactions on individual comments)
 - 🔲 **Shared playlists** (collaborative playlist editing)
 - 🔲 **User-to-user recommendations** ("You might like this, based on your ratings")
@@ -183,8 +196,8 @@
 
 - 🔲 **Artist biographies** (rich text, social links, discography view)
 - 🔲 **Song lyrics** (optional lyrics display with attribution)
-- 🔲 **Alternate titles / romanization** for song names
-- 🔲 **Soundtrack / OST type** as a 4th song category (beyond OP/ED/IN)
+- ✅ **Alternate titles / romanization** for song names
+- ✅ **Soundtrack / OST type** as a 4th song category (beyond OP/ED/IN)
 - 🔲 **Studio and Producer profile pages** (currently listed but no detail view)
 
 ### Analytics

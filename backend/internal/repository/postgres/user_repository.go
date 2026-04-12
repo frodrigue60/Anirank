@@ -33,6 +33,10 @@ func (r *userRepository) GetByID(ctx context.Context, id uint64) (*domain.User, 
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, domain.ErrNotFound
 	}
+	if err == nil {
+		ids, _ := r.GetSocialIdentitiesByUserID(ctx, user.ID)
+		user.SocialIdentities = ids
+	}
 	return &user, err
 }
 
@@ -48,6 +52,10 @@ func (r *userRepository) GetByEmail(ctx context.Context, email string) (*domain.
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, domain.ErrNotFound
 	}
+	if err == nil {
+		ids, _ := r.GetSocialIdentitiesByUserID(ctx, user.ID)
+		user.SocialIdentities = ids
+	}
 	return &user, err
 }
 
@@ -56,12 +64,17 @@ func (r *userRepository) GetByGoogleID(ctx context.Context, googleID string) (*d
 	query := `
 		SELECT u.*, sf.slug AS score_format
 		FROM users u
+		JOIN user_social_identities usi ON u.id = usi.user_id
 		LEFT JOIN score_formats sf ON u.score_format_id = sf.id
-		WHERE u.google_id = $1
+		WHERE usi.provider = 'google' AND usi.provider_id = $1
 	`
 	err := r.db.GetContext(ctx, &user, query, googleID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, domain.ErrNotFound
+	}
+	if err == nil {
+		ids, _ := r.GetSocialIdentitiesByUserID(ctx, user.ID)
+		user.SocialIdentities = ids
 	}
 	return &user, err
 }
@@ -71,12 +84,17 @@ func (r *userRepository) GetByAnilistID(ctx context.Context, anilistID uint64) (
 	query := `
 		SELECT u.*, sf.slug AS score_format
 		FROM users u
+		JOIN user_social_identities usi ON u.id = usi.user_id
 		LEFT JOIN score_formats sf ON u.score_format_id = sf.id
-		WHERE u.anilist_id = $1
+		WHERE usi.provider = 'anilist' AND usi.provider_id = $1
 	`
-	err := r.db.GetContext(ctx, &user, query, anilistID)
+	err := r.db.GetContext(ctx, &user, query, fmt.Sprintf("%d", anilistID))
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, domain.ErrNotFound
+	}
+	if err == nil {
+		ids, _ := r.GetSocialIdentitiesByUserID(ctx, user.ID)
+		user.SocialIdentities = ids
 	}
 	return &user, err
 }
@@ -95,6 +113,10 @@ func (r *userRepository) GetBySlug(ctx context.Context, slug string) (*domain.Us
 	err := r.db.GetContext(ctx, &user, query, slug)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, domain.ErrNotFound
+	}
+	if err == nil {
+		ids, _ := r.GetSocialIdentitiesByUserID(ctx, user.ID)
+		user.SocialIdentities = ids
 	}
 	return &user, err
 }
@@ -115,13 +137,17 @@ func (r *userRepository) GetByUUID(ctx context.Context, uuid string) (*domain.Us
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, domain.ErrNotFound
 	}
+	if err == nil {
+		ids, _ := r.GetSocialIdentitiesByUserID(ctx, user.ID)
+		user.SocialIdentities = ids
+	}
 	return &user, err
 }
 
 func (r *userRepository) Create(ctx context.Context, user *domain.User) error {
 	query := `
-		INSERT INTO users (uuid, name, slug, email, password, score_format_id, avatar, banner, anilist_id, anilist_username, anilist_access_token, anilist_refresh_token, anilist_token_expires_at, google_id, google_email, google_access_token, google_refresh_token, google_token_expires_at, about, profile_color, created_at, updated_at)
-		VALUES (:uuid, :name, :slug, :email, :password, (SELECT id FROM score_formats WHERE slug = :score_format), :avatar, :banner, :anilist_id, :anilist_username, :anilist_access_token, :anilist_refresh_token, :anilist_token_expires_at, :google_id, :google_email, :google_access_token, :google_refresh_token, :google_token_expires_at, :about, :profile_color, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		INSERT INTO users (uuid, name, slug, email, password, score_format_id, avatar, banner, about, profile_color, created_at, updated_at)
+		VALUES (:uuid, :name, :slug, :email, :password, (SELECT id FROM score_formats WHERE slug = :score_format), :avatar, :banner, :about, :profile_color, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 		RETURNING id
 	`
 	rows, err := r.db.NamedQueryContext(ctx, query, user)
@@ -137,7 +163,7 @@ func (r *userRepository) Create(ctx context.Context, user *domain.User) error {
 }
 
 func (r *userRepository) Update(ctx context.Context, user *domain.User) error {
-	query := `UPDATE users SET name=:name, slug=:slug, email=:email, score_format_id=(SELECT id FROM score_formats WHERE slug = :score_format), avatar=:avatar, banner=:banner, anilist_id=:anilist_id, anilist_username=:anilist_username, anilist_access_token=:anilist_access_token, anilist_refresh_token=:anilist_refresh_token, anilist_token_expires_at=:anilist_token_expires_at, google_id=:google_id, google_email=:google_email, google_access_token=:google_access_token, google_refresh_token=:google_refresh_token, google_token_expires_at=:google_token_expires_at, about=:about, profile_color=:profile_color, updated_at=CURRENT_TIMESTAMP WHERE id=:id`
+	query := `UPDATE users SET name=:name, slug=:slug, email=:email, score_format_id=(SELECT id FROM score_formats WHERE slug = :score_format), avatar=:avatar, banner=:banner, about=:about, profile_color=:profile_color, updated_at=CURRENT_TIMESTAMP WHERE id=:id`
 	_, err := r.db.NamedExecContext(ctx, query, user)
 	return err
 }
@@ -506,5 +532,47 @@ func (r *userRepository) GetMany(ctx context.Context, ids []uint64) ([]domain.Us
 		users = []domain.User{}
 	}
 	return users, err
+}
+
+func (r *userRepository) GetSocialIdentity(ctx context.Context, provider, providerID string) (*domain.UserSocialIdentity, error) {
+	var identity domain.UserSocialIdentity
+	query := `SELECT * FROM user_social_identities WHERE provider = $1 AND provider_id = $2`
+	err := r.db.GetContext(ctx, &identity, query, provider, providerID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, domain.ErrNotFound
+	}
+	return &identity, err
+}
+
+func (r *userRepository) GetSocialIdentitiesByUserID(ctx context.Context, userID uint64) ([]domain.UserSocialIdentity, error) {
+	var identities []domain.UserSocialIdentity
+	query := `SELECT * FROM user_social_identities WHERE user_id = $1`
+	err := r.db.SelectContext(ctx, &identities, query, userID)
+	if identities == nil {
+		identities = []domain.UserSocialIdentity{}
+	}
+	return identities, err
+}
+
+func (r *userRepository) SaveSocialIdentity(ctx context.Context, identity *domain.UserSocialIdentity) error {
+	query := `
+		INSERT INTO user_social_identities (user_id, provider, provider_id, provider_username, access_token, refresh_token, expires_at, created_at, updated_at)
+		VALUES (:user_id, :provider, :provider_id, :provider_username, :access_token, :refresh_token, :expires_at, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		ON CONFLICT (provider, provider_id) DO UPDATE SET
+			user_id = EXCLUDED.user_id,
+			provider_username = EXCLUDED.provider_username,
+			access_token = EXCLUDED.access_token,
+			refresh_token = EXCLUDED.refresh_token,
+			expires_at = EXCLUDED.expires_at,
+			updated_at = CURRENT_TIMESTAMP
+	`
+	_, err := r.db.NamedExecContext(ctx, query, identity)
+	return err
+}
+
+func (r *userRepository) DeleteSocialIdentity(ctx context.Context, userID uint64, provider string) error {
+	query := `DELETE FROM user_social_identities WHERE user_id = $1 AND provider = $2`
+	_, err := r.db.ExecContext(ctx, query, userID, provider)
+	return err
 }
 

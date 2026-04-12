@@ -5,6 +5,11 @@ export interface Role {
     description?: string;
 }
 
+export interface UserSocialIdentity {
+    provider: string;
+    provider_username: string;
+}
+
 export interface User {
     id: number;
     uuid: string;
@@ -19,10 +24,7 @@ export interface User {
     banner_url?: string;
     xp?: number;
     level?: number;
-    anilist_id?: number | null;
-    anilist_username?: string | null;
-    google_id?: string | null;
-    google_email?: string | null;
+    social_identities?: UserSocialIdentity[];
     profile_color?: string;
     about?: string;
 }

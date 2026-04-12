@@ -150,7 +150,14 @@
 - ✅ Image lazy loading on all catalog grids and components (Artist/Song/Anime cards)
 - ✅ `srcset` support for dynamic resolutions (backend thumbnail generation via `MediaService`)
 - 🔲 Pagination cursor-based migration for large datasets (currently offset-based)
-- 🔲 Database index audit (cover common WHERE/ORDER BY patterns)
+- 🔲 **Database Index & Performance Audit**
+  - [ ] **Large Scale Seeder**: Create a script to populate the DB with dynamic mock data (~50k songs, ~10k users) to simulate production volume.
+  - [ ] **Query Profiling**: Audit critical paths using `EXPLAIN ANALYZE` to ensure `Index Scan` usage:
+    - Seasonal lists and pagination.
+    - Global rankings (ORDER BY patterns).
+    - User notification feeds and interaction logs.
+  - [ ] **Composite Indexes**: Implement multi-column indexes for filters frequently used together (e.g., `anime_id` + `status`).
+  - [ ] **Slow Query Monitor**: Configure `log_min_duration_statement` in Postgres to identify bottleneck queries (>100ms) during staging.
 
 ### Quality & Testing
 

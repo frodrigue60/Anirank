@@ -41,6 +41,8 @@ type ContentAdminUsecase struct {
 	anilistClient *anilist.Client
 	mediaService  infrastructure.MediaService
 	auditUsecase  domain.AuditLogUsecase
+	interactionRepo    domain.InteractionRepository
+	notificationUsecase domain.NotificationUsecase
 
 	anilistCache     ApiStatusCache
 	animeThemesCache ApiStatusCache
@@ -57,6 +59,8 @@ func NewContentAdminUsecase(
 	ac *anilist.Client,
 	media infrastructure.MediaService,
 	audit domain.AuditLogUsecase,
+	ir domain.InteractionRepository,
+	nu domain.NotificationUsecase,
 ) *ContentAdminUsecase {
 	return &ContentAdminUsecase{
 		animeRepo:     ar,
@@ -68,6 +72,8 @@ func NewContentAdminUsecase(
 		anilistClient: ac,
 		mediaService:  media,
 		auditUsecase:  audit,
+		interactionRepo:    ir,
+		notificationUsecase: nu,
 	}
 }
 
@@ -1867,6 +1873,11 @@ func (u *ContentAdminUsecase) UpdateSong(ctx context.Context, s *domain.Song, me
 		return err
 	}
 
+	// Trigger notifications if promoted to public
+	if !existing.Status && s.Status {
+		go u.notifyFollowersOfNewSong(context.Background(), s.ID)
+	}
+
 	_ = u.auditUsecase.LogActions(ctx, meta.ActorID, "updated", s.ID, "song", existing, s, &meta.URL, &meta.IPAddress, &meta.UserAgent)
 	return nil
 }
@@ -1883,6 +1894,11 @@ func (u *ContentAdminUsecase) DeleteSong(ctx context.Context, id uint64, meta do
 func (u *ContentAdminUsecase) SyncSongArtists(ctx context.Context, songID uint64, artistIDs []uint64) error {
 	if err := u.songRepo.SyncArtists(ctx, songID, artistIDs); err != nil {
 		return err
+	}
+
+	// Trigger notifications if the song is public
+	if song, err := u.songRepo.GetByID(ctx, songID); err == nil && song != nil && song.Status {
+		go u.notifyFollowersOfNewSong(context.Background(), songID)
 	}
 
 	// Recount stats for each artist to update enabled/disabled counters
@@ -1996,6 +2012,62 @@ func (u *ContentAdminUsecase) GenerateArtistAvatar(ctx context.Context, artistID
 	}
 
 	return u.artistRepo.UpdateAvatar(ctx, artistID, url)
+}
+
+func (u *ContentAdminUsecase) notifyFollowersOfNewSong(ctx context.Context, songID uint64) {
+	song, err := u.songRepo.GetByID(ctx, songID)
+	if err != nil || song == nil {
+		return
+	}
+
+	anime, err := u.animeRepo.GetByID(ctx, song.AnimeID)
+	if err != nil || anime == nil {
+		return
+	}
+
+	artists, err := u.songRepo.GetArtistsBySongID(ctx, songID, true)
+	if err != nil {
+		return
+	}
+
+	// Track notified users to avoid duplicate notifications for the same song (if they follow multiple artists)
+	notifiedUsers := make(map[uint64]bool)
+
+	for _, artist := range artists {
+		userIDs, err := u.interactionRepo.GetUsersWhoFavorited(ctx, artist.ID, "artist")
+		if err != nil {
+			continue
+		}
+
+		for _, userID := range userIDs {
+			if notifiedUsers[userID] {
+				continue
+			}
+
+			dataObj := map[string]interface{}{
+				"artist_name": artist.Name,
+				"artist_slug": artist.Slug,
+				"anime_title": anime.Title,
+				"anime_slug":  anime.Slug,
+				"song_name":   song.SongRomaji,
+				"song_slug":   song.Slug,
+				"anime_cover": u.mediaService.Resolve(anime.Cover),
+			}
+			dataJSON, _ := json.Marshal(dataObj)
+
+			notif := &domain.Notification{
+				UserID:      userID,
+				Type:        domain.NotifArtistNewSong,
+				SubjectID:   &songID,
+				SubjectUUID: &song.UUID,
+				SubjectType: utils.Ptr("song"),
+				Data:        dataJSON,
+			}
+
+			_ = u.notificationUsecase.Create(ctx, notif)
+			notifiedUsers[userID] = true
+		}
+	}
 }
 
 func (u *ContentAdminUsecase) BatchGenerateArtistAvatars(ctx context.Context, ids []uint64, progress chan<- string) error {
@@ -2554,6 +2626,12 @@ func (u *ContentAdminUsecase) ToggleSongStatus(ctx context.Context, id uint64, m
 		return err
 	}
 	newSong, _ := u.songRepo.GetByID(ctx, id)
+
+	// Trigger notifications if the song was just made public
+	if existing != nil && newSong != nil && !existing.Status && newSong.Status {
+		go u.notifyFollowersOfNewSong(context.Background(), id)
+	}
+
 	_ = u.auditUsecase.LogActions(ctx, meta.ActorID, "status_toggled", id, "song", existing, newSong, &meta.URL, &meta.IPAddress, &meta.UserAgent)
 	return nil
 }

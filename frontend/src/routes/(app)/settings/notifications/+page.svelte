@@ -16,6 +16,7 @@
     social_follow: true,
     comment_reply: true,
     user_request_feedback: true,
+    artist_new_song: true,
   });
 
   async function fetchSettings() {
@@ -75,6 +76,20 @@
       ],
     },
     {
+      id: "artists",
+      title: "Artists",
+      icon: Users,
+      items: [
+        {
+          id: "artist_new_song",
+          label: "When a favorited artist has a new song",
+          description:
+            "Get notified when one of your favorite artists has a new song added.",
+          checked: settings.artist_new_song,
+        },
+      ],
+    },
+    {
       id: "submissions",
       title: "Submissions",
       icon: ShieldCheck,
@@ -94,7 +109,7 @@
 <div class="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
   <!-- Header Section -->
   <div>
-    <h1 class="text-4xl font-black text-white tracking-tighter mb-2">
+    <h1 class="text-4xl font-black text-on-surface tracking-tighter mb-2">
       Notification Preferences
     </h1>
     <p class="text-on-surface-variant max-w-2xl font-medium leading-relaxed">
@@ -117,7 +132,9 @@
             >
               <category.icon size={16} class="text-primary" />
             </div>
-            <h2 class="text-lg font-black text-white uppercase tracking-wider">
+            <h2
+              class="text-lg font-black text-on-surface uppercase tracking-wider"
+            >
               {category.title}
             </h2>
           </div>

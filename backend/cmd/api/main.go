@@ -179,7 +179,7 @@ func main() {
 	playlistUsecase := playlist.NewPlaylistUsecase(playlistRepo, songRepo, animeRepo, interactionRepo, mediaService, xpUsecase, userRepo)
 
 	userAdminUsecase := admin.NewUserAdminUsecase(userRepo, mediaService, auditUsecase)
-	contentAdminUsecase := admin.NewContentAdminUsecase(animeRepo, songRepo, variantRepo, artistRepo, taxonomyRepo, userRepo, anilistClient, mediaService, auditUsecase)
+	contentAdminUsecase := admin.NewContentAdminUsecase(animeRepo, songRepo, variantRepo, artistRepo, taxonomyRepo, userRepo, anilistClient, mediaService, auditUsecase, interactionRepo, notificationUsecase)
 	adminUsecase := admin.NewAdminUsecase(userAdminUsecase, contentAdminUsecase, adminRepo, moderationRepo, jobsRepo)
 
 	ogGenerator := og.NewGenerator(s3PublicUrl, s3Endpoint)

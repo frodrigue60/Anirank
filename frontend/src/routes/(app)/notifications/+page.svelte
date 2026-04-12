@@ -69,9 +69,12 @@
       case "follow":
         return "person_add";
       case "reply":
+      case "comment_reply":
         return "reply";
       case "like":
         return "favorite";
+      case "artist_new_song":
+        return "music_note";
       default:
         return "notifications";
     }
@@ -82,21 +85,22 @@
       case "follow":
         return "text-blue-400 bg-blue-400/10";
       case "reply":
+      case "comment_reply":
         return "text-green-400 bg-green-400/10";
       case "like":
         return "text-red-400 bg-red-400/10";
+      case "artist_new_song":
+        return "text-purple-400 bg-purple-400/10";
       default:
         return "text-primary bg-primary/10";
     }
   }
 
   const filters = [
-    { label: "All", value: "" },
-    { label: "Airing", value: "airing", disabled: true },
-    { label: "Activity", value: "activity" },
-    { label: "Forum", value: "forum", disabled: true },
-    { label: "Follows", value: "follow" },
-    { label: "Media", value: "media", disabled: true },
+    { label: "All", value: "", disabled: false },
+    { label: "Activity", value: "activity", disabled: false },
+    { label: "Follows", value: "follow", disabled: false },
+    { label: "Media", value: "artist_new_song", disabled: false },
   ];
 
   function setFilter(value: string) {
@@ -112,8 +116,8 @@
 </script>
 
 <div class="min-h-screen my-8">
-  <div class="max-w-6xl mx-auto px-6">
-    <div class="grid grid-cols-12 gap-8">
+  <div class="max-w-6xl mx-auto px-4">
+    <div class="grid grid-cols-12 gap-4">
       <!-- Sidebar -->
       <div
         class="shrink-0 space-y-6 h-fit bg-surface-container p-4 rounded-md col-span-12 lg:col-span-3"
@@ -125,11 +129,13 @@
             >
               Notifications
             </h2>
-            <button
+            <a
+              href="/settings/notifications"
+              title="Notification settings"
               class="text-on-surface-variant hover:text-on-surface transition-colors"
             >
               <span class="material-symbols-outlined text-lg">settings</span>
-            </button>
+            </a>
           </div>
           <div class="space-y-1">
             {#each filters as filter}
@@ -145,7 +151,7 @@
                 <span>{filter.label}</span>
                 {#if filter.value === "" && unreadCount > 0}
                   <span
-                    class="px-2 py-0.5 rounded-full bg-primary text-[10px] text-on-surface font-bold"
+                    class="px-2 py-0.5 rounded-full bg-primary text-[10px] text-white/80 font-bold"
                     >{unreadCount}</span
                   >
                 {/if}
@@ -157,7 +163,7 @@
         {#if unreadCount > 0}
           <button
             onclick={markAllAsRead}
-            class="w-full py-3 rounded-sm bg-primary text-on-surface font-bold text-sm shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
+            class="w-full py-3 rounded-sm bg-primary text-white/80 font-bold text-sm shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
           >
             Mark all as read
           </button>
@@ -165,9 +171,7 @@
       </div>
 
       <!-- Main Content -->
-      <div
-        class="flex-1 min-w-0 bg-surface-container rounded-md p-6 col-span-12 lg:col-span-9"
-      >
+      <div class="flex-1 min-w-0 rounded-md px-4 col-span-12 lg:col-span-9">
         {#if notifications.length === 0}
           <div
             class="p-20 rounded-md text-center border border-white/5 bg-white/2"
@@ -193,9 +197,9 @@
           <div class="space-y-3">
             {#each notifications as notification, i (notification.id)}
               <div
-                class="group relative p-5 rounded-sm border transition-all {notification.read_at
-                  ? 'bg-white/2 border-white/5 opacity-80'
-                  : 'bg-white/5 border-primary/20 shadow-lg shadow-primary/5'}"
+                class="group relative p-2 bg-surface-container hover:bg-surface-highest/50 rounded-sm transition-all shadow-sm shadow-dark {notification.read_at
+                  ? 'border border-primary/10'
+                  : 'border border-primary/50'}"
                 in:fly={{ y: 20, delay: i * 30 }}
               >
                 <div class="flex gap-5 items-center">
@@ -227,18 +231,18 @@
 
                   <div class="flex-1 min-w-0">
                     <div class="flex items-center justify-between gap-4">
-                      <p class="text-slate-200 text-sm leading-relaxed">
+                      <div class="text-on-surface text-sm leading-relaxed">
                         {#if notification.type === "follow"}
                           <a
                             href="/users/{notification.data.follower_slug}"
-                            class="font-bold text-white hover:text-primary transition-colors"
+                            class="font-bold text-on-surface hover:text-primary transition-colors"
                             >{notification.data.follower_name}</a
                           > started following you
                         {:else if notification.type === "reply" || notification.type === "comment_reply"}
                           <a
                             href="/users/{notification.data.replied_by_slug ||
                               '#'}"
-                            class="font-bold text-white hover:text-primary transition-colors"
+                            class="font-bold text-on-surface-variant hover:text-primary transition-colors"
                             >{notification.data.replied_by_name || "Someone"}</a
                           >
                           replied to your comment
@@ -248,17 +252,41 @@
                                 .anime_slug}/{notification.data
                                 .song_slug}#comment-{notification.data
                                 ?.comment_uuid || notification.data.comment_id}"
-                              class="text-white hover:text-primary transition-colors font-bold"
+                              class="text-on-surface-variant hover:text-primary transition-colors font-bold"
                               >{notification.data.anime_name}
                               {notification.data.song_slug}</a
                             >
                           {/if}
+                        {:else if notification.type === "artist_new_song"}
+                          <div>
+                            <a
+                              href="/artists/{notification.data.artist_slug}"
+                              class="font-bold text-on-surface-variant hover:text-primary transition-colors"
+                              >{notification.data.artist_name}</a
+                            >
+                            added a new song
+                          </div>
+                          <div>
+                            <a
+                              href="/songs/{notification.data
+                                .anime_slug}/{notification.data.song_slug}"
+                              class="font-bold text-on-surface-variant hover:text-primary transition-colors"
+                              >{notification.data.song_name} ({notification.data
+                                .song_slug})</a
+                            >
+                            for
+                            <a
+                              href="/animes/{notification.data.anime_slug}"
+                              class="font-bold text-on-surface-variant hover:text-primary transition-colors"
+                              >{notification.data.anime_title}</a
+                            >
+                          </div>
                         {:else if notification.type === "like"}
                           Someone liked your content
                         {:else}
                           New notification
                         {/if}
-                      </p>
+                      </div>
                       <span class="text-xs text-slate-500 whitespace-nowrap"
                         >{formatTime(notification.created_at)}</span
                       >
@@ -267,19 +295,16 @@
                     {#if !notification.read_at}
                       <button
                         onclick={() => markAsRead(notification.id)}
-                        class="text-[11px] text-primary hover:text-primary-light font-medium mt-1 transition-colors"
+                        class="text-xs text-primary hover:text-primary-light font-medium mt-1 transition-colors"
                       >
                         Mark as read
                       </button>
+                    {:else}
+                      <span class="text-xs text-slate-500 font-medium mt-1"
+                        >Read</span
+                      >
                     {/if}
                   </div>
-
-                  {#if !notification.read_at}
-                    <div
-                      class="w-2.5 h-2.5 rounded-full bg-primary shadow-sm shadow-primary"
-                    ></div>
-                  {/if}
-
                   {#if notification.data.anime_cover}
                     <div
                       class="shrink-0 w-16 h-20 rounded-sm overflow-hidden border border-white/10 ml-2"

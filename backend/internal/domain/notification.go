@@ -6,6 +6,10 @@ import (
 	"time"
 )
 
+const (
+	NotifArtistNewSong = "artist_new_song"
+)
+
 type Notification struct {
 	ID          string          `db:"id" json:"id"`
 	UserID      uint64          `db:"user_id" json:"user_id"`

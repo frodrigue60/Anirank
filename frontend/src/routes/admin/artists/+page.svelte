@@ -100,9 +100,11 @@
         `${api.defaults.baseURL}/admin/artists/generate-avatars`,
         {
           method: "POST",
+          credentials: "include",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${getAuthToken()}`,
+            "X-CSRF-Token": typeof document !== 'undefined' && document.cookie.includes('csrf_token=') ? `; ${document.cookie}`.split(`; csrf_token=`)[1].split(';')[0] : '',
           },
           body: JSON.stringify({
             artist_ids: selectedIds,
@@ -163,9 +165,11 @@
         `${api.defaults.baseURL}/admin/artists/merge`,
         {
           method: "POST",
+          credentials: "include",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${getAuthToken()}`,
+            "X-CSRF-Token": typeof document !== 'undefined' && document.cookie.includes('csrf_token=') ? `; ${document.cookie}`.split(`; csrf_token=`)[1].split(';')[0] : '',
           },
         },
       );
@@ -222,9 +226,11 @@
         `${api.defaults.baseURL}/admin/artists/recount-songs`,
         {
           method: "POST",
+          credentials: "include",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${getAuthToken()}`,
+            "X-CSRF-Token": typeof document !== 'undefined' && document.cookie.includes('csrf_token=') ? `; ${document.cookie}`.split(`; csrf_token=`)[1].split(';')[0] : '',
           },
         },
       );

@@ -359,3 +359,24 @@ func (r *interactionRepository) GetRecentActivities(ctx context.Context, limit i
 
 	return feed, nil
 }
+
+func (r *interactionRepository) GetUsersWhoFavorited(ctx context.Context, entityID uint64, entityType string) ([]uint64, error) {
+	var table string
+	var entityCol string
+
+	switch entityType {
+	case domain.TypeArtist:
+		table = "artist_user"
+		entityCol = "artist_id"
+	case domain.TypeSong:
+		table = "song_user"
+		entityCol = "song_id"
+	default:
+		return nil, fmt.Errorf("unsupported favoritable type: %s", entityType)
+	}
+
+	var userIDs []uint64
+	query := "SELECT user_id FROM " + table + " WHERE " + entityCol + " = $1"
+	err := r.db.SelectContext(ctx, &userIDs, query, entityID)
+	return userIDs, err
+}

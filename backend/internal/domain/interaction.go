@@ -114,6 +114,9 @@ type InteractionRepository interface {
 
 	// Activity Feed
 	GetRecentActivities(ctx context.Context, limit int) ([]ActivityItem, error)
+
+	// Notifications Helpers
+	GetUsersWhoFavorited(ctx context.Context, entityID uint64, entityType string) ([]uint64, error)
 }
 
 type CommentRepository interface {

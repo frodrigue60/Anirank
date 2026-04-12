@@ -3,13 +3,15 @@
   import api from "$lib/api";
 
   interface Announcement {
-    id: number;
+    id: number | string;
+    uuid: string;
     title: string;
     content?: string;
     type: string;
     icon?: string;
     url?: string;
     image_url?: string;
+    image_sources?: { url: string; width: number }[];
     priority: number;
   }
 
@@ -80,10 +82,22 @@
       >
         <!-- Background Image -->
         {#if item.image_url}
-          <div
-            class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-            style="background-image: url('{item.image_url}');"
-          ></div>
+          <picture
+            class="absolute inset-0 h-full w-full overflow-hidden transition-transform duration-700 group-hover:scale-110"
+          >
+            {#if item.image_sources}
+              <source
+                srcset={item.image_sources.map((s) => `${s.url} ${s.width}w`).join(", ")}
+                type="image/avif"
+              />
+            {/if}
+            <img
+              src={item.image_url}
+              alt={item.title}
+              loading="lazy"
+              class="h-full w-full object-cover"
+            />
+          </picture>
           <div
             class="absolute inset-0 bg-linear-to-t from-black/90 via-black/40 to-transparent"
           ></div>

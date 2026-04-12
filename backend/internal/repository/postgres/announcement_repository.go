@@ -30,6 +30,18 @@ func (r *postgresAnnouncementRepository) GetByID(ctx context.Context, id uint64)
 	return &a, nil
 }
 
+func (r *postgresAnnouncementRepository) GetByUUID(ctx context.Context, uuid string) (*domain.Announcement, error) {
+	var a domain.Announcement
+	query := `SELECT * FROM announcements WHERE uuid = $1`
+	if err := r.db.GetContext(ctx, &a, query, uuid); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, domain.NewAppError(404, "Announcement not found", err)
+		}
+		return nil, err
+	}
+	return &a, nil
+}
+
 func (r *postgresAnnouncementRepository) GetAll(ctx context.Context, filters domain.AnnouncementFilters, limit, offset int) ([]domain.Announcement, error) {
 	var announcements []domain.Announcement
 	query := `SELECT * FROM announcements WHERE 1=1`
@@ -95,9 +107,9 @@ func (r *postgresAnnouncementRepository) GetActive(ctx context.Context) ([]domai
 
 func (r *postgresAnnouncementRepository) Create(ctx context.Context, a *domain.Announcement) error {
 	query := `INSERT INTO announcements (
-		title, content, type, icon, url, image, priority, is_active, starts_at, ends_at, created_at, updated_at
+		uuid, title, content, type, icon, url, image, priority, is_active, starts_at, ends_at, created_at, updated_at
 	) VALUES (
-		:title, :content, :type, :icon, :url, :image, :priority, :is_active, :starts_at, :ends_at, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+		:uuid, :title, :content, :type, :icon, :url, :image, :priority, :is_active, :starts_at, :ends_at, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 	) RETURNING id`
 	
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
@@ -110,6 +122,7 @@ func (r *postgresAnnouncementRepository) Create(ctx context.Context, a *domain.A
 
 func (r *postgresAnnouncementRepository) Update(ctx context.Context, a *domain.Announcement) error {
 	query := `UPDATE announcements SET 
+		uuid = :uuid,
 		title = :title, 
 		content = :content, 
 		type = :type, 

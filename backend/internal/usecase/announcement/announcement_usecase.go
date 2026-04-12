@@ -2,23 +2,21 @@ package announcement
 
 import (
 	"context"
-	"fmt"
 	"mime/multipart"
-	"path/filepath"
-	"time"
 
 	"anirank/api/internal/domain"
 	"anirank/api/internal/infrastructure"
 	"anirank/api/internal/infrastructure/security"
+	"github.com/google/uuid"
 )
 
 type AnnouncementUsecase struct {
 	repo    domain.AnnouncementRepository
-	storage infrastructure.StorageService
+	media   infrastructure.MediaService
 }
 
-func NewAnnouncementUsecase(repo domain.AnnouncementRepository, storage infrastructure.StorageService) *AnnouncementUsecase {
-	return &AnnouncementUsecase{repo: repo, storage: storage}
+func NewAnnouncementUsecase(repo domain.AnnouncementRepository, media infrastructure.MediaService) *AnnouncementUsecase {
+	return &AnnouncementUsecase{repo: repo, media: media}
 }
 
 func (u *AnnouncementUsecase) GetByID(ctx context.Context, id uint64) (*domain.Announcement, error) {
@@ -58,6 +56,9 @@ func (u *AnnouncementUsecase) GetCount(ctx context.Context, filters domain.Annou
 
 func (u *AnnouncementUsecase) Create(ctx context.Context, a *domain.Announcement) error {
 	a.Content = security.SanitizeHTMLPtr(a.Content)
+	if a.UUID == "" {
+		a.UUID = uuid.New().String()
+	}
 	return u.repo.Create(ctx, a)
 }
 
@@ -82,20 +83,19 @@ func (u *AnnouncementUsecase) UploadImage(ctx context.Context, file *multipart.F
 	}
 	defer src.Close()
 
-	// Generate a unique filename
-	filename := fmt.Sprintf("announcements/%d%s", time.Now().UnixNano(), filepath.Ext(file.Filename))
-
-	// Upload using StorageService
-	if _, err := u.storage.UploadFile(ctx, filename, src, file.Size, file.Header.Get("Content-Type")); err != nil {
+	// Upload using MediaService with Announcement preset (multi-resolution)
+	path, _, err := u.media.UploadWithResolutions(ctx, "announcements", 0, src, infrastructure.PresetAnnouncement)
+	if err != nil {
 		return "", err
 	}
 
-	return filename, nil
+	return path, nil
 }
 
 func (u *AnnouncementUsecase) enrichAnnouncement(a *domain.Announcement) {
 	if a.Image != nil {
-		url := u.storage.GetURL(*a.Image)
+		url := u.media.GetURL(*a.Image)
 		a.ImageUrl = &url
+		a.ImageSources = u.media.GetImageSources(*a.Image)
 	}
 }

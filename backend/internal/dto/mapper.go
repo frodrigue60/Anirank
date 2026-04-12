@@ -645,18 +645,26 @@ func ToTournamentMatchupDTO(m *domain.TournamentMatchup) TournamentMatchupDTO {
 
 func ToAnnouncementDTO(a domain.Announcement) AnnouncementDTO {
 	return AnnouncementDTO{
-		ID:        a.Title, // Use Title as a non-sequential identifier for now
+		ID:        a.UUID,
+		UUID:      a.UUID,
 		Title:     a.Title,
 		Content:   a.Content,
 		Type:      a.Type,
 		Icon:      a.Icon,
 		URL:       a.URL,
 		ImageUrl:  a.ImageUrl,
+		ImageSources: a.ImageSources,
 		Priority:  a.Priority,
 		IsActive:  a.IsActive,
 		StartsAt:  a.StartsAt,
 		EndsAt:    a.EndsAt,
 	}
+}
+
+func ToAdminAnnouncementDTO(a domain.Announcement) AnnouncementDTO {
+	dto := ToAnnouncementDTO(a)
+	dto.ID = a.ID // Sequential numeric ID for Admin Panel
+	return dto
 }
 
 func ToNotificationDTO(n domain.Notification) NotificationDTO {

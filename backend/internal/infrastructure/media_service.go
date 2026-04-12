@@ -32,6 +32,7 @@ const (
 	PresetSquare    ResolutionPreset = "square"    // 128, 400
 	PresetPoster    ResolutionPreset = "poster"    // 240x360, 600x900
 	PresetLandscape ResolutionPreset = "landscape" // 640x360, 1280x720
+	PresetAnnouncement ResolutionPreset = "announcement" // 450
 )
 
 type ImageOptions struct {
@@ -138,9 +139,15 @@ func (s *mediaService) UploadImageOptimized(ctx context.Context, prefix string, 
 
 func (s *mediaService) UploadWithResolutions(ctx context.Context, prefix string, id uint64, file io.Reader, preset ResolutionPreset) (string, string, error) {
 	// 1. Decode original
-	originalImg, _, err := imageutil.Decode(file)
+	img, _, err := imageutil.Decode(file)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to decode original: %w", err)
+	}
+
+	// Optimize storage: For announcements, we don't want high-res originals.
+	// Resize immediately if it exceeds target width.
+	if preset == PresetAnnouncement && img.Bounds().Dx() > 450 {
+		img = imageutil.Resize(img, 450, 0)
 	}
 
 	// Define resolutions based on preset
@@ -154,19 +161,21 @@ func (s *mediaService) UploadWithResolutions(ctx context.Context, prefix string,
 		resolutions = []int{240, 600}
 	case PresetLandscape:
 		resolutions = []int{640, 1280}
+	case PresetAnnouncement:
+		resolutions = []int{450}
 	default:
 		resolutions = []int{600}
 	}
 
-	// 2. Upload Original (as JPEG for compatibility fallback)
+	// 2. Upload Fallback (as JPEG for compatibility)
 	var buf bytes.Buffer
-	if err := jpeg.Encode(&buf, originalImg, &jpeg.Options{Quality: 90}); err != nil {
-		return "", "", fmt.Errorf("failed to encode original fallback: %w", err)
+	if err := jpeg.Encode(&buf, img, &jpeg.Options{Quality: 90}); err != nil {
+		return "", "", fmt.Errorf("failed to encode fallback: %w", err)
 	}
 	originalPath := s.GeneratePath(prefix, id, "jpg")
 	_, err = s.storage.UploadFile(ctx, originalPath, bytes.NewReader(buf.Bytes()), int64(buf.Len()), "image/jpeg")
 	if err != nil {
-		return "", "", fmt.Errorf("failed to upload original: %w", err)
+		return "", "", fmt.Errorf("failed to upload fallback image: %w", err)
 	}
 
 	// 3. Generate and Upload AVIF versions
@@ -187,11 +196,16 @@ func (s *mediaService) UploadWithResolutions(ctx context.Context, prefix string,
 		}
 
 		if isSquare {
-			resized = imageutil.Fill(originalImg, w, w)
+			resized = imageutil.Fill(img, w, w)
 		} else if preset == PresetPoster {
-			resized = imageutil.Resize(originalImg, w, int(float64(w)*1.5))
+			resized = imageutil.Resize(img, w, int(float64(w)*1.5))
 		} else {
-			resized = imageutil.Resize(originalImg, w, 0) // Preserve aspect ratio
+			// Only downscale if original is larger than target width
+			if img.Bounds().Dx() > w {
+				resized = imageutil.Resize(img, w, 0) // Preserve aspect ratio
+			} else {
+				resized = img
+			}
 		}
 
 		avifData, err := imageutil.EncodeAVIF(resized, 65) // Quality 65 for AVIF is very good
@@ -226,6 +240,8 @@ func (s *mediaService) GetImageSources(path string) []domain.ImageSource {
 		sizes = map[string]int{"_sm": 128, "_md": 400}
 	} else if isPoster {
 		sizes = map[string]int{"_sm": 240, "_md": 600}
+	} else if strings.Contains(path, "announcements") {
+		sizes = map[string]int{"_md": 450}
 	} else {
 		sizes = map[string]int{"_md": 640, "_lg": 1280}
 	}

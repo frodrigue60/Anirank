@@ -66,7 +66,7 @@ func (h *AnnouncementHandler) GetAllAnnouncements(c *fiber.Ctx) error {
 
 	dtoAnnouncements := make([]dto.AnnouncementDTO, len(announcements))
 	for i, a := range announcements {
-		dtoAnnouncements[i] = dto.ToAnnouncementDTO(a)
+		dtoAnnouncements[i] = dto.ToAdminAnnouncementDTO(a)
 	}
 
 	return c.JSON(paginatedResponse(c, dtoAnnouncements, total, page, limit))
@@ -79,7 +79,7 @@ func (h *AnnouncementHandler) GetAnnouncementByID(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	return c.JSON(fiber.Map{"data": dto.ToAnnouncementDTO(*a)})
+	return c.JSON(fiber.Map{"data": dto.ToAdminAnnouncementDTO(*a)})
 }
 
 // CreateAnnouncement handles the creation of a new announcement.
@@ -107,7 +107,7 @@ func (h *AnnouncementHandler) CreateAnnouncement(c *fiber.Ctx) error {
 	if err := h.usecase.Create(c.Context(), &a); err != nil {
 		return err
 	}
-	return c.Status(201).JSON(fiber.Map{"data": dto.ToAnnouncementDTO(a)})
+	return c.Status(201).JSON(fiber.Map{"data": dto.ToAdminAnnouncementDTO(a)})
 }
 
 // UpdateAnnouncement handles updating an existing announcement.
@@ -136,7 +136,7 @@ func (h *AnnouncementHandler) UpdateAnnouncement(c *fiber.Ctx) error {
 	if err := h.usecase.Update(c.Context(), &a); err != nil {
 		return err
 	}
-	return c.JSON(fiber.Map{"data": dto.ToAnnouncementDTO(a)})
+	return c.JSON(fiber.Map{"data": dto.ToAdminAnnouncementDTO(a)})
 }
 
 func parseOptionalTime(val string) *time.Time {

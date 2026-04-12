@@ -78,7 +78,7 @@ func SetupPublicRoutes(app *fiber.App,
 	tournamentHandler := v1.NewTournamentHandler(tournamentUsecase)
 
 	announcementRepo := postgres.NewAnnouncementRepository(db)
-	announcementUsecase := announcement.NewAnnouncementUsecase(announcementRepo, storageService)
+	announcementUsecase := announcement.NewAnnouncementUsecase(announcementRepo, mediaService)
 	announcementHandler := v1.NewAnnouncementHandler(announcementUsecase)
 
 	badgeHandler := v1.NewBadgeHandler(badgeUsecase)

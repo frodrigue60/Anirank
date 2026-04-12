@@ -1,6 +1,8 @@
 import { fetchEventSource } from "@microsoft/fetch-event-source";
-import { getAuthToken } from "./auth.svelte";
+import { getAuthToken, logout } from "./auth.svelte";
 import api from "$lib/api";
+
+class FatalError extends Error {}
 
 class NotificationsState {
   unreadCount = $state(0);
@@ -53,6 +55,20 @@ class NotificationsState {
       method: "GET",
       headers,
       signal: this.abortController.signal,
+      onopen: async (response) => {
+        if (response.ok && response.headers.get("content-type")?.includes("text/event-stream")) {
+          return; // everything's good
+        } else if (response.status >= 400 && response.status < 500 && response.status !== 429) {
+          // Client-side errors are usually non-retriable
+          if (response.status === 401 || response.status === 403) {
+            console.error("SSE Authentication error, logging out...");
+            logout();
+          }
+          throw new FatalError();
+        } else {
+          // Server errors or rate limiting (429) will be retried by the default logic
+        }
+      },
       onmessage: (event) => {
         if (event.event === "message") {
           try {
@@ -71,6 +87,9 @@ class NotificationsState {
         // El cliente intentará reconectarse automáticamente de manera silenciosa
       },
       onerror: (err) => {
+        if (err instanceof FatalError) {
+          throw err; // Stop retrying
+        }
         console.error("SSE Error:", err);
       }
     });

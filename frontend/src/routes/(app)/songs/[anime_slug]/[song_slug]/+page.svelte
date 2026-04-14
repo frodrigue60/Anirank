@@ -185,6 +185,11 @@
       goto(`/login?redirect=${encodeURIComponent(page.url.pathname)}`);
       return;
     }
+
+    // Optimistic Update
+    const previousState = currentSong.is_favorited;
+    currentSong.is_favorited = !previousState;
+
     try {
       const response = await api.post(`/interactions/favorites`, {
         entity_id: currentSong.id,
@@ -195,15 +200,22 @@
         response.status === 200 ||
         response.status === 201
       ) {
+        // Sync with server response
         currentSong.is_favorited =
           response.data.data?.favorited ?? response.data.data?.favorite;
+        
         if (currentSong.is_favorited) {
           toastState.addToast("Added to favorites!", "success");
         } else {
           toastState.addToast("Removed from favorites", "info");
         }
+      } else {
+        // Rollback if server doesn't report success
+        currentSong.is_favorited = previousState;
       }
     } catch (error: any) {
+      // Rollback on error
+      currentSong.is_favorited = previousState;
       console.error("Error toggling favorite:", error);
       toastState.addToast(
         error.response?.data?.message || "Failed to update favorites",

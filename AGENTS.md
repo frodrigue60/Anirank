@@ -30,8 +30,15 @@ Handles cross-cutting concerns (auth flows, API contract changes, Docker, env fi
 ### Before Writing Code
 1. Check if a relevant **KI (Knowledge Item)** exists for the task.
 2. Read `DESIGN.md` if the task touches UI.
-3. Read `CONTEXT.md` if the task touches backend logic, DB, or architecture.
+3. Read `CONTEXT.md` if the task touches backend logic, DB, architecture, or frontend testing.
 4. Identify which layer the change belongs to (domain, usecase, repository, delivery, dto) and stay within it.
+5. **Frontend Only:** For critical logic (Auth, Optimistic UI, Admin CRUD), verify if a test file exists in `src/tests/` or `src/lib/state/`.
+
+### Mandatory Testing (Frontend)
+- After modifying a reactive state in `$lib/state/`, you MUST run `bun run test:unit` to ensure no regressions.
+- New complex components or interactions MUST include a corresponding `.test.ts` file.
+- Use **MSW** for all API mocks in component tests. Never make real API calls during Vitest execution.
+- Ensure that **Optimistic UI** changes are tested for both "Success Path" and "Rollback on Error" scenarios.
 
 ### Commit Format
 All commits must follow Conventional Commits:

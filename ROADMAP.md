@@ -174,10 +174,18 @@
   - **Security**: Added reflection-based helper (`testutil.AssertNoInternalIDs`) to detect any `uint64` leak in public DTOs.
   - Ensure all relationships (Badges, Roles) are correctly mapped to their public DTO equivalents.
   - Validate that `UserSocialIdentity` objects are correctly hydrated for the API.
-- 🔲 **Frontend component tests** (Vitest + Svelte Testing Library)
-  - Test reactive states in Svelte 5 runes (e.g., `authState` updates after login).
-  - Verify UI behavior in `AccountSettings` (showing/hiding "Synced" buttons based on `social_identities`).
-  - Unit test shared utility components for accessibility and premium visual states.
+- 🚧 **Frontend component tests** (Vitest + Svelte Testing Library)
+  - **Auth & Identity Persistence**:
+    - Validate `authState` (Svelte 5 Runes) updates globally after successful login.
+    - Test header reactivity (Login/Register buttons vs. User Profile dropdown).
+  - **Account Settings & Social Linkage**:
+    - Verify conditional rendering in `AccountSettings` (Link vs. Synced states).
+    - Mock social identity removal and assert UI clears cached session data.
+  - **Admin & CMS Form Validation**:
+    - Unit test complex forms (Anime/Song creation) for field validation and error messaging.
+    - Verify interactive elements like "Genre multi-select" and "Artist search" within the admin panel.
+  - **Optimistic UI & Rankings**:
+    - Assert that song ratings and favorite toggles reflect state changes instantly before API confirmation.
 - 🔲 CI pipeline (GitHub Actions: lint + test on PR)
 
 ---

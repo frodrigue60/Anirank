@@ -228,22 +228,31 @@ Managed by `robfig/cron/v3`. Defined in `internal/jobs/`.
 
 The backend employs a multi-layered testing strategy to ensure correctness and security:
 
-### DTO Security Tests
-- **Location:** `internal/dto/mapper_test.go`
-- **Purpose:** Ensures no internal numeric IDs are leaked to the API.
-- **Tooling:** Uses `testutil.AssertNoInternalIDs` helper.
-
-### Auth Integration Tests
-- **Location:** `internal/usecase/auth/auth_usecase_test.go` (package `auth_test`)
-- **Purpose:** Validates the full authentication lifecycle:
-    - User registration and login.
-    - Social account linking (AniList, Google, Discord).
-    - OAuth auto-registration.
-    - Token encryption/decryption validation.
-- **Tooling:** Uses `testutil` OAuth mocks (`MockAnilistClient`, etc.) and `MockUserRepository` hooks for isolated verification.
-
 ### Running Tests
 Use the following command to run all usecase tests:
 ```bash
 go test ./internal/usecase/... -v
 ```
+
+---
+
+## 14. Frontend Testing Strategy
+
+The frontend uses **Vitest** for unit and component testing, ensuring that Svelte 5 reactive states (Runes) and UI components behave as expected.
+
+### Core Stack
+- **Runner:** Vitest
+- **DOM Simulation:** jsdom
+- **Mocking:** 
+  - **API:** MSW (Mock Service Worker) for intercepting Axios calls.
+  - **Environment:** Manual mocks for `$app/state`, `$app/stores`, and `localStorage` located in `src/tests/setup.ts`.
+
+### Svelte 5 Setup
+Due to Svelte 5's architecture, Vitest is configured with `resolve.conditions: ['browser', 'development']` to ensure that client-side lifecycle functions like `onMount` are correctly loaded instead of the SSR versions.
+
+### Testing Locations
+- **State Logic:** `src/lib/state/*.test.ts` (e.g., `auth.test.ts` for `$state` and `$derived` logic).
+- **Component Behavior:** `src/tests/components/*.test.ts` (using Svelte Testing Library to interact with the DOM).
+
+### Optimistic UI Validation
+Tests for interactions (likes, favorites) must verify that the UI updates immediately (optimistically) before MSW resolves the network request, and that it correctly rolls back upon API failure.

@@ -126,9 +126,23 @@ func ToSongMinimalDTO(s *domain.Song) SongMinimalDTO {
 		artists = append(artists, ToArtistMinimalDTO(&a))
 	}
 
-	var typeID uint64
-	if s.TypeID != nil {
-		typeID = *s.TypeID
+	var typeID string
+	if s.SongType != nil && s.SongType.UUID != nil {
+		typeID = *s.SongType.UUID
+	}
+
+	var animeID, yearID, seasonID string
+	if s.Anime != nil {
+		animeID = s.Anime.UUID
+		if s.Anime.Year != nil {
+			yearID = s.Anime.Year.UUID
+		}
+		if s.Anime.Season != nil {
+			seasonID = s.Anime.Season.UUID
+		}
+	} else {
+		// Fallback for standalone IDs if relations aren't loaded 
+		// (though in this architecture we prefer relations)
 	}
 
 	var songType *SongTypeDTO
@@ -152,9 +166,9 @@ func ToSongMinimalDTO(s *domain.Song) SongMinimalDTO {
 		Views:          s.Views,
 		UserRating:     s.UserRating,
 		TypeID:         typeID,
-		AnimeID:        s.AnimeID,
-		YearID:         s.YearID,
-		SeasonID:       s.SeasonID,
+		AnimeID:        animeID,
+		YearID:         yearID,
+		SeasonID:       seasonID,
 	}
 
 	if s.PrevMainRank != nil {
@@ -381,7 +395,13 @@ func ToAnimeDTO(a *domain.Anime) AnimeDTO {
 
 	links := make([]ExternalLinkDTO, 0)
 	for _, l := range a.ExternalLinks {
-		links = append(links, ExternalLinkDTO{Name: l.Name, Type: l.Type, URL: l.URL, Icon: l.Icon})
+		links = append(links, ExternalLinkDTO{
+			ID:   l.UUID,
+			Name: l.Name,
+			Type: l.Type,
+			URL:  l.URL,
+			Icon: l.Icon,
+		})
 	}
 
 	return AnimeDTO{
@@ -400,6 +420,7 @@ func ToStudioDTO(s *domain.Studio) StudioDTO {
 		return StudioDTO{}
 	}
 	return StudioDTO{
+		ID:         s.UUID,
 		Name:       s.Name,
 		Slug:       s.Slug,
 		LogoUrl:    s.LogoUrl,
@@ -413,6 +434,7 @@ func ToProducerDTO(p *domain.Producer) ProducerDTO {
 		return ProducerDTO{}
 	}
 	return ProducerDTO{
+		ID:         p.UUID,
 		Name:       p.Name,
 		Slug:       p.Slug,
 		LogoUrl:    p.LogoUrl,
@@ -426,6 +448,7 @@ func ToGenreDTO(g *domain.Genre) GenreDTO {
 		return GenreDTO{}
 	}
 	return GenreDTO{
+		ID:   g.UUID,
 		Name: g.Name,
 		Slug: g.Slug,
 	}
@@ -436,6 +459,7 @@ func ToYearDTO(y *domain.Year) YearDTO {
 		return YearDTO{}
 	}
 	return YearDTO{
+		ID:   y.UUID,
 		Name: y.Name,
 		Slug: y.Slug,
 	}
@@ -446,6 +470,7 @@ func ToSeasonDTO(s *domain.Season) SeasonDTO {
 		return SeasonDTO{}
 	}
 	return SeasonDTO{
+		ID:   s.UUID,
 		Name: s.Name,
 		Slug: s.Slug,
 	}
@@ -456,6 +481,7 @@ func ToFormatDTO(f *domain.Format) FormatDTO {
 		return FormatDTO{}
 	}
 	return FormatDTO{
+		ID:   f.UUID,
 		Name: f.Name,
 		Slug: f.Slug,
 	}

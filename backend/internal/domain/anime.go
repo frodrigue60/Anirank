@@ -50,6 +50,7 @@ type Anime struct {
 // Taxonomies
 type Year struct {
 	ID        uint64    `db:"id" json:"id"`
+	UUID      string    `db:"uuid" json:"uuid"`
 	Name      string    `db:"name" json:"name"`
 	Slug      string    `db:"slug" json:"slug"`
 	Current   bool      `db:"current" json:"current"`
@@ -59,6 +60,7 @@ type Year struct {
 
 type Season struct {
 	ID        uint64    `db:"id" json:"id"`
+	UUID      string    `db:"uuid" json:"uuid"`
 	Name      string    `db:"name" json:"name"`
 	Slug      string    `db:"slug" json:"slug"`
 	Current   bool      `db:"current" json:"current"`
@@ -68,6 +70,7 @@ type Season struct {
 
 type Format struct {
 	ID        uint64    `db:"id" json:"id"`
+	UUID      string    `db:"uuid" json:"uuid"`
 	Name      string    `db:"name" json:"name"`
 	Slug      string    `db:"slug" json:"slug"`
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
@@ -108,6 +111,7 @@ type Producer struct {
 
 type Genre struct {
 	ID        uint64    `db:"id" json:"id"`
+	UUID      string    `db:"uuid" json:"uuid"`
 	Name      string    `db:"name" json:"name"`
 	Slug      string    `db:"slug" json:"slug"`
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
@@ -116,6 +120,7 @@ type Genre struct {
 
 type ExternalLink struct {
 	ID        uint64    `db:"id" json:"id"`
+	UUID      string    `db:"uuid" json:"uuid"`
 	Icon      *string   `db:"icon" json:"icon"`
 	Type      string    `db:"type" json:"type"`
 	Name      string    `db:"name" json:"name"`

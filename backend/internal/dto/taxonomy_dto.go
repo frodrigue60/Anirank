@@ -1,6 +1,7 @@
 package dto
 
 type StudioDTO struct {
+	ID         string  `json:"id"`
 	Name       string  `json:"name"`
 	Slug       string  `json:"slug"`
 	LogoUrl    *string `json:"logo_url,omitempty"`
@@ -9,6 +10,7 @@ type StudioDTO struct {
 }
 
 type ProducerDTO struct {
+	ID         string  `json:"id"`
 	Name       string  `json:"name"`
 	Slug       string  `json:"slug"`
 	LogoUrl    *string `json:"logo_url,omitempty"`
@@ -17,6 +19,7 @@ type ProducerDTO struct {
 }
 
 type GenreDTO struct {
+	ID   string `json:"id"`
 	Name string `json:"name"`
 	Slug string `json:"slug"`
 }

@@ -161,16 +161,17 @@
 
 ### Quality & Testing
 
-- 🔲 **Integration tests** for auth usecase
+- ✅ **Integration tests** for auth usecase
   - Validate full registration/login lifecycle including password hashing and JWT generation.
   - Mock OAuth provider responses to verify `anilist`, `google`, and `discord` identity persistence.
   - Test token encryption/decryption for social access tokens.
-- 🔲 **Handler tests** for protected routes
-  - Verify `AuthMiddleware` correctly extracts and validates UUIDs from JWTs.
-  - Ensure `OptionalAuthMiddleware` behaves as expected when no token is present.
-  - Test endpoint responses for unauthorized (401) and forbidden (403) access attempts.
-- 🔲 **DTO mapper tests**
+- ✅ **Handler tests** for protected routes
+  - Verified `AuthMiddleware` correctly extracts and validates UUIDs from JWTs.
+  - Ensured `OptionalAuthMiddleware` behaves as expected when no token is present.
+  - Tested endpoint responses for unauthorized (401) and forbidden (403) access attempts.
+- ✅ **DTO mapper tests**
   - **Critical**: Verify that `ToUserDTO` and `ToUserMinimalDTO` never include the numeric `ID` field.
+  - **Security**: Added reflection-based helper (`testutil.AssertNoInternalIDs`) to detect any `uint64` leak in public DTOs.
   - Ensure all relationships (Badges, Roles) are correctly mapped to their public DTO equivalents.
   - Validate that `UserSocialIdentity` objects are correctly hydrated for the API.
 - 🔲 **Frontend component tests** (Vitest + Svelte Testing Library)

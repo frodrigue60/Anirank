@@ -14,7 +14,7 @@ type SongMinimalDTO struct {
 	SongJP           *string       `json:"song_jp,omitempty"`
 	Slug             string        `json:"slug"`
 	Type             string        `json:"type"`
-	TypeID           uint64        `json:"type_id"`
+	TypeID           string        `json:"type_id"`
 	SongType         *SongTypeDTO  `json:"song_type,omitempty"`
 	AverageRating    float64       `json:"average_rating"`
 	Artists          []ArtistMinimalDTO `json:"artists,omitempty"`
@@ -24,9 +24,9 @@ type SongMinimalDTO struct {
 	UserRating       *float64           `json:"user_rating,omitempty"`
 	PrevMainRank     *uint64            `json:"prev_main_rank,omitempty"`
 	PrevSeasonalRank *uint64            `json:"prev_seasonal_rank,omitempty"`
-	AnimeID          uint64             `json:"anime_id"`
-	YearID           uint64             `json:"year_id"`
-	SeasonID         uint64             `json:"season_id"`
+	AnimeID          string             `json:"anime_id"`
+	YearID           string             `json:"year_id"`
+	SeasonID         string             `json:"season_id"`
 }
 
 type SongDTO struct {

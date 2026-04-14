@@ -66,6 +66,9 @@ The internal `uint64` IDs in the database (e.g. `user.ID`, `song.ID`) are **stri
 - Every entity that needs public referencing has a `UUID string` field.
 - Map `ID → UUID` in the DTO layer (see `backend/internal/dto/mapper.go`).
 - Slugs are acceptable for human-readable URLs (e.g. `/users/luis-rodz`).
+- **Required Verification:** 
+    - Always run `go test ./internal/dto/...` after modifying mappers/DTOs to ensure the security reflection helper passes with zero violations.
+    - Always run `go test ./internal/usecase/auth/...` after modifying any authentication or identity logic to ensure security flows (encryption, linking) are intact.
 
 ### JWT Token Policy
 - The JWT payload contains only `user_uuid` (string) and `roles` ([]string). Never put `user_id` (numeric) in the token.
@@ -106,7 +109,7 @@ The internal `uint64` IDs in the database (e.g. `user.ID`, `song.ID`) are **stri
 | DB Driver | `sqlx` + `pgx` (PostgreSQL) |
 | ORM | None. Raw SQL only via `sqlx`. |
 | Error Pattern | Always return `domain.NewAppError(code, message, err)` from handlers |
-| Config | `godotenv` — loads `../.env` then `./backend/.env` |
+| Config | `godotenv` — loads `./backend/.env` |
 
 **Naming Conventions:**
 - Repository files: `{entity}_repository.go`

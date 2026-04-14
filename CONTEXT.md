@@ -33,7 +33,7 @@
 | Containerization | Docker Compose (separate `backend` and `frontend` services) |
 | OG Images | Custom Go generator (`infrastructure/og`) |
 
-**Env file loading order:** `../.env` (root) → `./backend/.env` (backend-specific overrides)
+**Env file loading order:** `./backend/.env` (primary configuration)
 
 ---
 
@@ -175,6 +175,7 @@ The global `ErrorHandler` in `middleware/error_handler.go` intercepts `*domain.A
 - The `ID` field in any public-facing DTO **must be set to the UUID**, never the numeric ID.
 - Token/secret fields (passwords, OAuth tokens) must use `json:"-"` in the domain struct and must NOT appear in any DTO.
 - The canonical pattern for mapping a user is: `ToUserMinimalDTO` ⊂ `ToUserDTO` ⊂ `ToAuthUserDTO`.
+- **Security Validation:** All mappers MUST be covered by unit tests in `mapper_test.go` using the `testutil.AssertNoInternalIDs` helper. This helper uses reflection to ensure no sequential IDs are leaked through the DTO hierarchy.
 
 ---
 
@@ -219,3 +220,30 @@ Managed by `robfig/cron/v3`. Defined in `internal/jobs/`.
 - **Pivot tables:** Use the standard `{entity_a}_{entity_b}` naming (e.g. `badge_user`, `role_user`).
 - **UUIDs:** Generated in Go with `github.com/google/uuid` before insertion. Not DB-generated.
 - **Timestamps:** `created_at` and `updated_at` are always `CURRENT_TIMESTAMP` in SQL, managed at insert/update time.
+- **Search:** GIN indexes for vector search on `song_slugs_combined`.
+
+---
+
+## 13. Testing Strategy
+
+The backend employs a multi-layered testing strategy to ensure correctness and security:
+
+### DTO Security Tests
+- **Location:** `internal/dto/mapper_test.go`
+- **Purpose:** Ensures no internal numeric IDs are leaked to the API.
+- **Tooling:** Uses `testutil.AssertNoInternalIDs` helper.
+
+### Auth Integration Tests
+- **Location:** `internal/usecase/auth/auth_usecase_test.go` (package `auth_test`)
+- **Purpose:** Validates the full authentication lifecycle:
+    - User registration and login.
+    - Social account linking (AniList, Google, Discord).
+    - OAuth auto-registration.
+    - Token encryption/decryption validation.
+- **Tooling:** Uses `testutil` OAuth mocks (`MockAnilistClient`, etc.) and `MockUserRepository` hooks for isolated verification.
+
+### Running Tests
+Use the following command to run all usecase tests:
+```bash
+go test ./internal/usecase/... -v
+```

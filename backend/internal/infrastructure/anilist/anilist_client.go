@@ -29,6 +29,18 @@ func (c *Client) setAdvancedHeaders(req *http.Request) {
 	req.Header.Set("Sec-Fetch-Site", "same-site")
 }
 
+type AnilistClient interface {
+	SearchAnimes(ctx context.Context, search string, format string, page int) (*AnilistResponse, error)
+	GetMediaByIDs(ctx context.Context, ids []int) ([]Media, error)
+	FetchAnimes(ctx context.Context, page int, season string, seasonYear int, format string) (*AnilistResponse, error)
+	GetUserMediaList(ctx context.Context, anilistID int64, status string, page, perPage int) (*AnilistMediaListResponse, error)
+	ExchangeCode(ctx context.Context, clientID, clientSecret, redirectURI, code string) (*TokenResponse, error)
+	GetViewer(ctx context.Context, accessToken string) (*AnilistUser, error)
+	SearchStaff(ctx context.Context, search string) ([]Staff, error)
+	SearchStaffBatch(ctx context.Context, reqs []StaffSearchReq) (map[string][]Staff, error)
+	Ping(ctx context.Context) error
+}
+
 type Client struct {
 	httpClient *http.Client
 }

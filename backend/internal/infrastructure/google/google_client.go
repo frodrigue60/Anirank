@@ -13,6 +13,11 @@ import (
 const GoogleTokenEndpoint = "https://oauth2.googleapis.com/token"
 const GoogleUserInfoEndpoint = "https://www.googleapis.com/oauth2/v3/userinfo"
 
+type GoogleClient interface {
+	ExchangeCode(ctx context.Context, clientID, clientSecret, redirectURI, code string) (*TokenResponse, error)
+	GetUserInfo(ctx context.Context, accessToken string) (*GoogleUser, error)
+}
+
 type Client struct {
 	httpClient *http.Client
 }

@@ -38,7 +38,7 @@ type ContentAdminUsecase struct {
 	artistRepo    domain.ArtistRepository
 	taxonomyRepo  domain.TaxonomyRepository
 	userRepo      domain.UserRepository
-	anilistClient *anilist.Client
+	anilistClient anilist.AnilistClient
 	mediaService  infrastructure.MediaService
 	auditUsecase  domain.AuditLogUsecase
 	interactionRepo    domain.InteractionRepository
@@ -56,7 +56,7 @@ func NewContentAdminUsecase(
 	artistR domain.ArtistRepository,
 	tr domain.TaxonomyRepository,
 	ur domain.UserRepository,
-	ac *anilist.Client,
+	ac anilist.AnilistClient,
 	media infrastructure.MediaService,
 	audit domain.AuditLogUsecase,
 	ir domain.InteractionRepository,

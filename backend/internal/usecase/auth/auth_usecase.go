@@ -33,13 +33,13 @@ type AuthUsecase struct {
 	media         infrastructure.MediaService
 	xpUsecase     domain.XPUsecase
 	badgeUsecase  domain.BadgeUsecase
-	anilist       *anilist.Client
-	google        *google.Client
-	discord       *discord.Client
+	anilist       anilist.AnilistClient
+	google        google.GoogleClient
+	discord       discord.DiscordClient
 	encryptionKey string
 }
 
-func NewAuthUsecase(userRepo domain.UserRepository, jwtService *JWTService, storage infrastructure.StorageService, media infrastructure.MediaService, xu domain.XPUsecase, bu domain.BadgeUsecase, ac *anilist.Client, gc *google.Client, dc *discord.Client, eKey string) *AuthUsecase {
+func NewAuthUsecase(userRepo domain.UserRepository, jwtService *JWTService, storage infrastructure.StorageService, media infrastructure.MediaService, xu domain.XPUsecase, bu domain.BadgeUsecase, ac anilist.AnilistClient, gc google.GoogleClient, dc discord.DiscordClient, eKey string) *AuthUsecase {
 	return &AuthUsecase{
 		userRepo:      userRepo,
 		jwtService:    jwtService,

@@ -13,6 +13,11 @@ import (
 const TokenEndpoint = "https://discord.com/api/oauth2/token"
 const UserInfoEndpoint = "https://discord.com/api/users/@me"
 
+type DiscordClient interface {
+	ExchangeCode(ctx context.Context, clientID, clientSecret, redirectURI, code string) (*TokenResponse, error)
+	GetUserInfo(ctx context.Context, accessToken string) (*DiscordUser, error)
+}
+
 type Client struct {
 	httpClient *http.Client
 }

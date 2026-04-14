@@ -34,6 +34,15 @@ func GetPermissionManager(repo domain.UserRepository) *PermissionManager {
 	return manager
 }
 
+// Reset clears the singleton instance. Use only for testing.
+func Reset() {
+	mu := sync.Mutex{}
+	mu.Lock()
+	defer mu.Unlock()
+	manager = nil
+	once = sync.Once{}
+}
+
 // Refresh reloads all permissions from the database.
 func (m *PermissionManager) Refresh(ctx context.Context) error {
 	roles, err := m.repo.GetRoles(ctx)

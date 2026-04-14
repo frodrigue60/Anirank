@@ -23,7 +23,7 @@ type CatalogUsecase struct {
 	playlistRepo    domain.PlaylistRepository
 	interactionRepo domain.InteractionRepository
 	moderationRepo  domain.ModerationRepository
-	anilistClient   *anilist.Client
+	anilistClient   anilist.AnilistClient
 	mediaService    infrastructure.MediaService
 	cache           domain.Cache
 	encryptionKey   string
@@ -45,7 +45,7 @@ func NewCatalogUsecase(
 	plr domain.PlaylistRepository,
 	ir domain.InteractionRepository,
 	mr domain.ModerationRepository,
-	anilist *anilist.Client,
+	anilist anilist.AnilistClient,
 	media infrastructure.MediaService,
 	appCache domain.Cache,
 	encKey string,

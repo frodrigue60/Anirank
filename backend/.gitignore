@@ -29,3 +29,7 @@ build_err.txt
 # Project specific
 init.json
 seasonal_ranking.json
+.env
+.env.*
+!.env.example
+!.env.test

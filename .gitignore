@@ -1,7 +1,11 @@
 product_roadmap.md
 .playwright-mcp
 tmp
+# --- ENVIRONMENT ---
 .env
+.env.*
+!.env.example
+
 Stitch
 backend/activity_response.json
 backend/test_banner.jpg

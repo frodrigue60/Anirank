@@ -97,7 +97,29 @@ Token validity: **24 hours**. Signed with `JWT_SECRET` env var using HS256.
 
 ---
 
-## 5. Domain Entities Summary
+## 5. Security Headers & Hardening
+
+To achieve a 100% Best Practices score, both SvelteKit and Go enforce identical security policies. **Any change to one must be reflected in the other.**
+
+### Enforcement Locations
+- **Frontend:** `frontend/src/hooks.server.ts`
+- **Backend:** `backend/internal/delivery/http/middleware/security.go`
+
+### Mandatory Directives
+| Header | Value / Standard |
+|--------|-----------------|
+| `Content-Security-Policy` | `script-src 'self' 'nonce-...'`; `img-src 'self' data: s3-url...` |
+| `Strict-Transport-Security` | `max-age=31536000; includeSubDomains; preload` |
+| `X-Frame-Options` | `DENY` (Prevents clickjacking) |
+| `Cross-Origin-Opener-Policy`| `same-origin` |
+| `X-Content-Type-Options` | `nosniff` |
+
+### CSP Local Development
+For local development involving media assets, the `img-src` directive MUST include `http://localhost:9000` to allow connections to the local MinIO container.
+
+---
+
+## 6. Domain Entities Summary
 
 | Entity | Key Fields | Notes |
 |--------|-----------|-------|

@@ -5,9 +5,10 @@
   import InfiniteScroll from "$lib/components/InfiniteScroll.svelte";
   import RequestModal from "$lib/components/RequestModal.svelte";
   import Loader2 from "lucide-svelte/icons/loader-2";
-import Plus from "lucide-svelte/icons/plus";
-import ExternalLink from "lucide-svelte/icons/external-link";
-import MessageSquarePlus from "lucide-svelte/icons/message-square-plus";;
+  import Plus from "lucide-svelte/icons/plus";
+  import ExternalLink from "lucide-svelte/icons/external-link";
+  import MessageSquarePlus from "lucide-svelte/icons/message-square-plus";
+  import Link2Off from "lucide-svelte/icons/link-2-off";
   import { authState } from "$lib/state/auth.svelte";
 
   let { data } = $props();
@@ -146,7 +147,7 @@ import MessageSquarePlus from "lucide-svelte/icons/message-square-plus";;
       <div
         class="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center text-primary shadow-2xl shadow-primary/20"
       >
-        <span class="material-symbols-outlined text-4xl">link_off</span>
+        <Link2Off size={40} />
       </div>
       <div class="space-y-2 max-w-sm px-4">
         <h3

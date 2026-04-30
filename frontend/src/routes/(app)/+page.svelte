@@ -5,6 +5,15 @@
   import AnnouncementSidebar from "$lib/components/AnnouncementSidebar.svelte";
   import { authState } from "$lib/state/auth.svelte";
   import { getSongName, getFormattedScore } from "$lib/song-utils";
+  import Star from "lucide-svelte/icons/star";
+  import Sparkles from "lucide-svelte/icons/sparkles";
+  import Play from "lucide-svelte/icons/play";
+  import BarChart3 from "lucide-svelte/icons/bar-chart-3";
+  import ArrowLeft from "lucide-svelte/icons/arrow-left";
+  import ArrowRight from "lucide-svelte/icons/arrow-right";
+  import Heart from "lucide-svelte/icons/heart";
+  import Eye from "lucide-svelte/icons/eye";
+  import ChevronRight from "lucide-svelte/icons/chevron-right";
 
   let { data } = $props();
   let homeData = $derived(data.homeData);
@@ -69,7 +78,7 @@
           <div
             class="absolute inset-0 bg-cover bg-center opacity-40 transition-transform duration-700 group-hover:scale-105 group-hover:opacity-50"
             style="background-image: url('{homeData.featured_song.anime
-              ?.banner_url ?? '/images/placeholders/default-banner.jpg'}');"
+              ?.banner_url ?? '/images/placeholders/default-banner.svg'}');"
           ></div>
           <!-- gradient -->
           <div
@@ -88,8 +97,10 @@
                   title="Cover art for {homeData.featured_song.anime?.title ||
                     'featured theme'}"
                   class="h-full w-full object-cover"
+                  loading="eager"
+                  fetchpriority="high"
                   src={homeData.featured_song.anime?.cover_url ??
-                    "/images/placeholders/default.jpg"}
+                    "/images/placeholders/default.svg"}
                 />
                 <div
                   class="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/90 via-black/40 to-transparent p-4 pt-12"
@@ -97,7 +108,7 @@
                   <div
                     class="flex items-center gap-1 text-lg font-bold text-yellow-400 drop-shadow-md"
                   >
-                    <span class="material-symbols-outlined filled">star</span>
+                    <Star class="fill-yellow-400" size={18} />
                     <span
                       >{formatScore(
                         homeData.featured_song.average_rating,
@@ -113,9 +124,8 @@
               <div
                 class="inline-flex items-center gap-2 self-center rounded-full bg-primary/10 px-3 py-1.5 text-primary shadow-lg shadow-primary/5 md:self-start"
               >
-                <span class="material-symbols-outlined text-[16px] filled"
-                  >auto_awesome</span
-                >
+                <Sparkles class="fill-primary" size={16} />
+
                 <span class="text-xs font-bold uppercase tracking-wider"
                   >Featured Theme</span
                 >
@@ -145,11 +155,10 @@
                   title="Play featured theme: {getSongName(
                     homeData.featured_song,
                   )}"
-                  aria-label="Play featured theme"
+                  aria-label="Play Now - Featured theme"
                 >
-                  <span class="material-symbols-outlined filled text-[24px]"
-                    >play_arrow</span
-                  >
+                  <Play class="fill-on-surface" size={24} />
+
                   <span>Play Now</span>
                 </a>
               </div>
@@ -164,14 +173,13 @@
           class="mb-6 flex flex-col gap-4 px-1 sm:flex-row sm:items-center justify-between"
         >
           <h2 class="flex items-center gap-2 text-2xl font-bold tracking-tight">
-            <span class="material-symbols-outlined text-primary"
-              >leaderboard</span
-            >
+            <BarChart3 class="text-primary" />
+
             <a
               class="text-on-surface hover:text-primary transition-colors"
               href="/songs/ranking"
               title="View full song rankings"
-              aria-label="View all rankings">Weekly Anime Songs Ranking</a
+              aria-label="Weekly Anime Songs Ranking - View all">Weekly Anime Songs Ranking</a
             >
           </h2>
         </div>
@@ -199,7 +207,7 @@
                       title={getSongName(item)}
                       class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                       src={item.anime?.cover_url ??
-                        "/images/placeholders/default.jpg"}
+                        "/images/placeholders/default.svg"}
                     />
                       <div
                         class="absolute top-1 left-1 rounded-sm bg-black/60 px-1.5 py-0.5 text-xs font-bold text-white shadow backdrop-blur-sm"
@@ -217,9 +225,8 @@
                       <div
                         class="ml-2 flex shrink-0 items-center gap-1 rounded-sm bg-primary/20 px-1 py-0.5 text-xs font-bold text-on-surface-variant"
                       >
-                        <span class="material-symbols-outlined filled"
-                          >star</span
-                        >
+                        <Star class="fill-on-surface-variant" size={14} />
+
                         {formatScore(item.average_rating)}
                       </div>
                     </div>
@@ -264,7 +271,7 @@
                       title={getSongName(item)}
                       class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                       src={item.anime?.cover_url ??
-                        "/images/placeholders/default.jpg"}
+                        "/images/placeholders/default.svg"}
                     />
                       <div
                         class="absolute top-1 left-1 rounded-sm bg-black/60 px-1.5 py-0.5 text-xs font-bold text-white shadow backdrop-blur-sm"
@@ -282,9 +289,8 @@
                       <div
                         class="ml-2 flex shrink-0 items-center gap-1 rounded-sm bg-primary/20 px-1 py-0.5 text-xs font-bold text-on-surface-variant"
                       >
-                        <span class="material-symbols-outlined filled"
-                          >star</span
-                        >
+                        <Star class="fill-on-surface-variant" size={14} />
+
                         {formatScore(item.average_rating)}
                       </div>
                     </div>
@@ -350,10 +356,8 @@
               title="Scroll left"
               aria-label="Scroll carousel to the left"
             >
-              <span
-                class="material-symbols-outlined text-on-surface-variant transition-colors group-hover:text-primary"
-                >arrow_back</span
-              >
+              <ArrowLeft class="text-on-surface-variant group-hover:text-primary" />
+
             </button>
             <button
               onclick={scrollRight}
@@ -361,10 +365,8 @@
               title="Scroll right"
               aria-label="Scroll carousel to the right"
             >
-              <span
-                class="material-symbols-outlined text-on-surface-variant transition-colors group-hover:text-primary"
-                >arrow_forward</span
-              >
+              <ArrowRight class="text-on-surface-variant group-hover:text-primary" />
+
             </button>
           </div>
         </div>
@@ -390,7 +392,7 @@
                     title={getSongName(song)}
                     class="h-full w-full object-cover transition-opacity group-hover:opacity-80"
                     src={song.anime?.cover_url ??
-                      "/images/placeholders/default.jpg"}
+                      "/images/placeholders/default.svg"}
                   />
                   <div
                     class="absolute top-2 right-2 rounded-sm border border-outline-variant/10 bg-black/60 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white"
@@ -400,7 +402,7 @@
                   <div
                     class="absolute bottom-2 left-2 flex items-center gap-0.5 rounded-sm bg-black/60 px-1.5 py-0.5 text-xs font-bold text-yellow-400"
                   >
-                    <span class="material-symbols-outlined filled">star</span>
+                    <Star class="fill-yellow-400" size={18} />
                     {formatScore(song.average_rating)}
                   </div>
                 </div>
@@ -433,7 +435,7 @@
                     title={getSongName(song)}
                     class="h-full w-full object-cover transition-opacity group-hover:opacity-80"
                     src={song.anime?.cover_url ??
-                      "/images/placeholders/default.jpg"}
+                      "/images/placeholders/default.svg"}
                   />
                   <div
                     class="absolute top-2 right-2 rounded-sm border border-outline-variant/10 bg-black/60 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white"
@@ -443,9 +445,8 @@
                   <div
                     class="absolute bottom-2 left-2 flex items-center gap-0.5 rounded-sm bg-black/60 px-1.5 py-0.5 text-xs font-bold text-red-500"
                   >
-                    <span class="material-symbols-outlined filled"
-                      >favorite</span
-                    >
+                    <Heart class="fill-red-500" size={12} />
+
                     {song.favorites_count ?? "N/A"}
                   </div>
                 </div>
@@ -478,7 +479,7 @@
                     title={getSongName(song)}
                     class="h-full w-full object-cover transition-opacity group-hover:opacity-80"
                     src={song.anime?.cover_url ??
-                      "/images/placeholders/default.jpg"}
+                      "/images/placeholders/default.svg"}
                   />
                   <div
                     class="absolute top-2 right-2 rounded-sm border border-outline-variant/10 bg-black/60 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white"
@@ -488,9 +489,8 @@
                   <div
                     class="absolute bottom-2 left-2 flex items-center gap-0.5 rounded-sm bg-black/60 px-1.5 py-0.5 text-xs font-bold text-blue-500"
                   >
-                    <span class="material-symbols-outlined filled"
-                      >visibility</span
-                    >
+                    <Eye class="fill-blue-500" size={12} />
+
                     {song.views ?? "N/A"}
                   </div>
                 </div>
@@ -538,7 +538,7 @@
                       title={artist.name}
                       class="h-full w-full object-cover transition-transform group-hover:scale-110"
                       src={artist.avatar_url ||
-                        "/images/placeholders/default.jpg"}
+                        "/images/placeholders/default.svg"}
                     />
                   </div>
                   <div class="flex min-w-0 flex-col">
@@ -548,17 +548,14 @@
                       {artist.name}
                     </h4>
                     <span
-                      class="text-[10px] font-medium uppercase tracking-widest text-on-surface-variant/60"
+                      class="text-[10px] font-medium uppercase tracking-widest text-on-surface-variant/90"
                     >
                       {artist.enabled_songs || 0} Themes
                     </span>
                   </div>
                 </div>
-                <span
-                  class="material-symbols-outlined translate-x-2 text-primary opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100"
-                >
-                  chevron_right
-                </span>
+                  <ChevronRight size={18} class="text-primary opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100" />
+
               </a>
             {/each}
           </div>

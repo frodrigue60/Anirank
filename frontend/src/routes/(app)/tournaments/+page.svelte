@@ -5,8 +5,9 @@
   import InfiniteScroll from "$lib/components/InfiniteScroll.svelte";
   import SEO from "$lib/components/SEO.svelte";
   import Trophy from "lucide-svelte/icons/trophy";
-import Users from "lucide-svelte/icons/users";
-import Music from "lucide-svelte/icons/music";;
+  import Users from "lucide-svelte/icons/users";
+  import Music from "lucide-svelte/icons/music";
+  import ChevronRight from "lucide-svelte/icons/chevron-right";
 
   let tournaments = $state<Tournament[]>([]);
   let currentPage = $state(1);
@@ -150,10 +151,10 @@ import Music from "lucide-svelte/icons/music";;
               <div
                 class="w-10 h-10 rounded-full bg-surface-highest flex items-center justify-center group-hover:bg-primary group-hover:scale-110 transition-all"
               >
-                <span
-                  class="material-symbols-outlined text-on-surface group-hover:text-white transition-colors"
-                  >chevron_right</span
-                >
+                <ChevronRight
+                  class="text-on-surface group-hover:text-white transition-colors"
+                  size={20}
+                />
               </div>
             </div>
           </div>

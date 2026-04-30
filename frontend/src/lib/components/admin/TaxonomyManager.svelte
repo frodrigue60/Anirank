@@ -1,5 +1,9 @@
 <script lang="ts">
   import api from "$lib/api";
+  import Edit2 from "lucide-svelte/icons/edit-2";
+  import Trash2 from "lucide-svelte/icons/trash-2";
+  import X from "lucide-svelte/icons/x";
+  import Plus from "lucide-svelte/icons/plus";
 
   let { type, initialItems = [] } = $props<{
     type: "genres" | "formats" | "seasons" | "years";
@@ -131,10 +135,12 @@
     <h2 class="font-bold text-on-surface capitalize">{type}</h2>
     <button
       onclick={openCreate}
-      class="px-3 py-1.5 bg-primary hover:bg-primary-container text-on-surface text-xs font-semibold rounded-lg transition-colors shadow-lg shadow-anirank-primary/20"
+      class="px-3 py-1.5 bg-primary hover:bg-primary-container text-on-surface text-xs font-semibold rounded-lg transition-colors shadow-lg shadow-anirank-primary/20 flex items-center gap-1.5"
     >
-      Add New +
+      <Plus size={14} />
+      Add New
     </button>
+
   </div>
 
   <div class="overflow-x-auto">
@@ -181,13 +187,13 @@
                 <button
                   onclick={() => openEdit(item)}
                   class="font-medium text-blue-400 hover:text-blue-300 transition-colors"
-                  ><span class="material-symbols-outlined">edit</span></button
-                >
+                  <Edit2 size={18} />
+
                 <button
                   onclick={() => handleDelete(item.id)}
                   class="font-medium text-red-400 hover:text-red-300 transition-colors"
-                  ><span class="material-symbols-outlined">delete</span></button
-                >
+                  <Trash2 size={18} />
+
               </div>
             </td>
           </tr>
@@ -222,7 +228,7 @@
           onclick={() => (showModal = false)}
           class="text-on-surface-variant/70 hover:text-on-surface transition-colors"
         >
-          <span class="material-symbols-outlined">close</span>
+          <X size={20} />
         </button>
       </div>
 

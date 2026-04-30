@@ -52,17 +52,17 @@ describe('Song Interactions (Optimistic UI)', () => {
         });
 
         const favoriteButton = screen.getByLabelText(/add to favorites/i);
-        const icon = favoriteButton.querySelector('.material-symbols-outlined');
+        const svg = favoriteButton.querySelector('svg');
         
         // Initial state: not filled
-        expect(icon).not.toHaveClass('filled');
+        expect(svg).not.toHaveClass('fill-current');
 
         // Click favorite
         await fireEvent.click(favoriteButton);
 
         // CHECK INSTANTLY (Optimistic update)
         // Even though the API is delayed by 200ms, the UI should change immediately
-        expect(icon).toHaveClass('filled');
+        expect(svg).toHaveClass('fill-current');
         
         // Wait for the API to actually finish (to avoid unhandled promise leaks)
         await waitFor(() => {
@@ -84,17 +84,17 @@ describe('Song Interactions (Optimistic UI)', () => {
         });
 
         const favoriteButton = screen.getByLabelText(/add to favorites/i);
-        const icon = favoriteButton.querySelector('.material-symbols-outlined');
+        const svg = favoriteButton.querySelector('svg');
 
         // Click favorite
         await fireEvent.click(favoriteButton);
         
         // Optimistically filled
-        expect(icon).toHaveClass('filled');
+        expect(svg).toHaveClass('fill-current');
 
         // Wait for reversal after failure
         await waitFor(() => {
-            expect(icon).not.toHaveClass('filled');
+            expect(svg).not.toHaveClass('fill-current');
         }, { timeout: 2000 });
     });
 });

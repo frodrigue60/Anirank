@@ -4,6 +4,9 @@
   import { page } from "$app/state";
   import snarkdown from "snarkdown";
   import ArtistAvatarCard from "$lib/components/ArtistAvatarCard.svelte";
+  import Heart from "lucide-svelte/icons/heart";
+  import Mic2 from "lucide-svelte/icons/mic-2";
+  import History from "lucide-svelte/icons/history";
   const PUBLIC_API_URL =
     import.meta.env.VITE_API_URL || "http://localhost:8080/api";
 
@@ -53,9 +56,8 @@
   <section class="mb-12">
     <div class="flex items-center justify-between mb-6">
       <h3 class="text-2xl font-bold text-on-surface flex items-center gap-2">
-        <span class="material-symbols-outlined" style="color: {accentColor}"
-          >favorite</span
-        >
+        <Heart size={20} style="color: {accentColor}" />
+
         Favorite Themes
       </h3>
       <a
@@ -77,9 +79,8 @@
   <section class="mb-12">
     <div class="flex items-center justify-between mb-6">
       <h3 class="text-2xl font-bold text-on-surface flex items-center gap-2">
-        <span class="material-symbols-outlined" style="color: {accentColor}"
-          >artist</span
-        >
+        <Mic2 size={20} style="color: {accentColor}" />
+
         Top Artists
       </h3>
       <a
@@ -105,7 +106,7 @@
     <div
       class="w-20 h-20 rounded-full bg-surface-highest flex items-center justify-center text-on-surface-variant/40"
     >
-      <span class="material-symbols-outlined text-4xl">history</span>
+      <History size={40} />
     </div>
     <div>
       <h3 class="text-xl font-bold text-on-surface uppercase italic">

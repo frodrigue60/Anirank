@@ -5,7 +5,8 @@
   import SongCard from "$lib/components/SongCard.svelte";
   import InfiniteScroll from "$lib/components/InfiniteScroll.svelte";
   import api from "$lib/api";
-  import Search from "lucide-svelte/icons/search";;
+  import Search from "lucide-svelte/icons/search";
+  import Music from "lucide-svelte/icons/music";
   import SEO from "$lib/components/SEO.svelte";
 
   let { data } = $props();
@@ -335,10 +336,7 @@
       <div
         class="lg:col-span-2 text-center py-24 bg-surface-container/30 rounded-md border-2 border-dashed border-white/5"
       >
-        <span
-          class="material-symbols-outlined text-6xl text-on-surface-variant opacity-20 mb-4 block"
-          >music_off</span
-        >
+        <Music size={64} class="text-on-surface-variant opacity-20 mb-4 block mx-auto" />
         <h3 class="text-xl font-bold text-on-surface-variant">
           No themes found
         </h3>

@@ -3,6 +3,7 @@
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import api from '$lib/api';
+  import ArrowLeft from "lucide-svelte/icons/arrow-left";
 
   let announcement = $state({
     id: 0,
@@ -75,7 +76,7 @@
 <div class="p-6 max-w-4xl mx-auto">
   <div class="mb-8">
     <a href="/admin/announcements" class="text-primary hover:underline flex items-center gap-1 mb-2 text-sm">
-      <span class="material-symbols-outlined text-sm">arrow_back</span> Back to List
+      <ArrowLeft size={16} /> Back to List
     </a>
     <h1 class="text-2xl font-bold">Edit Announcement</h1>
   </div>

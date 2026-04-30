@@ -5,6 +5,8 @@
   import { toastState } from "$lib/state/toast.svelte";
   import { onMount } from "svelte";
   import { page } from "$app/state";
+  import KeyRound from "lucide-svelte/icons/key-round";
+  import Trash2 from "lucide-svelte/icons/trash-2";
 
   onMount(async () => {
     const oauthError = page.url.searchParams.get("error");
@@ -290,10 +292,10 @@
             Send a password reset link to your email.
           </p>
         </div>
-        <span
-          class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors"
-          >lock_reset</span
-        >
+        <KeyRound
+          class="text-on-surface-variant group-hover:text-primary transition-colors"
+          size={24}
+        />
       </button>
     </div>
   </section>
@@ -318,10 +320,10 @@
             Permanently remove your account and all data.
           </p>
         </div>
-        <span
-          class="material-symbols-outlined text-red-500/20 group-hover:text-red-500 transition-colors"
-          >delete_forever</span
-        >
+        <Trash2
+          class="text-red-500/20 group-hover:text-red-500 transition-colors"
+          size={24}
+        />
       </button>
     </div>
   </section>

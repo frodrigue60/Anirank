@@ -1,6 +1,11 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import api from "$lib/api";
+  import Loader2 from "lucide-svelte/icons/loader-2";
+  import Inbox from "lucide-svelte/icons/inbox";
+  import User from "lucide-svelte/icons/user";
+  import Eye from "lucide-svelte/icons/eye";
+  import Trash2 from "lucide-svelte/icons/trash-2";
 
   let { data } = $props();
   // svelte-ignore state_referenced_locally
@@ -79,13 +84,12 @@
   >
     {#if isLoading}
       <div class="p-8 flex justify-center text-on-surface/40">
-        <span class="material-symbols-outlined animate-spin text-4xl"
-          >progress_activity</span
-        >
+        <Loader2 class="animate-spin text-4xl" size={40} />
+
       </div>
     {:else if reports.length === 0}
       <div class="p-12 text-center text-on-surface/40">
-        <span class="material-symbols-outlined text-4xl mb-2">inbox</span>
+        <Inbox size={48} class="mb-2 mx-auto" />
         <p>No reports found.</p>
       </div>
     {:else}
@@ -117,7 +121,7 @@
                 </td>
                 <td class="p-4">
                   <div class="flex items-center gap-2">
-                    <span class="material-symbols-outlined text-on-surface/40 text-[18px]">person</span>
+                    <User size={18} class="text-on-surface/40" />
                     <span class="text-sm text-on-surface/80">{report.user?.name}</span>
                   </div>
                 </td>
@@ -131,7 +135,7 @@
                       class="flex items-center justify-center w-8 h-8 rounded-lg bg-surface-highest hover:bg-surface-highest text-on-surface/60 hover:text-blue-400 transition-all font-bold"
                       title="View Details"
                     >
-                      <span class="material-symbols-outlined text-[18px]">visibility</span>
+                      <Eye size={18} />
                     </a>
                     {#if statusFilter === 'fixed'}
                       <button
@@ -139,7 +143,7 @@
                         class="flex items-center justify-center w-8 h-8 rounded-lg bg-surface-highest hover:bg-red-500/20 text-on-surface/60 hover:text-red-400 transition-all"
                         title="Delete Report"
                       >
-                        <span class="material-symbols-outlined text-[18px]">delete</span>
+                        <Trash2 size={18} />
                       </button>
                     {/if}
                   </div>

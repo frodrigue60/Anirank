@@ -5,6 +5,12 @@
   import { getApiErrorMessage } from "$lib/api-errors";
   import type { PageData } from "./$types";
   import { toastState } from "$lib/state/toast.svelte";
+  import ArrowLeft from "lucide-svelte/icons/arrow-left";
+  import Search from "lucide-svelte/icons/search";
+  import SearchX from "lucide-svelte/icons/search-x";
+  import Check from "lucide-svelte/icons/check";
+  import Image from "lucide-svelte/icons/image";
+  import Download from "lucide-svelte/icons/download";
 
   interface AnilistBatchImportError {
     anilist_id: number;
@@ -182,7 +188,7 @@
       href="/admin/animes"
       class="p-2 rounded-xl bg-surface-highest hover:bg-surface-highest text-on-surface/60 hover:text-on-surface transition-colors border border-outline-variant"
     >
-      <span class="material-symbols-outlined text-lg">arrow_back</span>
+      <ArrowLeft size={18} />
     </a>
     <div>
       <h1 class="text-2xl font-black text-on-surface">AniList Search</h1>
@@ -209,10 +215,8 @@
 <!-- Search bar -->
 <form onsubmit={handleSearch} class="flex flex-col md:flex-row gap-3 mb-8">
   <div class="flex-1 relative">
-    <span
-      class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface/30"
-      >search</span
-    >
+    <Search size={18} class="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface/30" />
+
     <input
       type="text"
       bind:value={searchInput}
@@ -240,8 +244,8 @@
 
 {#if data.q && results.length === 0}
   <div class="text-center py-16 text-on-surface/40">
-    <span class="material-symbols-outlined text-5xl mb-3 block">search_off</span
-    >
+    <SearchX size={48} class="mb-3 block mx-auto" />
+
     No results found for "<span class="text-on-surface/60">{data.q}</span>"
     {#if data.format}
       with format <span class="text-on-surface/60">{data.format}</span>
@@ -276,9 +280,8 @@
               : 'bg-black/40 border-outline-variant text-transparent hover:border-white/40'}"
             aria-label={isSelected ? "Deselect anime" : "Select anime"}
           >
-            <span class="material-symbols-outlined text-sm font-bold"
-              >check</span
-            >
+            <Check size={14} class="font-bold" />
+
           </button>
         {/if}
 
@@ -300,7 +303,7 @@
             <div
               class="w-full h-full flex items-center justify-center text-on-surface/20"
             >
-              <span class="material-symbols-outlined text-4xl">image</span>
+              <Image size={36} />
             </div>
           {/if}
           <!-- Format badge -->
@@ -317,7 +320,7 @@
               <div
                 class="bg-green-500 text-on-surface px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1 shadow-lg"
               >
-                <span class="material-symbols-outlined text-sm">check</span>
+                <Check size={14} />
                 Imported
               </div>
             </div>
@@ -400,7 +403,7 @@
               </svg>
               Saving...
             {:else}
-              <span class="material-symbols-outlined text-lg">download</span>
+              <Download size={18} />
               Import Selected
             {/if}
           </button>

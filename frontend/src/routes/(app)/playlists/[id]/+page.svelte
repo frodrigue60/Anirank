@@ -7,6 +7,24 @@
   import ReportModal from "$lib/components/ReportModal.svelte";
   import type { Song } from "$lib/types/song";
   import { toastState } from "$lib/state/toast.svelte";
+  import Play from "lucide-svelte/icons/play";
+  import Star from "lucide-svelte/icons/star";
+  import Heart from "lucide-svelte/icons/heart";
+  import ThumbsUp from "lucide-svelte/icons/thumbs-up";
+  import ThumbsDown from "lucide-svelte/icons/thumbs-down";
+  import Trash2 from "lucide-svelte/icons/trash-2";
+  import AlertTriangle from "lucide-svelte/icons/alert-triangle";
+  import Share2 from "lucide-svelte/icons/share-2";
+  import Music2 from "lucide-svelte/icons/music-2";
+  import AudioLines from "lucide-svelte/icons/audio-lines";
+  import Shuffle from "lucide-svelte/icons/shuffle";
+  import SkipBack from "lucide-svelte/icons/skip-back";
+  import SkipForward from "lucide-svelte/icons/skip-forward";
+  import PlayCircle from "lucide-svelte/icons/play-circle";
+  import PauseCircle from "lucide-svelte/icons/pause-circle";
+  import Pause from "lucide-svelte/icons/pause";
+  import ListMinus from "lucide-svelte/icons/list-minus";
+  import Share from "lucide-svelte/icons/share";
 
   import SEO from "$lib/components/SEO.svelte";
   const PUBLIC_API_URL =
@@ -403,15 +421,13 @@
           <div
             class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
           >
-            <span class="material-symbols-outlined text-[64px]">play_arrow</span
-            >
+            <Play size={64} fill="currentColor" />
           </div>
         {:else}
           <div
             class="w-full h-full flex items-center justify-center text-white/5 bg-surface-dark"
           >
-            <span class="material-symbols-outlined text-[64px]">play_arrow</span
-            >
+            <Play size={64} fill="currentColor" />
           </div>
         {/if}
       </div>
@@ -440,7 +456,7 @@
               <div
                 class="flex items-center gap-1.5 text-yellow-400 font-black text-xl"
               >
-                <span class="material-symbols-outlined text-[20px]">star</span>
+                <Star size={20} class="fill-yellow-400" />
                 <span
                   >{getFormattedScore(
                     currentSong.average_rating,
@@ -460,13 +476,10 @@
               class="flex flex-col items-center gap-1 group"
               onclick={toggleFavorite}
             >
-              <span
-                class="material-symbols-outlined text-[20px] transition-colors {currentSong?.is_favorited
-                  ? 'text-primary filled'
-                  : 'text-white/40 group-hover:text-primary'}"
-              >
-                favorite
-              </span>
+                <Heart
+                  size={20}
+                  class={currentSong?.is_favorited ? "fill-primary text-primary" : "text-white/40 group-hover:text-primary"}
+                />
               <span
                 class="text-[10px] font-bold uppercase tracking-tighter {currentSong?.is_favorited
                   ? 'text-primary'
@@ -479,13 +492,10 @@
               class="flex flex-col items-center gap-1 group"
               onclick={toggleLike}
             >
-              <span
-                class="material-symbols-outlined text-[20px] transition-colors {currentSong?.is_liked
-                  ? 'text-primary filled'
-                  : 'text-white/40 group-hover:text-primary'}"
-              >
-                thumb_up
-              </span>
+                <ThumbsUp
+                  size={20}
+                  class={currentSong?.is_liked ? "fill-primary text-primary" : "text-white/40 group-hover:text-primary"}
+                />
               <span
                 class="text-[10px] font-bold uppercase tracking-tighter {currentSong?.is_liked
                   ? 'text-primary'
@@ -498,13 +508,10 @@
               class="flex flex-col items-center gap-1 group"
               onclick={toggleDislike}
             >
-              <span
-                class="material-symbols-outlined text-[20px] transition-colors {currentSong?.is_disliked
-                  ? 'text-primary filled'
-                  : 'text-white/40 group-hover:text-primary'}"
-              >
-                thumb_down
-              </span>
+                <ThumbsDown
+                  size={20}
+                  class={currentSong?.is_disliked ? "fill-primary text-primary" : "text-white/40 group-hover:text-primary"}
+                />
               <span
                 class="text-[10px] font-bold uppercase tracking-tighter {currentSong?.is_disliked
                   ? 'text-primary'
@@ -520,23 +527,21 @@
               class="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-red-400 hover:bg-red-500/10 transition-colors"
               title="Remove from Playlist"
             >
-              <span class="material-symbols-outlined text-[18px]"
-                >playlist_remove</span
-              >
+              <ListMinus size={18} />
             </button>
             <button
               onclick={reportSong}
               class="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-white hover:bg-white/5 transition-colors"
               title="Report Song"
             >
-              <span class="material-symbols-outlined text-[18px]">report</span>
+              <AlertTriangle size={18} />
             </button>
             <button
               onclick={shareSong}
               class="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-white hover:bg-white/5 transition-colors"
               title="Share Song"
             >
-              <span class="material-symbols-outlined text-[18px]">share</span>
+              <Share2 size={18} />
             </button>
           </div>
         </div>
@@ -556,9 +561,7 @@
           <div
             class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-darker/50 border border-white/5"
           >
-            <span class="material-symbols-outlined text-[14px] text-primary"
-              >queue_music</span
-            >
+            <Music2 size={14} class="text-primary" />
             <span class="text-xs font-bold text-white/60"
               >{songs.length} Songs</span
             >
@@ -583,9 +586,7 @@
                   class="absolute -left-1 w-1 h-8 bg-primary rounded-full"
                 ></div>
                 <div class="w-6 text-center text-primary font-black">
-                  <span class="material-symbols-outlined text-[18px]"
-                    >equalizer</span
-                  >
+                  <AudioLines size={18} />
                 </div>
               {:else}
                 <div
@@ -630,7 +631,7 @@
               <div
                 class="flex items-center gap-1 text-yellow-400 font-bold text-sm"
               >
-                <span class="material-symbols-outlined text-[14px]">star</span>
+                <Star size={14} class="fill-yellow-400" />
                 {getFormattedScore(
                   song.average_rating,
                   authState.user?.score_format,
@@ -644,9 +645,7 @@
           <div
             class="py-20 flex flex-col items-center justify-center text-center opacity-40"
           >
-            <span class="material-symbols-outlined text-[64px] font-thin"
-              >queue_music</span
-            >
+            <Music2 size={64} class="font-thin" />
             <p class="mt-4 font-bold">This playlist is empty</p>
           </div>
         {/if}
@@ -668,33 +667,29 @@
               : 'text-white/60 hover:text-white'}"
             title="Shuffle"
           >
-            <span class="material-symbols-outlined text-[24px]">shuffle</span>
+            <Shuffle size={24} />
           </button>
           <button
             onclick={playPrev}
             class="w-12 h-12 rounded-sm bg-surface-dark border border-white/10 flex items-center justify-center hover:bg-white/5 text-white/60 hover:text-white transition-colors"
           >
-            <span class="material-symbols-outlined text-[24px]"
-              >skip_previous</span
-            >
+            <SkipBack size={24} fill="currentColor" />
           </button>
           <button
             onclick={togglePlay}
             class="w-12 h-12 rounded-sm bg-primary flex items-center justify-center hover:bg-primary/80 shadow-lg shadow-primary/20 text-white transition-all transform hover:scale-105 active:scale-95"
           >
             {#if isPaused}
-              <span class="material-symbols-outlined text-[24px]"
-                >play_circle</span
-              >
+              <Play size={24} fill="currentColor" />
             {:else}
-              <span class="material-symbols-outlined text-[24px]">pause</span>
+              <Pause size={24} fill="currentColor" />
             {/if}
           </button>
           <button
             onclick={playNext}
             class="w-12 h-12 rounded-sm bg-surface-dark border border-white/10 flex items-center justify-center hover:bg-white/5 text-white/60 hover:text-white transition-colors"
           >
-            <span class="material-symbols-outlined text-[24px]">skip_next</span>
+            <SkipForward size={24} fill="currentColor" />
           </button>
         </div>
 
@@ -752,8 +747,7 @@
           <div
             class="w-full h-full flex items-center justify-center text-white/5 bg-surface-dark"
           >
-            <span class="material-symbols-outlined text-[48px]">play_arrow</span
-            >
+            <Play size={48} fill="currentColor" />
           </div>
         {/if}
       </div>
@@ -778,7 +772,7 @@
             <div
               class="flex items-center gap-1 text-yellow-400 font-black text-base"
             >
-              <span class="material-symbols-outlined text-[16px]">star</span>
+              <Star size={16} class="fill-yellow-400" />
               <span
                 >{getFormattedScore(
                   currentSong.average_rating,
@@ -794,11 +788,10 @@
                 : 'text-white/40'}"
               onclick={toggleFavorite}
             >
-              <span
-                class="material-symbols-outlined text-[18px] {currentSong?.is_favorited
-                  ? 'filled'
-                  : ''}">favorite</span
-              >
+              <Heart
+                size={18}
+                class={currentSong?.is_favorited ? "fill-primary text-primary" : ""}
+              />
             </button>
             <button
               class="w-8 h-8 rounded-full flex items-center justify-center transition-colors {currentSong?.is_liked
@@ -806,11 +799,10 @@
                 : 'text-white/40'}"
               onclick={toggleLike}
             >
-              <span
-                class="material-symbols-outlined text-[18px] {currentSong?.is_liked
-                  ? 'filled'
-                  : ''}">thumb_up</span
-              >
+              <ThumbsUp
+                size={18}
+                class={currentSong?.is_liked ? "fill-primary text-primary" : ""}
+              />
             </button>
             <button
               class="w-8 h-8 rounded-full flex items-center justify-center transition-colors {currentSong?.is_disliked
@@ -818,27 +810,24 @@
                 : 'text-white/40'}"
               onclick={toggleDislike}
             >
-              <span
-                class="material-symbols-outlined text-[18px] {currentSong?.is_disliked
-                  ? 'filled'
-                  : ''}">thumb_down</span
-              >
+              <ThumbsDown
+                size={18}
+                class={currentSong?.is_disliked ? "fill-primary text-primary" : ""}
+              />
             </button>
 
             <button
               onclick={shareSong}
               class="w-8 h-8 rounded-full flex items-center justify-center text-white/40 transition-colors"
             >
-              <span class="material-symbols-outlined text-[18px]">share</span>
+              <Share2 size={18} />
             </button>
             <button
               onclick={() => currentSong && removeFromPlaylist(currentSong.id)}
               class="w-8 h-8 rounded-full flex items-center justify-center text-red-400 transition-colors"
               title="Remove from Playlist"
             >
-              <span class="material-symbols-outlined text-[18px]"
-                >playlist_remove</span
-              >
+              <ListMinus size={18} />
             </button>
           </div>
         </div>
@@ -872,9 +861,7 @@
             <div class="flex items-center gap-3 flex-1 min-w-0">
               {#if currentSong?.id === song.id}
                 <div class="w-5 text-center text-primary font-black shrink-0">
-                  <span class="material-symbols-outlined text-[16px]"
-                    >equalizer</span
-                  >
+                  <AudioLines size={16} />
                 </div>
               {:else}
                 <div
@@ -914,7 +901,7 @@
               <div
                 class="flex items-center gap-0.5 text-yellow-400 font-bold text-xs"
               >
-                <span class="material-symbols-outlined text-[12px]">star</span>
+                <Star size={12} class="fill-yellow-400" />
                 {getFormattedScore(
                   song.average_rating,
                   authState.user?.score_format,
@@ -928,9 +915,7 @@
           <div
             class="py-16 flex flex-col items-center justify-center text-center opacity-40"
           >
-            <span class="material-symbols-outlined text-[48px] font-thin"
-              >queue_music</span
-            >
+            <Music2 size={48} class="font-thin" />
             <p class="mt-3 font-bold text-sm">This playlist is empty</p>
           </div>
         {/if}
@@ -949,16 +934,14 @@
             : 'text-white/40'}"
           title="Shuffle"
         >
-          <span class="material-symbols-outlined text-[22px]">shuffle</span>
+          <Shuffle size={22} />
         </button>
 
         <button
           onclick={playPrev}
           class="w-10 h-10 rounded-full flex items-center justify-center text-white/60 transition-colors border border-white/5"
         >
-          <span class="material-symbols-outlined text-[24px]"
-            >skip_previous</span
-          >
+          <SkipBack size={24} fill="currentColor" />
         </button>
 
         <button
@@ -966,10 +949,9 @@
           class="w-14 h-14 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-primary/30 text-white transition-all active:scale-95"
         >
           {#if isPaused}
-            <span class="material-symbols-outlined text-[28px]">play_arrow</span
-            >
+            <Play size={28} fill="currentColor" />
           {:else}
-            <span class="material-symbols-outlined text-[28px]">pause</span>
+            <Pause size={28} fill="currentColor" />
           {/if}
         </button>
 
@@ -977,7 +959,7 @@
           onclick={playNext}
           class="w-10 h-10 rounded-full flex items-center justify-center text-white/60 transition-colors border border-white/5"
         >
-          <span class="material-symbols-outlined text-[24px]">skip_next</span>
+          <SkipForward size={24} fill="currentColor" />
         </button>
 
         <button
@@ -985,7 +967,7 @@
           class="w-10 h-10 rounded-full flex items-center justify-center text-white/40 border border-white/5 transition-colors"
           title="Report"
         >
-          <span class="material-symbols-outlined text-[20px]">report</span>
+          <AlertTriangle size={20} />
         </button>
       </div>
     </div>
@@ -1010,13 +992,6 @@
   }
   .neon-text {
     text-shadow: 0 0 8px rgba(178, 77, 255, 0.6);
-  }
-  .material-symbols-outlined.filled {
-    font-variation-settings:
-      "FILL" 1,
-      "wght" 400,
-      "GRAD" 0,
-      "opsz" 24;
   }
   .custom-scrollbar::-webkit-scrollbar {
     width: 6px;

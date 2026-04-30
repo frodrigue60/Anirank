@@ -3,6 +3,11 @@
   import { authState } from "$lib/state/auth.svelte";
   import api from "$lib/api";
   import { invalidateAll } from "$app/navigation";
+  import Globe from "lucide-svelte/icons/globe";
+  import Lock from "lucide-svelte/icons/lock";
+  import Edit2 from "lucide-svelte/icons/edit-2";
+  import Trash2 from "lucide-svelte/icons/trash-2";
+  import Music from "lucide-svelte/icons/music";
 
   let { playlist, profile, openEditModal, handleDelete, onTogglePrivacy } =
     $props();
@@ -50,9 +55,12 @@
         class="text-white/70 hover:text-primary bg-white/5 hover:bg-white/10 rounded-sm px-3 py-2 transition-all border border-white/5 pointer-events-auto flex items-center gap-1.5"
         title="Toggle Privacy"
       >
-        <span class="material-symbols-outlined text-sm">
-          {playlist.is_public ? "public" : "lock"}
-        </span>
+        {#if playlist.is_public}
+          <Globe size={14} />
+        {:else}
+          <Lock size={14} />
+        {/if}
+
         <span class="text-[10px] font-bold uppercase tracking-wider">
           {playlist.is_public ? "public" : "private"}
         </span>
@@ -63,14 +71,14 @@
           class="text-white/70 hover:text-primary bg-white/5 hover:bg-white/10 rounded-sm p-2 transition-all border border-white/5"
           title="Edit Playlist"
         >
-          <span class="material-symbols-outlined text-[20px]">edit</span>
+          <Edit2 size={20} />
         </button>
         <button
           onclick={() => handleDelete(playlist.id)}
           class="text-white/70 hover:text-red-500 bg-white/5 hover:bg-white/10 rounded-sm p-2 transition-all border border-white/5"
           title="Delete Playlist"
         >
-          <span class="material-symbols-outlined text-[20px]">delete</span>
+          <Trash2 size={20} />
         </button>
       </div>
     </div>
@@ -80,7 +88,7 @@
   <div class="absolute bottom-0 left-0 right-0 p-5 flex flex-col gap-2">
     <div class="flex items-center gap-2 mb-2">
       <span class="text-slate-400 text-[10px] flex items-center gap-1">
-        <span class="material-symbols-outlined text-xs">music_note</span>
+        <Music size={12} />
         {playlist.song_count || 0} Songs
       </span>
     </div>

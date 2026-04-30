@@ -5,6 +5,12 @@
   import { getSongName } from "$lib/song-utils";
   import { goto } from "$app/navigation";
   import { getApiErrorMessage } from "$lib/api-errors";
+  import ArrowLeft from "lucide-svelte/icons/arrow-left";
+  import Edit2 from "lucide-svelte/icons/edit-2";
+  import Plus from "lucide-svelte/icons/plus";
+  import AlertTriangle from "lucide-svelte/icons/alert-triangle";
+  import Settings from "lucide-svelte/icons/settings";
+  import Video from "lucide-svelte/icons/video";
 
   let { data } = $props<{ data: PageData }>();
   let song = $derived(data.song);
@@ -58,7 +64,7 @@
 
 <div class="mb-6">
     <a href="/admin/animes/{data.id}/songs" class="inline-flex items-center text-sm text-on-surface-variant/70 hover:text-on-surface transition-colors gap-1 mb-4">
-        <span class="material-symbols-outlined text-sm">arrow_back</span>
+        <ArrowLeft size={16} />
         Back to Songs List
     </a>
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -71,12 +77,12 @@
         </div>
         <div class="flex flex-wrap gap-2">
             <a href="/admin/songs/{song.id}/edit" class="px-4 py-2 bg-surface-highest hover:bg-surface-highest border border-outline-variant text-on-surface rounded-lg text-sm transition-colors flex items-center gap-2">
-                <span class="material-symbols-outlined text-sm">edit</span>
+                <Edit2 size={16} />
                 Edit Song
             </a>
             {#if !hasValidData}
                 <button disabled class="px-4 py-2 bg-surface-highest border border-outline-variant text-on-surface-variant/40 rounded-lg text-sm cursor-not-allowed flex items-center gap-2" title="Song or Anime must have Season and Year assigned">
-                    <span class="material-symbols-outlined text-sm">add</span>
+                    <Plus size={16} />
                     Add Variant
                 </button>
             {:else}
@@ -88,7 +94,7 @@
                         </svg>
                         Creating...
                     {:else}
-                        <span class="material-symbols-outlined text-sm">add</span>
+                        <Plus size={16} />
                         Add Variant
                     {/if}
                 </button>
@@ -99,7 +105,7 @@
 
 {#if !hasValidData}
 <div class="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 flex items-start gap-3 mb-6">
-  <span class="material-symbols-outlined text-amber-500 mt-0.5">warning</span>
+  <AlertTriangle size={20} class="text-amber-500 mt-0.5" />
   <div>
     <h3 class="text-amber-500 font-medium text-sm">Missing Information</h3>
     <p class="text-amber-400/80 text-sm mt-1">This song (or its parent anime) must have a Season and Year assigned before you can create variants. Please edit the song or anime info first.</p>
@@ -149,10 +155,10 @@
                             <td class="px-6 py-4 text-right">
                                 <div class="flex items-center justify-end gap-2">
                                   <a href="/admin/variants/{variant.id}/video" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-on-surface transition-all border border-emerald-500/20 hover:border-emerald-500" title="Manage Video">
-                                      <span class="material-symbols-outlined text-sm">video_settings</span>
+                                      <Settings size={16} />
                                   </a>
                                   <a href="/admin/variants/{variant.id}/edit" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-surface-highest text-on-surface-variant/70 hover:bg-surface-highest hover:text-on-surface transition-all border border-outline-variant hover:border-outline-variant" title="Edit Variant">
-                                      <span class="material-symbols-outlined text-sm">edit</span>
+                                      <Edit2 size={16} />
                                   </a>
                                 </div>
                             </td>
@@ -163,13 +169,13 @@
         {:else}
             <div class="px-6 py-16 flex flex-col items-center justify-center text-center">
                 <div class="w-16 h-16 bg-surface-highest rounded-2xl flex items-center justify-center mb-4 border border-outline-variant">
-                    <span class="material-symbols-outlined text-3xl text-on-surface-variant/40">video_library</span>
+                    <Video size={32} class="text-on-surface-variant/40" />
                 </div>
                 <h3 class="text-on-surface font-medium mb-1">No variants configured</h3>
                 <p class="text-sm text-on-surface-variant/40 max-w-sm mb-6">Create the first variant to configure video sources for this theme.</p>
                 {#if !hasValidData}
                     <button disabled class="px-5 py-2.5 bg-surface-highest border border-outline-variant text-on-surface-variant/40 rounded-xl text-sm font-medium cursor-not-allowed flex items-center gap-2">
-                        <span class="material-symbols-outlined text-sm">add</span>
+                        <Plus size={16} />
                         Create First Variant
                     </button>
                 {:else}
@@ -181,7 +187,7 @@
                             </svg>
                             Creating First Variant...
                         {:else}
-                            <span class="material-symbols-outlined text-sm">add</span>
+                            <Plus size={16} />
                             Create First Variant
                         {/if}
                     </button>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Star from "lucide-svelte/icons/star";
   import { onMount, onDestroy } from "svelte";
 
   let {
@@ -51,7 +52,7 @@
   {:else if !hasMore}
     <div class="flex flex-col items-center gap-3 opacity-20 group">
         <div class="h-px w-24 bg-linear-to-r from-transparent via-white/50 to-transparent mb-2"></div>
-        <span class="material-symbols-outlined text-xl transition-transform group-hover:scale-110">hotel_class</span>
+        <Star size={20} class="transition-transform group-hover:scale-110" />
         <span class="text-[9px] font-black uppercase tracking-[0.3em]">End of Collection</span>
     </div>
   {/if}

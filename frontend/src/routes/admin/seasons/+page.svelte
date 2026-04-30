@@ -4,8 +4,12 @@
   let { data } = $props();
 
   // Local State
-  let items = $state<any[]>(data.seasons || []);
+  let items = $state<any[]>([]);
   let errorMsg = $state("");
+
+  $effect(() => {
+    items = data.seasons || [];
+  });
 
   // Modal State
   let showModal = $state(false);
@@ -143,24 +147,33 @@
           {#each items as item}
             <tr class="hover:bg-white/2 transition-colors group">
               <td class="px-6 py-4 font-mono text-xs opacity-40">#{item.id}</td>
-              <td class="px-6 py-4 font-medium text-on-surface">{item.name}</td>
+              <td class="px-6 py-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-lg bg-surface-highest flex items-center justify-center text-primary font-bold text-xs uppercase">
+                    {item.name.toString().slice(0, 1)}
+                  </div>
+                  <span class="font-bold text-on-surface">{item.name}</span>
+                </div>
+              </td>
               <td class="px-6 py-4">
                 {#if item.current}
                   <button 
                     onclick={() => toggleCurrent(item.id)}
                     aria-label="Toggle active status"
-                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-green-500/10 text-green-400 border border-green-500/20 text-[10px] font-bold uppercase tracking-wider"
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 text-primary border border-primary/20 text-[10px] font-bold uppercase tracking-wider"
                   >
-                    <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-                    Active Now
+                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24">
+                      <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                    </svg>
+                    Primary Season
                   </button>
                 {:else}
                   <button 
                     onclick={() => toggleCurrent(item.id)}
-                    aria-label="Set as active"
+                    aria-label="Set as primary"
                     class="inline-flex items-center px-2.5 py-1 rounded-lg bg-surface-highest text-on-surface-variant/40 hover:text-primary transition-colors text-[10px] font-bold uppercase tracking-wider border border-outline-variant"
                   >
-                    Set Active
+                    Set Primary
                   </button>
                 {/if}
               </td>
@@ -235,16 +248,20 @@
           />
         </div>
 
-        <div class="flex items-center gap-3 p-4 bg-surface-highest rounded-2xl border border-outline-variant group cursor-pointer" onclick={() => formCurrent = !formCurrent}>
-          <label class="relative inline-flex items-center cursor-pointer pointer-events-none">
+        <button 
+          type="button"
+          class="w-full flex items-center gap-3 p-4 bg-surface-highest rounded-2xl border border-outline-variant group transition-all text-left" 
+          onclick={() => formCurrent = !formCurrent}
+        >
+          <div class="relative inline-flex items-center">
             <input type="checkbox" bind:checked={formCurrent} class="sr-only peer">
             <div class="w-11 h-6 bg-on-surface-variant/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:inset-s-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-          </label>
+          </div>
           <div>
             <span class="text-sm font-bold text-on-surface">Primary System Season</span>
             <p class="text-[10px] text-on-surface-variant">Mark as the current airing season.</p>
           </div>
-        </div>
+        </button>
 
         <div class="pt-4 flex gap-3">
           <button

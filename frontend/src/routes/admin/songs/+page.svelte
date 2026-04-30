@@ -5,6 +5,14 @@
   import AutocompleteAnime from "$lib/components/admin/AutocompleteAnime.svelte";
   import { configState } from "$lib/state/config.svelte";
   import { toastState } from "$lib/state/toast.svelte";
+  import Plus from "lucide-svelte/icons/plus";
+  import Search from "lucide-svelte/icons/search";
+  import Video from "lucide-svelte/icons/video";
+  import Edit2 from "lucide-svelte/icons/edit-2";
+  import Trash2 from "lucide-svelte/icons/trash-2";
+  import ChevronLeft from "lucide-svelte/icons/chevron-left";
+  import ChevronRight from "lucide-svelte/icons/chevron-right";
+  import AlertCircle from "lucide-svelte/icons/alert-circle";
 
   let { data } = $props();
 
@@ -99,14 +107,8 @@
     href="/admin/songs/create"
     class="px-4 py-2 bg-primary hover:bg-primary-container text-on-surface font-medium rounded-xl transition-colors shadow-lg shadow-anirank-primary/20 flex items-center gap-2"
   >
-    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-      ><path
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-width="2"
-        d="M12 4v16m8-8H4"
-      /></svg
-    >
+    <Plus size={20} />
+
     New Song
   </a>
 </div>
@@ -123,18 +125,8 @@
       >Search Title</label
     >
     <div class="relative">
-      <svg
-        class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/40"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        ><path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-        /></svg
-      >
+      <Search size={16} class="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/40" />
+
       <input
         id="search"
         type="text"
@@ -277,19 +269,8 @@
                 </span>
                 {#if song.partial_artist_inactive}
                   <div class="group relative">
-                    <svg
-                      class="w-4 h-4 text-amber-500"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
+                    <AlertCircle size={16} class="text-amber-500" />
+
                     <div
                       class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-on-surface text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10 border border-outline-variant"
                     >
@@ -340,21 +321,21 @@
                   class="p-2 text-on-surface-variant/70 hover:text-on-surface hover:bg-surface-highest rounded-lg transition-colors"
                   title="Variants"
                 >
-                  <span class="material-symbols-outlined">video_library</span>
+                  <Video size={18} />
                 </a>
                 <a
                   href="/admin/songs/{song.id}/edit"
                   class="p-2 text-on-surface-variant/70 hover:text-on-surface hover:bg-surface-highest rounded-lg transition-colors"
                   title="Edit"
                 >
-                  <span class="material-symbols-outlined">edit</span>
+                  <Edit2 size={18} />
                 </a>
                 <button
                   onclick={() => handleDelete(song.id)}
                   class="p-2 text-on-surface-variant/70 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
                   title="Delete"
                 >
-                  <span class="material-symbols-outlined">delete</span>
+                  <Trash2 size={18} />
                 </button>
               </div>
             </td>
@@ -385,18 +366,8 @@
           aria-label="Previous Page"
           class="p-2 rounded-lg border border-outline-variant text-on-surface-variant/70 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-highest transition-colors"
         >
-          <svg
-            class="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            ><path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M15 19l-7-7 7-7"
-            /></svg
-          >
+          <ChevronLeft size={16} />
+
         </button>
         <span class="text-sm text-on-surface-variant font-medium px-2"
           >Page {pagination.current_page} of {pagination.last_page}</span
@@ -407,18 +378,8 @@
           aria-label="Next Page"
           class="p-2 rounded-lg border border-outline-variant text-on-surface-variant/70 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-highest transition-colors"
         >
-          <svg
-            class="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            ><path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M9 5l7 7-7 7"
-            /></svg
-          >
+          <ChevronRight size={16} />
+
         </button>
       </div>
     </div>

@@ -3,7 +3,8 @@
   import { page } from "$app/state";
   import InfiniteScroll from "$lib/components/InfiniteScroll.svelte";
   import api from "$lib/api";
-  import Search from "lucide-svelte/icons/search";;
+  import Search from "lucide-svelte/icons/search";
+  import UserMinus from "lucide-svelte/icons/user-minus";
   import SEO from "$lib/components/SEO.svelte";
   import ArtistAvatarCard from "$lib/components/ArtistAvatarCard.svelte";
 
@@ -195,10 +196,7 @@
         <div
           class="text-center py-20 bg-surface-container/30 rounded-md border-2 border-dashed border-white/5"
         >
-          <span
-            class="material-symbols-outlined text-6xl text-on-surface-variant opacity-20 mb-4 block"
-            >person_off</span
-          >
+          <UserMinus size={64} class="text-on-surface-variant opacity-20 mb-4 block mx-auto" />
           <h3 class="text-xl font-bold text-on-surface-variant">
             No artists found
           </h3>

@@ -6,6 +6,12 @@
   import api from "$lib/api";
   import XPProgressBar from "$lib/components/XPProgressBar.svelte";
   import UserReportModal from "$lib/components/UserReportModal.svelte";
+  import Settings from "lucide-svelte/icons/settings";
+  import RefreshCw from "lucide-svelte/icons/refresh-cw";
+  import UserMinus from "lucide-svelte/icons/user-minus";
+  import UserPlus from "lucide-svelte/icons/user-plus";
+  import Flag from "lucide-svelte/icons/flag";
+  import UserX from "lucide-svelte/icons/user-x";
 
   let { data, children } = $props();
 
@@ -118,7 +124,7 @@
           alt="Cover Image"
           class="w-full h-full object-cover"
           data-alt="User banner image"
-          src="/images/placeholders/default-banner.jpg"
+          src="/images/placeholders/default-banner.svg"
         />
       {/if}
       <div
@@ -139,7 +145,7 @@
                   alt="Profile"
                   class="w-full h-full object-cover"
                   data-alt="User avatar image"
-                  src="/images/placeholders/default.jpg"
+                  src="/images/placeholders/default.svg"
                 />
               {/if}
             </div>
@@ -186,7 +192,7 @@
               href="/settings"
               class="flex items-center justify-center gap-2 px-6 h-11 rounded-sm bg-surface-highest/50 hover:bg-surface-highest text-on-surface border border-on-surface-variant/10 transition-all font-bold text-sm"
             >
-              <span class="material-symbols-outlined text-sm">settings</span>
+              <Settings size={14} />
               Edit Profile
             </a>
           {:else}
@@ -201,13 +207,15 @@
                 : ""}
             >
               {#if isProcessing}
-                <span class="animate-spin material-symbols-outlined text-sm"
-                  >sync</span
-                >
+                <RefreshCw size={14} class="animate-spin" />
+
               {:else}
-                <span class="material-symbols-outlined text-sm"
-                  >{isFollowing ? "person_remove" : "person_add"}</span
-                >
+                {#if isFollowing}
+                  <UserMinus size={14} />
+                {:else}
+                  <UserPlus size={14} />
+                {/if}
+
               {/if}
               {isFollowing ? "Unfollow" : "Follow"}
             </button>
@@ -217,14 +225,14 @@
                 class="flex items-center justify-center size-11 rounded-sm bg-red-500/50 hover:bg-red-500 border border-on-surface-variant/10 text-on-surface transition-all"
                 title="Report User"
               >
-                <span class="material-symbols-outlined">report</span>
+                <Flag size={20} />
               </button>
             {:else}
               <a
                 href="/login"
                 class="flex items-center justify-center size-11 rounded-sm bg-red-500/50 hover:bg-red-500 border border-on-surface-variant/10 text-on-surface transition-all"
               >
-                <span class="material-symbols-outlined text-sm">report</span>
+                <Flag size={14} />
               </a>
             {/if}
           {/if}
@@ -343,7 +351,7 @@
     <div
       class="w-24 h-24 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 mb-6"
     >
-      <span class="material-symbols-outlined text-[48px]">person_off</span>
+      <UserX size={48} />
     </div>
     <h1 class="text-3xl font-black text-on-surface mb-2">User Not Found</h1>
     <p class="text-on-surface-variant max-w-md">

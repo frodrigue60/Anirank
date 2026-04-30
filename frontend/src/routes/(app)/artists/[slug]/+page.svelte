@@ -3,7 +3,11 @@
   import { page } from "$app/state";
   import { configState } from "$lib/state/config.svelte";
   import SongCard from "$lib/components/SongCard.svelte";
-  import Search from "lucide-svelte/icons/search";;
+  import Search from "lucide-svelte/icons/search";
+  import Heart from "lucide-svelte/icons/heart";
+  import Music from "lucide-svelte/icons/music";
+  import ChevronLeft from "lucide-svelte/icons/chevron-left";
+  import ChevronRight from "lucide-svelte/icons/chevron-right";
   import api from "$lib/api";
   import { toastState } from "$lib/state/toast.svelte";
   import SEO from "$lib/components/SEO.svelte";
@@ -201,7 +205,7 @@
           class="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-4 border-surface shadow-2xl relative z-10 group-hover:border-primary/50 transition-colors"
         >
           <img
-            src={artist.avatar_url || "/images/placeholders/default.jpg"}
+            src={artist.avatar_url || "/images/placeholders/default.svg"}
             alt="Avatar for {artist.name}"
             title="Avatar for {artist.name}"
             class="w-full h-full object-cover"
@@ -230,13 +234,7 @@
               ? 'bg-red-500 border-red-500 text-white'
               : 'bg-primary text-white hover:bg-primary/80'}"
           >
-            <span
-              class="material-symbols-outlined {isFavorited
-                ? 'fill-current'
-                : ''}"
-            >
-              favorite
-            </span>
+            <Heart size={20} class={isFavorited ? 'fill-current' : ''} />
             Favorite
           </button>
         {:else}
@@ -244,7 +242,7 @@
             href="/login"
             class="flex items-center bg-red-500 border-red-500/30 text-white gap-2 px-4 py-2 rounded-sm border transition-all active:scale-95 hover:bg-red-500/30"
           >
-            <span class="material-symbols-outlined">favorite</span>
+            <Heart size={20} />
             Favorite
           </a>
         {/if}
@@ -386,10 +384,7 @@
         <div
           class="lg:col-span-2 text-center py-24 bg-surface-container/30 rounded-md border-2 border-dashed border-white/5"
         >
-          <span
-            class="material-symbols-outlined text-6xl text-on-surface-variant opacity-20 mb-4 block"
-            >music_off</span
-          >
+          <Music size={64} class="text-on-surface-variant opacity-20 mb-4 block mx-auto" />
           <h3 class="text-xl font-bold text-on-surface-variant">
             No themes found
           </h3>
@@ -415,7 +410,7 @@
           class="w-10 h-10 rounded-md bg-background-dark/50 border border-white/5 flex items-center justify-center text-white hover:bg-surface-dark transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           title="Go to previous page"
         >
-          <span class="material-symbols-outlined">chevron_left</span>
+          <ChevronLeft size={20} />
         </button>
 
         {#each paginationRange as p}
@@ -441,7 +436,7 @@
           class="w-10 h-10 rounded-md bg-background-dark/50 border border-white/5 flex items-center justify-center text-white hover:bg-surface-dark transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           title="Go to next page"
         >
-          <span class="material-symbols-outlined">chevron_right</span>
+          <ChevronRight size={20} />
         </button>
       </div>
     {/if}

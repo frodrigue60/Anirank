@@ -4,6 +4,13 @@
   import { onMount } from "svelte";
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
+  import UserPlus from "lucide-svelte/icons/user-plus";
+  import Reply from "lucide-svelte/icons/reply";
+  import Heart from "lucide-svelte/icons/heart";
+  import Music from "lucide-svelte/icons/music";
+  import Bell from "lucide-svelte/icons/bell";
+  import Settings from "lucide-svelte/icons/settings";
+  import BellOff from "lucide-svelte/icons/bell-off";
 
   let { data } = $props();
   // svelte-ignore state_referenced_locally
@@ -64,20 +71,16 @@
     return date.toLocaleDateString();
   }
 
+  const iconMap: Record<string, any> = {
+    follow: UserPlus,
+    reply: Reply,
+    comment_reply: Reply,
+    like: Heart,
+    artist_new_song: Music,
+  };
+
   function getNotificationIcon(type: string) {
-    switch (type) {
-      case "follow":
-        return "person_add";
-      case "reply":
-      case "comment_reply":
-        return "reply";
-      case "like":
-        return "favorite";
-      case "artist_new_song":
-        return "music_note";
-      default:
-        return "notifications";
-    }
+    return iconMap[type] || Bell;
   }
 
   function getNotificationColor(type: string) {
@@ -134,7 +137,7 @@
               title="Notification settings"
               class="text-on-surface-variant hover:text-on-surface transition-colors"
             >
-              <span class="material-symbols-outlined text-lg">settings</span>
+              <Settings size={18} />
             </a>
           </div>
           <div class="space-y-1">
@@ -180,9 +183,7 @@
             <div
               class="w-20 h-20 rounded-md bg-white/5 flex items-center justify-center mx-auto mb-6 text-on-surface-variant"
             >
-              <span class="material-symbols-outlined text-5xl"
-                >notifications_off</span
-              >
+              <BellOff size={48} />
             </div>
             <h3 class="text-2xl font-bold text-on-surface mb-2">
               No notifications found
@@ -211,21 +212,20 @@
                     {#if notification.type === "follow"}
                       <img
                         src={notification.data.follower_avatar ||
-                          "/images/placeholders/default.jpg"}
+                          "/images/placeholders/default.svg"}
                         alt=""
                         class="w-full h-full object-cover"
                       />
                     {:else if notification.type === "reply" || notification.type === "comment_reply"}
                       <img
                         src={notification.data.replied_by_avatar ||
-                          "/images/placeholders/default.jpg"}
+                          "/images/placeholders/default.svg"}
                         alt=""
                         class="w-full h-full object-cover"
                       />
                     {:else}
-                      <span class="material-symbols-outlined text-2xl"
-                        >{getNotificationIcon(notification.type)}</span
-                      >
+                      {@const Icon = getNotificationIcon(notification.type)}
+                      <Icon size={24} />
                     {/if}
                   </div>
 

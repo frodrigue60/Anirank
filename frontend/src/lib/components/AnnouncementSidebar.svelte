@@ -1,6 +1,12 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import api from "$lib/api";
+  import Megaphone from "lucide-svelte/icons/megaphone";
+  import Info from "lucide-svelte/icons/info";
+  import AlertTriangle from "lucide-svelte/icons/alert-triangle";
+  import AlertCircle from "lucide-svelte/icons/alert-circle";
+  import CheckCircle from "lucide-svelte/icons/check-circle";
+  import Calendar from "lucide-svelte/icons/calendar";
 
   interface Announcement {
     id: number | string;
@@ -64,6 +70,15 @@
       glow: "shadow-sm",
     },
   };
+
+  const iconMap: Record<string, any> = {
+    info: Info,
+    success: CheckCircle,
+    warning: AlertTriangle,
+    danger: AlertCircle,
+    event: Calendar,
+    announcement: Megaphone,
+  };
 </script>
 
 {#if !loading && announcements.length > 0}
@@ -109,14 +124,12 @@
         <!-- Content -->
         <div class="relative z-10 flex flex-col gap-1">
           <!-- <div class="flex items-center gap-2 mb-1">
-            {#if item.icon}
-              <span
-                class="material-symbols-outlined text-[18px] {typeConfig[
-                  item.type
-                ]?.text || 'text-white'}"
-              >
-                {item.icon}
-              </span>
+            {#if item.icon && iconMap[item.icon]}
+              {@const Icon = iconMap[item.icon]}
+              <Icon
+                size={18}
+                class={typeConfig[item.type]?.text || "text-white"}
+              />
             {/if}
             <span
               class="text-[10px] font-bold uppercase tracking-widest {typeConfig[

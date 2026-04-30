@@ -4,8 +4,12 @@
   let { data } = $props();
 
   // Local State
-  let items = $state<any[]>(data.genres || []);
+  let items = $state<any[]>([]);
   let errorMsg = $state("");
+
+  $effect(() => {
+    items = data.genres || [];
+  });
 
   // Modal State
   let showModal = $state(false);

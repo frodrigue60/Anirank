@@ -10,6 +10,13 @@
     type HistoryItem,
   } from "$lib/utils/history";
   import { goto } from "$app/navigation";
+  import Search from "lucide-svelte/icons/search";
+  import X from "lucide-svelte/icons/x";
+  import History from "lucide-svelte/icons/history";
+  import Tv from "lucide-svelte/icons/tv";
+  import User from "lucide-svelte/icons/user";
+  import Music from "lucide-svelte/icons/music";
+  import Frown from "lucide-svelte/icons/frown";
 
   let { show = $bindable(false) } = $props();
 
@@ -165,9 +172,8 @@
       <div
         class="p-6 border-b border-outline-variant/10 flex items-center gap-4 bg-surface-container/50 backdrop-blur-md"
       >
-        <span class="material-symbols-outlined text-primary text-[24px]"
-          >search</span
-        >
+        <Search class="text-primary" size={24} />
+
         <input
           type="text"
           bind:value={query}
@@ -183,7 +189,7 @@
             onclick={() => (query = "")}
             class="w-8 h-8 rounded-full hover:bg-on-surface/5 flex items-center justify-center transition-colors text-on-surface-variant hover:text-on-surface"
           >
-            <span class="material-symbols-outlined text-[20px]">close</span>
+            <X size={20} />
           </button>
         {/if}
       </div>
@@ -224,15 +230,14 @@
                             loading="lazy"
                           />
                         {:else}
-                          <span
-                            class="material-symbols-outlined text-[20px] text-on-surface-variant/40"
-                          >
-                            {#if item.type === "query"}history
-                            {:else if item.type === "anime"}tv
-                            {:else if item.type === "artist"}person
-                            {:else if item.type === "user"}person
-                            {:else if item.type === "song"}music_note{/if}
-                          </span>
+                          <div class="text-on-surface-variant/40 flex items-center justify-center">
+                            {#if item.type === "query"}<History size={20} />
+                            {:else if item.type === "anime"}<Tv size={20} />
+                            {:else if item.type === "artist"}<User size={20} />
+                            {:else if item.type === "user"}<User size={20} />
+                            {:else if item.type === "song"}<Music size={20} />{/if}
+                          </div>
+
                         {/if}
                       </div>
                       <div class="flex flex-col min-w-0">
@@ -253,9 +258,8 @@
                       class="w-10 h-10 flex items-center justify-center text-on-surface-variant/40 hover:text-red-500 transition-colors"
                       title="Remove from history"
                     >
-                      <span class="material-symbols-outlined text-[18px]"
-                        >close</span
-                      >
+                      <X size={18} />
+
                     </button>
                   </div>
                 {/each}
@@ -263,9 +267,8 @@
             </div>
           {:else}
             <div class="text-center py-12 text-on-surface-variant">
-              <span class="material-symbols-outlined text-[48px] mb-4 opacity-20"
-                >search</span
-              >
+              <Search class="mb-4 opacity-20" size={48} />
+
               <p class="text-sm font-bold uppercase tracking-widest opacity-50">
                 Type at least 3 characters to search
               </p>
@@ -273,9 +276,8 @@
           {/if}
         {:else if !isLoading && (results?.animes?.length || 0) === 0 && (results?.artists?.length || 0) === 0 && (results?.users?.length || 0) === 0 && (results?.songs?.length || 0) === 0}
           <div class="text-center py-12 text-on-surface-variant">
-            <span class="material-symbols-outlined text-[48px] mb-4 opacity-20"
-              >sentiment_dissatisfied</span
-            >
+            <Frown class="mb-4 opacity-20" size={48} />
+
             <p class="text-sm font-bold uppercase tracking-widest opacity-50">
               No results found for "{query}"
             </p>
@@ -358,9 +360,8 @@
                       <div
                         class="w-12 h-12 rounded-sm bg-surface-highest border border-outline-variant/10 flex items-center justify-center text-primary shadow-sm"
                       >
-                        <span class="material-symbols-outlined text-[24px]"
-                          >music_note</span
-                        >
+                        <Music size={24} />
+
                       </div>
                       <div class="flex flex-col">
                         <span
@@ -417,9 +418,8 @@
                               loading="lazy"
                             />
                           {:else}
-                            <span class="material-symbols-outlined text-[20px]"
-                              >person</span
-                            >
+                            <User size={20} />
+
                           {/if}
                         </div>
                         <span
@@ -466,9 +466,8 @@
                               loading="lazy"
                             />
                           {:else}
-                            <span class="material-symbols-outlined text-[20px]"
-                              >person</span
-                            >
+                            <User size={20} />
+
                           {/if}
                         </div>
                         <span

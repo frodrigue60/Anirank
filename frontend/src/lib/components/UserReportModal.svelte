@@ -4,7 +4,9 @@ import Flag from "lucide-svelte/icons/flag";
 import Send from "lucide-svelte/icons/send";
 import CheckCircle2 from "lucide-svelte/icons/check-circle-2";
 import Loader2 from "lucide-svelte/icons/loader-2";
-import User from "lucide-svelte/icons/user";;
+import User from "lucide-svelte/icons/user";
+import ChevronDown from "lucide-svelte/icons/chevron-down";
+import AlertCircle from "lucide-svelte/icons/alert-circle";
   import api from "$lib/api";
   import { fade, scale } from "svelte/transition";
 
@@ -97,7 +99,7 @@ import User from "lucide-svelte/icons/user";;
       <div class="w-full flex justify-between items-start mb-6">
         <div class="text-left">
           <div class="flex items-center gap-2 text-primary mb-1">
-            <span class="material-symbols-outlined text-[14px]">flag</span>
+            <Flag size={14} />
             <p class="text-[10px] font-black uppercase tracking-[0.2em]">
               Report User
             </p>
@@ -150,7 +152,7 @@ import User from "lucide-svelte/icons/user";;
                 {/each}
               </select>
               <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant/40 group-hover:text-primary transition-colors">
-                <span class="material-symbols-outlined text-[18px]">expand_more</span>
+                <ChevronDown size={18} />
               </div>
             </div>
           </div>
@@ -172,7 +174,7 @@ import User from "lucide-svelte/icons/user";;
 
           {#if errorMessage}
             <p class="text-red-500 text-[10px] font-bold px-1 leading-tight flex items-center gap-1.5">
-              <span class="material-symbols-outlined text-[14px]">error</span>
+              <AlertCircle size={14} />
               {errorMessage}
             </p>
           {/if}
@@ -188,7 +190,7 @@ import User from "lucide-svelte/icons/user";;
               Submitting...
             {:else}
               Send Report
-              <span class="material-symbols-outlined text-[18px]">send</span>
+              <Send size={18} />
             {/if}
           </button>
         </div>

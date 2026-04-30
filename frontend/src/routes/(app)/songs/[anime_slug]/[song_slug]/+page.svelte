@@ -15,6 +15,23 @@
   import CommentReportModal from "$lib/components/CommentReportModal.svelte";
   import PlaylistModal from "$lib/components/PlaylistModal.svelte";
   import SEO from "$lib/components/SEO.svelte";
+  import ThumbsUp from "lucide-svelte/icons/thumbs-up";
+  import ThumbsDown from "lucide-svelte/icons/thumbs-down";
+  import Star from "lucide-svelte/icons/star";
+  import Heart from "lucide-svelte/icons/heart";
+  import ListPlus from "lucide-svelte/icons/list-plus";
+  import AlertTriangle from "lucide-svelte/icons/alert-triangle";
+  import MessageSquare from "lucide-svelte/icons/message-square";
+  import VideoOff from "lucide-svelte/icons/video-off";
+  import Trash2 from "lucide-svelte/icons/trash-2";
+  import MoreVertical from "lucide-svelte/icons/more-vertical";
+  import CornerDownRight from "lucide-svelte/icons/corner-down-right";
+  import MessageCircle from "lucide-svelte/icons/message-circle";
+  import Play from "lucide-svelte/icons/play";
+  import User from "lucide-svelte/icons/user";
+  import Flag from "lucide-svelte/icons/flag";
+  import RotateCcw from "lucide-svelte/icons/rotate-ccw";
+  import Library from "lucide-svelte/icons/library";
   import api from "$lib/api";
   import type { Song, Artist, SongVariant as Variant } from "$lib/types/song";
   interface User {
@@ -552,10 +569,10 @@
           <div
             class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center"
           >
-            <span
-              class="material-symbols-outlined text-on-surface-variant/20 text-6xl mb-4"
-              >videocam_off</span
-            >
+            <VideoOff
+              size={64}
+              class="text-on-surface-variant/20 mb-4"
+            />
             <span class="text-on-surface-variant/60 font-bold text-lg"
               >{(currentSong.song_variants?.length ?? 0) > 0
                 ? "No video available for this variant"
@@ -687,11 +704,10 @@
                     ? "Unlike theme"
                     : "Like theme"}
                 >
-                  <span
-                    class="material-symbols-outlined text-[14px] {currentSong.is_liked
-                      ? 'filled'
-                      : ''}">thumb_up</span
-                  >
+                  <ThumbsUp
+                    size={14}
+                    class={currentSong.is_liked ? "fill-primary" : ""}
+                  />
                   <span class="text-[10px] font-bold"
                     >{currentSong.likes_count || 0}</span
                   >
@@ -709,11 +725,10 @@
                     ? "Undislike theme"
                     : "Dislike theme"}
                 >
-                  <span
-                    class="material-symbols-outlined text-[14px] {currentSong.is_disliked
-                      ? 'filled'
-                      : ''}">thumb_down</span
-                  >
+                  <ThumbsDown
+                    size={14}
+                    class={currentSong.is_disliked ? "fill-red-500" : ""}
+                  />
                   <span class="text-[10px] font-bold"
                     >{currentSong.dislikes_count || 0}</span
                   >
@@ -740,10 +755,10 @@
                     authState.user?.score_format,
                   )}</span
                 >
-                <span
-                  class="material-symbols-outlined filled text-[16px] text-yellow-400 group-hover:rotate-12 transition-transform"
-                  >star</span
-                >
+                <Star
+                  size={16}
+                  class="fill-yellow-400 text-yellow-400 group-hover:rotate-12 transition-transform"
+                />
               </div>
             </button>
           </div>
@@ -761,11 +776,10 @@
                 ? "Remove from favorites"
                 : "Add to favorites"}
             >
-              <span
-                class="material-symbols-outlined text-[20px] {currentSong.is_favorited
-                  ? 'filled'
-                  : ''}">favorite</span
-              >
+              <Heart
+                size={20}
+                class={currentSong.is_favorited ? "fill-pink-500" : ""}
+              />
             </button>
             <button
               class="w-10 h-10 flex items-center justify-center bg-surface-highest hover:bg-surface-lowest border border-outline-variant/10 rounded-full transition-colors text-on-surface-variant hover:text-primary"
@@ -773,9 +787,7 @@
               title="Add to Playlist"
               aria-label="Add this theme to a playlist"
             >
-              <span class="material-symbols-outlined text-[20px]"
-                >playlist_add</span
-              >
+              <ListPlus size={20} />
             </button>
             <button
               class="w-10 h-10 flex items-center justify-center bg-surface-highest hover:bg-red-500/10 border border-outline-variant/10 rounded-full transition-colors {currentSong.is_reported
@@ -790,11 +802,10 @@
                 ? "Already reported"
                 : "Report this theme"}
             >
-              <span
-                class="material-symbols-outlined text-[20px] {currentSong.is_reported
-                  ? 'filled'
-                  : ''}">report</span
-              >
+              <AlertTriangle
+                size={20}
+                class={currentSong.is_reported ? "fill-red-500" : ""}
+              />
             </button>
           </div>
         </div>
@@ -803,7 +814,7 @@
       <!-- Comments Section -->
       <div class="space-y-6 pt-4">
         <h2 class="text-2xl font-bold flex items-center gap-3">
-          <span class="material-symbols-outlined text-primary">forum</span>
+          <MessageCircle size={24} class="text-primary" />
           Comments
         </h2>
 
@@ -815,16 +826,13 @@
             {#if authState.isAuthenticated && authState.user}
               <img
                 src={authState.user.avatar_url ||
-                  "/images/placeholders/default.jpg"}
+                  "/images/placeholders/default.svg"}
                 alt="{authState.user.name}'s avatar"
                 title="{authState.user.name}'s avatar"
                 class="w-full h-full object-cover"
               />
             {:else}
-              <span
-                class="material-symbols-outlined text-white/40 w-full h-full flex items-center justify-center"
-                >person</span
-              >
+              <User size={24} class="text-white/40" />
             {/if}
           </div>
           <div class="flex-1 flex flex-col gap-2">
@@ -861,7 +869,7 @@
               >
                 <img
                   src={comment.user?.avatar_url ||
-                    "/images/placeholders/default.jpg"}
+                    "/images/placeholders/default.svg"}
                   alt={comment.user?.name}
                   title={comment.user?.name}
                   class="w-full h-full object-cover"
@@ -913,11 +921,10 @@
                         ? "Unlike comment"
                         : "Like comment"}
                     >
-                      <span
-                        class="material-symbols-outlined {comment.is_liked
-                          ? 'filled'
-                          : ''}">thumb_up</span
-                      >
+                      <ThumbsUp
+                        size={16}
+                        class={comment.is_liked ? "fill-primary" : ""}
+                      />
                       {comment.likes_count || 0}
                     </button>
                     <button
@@ -932,11 +939,10 @@
                         ? "Undislike comment"
                         : "Dislike comment"}
                     >
-                      <span
-                        class="material-symbols-outlined {comment.is_disliked
-                          ? 'filled'
-                          : ''}">thumb_down</span
-                      >
+                      <ThumbsDown
+                        size={16}
+                        class={comment.is_disliked ? "fill-red-500" : ""}
+                      />
                       {comment.dislikes_count || 0}
                     </button>
                     <button
@@ -949,9 +955,7 @@
                       title="Reply to comment"
                       aria-label="Reply to comment"
                       >Reply
-                      <span class="material-symbols-outlined text-[16px]"
-                        >reply</span
-                      >
+                      <CornerDownRight size={16} />
                     </button>
                   </div>
 
@@ -962,9 +966,7 @@
                       title="Report Comment"
                       aria-label="Report comment"
                     >
-                      <span class="material-symbols-outlined text-[16px]"
-                        >flag</span
-                      >
+                      <Flag size={16} />
                     </button>
 
                     {#if authState.user && (authState.user.uuid === comment.user?.uuid || authState.isAdmin)}
@@ -974,9 +976,7 @@
                         title="Delete Comment"
                         aria-label="Delete comment"
                       >
-                        <span class="material-symbols-outlined text-[16px]"
-                          >delete</span
-                        >
+                        <Trash2 size={16} />
                       </button>
                     {/if}
                   </div>
@@ -1018,7 +1018,7 @@
                         >
                           <img
                             src={reply.user?.avatar_url ||
-                              "/images/placeholders/default.jpg"}
+                              "/images/placeholders/default.svg"}
                             alt={reply.user?.name}
                             title={reply.user?.name}
                             class="w-full h-full object-cover"
@@ -1063,10 +1063,7 @@
                                     title="Delete Reply"
                                     aria-label="Delete reply"
                                   >
-                                    <span
-                                      class="material-symbols-outlined text-[14px]"
-                                      >delete</span
-                                    >
+                                    <Trash2 size={14} />
                                   </button>
                                 {/if}
                                 <button
@@ -1076,10 +1073,7 @@
                                   title="Report Reply"
                                   aria-label="Report reply"
                                 >
-                                  <span
-                                    class="material-symbols-outlined text-[14px]"
-                                    >flag</span
-                                  >
+                                    <Flag size={14} />
                                 </button>
                               </div>
                             </div>
@@ -1102,11 +1096,10 @@
                                   ? "Unlike reply"
                                   : "Like reply"}
                               >
-                                <span
-                                  class="material-symbols-outlined text-[14px] {reply.is_liked
-                                    ? 'filled'
-                                    : ''}">thumb_up</span
-                                >
+                                <ThumbsUp
+                                  size={14}
+                                  class={reply.is_liked ? "fill-primary" : ""}
+                                />
                                 <span class="text-xs"
                                   >{reply.likes_count || 0}</span
                                 >
@@ -1121,11 +1114,10 @@
                                   ? 'text-red-500'
                                   : 'text-on-surface-variant/20 hover:text-on-surface'}"
                               >
-                                <span
-                                  class="material-symbols-outlined text-[14px] {reply.is_disliked
-                                    ? 'filled'
-                                    : ''}">thumb_down</span
-                                >
+                                <ThumbsDown
+                                  size={14}
+                                  class={reply.is_disliked ? "fill-red-500" : ""}
+                                />
                                 <span class="text-xs"
                                   >{reply.dislikes_count || 0}</span
                                 >
@@ -1141,10 +1133,7 @@
             </div>
           {:else}
             <div class="text-center py-8">
-              <span
-                class="material-symbols-outlined text-[48px] text-on-surface-variant/10 mb-2"
-                >speaker_notes</span
-              >
+                <MessageSquare size={48} class="text-on-surface-variant/10 mb-2" />
               <p class="text-on-surface-variant/40 font-bold text-sm">
                 No comments yet
               </p>
@@ -1163,9 +1152,7 @@
         <h2
           class="text-lg font-bold flex items-center gap-2 mb-4 text-on-surface"
         >
-          <span class="material-symbols-outlined text-primary text-[20px]"
-            >playlist_play</span
-          >
+          <Library size={20} class="text-primary" />
           More from this series
         </h2>
       </div>
@@ -1196,9 +1183,7 @@
                 <span
                   class="text-[10px] text-yellow-400 font-bold flex items-center gap-0.5"
                 >
-                  <span class="material-symbols-outlined filled text-[10px]"
-                    >star</span
-                  >
+                  <Star size={10} class="fill-yellow-400" />
                   {getFormattedScore(
                     related.average_rating,
                     authState.user?.score_format,

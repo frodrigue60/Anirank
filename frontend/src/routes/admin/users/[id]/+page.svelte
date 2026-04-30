@@ -3,6 +3,22 @@
   import api from "$lib/api";
   import { toastState } from "$lib/state/toast.svelte";
   import { fade, slide } from "svelte/transition";
+  import ArrowLeft from "lucide-svelte/icons/arrow-left";
+  import Edit2 from "lucide-svelte/icons/edit-2";
+  import CheckCircle2 from "lucide-svelte/icons/check-circle-2";
+  import AtSign from "lucide-svelte/icons/at-sign";
+  import Fingerprint from "lucide-svelte/icons/fingerprint";
+  import User from "lucide-svelte/icons/user";
+  import CheckCircle from "lucide-svelte/icons/check-circle";
+  import Clock from "lucide-svelte/icons/clock";
+  import Share2 from "lucide-svelte/icons/share-2";
+  import Shield from "lucide-svelte/icons/shield";
+  import Award from "lucide-svelte/icons/award";
+  import ImageOff from "lucide-svelte/icons/image-off";
+  import Lock from "lucide-svelte/icons/lock";
+  import Copy from "lucide-svelte/icons/copy";
+  import KeyRound from "lucide-svelte/icons/key-round";
+  import UserMinus from "lucide-svelte/icons/user-minus";
 
   let { data } = $props();
   const user = $derived(data.user);
@@ -62,7 +78,7 @@
       href="/admin/users"
       class="p-2 text-on-surface-variant/70 hover:text-on-surface hover:bg-surface-highest rounded-lg transition-colors border border-transparent hover:border-outline-variant"
     >
-      <span class="material-symbols-outlined text-xl">arrow_back</span>
+      <ArrowLeft size={20} />
     </a>
     <div>
       <h1 class="text-3xl font-bold tracking-tight text-on-surface mb-0.5">User Details</h1>
@@ -75,7 +91,7 @@
       href="/admin/users/{user.uuid}/edit"
       class="px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-xl transition-all font-medium flex items-center gap-2"
     >
-      <span class="material-symbols-outlined text-[18px]">edit</span>
+      <Edit2 size={18} />
       Edit Profile
     </a>
   </div>
@@ -118,12 +134,12 @@
           <div class="flex items-center gap-3 mb-1">
             <h2 class="text-3xl font-bold text-on-surface leading-none">{user.name}</h2>
             {#if user.roles?.some((r: any) => r.slug === 'admin' || r.slug === 'owner')}
-               <span class="material-symbols-outlined text-primary text-xl" title="Verified Staff">verified</span>
+               <CheckCircle2 size={18} class="text-primary" title="Verified Staff" />
             {/if}
           </div>
           <div class="flex flex-wrap items-center gap-4 text-sm text-on-surface-variant/70">
-             <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[16px]">alternate_email</span> {user.email}</span>
-             <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[16px]">fingerprint</span> {user.uuid}</span>
+             <span class="flex items-center gap-1.5"><AtSign size={14} /> {user.email}</span>
+             <span class="flex items-center gap-1.5"><Fingerprint size={14} /> {user.uuid}</span>
           </div>
         </div>
       </div>
@@ -158,7 +174,7 @@
        <div class="bg-surface-container border border-outline-variant rounded-2xl overflow-hidden">
          <div class="px-6 py-4 border-b border-outline-variant bg-white/2">
            <h3 class="text-sm font-bold text-on-surface flex items-center gap-2">
-             <span class="material-symbols-outlined text-primary text-[18px]">account_circle</span>
+             <User size={18} class="text-primary" />
              Account Information
            </h3>
          </div>
@@ -171,11 +187,11 @@
               <span class="text-on-surface-variant/70 text-sm">Email Verified</span>
               {#if user.email_verified_at}
                 <span class="text-emerald-400 text-xs font-bold uppercase tracking-widest flex items-center gap-1">
-                  <span class="material-symbols-outlined text-[16px]">check_circle</span> Verified
+                  <CheckCircle size={14} /> Verified
                 </span>
               {:else}
                  <span class="text-yellow-500/80 text-xs font-bold uppercase tracking-widest flex items-center gap-1">
-                  <span class="material-symbols-outlined text-[16px]">pending</span> Unverified
+                  <Clock size={14} /> Unverified
                 </span>
               {/if}
             </div>
@@ -190,7 +206,7 @@
        <div class="bg-surface-container border border-outline-variant rounded-2xl overflow-hidden">
          <div class="px-6 py-4 border-b border-outline-variant bg-white/2">
            <h3 class="text-sm font-bold text-on-surface flex items-center gap-2">
-             <span class="material-symbols-outlined text-primary text-[18px]">hub</span>
+             <Share2 size={18} class="text-primary" />
              Linked Accounts
            </h3>
          </div>
@@ -235,7 +251,7 @@
      <div class="bg-surface-container border border-outline-variant rounded-3xl p-6">
        <div class="flex items-center justify-between mb-6">
          <h3 class="text-base font-bold text-on-surface flex items-center gap-2">
-           <span class="material-symbols-outlined text-rose-400">shield_person</span>
+           <Shield size={18} class="text-rose-400" />
            Assigned Roles
          </h3>
        </div>
@@ -256,7 +272,7 @@
      <div class="bg-surface-container border border-outline-variant rounded-3xl p-6">
        <div class="flex items-center justify-between mb-6">
          <h3 class="text-base font-bold text-on-surface flex items-center gap-2">
-           <span class="material-symbols-outlined text-yellow-400">military_tech</span>
+           <Award size={18} class="text-yellow-400" />
            User Badges
          </h3>
          <span class="text-xs text-on-surface-variant/40 font-mono">{user.badges?.length || 0} Total</span>
@@ -267,7 +283,7 @@
              {#if badge.icon_url}
                <img src={badge.icon_url} alt={badge.name} class="w-full h-full object-contain" />
              {:else}
-               <span class="material-symbols-outlined text-gray-600 text-xl">image_not_supported</span>
+               <ImageOff size={20} class="text-gray-600" />
              {/if}
              <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-black rounded text-[10px] text-on-surface opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10 shadow-2xl">
                {badge.name}
@@ -284,7 +300,7 @@
      <!-- Security & Danger Zone -->
      <div class="bg-rose-500/5 border border-rose-500/10 rounded-3xl p-6">
        <h3 class="text-base font-bold text-rose-400 mb-4 flex items-center gap-2">
-         <span class="material-symbols-outlined">security</span>
+         <Lock size={18} />
          Control Panel
        </h3>
        
@@ -295,7 +311,7 @@
              <div class="flex items-center gap-2">
                 <code class="flex-1 bg-black/40 px-3 py-2 rounded-xl text-on-surface font-mono text-lg tracking-wider border border-outline-variant">{newPassword}</code>
                 <button onclick={copyPassword} class="p-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 rounded-xl transition-colors">
-                  <span class="material-symbols-outlined">content_copy</span>
+                  <Copy size={18} />
                 </button>
              </div>
            </div>
@@ -306,7 +322,7 @@
            disabled={isResetting}
            class="w-full px-4 py-3 bg-surface-highest hover:bg-surface-highest text-on-surface rounded-2xl transition-all border border-outline-variant text-sm font-semibold flex items-center gap-3 disabled:opacity-50"
          >
-           <span class="material-symbols-outlined text-rose-400">lock_reset</span>
+           <KeyRound size={18} class="text-rose-400" />
            {isResetting ? 'Resetting...' : 'Reset Password'}
          </button>
 
@@ -315,7 +331,7 @@
            disabled={isDeleting}
            class="w-full px-4 py-3 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-2xl transition-all border border-rose-500/20 text-sm font-semibold flex items-center gap-3 disabled:opacity-50"
          >
-           <span class="material-symbols-outlined">person_remove</span>
+           <UserMinus size={18} />
            {isDeleting ? 'Deleting...' : 'Terminate Account'}
          </button>
        </div>

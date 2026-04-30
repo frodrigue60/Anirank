@@ -2,6 +2,14 @@
   import api from "$lib/api";
   import { goto } from "$app/navigation";
   import { toastState } from "$lib/state/toast.svelte";
+  import ArrowLeft from "lucide-svelte/icons/arrow-left";
+  import Inbox from "lucide-svelte/icons/inbox";
+  import AlertCircle from "lucide-svelte/icons/alert-circle";
+  import Crosshair from "lucide-svelte/icons/crosshair";
+  import Music from "lucide-svelte/icons/music";
+  import ExternalLink from "lucide-svelte/icons/external-link";
+  import User from "lucide-svelte/icons/user";
+  import Gavel from "lucide-svelte/icons/gavel";
 
   let { data } = $props();
   // svelte-ignore state_referenced_locally
@@ -71,7 +79,7 @@
           href="/admin/reports/songs"
           class="p-2 bg-surface-highest hover:bg-surface-highest rounded-full text-on-surface-variant/70 font-bold transition-colors"
         >
-          <span class="material-symbols-outlined text-xl">arrow_back</span>
+          <ArrowLeft size={20} />
         </a>
         <h1 class="text-3xl font-bold tracking-tight text-on-surface">
           Report <span class="text-on-surface/40">#{report?.id}</span>
@@ -104,9 +112,8 @@
     <div
       class="bg-surface-container border border-outline-variant rounded-2xl p-12 text-center text-on-surface-variant/40"
     >
-      <span class="material-symbols-outlined text-6xl mb-4 opacity-20"
-        >inventory_2</span
-      >
+      <Inbox size={48} class="mb-4 opacity-20" />
+
       <p>Report not found or failed to load.</p>
     </div>
   {:else}
@@ -121,8 +128,8 @@
             class="p-4 border-b border-outline-variant bg-surface-highest flex justify-between items-center"
           >
             <h2 class="font-bold text-on-surface flex items-center gap-2">
-              <span class="material-symbols-outlined text-rose-400">report</span
-              >
+              <AlertCircle size={18} class="text-rose-400" />
+
               Report Content
             </h2>
             <span
@@ -149,8 +156,8 @@
         >
           <div class="p-4 border-b border-outline-variant bg-surface-highest">
             <h2 class="font-bold text-on-surface flex items-center gap-2">
-              <span class="material-symbols-outlined text-blue-400">target</span
-              >
+              <Crosshair size={18} class="text-blue-400" />
+
               Target Entity
             </h2>
           </div>
@@ -162,9 +169,8 @@
                 <div
                   class="w-16 h-16 bg-blue-500/20 rounded-xl flex items-center justify-center text-blue-400"
                 >
-                  <span class="material-symbols-outlined text-3xl"
-                    >music_note</span
-                  >
+                  <Music size={24} />
+
                 </div>
                 <div>
                   <div
@@ -191,7 +197,7 @@
                   target="_blank"
                   class="ml-auto p-2 hover:bg-surface-highest rounded-lg text-on-surface-variant/70"
                 >
-                  <span class="material-symbols-outlined">open_in_new</span>
+                  <ExternalLink size={18} />
                 </a>
               </div>
             {:else}
@@ -214,8 +220,8 @@
         >
           <div class="p-4 border-b border-outline-variant bg-surface-highest">
             <h2 class="font-bold text-on-surface flex items-center gap-2">
-              <span class="material-symbols-outlined text-on-surface-variant/70">person</span
-              >
+              <User size={18} class="text-on-surface-variant/70" />
+
               Reporter
             </h2>
           </div>
@@ -255,7 +261,7 @@
         <!-- Guidelines Check -->
         <div class="bg-amber-500/5 border border-amber-500/10 rounded-2xl p-6">
           <div class="flex items-center gap-2 text-amber-500 font-bold mb-3">
-            <span class="material-symbols-outlined">gavel</span>
+            <Gavel size={18} />
             <span>Moderator Tip</span>
           </div>
           <p class="text-sm text-amber-500/80 leading-relaxed italic">

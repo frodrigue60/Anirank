@@ -2,8 +2,9 @@
   import { setAuthToken, setUser, authState } from "$lib/state/auth.svelte";
   import Mail from "lucide-svelte/icons/mail";
 import Lock from "lucide-svelte/icons/lock";
-import Loader2 from "lucide-svelte/icons/loader-2";
-import ArrowLeft from "lucide-svelte/icons/arrow-left";;
+  import Loader2 from "lucide-svelte/icons/loader-2";
+  import ArrowLeft from "lucide-svelte/icons/arrow-left";
+  import AlertCircle from "lucide-svelte/icons/alert-circle";
   import api from "$lib/api";
   import { getApiErrorMessage } from "$lib/api-errors";
   import { goto } from "$app/navigation";
@@ -206,7 +207,7 @@ import ArrowLeft from "lucide-svelte/icons/arrow-left";;
         <div
           class="mb-8 rounded-md bg-red-500/5 p-4 text-[11px] font-black uppercase tracking-wider text-red-500 border border-red-500/10 text-center leading-tight flex items-center justify-center gap-2"
         >
-          <span class="material-symbols-outlined text-[16px]">error</span>
+          <AlertCircle size={16} />
           {errorMessage}
         </div>
       {/if}

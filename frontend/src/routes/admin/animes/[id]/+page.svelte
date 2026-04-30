@@ -4,6 +4,8 @@
   import { toastState } from "$lib/state/toast.svelte";
   import { invalidateAll } from "$app/navigation";
   import { getApiErrorMessage } from "$lib/api-errors";
+  import RefreshCw from "lucide-svelte/icons/refresh-cw";
+  import ExternalLink from "lucide-svelte/icons/external-link";
 
   let { data } = $props<{ data: PageData }>();
   let anime = $derived(data.anime);
@@ -89,11 +91,8 @@
           class="p-2 bg-surface-highest hover:bg-white/20 border border-outline-variant text-on-surface rounded-lg transition-colors disabled:opacity-50"
           title="Sync from AniList"
         >
-          <span
-            class="material-symbols-outlined text-sm {isSyncing
-              ? 'animate-spin'
-              : ''}">refresh</span
-          >
+          <RefreshCw size={14} class={isSyncing ? 'animate-spin' : ''} />
+
         </button>
       </div>
       <p class="text-on-surface-variant text-sm drop-shadow-md">
@@ -207,21 +206,7 @@
             <span
               class="w-6 h-6 rounded bg-black/20 text-on-surface-variant/70 flex items-center justify-center shrink-0 group-hover:text-blue-400 transition-colors"
             >
-              <svg
-                class="w-3.5 h-3.5"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                ><path
-                  d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"
-                ></path><polyline points="15 3 21 3 21 9"></polyline><line
-                  x1="10"
-                  y1="14"
-                  x2="21"
-                  y2="3"
-                ></line></svg
-              >
+              <ExternalLink size={14} />
             </span>
             <span
               class="text-sm text-on-surface-variant group-hover:text-on-surface transition-colors"

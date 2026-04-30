@@ -3,7 +3,7 @@
   import type { Song } from "$lib/types/song";
   import Play from "lucide-svelte/icons/play";
 import VideoOff from "lucide-svelte/icons/video-off";
-import CheckCircle2 from "lucide-svelte/icons/check-circle-2";;
+import CheckCircle2 from "lucide-svelte/icons/check-circle-2";
 
   interface Props {
     matchup: TournamentMatchup;

@@ -2,6 +2,8 @@
   import { fade } from "svelte/transition";
   import api from "$lib/api";
   import InfiniteScroll from "$lib/components/InfiniteScroll.svelte";
+  import ChevronRight from "lucide-svelte/icons/chevron-right";
+  import UserSearch from "lucide-svelte/icons/user-search";
 
   let { data } = $props();
 
@@ -70,7 +72,7 @@
             class="size-14 rounded-md overflow-hidden bg-surface-low border border-on-surface-variant/10 group-hover:border-primary/50 transition-colors shadow-inner"
           >
             <img
-              src={user.avatar_url || "/images/placeholders/default.jpg"}
+              src={user.avatar_url || "/images/placeholders/default.svg"}
               alt={user.name}
               class="w-full h-full object-cover"
             />
@@ -83,11 +85,10 @@
             </h3>
             <p class="text-on-surface-variant text-xs truncate font-medium">@{user.slug}</p>
           </div>
-          <span
-            class="material-symbols-outlined text-on-surface-variant/30 group-hover:text-primary transition-colors"
-          >
-            chevron_right
-          </span>
+          <ChevronRight
+            class="text-on-surface-variant/30 group-hover:text-primary transition-colors"
+            size={20}
+          />
         </a>
       {/each}
     </div>
@@ -104,7 +105,7 @@
       <div
         class="size-20 bg-surface-highest rounded-full flex items-center justify-center mx-auto mb-4 text-on-surface-variant/40"
       >
-        <span class="material-symbols-outlined text-4xl">person_search</span>
+        <UserSearch size={40} />
       </div>
       <h3 class="text-xl font-bold text-on-surface tracking-tight">Not following anyone</h3>
       <p class="text-on-surface-variant max-w-xs mx-auto mt-2 font-medium">

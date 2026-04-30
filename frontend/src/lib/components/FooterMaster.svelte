@@ -1,5 +1,14 @@
 <script lang="ts">
   import { themeState } from "$lib/state/theme.svelte";
+  import Compass from "lucide-svelte/icons/compass";
+  import Info from "lucide-svelte/icons/info";
+  import HelpCircle from "lucide-svelte/icons/help-circle";
+  import Gavel from "lucide-svelte/icons/gavel";
+  import Share2 from "lucide-svelte/icons/share-2";
+  import Sun from "lucide-svelte/icons/sun";
+  import Moon from "lucide-svelte/icons/moon";
+  import Contrast from "lucide-svelte/icons/contrast";
+  import Heart from "lucide-svelte/icons/heart";
   const currentYear = new Date().getFullYear();
 </script>
 
@@ -27,7 +36,7 @@
         </p>
 
         <!-- Site Stats Snippet -->
-        <div class="mt-6 flex flex-wrap gap-4 opacity-50">
+        <div class="mt-6 flex flex-wrap gap-4 opacity-90">
           <div class="flex flex-col">
             <span class="text-xs font-bold text-on-surface">45K+</span>
             <span class="text-[10px] uppercase tracking-wider">Themes</span>
@@ -51,9 +60,8 @@
         <h4
           class="mb-6 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-on-surface"
         >
-          <span class="material-symbols-outlined text-primary text-[18px]"
-            >explore</span
-          >
+          <Compass class="text-primary" size={18} />
+
           Discover
         </h4>
         <ul class="space-y-4">
@@ -100,9 +108,8 @@
         <h4
           class="mb-6 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-on-surface"
         >
-          <span class="material-symbols-outlined text-primary text-[18px]"
-            >info</span
-          >
+          <Info class="text-primary" size={18} />
+
           Resources
         </h4>
         <ul class="space-y-4">
@@ -142,9 +149,8 @@
         <h4
           class="mb-6 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-on-surface"
         >
-          <span class="material-symbols-outlined text-primary text-[18px]"
-            >help</span
-          >
+          <HelpCircle class="text-primary" size={18} />
+
           Support
         </h4>
         <ul class="space-y-4">
@@ -184,9 +190,8 @@
         <h4
           class="mb-6 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-on-surface"
         >
-          <span class="material-symbols-outlined text-primary text-[18px]"
-            >gavel</span
-          >
+          <Gavel class="text-primary" size={18} />
+
           Legal
         </h4>
         <ul class="space-y-4">
@@ -226,9 +231,8 @@
         <h4
           class="mb-6 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-on-surface"
         >
-          <span class="material-symbols-outlined text-primary text-[18px]"
-            >share</span
-          >
+          <Share2 class="text-primary" size={18} />
+
           Social
         </h4>
         <ul class="space-y-4">
@@ -273,7 +277,7 @@
             : 'text-on-surface-variant/40 hover:text-on-surface-variant'}"
           title="Light Mode"
         >
-          <span class="material-symbols-outlined text-[18px]">light_mode</span>
+          <Sun size={18} />
         </button>
         <button
           onclick={() => themeState.set("dark")}
@@ -283,7 +287,7 @@
             : 'text-on-surface-variant/40 hover:text-on-surface-variant'}"
           title="Dark Mode"
         >
-          <span class="material-symbols-outlined text-[18px]">dark_mode</span>
+          <Moon size={18} />
         </button>
         <button
           onclick={() => themeState.set("contrast")}
@@ -293,7 +297,7 @@
             : 'text-on-surface-variant/40 hover:text-on-surface-variant'}"
           title="High Contrast"
         >
-          <span class="material-symbols-outlined text-[18px]">contrast</span>
+          <Contrast size={18} />
         </button>
       </div>
     </div>
@@ -302,17 +306,15 @@
     <div
       class="flex flex-col items-center justify-between gap-4 border-t border-outline-variant/10 pt-8 mt-8 md:flex-row"
     >
-      <p class="text-xs font-medium text-on-surface-variant/40">
+      <p class="text-xs font-medium text-on-surface-variant/70">
         &copy; {currentYear} AniRank. All rights reserved.
       </p>
       <div class="flex items-center gap-6">
         <span
-          class="flex items-center gap-1 text-xs font-medium text-on-surface-variant/40"
+          class="flex items-center gap-1 text-xs font-medium text-on-surface-variant/70"
         >
-          Made with <span
-            class="material-symbols-outlined text-primary text-[14px] filled"
-            >favorite</span
-          > by fans
+          <Heart class="text-primary fill-primary" size={14} />
+ by fans
         </span>
       </div>
     </div>

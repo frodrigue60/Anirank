@@ -2,6 +2,7 @@
   import { getFormattedScore } from "$lib/song-utils";
   import { authState } from "$lib/state/auth.svelte";
   import { getSrcset } from "$lib/utils/image";
+  import Smile from "lucide-svelte/icons/smile";
 
   let { anime, view = "grid" } = $props<{
     anime: any;
@@ -33,7 +34,7 @@
         alt={anime.title}
         title={anime.title}
         class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-        src={anime.cover_url ?? "/images/placeholders/default.jpg"}
+        src={anime.cover_url ?? "/images/placeholders/default.svg"}
         srcset={getSrcset(anime.cover_sources)}
         sizes="(max-width: 640px) 150px, (max-width: 1024px) 200px, 300px"
         loading="lazy"
@@ -90,7 +91,7 @@
       <!-- Media Section -->
       <div class="relative w-28 sm:w-40 aspect-2/3 shrink-0 overflow-hidden">
         <img
-          src={anime.cover_url ?? "/images/placeholders/default.jpg"}
+          src={anime.cover_url ?? "/images/placeholders/default.svg"}
           srcset={getSrcset(anime.cover_sources)}
           sizes="(max-width: 640px) 112px, 160px"
           alt={anime.title}
@@ -144,10 +145,8 @@
             {#if anime.average_score || anime.rating}
               <div class="flex flex-col items-end shrink-0">
                 <div class="flex items-center gap-1.5 text-primary">
-                  <span
-                    class="material-symbols-outlined text-xs sm:text-sm filled"
-                    >sentiment_satisfied</span
-                  >
+                  <Smile class="fill-current" size={14} />
+
                   <span class="font-bold text-sm sm:text-lg"
                     >{formatScore(anime.average_score || anime.rating)}%</span
                   >
@@ -205,7 +204,7 @@
       <!-- Media Section -->
       <div class="h-full aspect-2/3 shrink-0 overflow-hidden">
         <img
-          src={anime.cover_url ?? "/images/placeholders/default.jpg"}
+          src={anime.cover_url ?? "/images/placeholders/default.svg"}
           srcset={getSrcset(anime.cover_sources)}
           sizes="80px"
           alt={anime.title}
@@ -256,9 +255,8 @@
         >
           {#if anime.average_score || anime.rating}
             <div class="flex items-center gap-2 text-primary">
-              <span class="material-symbols-outlined text-base filled"
-                >sentiment_satisfied</span
-              >
+              <Smile class="fill-current" size={16} />
+
               <span class="font-bold text-lg"
                 >{formatScore(anime.average_score || anime.rating)}%</span
               >

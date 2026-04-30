@@ -3,7 +3,8 @@
   import { page } from "$app/state";
   import InfiniteScroll from "$lib/components/InfiniteScroll.svelte";
   import api from "$lib/api";
-  import Search from "lucide-svelte/icons/search";;
+  import Search from "lucide-svelte/icons/search";
+  import SearchX from "lucide-svelte/icons/search-x";
   import SEO from "$lib/components/SEO.svelte";
 
   let { data }: { data: any } = $props();
@@ -189,7 +190,7 @@
           <div
             class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
             style="background-image: url('{studio.banner_url ||
-              '/images/placeholders/default-banner.jpg'}'); filter:brightness(0.5)"
+              '/images/placeholders/default-banner.svg'}'); filter:brightness(0.5)"
           ></div>
 
           <div
@@ -229,10 +230,7 @@
     <div
       class="text-center py-20 bg-surface-container/30 rounded-md border-2 border-dashed border-white/5"
     >
-      <span
-        class="material-symbols-outlined text-6xl text-on-surface-variant opacity-20 mb-4 block"
-        >search_off</span
-      >
+      <SearchX size={64} class="text-on-surface-variant opacity-20 mb-4 block mx-auto" />
       <h3 class="text-xl font-bold text-on-surface-variant">
         No studios found
       </h3>

@@ -7,7 +7,14 @@
   import { getApiErrorMessage } from "$lib/api-errors";
   import type { PageData } from "./$types";
   import { authState } from "$lib/state/auth.svelte";
-  import Loader2 from "lucide-svelte/icons/loader-2";;
+  import Loader2 from "lucide-svelte/icons/loader-2";
+  import ArrowLeft from "lucide-svelte/icons/arrow-left";
+  import Info from "lucide-svelte/icons/info";
+  import Tags from "lucide-svelte/icons/tags";
+  import Link from "lucide-svelte/icons/link";
+  import Image from "lucide-svelte/icons/image";
+  import Film from "lucide-svelte/icons/film";
+  import Upload from "lucide-svelte/icons/upload";
 
   let { data } = $props<{ data: PageData }>();
   // svelte-ignore state_referenced_locally
@@ -142,10 +149,8 @@
       aria-label="Back to Animes"
       class="text-on-surface-variant hover:text-primary transition-all p-2 -ml-2 rounded-xl hover:bg-primary-container group"
     >
-      <span
-        class="material-symbols-outlined transition-transform group-hover:-translate-x-1"
-        >arrow_back</span
-      >
+      <ArrowLeft class="transition-transform group-hover:-translate-x-1" />
+
     </a>
     <h1 class="text-3xl font-black tracking-tighter text-on-surface uppercase">
       Edit Anime
@@ -167,7 +172,7 @@
       <div
         class="bg-primary/10 w-10 h-10 rounded-2xl flex items-center justify-center text-primary"
       >
-        <span class="material-symbols-outlined text-[20px]">info</span>
+        <Info size={20} />
       </div>
       General Information
     </h2>
@@ -217,7 +222,7 @@
         <div
           class="bg-primary/10 w-10 h-10 rounded-2xl flex items-center justify-center text-primary"
         >
-          <span class="material-symbols-outlined text-[20px]">category</span>
+          <Tags size={20} />
         </div>
         Taxonomy
       </h2>
@@ -334,7 +339,7 @@
           <div
             class="bg-primary/10 w-10 h-10 rounded-2xl flex items-center justify-center text-primary"
           >
-            <span class="material-symbols-outlined text-[20px]">link</span>
+            <Link size={20} />
           </div>
           Connections & Status
         </h2>
@@ -416,7 +421,7 @@
           <div
             class="bg-primary/10 w-10 h-10 rounded-2xl flex items-center justify-center text-primary"
           >
-            <span class="material-symbols-outlined text-[20px]">image</span>
+            <Info size={20} />
           </div>
           Quick Help
         </h2>
@@ -441,7 +446,7 @@
       <div
         class="bg-primary/10 w-10 h-10 rounded-2xl flex items-center justify-center text-primary"
       >
-        <span class="material-symbols-outlined text-[20px]">media_output</span>
+        <Film size={20} />
       </div>
       Media Assets
     </h2>
@@ -465,9 +470,8 @@
               <div
                 class="bg-on-surface-variant/5 w-12 h-12 rounded-2xl flex items-center justify-center text-on-surface-variant/30 mb-4"
               >
-                <span class="material-symbols-outlined text-3xl"
-                  >cloud_upload</span
-                >
+                <Upload size={30} />
+
               </div>
               <p
                 class="mb-1 text-[11px] font-black uppercase tracking-widest text-on-surface"
@@ -539,8 +543,8 @@
               <div
                 class="bg-on-surface-variant/5 w-12 h-12 rounded-2xl flex items-center justify-center text-on-surface-variant/30 mb-4"
               >
-                <span class="material-symbols-outlined text-3xl">landscape</span
-                >
+                <Image size={30} />
+
               </div>
               <p
                 class="mb-1 text-[11px] font-black uppercase tracking-widest text-on-surface"

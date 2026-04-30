@@ -1,5 +1,6 @@
 <script lang="ts">
   import api from "$lib/api";
+  import Inbox from "lucide-svelte/icons/inbox";
 
   let { data } = $props();
   // svelte-ignore state_referenced_locally
@@ -154,7 +155,7 @@
           <tr>
             <td colspan="5" class="px-6 py-24 text-center text-on-surface-variant/40">
               <div class="flex flex-col items-center justify-center gap-2">
-                <span class="material-symbols-outlined text-4xl opacity-20">inventory_2</span>
+                <Inbox size={48} class="opacity-20 mx-auto" />
                 <p>No {status} reports found.</p>
               </div>
             </td>

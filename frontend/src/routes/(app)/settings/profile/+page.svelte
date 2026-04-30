@@ -6,7 +6,9 @@
   import Camera from "lucide-svelte/icons/camera";
 import ImageIcon from "lucide-svelte/icons/image";
 import Save from "lucide-svelte/icons/save";
-import Loader2 from "lucide-svelte/icons/loader-2";;
+import Loader2 from "lucide-svelte/icons/loader-2";
+import Lock from "lucide-svelte/icons/lock";
+import ChevronDown from "lucide-svelte/icons/chevron-down";
 
   let scoreFormat = $state(authState.user?.score_format_id || 1);
   let profileColor = $state(authState.user?.profile_color || "#3db4f2");
@@ -207,10 +209,8 @@ import Loader2 from "lucide-svelte/icons/loader-2";;
           aria-label="Custom color locked"
           title="Custom colors available for supporters soon"
         >
-          <span
-            class="material-symbols-outlined text-2xl group-hover:scale-110 transition-transform"
-            >lock</span
-          >
+          <Lock class="group-hover:scale-110 transition-transform" size={24} />
+
         </button>
       </div>
       <p class="text-[10px] text-on-surface/20 mt-4 px-1 font-medium italic">
@@ -435,7 +435,7 @@ import Loader2 from "lucide-svelte/icons/loader-2";;
               />
             {:else}
               <img
-                src="/images/placeholders/default.jpg"
+                src="/images/placeholders/default.svg"
                 alt="Default Avatar"
                 class="w-full h-full object-cover"
               />
@@ -515,9 +515,8 @@ import Loader2 from "lucide-svelte/icons/loader-2";;
           <div
             class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant"
           >
-            <span class="material-symbols-outlined text-[20px]"
-              >expand_more</span
-            >
+            <ChevronDown size={20} />
+
           </div>
         </div>
         <p

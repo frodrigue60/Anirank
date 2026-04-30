@@ -2,6 +2,11 @@
   import { toastState } from "$lib/state/toast.svelte";
   import { flip } from "svelte/animate";
   import { fade, fly } from "svelte/transition";
+  import CheckCircle2 from "lucide-svelte/icons/check-circle-2";
+  import AlertCircle from "lucide-svelte/icons/alert-circle";
+  import Info from "lucide-svelte/icons/info";
+  import AlertTriangle from "lucide-svelte/icons/alert-triangle";
+  import X from "lucide-svelte/icons/x";
 </script>
 
 <div
@@ -23,12 +28,11 @@
           : ''}
         {toast.type === 'warning' ? 'bg-amber-500/10 text-amber-400' : ''}"
       >
-        <span class="material-symbols-outlined">
-          {#if toast.type === "success"}check_circle{/if}
-          {#if toast.type === "error"}error{/if}
-          {#if toast.type === "info"}info{/if}
-          {#if toast.type === "warning"}warning{/if}
-        </span>
+        {#if toast.type === "success"}<CheckCircle2 size={20} />{/if}
+        {#if toast.type === "error"}<AlertCircle size={20} />{/if}
+        {#if toast.type === "info"}<Info size={20} />{/if}
+        {#if toast.type === "warning"}<AlertTriangle size={20} />{/if}
+
       </div>
 
       <div class="flex-1 pt-0.5">
@@ -41,7 +45,7 @@
         onclick={() => toastState.removeToast(toast.id)}
         class="p-1 rounded-lg hover:bg-white/5 text-white/20 hover:text-white transition-colors"
       >
-        <span class="material-symbols-outlined text-lg">close</span>
+        <X size={18} />
       </button>
     </div>
   {/each}

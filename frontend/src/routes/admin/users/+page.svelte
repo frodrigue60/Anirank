@@ -2,6 +2,11 @@
   import { goto } from "$app/navigation";
   import api from "$lib/api";
   import { toastState } from "$lib/state/toast.svelte";
+  import Edit2 from "lucide-svelte/icons/edit-2";
+  import Trash2 from "lucide-svelte/icons/trash-2";
+  import Search from "lucide-svelte/icons/search";
+  import ChevronLeft from "lucide-svelte/icons/chevron-left";
+  import ChevronRight from "lucide-svelte/icons/chevron-right";
   let { data } = $props();
 
   let searchQuery = $state("");
@@ -74,18 +79,7 @@
   class="bg-surface-container border border-outline-variant rounded-2xl p-4 mb-6 flex flex-col sm:flex-row gap-4"
 >
   <div class="relative flex-1">
-    <svg
-      class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/40"
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-      ><path
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-width="2"
-        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-      /></svg
-    >
+    <Search size={20} class="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/40" />
     <input
       type="text"
       bind:value={searchQuery}
@@ -160,20 +154,13 @@
             </td>
             <td class="px-6 py-4 text-right">
               <div class="flex items-center justify-end gap-2">
-                <!-- <a
-                  href="/admin/users/{user.id}"
-                  class="p-2 text-on-surface-variant/70 hover:text-on-surface hover:bg-surface-highest rounded-lg transition-colors border border-transparent hover:border-outline-variant"
-                  title="View Details"
-                >
-                  <span class="material-symbols-outlined">visibility</span>
-                </a> -->
 
                 <a
                   href="/admin/users/{user.id}/edit"
                   class="p-2 text-on-surface-variant/70 hover:text-on-surface hover:bg-emerald-500/10 rounded-lg transition-colors border border-transparent hover:border-emerald-500/10"
                   title="Edit Profile"
                 >
-                  <span class="material-symbols-outlined">edit</span>
+                  <Edit2 size={18} />
                 </a>
 
                 <button
@@ -182,7 +169,7 @@
                   class="p-2 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition-colors border border-transparent hover:border-rose-500/20 disabled:opacity-50"
                   title="Delete User"
                 >
-                  <span class="material-symbols-outlined">delete</span>
+                  <Trash2 size={18} />
                 </button>
               </div>
             </td>
@@ -213,18 +200,7 @@
           class="p-2 rounded-lg border border-outline-variant text-on-surface-variant/70 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-highest transition-colors"
           aria-label="Previous Page"
         >
-          <svg
-            class="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            ><path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M15 19l-7-7 7-7"
-            /></svg
-          >
+          <ChevronLeft size={16} />
         </button>
         <span class="text-sm text-on-surface-variant font-medium px-2"
           >Page {data.pagination.current_page} of {data.pagination
@@ -236,18 +212,7 @@
           class="p-2 rounded-lg border border-outline-variant text-on-surface-variant/70 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-highest transition-colors"
           aria-label="Next Page"
         >
-          <svg
-            class="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            ><path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M9 5l7 7-7 7"
-            /></svg
-          >
+          <ChevronRight size={16} />
         </button>
       </div>
     </div>

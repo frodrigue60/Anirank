@@ -6,7 +6,10 @@
   import AnimeCard from "$lib/components/AnimeCard.svelte";
   import InfiniteScroll from "$lib/components/InfiniteScroll.svelte";
   import api from "$lib/api";
-  import Search from "lucide-svelte/icons/search";;
+  import Search from "lucide-svelte/icons/search";
+  import LayoutGrid from "lucide-svelte/icons/layout-grid";
+  import Grid2X2 from "lucide-svelte/icons/grid-2x2";
+  import List from "lucide-svelte/icons/list";
   import SEO from "$lib/components/SEO.svelte";
 
   let { data } = $props();
@@ -307,7 +310,7 @@
               : 'text-on-surface-variant'}"
             title="Compact Grid"
           >
-            <span class="material-symbols-outlined">grid_on</span>
+            <LayoutGrid size={20} />
           </button>
           <button
             onclick={() => (viewType = "card")}
@@ -316,7 +319,7 @@
               : 'text-on-surface-variant'}"
             title="Detailed Cards"
           >
-            <span class="material-symbols-outlined">border_all</span>
+            <Grid2X2 size={20} />
           </button>
           <button
             onclick={() => (viewType = "list")}
@@ -325,7 +328,7 @@
               : 'text-on-surface-variant'}"
             title="List View"
           >
-            <span class="material-symbols-outlined">list_alt</span>
+            <List size={20} />
           </button>
         </div>
       </div>

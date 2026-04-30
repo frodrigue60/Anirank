@@ -19,15 +19,17 @@ func SecurityHeaders() fiber.Handler {
 		csp := "default-src 'self'; " +
 			"script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.google.com https://*.anilist.co; " +
 			"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-			"img-src 'self' data: blob: https://*.anirank.work https://*.googleusercontent.com https://*.anilist.co https://*.discordapp.com https://*.media-amazon.com; " +
+			"img-src 'self' data: blob: http://localhost:8080 http://localhost:9000 https://*.anirank.work https://*.googleusercontent.com https://*.anilist.co https://*.discordapp.com https://*.media-amazon.com; " +
 			"font-src 'self' https://fonts.gstatic.com; " +
-			"connect-src 'self' https://api.anirank.work https://*.google.com https://*.anilist.co; " +
+			"connect-src 'self' http://localhost:8080 https://api.anirank.work https://*.google.com https://*.anilist.co; " +
 			"frame-src 'self' https://www.youtube-nocookie.com https://www.youtube.com https://*.google.com; " +
 			"object-src 'none'; " +
 			"base-uri 'self'; " +
 			"form-action 'self'; " +
-			"frame-ancestors 'none'; " + // Clickjacking protection (equivalent to X-Frame-Options: DENY)
-			"upgrade-insecure-requests;"
+			"frame-ancestors 'none'; " +
+			"upgrade-insecure-requests; " +
+			"trusted-types svelte-trusted-html 'allow-duplicates'; " +
+			"require-trusted-types-for 'script';"
 
 		c.Set("Content-Security-Policy", csp)
 

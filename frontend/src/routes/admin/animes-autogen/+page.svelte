@@ -4,6 +4,17 @@
   import { getAuthToken } from "$lib/state/auth.svelte";
   import { toastState } from "$lib/state/toast.svelte";
   import { getApiErrorMessage } from "$lib/api-errors";
+  import RefreshCw from "lucide-svelte/icons/refresh-cw";
+  import AlertTriangle from "lucide-svelte/icons/alert-triangle";
+  import Wand2 from "lucide-svelte/icons/wand-2";
+  import Download from "lucide-svelte/icons/download";
+  import Search from "lucide-svelte/icons/search";
+  import CloudDownload from "lucide-svelte/icons/cloud-download";
+  import X from "lucide-svelte/icons/x";
+  import Check from "lucide-svelte/icons/check";
+  import CheckCircle2 from "lucide-svelte/icons/check-circle-2";
+  import Image from "lucide-svelte/icons/image";
+  import SearchCode from "lucide-svelte/icons/search-code";
 
   // Anilist search form state
   let anilistQuery = $state("");
@@ -388,12 +399,8 @@
         class="p-2 hover:bg-surface-highest rounded-full transition-colors text-on-surface-variant/70 hover:text-on-surface"
         title="Check status now"
       >
-        <span
-          class="material-symbols-outlined text-sm {apiStatus.anilist.status ===
-            'loading' || apiStatus.animethemes.status === 'loading'
-            ? 'animate-spin'
-            : ''}">refresh</span
-        >
+        <RefreshCw size={14} class={apiStatus.anilist.status === 'loading' || apiStatus.animethemes.status === 'loading' ? 'animate-spin' : ''} />
+
       </button>
     </div>
 
@@ -401,9 +408,7 @@
       <div
         class="flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-500/10 border border-rose-500/20 animate-in fade-in slide-in-from-left-2"
       >
-        <span class="material-symbols-outlined text-rose-500 text-sm"
-          >warning</span
-        >
+        <AlertTriangle size={16} class="text-rose-500" />
         <p class="text-[11px] text-rose-200 font-medium">
           Partial outages detected. Generation may be incomplete.
         </p>
@@ -431,7 +436,7 @@
         <div
           class="absolute top-0 right-0 p-8 opacity-5 -mr-4 -mt-4 group-hover:scale-110 transition-transform"
         >
-          <span class="material-symbols-outlined text-8xl">auto_fix_high</span>
+          <Wand2 size={96} class="opacity-5" />
         </div>
 
         <div class="mb-6 relative">
@@ -529,7 +534,7 @@
               >
               Processing Batch...
             {:else}
-              <span class="material-symbols-outlined">download</span>
+              <Download size={20} />
               Fetch from AniList
             {/if}
           </button>
@@ -579,7 +584,7 @@
                 ></path></svg
               >
             {:else}
-              <span class="material-symbols-outlined">search</span>
+              <Search size={20} />
             {/if}
           </button>
         </form>
@@ -606,9 +611,7 @@
         <div
           class="absolute top-0 right-0 p-8 opacity-5 -mr-4 -mt-4 group-hover:scale-110 transition-transform"
         >
-          <span class="material-symbols-outlined text-8xl text-purple-400"
-            >refresh</span
-          >
+          <RefreshCw size={96} class="opacity-5 text-purple-400" />
         </div>
 
         <div class="mb-6 relative">
@@ -682,7 +685,7 @@
               >
               Hydrating Stream...
             {:else}
-              <span class="material-symbols-outlined">refresh</span>
+              <RefreshCw size={20} />
               Start Hydration
             {/if}
           </button>
@@ -767,7 +770,7 @@
                 ></path></svg
               >
             {:else}
-              <span class="material-symbols-outlined">search</span>
+              <Search size={20} />
             {/if}
           </button>
         </form>
@@ -789,9 +792,7 @@
       >
         <div>
           <h3 class="text-xl font-bold text-on-surface flex items-center gap-2">
-            <span class="text-primary material-symbols-outlined"
-              >cloud_download</span
-            >
+            <CloudDownload size={24} class="text-primary" />
             AnimeThemes Results
           </h3>
           <p class="text-sm text-on-surface-variant/70">
@@ -804,7 +805,7 @@
           onclick={() => (showResultsModal = false)}
           class="p-2 hover:bg-surface-highest rounded-full transition-colors text-on-surface-variant/70"
         >
-          <span class="material-symbols-outlined">close</span>
+          <X size={20} />
         </button>
       </div>
 
@@ -812,9 +813,7 @@
       <div class="flex-1 overflow-y-auto p-6">
         {#if animeThemesResults.length === 0}
           <div class="text-center py-12">
-            <span class="material-symbols-outlined text-5xl text-gray-600 mb-2"
-              >search_off</span
-            >
+            <SearchCode size={48} class="text-gray-600 mb-2 mx-auto" />
             <p class="text-on-surface-variant/70">No results found on AnimeThemes.</p>
           </div>
         {:else}
@@ -846,9 +845,7 @@
                     />
                   {:else}
                     <div class="w-full h-full flex items-center justify-center">
-                      <span class="material-symbols-outlined text-gray-600"
-                        >image</span
-                      >
+                      <Image size={24} class="text-gray-600" />
                     </div>
                   {/if}
 
@@ -856,10 +853,7 @@
                     <div
                       class="absolute inset-0 bg-primary/40 flex items-center justify-center"
                     >
-                      <span
-                        class="material-symbols-outlined text-on-surface font-bold scale-125"
-                        >check_circle</span
-                      >
+                      <CheckCircle2 size={32} class="text-on-surface font-bold" />
                     </div>
                   {/if}
                 </div>
@@ -930,9 +924,7 @@
       >
         <div>
           <h3 class="text-xl font-bold text-on-surface flex items-center gap-2">
-            <span class="text-primary material-symbols-outlined"
-              >search</span
-            >
+            <Search size={24} class="text-primary" />
             AniList Results
           </h3>
           <p class="text-sm text-on-surface-variant/70">
@@ -945,7 +937,7 @@
           onclick={() => (showAnilistResultsModal = false)}
           class="p-2 hover:bg-surface-highest rounded-full transition-colors text-on-surface-variant/70"
         >
-          <span class="material-symbols-outlined">close</span>
+          <X size={20} />
         </button>
       </div>
 
@@ -953,9 +945,7 @@
       <div class="flex-1 overflow-y-auto p-6">
         {#if anilistResults.length === 0}
           <div class="text-center py-12">
-            <span class="material-symbols-outlined text-5xl text-gray-600 mb-2"
-              >search_off</span
-            >
+            <SearchCode size={48} class="text-gray-600 mb-2 mx-auto" />
             <p class="text-on-surface-variant/70">No results found on AniList.</p>
           </div>
         {:else}
@@ -983,9 +973,7 @@
                     />
                   {:else}
                     <div class="w-full h-full flex items-center justify-center">
-                      <span class="material-symbols-outlined text-gray-600"
-                        >image</span
-                      >
+                      <Image size={24} class="text-gray-600" />
                     </div>
                   {/if}
 
@@ -993,10 +981,7 @@
                     <div
                       class="absolute inset-0 bg-primary/40 flex items-center justify-center"
                     >
-                      <span
-                        class="material-symbols-outlined text-on-surface font-bold scale-125"
-                        >check_circle</span
-                      >
+                      <CheckCircle2 size={32} class="text-on-surface font-bold" />
                     </div>
                   {/if}
                 </div>

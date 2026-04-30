@@ -1,7 +1,8 @@
 <script lang="ts">
   import { fade } from "svelte/transition";
   import Search from "lucide-svelte/icons/search";
-import Music from "lucide-svelte/icons/music";;
+  import Music from "lucide-svelte/icons/music";
+  import Plus from "lucide-svelte/icons/plus";
   import PlaylistCard from "$lib/components/PlaylistCard.svelte";
   import { authState } from "$lib/state/auth.svelte";
   import CreatePlaylistModal from "$lib/components/CreatePlaylistModal.svelte";
@@ -117,7 +118,7 @@ import Music from "lucide-svelte/icons/music";;
             onclick={() => (showCreateModal = true)}
             class="bg-primary hover:opacity-90 text-white px-8 py-4 rounded-sm text-sm font-black uppercase tracking-widest transition-all flex items-center gap-2 whitespace-nowrap shadow-lg shadow-primary/20 active:scale-95"
           >
-            <span class="material-symbols-outlined text-sm font-black">add</span>
+            <Plus size={16} strokeWidth={3} />
             New Playlist
           </button>
         {/if}

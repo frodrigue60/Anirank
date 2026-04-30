@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import api from '$lib/api';
+  import Pencil from "lucide-svelte/icons/pencil";
+  import Trash2 from "lucide-svelte/icons/trash-2";
 
   interface Announcement {
     id: number;
@@ -101,7 +103,7 @@
                     aria-label="Edit announcement"
                     class="text-on-surface/50 hover:text-on-surface transition-colors"
                   >
-                    <span class="material-symbols-outlined">edit</span>
+                    <Pencil size={18} />
                   </a>
                   <button 
                     onclick={() => handleDelete(a.id)}
@@ -109,7 +111,7 @@
                     aria-label="Delete announcement"
                     class="text-red-500/50 hover:text-red-500 transition-colors"
                   >
-                    <span class="material-symbols-outlined">delete</span>
+                    <Trash2 size={18} />
                   </button>
                 </div>
               </td>

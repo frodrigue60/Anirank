@@ -1,6 +1,11 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import api from "$lib/api";
+  import ArrowLeft from "lucide-svelte/icons/arrow-left";
+  import MessageSquare from "lucide-svelte/icons/message-square";
+  import User from "lucide-svelte/icons/user";
+  import CheckCircle2 from "lucide-svelte/icons/check-circle-2";
+  import Trash2 from "lucide-svelte/icons/trash-2";
 
   let { data } = $props();
   // svelte-ignore state_referenced_locally
@@ -36,7 +41,7 @@
       href="/admin/reports/comments"
       class="flex items-center justify-center w-10 h-10 rounded-xl bg-surface-highest hover:bg-surface-highest text-on-surface/60 hover:text-on-surface transition-all font-bold"
     >
-      <span class="material-symbols-outlined">arrow_back</span>
+      <ArrowLeft size={20} />
     </a>
     <div>
       <div class="flex items-center gap-3">
@@ -68,7 +73,7 @@
     <div class="lg:col-span-2 space-y-6">
       <div class="bg-surface-container border border-outline-variant rounded-2xl p-6 space-y-4">
         <div class="flex items-center gap-3 border-b border-outline-variant pb-4">
-          <span class="material-symbols-outlined text-blue-400 text-2xl">forum</span>
+          <MessageSquare size={24} class="text-blue-400" />
           <h2 class="text-xl font-bold text-on-surface">Reported Comment</h2>
         </div>
         
@@ -95,7 +100,7 @@
         </h3>
         <div class="flex items-center gap-3">
           <div class="w-12 h-12 rounded-full bg-surface-highest flex items-center justify-center shrink-0">
-            <span class="material-symbols-outlined text-on-surface/40">person</span>
+            <User size={24} class="text-on-surface/40" />
           </div>
           <div>
             <p class="font-bold text-on-surface/90">{report?.user?.name}</p>
@@ -116,7 +121,7 @@
               onclick={resolveReport}
               class="w-full flex items-center justify-center gap-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 py-3 rounded-xl font-bold text-sm transition-all"
             >
-              <span class="material-symbols-outlined">check_circle</span>
+              <CheckCircle2 size={18} />
               Mark as Resolved
             </button>
           {/if}
@@ -125,7 +130,7 @@
             onclick={deleteReport}
             class="w-full flex items-center justify-center gap-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 py-3 rounded-xl font-bold text-sm transition-all"
           >
-            <span class="material-symbols-outlined">delete</span>
+            <Trash2 size={18} />
             Delete Report
           </button>
         </div>

@@ -4,7 +4,8 @@
 import Flag from "lucide-svelte/icons/flag";
 import Trash2 from "lucide-svelte/icons/trash-2";
 import CheckCircle from "lucide-svelte/icons/check-circle";
-import ExternalLink from "lucide-svelte/icons/external-link";;
+import ExternalLink from "lucide-svelte/icons/external-link";
+import Inbox from "lucide-svelte/icons/inbox";
   import { fade } from "svelte/transition";
   import { toastState } from "$lib/state/toast.svelte";
 
@@ -208,7 +209,7 @@ import ExternalLink from "lucide-svelte/icons/external-link";;
           <tr>
             <td colspan="5" class="px-6 py-24 text-center text-on-surface-variant/40">
               <div class="flex flex-col items-center justify-center gap-2">
-                <span class="material-symbols-outlined text-4xl opacity-20">inventory_2</span>
+                <Inbox size={48} class="opacity-20" />
                 <p>No {status} user reports found.</p>
               </div>
             </td>

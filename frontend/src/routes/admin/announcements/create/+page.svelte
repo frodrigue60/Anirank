@@ -1,6 +1,8 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import api from '$lib/api';
+  import ArrowLeft from "lucide-svelte/icons/arrow-left";
+  import X from "lucide-svelte/icons/x";
 
   let announcement = $state({
     title: '',
@@ -64,7 +66,7 @@
 <div class="p-6 max-w-4xl mx-auto">
   <div class="mb-8">
     <a href="/admin/announcements" class="text-primary hover:underline flex items-center gap-1 mb-2 text-sm">
-      <span class="material-symbols-outlined text-sm">arrow_back</span> Back to List
+      <ArrowLeft size={16} /> Back to List
     </a>
     <h1 class="text-2xl font-bold">Create New Announcement</h1>
   </div>
@@ -92,7 +94,7 @@
             onclick={() => { imageFile = null; imagePreview = null; }}
             class="absolute top-2 right-2 bg-black/60 hover:bg-red-500/80 text-on-surface p-1 rounded-full transition-colors opacity-0 group-hover:opacity-100"
           >
-            <span class="material-symbols-outlined text-sm">close</span>
+            <X size={14} />
           </button>
         </div>
       {/if}

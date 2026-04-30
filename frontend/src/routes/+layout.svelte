@@ -36,19 +36,6 @@
   });
 </script>
 
-<svelte:head>
-  <link href="https://fonts.googleapis.com" rel="preconnect" />
-  <link
-    crossorigin="anonymous"
-    href="https://fonts.gstatic.com"
-    rel="preconnect"
-  />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
-    rel="stylesheet"
-  />
-</svelte:head>
-
 <!-- Render Modal Global -->
 <ToastContainer />
 

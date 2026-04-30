@@ -5,7 +5,8 @@
   import AnimeCard from "$lib/components/AnimeCard.svelte";
   import InfiniteScroll from "$lib/components/InfiniteScroll.svelte";
   import api from "$lib/api";
-  import Search from "lucide-svelte/icons/search";;
+  import Search from "lucide-svelte/icons/search";
+  import Film from "lucide-svelte/icons/film";
   import SEO from "$lib/components/SEO.svelte";
 
   let { data }: { data: PageData } = $props();
@@ -207,10 +208,7 @@
     <div
       class="text-center py-20 bg-surface-container/30 rounded-md border border-white/5"
     >
-      <span
-        class="material-symbols-outlined text-6xl text-on-surface-variant opacity-20 mb-4 block"
-        >movie</span
-      >
+      <Film size={64} class="text-on-surface-variant opacity-20 mb-4 block mx-auto" />
       <h3 class="text-xl font-bold text-on-surface-variant opacity-50 mb-2">
         No animes found
       </h3>

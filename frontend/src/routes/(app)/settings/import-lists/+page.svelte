@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/state";
+  import Construction from "lucide-svelte/icons/construction";
 
   const titleMap: Record<string, string> = {
     "/settings/anime-list": "Anime List",
@@ -18,9 +19,7 @@
   <div
     class="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mb-6 border border-white/5"
   >
-    <span class="material-symbols-outlined text-4xl text-white/10"
-      >construction</span
-    >
+    <Construction size={40} class="text-white/10" />
   </div>
   <h1 class="text-3xl font-black text-white tracking-tighter mb-2">
     {title}

@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { RankingUser } from "$lib/types/user";
+  import Users from "lucide-svelte/icons/users";
 
   let { users = [] as RankingUser[], startIndex = 0, sort = "xp" } = $props();
 
@@ -52,7 +53,7 @@
                     alt={user.name}
                     title={user.name}
                     class="w-full h-full object-cover"
-                    src={user.avatar_url || "/images/placeholders/default.jpg"}
+                    src={user.avatar_url || "/images/placeholders/default.svg"}
                   />
                 </div>
                 <div class="min-w-0 flex flex-col">
@@ -102,9 +103,8 @@
         <tr>
           <td colspan="6" class="py-20 text-on-surface-variant text-center">
             <div class="flex flex-col items-center justify-center">
-              <span class="material-symbols-outlined text-6xl mb-4"
-                >group_off</span
-              >
+              <Users size={60} class="mb-4" />
+
               <p class="text-lg font-bold">No users found</p>
             </div>
           </td>

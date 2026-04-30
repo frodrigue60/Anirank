@@ -4,6 +4,12 @@
   import { toastState } from "$lib/state/toast.svelte";
   import { getApiErrorMessage } from "$lib/api-errors";
   import type { PageData } from "./$types";
+  import AlertTriangle from "lucide-svelte/icons/alert-triangle";
+  import Plus from "lucide-svelte/icons/plus";
+  import Video from "lucide-svelte/icons/video";
+  import Edit2 from "lucide-svelte/icons/edit-2";
+  import Trash2 from "lucide-svelte/icons/trash-2";
+  import Music from "lucide-svelte/icons/music";
 
   let { data } = $props<{ data: PageData }>();
   let anime = $derived(data.anime);
@@ -38,7 +44,7 @@
 <div class="space-y-4">
   {#if !anime.season_id || !anime.year_id}
     <div class="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 flex items-start gap-3">
-      <span class="material-symbols-outlined text-amber-500 mt-0.5">warning</span>
+      <AlertTriangle size={20} class="text-amber-500 mt-0.5" />
       <div>
         <h3 class="text-amber-500 font-medium text-sm">Missing Information</h3>
         <p class="text-amber-400/80 text-sm mt-1">This anime must have a Season and Year assigned before you can create songs. Please edit the anime info first.</p>
@@ -62,7 +68,7 @@
           class="text-sm px-4 py-2 bg-surface-highest border border-outline-variant text-on-surface-variant/40 rounded-lg cursor-not-allowed flex items-center gap-2"
           title="Season and Year required"
         >
-          <span class="material-symbols-outlined text-sm">add</span>
+          <Plus size={16} />
           Add Song
         </button>
       {:else}
@@ -70,7 +76,7 @@
           href="/admin/songs/create?anime_id={anime.id}"
           class="text-sm px-4 py-2 bg-primary hover:bg-primary-container text-on-surface rounded-lg transition-colors flex items-center gap-2 shadow-lg shadow-anirank-primary/20"
         >
-          <span class="material-symbols-outlined text-sm">add</span>
+          <Plus size={16} />
           Add Song
         </a>
       {/if}
@@ -142,7 +148,7 @@
                       class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-on-surface transition-all border border-emerald-500/20 hover:border-emerald-500"
                       title="Variants"
                       >
-                       <span class="material-symbols-outlined text-sm">video_library</span> 
+                       <Video size={16} />
                       </a
                     >
                     <a
@@ -150,7 +156,7 @@
                       class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-surface-highest text-on-surface-variant/70 hover:bg-surface-highest hover:text-on-surface transition-all border border-outline-variant hover:border-outline-variant"
                       title="Edit Song"
                       >
-                       <span class="material-symbols-outlined text-sm">edit</span> 
+                       <Edit2 size={16} />
                       </a
                     >
                     <button
@@ -158,7 +164,7 @@
                       class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-surface-highest text-on-surface-variant/70 hover:bg-rose-500/10 hover:text-rose-400 transition-all border border-outline-variant hover:border-rose-500/20"
                       title="Delete Song"
                       >
-                       <span class="material-symbols-outlined text-sm">delete</span> 
+                       <Trash2 size={16} />
                       </button
                     >
                   </div>
@@ -170,7 +176,7 @@
       {:else}
         <div class="px-6 py-16 flex flex-col items-center justify-center text-center">
           <div class="w-16 h-16 bg-surface-highest rounded-2xl flex items-center justify-center mb-4 border border-outline-variant">
-              <span class="material-symbols-outlined text-3xl text-on-surface-variant/40">music_note</span>
+              <Music size={32} class="text-on-surface-variant/40" />
           </div>
           <h3 class="text-on-surface font-medium mb-1">No songs registered</h3>
           <p class="text-sm text-on-surface-variant/40 max-w-sm mb-6">Create the first song for this anime, like an Opening or Ending theme.</p>
@@ -179,7 +185,7 @@
               disabled
               class="px-5 py-2.5 bg-surface-highest border border-outline-variant text-on-surface-variant/40 rounded-xl text-sm font-medium cursor-not-allowed flex items-center gap-2"
             >
-              <span class="material-symbols-outlined text-sm">add</span>
+              <Plus size={16} />
               Create First Song
             </button>
           {:else}
@@ -187,7 +193,7 @@
               href="/admin/songs/create?anime_id={anime.id}"
               class="px-5 py-2.5 bg-primary hover:bg-primary-container text-on-surface rounded-xl text-sm font-medium transition-colors shadow-lg shadow-anirank-primary/20 flex items-center gap-2"
             >
-              <span class="material-symbols-outlined text-sm">add</span>
+              <Plus size={16} />
               Create First Song
             </a>
           {/if}

@@ -3,6 +3,7 @@
   import api from "$lib/api";
   import { toastState } from "$lib/state/toast.svelte";
   import StatusControl from "$lib/components/admin/StatusControl.svelte";
+  import ArrowLeft from "lucide-svelte/icons/arrow-left";
 
   let name = $state("");
   let name_jp = $state("");
@@ -60,7 +61,7 @@
       onclick={() => history.back()}
       class="p-2 hover:bg-surface-highest rounded-xl text-on-surface-variant/70 transition-colors"
     >
-      <span class="material-symbols-outlined">arrow_back</span>
+      <ArrowLeft size={20} />
     </button>
     <div>
       <h1 class="text-3xl font-bold tracking-tight text-on-surface mb-1">

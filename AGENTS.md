@@ -32,7 +32,9 @@ Handles cross-cutting concerns (auth flows, API contract changes, Docker, env fi
 2. Read `DESIGN.md` if the task touches UI.
 3. Read `CONTEXT.md` if the task touches backend logic, DB, architecture, or frontend testing.
 4. Identify which layer the change belongs to (domain, usecase, repository, delivery, dto) and stay within it.
-5. **Frontend Only:** For critical logic (Auth, Optimistic UI, Admin CRUD), verify if a test file exists in `src/tests/` or `src/lib/state/`.
+5. - **Frontend Only:** For critical logic (Auth, Optimistic UI, Admin CRUD), verify if a test file exists in `src/tests/` or `src/lib/state/`.
+- **Security Audit:** Any change to security headers in `hooks.server.ts` MUST be mirrored in `backend/internal/delivery/http/middleware/security.go`.
+- **Accessibility Audit:** New UI elements must be verified for WCAG 4.5:1 contrast. Use opacities of `70%` or higher for secondary text on dark backgrounds.
 
 ### Mandatory Testing (Frontend)
 - After modifying a reactive state in `$lib/state/`, you MUST run `bun run test:unit` to ensure no regressions.

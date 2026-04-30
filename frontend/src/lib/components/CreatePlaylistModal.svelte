@@ -3,7 +3,10 @@
 import Plus from "lucide-svelte/icons/plus";
 import CheckCircle2 from "lucide-svelte/icons/check-circle-2";
 import Loader2 from "lucide-svelte/icons/loader-2";
-import Library from "lucide-svelte/icons/library";;
+import Library from "lucide-svelte/icons/library";
+import FolderPlus from "lucide-svelte/icons/folder-plus";
+import ChevronDown from "lucide-svelte/icons/chevron-down";
+import AlertCircle from "lucide-svelte/icons/alert-circle";
   import api from "$lib/api";
   import { fade, scale } from "svelte/transition";
 
@@ -84,9 +87,8 @@ import Library from "lucide-svelte/icons/library";;
       <div class="w-full flex justify-between items-start mb-6">
         <div class="text-left">
           <div class="flex items-center gap-2 text-primary mb-1">
-            <span class="material-symbols-outlined text-[14px]"
-              >library_add</span
-            >
+            <FolderPlus size={14} />
+
             <p class="text-[10px] font-black uppercase tracking-[0.2em]">
               New Collection
             </p>
@@ -172,9 +174,8 @@ import Library from "lucide-svelte/icons/library";;
               <div
                 class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant/40 group-hover:text-primary transition-colors"
               >
-                <span class="material-symbols-outlined text-[18px]"
-                  >expand_more</span
-                >
+                <ChevronDown size={18} />
+
               </div>
             </div>
           </div>
@@ -183,7 +184,7 @@ import Library from "lucide-svelte/icons/library";;
             <p
               class="text-red-500 text-[10px] font-bold px-1 leading-tight flex items-center gap-1.5"
             >
-              <span class="material-symbols-outlined text-[14px]">error</span>
+              <AlertCircle size={14} />
               {errorMessage}
             </p>
           {/if}
@@ -199,7 +200,7 @@ import Library from "lucide-svelte/icons/library";;
               Creating...
             {:else}
               Create Playlist
-              <span class="material-symbols-outlined text-[18px]">add</span>
+              <Plus size={18} />
             {/if}
           </button>
         </div>

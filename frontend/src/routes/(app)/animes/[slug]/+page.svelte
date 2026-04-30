@@ -4,6 +4,12 @@
   import SEO from "$lib/components/SEO.svelte";
   import { authState } from "$lib/state/auth.svelte";
   import { page } from "$app/state";
+  import Globe from "lucide-svelte/icons/globe";
+  import ExternalLink from "lucide-svelte/icons/external-link";
+  import ChevronDown from "lucide-svelte/icons/chevron-down";
+  import ChevronUp from "lucide-svelte/icons/chevron-up";
+  import Star from "lucide-svelte/icons/star";
+  import Play from "lucide-svelte/icons/play";
   const PUBLIC_API_URL =
     import.meta.env.VITE_API_URL || "http://localhost:8080/api";
 
@@ -139,17 +145,13 @@
                 target="_blank"
                 title="Visit {link.name}"
               >
-                <span
-                  class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors text-lg"
-                  >language</span
-                >
+                <Globe size={18} class="text-on-surface-variant group-hover:text-primary transition-colors" />
+
                 <span class="text-on-surface-variant group-hover:text-primary"
                   >{link.name}</span
                 >
-                <span
-                  class="material-symbols-outlined text-on-surface-variant text-sm ml-auto"
-                  >open_in_new</span
-                >
+                <ExternalLink size={14} class="text-on-surface-variant ml-auto" />
+
               </a>
             {/each}
           </div>
@@ -206,9 +208,8 @@
                 class="text-primary font-bold text-xs uppercase tracking-widest flex items-center gap-1"
               >
                 Read More
-                <span class="material-symbols-outlined text-sm"
-                  >expand_more</span
-                >
+                <ChevronDown size={14} />
+
               </span>
             </div>
           {/if}
@@ -219,9 +220,8 @@
                 class="text-primary/50 font-bold text-xs uppercase tracking-widest flex items-center gap-1 hover:text-primary transition-colors"
               >
                 Show Less
-                <span class="material-symbols-outlined text-sm"
-                  >expand_less</span
-                >
+                <ChevronUp size={14} />
+
               </span>
             </div>
           {/if}
@@ -282,10 +282,8 @@
                   </td>
                   <td class="p-5 text-right">
                     <div class="flex items-center justify-end gap-1.5">
-                      <span
-                        class="material-symbols-outlined text-yellow-400 text-sm filled"
-                        >star</span
-                      >
+                      <Star size={14} class="text-yellow-400 fill-current" />
+
                       <span class="font-bold text-on-surface text-lg"
                         >{formatScore(song.average_rating)}</span
                       >
@@ -297,9 +295,8 @@
                       class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface bg-primary/20 hover:bg-primary hover:text-white/50 transition-colors"
                       title="Play theme: {song.song_romaji || song.song_en}"
                     >
-                      <span class="material-symbols-outlined text-lg"
-                        >play_arrow</span
-                      >
+                      <Play size={18} class="fill-current" />
+
                     </a>
                   </td>
                 </tr>

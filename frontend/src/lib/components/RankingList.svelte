@@ -3,6 +3,11 @@
   import { getSongName, getFormattedScore } from "$lib/song-utils";
   import { authState } from "$lib/state/auth.svelte";
   import InfiniteScroll from "$lib/components/InfiniteScroll.svelte";
+  import TrendingUp from "lucide-svelte/icons/trending-up";
+  import TrendingDown from "lucide-svelte/icons/trending-down";
+  import Minus from "lucide-svelte/icons/minus";
+  import Play from "lucide-svelte/icons/play";
+  import Music2 from "lucide-svelte/icons/music-2";
 
   let {
     songs = [],
@@ -65,10 +70,8 @@
                     class="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-green-500/10 text-green-400"
                     title={`Previous rank: ${previousRank}`}
                   >
-                    <span
-                      class="material-symbols-outlined text-[12px] font-black"
-                      >arrow_drop_up</span
-                    >
+                    <TrendingUp size={12} />
+
                     <span class="text-[9px] font-black"
                       >{previousRank! - rank}</span
                     >
@@ -78,19 +81,16 @@
                     class="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-red-500/10 text-red-400"
                     title={`Previous rank: ${previousRank}`}
                   >
-                    <span
-                      class="material-symbols-outlined text-[12px] font-black"
-                      >arrow_drop_down</span
-                    >
+                    <TrendingDown size={12} />
+
                     <span class="text-[9px] font-black"
                       >{rank - previousRank!}</span
                     >
                   </div>
                 {:else if movement === "stable"}
                   <div class="text-on-surface-variant/20 flex items-center">
-                    <span class="material-symbols-outlined text-[14px]"
-                      >remove</span
-                    >
+                    <Minus size={14} />
+
                   </div>
                 {:else if movement === "new"}
                   <span
@@ -111,7 +111,7 @@
                     title={getSongName(item)}
                     class="w-full h-full object-cover"
                     src={item.anime?.cover_url ??
-                      "/images/placeholders/default.jpg"}
+                      "/images/placeholders/default.svg"}
                     loading="lazy"
                   />
                 </div>
@@ -160,7 +160,7 @@
                   </div>
                 {:else}
                   <div class="text-xs">
-                    <span class="text-on-surface-variant opacity-50"
+                    <span class="text-on-surface-variant/80"
                       >Not rated</span
                     >
                   </div>
@@ -175,9 +175,8 @@
                   class="w-10 h-10 rounded-full flex items-center justify-center bg-primary/10 hover:bg-primary text-primary hover:text-white transition-all shadow-lg hover:shadow-primary/20"
                   title="Play theme"
                 >
-                  <span class="material-symbols-outlined text-[20px]"
-                    >play_arrow</span
-                  >
+                  <Play class="fill-current" size={20} />
+
                 </a>
               </div>
             </td>
@@ -192,10 +191,9 @@
       {:else if !loading}
         <tr>
           <td colspan="4" class="py-20 text-on-surface-variant">
-            <div class="flex flex-col items-center justify-center opacity-30">
-              <span class="material-symbols-outlined text-6xl mb-4"
-                >music_off</span
-              >
+            <div class="flex flex-col items-center justify-center opacity-60">
+              <Music2 size={60} class="mb-4" />
+
               <p class="text-lg font-bold">No themes found</p>
             </div>
           </td>

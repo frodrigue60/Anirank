@@ -50,9 +50,23 @@ In this system, we do not use drop shadows or glassmorphism. Hierarchy is create
 - **Tonal Layering:** Hierarchy must be solved with a tone shift first. A `surface-container` card sitting on a `surface-low` background provides a clean, solid structure.
 - **Solid Borders:** For interactive inputs or critical containers, use a solid `outline_variant` (#c4b9d8). Avoid using low-opacity borders or blurs.
 
+## 5. Accessibility Standards (WCAG 2.1 AA)
+
+To maintain our 100% Lighthouse accessibility score, all UI components must follow these strict contrast and structure rules:
+
+- **Contrast Ratio:** All body text and functional icons MUST maintain a minimum contrast ratio of **4.5:1** against their background.
+- **Opacity Limits:**
+    - For `on-surface-variant` text on dark backgrounds, do not use opacities lower than **70%** (e.g., `text-on-surface-variant/70`).
+    - High-emphasis text must use **90%** or higher.
+- **Interactive Targets:** Ensure buttons and links have a minimum hit area of **44x44px** where possible, or use padding to ensure they are distinct.
+- **Screen Readers:**
+    - Every interactive element (buttons without text, icons) must have a descriptive `aria-label` and `title`.
+    - Images must have descriptive `alt` tags. Use `alt=""` only for purely decorative elements.
+- **Focus States:** Never disable `outline: none` without providing a visible, high-contrast custom focus ring.
+
 ---
 
-## 5. Components
+## 6. Components
 
 ### Buttons
 

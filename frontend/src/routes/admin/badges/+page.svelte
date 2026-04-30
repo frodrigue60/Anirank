@@ -104,7 +104,7 @@
             <tr class="hover:bg-white/2 transition-colors group">
               <td class="px-6 py-4">
                 <img
-                  src={badge?.icon_url || "/images/placeholders/default.jpg"}
+                  src={badge?.icon_url || "/images/placeholders/default.svg"}
                   alt={badge.name}
                   class="w-10 h-10 object-contain rounded-md bg-black/20 p-1"
                 />

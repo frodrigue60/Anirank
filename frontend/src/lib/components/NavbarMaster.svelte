@@ -5,6 +5,29 @@
   import { goto } from "$app/navigation";
   import SearchModal from "$lib/components/SearchModal.svelte";
   import RequestModal from "$lib/components/RequestModal.svelte";
+  import ChevronDown from "lucide-svelte/icons/chevron-down";
+  import Tv from "lucide-svelte/icons/tv";
+  import Users from "lucide-svelte/icons/users";
+  import Music from "lucide-svelte/icons/music";
+  import Film from "lucide-svelte/icons/film";
+  import Drama from "lucide-svelte/icons/drama";
+  import ListMusic from "lucide-svelte/icons/list-music";
+  import Trophy from "lucide-svelte/icons/trophy";
+  import BarChart3 from "lucide-svelte/icons/bar-chart-3";
+  import Search from "lucide-svelte/icons/search";
+  import Bell from "lucide-svelte/icons/bell";
+  import User from "lucide-svelte/icons/user";
+  import LayoutDashboard from "lucide-svelte/icons/layout-dashboard";
+  import UserRound from "lucide-svelte/icons/user-round";
+  import ListTodo from "lucide-svelte/icons/list-todo";
+  import Settings from "lucide-svelte/icons/settings";
+  import MessageSquare from "lucide-svelte/icons/message-square";
+  import LogOut from "lucide-svelte/icons/log-out";
+  import LogIn from "lucide-svelte/icons/log-in";
+  import UserPlus from "lucide-svelte/icons/user-plus";
+  import Menu from "lucide-svelte/icons/menu";
+  import X from "lucide-svelte/icons/x";
+  import CalendarDays from "lucide-svelte/icons/calendar-days";
 
   let showUserDropdown = $state(false);
   let showDiscoverDropdown = $state(false);
@@ -64,7 +87,7 @@
             : 'text-on-surface-variant hover:text-on-surface'}"
           href="/songs/seasonal"
           title="Seasonal Themes"
-          aria-label="View seasonal anime themes">Season</a
+          aria-label="Season - View seasonal anime themes">Season</a
         >
         <a
           class="text-sm font-medium transition-colors {page.url.pathname.includes(
@@ -74,7 +97,7 @@
             : 'text-on-surface-variant hover:text-on-surface'}"
           href="/songs/ranking"
           title="Song Rankings"
-          aria-label="View top rated anime songs">Ranking</a
+          aria-label="Ranking - View top rated anime songs">Ranking</a
         >
 
         <!-- Discover Dropdown -->
@@ -92,11 +115,12 @@
             aria-label="Toggle discover dropdown menu"
           >
             Discover
-            <span
-              class="material-symbols-outlined text-[18px] transition-transform {showDiscoverDropdown
+            <ChevronDown
+              size={18}
+              class="transition-transform {showDiscoverDropdown
                 ? 'rotate-180'
-                : ''}">expand_more</span
-            >
+                : ''}"
+            />
           </button>
 
           {#if showDiscoverDropdown}
@@ -108,65 +132,56 @@
                 class="flex items-center gap-3 px-4 py-2 text-sm text-on-surface-variant transition-colors hover:bg-surface-low hover:text-primary"
                 title="Browse Anime Series"
               >
-                <span class="material-symbols-outlined text-[18px]">tv</span> Animes
+                <Tv size={18} /> Animes
               </a>
               <a
                 href="/artists"
                 class="flex items-center gap-3 px-4 py-2 text-sm text-on-surface-variant transition-colors hover:bg-surface-low hover:text-primary"
                 title="Browse Artists"
               >
-                <span class="material-symbols-outlined text-[18px]">group</span> Artists
+                <Users size={18} /> Artists
               </a>
               <a
                 href="/songs"
                 class="flex items-center gap-3 px-4 py-2 text-sm text-on-surface-variant transition-colors hover:bg-surface-low hover:text-primary"
                 title="Browse Themes and Songs"
               >
-                <span class="material-symbols-outlined text-[18px]"
-                  >music_note</span
-                > Songs
+                <Music size={18} /> Songs
               </a>
               <a
                 href="/studios"
                 class="flex items-center gap-3 px-4 py-2 text-sm text-on-surface-variant transition-colors hover:bg-surface-low hover:text-primary"
                 title="Browse Animation Studios"
               >
-                <span class="material-symbols-outlined text-[18px]">movie</span> Studios
+                <Film size={18} /> Studios
               </a>
               <a
                 href="/producers"
                 class="flex items-center gap-3 px-4 py-2 text-sm text-on-surface-variant transition-colors hover:bg-surface-low hover:text-primary"
                 title="Browse Music Producers"
               >
-                <span class="material-symbols-outlined text-[18px]"
-                  >theater_comedy</span
-                > Producers
+                <Drama size={18} /> Producers
               </a>
               <a
                 href="/playlists"
                 class="flex items-center gap-3 px-4 py-2 text-sm text-on-surface-variant transition-colors hover:bg-surface-low hover:text-primary"
                 title="Browse Playlists"
               >
-                <span class="material-symbols-outlined text-[18px]"
-                  >queue_music</span
-                > Playlists
+                <ListMusic size={18} /> Playlists
               </a>
               <a
                 href="/tournaments"
                 class="flex items-center gap-3 px-4 py-2 text-sm text-on-surface-variant transition-colors hover:bg-surface-low hover:text-primary"
                 title="View Tournaments"
               >
-                <span class="material-symbols-outlined text-[18px]">trophy</span
-                > Tournaments
+                <Trophy size={18} /> Tournaments
               </a>
               <a
                 href="/users/ranking"
                 class="flex items-center gap-3 px-4 py-2 text-sm text-on-surface-variant transition-colors hover:bg-surface-low hover:text-primary"
                 title="View User Rankings"
               >
-                <span class="material-symbols-outlined text-[18px]"
-                  >leaderboard</span
-                > User Ranking
+                <BarChart3 size={18} /> User Ranking
               </a>
             </div>
           {/if}
@@ -182,7 +197,7 @@
         title="Search (Ctrl + K)"
         aria-label="Open search modal"
       >
-        <span class="material-symbols-outlined text-[20px]">search</span>
+        <Search size={20} />
       </button>
 
       <!-- Notifications (Hidden on mobile) -->
@@ -193,9 +208,8 @@
           title="Notifications"
           aria-label="View notifications"
         >
-          <span class="material-symbols-outlined text-[20px]"
-            >notifications</span
-          >
+          <Bell size={20} />
+
 
           {#if notificationState.unreadCount > 0}
             <span
@@ -236,21 +250,19 @@
                   />
                 {:else}
                   <img
-                    src="/images/placeholders/default.jpg"
+                    src="/images/placeholders/default.svg"
                     alt="{authState.user.name}'s default avatar"
                     title="{authState.user.name}'s default avatar"
                     class="h-full w-full object-cover"
                   />
                 {/if}
               {:else}
-                <span class="material-symbols-outlined text-[20px]">person</span
-                >
+                <User size={20} />
+
               {/if}
             </div>
-            <span
-              class="material-symbols-outlined text-on-surface-variant text-[20px] group-hover:text-on-surface hidden sm:block"
-              >expand_more</span
-            >
+            <ChevronDown size={20} class="text-on-surface-variant group-hover:text-on-surface hidden sm:block" />
+
           </button>
 
           {#if showUserDropdown}
@@ -269,34 +281,26 @@
                       href="/admin"
                       class="flex items-center gap-3 px-4 py-2 text-sm text-on-surface-variant transition-colors hover:bg-surface-low hover:text-primary"
                     >
-                      <span class="material-symbols-outlined text-[18px]"
-                        >dashboard</span
-                      > Dashboard
+                      <LayoutDashboard size={18} /> Dashboard
                     </a>
                   {/if}
                   <a
                     href="/users/{authState.user.slug}"
                     class="flex items-center gap-3 px-4 py-2 text-sm text-on-surface-variant transition-colors hover:bg-surface-low hover:text-primary"
                   >
-                    <span class="material-symbols-outlined text-[18px]"
-                      >person_pin</span
-                    > My Profile
+                    <UserRound size={18} /> My Profile
                   </a>
                   <a
                     href="/users/{authState.user.slug}/playlists"
                     class="flex items-center gap-3 px-4 py-2 text-sm text-on-surface-variant transition-colors hover:bg-surface-low hover:text-primary"
                   >
-                    <span class="material-symbols-outlined text-[18px]"
-                      >list_alt</span
-                    > My Playlists
+                    <ListTodo size={18} /> My Playlists
                   </a>
                   <a
                     href="/settings"
                     class="flex items-center gap-3 px-4 py-2 text-sm text-on-surface-variant transition-colors hover:bg-surface-low hover:text-primary"
                   >
-                    <span class="material-symbols-outlined text-[18px]"
-                      >settings</span
-                    > Settings
+                    <Settings size={18} /> Settings
                   </a>
                   <button
                     onclick={() => {
@@ -305,9 +309,7 @@
                     }}
                     class="flex w-full items-center gap-3 px-4 py-2 text-sm text-on-surface-variant transition-colors hover:bg-surface-low hover:text-primary"
                   >
-                    <span class="material-symbols-outlined text-[18px]"
-                      >chat</span
-                    > Request Song
+                    <MessageSquare size={18} /> Request Song
                   </button>
                 </div>
                 <div class="border-t border-outline-variant/10 py-1">
@@ -316,9 +318,7 @@
                     class="flex w-full items-center gap-3 px-4 py-2 text-sm text-red-500 transition-colors hover:bg-red-500/10"
                     title="Sign Out"
                   >
-                    <span class="material-symbols-outlined text-[18px]"
-                      >logout</span
-                    > Logout
+                    <LogOut size={18} /> Logout
                   </button>
                 </div>
               {:else}
@@ -333,18 +333,16 @@
                     href="/login"
                     class="flex w-full items-center gap-3 px-4 py-2 text-sm text-on-surface-variant transition-colors hover:bg-surface-low hover:text-primary"
                   >
-                    <span class="material-symbols-outlined text-[18px]"
-                      >login</span
-                    >
+                    <LogIn size={18} />
+
                     Sign In
                   </a>
                   <a
                     href="/register"
                     class="flex w-full items-center gap-3 px-4 py-2 text-sm text-on-surface-variant transition-colors hover:bg-surface-low hover:text-primary"
                   >
-                    <span class="material-symbols-outlined text-[18px]"
-                      >person_add</span
-                    >
+                    <UserPlus size={18} />
+
                     Register
                   </a>
                 </div>
@@ -361,7 +359,7 @@
         title="Open Mobile Menu"
         aria-label="Open mobile menu"
       >
-        <span class="material-symbols-outlined text-[24px]">menu</span>
+        <Menu size={24} />
       </button>
     </div>
   </header>
@@ -390,7 +388,7 @@
           onclick={() => (showMobileMenu = false)}
           class="text-on-surface-variant transition-colors hover:text-on-surface flex items-center justify-center"
         >
-          <span class="material-symbols-outlined">close</span>
+          <X />
         </button>
       </div>
 
@@ -399,59 +397,56 @@
           href="/songs/seasonal"
           class="flex items-center gap-3 rounded-sm px-4 py-3 text-on-surface-variant transition-all hover:bg-surface-low hover:text-on-surface"
         >
-          <span class="material-symbols-outlined text-[18px]"
-            >calendar_month</span
-          > <span class="text-sm font-medium">Seasonal</span>
+          <CalendarDays size={18} /> <span class="text-sm font-medium">Seasonal</span>
         </a>
         <a
           href="/songs/ranking"
           class="flex items-center gap-3 rounded-sm px-4 py-3 text-on-surface-variant transition-all hover:bg-surface-low hover:text-on-surface"
         >
-          <span class="material-symbols-outlined text-[18px]">leaderboard</span>
+          <BarChart3 size={18} />
           <span class="text-sm font-medium">Ranking</span>
         </a>
         <a
           href="/animes"
           class="flex items-center gap-3 rounded-sm px-4 py-3 text-on-surface-variant transition-all hover:bg-surface-low hover:text-on-surface"
         >
-          <span class="material-symbols-outlined text-[18px]">tv</span>
+          <Tv size={18} />
           <span class="text-sm font-medium">Animes</span>
         </a>
         <a
           href="/users/ranking"
           class="flex items-center gap-3 rounded-sm px-4 py-3 text-on-surface-variant transition-all hover:bg-surface-low hover:text-on-surface"
         >
-          <span class="material-symbols-outlined text-[18px]">leaderboard</span>
+          <BarChart3 size={18} />
           <span class="text-sm font-medium">User Ranking</span>
         </a>
         <a
           href="/artists"
           class="flex items-center gap-3 rounded-sm px-4 py-3 text-on-surface-variant transition-all hover:bg-surface-low hover:text-on-surface"
         >
-          <span class="material-symbols-outlined text-[18px]">group</span>
+          <Users size={18} />
           <span class="text-sm font-medium">Artists</span>
         </a>
         <a
           href="/themes"
           class="flex items-center gap-3 rounded-sm px-4 py-3 text-on-surface-variant transition-all hover:bg-surface-low hover:text-on-surface"
         >
-          <span class="material-symbols-outlined text-[18px]">music_note</span>
+          <Music size={18} />
           <span class="text-sm font-medium">Themes</span>
         </a>
         <a
           href="/studios"
           class="flex items-center gap-3 rounded-sm px-4 py-3 text-on-surface-variant transition-all hover:bg-surface-low hover:text-on-surface"
         >
-          <span class="material-symbols-outlined text-[18px]">movie</span>
+          <Film size={18} />
           <span class="text-sm font-medium">Studios</span>
         </a>
         <a
           href="/producers"
           class="flex items-center gap-3 rounded-sm px-4 py-3 text-on-surface-variant transition-all hover:bg-surface-low hover:text-on-surface"
         >
-          <span class="material-symbols-outlined text-[18px]"
-            >theater_comedy</span
-          > <span class="text-sm font-medium">Producers</span>
+          <Drama size={18} />
+ <span class="text-sm font-medium">Producers</span>
         </a>
       </nav>
     </div>

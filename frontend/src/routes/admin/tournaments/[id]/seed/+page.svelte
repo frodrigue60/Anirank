@@ -404,7 +404,7 @@
                   >
                     <img
                       src={song.anime?.cover_url ||
-                        "/images/placeholders/default.jpg"}
+                        "/images/placeholders/default.svg"}
                       alt=""
                       class="w-12 h-16 object-cover rounded shadow"
                     />

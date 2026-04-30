@@ -2,6 +2,14 @@
   import { goto } from "$app/navigation";
   import api from "$lib/api";
   import { toastState } from "$lib/state/toast.svelte";
+  import ArrowLeft from "lucide-svelte/icons/arrow-left";
+  import Dices from "lucide-svelte/icons/dices";
+  import Copy from "lucide-svelte/icons/copy";
+  import ShieldCheck from "lucide-svelte/icons/shield-check";
+  import Trophy from "lucide-svelte/icons/trophy";
+  import Check from "lucide-svelte/icons/check";
+  import Loader2 from "lucide-svelte/icons/loader-2";
+  import Plus from "lucide-svelte/icons/plus";
 
   let { data } = $props();
 
@@ -83,7 +91,7 @@
       class="p-2 text-on-surface-variant/70 hover:text-on-surface hover:bg-surface-highest rounded-lg transition-colors border border-transparent hover:border-outline-variant"
       title="Back to Users"
     >
-      <span class="material-symbols-outlined text-xl">arrow_back</span>
+      <ArrowLeft size={20} />
     </a>
     <h1 class="text-3xl font-bold tracking-tight text-on-surface">Create User</h1>
   </div>
@@ -160,7 +168,7 @@
                 class="px-3 bg-surface-highest hover:bg-surface-highest border border-outline-variant text-on-surface rounded-xl transition-colors flex items-center justify-center shrink-0"
                 title="Generate Random Password"
               >
-                <span class="material-symbols-outlined text-[20px]">casino</span>
+                <Dices size={20} />
               </button>
               <button
                 type="button"
@@ -168,7 +176,7 @@
                 class="px-3 bg-surface-highest hover:bg-surface-highest border border-outline-variant text-emerald-400 rounded-xl transition-colors flex items-center justify-center shrink-0"
                 title="Copy Password"
               >
-                <span class="material-symbols-outlined text-[20px]">content_copy</span>
+                <Copy size={20} />
               </button>
             </div>
             <p class="text-xs text-on-surface-variant/40 mt-2">
@@ -187,9 +195,7 @@
         <h2
           class="text-lg font-semibold text-on-surface border-b border-outline-variant pb-3 mb-4 flex items-center gap-2"
         >
-          <span class="material-symbols-outlined text-rose-400"
-            >shield_person</span
-          >
+          <ShieldCheck size={20} class="text-rose-400" />
           Access Roles
         </h2>
 
@@ -216,9 +222,7 @@
                   onchange={() => toggleRole(role.id)}
                 />
                 {#if selectedRoleIds.includes(role.id)}
-                  <span class="material-symbols-outlined text-[16px] text-on-surface"
-                    >check</span
-                  >
+                  <Check size={16} class="text-on-surface" />
                 {/if}
               </div>
               <div>
@@ -235,9 +239,7 @@
         <h2
           class="text-lg font-semibold text-on-surface border-b border-outline-variant pb-3 mb-4 flex items-center gap-2"
         >
-          <span class="material-symbols-outlined text-yellow-400"
-            >military_tech</span
-          >
+          <Trophy size={20} class="text-yellow-400" />
           Earned Badges
         </h2>
 
@@ -266,9 +268,7 @@
                   onchange={() => toggleBadge(badge.id)}
                 />
                 {#if selectedBadgeIds.includes(badge.id)}
-                  <span class="material-symbols-outlined text-[16px] text-on-surface"
-                    >check</span
-                  >
+                  <Check size={16} class="text-on-surface" />
                 {/if}
               </div>
               <div class="flex items-center gap-2 overflow-hidden">
@@ -309,13 +309,10 @@
       class="px-6 py-2.5 bg-primary hover:bg-anirank-secondary text-on-surface rounded-xl transition-colors font-medium shadow-lg shadow-anirank-primary/20 disabled:opacity-70 flex items-center gap-2"
     >
       {#if isSaving}
-        <span
-          class="material-symbols-outlined animate-spin align-middle shrink-0"
-          >progress_activity</span
-        >
+        <Loader2 size={20} class="animate-spin align-middle shrink-0" />
         Saving...
       {:else}
-        <span class="material-symbols-outlined align-middle shrink-0">add</span>
+        <Plus size={20} class="align-middle shrink-0" />
         Create User
       {/if}
     </button>

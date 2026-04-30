@@ -1,6 +1,26 @@
 <script lang="ts">
   import { authState } from "$lib/state/auth.svelte";
   import { goto } from "$app/navigation";
+  import Menu from "lucide-svelte/icons/menu";
+  import LayoutDashboard from "lucide-svelte/icons/layout-dashboard";
+  import Film from "lucide-svelte/icons/film";
+  import Zap from "lucide-svelte/icons/zap";
+  import Music from "lucide-svelte/icons/music";
+  import User from "lucide-svelte/icons/user";
+  import Megaphone from "lucide-svelte/icons/megaphone";
+  import Trophy from "lucide-svelte/icons/trophy";
+  import AlertTriangle from "lucide-svelte/icons/alert-triangle";
+  import MessageSquare from "lucide-svelte/icons/message-square";
+  import Flag from "lucide-svelte/icons/flag";
+  import Mail from "lucide-svelte/icons/mail";
+  import History from "lucide-svelte/icons/history";
+  import ShieldCheck from "lucide-svelte/icons/shield-check";
+  import Award from "lucide-svelte/icons/award";
+  import Tag from "lucide-svelte/icons/tag";
+  import Tv from "lucide-svelte/icons/tv";
+  import Sun from "lucide-svelte/icons/sun";
+  import Calendar from "lucide-svelte/icons/calendar";
+  import LogOut from "lucide-svelte/icons/log-out";
 
   let { children } = $props();
 
@@ -38,7 +58,7 @@
         onclick={toggleSidebar}
         class="p-2 hover:bg-surface-highest rounded-lg text-on-surface"
       >
-        <span class="material-symbols-outlined">menu</span>
+        <Menu size={20} />
       </button>
     </div>
 
@@ -51,7 +71,7 @@
               ? ''
               : 'justify-center'}"
           >
-            <span class="material-symbols-outlined">dashboard</span>
+            <LayoutDashboard size={20} />
             {#if isSidebarOpen}<span class="ml-3 font-medium">Dashboard</span
               >{/if}
           </a>
@@ -71,7 +91,7 @@
               ? ''
               : 'justify-center'}"
           >
-            <span class="material-symbols-outlined">movie</span>
+            <Film size={20} />
             {#if isSidebarOpen}<span class="ml-3 font-medium">Animes</span>{/if}
           </a>
         </li>
@@ -83,7 +103,7 @@
               ? ''
               : 'justify-center'}"
           >
-            <span class="material-symbols-outlined">api</span>
+            <Zap size={20} />
             {#if isSidebarOpen}<span class="ml-3 font-medium">Autogen</span
               >{/if}
           </a>
@@ -96,7 +116,7 @@
               ? ''
               : 'justify-center'}"
           >
-            <span class="material-symbols-outlined">music_note</span>
+            <Music size={20} />
             {#if isSidebarOpen}<span class="ml-3 font-medium">Songs</span>{/if}
           </a>
         </li>
@@ -108,7 +128,7 @@
               ? ''
               : 'justify-center'}"
           >
-            <span class="material-symbols-outlined">person</span>
+            <User size={20} />
             {#if isSidebarOpen}<span class="ml-3 font-medium">Artists</span
               >{/if}
           </a>
@@ -129,7 +149,7 @@
               ? ''
               : 'justify-center'}"
           >
-            <span class="material-symbols-outlined w-5 h-5">campaign</span>
+            <Megaphone size={20} />
             {#if isSidebarOpen}<span class="ml-3 font-medium"
                 >Announcements</span
               >{/if}
@@ -144,7 +164,7 @@
               ? ''
               : 'justify-center'}"
           >
-            <span class="material-symbols-outlined">trophy</span>
+            <Trophy size={20} />
             {#if isSidebarOpen}<span class="ml-3 font-medium">Tournaments</span
               >{/if}
           </a>
@@ -165,7 +185,7 @@
               ? ''
               : 'justify-center'}"
           >
-            <span class="material-symbols-outlined">warning</span>
+            <AlertTriangle size={20} />
             {#if isSidebarOpen}<span class="ml-3 font-medium"
                 >Songs Reports</span
               >{/if}
@@ -179,7 +199,7 @@
               ? ''
               : 'justify-center'}"
           >
-            <span class="material-symbols-outlined">forum</span>
+            <MessageSquare size={20} />
             {#if isSidebarOpen}<span class="ml-3 font-medium"
                 >Comment Reports</span
               >{/if}
@@ -193,7 +213,7 @@
               ? ''
               : 'justify-center'}"
           >
-            <span class="material-symbols-outlined">flag</span>
+            <Flag size={20} />
             {#if isSidebarOpen}<span class="ml-3 font-medium">User Reports</span
               >{/if}
           </a>
@@ -206,7 +226,7 @@
               ? ''
               : 'justify-center'}"
           >
-            <span class="material-symbols-outlined">mail</span>
+            <Mail size={20} />
             {#if isSidebarOpen}<span class="ml-3 font-medium"
                 >User Requests</span
               >{/if}
@@ -227,7 +247,7 @@
               ? ''
               : 'justify-center'}"
           >
-            <span class="material-symbols-outlined">person</span>
+            <User size={20} />
             {#if isSidebarOpen}<span class="ml-3 font-medium">Users</span>{/if}
           </a>
         </li>
@@ -239,7 +259,7 @@
               ? ''
               : 'justify-center'}"
           >
-            <span class="material-symbols-outlined">history</span>
+            <History size={20} />
             {#if isSidebarOpen}<span class="ml-3 font-medium">Audit Logs</span
               >{/if}
           </a>
@@ -252,7 +272,7 @@
               ? ''
               : 'justify-center'}"
           >
-            <span class="material-symbols-outlined">shield</span>
+            <ShieldCheck size={20} />
             {#if isSidebarOpen}<span class="ml-3 font-medium">Roles</span>{/if}
           </a>
         </li>
@@ -264,7 +284,7 @@
               ? ''
               : 'justify-center'}"
           >
-            <span class="material-symbols-outlined">interests</span>
+            <Award size={20} />
             {#if isSidebarOpen}<span class="ml-3 font-medium">Badges</span>{/if}
           </a>
         </li>
@@ -285,7 +305,7 @@
               ? ''
               : 'justify-center'}"
           >
-            <span class="material-symbols-outlined">label</span>
+            <Tag size={20} />
             {#if isSidebarOpen}<span class="ml-3 font-medium">Genres</span>{/if}
           </a>
         </li>
@@ -298,9 +318,8 @@
               ? ''
               : 'justify-center'}"
           >
-            <span class="material-symbols-outlined"
-              >tv_options_input_settings</span
-            >
+            <Tv size={20} />
+
             {#if isSidebarOpen}<span class="ml-3 font-medium"
                 >Anime Formats</span
               >{/if}
@@ -314,7 +333,7 @@
               ? ''
               : 'justify-center'}"
           >
-            <span class="material-symbols-outlined">wb_sunny</span>
+            <Sun size={20} />
             {#if isSidebarOpen}<span class="ml-3 font-medium">Seasons</span
               >{/if}
           </a>
@@ -327,7 +346,7 @@
               ? ''
               : 'justify-center'}"
           >
-            <span class="material-symbols-outlined">calendar_month</span>
+            <Calendar size={20} />
             {#if isSidebarOpen}<span class="ml-3 font-medium">Years</span>{/if}
           </a>
         </li>
@@ -340,7 +359,7 @@
               ? ''
               : 'justify-center'}"
           >
-            <span class="material-symbols-outlined">exit_to_app</span>
+            <LogOut size={20} />
             {#if isSidebarOpen}<span class="ml-3 font-medium">Back to Site</span
               >{/if}
           </a>
@@ -363,7 +382,7 @@
         <div class="flex items-center gap-3 pl-4 border-l border-gray-500">
           <img
             src={authState.user?.avatar_url ||
-              "/images/placeholders/default.jpg"}
+              "/images/placeholders/default.svg"}
             alt={authState.user?.name || "Admin"}
             class="w-8 h-8 rounded-full object-cover ring-2 ring-white/10"
           />

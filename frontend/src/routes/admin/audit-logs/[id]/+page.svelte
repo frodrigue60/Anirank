@@ -1,6 +1,13 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import api from "$lib/api";
+    import ChevronRight from "lucide-svelte/icons/chevron-right";
+    import AlertCircle from "lucide-svelte/icons/alert-circle";
+    import ArrowLeft from "lucide-svelte/icons/arrow-left";
+    import User from "lucide-svelte/icons/user";
+    import Calendar from "lucide-svelte/icons/calendar";
+    import Network from "lucide-svelte/icons/network";
+    import FileJson from "lucide-svelte/icons/file-json";
     let { data } = $props();
 
     let log = $state<any>(null);
@@ -40,7 +47,7 @@
     <!-- Breadcrumbs -->
     <nav class="flex items-center gap-2 text-sm text-on-surface-variant/40 mb-6">
         <a href="/admin/audit-logs" class="hover:text-on-surface transition-colors">Audit Logs</a>
-        <span class="material-symbols-outlined text-xs">chevron_right</span>
+        <ChevronRight size={14} />
         <span class="text-on-surface-variant">Log Detail</span>
     </nav>
 
@@ -52,7 +59,7 @@
     {:else if error}
         <div class="bg-rose-500/10 border border-rose-500/20 rounded-2xl p-8 text-center max-w-2xl mx-auto">
             <div class="w-16 h-16 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-500 mx-auto mb-4">
-                <span class="material-symbols-outlined text-3xl">error</span>
+                <AlertCircle size={36} />
             </div>
             <h2 class="text-xl font-bold text-on-surface mb-2">Error al cargar</h2>
             <p class="text-rose-400/80 mb-6">{error}</p>
@@ -81,7 +88,7 @@
                 onclick={() => history.back()}
                 class="px-4 py-2 bg-surface-highest hover:bg-surface-highest text-on-surface rounded-xl transition-colors border border-outline-variant flex items-center gap-2 self-start"
             >
-                <span class="material-symbols-outlined text-sm">arrow_back</span>
+                <ArrowLeft size={18} />
                 Back
             </button>
         </div>
@@ -95,7 +102,7 @@
                     <div class="space-y-6">
                         <div class="flex items-start gap-3">
                             <div class="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center border border-blue-500/20 text-blue-400">
-                                <span class="material-symbols-outlined text-sm">person</span>
+                                <User size={14} />
                             </div>
                             <div>
                                 <span class="block text-xs text-on-surface-variant/40 font-medium mb-0.5">Executor</span>
@@ -105,7 +112,7 @@
 
                         <div class="flex items-start gap-3">
                             <div class="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 text-emerald-400">
-                                <span class="material-symbols-outlined text-sm">calendar_today</span>
+                                <Calendar size={14} />
                             </div>
                             <div>
                                 <span class="block text-xs text-on-surface-variant/40 font-medium mb-0.5">Timestamp</span>
@@ -115,7 +122,7 @@
 
                         <div class="flex items-start gap-3">
                             <div class="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center border border-purple-500/20 text-purple-400">
-                                <span class="material-symbols-outlined text-sm">lan</span>
+                                <Network size={14} />
                             </div>
                             <div class="overflow-hidden">
                                 <span class="block text-xs text-on-surface-variant/40 font-medium mb-0.5">IP Address</span>
@@ -147,7 +154,7 @@
                 <div class="bg-surface-container border border-outline-variant rounded-2xl overflow-hidden shadow-xl">
                     <div class="px-6 py-4 bg-surface-highest border-b border-outline-variant flex items-center justify-between">
                         <h3 class="text-sm font-bold text-on-surface flex items-center gap-2">
-                            <span class="material-symbols-outlined text-sm opacity-50">data_object</span>
+                            <FileJson size={18} class="opacity-50" />
                             State Changes
                         </h3>
                     </div>

@@ -4,8 +4,12 @@
   let { data } = $props();
 
   // Local State
-  let items = $state<any[]>(data.formats || []);
+  let items = $state<any[]>([]);
   let errorMsg = $state("");
+
+  $effect(() => {
+    items = data.formats || [];
+  });
 
   // Modal State
   let showModal = $state(false);
@@ -129,6 +133,8 @@
                 <div class="flex items-center justify-end gap-2">
                   <button
                     onclick={() => openEdit(item)}
+                    aria-label="Edit format"
+                    title="Edit format"
                     class="p-2 hover:bg-surface-highest text-on-surface-variant/70 hover:text-on-surface rounded-lg transition-colors"
                   >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -137,6 +143,8 @@
                   </button>
                   <button
                     onclick={() => handleDelete(item.id)}
+                    aria-label="Delete format"
+                    title="Delete format"
                     class="p-2 hover:bg-red-500/20 text-on-surface-variant/70 hover:text-red-400 rounded-lg transition-colors"
                   >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -166,7 +174,7 @@
         <h2 class="text-lg font-bold text-on-surface">
           {modalMode === 'create' ? 'Add' : 'Edit'} Format
         </h2>
-        <button onclick={() => (showModal = false)} class="text-on-surface-variant/70 hover:text-on-surface">
+        <button onclick={() => (showModal = false)} class="text-on-surface-variant/70 hover:text-on-surface" aria-label="Close modal">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>

@@ -4,6 +4,12 @@
   import { getAuthToken } from "$lib/state/auth.svelte";
   import { toastState } from "$lib/state/toast.svelte";
   import { getApiErrorMessage } from "$lib/api-errors";
+  import Pencil from "lucide-svelte/icons/pencil";
+  import Trash2 from "lucide-svelte/icons/trash-2";
+  import Search from "lucide-svelte/icons/search";
+  import ChevronLeft from "lucide-svelte/icons/chevron-left";
+  import ChevronRight from "lucide-svelte/icons/chevron-right";
+  import User from "lucide-svelte/icons/user";
 
   let { data } = $props();
 
@@ -386,19 +392,7 @@
   class="bg-surface-container border border-outline-variant rounded-2xl p-4 mb-6 flex flex-col sm:flex-row gap-4"
 >
   <div class="relative flex-1">
-    <svg
-      class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/40"
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-    >
-      <path
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-width="2"
-        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-      />
-    </svg>
+    <Search size={20} class="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/40" />
     <input
       type="text"
       bind:value={searchQuery}
@@ -512,19 +506,7 @@
                   <div
                     class="w-full h-full flex items-center justify-center text-gray-600"
                   >
-                    <svg
-                      class="w-6 h-6"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                      />
-                    </svg>
+                    <User size={24} />
                   </div>
                 {/if}
               </div>
@@ -571,14 +553,14 @@
                   class="p-2 text-on-surface-variant/70 hover:text-on-surface hover:bg-surface-highest rounded-lg transition-colors"
                   title="Edit"
                 >
-                  <span class="material-symbols-outlined">edit</span>
+                  <Pencil size={18} />
                 </a>
                 <button
                   onclick={() => handleDelete(artist.id, artist.name)}
                   class="p-2 text-on-surface-variant/70 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
                   title="Delete"
                 >
-                  <span class="material-symbols-outlined">delete</span>
+                  <Trash2 size={18} />
                 </button>
               </div>
             </td>
@@ -609,19 +591,7 @@
           aria-label="Previous Page"
           class="p-2 rounded-lg border border-outline-variant text-on-surface-variant/70 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-highest transition-colors"
         >
-          <svg
-            class="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
+          <ChevronLeft size={16} />
         </button>
         <span class="text-sm text-on-surface-variant font-medium px-2"
           >Page {pagination.current_page} of {pagination.last_page}</span
@@ -632,19 +602,7 @@
           aria-label="Next Page"
           class="p-2 rounded-lg border border-outline-variant text-on-surface-variant/70 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-highest transition-colors"
         >
-          <svg
-            class="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M9 5l7 7-7 7"
-            />
-          </svg>
+          <ChevronRight size={16} />
         </button>
       </div>
     </div>

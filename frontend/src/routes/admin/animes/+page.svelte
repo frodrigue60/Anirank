@@ -3,6 +3,12 @@
   import api from "$lib/api";
   import { toastState } from "$lib/state/toast.svelte";
   import { getApiErrorMessage } from "$lib/api-errors";
+  import Plus from "lucide-svelte/icons/plus";
+  import Music from "lucide-svelte/icons/music";
+  import Edit2 from "lucide-svelte/icons/edit-2";
+  import Trash2 from "lucide-svelte/icons/trash-2";
+  import ChevronLeft from "lucide-svelte/icons/chevron-left";
+  import ChevronRight from "lucide-svelte/icons/chevron-right";
 
   import { onMount } from "svelte";
 
@@ -169,14 +175,8 @@
     href="/admin/animes/create"
     class="px-4 py-2 bg-primary hover:bg-primary-container text-on-surface font-medium rounded-xl transition-colors shadow-lg shadow-anirank-primary/20 flex items-center gap-2"
   >
-    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-      ><path
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-width="2"
-        d="M12 4v16m8-8H4"
-      /></svg
-    >
+    <Plus size={20} />
+
     New Anime
   </a>
 </div>
@@ -267,7 +267,7 @@
             onclick={handleBatchDelete}
             class="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-medium rounded-lg transition-colors border border-red-500/20 flex items-center gap-1.5"
           >
-            <span class="material-symbols-outlined text-base">delete</span>
+            <Trash2 size={16} />
             Delete selected
           </button>
         </div>
@@ -367,28 +367,28 @@
                   class="p-2 text-on-surface-variant/70 hover:text-on-surface hover:bg-surface-highest rounded-lg transition-colors"
                   title="Songs"
                 >
-                  <span class="material-symbols-outlined">music_note</span>
+                  <Music size={18} />
                 </a>
                 <a
                   href="/admin/songs/create?anime={anime.id}"
                   class="p-2 text-on-surface-variant/70 hover:text-on-surface hover:bg-surface-highest rounded-lg transition-colors"
                   title="Add Song"
                 >
-                  <span class="material-symbols-outlined">add</span>
+                  <Plus size={18} />
                 </a>
                 <a
                   href="/admin/animes/{anime.id}/edit"
                   class="p-2 text-on-surface-variant/70 hover:text-on-surface hover:bg-surface-highest rounded-lg transition-colors"
                   title="Edit"
                 >
-                  <span class="material-symbols-outlined">edit</span>
+                  <Edit2 size={18} />
                 </a>
                 <button
                   onclick={() => handleDelete(anime.id, anime.title)}
                   class="p-2 text-on-surface-variant/70 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
                   title="Delete"
                 >
-                  <span class="material-symbols-outlined">delete</span>
+                  <Trash2 size={18} />
                 </button>
               </div>
             </td>
@@ -419,18 +419,8 @@
           aria-label="Previous Page"
           class="p-2 rounded-lg border border-outline-variant text-on-surface-variant/70 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-highest transition-colors"
         >
-          <svg
-            class="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            ><path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M15 19l-7-7 7-7"
-            /></svg
-          >
+          <ChevronLeft size={16} />
+
         </button>
         <span class="text-sm text-on-surface-variant font-medium px-2"
           >Page {pagination.current_page} of {pagination.last_page}</span
@@ -441,18 +431,8 @@
           aria-label="Next Page"
           class="p-2 rounded-lg border border-outline-variant text-on-surface-variant/70 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-highest transition-colors"
         >
-          <svg
-            class="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            ><path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M9 5l7 7-7 7"
-            /></svg
-          >
+          <ChevronRight size={16} />
+
         </button>
       </div>
     </div>

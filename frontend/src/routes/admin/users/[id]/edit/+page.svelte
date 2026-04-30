@@ -2,6 +2,15 @@
   import { goto } from "$app/navigation";
   import api from "$lib/api";
   import { toastState } from "$lib/state/toast.svelte";
+  import ArrowLeft from "lucide-svelte/icons/arrow-left";
+  import KeyRound from "lucide-svelte/icons/key-round";
+  import Copy from "lucide-svelte/icons/copy";
+  import Loader2 from "lucide-svelte/icons/loader-2";
+  import Key from "lucide-svelte/icons/key";
+  import Shield from "lucide-svelte/icons/shield";
+  import Check from "lucide-svelte/icons/check";
+  import Award from "lucide-svelte/icons/award";
+  import Save from "lucide-svelte/icons/save";
 
   let { data } = $props();
 
@@ -102,7 +111,7 @@
       class="p-2 text-on-surface-variant/70 hover:text-on-surface hover:bg-surface-highest rounded-lg transition-colors border border-transparent hover:border-outline-variant"
       title="Back to Users"
     >
-      <span class="material-symbols-outlined text-xl">arrow_back</span>
+      <ArrowLeft size={20} />
     </a>
     <h1 class="text-3xl font-bold tracking-tight text-on-surface">Edit User</h1>
   </div>
@@ -165,7 +174,7 @@
         <h2
           class="text-lg font-semibold text-rose-400 border-b border-rose-500/10 pb-3 mb-4 flex items-center gap-2"
         >
-          <span class="material-symbols-outlined">lock_reset</span>
+          <KeyRound size={20} />
           Security
         </h2>
         <p class="text-sm text-on-surface-variant/70 mb-4">
@@ -191,7 +200,7 @@
                 onclick={copyPassword}
                 class="flex items-center gap-1 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 px-3 py-2 rounded-lg transition-colors text-sm font-medium border border-transparent hover:border-emerald-500/20"
               >
-                <span class="material-symbols-outlined text-[18px]">content_copy</span>
+                <Copy size={18} />
                 Copy
               </button>
             </div>
@@ -208,12 +217,10 @@
           class="px-4 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl transition-colors border border-rose-500/20 text-sm font-medium flex items-center gap-2 disabled:opacity-50"
         >
           {#if isResetting}
-            <span class="material-symbols-outlined animate-spin text-[18px]"
-              >progress_activity</span
-            >
+            <Loader2 size={18} class="animate-spin" />
             Generating...
           {:else}
-            <span class="material-symbols-outlined text-[18px]">key</span>
+            <Key size={18} />
             Generate Random Password
           {/if}
         </button>
@@ -227,9 +234,7 @@
         <h2
           class="text-lg font-semibold text-on-surface border-b border-outline-variant pb-3 mb-4 flex items-center gap-2"
         >
-          <span class="material-symbols-outlined text-rose-400"
-            >shield_person</span
-          >
+          <Shield size={20} class="text-rose-400" />
           Access Roles
         </h2>
 
@@ -256,9 +261,7 @@
                   onchange={() => toggleRole(role.id)}
                 />
                 {#if selectedRoleIds.includes(role.id)}
-                  <span class="material-symbols-outlined text-[16px] text-on-surface"
-                    >check</span
-                  >
+                  <Check size={16} />
                 {/if}
               </div>
               <div>
@@ -275,9 +278,7 @@
         <h2
           class="text-lg font-semibold text-on-surface border-b border-outline-variant pb-3 mb-4 flex items-center gap-2"
         >
-          <span class="material-symbols-outlined text-yellow-400"
-            >military_tech</span
-          >
+          <Award size={20} class="text-yellow-400" />
           Earned Badges
         </h2>
 
@@ -306,9 +307,7 @@
                   onchange={() => toggleBadge(badge.id)}
                 />
                 {#if selectedBadgeIds.includes(badge.id)}
-                  <span class="material-symbols-outlined text-[16px] text-on-surface"
-                    >check</span
-                  >
+                  <Check size={16} />
                 {/if}
               </div>
               <div class="flex items-center gap-2 overflow-hidden">
@@ -349,13 +348,10 @@
       class="px-6 py-2.5 bg-primary hover:bg-anirank-secondary text-on-surface rounded-xl transition-colors font-medium shadow-lg shadow-anirank-primary/20 disabled:opacity-70 flex items-center gap-2"
     >
       {#if isSaving}
-        <span
-          class="material-symbols-outlined animate-spin align-middle shrink-0"
-          >progress_activity</span
-        >
+        <Loader2 size={20} class="animate-spin align-middle shrink-0" />
         Saving Changes...
       {:else}
-        <span class="material-symbols-outlined align-middle shrink-0">save</span
+        <Save size={20} class="align-middle shrink-0" />
         >
         Save User Details
       {/if}

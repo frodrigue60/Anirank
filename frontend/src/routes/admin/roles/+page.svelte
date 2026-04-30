@@ -2,6 +2,19 @@
   import api from "$lib/api";
   import { toastState } from "$lib/state/toast.svelte";
   import { onMount } from "svelte";
+  import LayoutGrid from "lucide-svelte/icons/layout-grid";
+  import Film from "lucide-svelte/icons/film";
+  import Music from "lucide-svelte/icons/music";
+  import User from "lucide-svelte/icons/user";
+  import Users from "lucide-svelte/icons/users";
+  import AlertTriangle from "lucide-svelte/icons/alert-triangle";
+  import ShieldCheck from "lucide-svelte/icons/shield-check";
+  import Award from "lucide-svelte/icons/award";
+  import Megaphone from "lucide-svelte/icons/megaphone";
+  import Trophy from "lucide-svelte/icons/trophy";
+  import Settings from "lucide-svelte/icons/settings";
+  import Save from "lucide-svelte/icons/save";
+  import Check from "lucide-svelte/icons/check";
 
   let { data } = $props();
 
@@ -87,18 +100,18 @@
   }
 
   const getResourceIcon = (group: string) => {
-    if (group.startsWith("taxonomy")) return "category";
+    if (group.startsWith("taxonomy")) return LayoutGrid;
     switch (group) {
-      case "anime": return "movie";
-      case "song": return "music_note";
-      case "artist": return "person";
-      case "users": return "group";
-      case "reports": return "report";
-      case "permissions": return "admin_panel_settings";
-      case "badge": return "workspace_premium";
-      case "announcement": return "campaign";
-      case "tournament": return "military_tech";
-      default: return "settings";
+      case "anime": return Film;
+      case "song": return Music;
+      case "artist": return User;
+      case "users": return Users;
+      case "reports": return AlertTriangle;
+      case "permissions": return ShieldCheck;
+      case "badge": return Award;
+      case "announcement": return Megaphone;
+      case "tournament": return Trophy;
+      default: return Settings;
     }
   };
 
@@ -178,7 +191,7 @@
                 <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                 Saving...
               {:else}
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
+                <Save size={16} />
                 Save Changes
               {/if}
             </button>
@@ -199,10 +212,11 @@
         <div class="p-6">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
             {#each Object.entries(groupedPermissions()) as [group, perms]}
+              {@const GroupIcon = getResourceIcon(group)}
               <div class="space-y-4">
                 <div class="flex items-center gap-2 pb-2 border-b border-outline-variant">
                   <div class="p-1 px-1.5 rounded-md bg-indigo-500/20 text-indigo-400">
-                    <span class="material-symbols-outlined text-sm! leading-none">{getResourceIcon(group)}</span>
+                    <GroupIcon size={16} />
                   </div>
                   <span class="text-indigo-400 text-sm font-bold tracking-tight">{formatGroupName(group)}</span>
                 </div>
@@ -224,7 +238,7 @@
                         ? 'bg-indigo-500 text-on-surface' 
                         : 'bg-surface-highest text-gray-600 group-hover:bg-surface-highest'}">
                         {#if selectedPermissionIds.has(perm.id)}
-                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                          <Check size={16} />
                         {:else}
                           <div class="w-2 h-2 rounded-full bg-current opacity-20"></div>
                         {/if}

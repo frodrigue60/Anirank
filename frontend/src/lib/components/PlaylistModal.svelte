@@ -5,7 +5,8 @@ import Music from "lucide-svelte/icons/music";
 import Loader2 from "lucide-svelte/icons/loader-2";
 import Check from "lucide-svelte/icons/check";
 import CheckCircle2 from "lucide-svelte/icons/check-circle-2";
-import ListMusic from "lucide-svelte/icons/list-music";;
+import ListMusic from "lucide-svelte/icons/list-music";
+import LayoutList from "lucide-svelte/icons/layout-list";
   import api from "$lib/api";
   import { fade, scale, slide } from "svelte/transition";
   import CreatePlaylistModal from "./CreatePlaylistModal.svelte";
@@ -109,9 +110,8 @@ import ListMusic from "lucide-svelte/icons/list-music";;
       <div class="w-full flex justify-between items-start mb-6">
         <div class="text-left">
           <div class="flex items-center gap-2 text-primary mb-1">
-            <span class="material-symbols-outlined text-[14px]"
-              >library_music</span
-            >
+            <ListMusic size={14} />
+
             <p class="text-[10px] font-black uppercase tracking-[0.2em]">
               Add to Collection
             </p>
@@ -173,9 +173,8 @@ import ListMusic from "lucide-svelte/icons/list-music";;
                 <div
                   class="w-10 h-10 rounded-sm bg-surface-lowest flex items-center justify-center text-on-surface-variant/40 group-hover:text-primary transition-colors"
                 >
-                  <span class="material-symbols-outlined text-[20px]"
-                    >list_alt</span
-                  >
+                  <LayoutList size={20} />
+
                 </div>
                 <div>
                   <h4
@@ -229,7 +228,7 @@ import ListMusic from "lucide-svelte/icons/list-music";;
           onclick={() => (showCreateModal = true)}
           class="w-full bg-on-surface text-surface py-4 rounded-sm font-black text-sm transition-all flex items-center justify-center gap-2 hover:opacity-90 active:scale-95"
         >
-          <span class="material-symbols-outlined text-[18px]">add</span>
+          <Plus size={18} />
           Create New Playlist
         </button>
       </div>

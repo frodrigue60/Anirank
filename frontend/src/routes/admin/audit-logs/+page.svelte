@@ -1,6 +1,9 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
+  import AlertCircle from "lucide-svelte/icons/alert-circle";
+  import ChevronRight from "lucide-svelte/icons/chevron-right";
+  import Eye from "lucide-svelte/icons/eye";
   let { data } = $props();
 
   let eventFilter = $state(page.url.searchParams.get("event") || "");
@@ -128,7 +131,7 @@
       <div
         class="inline-flex items-center gap-2 px-4 py-2 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-xl mb-4"
       >
-        <span class="material-symbols-outlined text-sm">error</span>
+        <AlertCircle size={14} />
         <span class="text-sm font-medium">{data.error}</span>
       </div>
       <p class="text-on-surface-variant/40 text-sm">
@@ -158,15 +161,8 @@
               onclick={() => toggleRow(log.id)}
             >
               <td class="px-6 py-4">
-                <span
-                  class="material-symbols-outlined transition-transform {expandedRows.has(
-                    log.id,
-                  )
-                    ? 'rotate-90'
-                    : ''}"
-                >
-                  chevron_right
-                </span>
+                <ChevronRight size={18} class="transition-transform {expandedRows.has(log.id) ? 'rotate-90' : ''}" />
+
               </td>
               <td class="px-6 py-4">
                 <div class="flex items-center gap-2">
@@ -205,9 +201,8 @@
                   href="/admin/audit-logs/{log.id}"
                   class="px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl transition-colors border border-primary/20 text-xs font-bold flex items-center gap-2"
                 >
-                  <span class="material-symbols-outlined text-sm"
-                    >visibility</span
-                  >
+                  <Eye size={14} />
+
                   View
                 </a>
               </td>
@@ -264,9 +259,8 @@
                       href="/admin/audit-logs/{log.id}"
                       class="px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl transition-colors border border-primary/20 text-xs font-bold flex items-center gap-2"
                     >
-                      <span class="material-symbols-outlined text-sm"
-                        >visibility</span
-                      >
+                      <Eye size={14} />
+
                       View Full Detail
                     </a>
                   </div>

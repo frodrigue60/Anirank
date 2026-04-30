@@ -4,6 +4,13 @@
   let { data } = $props<{ data: PageData }>();
   let artist = $derived(data.artist);
   let songs = $derived(data.songs);
+  import ArrowLeft from "lucide-svelte/icons/arrow-left";
+  import Pencil from "lucide-svelte/icons/pencil";
+  import Music from "lucide-svelte/icons/music";
+  import Play from "lucide-svelte/icons/play";
+  import Heart from "lucide-svelte/icons/heart";
+  import Music2 from "lucide-svelte/icons/music-2";
+  import User from "lucide-svelte/icons/user";
 </script>
 
 <svelte:head>
@@ -19,19 +26,7 @@
         class="p-2 hover:bg-surface-highest rounded-xl text-on-surface-variant/70 transition-colors"
         aria-label="Back"
       >
-        <svg
-          class="w-6 h-6"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M10 19l-7-7m0 0l7-7m-7 7h18"
-          />
-        </svg>
+        <ArrowLeft size={24} />
       </button>
       <div>
         <h1 class="text-3xl font-bold tracking-tight text-on-surface mb-1">
@@ -45,19 +40,7 @@
         href={`/admin/artists/${artist.id}/edit`}
         class="px-4 py-2 bg-surface-highest hover:bg-surface-highest text-on-surface rounded-xl border border-outline-variant transition-colors shadow-sm flex items-center gap-2 font-medium"
       >
-        <svg
-          class="w-4 h-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-          />
-        </svg>
+        <Pencil size={16} />
         Edit Artist
       </a>
     {/if}
@@ -89,9 +72,7 @@
               />
             {:else}
               <div class="w-full h-full flex items-center justify-center text-on-surface-variant/40">
-                <svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
+                <User size={64} />
               </div>
             {/if}
           </div>
@@ -156,7 +137,7 @@
         <div class="bg-surface-container border border-outline-variant rounded-3xl p-6 shadow-md h-full">
           <div class="flex justify-between items-center mb-6">
             <h3 class="text-xl font-bold text-on-surface flex items-center gap-2">
-               <span class="material-symbols-outlined text-primary">music_note</span>
+               <Music size={20} class="text-primary" />
                Recent Songs
             </h3>
             <span class="text-sm text-on-surface-variant/40 bg-surface-highest px-3 py-1 rounded-full border border-outline-variant">Top 10 Latest</span>
@@ -177,11 +158,11 @@
                   </div>
                   <div class="flex items-center gap-4 shrink-0 pl-4">
                     <span class="text-xs text-on-surface-variant/40 font-medium flex items-center gap-1">
-                       <span class="material-symbols-outlined text-xs">play_arrow</span>
+                        <Play size={12} />
                        {song.views || 0}
                     </span>
                     <span class="text-xs text-on-surface-variant/40 font-medium flex items-center gap-1">
-                       <span class="material-symbols-outlined text-xs">favorite</span>
+                        <Heart size={12} />
                        {song.favorites_count || 0}
                     </span>
                   </div>
@@ -190,7 +171,7 @@
             </div>
           {:else}
             <div class="h-40 border-2 border-dashed border-outline-variant rounded-2xl flex flex-col items-center justify-center text-center">
-               <span class="material-symbols-outlined text-gray-600 text-4xl! mb-2">music_off</span>
+               <Music2 size={48} class="text-gray-600 mb-2" />
                <p class="text-on-surface-variant/70 font-medium">No songs available for this artist.</p>
                <p class="text-sm text-gray-600 mt-1">They might have no tracks associated yet.</p>
             </div>

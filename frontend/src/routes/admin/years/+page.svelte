@@ -4,8 +4,12 @@
   let { data } = $props();
 
   // Local State
-  let items = $state<any[]>(data.years || []);
+  let items = $state<any[]>([]);
   let errorMsg = $state("");
+
+  $effect(() => {
+    items = data.years || [];
+  });
 
   // Modal State
   let showModal = $state(false);
@@ -244,16 +248,20 @@
           />
         </div>
 
-        <div class="flex items-center gap-3 p-4 bg-surface-highest rounded-2xl border border-outline-variant group cursor-pointer" onclick={() => formCurrent = !formCurrent}>
-          <label class="relative inline-flex items-center cursor-pointer pointer-events-none">
+        <button 
+          type="button"
+          class="w-full flex items-center gap-3 p-4 bg-surface-highest rounded-2xl border border-outline-variant group transition-all text-left" 
+          onclick={() => formCurrent = !formCurrent}
+        >
+          <div class="relative inline-flex items-center">
             <input type="checkbox" bind:checked={formCurrent} class="sr-only peer">
             <div class="w-11 h-6 bg-on-surface-variant/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:inset-s-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-          </label>
+          </div>
           <div>
             <span class="text-sm font-bold text-on-surface">Primary System Year</span>
             <p class="text-[10px] text-on-surface-variant">Sets this year as the main reference.</p>
           </div>
-        </div>
+        </button>
 
         <div class="pt-4 flex gap-3">
           <button

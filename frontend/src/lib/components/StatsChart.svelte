@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Activity from "lucide-svelte/icons/activity";
   interface StatPoint {
     date: string;
     count: number;
@@ -131,7 +132,7 @@
 {:else}
   <div class="flex items-center justify-center py-12 text-on-surface-variant/20">
     <div class="text-center">
-      <span class="material-symbols-outlined text-4xl mb-2 opacity-10">monitoring</span>
+      <Activity size={36} class="mb-2 opacity-10" />
       <p class="text-[10px] font-black uppercase tracking-widest">No data available</p>
     </div>
   </div>

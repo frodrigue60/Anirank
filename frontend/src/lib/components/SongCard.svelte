@@ -2,6 +2,8 @@
   import { getSongName, getFormattedScore } from "$lib/song-utils";
   import { authState } from "$lib/state/auth.svelte";
   import { getSrcset } from "$lib/utils/image";
+  import Star from "lucide-svelte/icons/star";
+  import Play from "lucide-svelte/icons/play";
 
   let { song } = $props();
 </script>
@@ -13,7 +15,7 @@
   <img
     src={song.anime?.banner_url ||
       song.anime?.cover_url ||
-      "/images/placeholders/default-banner.jpg"}
+      "/images/placeholders/default-banner.svg"}
     srcset={getSrcset(song.anime?.banner_sources ?? song.anime?.cover_sources)}
     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 600px"
     alt=""
@@ -76,7 +78,7 @@
         class="px-2 py-1 rounded-sm flex items-center gap-1.5 text-yellow-500 drop-shadow"
         title="Average rating"
       >
-        <span class="material-symbols-outlined text-sm filled">star</span>
+        <Star class="fill-current" size={14} />
         <span class="font-bold text-lg"
           >{getFormattedScore(
             song.average_rating,
@@ -92,7 +94,7 @@
           class="flex items-center justify-center h-12 w-12 rounded-full bg-secondary-container hover:bg-primary/80 transition-all text-on-surface border border-white/10 group-hover:border-primary/50 group-hover:scale-110 shadow-lg"
           title="Play theme: {getSongName(song)}"
         >
-          <span class="material-symbols-outlined text-2xl">play_arrow</span>
+          <Play size={24} class="fill-current" />
         </a>
       </div> -->
     </div>

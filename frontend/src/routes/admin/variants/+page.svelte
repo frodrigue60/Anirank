@@ -7,6 +7,8 @@
   import { getApiErrorMessage } from "$lib/api-errors";
   import AutocompleteAnime from "$lib/components/admin/AutocompleteAnime.svelte";
   import { getSongName } from "$lib/song-utils";
+  import Plus from "lucide-svelte/icons/plus";
+  import Pencil from "lucide-svelte/icons/pencil";
 
   let { data } = $props<{ data: PageData }>();
   let variants = $state<any[]>([]);
@@ -100,7 +102,7 @@
     href="/admin/variants/create"
     class="px-4 py-2 bg-primary hover:bg-primary-container text-on-surface font-medium rounded-xl transition-colors shadow-lg shadow-anirank-primary/20 flex items-center gap-2"
   >
-    <span class="material-symbols-outlined">add</span>
+    <Plus size={20} />
     New Variant
   </a>
 </div>
@@ -234,18 +236,7 @@
                 class="p-2 text-on-surface-variant/70 hover:text-on-surface hover:bg-surface-highest rounded-lg transition-colors inline-block"
                 title="Edit"
               >
-                <svg
-                  class="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  ><path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                  /></svg
-                >
+                <Pencil size={18} />
               </a>
             </td>
           </tr>

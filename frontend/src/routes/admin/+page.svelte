@@ -2,8 +2,37 @@
   import api from "$lib/api";
   import { toastState } from "$lib/state/toast.svelte";
   import { getApiErrorMessage } from "$lib/api-errors";
+  import Film from "lucide-svelte/icons/film";
+  import Music from "lucide-svelte/icons/music";
+  import Layers from "lucide-svelte/icons/layers";
+  import Video from "lucide-svelte/icons/video";
+  import User from "lucide-svelte/icons/user";
+  import AlertTriangle from "lucide-svelte/icons/alert-triangle";
+  import MessageSquare from "lucide-svelte/icons/message-square";
+  import HelpCircle from "lucide-svelte/icons/help-circle";
+  import Trophy from "lucide-svelte/icons/trophy";
+  import Zap from "lucide-svelte/icons/zap";
+  import AlertCircle from "lucide-svelte/icons/alert-circle";
+  import Eraser from "lucide-svelte/icons/eraser";
+  import Plus from "lucide-svelte/icons/plus";
+  import RefreshCw from "lucide-svelte/icons/refresh-cw";
+  import TrendingUp from "lucide-svelte/icons/trending-up";
+  import Loader2 from "lucide-svelte/icons/loader-2";
 
   let { data } = $props();
+
+  const iconMap: Record<string, any> = {
+    movie: Film,
+    music_note: Music,
+    layers: Layers,
+    videocam: Video,
+    person: User,
+    report: AlertTriangle,
+    forum: MessageSquare,
+    help: HelpCircle,
+    emoji_events: Trophy,
+    bolt: Zap,
+  };
 
   // Mapping backend stats to minimalist display format focus on Moderation & Activity
   let displayStats = $derived([
@@ -205,7 +234,7 @@
     <div
       class="mb-8 p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-400 flex items-center gap-3"
     >
-      <span class="material-symbols-outlined">error</span>
+      <AlertCircle size={20} />
       <p class="text-sm font-medium">{data.error}</p>
     </div>
   {/if}
@@ -220,11 +249,12 @@
         <div
           class="absolute top-2 right-2 transition-transform duration-500 group-hover:scale-110"
         >
-          <span
-            class="material-symbols-outlined text-2xl {stat.color.split(
-              ' ',
-            )[1]}">{stat.icon}</span
-          >
+          <svelte:component
+            this={iconMap[stat.icon]}
+            size={24}
+            class={stat.color.split(" ")[1]}
+          />
+
         </div>
         <p
           class="text-[10px] font-bold uppercase tracking-wider text-on-surface mb-1 relative z-10"
@@ -420,7 +450,7 @@
               <div
                 class="w-10 h-10 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0"
               >
-                <span class="material-symbols-outlined text-xl">report</span>
+                <AlertTriangle size={20} />
               </div>
               <div>
                 <p class="text-sm font-medium text-on-surface">
@@ -449,7 +479,7 @@
               <div
                 class="w-10 h-10 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0"
               >
-                <span class="material-symbols-outlined text-xl">help</span>
+                <HelpCircle size={20} />
               </div>
               <div>
                 <p class="text-sm font-medium text-on-surface">
@@ -490,18 +520,7 @@
           <div
             class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center"
           >
-            <svg
-              class="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              ><path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 4v16m8-8H4"
-              /></svg
-            >
+            <Plus size={16} />
           </div>
           <span class="font-medium text-sm text-on-surface">Add New Song</span>
         </a>
@@ -511,18 +530,7 @@
           <div
             class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center"
           >
-            <svg
-              class="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              ><path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-              /></svg
-            >
+            <RefreshCw size={16} />
           </div>
           <span class="font-medium text-sm text-on-surface"
             >Sync with Anilist</span
@@ -538,34 +546,9 @@
             class="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center"
           >
             {#if isUpdating}
-              <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                <circle
-                  class="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  stroke-width="4"
-                ></circle>
-                <path
-                  class="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
+              <Loader2 size={16} class="animate-spin" />
             {:else}
-              <svg
-                class="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                ><path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-                /></svg
-              >
+              <TrendingUp size={16} />
             {/if}
           </div>
           <span class="font-medium text-sm text-on-surface"
@@ -582,24 +565,10 @@
             class="w-8 h-8 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center"
           >
             {#if isFlushing}
-              <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                <circle
-                  class="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  stroke-width="4"
-                ></circle>
-                <path
-                  class="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
+              <Loader2 size={16} class="animate-spin" />
             {:else}
-              <span class="material-symbols-outlined text-xl">delete_sweep</span
-              >
+              <Eraser size={20} />
+
             {/if}
           </div>
           <span class="font-medium text-sm text-on-surface"

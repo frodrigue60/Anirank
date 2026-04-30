@@ -1,7 +1,9 @@
 <script lang="ts">
   import { page } from "$app/state";
   import SEO from "$lib/components/SEO.svelte";
-  import { ArrowLeft, ShieldAlert, FileQuestion } from "lucide-svelte";
+  import ArrowLeft from "lucide-svelte/icons/arrow-left";
+import ShieldAlert from "lucide-svelte/icons/shield-alert";
+import FileQuestion from "lucide-svelte/icons/file-question";;
 
   let status = $derived(page.status);
   let error = $derived(page.error);

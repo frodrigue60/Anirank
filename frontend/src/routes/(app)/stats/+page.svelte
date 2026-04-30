@@ -1,15 +1,13 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import {
-    Users,
-    Music,
-    Tv,
-    Star,
-    MessageSquare,
-    TrendingUp,
-    BarChart3,
-    PieChart,
-  } from "lucide-svelte";
+  import Users from "lucide-svelte/icons/users";
+import Music from "lucide-svelte/icons/music";
+import Tv from "lucide-svelte/icons/tv";
+import Star from "lucide-svelte/icons/star";
+import MessageSquare from "lucide-svelte/icons/message-square";
+import TrendingUp from "lucide-svelte/icons/trending-up";
+import BarChart3 from "lucide-svelte/icons/bar-chart-3";
+import PieChart from "lucide-svelte/icons/pie-chart";;
   import StatsChart from "$lib/components/StatsChart.svelte";
   import api from "$lib/api";
 

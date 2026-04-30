@@ -10,7 +10,8 @@ import (
 )
 
 type RedisCache struct {
-	client *redis.Client
+	client  *redis.Client
+	healthy bool
 }
 
 func NewRedisCache(url string) (*RedisCache, error) {
@@ -19,16 +20,19 @@ func NewRedisCache(url string) (*RedisCache, error) {
 		return nil, err
 	}
 
+	opts.DialTimeout = 1 * time.Second
+	opts.ReadTimeout = 1 * time.Second
+	opts.WriteTimeout = 1 * time.Second
 	client := redis.NewClient(opts)
 	
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 	
 	if err := client.Ping(ctx).Err(); err != nil {
-		return nil, err
+		return &RedisCache{client: client, healthy: false}, nil // Return unhealthy instead of error
 	}
 
-	return &RedisCache{client: client}, nil
+	return &RedisCache{client: client, healthy: true}, nil
 }
 
 func (c *RedisCache) Get(ctx context.Context, key string, dest interface{}) error {
@@ -37,6 +41,7 @@ func (c *RedisCache) Get(ctx context.Context, key string, dest interface{}) erro
 		return ErrCacheMiss
 	}
 	if err != nil {
+		c.healthy = false
 		return err
 	}
 
@@ -49,7 +54,11 @@ func (c *RedisCache) Set(ctx context.Context, key string, value interface{}, exp
 		return err
 	}
 
-	return c.client.Set(ctx, key, data, expiration).Err()
+	err = c.client.Set(ctx, key, data, expiration).Err()
+	if err != nil {
+		c.healthy = false
+	}
+	return err
 }
 
 func (c *RedisCache) Delete(ctx context.Context, key string) error {
@@ -57,7 +66,15 @@ func (c *RedisCache) Delete(ctx context.Context, key string) error {
 }
 
 func (c *RedisCache) IsAvailable() bool {
-	return true
+	if !c.healthy {
+		// Attempt to recover if it was marked unhealthy
+		ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+		defer cancel()
+		if err := c.client.Ping(ctx).Err(); err == nil {
+			c.healthy = true
+		}
+	}
+	return c.healthy
 }
 
 type RedisSubscriber struct {

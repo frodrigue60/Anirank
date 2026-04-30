@@ -1,6 +1,9 @@
 <script lang="ts">
   import { setAuthToken, setUser, authState } from "$lib/state/auth.svelte";
-  import { Mail, Lock, Loader2, ArrowLeft } from "lucide-svelte";
+  import Mail from "lucide-svelte/icons/mail";
+import Lock from "lucide-svelte/icons/lock";
+import Loader2 from "lucide-svelte/icons/loader-2";
+import ArrowLeft from "lucide-svelte/icons/arrow-left";;
   import api from "$lib/api";
   import { getApiErrorMessage } from "$lib/api-errors";
   import { goto } from "$app/navigation";

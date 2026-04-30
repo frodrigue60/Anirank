@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 	"os"
-
 	"anirank/api/internal/delivery/http"
 	"anirank/api/internal/delivery/http/middleware"
 	v1 "anirank/api/internal/delivery/http/v1"
@@ -35,6 +34,8 @@ import (
 	"github.com/gofiber/storage/redis/v3"
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
+	"time"
+	goredis "github.com/redis/go-redis/v9"
 )
 
 // @title Anirank API
@@ -129,8 +130,10 @@ func main() {
 
 	// Setup Cache (Optional Redis)
 	redisURL := os.Getenv("REDIS_URL")
+	redisEnabled := os.Getenv("REDIS_ENABLED") != "false"
+	
 	var appCache domain.Cache
-	if redisURL != "" {
+	if redisURL != "" && redisEnabled {
 		rc, err := cache.NewRedisCache(redisURL)
 		if err != nil {
 			log.Printf("Warning: Redis requested but connection failed: %v. Falling back to NoOpCache.", err)
@@ -140,21 +143,47 @@ func main() {
 			appCache = rc
 		}
 	} else {
-		log.Println("Note: Redis not configured, using NoOpCache (caching disabled)")
+		if !redisEnabled && redisURL != "" {
+			log.Println("ℹ️ Redis is explicitly disabled via REDIS_ENABLED=false")
+		} else {
+			log.Println("Note: Redis not configured, using NoOpCache (caching disabled)")
+		}
 		appCache = cache.NewNoOpCache()
 	}
 
 	// --- 1.6 Setup Rate Limiting Storage (Resilience Shield) ---
 	var limitStorage fiber.Storage
-	if redisURL != "" {
-		limitStorage = redis.New(redis.Config{
-			URL:   redisURL,
-			Reset: false,
-		})
-		log.Println("✅ Rate Limiter: Redis storage initialized")
-	} else {
+	if redisURL != "" && redisEnabled {
+		// We use a recovery block because fiber/storage/redis/v3 panics if it can't connect/resolve at startup
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Printf("⚠️ Rate Limiter: Redis storage initialization panicked: %v. Falling back to Memory storage.", r)
+					limitStorage = memory.New()
+				}
+			}()
+
+			// Use NewFromConnection to apply custom timeouts (fixes the 5s DNS timeout block)
+			opts, err := goredis.ParseURL(redisURL)
+			if err != nil {
+				log.Printf("⚠️ Rate Limiter: Invalid Redis URL: %v", err)
+				return
+			}
+			opts.DialTimeout = 1 * time.Second
+			opts.ReadTimeout = 1 * time.Second
+			opts.WriteTimeout = 1 * time.Second
+
+			client := goredis.NewClient(opts)
+			primaryStorage := redis.NewFromConnection(client)
+			
+			limitStorage = cache.NewResilientStorage(primaryStorage)
+			log.Println("✅ Rate Limiter: Resilient Redis storage initialized with custom timeouts")
+		}()
+	}
+
+	if limitStorage == nil {
 		limitStorage = memory.New()
-		log.Println("⚠️ Rate Limiter: Redis not found, falling back to Memory storage")
+		log.Println("⚠️ Rate Limiter: Using Memory storage (Redis unavailable or not configured)")
 	}
 
 	// 2. Dependency Injection: Services & Usecases
@@ -216,6 +245,7 @@ func main() {
 	}))
 
 	app.Use(middleware.RequestLogger())
+	app.Use(middleware.SecurityHeaders())
 
 	// Setup Daily Stats
 	statsRepo := postgres.NewStatsRepository(db)

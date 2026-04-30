@@ -9,16 +9,14 @@
   import type { Song } from "$lib/types/song";
   import { getSongName } from "$lib/song-utils";
   import SEO from "$lib/components/SEO.svelte";
-  import {
-    Trophy,
-    X,
-    Play,
-    Music,
-    Info,
-    Users,
-    CheckCircle2,
-    VideoOff,
-  } from "lucide-svelte";
+  import Trophy from "lucide-svelte/icons/trophy";
+import X from "lucide-svelte/icons/x";
+import Play from "lucide-svelte/icons/play";
+import Music from "lucide-svelte/icons/music";
+import Info from "lucide-svelte/icons/info";
+import Users from "lucide-svelte/icons/users";
+import CheckCircle2 from "lucide-svelte/icons/check-circle-2";
+import VideoOff from "lucide-svelte/icons/video-off";;
 
   let tournament = $state<Tournament | null>(null);
   let loading = $state(true);

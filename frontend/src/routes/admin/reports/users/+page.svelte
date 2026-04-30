@@ -1,6 +1,10 @@
 <script lang="ts">
   import api from "$lib/api";
-  import { User, Flag, Trash2, CheckCircle, ExternalLink } from "lucide-svelte";
+  import User from "lucide-svelte/icons/user";
+import Flag from "lucide-svelte/icons/flag";
+import Trash2 from "lucide-svelte/icons/trash-2";
+import CheckCircle from "lucide-svelte/icons/check-circle";
+import ExternalLink from "lucide-svelte/icons/external-link";;
   import { fade } from "svelte/transition";
   import { toastState } from "$lib/state/toast.svelte";
 

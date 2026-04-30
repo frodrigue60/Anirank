@@ -26,12 +26,13 @@
 | Frontend | SvelteKit 5, TailwindCSS v4, Bun |
 | Backend | Go 1.25, GoFiber v2 |
 | Database | PostgreSQL (via `sqlx` + raw SQL, NO ORM) |
-| Cache | Redis (optional; falls back to `NoOpCache` if not configured) |
+| Cache | Redis (with `ResilientStorage` fallback to Memory) |
 | Storage | S3-compatible (MinIO in Docker, AWS S3 in production) |
 | Auth | JWT HS256 (`golang-jwt/jwt/v5`) |
 | Scheduler | `robfig/cron/v3` for background jobs |
 | Containerization | Docker Compose (separate `backend` and `frontend` services) |
 | OG Images | Custom Go generator (`infrastructure/og`) |
+| Resilience | `REDIS_ENABLED` flag to explicitly bypass Redis connectivity |
 
 **Env file loading order:** `./backend/.env` (primary configuration)
 
@@ -127,11 +128,13 @@ Roles are stored in the `roles` table with a `weight` field (higher = more power
 
 Permissions are granular (e.g. `anime.create`, `song.edit`, `reports.manage`) and are stored in the `permissions` table, linked via `role_permissions`.
 
+- **Don't** run `migrate reset` on the production database. Only on local/dev environments.
+
 The `HasPermissionMiddleware` checks the authenticated user's permissions (loaded from DB) before allowing access to a specific route.
 
 ---
 
-## 7. XP & Gamification System
+## 8. XP & Gamification System
 
 XP is awarded via the `XPUsecase.AwardXP(ctx, userID, activityKey, metadata)` method.
 
@@ -148,7 +151,7 @@ Badges can also be auto-awarded based on `requirement_type` (e.g. `ratings_count
 
 ---
 
-## 8. Error Handling Convention
+## 9. Error Handling Convention
 
 All handlers must return `domain.AppError`, not raw Go errors:
 
@@ -169,7 +172,7 @@ The global `ErrorHandler` in `middleware/error_handler.go` intercepts `*domain.A
 
 ---
 
-## 9. DTO Layer Rules
+## 10. DTO Layer Rules
 
 - All mappers live in `internal/dto/mapper.go`.
 - The `ID` field in any public-facing DTO **must be set to the UUID**, never the numeric ID.
@@ -179,7 +182,7 @@ The global `ErrorHandler` in `middleware/error_handler.go` intercepts `*domain.A
 
 ---
 
-## 10. External Integrations
+## 11. External Integrations
 
 ### AniList
 - Client: `internal/infrastructure/anilist/`
@@ -200,7 +203,7 @@ The global `ErrorHandler` in `middleware/error_handler.go` intercepts `*domain.A
 
 ---
 
-## 11. Background Jobs
+## 12. Background Jobs
 
 Managed by `robfig/cron/v3`. Defined in `internal/jobs/`.
 
@@ -211,7 +214,7 @@ Managed by `robfig/cron/v3`. Defined in `internal/jobs/`.
 
 ---
 
-## 12. Database Conventions
+## 13. Database Conventions
 
 - **Driver:** `pgx` via `sqlx` (PostgreSQL only).
 - **Migrations:** Raw SQL files in `backend/database/migrations/`. Run manually or via scripts.
@@ -224,7 +227,7 @@ Managed by `robfig/cron/v3`. Defined in `internal/jobs/`.
 
 ---
 
-## 13. Testing Strategy
+## 14. Testing Strategy
 
 The backend employs a multi-layered testing strategy to ensure correctness and security:
 
@@ -236,7 +239,7 @@ go test ./internal/usecase/... -v
 
 ---
 
-## 14. Frontend Testing Strategy
+## 15. Frontend Testing Strategy
 
 The frontend uses **Vitest** for unit and component testing, ensuring that Svelte 5 reactive states (Runes) and UI components behave as expected.
 
@@ -255,4 +258,18 @@ Due to Svelte 5's architecture, Vitest is configured with `resolve.conditions: [
 - **Component Behavior:** `src/tests/components/*.test.ts` (using Svelte Testing Library to interact with the DOM).
 
 ### Optimistic UI Validation
-Tests for interactions (likes, favorites) must verify that the UI updates immediately (optimistically) before MSW resolves the network request, and that it correctly rolls back upon API failure.
+- Tests for interactions (likes, favorites) must verify that the UI updates immediately (optimistically) before MSW resolves the network request, and that it correctly rolls back upon API failure.
+
+---
+
+## 16. Performance Best Practices
+
+### Data Fetching
+- **No N+1 Queries:** Use Cases must implement bulk hydration for lists.
+- **Repository Joins:** Repositories should include basic relations (e.g., `Song` should JOIN `Anime` in `GetMany`) to avoid secondary lookups.
+- **Cache Policy:** Use short-lived (5-30m) Redis/Memory cache for heavy entry points like `/api/home` or `/api/ranking`.
+- **Resilient Cache:** All Redis operations fallback to local memory if the service is unreachable (see `cache.NewResilientStorage`).
+
+### Infrastructure Health
+- **Timeouts:** All external I/O (Redis, S3, AniList) must have a context timeout (typically 1s-3s).
+- **Graceful Degradation:** The system must remain functional (even if slower) if non-critical services like Redis or MinIO are down.

@@ -42,6 +42,34 @@ func (r *moderationRepository) IsSongReportedByUser(ctx context.Context, userID,
 	return count > 0, err
 }
 
+func (r *moderationRepository) GetSongReportsByUserAndSongIDs(ctx context.Context, userID uint64, songIDs []uint64) (map[uint64]bool, error) {
+	if len(songIDs) == 0 {
+		return map[uint64]bool{}, nil
+	}
+
+	query, args, err := sqlx.In(`
+		SELECT song_id 
+		FROM song_reports 
+		WHERE user_id = ? AND song_id IN (?) AND status = false
+	`, userID, songIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	query = r.db.Rebind(query)
+	var reportedIDs []uint64
+	err = r.db.SelectContext(ctx, &reportedIDs, query, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	res := make(map[uint64]bool)
+	for _, id := range reportedIDs {
+		res[id] = true
+	}
+	return res, nil
+}
+
 func (r *moderationRepository) CreateCommentReport(ctx context.Context, report *domain.CommentReport) error {
 	query := `
 		INSERT INTO comment_reports (comment_id, user_id, source, title, content, status, created_at, updated_at) 

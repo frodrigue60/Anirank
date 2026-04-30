@@ -68,6 +68,142 @@ func NewCatalogUsecase(
 
 // ─── Songs ───
 
+func (u *CatalogUsecase) enrichSongsBulk(ctx context.Context, userID *uint64, songs []domain.Song) {
+	if len(songs) == 0 {
+		return
+	}
+
+	songIDs := make([]uint64, len(songs))
+	animeIDsMap := make(map[uint64]bool)
+	for i, s := range songs {
+		songIDs[i] = s.ID
+		if s.Anime == nil && s.AnimeID > 0 {
+			animeIDsMap[s.AnimeID] = true
+		}
+	}
+
+	// 1. Bulk fetch Relations
+	artistsMap, _ := u.songRepo.GetArtistsBySongIDs(ctx, songIDs)
+	variantsMap, _ := u.songRepo.GetVariantsBySongIDs(ctx, songIDs)
+	ratingsMap, _ := u.interactionRepo.GetAverageRatingsBySongIDs(ctx, songIDs)
+
+	// 2. Bulk fetch Animes if needed
+	var animeMap map[uint64]domain.Anime
+	if len(animeIDsMap) > 0 {
+		var animeIDs []uint64
+		for id := range animeIDsMap {
+			animeIDs = append(animeIDs, id)
+		}
+		animes, _ := u.animeRepo.GetMany(ctx, animeIDs)
+		animeMap = make(map[uint64]domain.Anime)
+		for _, a := range animes {
+			animeMap[a.ID] = a
+		}
+	}
+
+	// 3. User interactions & Moderation
+	var userInteractions map[uint64]domain.UserSongInteraction
+	var reportedMap map[uint64]bool
+	if userID != nil {
+		userInteractions, _ = u.interactionRepo.GetUserInteractionsBySongIDs(ctx, *userID, songIDs)
+		reportedMap, _ = u.moderationRepo.GetSongReportsByUserAndSongIDs(ctx, *userID, songIDs)
+	}
+
+	// 4. Map everything back
+	for i := range songs {
+		s := &songs[i]
+
+		// Anime
+		if s.Anime == nil && animeMap != nil {
+			if a, ok := animeMap[s.AnimeID]; ok {
+				s.Anime = &a
+			}
+		}
+		if s.Anime != nil {
+			s.Anime.CoverUrl = u.mediaService.Resolve(s.Anime.Cover)
+			s.Anime.BannerUrl = u.mediaService.Resolve(s.Anime.Banner)
+		}
+
+		// Artists
+		if len(s.Artists) == 0 {
+			if artists, ok := artistsMap[s.ID]; ok {
+				for j := range artists {
+					artists[j].AvatarUrl = u.mediaService.Resolve(artists[j].Avatar)
+				}
+				s.Artists = artists
+			} else {
+				s.Artists = []domain.Artist{}
+			}
+		}
+
+		// Variants & Embed cleanup
+		if len(s.Variants) == 0 {
+			if variants, ok := variantsMap[s.ID]; ok {
+				for j := range variants {
+					if variants[j].Video != nil && variants[j].Video.EmbedUrl != nil {
+						matches := iframeSrcRegex.FindStringSubmatch(*variants[j].Video.EmbedUrl)
+						if len(matches) > 1 {
+							variants[j].Video.EmbedUrl = &matches[1]
+						}
+					}
+				}
+				s.Variants = variants
+			} else {
+				s.Variants = []domain.SongVariant{}
+			}
+		}
+
+		// Ratings
+		if avg, ok := ratingsMap[s.ID]; ok {
+			s.AverageRating = avg
+		}
+
+		// User specific
+		if userInteractions != nil {
+			if inter, ok := userInteractions[s.ID]; ok {
+				s.IsFavorited = inter.IsFavorited
+				s.IsLiked = inter.Reaction == 1
+				s.IsDisliked = inter.Reaction == -1
+				s.UserRating = inter.Rating
+			}
+		}
+
+		// Moderation (Bulk)
+		if reportedMap != nil {
+			s.IsReported = reportedMap[s.ID]
+		}
+
+		// Computed names (Consistent with enrichSong)
+		if s.SongRomaji != nil && *s.SongRomaji != "" {
+			s.Name = *s.SongRomaji
+		} else if s.SongEN != nil && *s.SongEN != "" {
+			s.Name = *s.SongEN
+		} else if s.SongJP != nil && *s.SongJP != "" {
+			s.Name = *s.SongJP
+		} else {
+			s.Name = "N/A"
+		}
+
+		// Type Name
+		switch s.Type {
+		case "OP":
+			s.TypeName = "Opening"
+		case "ED":
+			s.TypeName = "Ending"
+		case "INS":
+			s.TypeName = "Insert"
+		default:
+			if s.SongType != nil && s.SongType.Name != nil {
+				s.TypeName = *s.SongType.Name
+			} else {
+				s.TypeName = "Other"
+			}
+		}
+	}
+}
+
+// ─── Songs ───
+
 func (u *CatalogUsecase) GetPaginatedSongs(ctx context.Context, userID *uint64, limit, offset int, filters domain.SongFilters) ([]domain.Song, int, error) {
 	songs, err := u.songRepo.GetPaginated(ctx, limit, offset, filters)
 	if err != nil {
@@ -76,9 +212,7 @@ func (u *CatalogUsecase) GetPaginatedSongs(ctx context.Context, userID *uint64, 
 
 	total, _ := u.songRepo.Count(ctx, filters)
 
-	for i := range songs {
-		u.enrichSong(ctx, userID, &songs[i])
-	}
+	u.enrichSongsBulk(ctx, userID, songs)
 	return songs, total, nil
 }
 
@@ -103,11 +237,11 @@ func (u *CatalogUsecase) GetSongByAnimeSongSlug(ctx context.Context, userID *uin
 
 		// Use the new cache interface instead of viewCache
 		var lastView time.Time
-		err := u.cache.Get(ctx, cacheKey, &lastView)
+		err := u.safeCacheGet(ctx, cacheKey, &lastView)
 		
-		if err != nil { // Cache miss (ErrCacheMiss) or error
+		if err != nil { // Cache miss or error
 			_ = u.songRepo.IncrementViews(ctx, song.ID)
-			_ = u.cache.Set(ctx, cacheKey, time.Now(), 24*time.Hour)
+			u.safeCacheSet(ctx, cacheKey, time.Now(), 24*time.Hour)
 		}
 	}
 
@@ -118,11 +252,13 @@ func (u *CatalogUsecase) GetSongByAnimeSongSlug(ctx context.Context, userID *uin
 	for _, s := range related {
 		if s.ID != song.ID {
 			s.Anime = anime
-			u.enrichSong(ctx, userID, &s)
 			filtered = append(filtered, s)
 		}
 	}
-	if filtered == nil {
+	
+	if len(filtered) > 0 {
+		u.enrichSongsBulk(ctx, userID, filtered)
+	} else {
 		filtered = []domain.Song{}
 	}
 
@@ -134,10 +270,8 @@ func (u *CatalogUsecase) GetSongRanking(ctx context.Context, userID *uint64, ran
 	cacheKey := fmt.Sprintf("ranking:v2:%s:%s:%d:%d", rankingType, songType, limit, offset)
 
 	var cachedResponse RankingResponse
-	if err := u.cache.Get(ctx, cacheKey, &cachedResponse); err == nil {
-		for i := range cachedResponse.Songs {
-			u.enrichSong(ctx, userID, &cachedResponse.Songs[i])
-		}
+	if err := u.safeCacheGet(ctx, cacheKey, &cachedResponse); err == nil {
+		u.enrichSongsBulk(ctx, userID, cachedResponse.Songs)
 		return &cachedResponse, nil
 	}
 
@@ -146,9 +280,7 @@ func (u *CatalogUsecase) GetSongRanking(ctx context.Context, userID *uint64, ran
 		return nil, domain.NewAppError(500, "Failed to load ranking", err)
 	}
 
-	for i := range songs {
-		u.enrichSong(ctx, nil, &songs[i])
-	}
+	u.enrichSongsBulk(ctx, nil, songs)
 
 	total, _ := u.songRepo.CountRanking(ctx, rankingType, songType)
 
@@ -162,11 +294,9 @@ func (u *CatalogUsecase) GetSongRanking(ctx context.Context, userID *uint64, ran
 		response.CurrentYear, _ = u.taxonomyRepo.GetCurrentYear(ctx)
 	}
 
-	_ = u.cache.Set(ctx, cacheKey, response, 5*time.Minute)
+	u.safeCacheSet(ctx, cacheKey, response, 5*time.Minute)
 
-	for i := range response.Songs {
-		u.enrichSong(ctx, userID, &response.Songs[i])
-	}
+	u.enrichSongsBulk(ctx, userID, response.Songs)
 
 	return response, nil
 }
@@ -204,9 +334,7 @@ func (u *CatalogUsecase) GetSongsByArtistSlug(ctx context.Context, userID *uint6
 
 	total, _ := u.songRepo.CountByArtistID(ctx, artist.ID, filters)
 
-	for i := range songs {
-		u.enrichSong(ctx, userID, &songs[i])
-	}
+	u.enrichSongsBulk(ctx, userID, songs)
 
 	return artist, songs, total, nil
 }
@@ -381,9 +509,7 @@ func (u *CatalogUsecase) GetUserFavorites(ctx context.Context, userID string, li
 	}
 
 	uid := &internalID
-	for i := range songs {
-		u.enrichSong(ctx, uid, &songs[i])
-	}
+	u.enrichSongsBulk(ctx, uid, songs)
 
 	return songs, total, nil
 }
@@ -490,7 +616,7 @@ func (u *CatalogUsecase) GetUserAnilistList(ctx context.Context, slug string, st
 	// First check cache
 	cacheKey := fmt.Sprintf("anilist:list:%s:%s:%d:%d", slug, status, page, limit)
 	var cached AnilistListCacheResponse
-	if err := u.cache.Get(ctx, cacheKey, &cached); err == nil {
+	if err := u.safeCacheGet(ctx, cacheKey, &cached); err == nil {
 		return cached.Items, cached.Total, nil
 	}
 
@@ -553,7 +679,7 @@ func (u *CatalogUsecase) GetUserAnilistList(ctx context.Context, slug string, st
 	}
 
 	// Store in cache for 5 minutes
-	_ = u.cache.Set(ctx, cacheKey, AnilistListCacheResponse{
+	u.safeCacheSet(ctx, cacheKey, AnilistListCacheResponse{
 		Items: items,
 		Total: total,
 	}, 5*time.Minute)
@@ -602,61 +728,137 @@ type WeaklyRanking struct {
 }
 
 func (u *CatalogUsecase) GetHomeData(ctx context.Context, userID *uint64) (*HomeData, error) {
+	cacheKey := "home_data"
 	var data HomeData
 
-	// Recently Added
+	// 1. Try global cache first
+	if err := u.safeCacheGet(ctx, cacheKey, &data); err == nil {
+		// Cache hit! Inject personalized state for the requester if logged in
+		if userID != nil {
+			u.injectUserInteractions(ctx, *userID, &data)
+		}
+		return &data, nil
+	}
+
+	// 2. Cache miss -> Fetch all candidate songs (without enrichment yet)
 	recent, _ := u.songRepo.GetPaginated(ctx, 10, 0, domain.SongFilters{})
-	for i := range recent {
-		u.enrichSong(ctx, userID, &recent[i])
-	}
-	data.RecentlyAdded = recent
-
-	// Most Popular
 	popular, _ := u.songRepo.GetPaginated(ctx, 10, 0, domain.SongFilters{Sort: "favorites"})
-	for i := range popular {
-		u.enrichSong(ctx, userID, &popular[i])
-	}
-	data.MostPopular = popular
-
-	// Most Viewed
 	viewed, _ := u.songRepo.GetPaginated(ctx, 10, 0, domain.SongFilters{Sort: "views"})
-	for i := range viewed {
-		u.enrichSong(ctx, userID, &viewed[i])
-	}
-	data.MostViewed = viewed
+	ranking, _ := u.songRepo.GetRanking(ctx, "global", "all", 20, 0)
+
+	// 3. Combine all for single bulk enrichment (Excluding user-specific data for caching)
+	allSongs := make([]domain.Song, 0, len(recent)+len(popular)+len(viewed)+len(ranking))
+	allSongs = append(allSongs, recent...)
+	allSongs = append(allSongs, popular...)
+	allSongs = append(allSongs, viewed...)
+	allSongs = append(allSongs, ranking...)
+
+	// 4. Perform bulk enrichment (Global data only)
+	u.enrichSongsBulk(ctx, nil, allSongs)
+
+	// 5. Map enriched songs back to sections using slice bounds
+	cursor := 0
+	data.RecentlyAdded = allSongs[cursor : cursor+len(recent)]
+	cursor += len(recent)
+	data.MostPopular = allSongs[cursor : cursor+len(popular)]
+	cursor += len(popular)
+	data.MostViewed = allSongs[cursor : cursor+len(viewed)]
+	cursor += len(viewed)
+	enrichedRanking := allSongs[cursor : cursor+len(ranking)]
 
 	// Featured Song (First from popular)
-	if len(popular) > 0 {
-		data.FeaturedSong = &popular[0]
+	if len(data.MostPopular) > 0 {
+		data.FeaturedSong = &data.MostPopular[0]
 	}
 
-	// Weakly Ranking (OP/ED split from ranking)
-	ranking, _ := u.songRepo.GetRanking(ctx, "global", "all", 20, 0)
+	// Weakly Ranking (OP/ED split)
 	data.WeaklyRanking.OP = []domain.Song{}
 	data.WeaklyRanking.ED = []domain.Song{}
-	for i := range ranking {
-		u.enrichSong(ctx, userID, &ranking[i])
-		if ranking[i].Type == "OP" && len(data.WeaklyRanking.OP) < 3 {
-			data.WeaklyRanking.OP = append(data.WeaklyRanking.OP, ranking[i])
-		} else if ranking[i].Type == "ED" && len(data.WeaklyRanking.ED) < 3 {
-			data.WeaklyRanking.ED = append(data.WeaklyRanking.ED, ranking[i])
+	for _, s := range enrichedRanking {
+		if s.Type == "OP" && len(data.WeaklyRanking.OP) < 3 {
+			data.WeaklyRanking.OP = append(data.WeaklyRanking.OP, s)
+		} else if s.Type == "ED" && len(data.WeaklyRanking.ED) < 3 {
+			data.WeaklyRanking.ED = append(data.WeaklyRanking.ED, s)
 		}
 	}
 
 	// Featured Artists
 	artists, err := u.artistRepo.GetFeatured(ctx, 5)
-	if err != nil {
-		fmt.Printf("[Catalog] Error fetching featured artists: %v\n", err)
+	if err == nil {
+		for i := range artists {
+			artists[i].AvatarUrl = u.mediaService.Resolve(artists[i].Avatar)
+		}
+		data.FeaturedArtists = artists
 	}
-	for i := range artists {
-		artists[i].AvatarUrl = u.mediaService.Resolve(artists[i].Avatar)
+
+	// 6. Save to cache for 10 minutes (Shared across all guests/users)
+	u.safeCacheSet(ctx, cacheKey, &data, 10*time.Minute)
+
+	// 7. Finally, inject user specific state for the requester
+	if userID != nil {
+		u.injectUserInteractions(ctx, *userID, &data)
 	}
-	data.FeaturedArtists = artists
 
 	return &data, nil
 }
 
 // ─── Helpers ───
+
+func (u *CatalogUsecase) injectUserInteractions(ctx context.Context, userID uint64, data *HomeData) {
+	// Collect all song pointers from the data structure
+	allPointers := make([]*domain.Song, 0, 60)
+
+	for i := range data.RecentlyAdded {
+		allPointers = append(allPointers, &data.RecentlyAdded[i])
+	}
+	for i := range data.MostPopular {
+		allPointers = append(allPointers, &data.MostPopular[i])
+	}
+	for i := range data.MostViewed {
+		allPointers = append(allPointers, &data.MostViewed[i])
+	}
+	for i := range data.WeaklyRanking.OP {
+		allPointers = append(allPointers, &data.WeaklyRanking.OP[i])
+	}
+	for i := range data.WeaklyRanking.ED {
+		allPointers = append(allPointers, &data.WeaklyRanking.ED[i])
+	}
+	if data.FeaturedSong != nil {
+		allPointers = append(allPointers, data.FeaturedSong)
+	}
+
+	if len(allPointers) == 0 {
+		return
+	}
+
+	// Deduplicate IDs for query efficiency
+	uniqueIDs := make(map[uint64]bool)
+	idList := make([]uint64, 0)
+	for _, s := range allPointers {
+		if !uniqueIDs[s.ID] {
+			uniqueIDs[s.ID] = true
+			idList = append(idList, s.ID)
+		}
+	}
+
+	// Bulk fetch user interactions
+	interactions, err := u.interactionRepo.GetUserInteractionsBySongIDs(ctx, userID, idList)
+	if err != nil {
+		return
+	}
+
+	// Apply interactions to all instances of the songs
+	for _, s := range allPointers {
+		if inter, ok := interactions[s.ID]; ok {
+			s.IsFavorited = inter.IsFavorited
+			s.IsLiked = inter.Reaction == 1
+			s.IsDisliked = inter.Reaction == -1
+			s.UserRating = inter.Rating
+		}
+		// Individual moderation check (can be bulked if repository adds support)
+		s.IsReported, _ = u.moderationRepo.IsSongReportedByUser(ctx, userID, s.ID)
+	}
+}
 
 func (u *CatalogUsecase) enrichSong(ctx context.Context, userID *uint64, s *domain.Song) {
 	if s.Anime == nil {
@@ -787,7 +989,7 @@ func (u *CatalogUsecase) GetSitemapData(ctx context.Context) ([]domain.SitemapIt
 	animes, err := u.animeRepo.GetPublicSlugs(ctx)
 	if err == nil {
 		for i := range animes {
-			animes[i].Loc = "/anime/" + animes[i].Loc
+			animes[i].Loc = "/animes/" + animes[i].Loc
 			animes[i].Priority = 0.8
 			animes[i].ChangeFreq = "weekly"
 		}
@@ -798,11 +1000,7 @@ func (u *CatalogUsecase) GetSitemapData(ctx context.Context) ([]domain.SitemapIt
 	songs, err := u.songRepo.GetPublicSlugs(ctx)
 	if err == nil {
 		for i := range songs {
-			// Loc in DB is slug (e.g. chainsaw-man/kick-back)
-			// But wait, song slug in DB might already be full or just song slug.
-			// Let's assume catalog logic uses /song/ANIME_SLUG/SONG_SLUG
-			// Actually, in GetSongByAnimeSongSlug it uses anime_slug/song_slug
-			songs[i].Loc = "/song/" + songs[i].Loc
+			songs[i].Loc = "/songs/" + songs[i].Loc
 			songs[i].Priority = 0.7
 			songs[i].ChangeFreq = "monthly"
 		}
@@ -813,7 +1011,7 @@ func (u *CatalogUsecase) GetSitemapData(ctx context.Context) ([]domain.SitemapIt
 	artists, err := u.artistRepo.GetPublicSlugs(ctx)
 	if err == nil {
 		for i := range artists {
-			artists[i].Loc = "/artist/" + artists[i].Loc
+			artists[i].Loc = "/artists/" + artists[i].Loc
 			artists[i].Priority = 0.6
 			artists[i].ChangeFreq = "monthly"
 		}
@@ -821,4 +1019,22 @@ func (u *CatalogUsecase) GetSitemapData(ctx context.Context) ([]domain.SitemapIt
 	}
 
 	return allItems, nil
+}
+
+func (u *CatalogUsecase) safeCacheGet(ctx context.Context, key string, dest interface{}) error {
+	if !u.cache.IsAvailable() {
+		return fmt.Errorf("cache unavailable")
+	}
+	cacheCtx, cancel := context.WithTimeout(ctx, 300*time.Millisecond)
+	defer cancel()
+	return u.cache.Get(cacheCtx, key, dest)
+}
+
+func (u *CatalogUsecase) safeCacheSet(ctx context.Context, key string, val interface{}, exp time.Duration) {
+	if !u.cache.IsAvailable() {
+		return
+	}
+	cacheCtx, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
+	defer cancel()
+	_ = u.cache.Set(cacheCtx, key, val, exp)
 }

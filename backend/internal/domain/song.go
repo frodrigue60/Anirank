@@ -164,7 +164,9 @@ type SongRepository interface {
 
 	// Relations
 	GetVariantsBySongID(ctx context.Context, songID uint64) ([]SongVariant, error)
+	GetVariantsBySongIDs(ctx context.Context, songIDs []uint64) (map[uint64][]SongVariant, error)
 	GetArtistsBySongID(ctx context.Context, songID uint64, isAdmin bool) ([]Artist, error)
+	GetArtistsBySongIDs(ctx context.Context, songIDs []uint64) (map[uint64][]Artist, error)
 	SyncArtists(ctx context.Context, songID uint64, artistIDs []uint64) error
 	ToggleStatus(ctx context.Context, id uint64) error
 

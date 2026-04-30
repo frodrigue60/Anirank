@@ -7,7 +7,7 @@
   import { getApiErrorMessage } from "$lib/api-errors";
   import type { PageData } from "./$types";
   import { authState } from "$lib/state/auth.svelte";
-  import { Loader2 } from "lucide-svelte";
+  import Loader2 from "lucide-svelte/icons/loader-2";;
 
   let { data } = $props<{ data: PageData }>();
   // svelte-ignore state_referenced_locally

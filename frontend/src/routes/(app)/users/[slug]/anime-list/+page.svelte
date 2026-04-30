@@ -4,12 +4,10 @@
   import api from "$lib/api";
   import InfiniteScroll from "$lib/components/InfiniteScroll.svelte";
   import RequestModal from "$lib/components/RequestModal.svelte";
-  import {
-    Loader2,
-    Plus,
-    ExternalLink,
-    MessageSquarePlus,
-  } from "lucide-svelte";
+  import Loader2 from "lucide-svelte/icons/loader-2";
+import Plus from "lucide-svelte/icons/plus";
+import ExternalLink from "lucide-svelte/icons/external-link";
+import MessageSquarePlus from "lucide-svelte/icons/message-square-plus";;
   import { authState } from "$lib/state/auth.svelte";
 
   let { data } = $props();

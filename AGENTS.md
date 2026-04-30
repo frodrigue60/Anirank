@@ -134,3 +134,20 @@ The internal `uint64` IDs in the database (e.g. `user.ID`, `song.ID`) are **stri
 - **Don't** use glassmorphism, `backdrop-blur`, or `bg-opacity` in UI components. Use solid surface token colors.
 - **Don't** import `strconv` in `mapper.go` — there is no need to convert IDs to strings in the DTO layer.
 - **Don't** run `migrate reset` on the production database. Only on local/dev environments.
+
+---
+
+## 7. Performance & Resilience Patterns (Mandatory)
+
+### Resilient Storage
+- All Redis-backed storage (Rate limiters, App Cache) MUST be wrapped in `cache.NewResilientStorage(primary)`.
+- This ensures the application falls back to In-Memory storage if Redis becomes unresponsive.
+- Use `REDIS_ENABLED=false` in `.env` to skip Redis connectivity entirely in restricted environments.
+
+### Eager Loading (N+1 Prevention)
+- In any UseCase returning a list of entities (Feeds, Rankings, Catalogs), DO NOT loop and call repositories inside the loop.
+- Use the **Batch Enrichment Pattern**:
+    1. Collect all required IDs into maps.
+    2. Fetch all related entities (Users, Songs, Artists) in bulk using `GetMany`.
+    3. Hydrate the original list in a single pass.
+- Target latency for list endpoints: **< 50ms**.

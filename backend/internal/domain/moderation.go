@@ -76,6 +76,7 @@ type ModerationRepository interface {
 	// User Facing
 	CreateSongReport(ctx context.Context, report *SongReport) error
 	IsSongReportedByUser(ctx context.Context, userID, songID uint64) (bool, error)
+	GetSongReportsByUserAndSongIDs(ctx context.Context, userID uint64, songIDs []uint64) (map[uint64]bool, error)
 	CreateCommentReport(ctx context.Context, report *CommentReport) error
 	CreateUserRequest(ctx context.Context, request *UserRequest) error
 

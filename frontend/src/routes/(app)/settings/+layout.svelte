@@ -1,15 +1,13 @@
 <script lang="ts">
   import { authState } from "$lib/state/auth.svelte";
-  import {
-    User,
-    Settings,
-    Tv,
-    Bell,
-    Download,
-    Smartphone,
-    Code,
-    Check,
-  } from "lucide-svelte";
+  import User from "lucide-svelte/icons/user";
+import Settings from "lucide-svelte/icons/settings";
+import Tv from "lucide-svelte/icons/tv";
+import Bell from "lucide-svelte/icons/bell";
+import Download from "lucide-svelte/icons/download";
+import Smartphone from "lucide-svelte/icons/smartphone";
+import Code from "lucide-svelte/icons/code";
+import Check from "lucide-svelte/icons/check";;
   import { onMount } from "svelte";
   import { goto } from "$app/navigation";
   import { page } from "$app/state";

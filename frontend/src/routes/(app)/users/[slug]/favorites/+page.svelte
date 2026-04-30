@@ -1,6 +1,6 @@
 <script lang="ts">
   import { fade } from "svelte/transition";
-  import { Music } from "lucide-svelte";
+  import Music from "lucide-svelte/icons/music";;
   import SongCard from "$lib/components/SongCard.svelte";
   import InfiniteScroll from "$lib/components/InfiniteScroll.svelte";
   import api from "$lib/api";

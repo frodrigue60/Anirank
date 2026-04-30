@@ -3,7 +3,7 @@
   import { page } from "$app/state";
   import InfiniteScroll from "$lib/components/InfiniteScroll.svelte";
   import api from "$lib/api";
-  import { Search } from "lucide-svelte";
+  import Search from "lucide-svelte/icons/search";;
   import SEO from "$lib/components/SEO.svelte";
 
   let { data }: { data: any } = $props();

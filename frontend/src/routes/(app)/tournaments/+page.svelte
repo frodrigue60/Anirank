@@ -4,7 +4,9 @@
   import type { Tournament } from "$lib/types/tournament";
   import InfiniteScroll from "$lib/components/InfiniteScroll.svelte";
   import SEO from "$lib/components/SEO.svelte";
-  import { Trophy, Users, Music } from "lucide-svelte";
+  import Trophy from "lucide-svelte/icons/trophy";
+import Users from "lucide-svelte/icons/users";
+import Music from "lucide-svelte/icons/music";;
 
   let tournaments = $state<Tournament[]>([]);
   let currentPage = $state(1);

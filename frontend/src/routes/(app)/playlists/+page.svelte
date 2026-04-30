@@ -3,7 +3,9 @@
   import { page } from "$app/state";
   import InfiniteScroll from "$lib/components/InfiniteScroll.svelte";
   import api from "$lib/api";
-  import { Search, Music, User } from "lucide-svelte";
+  import Search from "lucide-svelte/icons/search";
+import Music from "lucide-svelte/icons/music";
+import User from "lucide-svelte/icons/user";;
 
   let { data }: { data: any } = $props();
 

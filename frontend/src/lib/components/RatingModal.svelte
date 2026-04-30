@@ -1,7 +1,11 @@
 <script lang="ts">
   import { authState } from "$lib/state/auth.svelte";
   import { toastState } from "$lib/state/toast.svelte";
-  import { X, Star, Send, CheckCircle2, Loader2 } from "lucide-svelte";
+  import X from "lucide-svelte/icons/x";
+import Star from "lucide-svelte/icons/star";
+import Send from "lucide-svelte/icons/send";
+import CheckCircle2 from "lucide-svelte/icons/check-circle-2";
+import Loader2 from "lucide-svelte/icons/loader-2";;
   import api from "$lib/api";
   import { fade, scale } from "svelte/transition";
 

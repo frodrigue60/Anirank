@@ -105,6 +105,7 @@ func (r *songRepository) GetPaginated(ctx context.Context, limit, offset int, fi
 	query := `
 		SELECT s.*, 
 		       st.id AS "song_type.id", st.uuid AS "song_type.uuid", st.name AS "song_type.name", st.slug AS "song_type.slug", st.description AS "song_type.description",
+		       a.id AS "anime.id", a.uuid AS "anime.uuid", a.title AS "anime.title", a.slug AS "anime.slug", a.cover AS "anime.cover",
 		       EXISTS (SELECT 1 FROM artist_song asong JOIN artists art ON asong.artist_id = art.id WHERE asong.song_id = s.id AND art.status = false) as partial_artist_inactive
 		FROM songs s
 		JOIN animes a ON s.anime_id = a.id
@@ -387,6 +388,58 @@ func (r *songRepository) Delete(ctx context.Context, id uint64) error {
 	return err
 }
 
+func (r *songRepository) GetVariantsBySongIDs(ctx context.Context, songIDs []uint64) (map[uint64][]domain.SongVariant, error) {
+	if len(songIDs) == 0 {
+		return map[uint64][]domain.SongVariant{}, nil
+	}
+
+	query, args, err := sqlx.In(`
+		SELECT 
+			sv.id, sv.uuid, sv.version_number, sv.song_id, sv.slug, sv.views, sv.season_id, sv.year_id, sv.spoiler, sv.status, sv.created_at, sv.updated_at,
+			v.video_src, v.embed_code
+		FROM song_variants sv
+		LEFT JOIN videos v ON sv.id = v.song_variant_id
+		WHERE sv.song_id IN (?)
+		ORDER BY sv.song_id, sv.version_number ASC
+	`, songIDs)
+	if err != nil {
+		return nil, err
+	}
+	query = r.db.Rebind(query)
+
+	type VariantWithVideoStruct struct {
+		domain.SongVariant
+		VideoSrc  *string `db:"video_src"`
+		EmbedCode *string `db:"embed_code"`
+	}
+
+	var rows []VariantWithVideoStruct
+	err = r.db.SelectContext(ctx, &rows, query, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[uint64][]domain.SongVariant)
+	for _, row := range rows {
+		v := row.SongVariant
+		if row.VideoSrc != nil || row.EmbedCode != nil {
+			v.Video = &domain.SongVariantVideo{
+				EmbedUrl: extractSrcFromIframe(row.EmbedCode),
+				LocalUrl: row.VideoSrc,
+			}
+
+			if row.VideoSrc != nil && *row.VideoSrc != "" {
+				v.Video.Type = "file"
+			} else if row.EmbedCode != nil && *row.EmbedCode != "" {
+				v.Video.Type = "embed"
+			}
+		}
+		result[v.SongID] = append(result[v.SongID], v)
+	}
+
+	return result, nil
+}
+
 func (r *songRepository) GetVariantsBySongID(ctx context.Context, songID uint64) ([]domain.SongVariant, error) {
 	query := `
 		SELECT 
@@ -432,6 +485,41 @@ func (r *songRepository) GetVariantsBySongID(ctx context.Context, songID uint64)
 		variants = []domain.SongVariant{}
 	}
 	return variants, nil
+}
+
+func (r *songRepository) GetArtistsBySongIDs(ctx context.Context, songIDs []uint64) (map[uint64][]domain.Artist, error) {
+	if len(songIDs) == 0 {
+		return map[uint64][]domain.Artist{}, nil
+	}
+
+	query, args, err := sqlx.In(`
+		SELECT a.*, asong.song_id as linked_song_id
+		FROM artists a
+		JOIN artist_song asong ON a.id = asong.artist_id
+		WHERE asong.song_id IN (?) AND a.status = true
+	`, songIDs)
+	if err != nil {
+		return nil, err
+	}
+	query = r.db.Rebind(query)
+
+	type ArtistWithSongID struct {
+		domain.Artist
+		LinkedSongID uint64 `db:"linked_song_id"`
+	}
+
+	var rows []ArtistWithSongID
+	err = r.db.SelectContext(ctx, &rows, query, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[uint64][]domain.Artist)
+	for _, row := range rows {
+		result[row.LinkedSongID] = append(result[row.LinkedSongID], row.Artist)
+	}
+
+	return result, nil
 }
 
 func (r *songRepository) GetArtistsBySongID(ctx context.Context, songID uint64, isAdmin bool) ([]domain.Artist, error) {
@@ -511,9 +599,11 @@ func (r *songRepository) GetMany(ctx context.Context, ids []uint64) ([]domain.So
 	}
 	query, args, err := sqlx.In(`
 		SELECT s.*, s.average_score, s.favorites_count,
-		       st.id AS "song_type.id", st.uuid AS "song_type.uuid", st.name AS "song_type.name", st.slug AS "song_type.slug", st.description AS "song_type.description"
+		       st.id AS "song_type.id", st.uuid AS "song_type.uuid", st.name AS "song_type.name", st.slug AS "song_type.slug", st.description AS "song_type.description",
+		       a.id AS "anime.id", a.uuid AS "anime.uuid", a.title AS "anime.title", a.cover AS "anime.cover", a.banner AS "anime.banner", a.slug AS "anime.slug"
 		FROM songs s 
 		LEFT JOIN song_types st ON s.type_id = st.id
+		LEFT JOIN animes a ON s.anime_id = a.id
 		WHERE s.id IN (?)
 	`, ids)
 	if err != nil {

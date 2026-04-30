@@ -1,6 +1,6 @@
 <script lang="ts">
   import { fade } from "svelte/transition";
-  import { User as UserIcon } from "lucide-svelte";
+  import UserIcon from "lucide-svelte/icons/user";;
   import InfiniteScroll from "$lib/components/InfiniteScroll.svelte";
   import api from "$lib/api";
   import ArtistAvatarCard from "$lib/components/ArtistAvatarCard.svelte";

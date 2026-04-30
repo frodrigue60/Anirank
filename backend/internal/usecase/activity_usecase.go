@@ -36,9 +36,7 @@ func (u *activityUsecase) GetFeed(ctx context.Context, limit, offset int) ([]dom
 		return nil, err
 	}
 
-	for i := range activities {
-		u.enrichActivity(ctx, &activities[i])
-	}
+	u.enrichActivitiesBatch(ctx, activities)
 
 	return activities, nil
 }
@@ -47,59 +45,120 @@ func (u *activityUsecase) GetCount(ctx context.Context) (int, error) {
 	return u.activityRepo.Count(ctx)
 }
 
-func (u *activityUsecase) enrichActivity(ctx context.Context, activity *domain.Activity) {
-	// Populate compatibility Action field
-	activity.Action = activity.ActionType
-
-	// Hydrate Author User
-	user, err := u.userRepo.GetByID(ctx, activity.UserID)
-	if err == nil {
-		if user.Avatar != nil {
-			user.AvatarUrl = u.mediaService.Resolve(user.Avatar)
-		}
-		activity.User = user
+func (u *activityUsecase) enrichActivitiesBatch(ctx context.Context, activities []domain.Activity) {
+	if len(activities) == 0 {
+		return
 	}
 
-	// Hydrate Target based on type
-	switch activity.TargetType {
-	case "song":
-		song, err := u.songRepo.GetByID(ctx, activity.TargetID)
-		if err == nil {
-			if song.Anime != nil {
-				song.Anime.CoverUrl = u.mediaService.Resolve(song.Anime.Cover)
-			}
+	userIDs := make(map[uint64]bool)
+	songIDs := make(map[uint64]bool)
+	artistIDs := make(map[uint64]bool)
+	targetUserIDs := make(map[uint64]bool)
 
-			// Set computed fields (Name fallback)
-			if song.SongRomaji != nil && *song.SongRomaji != "" {
-				song.Name = *song.SongRomaji
-			} else if song.SongEN != nil && *song.SongEN != "" {
-				song.Name = *song.SongEN
-			} else if song.SongJP != nil && *song.SongJP != "" {
-				song.Name = *song.SongJP
+	for _, a := range activities {
+		userIDs[a.UserID] = true
+		switch a.TargetType {
+		case "song":
+			songIDs[a.TargetID] = true
+		case "artist":
+			artistIDs[a.TargetID] = true
+		case "user":
+			targetUserIDs[a.TargetID] = true
+		}
+	}
+
+	// Map to store fetched entities
+	usersMap := make(map[uint64]*domain.User)
+	if len(userIDs) > 0 {
+		ids := make([]uint64, 0, len(userIDs))
+		for id := range userIDs {
+			ids = append(ids, id)
+		}
+		users, _ := u.userRepo.GetMany(ctx, ids)
+		for i := range users {
+			if users[i].Avatar != nil {
+				users[i].AvatarUrl = u.mediaService.Resolve(users[i].Avatar)
+			}
+			usersMap[users[i].ID] = &users[i]
+		}
+	}
+
+	songsMap := make(map[uint64]*domain.Song)
+	if len(songIDs) > 0 {
+		ids := make([]uint64, 0, len(songIDs))
+		for id := range songIDs {
+			ids = append(ids, id)
+		}
+		songs, _ := u.songRepo.GetMany(ctx, ids)
+		for i := range songs {
+			if songs[i].Anime != nil {
+				songs[i].Anime.CoverUrl = u.mediaService.Resolve(songs[i].Anime.Cover)
+			}
+			// Set computed fields (fallback logic)
+			if songs[i].SongRomaji != nil && *songs[i].SongRomaji != "" {
+				songs[i].Name = *songs[i].SongRomaji
+			} else if songs[i].SongEN != nil && *songs[i].SongEN != "" {
+				songs[i].Name = *songs[i].SongEN
+			} else if songs[i].SongJP != nil && *songs[i].SongJP != "" {
+				songs[i].Name = *songs[i].SongJP
 			} else {
-				song.Name = "N/A"
+				songs[i].Name = "N/A"
 			}
+			songsMap[songs[i].ID] = &songs[i]
+		}
+	}
 
-			activity.Target = song
-			activity.Song = song
+	artistsMap := make(map[uint64]*domain.Artist)
+	if len(artistIDs) > 0 {
+		ids := make([]uint64, 0, len(artistIDs))
+		for id := range artistIDs {
+			ids = append(ids, id)
 		}
-	case "artist":
-		artist, err := u.artistRepo.GetByID(ctx, activity.TargetID)
-		if err == nil {
-			if artist.Avatar != nil {
-				artist.AvatarUrl = u.mediaService.Resolve(artist.Avatar)
+		artists, _ := u.artistRepo.GetMany(ctx, ids)
+		for i := range artists {
+			if artists[i].Avatar != nil {
+				artists[i].AvatarUrl = u.mediaService.Resolve(artists[i].Avatar)
 			}
-			activity.Target = artist
-			activity.Artist = artist
+			artistsMap[artists[i].ID] = &artists[i]
 		}
-	case "user":
-		targetUser, err := u.userRepo.GetByID(ctx, activity.TargetID)
-		if err == nil {
-			if targetUser.Avatar != nil {
-				targetUser.AvatarUrl = u.mediaService.Resolve(targetUser.Avatar)
+	}
+
+	targetUsersMap := make(map[uint64]*domain.User)
+	if len(targetUserIDs) > 0 {
+		ids := make([]uint64, 0, len(targetUserIDs))
+		for id := range targetUserIDs {
+			ids = append(ids, id)
+		}
+		tUsers, _ := u.userRepo.GetMany(ctx, ids)
+		for i := range tUsers {
+			if tUsers[i].Avatar != nil {
+				tUsers[i].AvatarUrl = u.mediaService.Resolve(tUsers[i].Avatar)
 			}
-			activity.Target = targetUser
-			activity.UserTarget = targetUser
+			targetUsersMap[tUsers[i].ID] = &tUsers[i]
+		}
+	}
+
+	// Final pass to assign relations
+	for i := range activities {
+		activities[i].Action = activities[i].ActionType
+		activities[i].User = usersMap[activities[i].UserID]
+
+		switch activities[i].TargetType {
+		case "song":
+			if song, ok := songsMap[activities[i].TargetID]; ok {
+				activities[i].Target = song
+				activities[i].Song = song
+			}
+		case "artist":
+			if artist, ok := artistsMap[activities[i].TargetID]; ok {
+				activities[i].Target = artist
+				activities[i].Artist = artist
+			}
+		case "user":
+			if targetUser, ok := targetUsersMap[activities[i].TargetID]; ok {
+				activities[i].Target = targetUser
+				activities[i].UserTarget = targetUser
+			}
 		}
 	}
 }

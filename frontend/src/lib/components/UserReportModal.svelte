@@ -1,5 +1,10 @@
 <script lang="ts">
-  import { X, Flag, Send, CheckCircle2, Loader2, User } from "lucide-svelte";
+  import X from "lucide-svelte/icons/x";
+import Flag from "lucide-svelte/icons/flag";
+import Send from "lucide-svelte/icons/send";
+import CheckCircle2 from "lucide-svelte/icons/check-circle-2";
+import Loader2 from "lucide-svelte/icons/loader-2";
+import User from "lucide-svelte/icons/user";;
   import api from "$lib/api";
   import { fade, scale } from "svelte/transition";
 

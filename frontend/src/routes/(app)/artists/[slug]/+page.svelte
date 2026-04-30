@@ -3,7 +3,7 @@
   import { page } from "$app/state";
   import { configState } from "$lib/state/config.svelte";
   import SongCard from "$lib/components/SongCard.svelte";
-  import { Search } from "lucide-svelte";
+  import Search from "lucide-svelte/icons/search";;
   import api from "$lib/api";
   import { toastState } from "$lib/state/toast.svelte";
   import SEO from "$lib/components/SEO.svelte";

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { fade } from "svelte/transition";
-  import { Search, Music } from "lucide-svelte";
+  import Search from "lucide-svelte/icons/search";
+import Music from "lucide-svelte/icons/music";;
   import PlaylistCard from "$lib/components/PlaylistCard.svelte";
   import { authState } from "$lib/state/auth.svelte";
   import CreatePlaylistModal from "$lib/components/CreatePlaylistModal.svelte";

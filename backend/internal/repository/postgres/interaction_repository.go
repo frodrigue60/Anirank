@@ -62,6 +62,100 @@ func (r *interactionRepository) CountRatingsByUser(ctx context.Context, userID u
 	return count, err
 }
 
+func (r *interactionRepository) GetAverageRatingsBySongIDs(ctx context.Context, songIDs []uint64) (map[uint64]float64, error) {
+	if len(songIDs) == 0 {
+		return map[uint64]float64{}, nil
+	}
+
+	query, args, err := sqlx.In("SELECT song_id, AVG(rating) as avg_rating FROM song_ratings WHERE song_id IN (?) GROUP BY song_id", songIDs)
+	if err != nil {
+		return nil, err
+	}
+	query = r.db.Rebind(query)
+
+	type AvgRatingRow struct {
+		SongID    uint64  `db:"song_id"`
+		AvgRating float64 `db:"avg_rating"`
+	}
+
+	var rows []AvgRatingRow
+	err = r.db.SelectContext(ctx, &rows, query, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[uint64]float64)
+	for _, row := range rows {
+		result[row.SongID] = row.AvgRating
+	}
+
+	return result, nil
+}
+
+func (r *interactionRepository) GetUserInteractionsBySongIDs(ctx context.Context, userID uint64, songIDs []uint64) (map[uint64]domain.UserSongInteraction, error) {
+	if len(songIDs) == 0 {
+		return map[uint64]domain.UserSongInteraction{}, nil
+	}
+
+	result := make(map[uint64]domain.UserSongInteraction)
+	for _, id := range songIDs {
+		result[id] = domain.UserSongInteraction{SongID: id}
+	}
+
+	// 1. Favorites
+	queryFavs, argsFavs, err := sqlx.In("SELECT song_id FROM song_user WHERE user_id = ? AND song_id IN (?)", userID, songIDs)
+	if err == nil {
+		queryFavs = r.db.Rebind(queryFavs)
+		var favIDs []uint64
+		if err := r.db.SelectContext(ctx, &favIDs, queryFavs, argsFavs...); err == nil {
+			for _, id := range favIDs {
+				inter := result[id]
+				inter.IsFavorited = true
+				result[id] = inter
+			}
+		}
+	}
+
+	// 2. Reactions (Likes/Dislikes)
+	queryReacts, argsReacts, err := sqlx.In("SELECT song_id, type FROM song_reactions WHERE user_id = ? AND song_id IN (?)", userID, songIDs)
+	if err == nil {
+		queryReacts = r.db.Rebind(queryReacts)
+		type ReactRow struct {
+			SongID uint64 `db:"song_id"`
+			Type   int8   `db:"type"`
+		}
+		var reactRows []ReactRow
+		if err := r.db.SelectContext(ctx, &reactRows, queryReacts, argsReacts...); err == nil {
+			for _, row := range reactRows {
+				inter := result[row.SongID]
+				inter.Reaction = row.Type
+				result[row.SongID] = inter
+			}
+		}
+	}
+
+	// 3. Ratings
+	queryRatings, argsRatings, err := sqlx.In("SELECT song_id, rating FROM song_ratings WHERE user_id = ? AND song_id IN (?)", userID, songIDs)
+	if err == nil {
+		queryRatings = r.db.Rebind(queryRatings)
+		type RatingRow struct {
+			SongID uint64  `db:"song_id"`
+			Rating float64 `db:"rating"`
+		}
+		var ratingRows []RatingRow
+		if err := r.db.SelectContext(ctx, &ratingRows, queryRatings, argsRatings...); err == nil {
+			for _, row := range ratingRows {
+				inter := result[row.SongID]
+				val := row.Rating
+				inter.Rating = &val
+				result[row.SongID] = inter
+			}
+		}
+	}
+
+	return result, nil
+}
+
 // Favorites
 func (r *interactionRepository) ToggleFavorite(ctx context.Context, favorite *domain.Favorite) (bool, error) {
 	var table string

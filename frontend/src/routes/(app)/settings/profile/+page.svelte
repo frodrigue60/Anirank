@@ -3,7 +3,10 @@
   import { themeState, type Theme } from "$lib/state/theme.svelte";
   import api from "$lib/api";
   import { toastState } from "$lib/state/toast.svelte";
-  import { Camera, Image as ImageIcon, Save, Loader2 } from "lucide-svelte";
+  import Camera from "lucide-svelte/icons/camera";
+import ImageIcon from "lucide-svelte/icons/image";
+import Save from "lucide-svelte/icons/save";
+import Loader2 from "lucide-svelte/icons/loader-2";;
 
   let scoreFormat = $state(authState.user?.score_format_id || 1);
   let profileColor = $state(authState.user?.profile_color || "#3db4f2");

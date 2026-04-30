@@ -62,6 +62,13 @@ type Favorite struct {
 	UpdatedAt       time.Time `db:"updated_at" json:"updated_at"`
 }
 
+type UserSongInteraction struct {
+	SongID      uint64
+	IsFavorited bool
+	Reaction    int8     // 1 for like, -1 for dislike, 0 for none
+	Rating      *float64
+}
+
 type ActivityItem struct {
 	Type       string      `json:"type"` // "rating", "favorite", "comment"
 	UserID     uint64      `json:"user_id"`
@@ -99,6 +106,8 @@ type InteractionRepository interface {
 	UpsertRating(ctx context.Context, rating *Rating) error
 	GetRatingByUser(ctx context.Context, userID, songID uint64) (*Rating, error)
 	GetAverageRating(ctx context.Context, songID uint64) (float64, error)
+	GetAverageRatingsBySongIDs(ctx context.Context, songIDs []uint64) (map[uint64]float64, error)
+	GetUserInteractionsBySongIDs(ctx context.Context, userID uint64, songIDs []uint64) (map[uint64]UserSongInteraction, error)
 	CountRatingsByUser(ctx context.Context, userID uint64) (int, error) // For automatic badges
 
 	// Reactions (Likes & Dislikes)

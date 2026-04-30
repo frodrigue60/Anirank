@@ -1,14 +1,12 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import api from "$lib/api";
-  import {
-    Bell,
-    Users,
-    MessageSquare,
-    Info,
-    ShieldCheck,
-    Loader2,
-  } from "lucide-svelte";
+  import Bell from "lucide-svelte/icons/bell";
+import Users from "lucide-svelte/icons/users";
+import MessageSquare from "lucide-svelte/icons/message-square";
+import Info from "lucide-svelte/icons/info";
+import ShieldCheck from "lucide-svelte/icons/shield-check";
+import Loader2 from "lucide-svelte/icons/loader-2";;
 
   let loading = $state(true);
   let saving = $state(false);

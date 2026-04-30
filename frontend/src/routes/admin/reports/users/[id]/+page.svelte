@@ -2,7 +2,13 @@
   import api from "$lib/api";
   import { goto } from "$app/navigation";
   import { toastState } from "$lib/state/toast.svelte";
-  import { User, Flag, CheckCircle, Trash2, ArrowLeft, ExternalLink, ShieldAlert } from "lucide-svelte";
+  import User from "lucide-svelte/icons/user";
+import Flag from "lucide-svelte/icons/flag";
+import CheckCircle from "lucide-svelte/icons/check-circle";
+import Trash2 from "lucide-svelte/icons/trash-2";
+import ArrowLeft from "lucide-svelte/icons/arrow-left";
+import ExternalLink from "lucide-svelte/icons/external-link";
+import ShieldAlert from "lucide-svelte/icons/shield-alert";;
   import { fade, scale } from "svelte/transition";
 
   let { data } = $props();

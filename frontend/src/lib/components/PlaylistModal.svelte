@@ -1,13 +1,11 @@
 <script lang="ts">
-  import {
-    X,
-    Plus,
-    Music,
-    Loader2,
-    Check,
-    CheckCircle2,
-    ListMusic,
-  } from "lucide-svelte";
+  import X from "lucide-svelte/icons/x";
+import Plus from "lucide-svelte/icons/plus";
+import Music from "lucide-svelte/icons/music";
+import Loader2 from "lucide-svelte/icons/loader-2";
+import Check from "lucide-svelte/icons/check";
+import CheckCircle2 from "lucide-svelte/icons/check-circle-2";
+import ListMusic from "lucide-svelte/icons/list-music";;
   import api from "$lib/api";
   import { fade, scale, slide } from "svelte/transition";
   import CreatePlaylistModal from "./CreatePlaylistModal.svelte";

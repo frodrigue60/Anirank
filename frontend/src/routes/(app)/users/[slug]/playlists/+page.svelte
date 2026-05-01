@@ -4,6 +4,7 @@
   import Music from "lucide-svelte/icons/music";
   import Plus from "lucide-svelte/icons/plus";
   import PlaylistCard from "$lib/components/PlaylistCard.svelte";
+  import EmptyState from "$lib/components/EmptyState.svelte";
   import { authState } from "$lib/state/auth.svelte";
   import CreatePlaylistModal from "$lib/components/CreatePlaylistModal.svelte";
   import EditPlaylistModal from "$lib/components/EditPlaylistModal.svelte";
@@ -138,15 +139,18 @@
         {/each}
       </div>
     {:else}
-      <div
-        class="py-20 flex flex-col items-center justify-center text-center text-on-surface-variant/40"
-      >
-        <Music size={80} strokeWidth={1} />
-        <h2 class="text-2xl font-bold mt-6">No playlists found</h2>
-        <p class="mt-2 text-sm font-medium">
-          This user hasn't made any public playlists yet.
-        </p>
-      </div>
+      <EmptyState
+        title={searchQuery ? "No playlists found" : "No playlists yet"}
+        message={searchQuery 
+          ? `No playlists matching "${searchQuery}" found.` 
+          : `${data.profile.name} hasn't made any public playlists yet.`}
+        icon={Music}
+        actionLabel={isOwner && !searchQuery ? "Create First Playlist" : searchQuery ? "Clear Search" : ""}
+        onAction={() => {
+          if (isOwner && !searchQuery) showCreateModal = true;
+          else if (searchQuery) searchQuery = "";
+        }}
+      />
     {/if}
   {/if}
 </section>

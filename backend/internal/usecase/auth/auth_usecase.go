@@ -973,3 +973,18 @@ func (u *AuthUsecase) autoRegisterDiscordUser(ctx context.Context, discordUser *
 
 	return newUser, nil
 }
+
+func (u *AuthUsecase) UnlinkSocial(ctx context.Context, userID uint64, provider string) error {
+	// Verify provider is valid
+	validProviders := map[string]bool{
+		"google":  true,
+		"anilist": true,
+		"discord": true,
+	}
+
+	if !validProviders[provider] {
+		return domain.NewAppError(400, "Invalid provider", nil)
+	}
+
+	return u.userRepo.DeleteSocialIdentity(ctx, userID, provider)
+}

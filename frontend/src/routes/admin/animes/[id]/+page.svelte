@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { PageData } from "./$types";
   import api from "$lib/api";
+  import { createTrustedHTML } from "$lib/trusted";
   import { toastState } from "$lib/state/toast.svelte";
   import { invalidateAll } from "$app/navigation";
   import { getApiErrorMessage } from "$lib/api-errors";
@@ -113,7 +114,7 @@
       <h2 class="text-xl font-semibold text-on-surface mb-4">Synopsis</h2>
       <div class="text-on-surface-variant leading-relaxed max-w-none text-sm space-y-4">
         {#if anime.description}
-          {@html anime.description}
+          {@html createTrustedHTML(anime.description)}
         {:else}
           <p class="text-on-surface-variant/40 italic">No description provided.</p>
         {/if}

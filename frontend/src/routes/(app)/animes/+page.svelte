@@ -4,6 +4,7 @@
   import { page } from "$app/state";
   import { configState } from "$lib/state/config.svelte";
   import AnimeCard from "$lib/components/AnimeCard.svelte";
+  import EmptyState from "$lib/components/EmptyState.svelte";
   import InfiniteScroll from "$lib/components/InfiniteScroll.svelte";
   import api from "$lib/api";
   import Search from "lucide-svelte/icons/search";
@@ -354,16 +355,21 @@
           onLoadMore={loadMore}
         />
       {:else}
-        <div
-          class="flex flex-col items-center justify-center py-20 bg-surface-dark/30 rounded-md border border-dashed border-white/5"
-        >
-          <Search size={48} class="text-white/10 mb-4" />
-          <h3 class="text-xl font-bold text-white mb-2">No results found</h3>
-          <p class="text-white/40 max-w-xs text-center">
-            Try adjusting your filters or search terms to find what you're
-            looking for.
-          </p>
-        </div>
+        <EmptyState
+          title="No results found"
+          message="Try adjusting your filters or search terms to find what you're looking for."
+          icon={Search}
+          actionLabel="Clear Filters"
+          onAction={() => {
+            searchTerm = "";
+            selectedYear = "";
+            selectedSeason = "";
+            selectedFormat = "";
+            selectedGenre = "";
+            selectedSort = "";
+            updateFilters();
+          }}
+        />
       {/if}
     </section>
   </div>

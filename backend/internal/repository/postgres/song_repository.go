@@ -191,6 +191,17 @@ func (r *songRepository) GetPaginated(ctx context.Context, limit, offset int, fi
 		whereClauses = append(whereClauses, "a.status = true", "s.status = true")
 	}
 
+	if filters.Cursor != "" {
+		// Use ID as a simple cursor for now
+		var cursorID uint64
+		fmt.Sscanf(filters.Cursor, "%d", &cursorID)
+		if cursorID > 0 {
+			whereClauses = append(whereClauses, fmt.Sprintf("s.id < $%d", i))
+			args = append(args, cursorID)
+			i++
+		}
+	}
+
 	if len(whereClauses) > 0 {
 		query += " WHERE " + joinWS(whereClauses, " AND ")
 	}
@@ -198,13 +209,13 @@ func (r *songRepository) GetPaginated(ctx context.Context, limit, offset int, fi
 	// Sorting
 	switch filters.Sort {
 	case "rating":
-		query += " ORDER BY s.average_score DESC, s.created_at DESC"
+		query += " ORDER BY s.average_score DESC, s.created_at DESC, s.id DESC"
 	case "rating_asc":
-		query += " ORDER BY s.average_score ASC, s.created_at DESC"
+		query += " ORDER BY s.average_score ASC, s.created_at DESC, s.id DESC"
 	case "favorites":
-		query += " ORDER BY s.favorites_count DESC, s.created_at DESC"
+		query += " ORDER BY s.favorites_count DESC, s.created_at DESC, s.id DESC"
 	case "views":
-		query += " ORDER BY s.views DESC, s.created_at DESC"
+		query += " ORDER BY s.views DESC, s.created_at DESC, s.id DESC"
 	case "recently_added":
 		query += " ORDER BY s.created_at DESC, s.id DESC"
 	case "random":
@@ -213,8 +224,14 @@ func (r *songRepository) GetPaginated(ctx context.Context, limit, offset int, fi
 		query += " ORDER BY s.created_at DESC, s.id DESC"
 	}
 
-	query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", i, i+1)
-	args = append(args, limit, offset)
+	// Only apply OFFSET if cursor is not present (for compatibility)
+	if filters.Cursor != "" {
+		query += fmt.Sprintf(" LIMIT $%d", i)
+		args = append(args, limit)
+	} else {
+		query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", i, i+1)
+		args = append(args, limit, offset)
+	}
 
 	err := r.db.SelectContext(ctx, &songs, query, args...)
 	if err != nil {

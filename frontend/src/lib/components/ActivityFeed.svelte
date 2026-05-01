@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import api from "$lib/api";
+  import EmptyState from "$lib/components/EmptyState.svelte";
   import MessagesSquare from "lucide-svelte/icons/messages-square";
   import ArrowRight from "lucide-svelte/icons/arrow-right";
   import Inbox from "lucide-svelte/icons/inbox";
@@ -99,19 +100,12 @@
         </div>
       {/each}
     {:else if activities.length === 0}
-      <div
-        class="p-20 text-center flex flex-col items-center gap-4 bg-surface-container"
-      >
-        <div
-          class="bg-on-surface-variant/5 w-16 h-16 rounded-full flex items-center justify-center text-on-surface-variant/20 mb-2"
-        >
-          <Inbox size={40} />
-        </div>
-        <div
-          class="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/80"
-        >
-          No activities to show
-        </div>
+      <div class="bg-surface-container">
+        <EmptyState
+          title="No activities to show"
+          message="There's no recent activity to display right now. Check back later!"
+          icon={Inbox}
+        />
       </div>
     {:else}
       {#each activities as activity}

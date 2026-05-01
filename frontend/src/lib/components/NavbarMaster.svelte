@@ -131,6 +131,7 @@
                 href="/animes"
                 class="flex items-center gap-3 px-4 py-2 text-sm text-on-surface-variant transition-colors hover:bg-surface-low hover:text-primary"
                 title="Browse Anime Series"
+                aria-label="Browse all anime series"
               >
                 <Tv size={18} /> Animes
               </a>
@@ -145,6 +146,7 @@
                 href="/songs"
                 class="flex items-center gap-3 px-4 py-2 text-sm text-on-surface-variant transition-colors hover:bg-surface-low hover:text-primary"
                 title="Browse Themes and Songs"
+                aria-label="Browse all songs and themes"
               >
                 <Music size={18} /> Songs
               </a>
@@ -166,6 +168,7 @@
                 href="/playlists"
                 class="flex items-center gap-3 px-4 py-2 text-sm text-on-surface-variant transition-colors hover:bg-surface-low hover:text-primary"
                 title="Browse Playlists"
+                aria-label="Browse community playlists"
               >
                 <ListMusic size={18} /> Playlists
               </a>

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/svelte';
+import { render, screen, waitFor, fireEvent } from '@testing-library/svelte';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import AccountSettings from '../../routes/(app)/settings/account/+page.svelte';
 import { authState, setUser } from '$lib/state/auth.svelte';
@@ -68,5 +68,35 @@ describe('AccountSettings Component', () => {
             const discordButton = screen.getByRole('button', { name: /synced/i });
             expect(discordButton).toBeInTheDocument();
         }, { timeout: 2000 });
+    });
+
+    it('should handle unlinking a social account', async () => {
+        // Mock window.confirm to return true
+        const confirmSpy = vi.spyOn(window, 'confirm').mockImplementation(() => true);
+
+        // Mock API delete call
+        server.use(
+            http.delete(`${API_URL}/auth/google/unlink`, () => {
+                return HttpResponse.json({ success: true });
+            })
+        );
+
+        render(AccountSettings);
+
+        const googleButton = screen.getByRole('button', { name: /synced/i });
+        await fireEvent.click(googleButton);
+
+        expect(confirmSpy).toHaveBeenCalled();
+        
+        // Wait for authState update
+        await waitFor(() => {
+            expect(screen.queryByRole('button', { name: /synced/i })).not.toBeInTheDocument();
+            const syncButtons = screen.getAllByRole('button', { name: /sync account/i });
+            // Since we started with 1 linked (Google) and 2 unlinked (Anilist, Discord),
+            // after unlinking Google, we should have 3 unlinked.
+            expect(syncButtons.length).toBe(3);
+        });
+        
+        confirmSpy.mockRestore();
     });
 });

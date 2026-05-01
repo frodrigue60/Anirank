@@ -12,9 +12,9 @@
 </script>
 
 <div
-  class="bg-surface-container border border-white/5 rounded-md overflow-hidden mb-8"
+  class="bg-surface-container border border-white/5 rounded-md overflow-x-auto mb-8"
 >
-  <table class="w-full border-collapse">
+  <table class="w-full border-collapse min-w-[800px]">
     <thead>
       <tr
         class="border-b border-white/5 text-[10px] bg-surface-highest font-black uppercase tracking-widest text-on-surface-variant"

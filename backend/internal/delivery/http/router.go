@@ -134,16 +134,16 @@ func SetupPublicRoutes(app *fiber.App,
 	catalogApi.Get("/animes/:slug", middleware.NewResponseCache(storage, 5*time.Minute), animeHandler.Show)
 
 	// Catalog: Songs
-	catalogApi.Get("/songs", middleware.OptionalAuthMiddleware(jwtService, userRepo), middleware.NewResponseCache(storage, 5*time.Minute), catalogHandler.SongIndex)
-	catalogApi.Get("/songs/ranking/:type", middleware.OptionalAuthMiddleware(jwtService, userRepo), middleware.NewResponseCache(storage, 5*time.Minute), catalogHandler.SongRanking)
-	catalogApi.Get("/songs/:uuid/comments", middleware.OptionalAuthMiddleware(jwtService, userRepo), middleware.NewResponseCache(storage, 5*time.Minute), interactionHandler.GetSongComments)
-	catalogApi.Get("/songs/:anime_slug/:song_slug", middleware.OptionalAuthMiddleware(jwtService, userRepo), middleware.NewResponseCache(storage, 5*time.Minute), catalogHandler.SongShow)
-	catalogApi.Get("/animes/:anime_slug/songs/:song_slug", middleware.OptionalAuthMiddleware(jwtService, userRepo), middleware.NewResponseCache(storage, 5*time.Minute), catalogHandler.SongShow)
+	catalogApi.Get("/songs", middleware.OptionalAuthMiddleware(jwtService, userRepo, appCache), middleware.NewResponseCache(storage, 5*time.Minute), catalogHandler.SongIndex)
+	catalogApi.Get("/songs/ranking/:type", middleware.OptionalAuthMiddleware(jwtService, userRepo, appCache), middleware.NewResponseCache(storage, 5*time.Minute), catalogHandler.SongRanking)
+	catalogApi.Get("/songs/:uuid/comments", middleware.OptionalAuthMiddleware(jwtService, userRepo, appCache), middleware.NewResponseCache(storage, 5*time.Minute), interactionHandler.GetSongComments)
+	catalogApi.Get("/songs/:anime_slug/:song_slug", middleware.OptionalAuthMiddleware(jwtService, userRepo, appCache), middleware.NewResponseCache(storage, 5*time.Minute), catalogHandler.SongShow)
+	catalogApi.Get("/animes/:anime_slug/songs/:song_slug", middleware.OptionalAuthMiddleware(jwtService, userRepo, appCache), middleware.NewResponseCache(storage, 5*time.Minute), catalogHandler.SongShow)
 
 	// Catalog: Artists
 	catalogApi.Get("/artists", middleware.NewResponseCache(storage, 5*time.Minute), catalogHandler.ArtistIndex)
-	catalogApi.Get("/artists/:slug", middleware.OptionalAuthMiddleware(jwtService, userRepo), middleware.NewResponseCache(storage, 5*time.Minute), catalogHandler.ArtistShow)
-	catalogApi.Get("/artists/:slug/songs", middleware.OptionalAuthMiddleware(jwtService, userRepo), middleware.NewResponseCache(storage, 5*time.Minute), catalogHandler.ArtistShow)
+	catalogApi.Get("/artists/:slug", middleware.OptionalAuthMiddleware(jwtService, userRepo, appCache), middleware.NewResponseCache(storage, 5*time.Minute), catalogHandler.ArtistShow)
+	catalogApi.Get("/artists/:slug/songs", middleware.OptionalAuthMiddleware(jwtService, userRepo, appCache), middleware.NewResponseCache(storage, 5*time.Minute), catalogHandler.ArtistShow)
 
 	// Catalog: Studios
 	catalogApi.Get("/studios", catalogHandler.StudioIndex)
@@ -155,12 +155,12 @@ func SetupPublicRoutes(app *fiber.App,
 
 	// Catalog: Users
 	catalogApi.Get("/users/ranking", catalogHandler.UserRanking)
-	catalogApi.Get("/users/:slug", middleware.OptionalAuthMiddleware(jwtService, userRepo), catalogHandler.UserProfile)
+	catalogApi.Get("/users/:slug", middleware.OptionalAuthMiddleware(jwtService, userRepo, appCache), catalogHandler.UserProfile)
 	// Catalog: Home
-	catalogApi.Get("/home", middleware.OptionalAuthMiddleware(jwtService, userRepo), middleware.NewResponseCache(storage, 5*time.Minute), catalogHandler.Home)
+	catalogApi.Get("/home", middleware.OptionalAuthMiddleware(jwtService, userRepo, appCache), middleware.NewResponseCache(storage, 5*time.Minute), catalogHandler.Home)
 
 	// Catalog: Playlists
-	catalogApi.Get("/playlists", middleware.OptionalAuthMiddleware(jwtService, userRepo), catalogHandler.PlaylistIndex)
+	catalogApi.Get("/playlists", middleware.OptionalAuthMiddleware(jwtService, userRepo, appCache), catalogHandler.PlaylistIndex)
 
 	// Sitemap
 	catalogApi.Get("/catalog/sitemap", catalogHandler.GetSitemap)
@@ -176,7 +176,7 @@ func SetupPublicRoutes(app *fiber.App,
 	// Tournaments Public
 	api.Get("/tournaments", tournamentHandler.ListTournamentsPublic)
 	api.Get("/tournaments/active", tournamentHandler.GetActiveTournament)
-	api.Get("/tournaments/:slug", middleware.OptionalAuthMiddleware(jwtService, userRepo), tournamentHandler.GetTournamentBySlug)
+	api.Get("/tournaments/:slug", middleware.OptionalAuthMiddleware(jwtService, userRepo, appCache), tournamentHandler.GetTournamentBySlug)
 
 	// Public Interactions (e.g Feed)
 	api.Get("/interactions/feed", interactionHandler.Feed)
@@ -201,15 +201,15 @@ func SetupPublicRoutes(app *fiber.App,
 
 
 	// Comments Public
-	api.Get("/comments", middleware.OptionalAuthMiddleware(jwtService, userRepo), interactionHandler.GetComments)
-	api.Get("/comments/:id/replies", middleware.OptionalAuthMiddleware(jwtService, userRepo), interactionHandler.GetReplies)
+	api.Get("/comments", middleware.OptionalAuthMiddleware(jwtService, userRepo, appCache), interactionHandler.GetComments)
+	api.Get("/comments/:id/replies", middleware.OptionalAuthMiddleware(jwtService, userRepo, appCache), interactionHandler.GetReplies)
 
 	// User Public Playlists
-	api.Get("/playlists/users/:id", middleware.OptionalAuthMiddleware(jwtService, userRepo), playlistHandler.GetUserPlaylists)
-	api.Get("/playlists/:id", middleware.OptionalAuthMiddleware(jwtService, userRepo), playlistHandler.GetPlaylist)
+	api.Get("/playlists/users/:id", middleware.OptionalAuthMiddleware(jwtService, userRepo, appCache), playlistHandler.GetUserPlaylists)
+	api.Get("/playlists/:id", middleware.OptionalAuthMiddleware(jwtService, userRepo, appCache), playlistHandler.GetPlaylist)
 
 	// User Public Data
-	api.Get("/users/:slug/playlists", middleware.OptionalAuthMiddleware(jwtService, userRepo), catalogHandler.UserPlaylists)
+	api.Get("/users/:slug/playlists", middleware.OptionalAuthMiddleware(jwtService, userRepo, appCache), catalogHandler.UserPlaylists)
 	api.Get("/users/:slug/followers", catalogHandler.UserFollowers)
 	api.Get("/users/:slug/following", catalogHandler.UserFollowing)
 	api.Get("/users/:slug/anilist-list", catalogHandler.UserAnilistList)
@@ -217,7 +217,7 @@ func SetupPublicRoutes(app *fiber.App,
 	api.Post("/users/favorites/artists", catalogHandler.UserArtistFavorites)
 
 	// --- PROTECTED ROUTES ---
-	protected := api.Group("/", middleware.AuthMiddleware(jwtService, userRepo))
+	protected := api.Group("/", middleware.AuthMiddleware(jwtService, userRepo, appCache))
 
 	// User Profile
 	protected.Get("/profile", authHandler.Profile)
@@ -235,6 +235,7 @@ func SetupPublicRoutes(app *fiber.App,
 	protected.Post("/auth/google/callback", authHandler.GoogleCallback)
 
 	// Discord Link
+	protected.Delete("/auth/:provider/unlink", authHandler.UnlinkSocial)
 	protected.Get("/auth/discord/link", authHandler.DiscordLink)
 	protected.Post("/auth/discord/callback", authHandler.DiscordCallback)
 

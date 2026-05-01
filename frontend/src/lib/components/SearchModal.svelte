@@ -179,6 +179,7 @@
           bind:value={query}
           placeholder="Search animes, artists, users..."
           class="flex-1 bg-transparent border-none text-on-surface text-lg focus:outline-none placeholder:text-on-surface-variant/30 font-bold"
+          aria-label="Search animes, artists, users, and songs"
         />
         {#if isLoading}
           <div
@@ -188,6 +189,7 @@
           <button
             onclick={() => (query = "")}
             class="w-8 h-8 rounded-full hover:bg-on-surface/5 flex items-center justify-center transition-colors text-on-surface-variant hover:text-on-surface"
+            aria-label="Clear search query"
           >
             <X size={20} />
           </button>

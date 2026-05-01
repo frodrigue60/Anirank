@@ -242,6 +242,7 @@
   <!-- Stats Grid: Focused on Pending & Moderation -->
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
     {#each displayStats as stat}
+      {@const Icon = iconMap[stat.icon]}
       <a
         href={stat.link || "#"}
         class="bg-surface-container border border-outline-variant rounded-xl p-4 relative overflow-hidden group transition-all hover:border-outline-variant hover:bg-white/3"
@@ -249,12 +250,10 @@
         <div
           class="absolute top-2 right-2 transition-transform duration-500 group-hover:scale-110"
         >
-          <svelte:component
-            this={iconMap[stat.icon]}
+          <Icon
             size={24}
             class={stat.color.split(" ")[1]}
           />
-
         </div>
         <p
           class="text-[10px] font-bold uppercase tracking-wider text-on-surface mb-1 relative z-10"

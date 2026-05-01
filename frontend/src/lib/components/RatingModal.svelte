@@ -44,6 +44,12 @@ import AlertCircle from "lucide-svelte/icons/alert-circle";
   });
 
   async function handleSubmit() {
+    // Optimistic Update
+    const previousRating = song.user_rating;
+    if (onRated) {
+      onRated({ rating: value });
+    }
+
     isSubmitting = true;
     errorMessage = "";
     try {
@@ -58,13 +64,28 @@ import AlertCircle from "lucide-svelte/icons/alert-circle";
       ) {
         isSuccess = true;
         toastState.addToast("Rating submitted successfully!", "success");
-        if (onRated) onRated(response.data);
+        
+        // Final update with server data (including new average)
+        if (onRated) {
+          const serverData = response.data.data || response.data;
+          onRated({
+            rating: serverData.rating ?? serverData.score ?? value,
+            average: serverData.average ?? serverData.averageRating
+          });
+        }
+        
         setTimeout(() => {
           handleClose();
         }, 1500);
       }
     } catch (e: any) {
       errorMessage = e.response?.data?.message || "Failed to submit rating";
+      toastState.addToast(errorMessage, "error");
+      
+      // Rollback on error
+      if (onRated) {
+        onRated({ rating: previousRating });
+      }
     } finally {
       isSubmitting = false;
     }
@@ -106,7 +127,7 @@ import AlertCircle from "lucide-svelte/icons/alert-circle";
   >
     <!-- Modal Content -->
     <div
-      class="modal-glass w-full max-w-md rounded-md overflow-hidden shadow-2xl p-10 flex flex-col items-center text-center relative"
+      class="modal-glass w-full max-w-md rounded-md overflow-hidden shadow-2xl p-4 sm:p-6 flex flex-col items-center text-center relative"
       onclick={(e) => e.stopPropagation()}
       transition:scale={{ duration: 300, start: 0.95 }}
     >

@@ -3,6 +3,7 @@ package middleware
 import (
 	"log"
 	"strings"
+	"time"
 
 	"anirank/api/internal/domain"
 	"anirank/api/internal/usecase/auth"
@@ -11,7 +12,7 @@ import (
 )
 
 // AuthMiddleware validates JWT context over routes and ensures user still exists in DB
-func AuthMiddleware(jwtService *auth.JWTService, userRepo domain.UserRepository) fiber.Handler {
+func AuthMiddleware(jwtService *auth.JWTService, userRepo domain.UserRepository, cache domain.Cache) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		authHeader := c.Get("Authorization")
 		if authHeader == "" {
@@ -34,7 +35,23 @@ func AuthMiddleware(jwtService *auth.JWTService, userRepo domain.UserRepository)
 			return domain.NewAppError(401, "Invalid token payload: missing user identifier. Please re-login.", nil)
 		}
 
-		// EXTRA SECURITY: Verify user exists in DB and get numeric ID from UUID
+		// 1. Try Cache First
+		cacheKey := "session:" + claims.UserUUID
+		var cachedUser struct {
+			ID   uint64
+			UUID string
+		}
+		
+		if cache != nil {
+			if err := cache.Get(c.Context(), cacheKey, &cachedUser); err == nil {
+				c.Locals("user_id", cachedUser.ID)
+				c.Locals("user_uuid", cachedUser.UUID)
+				c.Locals("user_roles", claims.Roles)
+				return c.Next()
+			}
+		}
+
+		// 2. Fallback to DB
 		user, err := userRepo.GetByUUID(c.Context(), claims.UserUUID)
 		if err != nil {
 			if err == domain.ErrNotFound {
@@ -43,8 +60,13 @@ func AuthMiddleware(jwtService *auth.JWTService, userRepo domain.UserRepository)
 			return domain.NewAppError(500, "Database validation error", err)
 		}
 
-		// Store user info in Context Locals for downstream handlers
-		// Keep user_id (numeric) for internal operations, add user_uuid for frontend logic if needed
+		// 3. Store in Cache (Short TTL)
+		if cache != nil {
+			cachedUser.ID = user.ID
+			cachedUser.UUID = user.UUID
+			_ = cache.Set(c.Context(), cacheKey, cachedUser, 2*time.Minute)
+		}
+
 		c.Locals("user_id", user.ID)
 		c.Locals("user_uuid", user.UUID)
 		c.Locals("user_roles", claims.Roles)
@@ -54,7 +76,7 @@ func AuthMiddleware(jwtService *auth.JWTService, userRepo domain.UserRepository)
 }
 
 // OptionalAuthMiddleware parses JWT if present, but allows request to continue if not
-func OptionalAuthMiddleware(jwtService *auth.JWTService, userRepo domain.UserRepository) fiber.Handler {
+func OptionalAuthMiddleware(jwtService *auth.JWTService, userRepo domain.UserRepository, cache domain.Cache) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		authHeader := c.Get("Authorization")
 		if authHeader == "" {
@@ -65,8 +87,29 @@ func OptionalAuthMiddleware(jwtService *auth.JWTService, userRepo domain.UserRep
 		if len(parts) == 2 && parts[0] == "Bearer" {
 			tokenString := parts[1]
 			if claims, err := jwtService.ValidateToken(tokenString); err == nil && claims.UserUUID != "" {
-				// We need the numeric ID for many optional filters, so we do a quick lookup
+				
+				// 1. Try Cache
+				cacheKey := "session:" + claims.UserUUID
+				var cachedUser struct {
+					ID   uint64
+					UUID string
+				}
+				if cache != nil {
+					if err := cache.Get(c.Context(), cacheKey, &cachedUser); err == nil {
+						c.Locals("user_id", cachedUser.ID)
+						c.Locals("user_uuid", cachedUser.UUID)
+						c.Locals("user_roles", claims.Roles)
+						return c.Next()
+					}
+				}
+
+				// 2. DB Fallback
 				if user, uErr := userRepo.GetByUUID(c.Context(), claims.UserUUID); uErr == nil {
+					if cache != nil {
+						cachedUser.ID = user.ID
+						cachedUser.UUID = user.UUID
+						_ = cache.Set(c.Context(), cacheKey, cachedUser, 2*time.Minute)
+					}
 					c.Locals("user_id", user.ID)
 					c.Locals("user_uuid", user.UUID)
 					c.Locals("user_roles", claims.Roles)

@@ -2,6 +2,7 @@
   import { authState, setUser } from "$lib/state/auth.svelte";
   import { themeState, type Theme } from "$lib/state/theme.svelte";
   import api from "$lib/api";
+  import { getApiErrorMessage } from "$lib/api-errors";
   import { toastState } from "$lib/state/toast.svelte";
   import Camera from "lucide-svelte/icons/camera";
 import ImageIcon from "lucide-svelte/icons/image";
@@ -57,7 +58,7 @@ import ChevronDown from "lucide-svelte/icons/chevron-down";
       }
     } catch (err: any) {
       toastState.addToast(
-        err.response?.data?.message || "Failed to update profile.",
+        getApiErrorMessage(err, "Failed to update profile."),
         "error",
       );
     } finally {
@@ -92,7 +93,7 @@ import ChevronDown from "lucide-svelte/icons/chevron-down";
         }
       } catch (err: any) {
         toastState.addToast(
-          err.response?.data?.message || "Failed to upload avatar.",
+          getApiErrorMessage(err, "Failed to upload avatar."),
           "error",
         );
       } finally {
@@ -123,7 +124,7 @@ import ChevronDown from "lucide-svelte/icons/chevron-down";
         }
       } catch (err: any) {
         toastState.addToast(
-          err.response?.data?.message || "Failed to upload banner.",
+          getApiErrorMessage(err, "Failed to upload banner."),
           "error",
         );
       } finally {
@@ -151,7 +152,7 @@ import ChevronDown from "lucide-svelte/icons/chevron-down";
       }
     } catch (err: any) {
       toastState.addToast(
-        err.response?.data?.message || "Failed to save settings.",
+        getApiErrorMessage(err, "Failed to save settings."),
         "error",
       );
     } finally {

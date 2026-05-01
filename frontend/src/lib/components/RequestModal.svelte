@@ -6,6 +6,8 @@ import CheckCircle2 from "lucide-svelte/icons/check-circle-2";
 import Loader2 from "lucide-svelte/icons/loader-2";
 import AlertCircle from "lucide-svelte/icons/alert-circle";
   import api from "$lib/api";
+  import { getApiErrorMessage } from "$lib/api-errors";
+  import { toastState } from "$lib/state/toast.svelte";
   import { fade, scale } from "svelte/transition";
 
   interface Props {
@@ -22,14 +24,14 @@ import AlertCircle from "lucide-svelte/icons/alert-circle";
     initialContent = "",
   }: Props = $props();
 
-  let title = $state(initialTitle);
-  let content = $state(initialContent);
+  let title = $state("");
+  let content = $state("");
 
-  // Update internal state when props change
+  // Update internal state when props change or modal opens
   $effect(() => {
     if (show) {
-      if (initialTitle && !title) title = initialTitle;
-      if (initialContent && !content) content = initialContent;
+      title = initialTitle;
+      content = initialContent;
     }
   });
   let isSubmitting = $state(false);
@@ -50,16 +52,15 @@ import AlertCircle from "lucide-svelte/icons/alert-circle";
         content: content,
       });
 
-      if (response.data.success) {
-        isSuccess = true;
-        setTimeout(() => {
-          handleClose();
-        }, 2000);
+      if (response.data.success || response.status === 201 || response.status === 200) {
+        toastState.addToast("Request submitted successfully", "success");
+        handleClose();
       } else {
-        errorMessage = response.data.message || "Failed to submit request.";
+        throw new Error(response.data.message || "Failed to submit request.");
       }
     } catch (e: any) {
-      errorMessage = e.response?.data?.message || "Failed to submit request.";
+      errorMessage = getApiErrorMessage(e, "Failed to submit request.");
+      toastState.addToast(errorMessage, "error");
     } finally {
       isSubmitting = false;
     }
@@ -116,19 +117,6 @@ import AlertCircle from "lucide-svelte/icons/alert-circle";
         </button>
       </div>
 
-      {#if isSuccess}
-        <div class="py-12 flex flex-col items-center space-y-4" in:scale>
-          <div
-            class="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center text-green-500 mb-2 shadow-inner"
-          >
-            <CheckCircle2 size={36} />
-          </div>
-          <h4 class="text-lg font-bold text-on-surface">Request Sent!</h4>
-          <p class="text-xs text-on-surface-variant leading-relaxed">
-            Your request has been submitted. We'll check it out!
-          </p>
-        </div>
-      {:else}
         <div class="w-full space-y-4 text-left">
           <!-- Title Input -->
           <div>
@@ -185,7 +173,6 @@ import AlertCircle from "lucide-svelte/icons/alert-circle";
             {/if}
           </button>
         </div>
-      {/if}
     </div>
   </div>
 {/if}

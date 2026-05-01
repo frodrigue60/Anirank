@@ -3,6 +3,7 @@
   import { getSongArtistNames, getFormattedScore } from "$lib/song-utils";
   import SEO from "$lib/components/SEO.svelte";
   import { authState } from "$lib/state/auth.svelte";
+  import { createTrustedHTML } from "$lib/trusted";
   import { page } from "$app/state";
   import Globe from "lucide-svelte/icons/globe";
   import ExternalLink from "lucide-svelte/icons/external-link";
@@ -197,7 +198,7 @@
               ? ''
               : 'line-clamp-4'}"
           >
-            {@html anime.description || "No synopsis available."}
+            {@html createTrustedHTML(anime.description || "No synopsis available.")}
           </p>
 
           {#if !isExpanded && anime.description && anime.description.length > 200}

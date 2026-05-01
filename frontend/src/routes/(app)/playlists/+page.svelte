@@ -2,6 +2,7 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import InfiniteScroll from "$lib/components/InfiniteScroll.svelte";
+  import EmptyState from "$lib/components/EmptyState.svelte";
   import api from "$lib/api";
   import Search from "lucide-svelte/icons/search";
 import Music from "lucide-svelte/icons/music";
@@ -196,14 +197,16 @@ import User from "lucide-svelte/icons/user";;
       onLoadMore={loadMore}
     />
   {:else}
-    <div
-      class="text-center py-24 bg-surface-container/30 rounded-md border-2 border-dashed border-white/5"
-    >
-      <Search size={48} class="text-on-surface-variant/20 mx-auto mb-4" />
-      <p class="text-on-surface-variant/40">
-        No playlists found matching your criteria.
-      </p>
-    </div>
+    <EmptyState
+      title="No playlists found"
+      message="No playlists found matching your criteria. Try a different search term!"
+      icon={Search}
+      actionLabel="Clear Search"
+      onAction={() => {
+        params.name = "";
+        updateFilters();
+      }}
+    />
   {/if}
 </main>
 

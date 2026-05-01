@@ -7,6 +7,8 @@ import Loader2 from "lucide-svelte/icons/loader-2";
 import ChevronDown from "lucide-svelte/icons/chevron-down";
 import AlertCircle from "lucide-svelte/icons/alert-circle";
   import api from "$lib/api";
+  import { getApiErrorMessage } from "$lib/api-errors";
+  import { toastState } from "$lib/state/toast.svelte";
   import { fade, scale } from "svelte/transition";
 
   interface Props {
@@ -49,21 +51,16 @@ import AlertCircle from "lucide-svelte/icons/alert-circle";
         source: "web",
       });
 
-      if (
-        response.data.success ||
-        response.status === 201 ||
-        response.status === 200
-      ) {
-        isSuccess = true;
+      if (response.data.success || response.status === 201 || response.status === 200) {
+        toastState.addToast("Report submitted successfully", "success");
         if (onSuccess) onSuccess();
-        setTimeout(() => {
-          handleClose();
-        }, 2000);
+        handleClose();
       } else {
-        errorMessage = response.data.message || "Failed to submit report.";
+        throw new Error(response.data.message || "Failed to submit report.");
       }
     } catch (e: any) {
-      errorMessage = e.response?.data?.message || "Failed to submit report.";
+      errorMessage = getApiErrorMessage(e, "Failed to submit report.");
+      toastState.addToast(errorMessage, "error");
     } finally {
       isSubmitting = false;
     }
@@ -119,19 +116,6 @@ import AlertCircle from "lucide-svelte/icons/alert-circle";
         </button>
       </div>
 
-      {#if isSuccess}
-        <div class="py-12 flex flex-col items-center space-y-4" in:scale>
-          <div
-            class="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center text-green-500 mb-2 shadow-inner"
-          >
-            <CheckCircle2 size={36} />
-          </div>
-          <h4 class="text-lg font-bold text-on-surface">Report Received</h4>
-          <p class="text-xs text-on-surface-variant leading-relaxed">
-            Thank you for your feedback. We'll look into it soon!
-          </p>
-        </div>
-      {:else}
         <div class="w-full space-y-4 text-left">
           <!-- Reason Select -->
           <div>
@@ -200,7 +184,6 @@ import AlertCircle from "lucide-svelte/icons/alert-circle";
             {/if}
           </button>
         </div>
-      {/if}
     </div>
   </div>
 {/if}

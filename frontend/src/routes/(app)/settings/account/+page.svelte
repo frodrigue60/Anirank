@@ -108,6 +108,32 @@
     }
   }
 
+  async function handleUnlink(provider: string) {
+    if (!confirm(`Are you sure you want to unlink your ${provider} account?`))
+      return;
+
+    try {
+      await api.delete(`/auth/${provider}/unlink`);
+      toastState.addToast(
+        `${provider.charAt(0).toUpperCase() + provider.slice(1)} account unlinked successfully.`,
+        "success",
+      );
+
+      // Update local state
+      if (authState.user) {
+        authState.user.social_identities =
+          authState.user.social_identities?.filter(
+            (s) => s.provider !== provider,
+          );
+      }
+    } catch (err: unknown) {
+      toastState.addToast(
+        getApiErrorMessage(err, `Failed to unlink ${provider} account.`),
+        "error",
+      );
+    }
+  }
+
   function handleResetPassword() {
     toastState.addToast("Password reset email sent (WIP)!", "info");
   }
@@ -175,9 +201,9 @@
           </div>
         </div>
         <button
-          onclick={handleAnilistLink}
+          onclick={() => isLinked("anilist") ? handleUnlink("anilist") : handleAnilistLink()}
           class="px-5 py-2 rounded-sm font-bold text-xs uppercase tracking-widest transition-all {isLinked("anilist")
-            ? 'bg-surface-highest text-on-surface-variant/40 border border-on-surface-variant/10'
+            ? 'bg-surface-highest text-on-surface-variant/40 border border-on-surface-variant/10 hover:text-red-400 hover:border-red-400/30'
             : 'bg-[#02a9ff] text-white shadow-sm shadow-[#02a9ff]/20 hover:scale-105 active:scale-95'}"
         >
           {isLinked("anilist") ? "Synced" : "Sync account"}
@@ -225,9 +251,9 @@
           </div>
         </div>
         <button
-          onclick={handleGoogleSync}
+          onclick={() => isLinked("google") ? handleUnlink("google") : handleGoogleSync()}
           class="px-5 py-2 rounded-sm font-bold text-xs uppercase tracking-widest transition-all {isLinked("google")
-            ? 'bg-surface-highest text-on-surface-variant/40 border border-on-surface-variant/10'
+            ? 'bg-surface-highest text-on-surface-variant/40 border border-on-surface-variant/10 hover:text-red-400 hover:border-red-400/30'
             : 'bg-on-surface text-surface hover:scale-105 active:scale-95 shadow-sm shadow-black/20'}"
         >
           {isLinked("google") ? "Synced" : "Sync account"}
@@ -263,9 +289,9 @@
           </div>
         </div>
         <button
-          onclick={handleDiscordLink}
+          onclick={() => isLinked("discord") ? handleUnlink("discord") : handleDiscordLink()}
           class="px-5 py-2 rounded-sm font-bold text-xs uppercase tracking-widest transition-all {isLinked("discord")
-            ? 'bg-surface-highest text-on-surface-variant/40 border border-on-surface-variant/10'
+            ? 'bg-surface-highest text-on-surface-variant/40 border border-on-surface-variant/10 hover:text-red-400 hover:border-red-400/30'
             : 'bg-[#5865F2] text-white hover:scale-105 active:scale-95 shadow-sm shadow-[#5865F2]/20'}"
         >
           {isLinked("discord") ? "Synced" : "Sync account"}

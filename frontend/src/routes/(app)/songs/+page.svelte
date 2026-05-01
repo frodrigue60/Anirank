@@ -3,6 +3,7 @@
   import { page } from "$app/state";
   import { configState } from "$lib/state/config.svelte";
   import SongCard from "$lib/components/SongCard.svelte";
+  import EmptyState from "$lib/components/EmptyState.svelte";
   import InfiniteScroll from "$lib/components/InfiniteScroll.svelte";
   import api from "$lib/api";
   import Search from "lucide-svelte/icons/search";
@@ -333,17 +334,22 @@
         <SongCard {song} />
       {/each}
     {:else}
-      <div
-        class="lg:col-span-2 text-center py-24 bg-surface-container/30 rounded-md border-2 border-dashed border-white/5"
-      >
-        <Music size={64} class="text-on-surface-variant opacity-20 mb-4 block mx-auto" />
-        <h3 class="text-xl font-bold text-on-surface-variant">
-          No themes found
-        </h3>
-        <p class="text-on-surface-variant opacity-40 mt-2">
-          Try adjusting your filters or search query
-        </p>
-      </div>
+      <EmptyState
+        title="No themes found"
+        message="Try adjusting your filters or search query to find the songs you're looking for."
+        icon={Music}
+        actionLabel="Reset Search"
+        onAction={() => {
+          searchTerm = "";
+          selectedYear = "";
+          selectedSeason = "";
+          selectedGenre = "";
+          selectedType = "";
+          selectedFormat = "";
+          selectedSort = "";
+          updateFilters();
+        }}
+      />
     {/if}
   </div>
 

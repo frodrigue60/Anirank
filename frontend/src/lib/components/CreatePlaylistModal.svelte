@@ -8,6 +8,8 @@ import FolderPlus from "lucide-svelte/icons/folder-plus";
 import ChevronDown from "lucide-svelte/icons/chevron-down";
 import AlertCircle from "lucide-svelte/icons/alert-circle";
   import api from "$lib/api";
+  import { getApiErrorMessage } from "$lib/api-errors";
+  import { toastState } from "$lib/state/toast.svelte";
   import { fade, scale } from "svelte/transition";
 
   interface Props {
@@ -40,19 +42,16 @@ import AlertCircle from "lucide-svelte/icons/alert-circle";
         is_public: is_public,
       });
 
-      if (
-        response.status === 201 ||
-        response.status === 200 ||
-        response.data.playlist
-      ) {
-        isSuccess = true;
+      if (response.status === 201 || response.status === 200 || response.data.playlist) {
+        toastState.addToast("Playlist created successfully", "success");
         if (onCreated) onCreated(response.data.playlist || response.data.data);
-        setTimeout(handleClose, 1500);
+        handleClose();
       } else {
         throw new Error("Failed to create playlist");
       }
     } catch (e: any) {
-      errorMessage = e.response?.data?.message || "Failed to create playlist.";
+      errorMessage = getApiErrorMessage(e, "Failed to create playlist.");
+      toastState.addToast(errorMessage, "error");
     } finally {
       isSubmitting = false;
     }
@@ -110,19 +109,6 @@ import AlertCircle from "lucide-svelte/icons/alert-circle";
         </button>
       </div>
 
-      {#if isSuccess}
-        <div class="py-12 flex flex-col items-center space-y-4" in:scale>
-          <div
-            class="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center text-green-500 mb-2 shadow-inner"
-          >
-            <CheckCircle2 size={36} />
-          </div>
-          <h4 class="text-lg font-bold text-on-surface">Playlist Created</h4>
-          <p class="text-xs text-on-surface-variant leading-relaxed">
-            Your new collection is ready!
-          </p>
-        </div>
-      {:else}
         <div class="w-full space-y-4 text-left">
           <!-- Name Input -->
           <div>
@@ -204,7 +190,6 @@ import AlertCircle from "lucide-svelte/icons/alert-circle";
             {/if}
           </button>
         </div>
-      {/if}
     </div>
   </div>
 {/if}

@@ -13,7 +13,7 @@
 - Rate, react to, and comment on songs.
 - View weekly/seasonal rankings of anime themes.
 - User profiles with XP/Level gamification, badges, followers, and playlists.
-- AniList and Google OAuth account linking.
+- AniList and Google OAuth account linking and unlinking.
 - Administrative backend for full content management.
 - Public tournament system for community song voting.
 
@@ -280,7 +280,10 @@ Due to Svelte 5's architecture, Vitest is configured with `resolve.conditions: [
 - **Component Behavior:** `src/tests/components/*.test.ts` (using Svelte Testing Library to interact with the DOM).
 
 ### Optimistic UI Validation
-- Tests for interactions (likes, favorites) must verify that the UI updates immediately (optimistically) before MSW resolves the network request, and that it correctly rolls back upon API failure.
+- Tests for interactions (likes, favorites, ratings) must verify that the UI updates immediately (optimistically) before MSW resolves the network request, and that it correctly rolls back upon API failure.
+
+### Web Animations API Caveat
+- Svelte 5 transitions (e.g., `fade`, `scale`) rely on the Web Animations API. Since JSDOM does not support it, `Element.prototype.animate` must be mocked in `src/tests/setup.ts` to prevent test failures.
 
 ---
 

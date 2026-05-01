@@ -3,7 +3,9 @@
   import SEO from "$lib/components/SEO.svelte";
   import { page } from "$app/state";
   import snarkdown from "snarkdown";
+  import { createTrustedHTML } from "$lib/trusted";
   import ArtistAvatarCard from "$lib/components/ArtistAvatarCard.svelte";
+  import EmptyState from "$lib/components/EmptyState.svelte";
   import Heart from "lucide-svelte/icons/heart";
   import Mic2 from "lucide-svelte/icons/mic-2";
   import History from "lucide-svelte/icons/history";
@@ -16,7 +18,7 @@
 
   function renderMarkdown(text: string | null | undefined) {
     if (!text) return "";
-    return snarkdown(text);
+    return createTrustedHTML(snarkdown(text));
   }
 </script>
 
@@ -100,21 +102,9 @@
 {/if}
 
 {#if (!data.initialSongs || data.initialSongs.length === 0) && (!data.artists || data.artists.length === 0)}
-  <div
-    class="py-20 flex flex-col items-center justify-center text-center space-y-4 rounded-md border border-on-surface-variant/10 bg-surface-container"
-  >
-    <div
-      class="w-20 h-20 rounded-full bg-surface-highest flex items-center justify-center text-on-surface-variant/40"
-    >
-      <History size={40} />
-    </div>
-    <div>
-      <h3 class="text-xl font-bold text-on-surface uppercase italic">
-        Quiet Profile
-      </h3>
-      <p class="text-sm text-on-surface-variant max-w-xs mx-auto mt-2">
-        This user hasn't added any favorites or recent activity yet.
-      </p>
-    </div>
-  </div>
+  <EmptyState
+    title="Quiet Profile"
+    message="This user hasn't added any favorites or recent activity yet."
+    icon={History}
+  />
 {/if}

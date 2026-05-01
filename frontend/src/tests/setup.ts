@@ -59,3 +59,21 @@ vi.mock('$app/stores', () => {
         updated: readable(false)
     };
 });
+
+// Mock Web Animations API (JSDOM lacks this, needed for Svelte 5 transitions)
+if (typeof window !== 'undefined') {
+    if (!HTMLDivElement.prototype.animate) {
+        const animateMock = vi.fn().mockReturnValue({
+            finished: Promise.resolve(),
+            cancel: vi.fn(),
+            pause: vi.fn(),
+            play: vi.fn(),
+            reverse: vi.fn(),
+            onfinish: null,
+            oncancel: null,
+        });
+        HTMLDivElement.prototype.animate = animateMock;
+        HTMLElement.prototype.animate = animateMock;
+        (window as any).Element.prototype.animate = animateMock;
+    }
+}

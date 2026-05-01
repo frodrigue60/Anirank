@@ -59,6 +59,7 @@ func (h *CatalogHandler) SongIndex(c *fiber.Ctx) error {
 		Type:     c.Query("type", ""),
 		Format:   c.Query("format", ""),
 		Sort:     c.Query("sort", ""),
+		Cursor:   c.Query("cursor", ""),
 		IsAdmin:  false,
 	}
 
@@ -68,12 +69,18 @@ func (h *CatalogHandler) SongIndex(c *fiber.Ctx) error {
 		return err
 	}
 
-	songDTOs := make([]dto.SongMinimalDTO, len(songs))
+	songDTOs := make([]dto.SongSlimDTO, len(songs))
 	for i, s := range songs {
-		songDTOs[i] = dto.ToSongMinimalDTO(&s)
+		songDTOs[i] = dto.ToSongSlimDTO(&s)
 	}
 
-	return c.JSON(paginatedResponse(c, songDTOs, total, page, limit))
+	res := paginatedResponse(c, songDTOs, total, page, limit)
+	if len(songs) > 0 {
+		lastSong := songs[len(songs)-1]
+		res["links"].(fiber.Map)["next_cursor"] = fmt.Sprintf("%d", lastSong.ID)
+	}
+
+	return c.JSON(res)
 }
 
 // SongShow handles GET /api/songs/:anime_slug/:song_slug
@@ -113,9 +120,9 @@ func (h *CatalogHandler) SongRanking(c *fiber.Ctx) error {
 		return err
 	}
 
-	songDTOs := make([]dto.SongMinimalDTO, len(ranking.Songs))
+	songDTOs := make([]dto.SongSlimDTO, len(ranking.Songs))
 	for i, s := range ranking.Songs {
-		songDTOs[i] = dto.ToSongMinimalDTO(&s)
+		songDTOs[i] = dto.ToSongSlimDTO(&s)
 	}
 
 	return c.JSON(paginatedResponse(c, songDTOs, ranking.Total, page, limit))
@@ -171,9 +178,9 @@ func (h *CatalogHandler) ArtistShow(c *fiber.Ctx) error {
 		return err
 	}
 
-	songDTOs := make([]dto.SongMinimalDTO, len(songs))
+	songDTOs := make([]dto.SongSlimDTO, len(songs))
 	for i, s := range songs {
-		songDTOs[i] = dto.ToSongMinimalDTO(&s)
+		songDTOs[i] = dto.ToSongSlimDTO(&s)
 	}
 
 	response := paginatedResponse(c, songDTOs, total, page, limit)
@@ -376,9 +383,9 @@ func (h *CatalogHandler) UserFavorites(c *fiber.Ctx) error {
 		return err
 	}
 
-	songDTOs := make([]dto.SongMinimalDTO, len(songs))
+	songDTOs := make([]dto.SongSlimDTO, len(songs))
 	for i, s := range songs {
-		songDTOs[i] = dto.ToSongMinimalDTO(&s)
+		songDTOs[i] = dto.ToSongSlimDTO(&s)
 	}
 
 	return c.JSON(paginatedResponse(c, songDTOs, total, page, limit))

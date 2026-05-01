@@ -183,6 +183,38 @@ func ToSongMinimalDTO(s *domain.Song) SongMinimalDTO {
 	return res
 }
 
+func ToSongSlimDTO(s *domain.Song) SongSlimDTO {
+	if s == nil {
+		return SongSlimDTO{}
+	}
+
+	artists := make([]ArtistSlimDTO, 0)
+	for _, a := range s.Artists {
+		artists = append(artists, ArtistSlimDTO{
+			Name: a.Name,
+			Slug: a.Slug,
+		})
+	}
+
+	anime := AnimeSlimDTO{}
+	if s.Anime != nil {
+		anime.Title = s.Anime.Title
+		anime.Slug = s.Anime.Slug
+	}
+
+	return SongSlimDTO{
+		ID:            s.UUID,
+		Name:          s.Name,
+		Slug:          s.Slug,
+		Type:          s.Type,
+		AverageRating: s.AverageRating,
+		Artists:       artists,
+		Anime:         anime,
+		Views:         s.Views,
+		UserRating:    s.UserRating,
+	}
+}
+
 func ToSongTypeDTO(st *domain.SongType) SongTypeDTO {
 	if st == nil {
 		return SongTypeDTO{}

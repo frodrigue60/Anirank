@@ -84,7 +84,6 @@ func (u *CatalogUsecase) enrichSongsBulk(ctx context.Context, userID *uint64, so
 
 	// 1. Bulk fetch Relations
 	artistsMap, _ := u.songRepo.GetArtistsBySongIDs(ctx, songIDs)
-	variantsMap, _ := u.songRepo.GetVariantsBySongIDs(ctx, songIDs)
 	ratingsMap, _ := u.interactionRepo.GetAverageRatingsBySongIDs(ctx, songIDs)
 
 	// 2. Bulk fetch Animes if needed
@@ -133,23 +132,6 @@ func (u *CatalogUsecase) enrichSongsBulk(ctx context.Context, userID *uint64, so
 				s.Artists = artists
 			} else {
 				s.Artists = []domain.Artist{}
-			}
-		}
-
-		// Variants & Embed cleanup
-		if len(s.Variants) == 0 {
-			if variants, ok := variantsMap[s.ID]; ok {
-				for j := range variants {
-					if variants[j].Video != nil && variants[j].Video.EmbedUrl != nil {
-						matches := iframeSrcRegex.FindStringSubmatch(*variants[j].Video.EmbedUrl)
-						if len(matches) > 1 {
-							variants[j].Video.EmbedUrl = &matches[1]
-						}
-					}
-				}
-				s.Variants = variants
-			} else {
-				s.Variants = []domain.SongVariant{}
 			}
 		}
 

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { getFormattedScore } from "$lib/song-utils";
   import { authState } from "$lib/state/auth.svelte";
+  import { createTrustedHTML } from "$lib/trusted";
   import { getSrcset } from "$lib/utils/image";
   import Smile from "lucide-svelte/icons/smile";
 
@@ -164,7 +165,7 @@
             <p
               class="text-on-surface-variant text-[10px] sm:text-sm line-clamp-2 sm:line-clamp-4 leading-relaxed font-medium"
             >
-              {@html anime.description}
+              {@html createTrustedHTML(anime.description)}
             </p>
           {:else}
             <p

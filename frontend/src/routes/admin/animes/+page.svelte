@@ -94,7 +94,10 @@
       toastState.addToast("Anime status updated", "success");
     } catch (err: any) {
       console.error(err);
-      toastState.addToast(getApiErrorMessage(err, "Failed to update status"), "error");
+      toastState.addToast(
+        getApiErrorMessage(err, "Failed to update status"),
+        "error",
+      );
     }
   }
 
@@ -107,7 +110,10 @@
       toastState.addToast(`Anime "${title}" deleted successfully`, "success");
     } catch (err: any) {
       console.error(err);
-      toastState.addToast(getApiErrorMessage(err, "Failed to delete anime"), "error");
+      toastState.addToast(
+        getApiErrorMessage(err, "Failed to delete anime"),
+        "error",
+      );
     }
   }
 
@@ -150,7 +156,10 @@
       selectedIds = [];
     } catch (err: any) {
       console.error(err);
-      toastState.addToast(getApiErrorMessage(err, "Failed to delete animes"), "error");
+      toastState.addToast(
+        getApiErrorMessage(err, "Failed to delete animes"),
+        "error",
+      );
     }
   }
 </script>
@@ -181,15 +190,18 @@
   </a>
 </div>
 
-<!-- Search -->
-<div
-  class="bg-surface-container border border-outline-variant rounded-2xl p-4 mb-6 flex flex-col sm:flex-row gap-4"
+<!-- Search & Filters -->
+<form
+  onsubmit={(e) => {
+    e.preventDefault();
+    handleSearch();
+  }}
+  class="bg-surface-container border border-outline-variant rounded-2xl p-4 mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
 >
   <div class="relative flex-1">
     <input
       type="text"
       bind:value={searchQuery}
-      onkeydown={(e) => e.key === "Enter" && handleSearch()}
       placeholder="Search by title..."
       class="w-full bg-surface-highest border border-outline-variant rounded-xl p-2 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-colors"
     />
@@ -243,17 +255,21 @@
   </div>
   <div class="flex gap-2">
     <button
-      onclick={handleSearch}
+      type="submit"
       class="px-6 py-2 bg-primary hover:bg-primary-container text-on-surface rounded-xl transition-all font-medium border border-outline-variant"
     >
       Filter
     </button>
   </div>
-</div>
+</form>
 
 <!-- Table -->
-<div class="bg-surface-container border border-outline-variant rounded-2xl overflow-hidden">
-  <div class="p-4 border-b border-outline-variant flex items-center justify-between">
+<div
+  class="bg-surface-container border border-outline-variant rounded-2xl overflow-hidden"
+>
+  <div
+    class="p-4 border-b border-outline-variant flex items-center justify-between"
+  >
     <div class="flex items-center gap-4">
       <h2 class="text-xl font-semibold text-on-surface">Animes</h2>
       {#if selectedIds.length > 0}
@@ -310,7 +326,7 @@
             </td>
             <td class="px-6 py-4">
               <img
-                src={anime.cover_url || "/images/placeholders/anime-cover.png"}
+                src={anime.cover_url || "/images/placeholders/default.svg"}
                 alt="{anime.title} cover"
                 class="w-10 h-14 object-cover rounded shadow-sm"
               />
@@ -395,7 +411,10 @@
           </tr>
         {:else}
           <tr>
-            <td colspan="6" class="px-6 py-12 text-center text-on-surface-variant/40">
+            <td
+              colspan="6"
+              class="px-6 py-12 text-center text-on-surface-variant/40"
+            >
               No animes found.
             </td>
           </tr>
@@ -420,7 +439,6 @@
           class="p-2 rounded-lg border border-outline-variant text-on-surface-variant/70 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-highest transition-colors"
         >
           <ChevronLeft size={16} />
-
         </button>
         <span class="text-sm text-on-surface-variant font-medium px-2"
           >Page {pagination.current_page} of {pagination.last_page}</span
@@ -432,7 +450,6 @@
           class="p-2 rounded-lg border border-outline-variant text-on-surface-variant/70 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-highest transition-colors"
         >
           <ChevronRight size={16} />
-
         </button>
       </div>
     </div>

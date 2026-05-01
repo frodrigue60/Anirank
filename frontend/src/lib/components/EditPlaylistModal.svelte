@@ -7,6 +7,8 @@ import Edit2 from "lucide-svelte/icons/edit-2";
 import ChevronDown from "lucide-svelte/icons/chevron-down";
 import AlertCircle from "lucide-svelte/icons/alert-circle";
   import api from "$lib/api";
+  import { getApiErrorMessage } from "$lib/api-errors";
+  import { toastState } from "$lib/state/toast.svelte";
   import { fade, scale } from "svelte/transition";
 
   interface Props {
@@ -49,6 +51,7 @@ import AlertCircle from "lucide-svelte/icons/alert-circle";
       });
 
       if (response.status === 200 || response.data.playlist) {
+        toastState.addToast("Playlist updated successfully", "success");
         if (onUpdated)
           onUpdated(
             response.data.playlist || {
@@ -60,10 +63,11 @@ import AlertCircle from "lucide-svelte/icons/alert-circle";
           );
         onClose();
       } else {
-        errorMessage = response.data.message || "Failed to update playlist.";
+        throw new Error(response.data.message || "Failed to update playlist.");
       }
     } catch (e: any) {
-      errorMessage = e.response?.data?.message || "Failed to update playlist.";
+      errorMessage = getApiErrorMessage(e, "Failed to update playlist.");
+      toastState.addToast(errorMessage, "error");
     } finally {
       isSubmitting = false;
     }

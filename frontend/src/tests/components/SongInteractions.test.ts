@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/svelte';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import SongPage from '../../routes/(app)/songs/[anime_slug]/[song_slug]/+page.svelte';
+import RatingModal from '$lib/components/RatingModal.svelte';
 import { authState, setUser } from '$lib/state/auth.svelte';
 import { http, HttpResponse, delay } from 'msw';
 import { server } from '../setup';
@@ -31,7 +32,8 @@ describe('Song Interactions (Optimistic UI)', () => {
             uuid: 'user-uuid',
             name: 'Test user',
             email: 'test@example.com',
-            slug: 'test'
+            slug: 'test',
+            score_format: 'POINT_100'
         });
     });
 
@@ -55,14 +57,14 @@ describe('Song Interactions (Optimistic UI)', () => {
         const svg = favoriteButton.querySelector('svg');
         
         // Initial state: not filled
-        expect(svg).not.toHaveClass('fill-current');
+        expect(svg).not.toHaveClass('fill-pink-500');
 
         // Click favorite
         await fireEvent.click(favoriteButton);
 
         // CHECK INSTANTLY (Optimistic update)
         // Even though the API is delayed by 200ms, the UI should change immediately
-        expect(svg).toHaveClass('fill-current');
+        expect(svg).toHaveClass('fill-pink-500');
         
         // Wait for the API to actually finish (to avoid unhandled promise leaks)
         await waitFor(() => {
@@ -90,11 +92,42 @@ describe('Song Interactions (Optimistic UI)', () => {
         await fireEvent.click(favoriteButton);
         
         // Optimistically filled
-        expect(svg).toHaveClass('fill-current');
+        expect(svg).toHaveClass('fill-pink-500');
 
         // Wait for reversal after failure
         await waitFor(() => {
-            expect(svg).not.toHaveClass('fill-current');
+            expect(svg).not.toHaveClass('fill-pink-500');
         }, { timeout: 2000 });
+    });
+
+    it('should call onRated optimistically in RatingModal', async () => {
+        const onRated = vi.fn();
+        server.use(
+            http.post(`${API_URL}/interactions/ratings`, async () => {
+                await delay(100);
+                return HttpResponse.json({ success: true, data: { rating: 80, average: 85 } });
+            })
+        );
+
+        render(RatingModal, { 
+            show: true, 
+            song: { id: 1, user_rating: 0 }, 
+            onClose: vi.fn(), 
+            onRated 
+        });
+
+        const slider = screen.getByRole('slider');
+        await fireEvent.input(slider, { target: { value: '80' } });
+        
+        const submit = screen.getByRole('button', { name: /submit rating/i });
+        await fireEvent.click(submit);
+
+        // Should have been called once with optimistic value
+        expect(onRated).toHaveBeenCalledWith(expect.objectContaining({ rating: 80 }));
+        
+        // Wait for final call
+        await waitFor(() => {
+            expect(onRated).toHaveBeenCalledWith(expect.objectContaining({ rating: 80, average: 85 }));
+        });
     });
 });

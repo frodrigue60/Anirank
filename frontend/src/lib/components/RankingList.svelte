@@ -32,9 +32,9 @@
 </script>
 
 <div
-  class="bg-surface-container shadow-sm border border-primary/10 rounded-md overflow-hidden mb-8"
+  class="bg-surface-container shadow-sm border border-primary/10 rounded-md overflow-x-auto mb-8"
 >
-  <table class="w-full border-collapse">
+  <table class="w-full border-collapse min-w-[700px]">
     <thead>
       <tr
         class="border-b border-primary/10 bg-surface-highest text-[10px] font-black uppercase tracking-widest text-on-surface-variant"

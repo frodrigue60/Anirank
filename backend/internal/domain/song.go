@@ -119,6 +119,7 @@ type Artist struct {
 type ArtistFilters struct {
 	Search  string
 	Sort    string
+	Cursor  string
 	IsAdmin bool
 }
 
@@ -136,6 +137,7 @@ type SongFilters struct {
 	Type     string
 	Format   string
 	Sort     string
+	Cursor   string
 	IsAdmin  bool
 }
 

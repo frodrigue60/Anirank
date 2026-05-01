@@ -40,6 +40,7 @@ Handles cross-cutting concerns (auth flows, API contract changes, Docker, env fi
 - After modifying a reactive state in `$lib/state/`, you MUST run `bun run test:unit` to ensure no regressions.
 - New complex components or interactions MUST include a corresponding `.test.ts` file.
 - Use **MSW** for all API mocks in component tests. Never make real API calls during Vitest execution.
+- **JSDOM Transition Caveat**: JSDOM does not support the Web Animations API. If a component uses Svelte 5 transitions, ensure `Element.prototype.animate` is mocked in `setup.ts`.
 - Ensure that **Optimistic UI** changes are tested for both "Success Path" and "Rollback on Error" scenarios.
 
 ### Commit Format
@@ -107,6 +108,11 @@ The internal `uint64` IDs in the database (e.g. `user.ID`, `song.ID`) are **stri
 - Files in `src/routes/(app)/` are page-level components.
 - Admin routes live in `src/routes/(admin)/`.
 
+**Optimistic UI Standard:**
+- Call state update/callback *immediately* before the API call.
+- Wrap API call in `try/catch`.
+- In `catch`, restore the previous state and show a toast error message.
+
 ---
 
 ## 5. Backend Coding Style
@@ -136,6 +142,8 @@ The internal `uint64` IDs in the database (e.g. `user.ID`, `song.ID`) are **stri
 - **Don't** use glassmorphism, `backdrop-blur`, or `bg-opacity` in UI components. Use solid surface token colors.
 - **Don't** import `strconv` in `mapper.go` — there is no need to convert IDs to strings in the DTO layer.
 - **Don't** run `migrate reset` on the production database. Only on local/dev environments.
+- **Don't** implement custom social unlinking logic in handlers; use the standard `DELETE /api/auth/:provider/unlink` pattern.
+- **Don't** use `{@html}` directly with raw strings. Always wrap the content with `createTrustedHTML()` from `$lib/trusted` to comply with the CSP Trusted Types policy.
 
 ---
 

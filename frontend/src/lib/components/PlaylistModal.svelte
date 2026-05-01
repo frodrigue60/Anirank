@@ -8,6 +8,8 @@ import CheckCircle2 from "lucide-svelte/icons/check-circle-2";
 import ListMusic from "lucide-svelte/icons/list-music";
 import LayoutList from "lucide-svelte/icons/layout-list";
   import api from "$lib/api";
+  import { getApiErrorMessage } from "$lib/api-errors";
+  import { toastState } from "$lib/state/toast.svelte";
   import { fade, scale, slide } from "svelte/transition";
   import CreatePlaylistModal from "./CreatePlaylistModal.svelte";
 
@@ -31,7 +33,6 @@ import LayoutList from "lucide-svelte/icons/layout-list";
   let isLoading = $state(false);
   let errorMessage = $state("");
   let showCreateModal = $state(false);
-  let successMessage = $state("");
 
   async function fetchPlaylists() {
     if (!song) return;
@@ -41,7 +42,7 @@ import LayoutList from "lucide-svelte/icons/layout-list";
       const response = await api.get(`/me/playlists?song_id=${song.id}`);
       playlists = response.data.data;
     } catch (e: any) {
-      errorMessage = "Failed to load playlists.";
+      errorMessage = getApiErrorMessage(e, "Failed to load playlists.");
       console.error(e);
     } finally {
       isLoading = false;
@@ -51,24 +52,20 @@ import LayoutList from "lucide-svelte/icons/layout-list";
   async function toggleSong(playlist: Playlist) {
     try {
       if (playlist.contains_song) {
-        // Remove song from playlist
         await api.delete(`/playlists/${playlist.id}/songs/${song.id}`);
         playlist.contains_song = false;
         playlist.song_count = playlist.song_count - 1;
-        successMessage = "Song removed from playlist";
+        toastState.addToast("Song removed from playlist", "success");
       } else {
-        // Add song to playlist
         await api.post(`/playlists/${playlist.id}/songs`, {
           song_id: song.id,
         });
         playlist.contains_song = true;
         playlist.song_count = playlist.song_count + 1;
-        successMessage = "Song added to playlist";
+        toastState.addToast("Song added to playlist", "success");
       }
-      setTimeout(() => {
-        successMessage = "";
-      }, 3000);
     } catch (e) {
+      toastState.addToast(getApiErrorMessage(e, "Error updating playlist"), "error");
       console.error("Error toggling song in playlist", e);
     }
   }
@@ -86,7 +83,6 @@ import LayoutList from "lucide-svelte/icons/layout-list";
 
   function handleClose() {
     onClose();
-    successMessage = "";
     errorMessage = "";
   }
 </script>
@@ -102,7 +98,7 @@ import LayoutList from "lucide-svelte/icons/layout-list";
   >
     <!-- Modal Content -->
     <div
-      class="modal-glass w-full max-w-sm rounded-md overflow-hidden shadow-2xl p-10 flex flex-col items-center text-center relative max-h-[90vh]"
+      class="modal-glass w-full max-w-sm rounded-md overflow-hidden shadow-2xl p-6 sm:p-10 flex flex-col items-center text-center relative max-h-[90vh]"
       onclick={(e) => e.stopPropagation()}
       transition:scale={{ duration: 300, start: 0.95 }}
     >
@@ -128,6 +124,7 @@ import LayoutList from "lucide-svelte/icons/layout-list";
         <button
           onclick={handleClose}
           class="w-8 h-8 rounded-full hover:bg-on-surface/5 flex items-center justify-center transition-colors text-on-surface-variant hover:text-on-surface"
+          aria-label="Close modal"
         >
           <X size={18} />
         </button>
@@ -212,17 +209,7 @@ import LayoutList from "lucide-svelte/icons/layout-list";
         {/if}
       </div>
 
-      <!-- Footer Action -->
       <div class="w-full space-y-4">
-        {#if successMessage}
-          <div
-            class="bg-primary/10 border border-primary/20 rounded-sm p-3 flex items-center gap-3 text-primary"
-            transition:slide
-          >
-            <CheckCircle2 size={16} />
-            <span class="text-xs font-bold">{successMessage}</span>
-          </div>
-        {/if}
 
         <button
           onclick={() => (showCreateModal = true)}

@@ -22,12 +22,17 @@ func paginatedResponse(c *fiber.Ctx, items interface{}, total int, page, perPage
 	// Strip /api prefix if present to avoid doubling with frontend baseURL
 	cleanPath := strings.TrimPrefix(path, "/api")
 
-	buildURL := func(p int) string {
+	buildURL := func(p int, cursor string) string {
 		q := make(map[string]string)
 		for k, v := range queryParams {
 			q[k] = v
 		}
-		q["page"] = strconv.Itoa(p)
+		if cursor != "" {
+			q["cursor"] = cursor
+			delete(q, "page") // Cursor takes precedence
+		} else {
+			q["page"] = strconv.Itoa(p)
+		}
 		
 		u := cleanPath + "?"
 		for k, v := range q {
@@ -36,7 +41,23 @@ func paginatedResponse(c *fiber.Ctx, items interface{}, total int, page, perPage
 		return u[:len(u)-1]
 	}
 
-	response := fiber.Map{
+	links := fiber.Map{
+		"self": buildURL(page, ""),
+	}
+
+	if page < lastPage {
+		links["next"] = buildURL(page+1, "")
+	} else {
+		links["next"] = nil
+	}
+
+	if page > 1 {
+		links["prev"] = buildURL(page-1, "")
+	} else {
+		links["prev"] = nil
+	}
+
+	return fiber.Map{
 		"data": items,
 		"pagination": fiber.Map{
 			"total":        total,
@@ -45,24 +66,8 @@ func paginatedResponse(c *fiber.Ctx, items interface{}, total int, page, perPage
 			"last_page":    lastPage,
 			"has_more":     page < lastPage,
 		},
-		"links": fiber.Map{
-			"self": buildURL(page),
-		},
+		"links": links,
 	}
-
-	if page < lastPage {
-		response["links"].(fiber.Map)["next"] = buildURL(page + 1)
-	} else {
-		response["links"].(fiber.Map)["next"] = nil
-	}
-
-	if page > 1 {
-		response["links"].(fiber.Map)["prev"] = buildURL(page - 1)
-	} else {
-		response["links"].(fiber.Map)["prev"] = nil
-	}
-
-	return response
 }
 
 func parsePagination(c *fiber.Ctx, defaultLimit int) (int, int) {

@@ -578,3 +578,32 @@ func (h *AuthHandler) getGoogleLoginRedirectURI() string {
 	}
 	return base
 }
+
+// UnlinkSocial removes a social identity from the user
+// @Summary Unlink Social Identity
+// @Description Removes the specified social provider linkage from the authenticated user.
+// @Tags Auth
+// @Security BearerAuth
+// @Param provider path string true "Provider (google, anilist, discord)"
+// @Success 200 {object} object{success=bool}
+// @Router /auth/{provider}/unlink [delete]
+func (h *AuthHandler) UnlinkSocial(c *fiber.Ctx) error {
+	userID, ok := c.Locals("user_id").(uint64)
+	if !ok {
+		return domain.NewAppError(401, "Unauthorized", nil)
+	}
+
+	provider := c.Params("provider")
+	if provider == "" {
+		return domain.NewAppError(422, "provider is required", nil)
+	}
+
+	if err := h.usecase.UnlinkSocial(c.Context(), userID, provider); err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{
+		"success": true,
+		"message": fmt.Sprintf("%s account unlinked successfully", strings.Title(provider)),
+	})
+}

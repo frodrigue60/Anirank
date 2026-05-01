@@ -29,6 +29,28 @@ type SongMinimalDTO struct {
 	SeasonID         string             `json:"season_id"`
 }
 
+type SongSlimDTO struct {
+	ID            string             `json:"id"`
+	Name          string             `json:"name"`
+	Slug          string             `json:"slug"`
+	Type          string             `json:"type"`
+	AverageRating float64            `json:"average_rating"`
+	Artists       []ArtistSlimDTO    `json:"artists"`
+	Anime         AnimeSlimDTO       `json:"anime"`
+	Views         uint64             `json:"views"`
+	UserRating    *float64           `json:"user_rating,omitempty"`
+}
+
+type ArtistSlimDTO struct {
+	Name string `json:"name"`
+	Slug string `json:"slug"`
+}
+
+type AnimeSlimDTO struct {
+	Title string `json:"title"`
+	Slug  string `json:"slug"`
+}
+
 type SongDTO struct {
 	SongMinimalDTO
 	LikesCount    uint64           `json:"likes_count"`

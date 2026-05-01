@@ -179,7 +179,8 @@
               class="text-on-surface hover:text-primary transition-colors"
               href="/songs/ranking"
               title="View full song rankings"
-              aria-label="Weekly Anime Songs Ranking - View all">Weekly Anime Songs Ranking</a
+              aria-label="Weekly Anime Songs Ranking - View all"
+              >Weekly Anime Songs Ranking</a
             >
           </h2>
         </div>
@@ -199,9 +200,9 @@
                   class="group relative flex items-center gap-4 rounded-sm bg-surface-container p-4 transition-all hover:bg-primary/10 shadow-sm shadow-on-surface/5"
                   title="View details for {getSongName(item)}"
                 >
-                    <div
-                      class="relative h-20 w-20 shrink-0 overflow-hidden rounded-md"
-                    >
+                  <div
+                    class="relative h-20 w-20 shrink-0 overflow-hidden rounded-md"
+                  >
                     <img
                       alt={getSongName(item)}
                       title={getSongName(item)}
@@ -209,11 +210,11 @@
                       src={item.anime?.cover_url ??
                         "/images/placeholders/default.svg"}
                     />
-                      <div
-                        class="absolute top-1 left-1 rounded-sm bg-black/60 px-1.5 py-0.5 text-xs font-bold text-white shadow backdrop-blur-sm"
-                      >
-                        #{index + 1}
-                      </div>
+                    <div
+                      class="absolute top-1 left-1 rounded-sm bg-black/60 px-1.5 py-0.5 text-xs font-bold text-white shadow backdrop-blur-sm"
+                    >
+                      #{index + 1}
+                    </div>
                   </div>
                   <div class="min-w-0 flex-1">
                     <div class="flex items-center justify-between">
@@ -263,9 +264,9 @@
                   class="group relative flex items-center gap-4 rounded-sm bg-surface-container p-4 transition-all hover:bg-primary/10 shadow-sm shadow-on-surface/5"
                   title="View details for {getSongName(item)}"
                 >
-                    <div
-                      class="relative h-20 w-20 shrink-0 overflow-hidden rounded-md"
-                    >
+                  <div
+                    class="relative h-20 w-20 shrink-0 overflow-hidden rounded-md"
+                  >
                     <img
                       alt={getSongName(item)}
                       title={getSongName(item)}
@@ -273,11 +274,11 @@
                       src={item.anime?.cover_url ??
                         "/images/placeholders/default.svg"}
                     />
-                      <div
-                        class="absolute top-1 left-1 rounded-sm bg-black/60 px-1.5 py-0.5 text-xs font-bold text-white shadow backdrop-blur-sm"
-                      >
-                        #{index + 1}
-                      </div>
+                    <div
+                      class="absolute top-1 left-1 rounded-sm bg-black/60 px-1.5 py-0.5 text-xs font-bold text-white shadow backdrop-blur-sm"
+                    >
+                      #{index + 1}
+                    </div>
                   </div>
                   <div class="min-w-0 flex-1">
                     <div class="flex items-center justify-between">
@@ -356,8 +357,9 @@
               title="Scroll left"
               aria-label="Scroll carousel to the left"
             >
-              <ArrowLeft class="text-on-surface-variant group-hover:text-primary" />
-
+              <ArrowLeft
+                class="text-on-surface-variant group-hover:text-primary"
+              />
             </button>
             <button
               onclick={scrollRight}
@@ -365,8 +367,9 @@
               title="Scroll right"
               aria-label="Scroll carousel to the right"
             >
-              <ArrowRight class="text-on-surface-variant group-hover:text-primary" />
-
+              <ArrowRight
+                class="text-on-surface-variant group-hover:text-primary"
+              />
             </button>
           </div>
         </div>
@@ -391,7 +394,7 @@
                     alt={getSongName(song)}
                     title={getSongName(song)}
                     class="h-full w-full object-cover transition-opacity group-hover:opacity-80"
-                    src={song.anime?.cover_url ??
+                    src={song.anime?.cover_url ||
                       "/images/placeholders/default.svg"}
                   />
                   <div
@@ -554,8 +557,10 @@
                     </span>
                   </div>
                 </div>
-                  <ChevronRight size={18} class="text-primary opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100" />
-
+                <ChevronRight
+                  size={18}
+                  class="text-primary opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100"
+                />
               </a>
             {/each}
           </div>

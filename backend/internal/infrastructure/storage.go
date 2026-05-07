@@ -104,6 +104,9 @@ func InitStorageFromEnv(ctx context.Context) (StorageService, error) {
 		}
 	}
 
+	// Sanitize public URL to remove trailing slash
+	publicUrl = strings.TrimSuffix(publicUrl, "/")
+
 	return NewS3Storage(ctx, accessKey, secretKey, region, bucket, endpoint, publicUrl)
 }
 

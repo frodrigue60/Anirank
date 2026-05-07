@@ -8,7 +8,6 @@ import (
 	"image/jpeg"
 	"image/png"
 	"io"
-	"os"
 	"strings"
 
 	"anirank/api/internal/domain"
@@ -48,12 +47,11 @@ type mediaService struct {
 }
 
 func NewMediaService(storage StorageService) MediaService {
-	// Fallback to Env if storage doesn't provide it (standardizing)
-	baseURL := os.Getenv("S3_PUBLIC_URL")
-	if !strings.HasSuffix(baseURL, "/") {
+	baseURL := storage.GetPublicURL()
+	if baseURL != "" && !strings.HasSuffix(baseURL, "/") {
 		baseURL += "/"
 	}
-	
+
 	return &mediaService{
 		storage: storage,
 		baseURL: baseURL,

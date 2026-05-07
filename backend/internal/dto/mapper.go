@@ -200,6 +200,10 @@ func ToSongSlimDTO(s *domain.Song) SongSlimDTO {
 	if s.Anime != nil {
 		anime.Title = s.Anime.Title
 		anime.Slug = s.Anime.Slug
+		if s.Anime.CoverUrl != nil {
+			anime.CoverUrl = *s.Anime.CoverUrl
+		}
+		anime.BannerUrl = s.Anime.BannerUrl
 	}
 
 	return SongSlimDTO{

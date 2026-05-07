@@ -24,7 +24,7 @@ func (r *songRepository) GetByID(ctx context.Context, id uint64) (*domain.Song, 
 	var s domain.Song
 	query := `
 		SELECT s.*, 
-		       a.id AS "anime.id", a.uuid AS "anime.uuid", a.title AS "anime.title", a.slug AS "anime.slug", a.cover AS "anime.cover",
+		       a.id AS "anime.id", a.uuid AS "anime.uuid", a.title AS "anime.title", a.slug AS "anime.slug", a.cover AS "anime.cover", a.banner AS "anime.banner",
 		       st.id AS "song_type.id", st.uuid AS "song_type.uuid", st.name AS "song_type.name", st.slug AS "song_type.slug", st.description AS "song_type.description"
 		FROM songs s 
 		LEFT JOIN animes a ON s.anime_id = a.id
@@ -45,7 +45,7 @@ func (r *songRepository) GetByUUID(ctx context.Context, uuid string) (*domain.So
 	var s domain.Song
 	query := `
 		SELECT s.*, 
-		       a.id AS "anime.id", a.uuid AS "anime.uuid", a.title AS "anime.title", a.slug AS "anime.slug", a.cover AS "anime.cover",
+		       a.id AS "anime.id", a.uuid AS "anime.uuid", a.title AS "anime.title", a.slug AS "anime.slug", a.cover AS "anime.cover", a.banner AS "anime.banner",
 		       st.id AS "song_type.id", st.uuid AS "song_type.uuid", st.name AS "song_type.name", st.slug AS "song_type.slug", st.description AS "song_type.description"
 		FROM songs s 
 		LEFT JOIN animes a ON s.anime_id = a.id
@@ -105,7 +105,7 @@ func (r *songRepository) GetPaginated(ctx context.Context, limit, offset int, fi
 	query := `
 		SELECT s.*, 
 		       st.id AS "song_type.id", st.uuid AS "song_type.uuid", st.name AS "song_type.name", st.slug AS "song_type.slug", st.description AS "song_type.description",
-		       a.id AS "anime.id", a.uuid AS "anime.uuid", a.title AS "anime.title", a.slug AS "anime.slug", a.cover AS "anime.cover",
+		       a.id AS "anime.id", a.uuid AS "anime.uuid", a.title AS "anime.title", a.slug AS "anime.slug", a.cover AS "anime.cover", a.banner AS "anime.banner",
 		       EXISTS (SELECT 1 FROM artist_song asong JOIN artists art ON asong.artist_id = art.id WHERE asong.song_id = s.id AND art.status = false) as partial_artist_inactive
 		FROM songs s
 		JOIN animes a ON s.anime_id = a.id
@@ -849,7 +849,8 @@ func (r *songRepository) GetRanking(ctx context.Context, rankingType, songType s
 				s.average_score,
 				s.favorites_count,
 				s.prev_seasonal_rank as prev_rank,
-				st.id AS "song_type.id", st.uuid AS "song_type.uuid", st.name AS "song_type.name", st.slug AS "song_type.slug", st.description AS "song_type.description"
+				st.id AS "song_type.id", st.uuid AS "song_type.uuid", st.name AS "song_type.name", st.slug AS "song_type.slug", st.description AS "song_type.description",
+				a.id AS "anime.id", a.uuid AS "anime.uuid", a.title AS "anime.title", a.slug AS "anime.slug", a.cover AS "anime.cover", a.banner AS "anime.banner"
 			FROM songs s
 			JOIN animes a ON s.anime_id = a.id
 			JOIN seasons se ON s.season_id = se.id
@@ -863,7 +864,8 @@ func (r *songRepository) GetRanking(ctx context.Context, rankingType, songType s
 				s.average_score,
 				s.favorites_count,
 				s.prev_main_rank as prev_rank,
-				st.id AS "song_type.id", st.uuid AS "song_type.uuid", st.name AS "song_type.name", st.slug AS "song_type.slug", st.description AS "song_type.description"
+				st.id AS "song_type.id", st.uuid AS "song_type.uuid", st.name AS "song_type.name", st.slug AS "song_type.slug", st.description AS "song_type.description",
+				a.id AS "anime.id", a.uuid AS "anime.uuid", a.title AS "anime.title", a.slug AS "anime.slug", a.cover AS "anime.cover", a.banner AS "anime.banner"
 			FROM songs s
 			JOIN animes a ON s.anime_id = a.id
 			LEFT JOIN song_types st ON s.type_id = st.id
@@ -937,7 +939,7 @@ func (r *songRepository) Search(ctx context.Context, term string, limit int) ([]
 	query := `
 		SELECT 
 			s.id, s.uuid, s.song_romaji, s.song_jp, s.song_en, s.slug, s.theme_num,
-			a.id AS "anime.id", a.uuid AS "anime.uuid", a.title AS "anime.title", a.slug AS "anime.slug",
+			a.id AS "anime.id", a.uuid AS "anime.uuid", a.title AS "anime.title", a.slug AS "anime.slug", a.cover AS "anime.cover", a.banner AS "anime.banner",
 			st.id AS "song_type.id", st.uuid AS "song_type.uuid", st.name AS "song_type.name", st.slug AS "song_type.slug", st.description AS "song_type.description"
 		FROM songs s
 		JOIN animes a ON s.anime_id = a.id

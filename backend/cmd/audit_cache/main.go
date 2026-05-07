@@ -17,7 +17,7 @@ func main() {
 		{"Songs List", "/api/songs?limit=20"},
 	}
 
-	fmt.Println("\n📊 --- CACHE VALIDATION AUDIT (5 Passes) ---")
+	fmt.Println("📊 --- CACHE VALIDATION AUDIT (5 Passes) ---")
 	fmt.Printf("%-20s | %-10s | %-10s | %-10s | %-10s | %-10s\n", "Service", "Pass 1", "Pass 2", "Pass 3", "Pass 4", "Pass 5")
 	fmt.Println("------------------------------------------------------------------------------------------")
 
@@ -39,5 +39,5 @@ func main() {
 		}
 		fmt.Println()
 	}
-	fmt.Println("------------------------------------------------------------------------------------------\n")
+	fmt.Println("------------------------------------------------------------------------------------------")
 }

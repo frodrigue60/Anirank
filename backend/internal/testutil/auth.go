@@ -84,6 +84,7 @@ func (m *MockUserRepository) Delete(ctx context.Context, id uint64) error       
 func (m *MockUserRepository) GetRolesByUserID(ctx context.Context, userID uint64) ([]domain.Role, error) { return nil, nil }
 func (m *MockUserRepository) UpdateRoles(ctx context.Context, userID uint64, rIDs []uint64) error      { return nil }
 func (m *MockUserRepository) GetBadgesByUserID(ctx context.Context, userID uint64) ([]domain.Badge, error) { return nil, nil }
+func (m *MockUserRepository) GetBadgesByUserIDs(ctx context.Context, userIDs []uint64) (map[uint64][]domain.Badge, error) { return nil, nil }
 func (m *MockUserRepository) UpdateBadges(ctx context.Context, userID uint64, bIDs []uint64) error     { return nil }
 func (m *MockUserRepository) GetPermissionsByUserID(ctx context.Context, userID uint64) ([]domain.Permission, error) { return nil, nil }
 func (m *MockUserRepository) GetAllPermissions(ctx context.Context) ([]domain.Permission, error)      { return nil, nil }

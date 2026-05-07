@@ -22,7 +22,7 @@ func main() {
 		{"Activity Feed", "/api/activity?limit=10"},
 	}
 
-	fmt.Println("\n🚀 --- ANIRANK PUBLIC API PERFORMANCE AUDIT ---")
+	fmt.Println("🚀 --- ANIRANK PUBLIC API PERFORMANCE AUDIT ---")
 	fmt.Printf("%-25s | %-15s | %-8s\n", "Service", "Latency", "Status")
 	fmt.Println("------------------------------------------------------------")
 
@@ -52,5 +52,5 @@ func main() {
 		fmt.Printf("%-25s | %-15s | %-8d %s\n", ep.name, duration.Round(time.Microsecond), resp.StatusCode, perfTag)
 		resp.Body.Close()
 	}
-	fmt.Println("------------------------------------------------------------\n")
+	fmt.Println("------------------------------------------------------------")
 }

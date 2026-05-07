@@ -323,7 +323,7 @@ func fetchAnilistMedia(ids []int64) (map[int64]struct {
 	return results, nil
 }
 
-func mirrorImage(ctx context.Context, storage *infrastructure.S3Storage, sourceURL, prefix string, anilistID int64) (string, error) {
+func mirrorImage(ctx context.Context, storage infrastructure.StorageService, sourceURL, prefix string, anilistID int64) (string, error) {
 	// Download
 	resp, err := http.Get(sourceURL)
 	if err != nil {

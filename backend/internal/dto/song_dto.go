@@ -47,8 +47,10 @@ type ArtistSlimDTO struct {
 }
 
 type AnimeSlimDTO struct {
-	Title string `json:"title"`
-	Slug  string `json:"slug"`
+	Title    string  `json:"title"`
+	Slug     string  `json:"slug"`
+	CoverUrl string  `json:"cover_url"`
+	BannerUrl *string `json:"banner_url"`
 }
 
 type SongDTO struct {

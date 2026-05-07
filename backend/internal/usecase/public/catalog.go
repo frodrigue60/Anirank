@@ -113,9 +113,13 @@ func (u *CatalogUsecase) enrichSongsBulk(ctx context.Context, userID *uint64, so
 		s := &songs[i]
 
 		// Anime
-		if s.Anime == nil && animeMap != nil {
+		if animeMap != nil {
 			if a, ok := animeMap[s.AnimeID]; ok {
-				s.Anime = &a
+				// Always prefer the rich version from animeMap if current one is nil or missing banner
+				if s.Anime == nil || s.Anime.Banner == nil {
+					animeCopy := a
+					s.Anime = &animeCopy
+				}
 			}
 		}
 		if s.Anime != nil {
@@ -576,6 +580,7 @@ func (u *CatalogUsecase) GetUserRanking(ctx context.Context, sortBy string, limi
 
 	return users, total, nil
 }
+
 
 type AnilistHybridItem struct {
 	AnilistID  int    `json:"anilist_id"`

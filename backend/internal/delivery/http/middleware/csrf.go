@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"anirank/api/internal/domain"
+	"os"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -11,10 +12,15 @@ import (
 // NewCSRFMiddleware creates a CSRF protection middleware.
 // It uses the provided storage (Redis or Memory fallback).
 func NewCSRFMiddleware(storage fiber.Storage) fiber.Handler {
+	cookieDomain := os.Getenv("COOKIE_DOMAIN")
+	secure := os.Getenv("COOKIE_SECURE") != "false" // Default to true in prod
+
 	return csrf.New(csrf.Config{
 		KeyLookup:      "header:X-CSRF-Token",
 		CookieName:     "csrf_token",
 		CookieSameSite: "Lax",
+		CookieSecure:   secure,
+		CookieDomain:   cookieDomain,
 		CookieHTTPOnly: false, // Standard for SPAs so Axios can read it
 		Expiration:     1 * time.Hour,
 		Storage:        storage,

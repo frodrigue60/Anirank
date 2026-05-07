@@ -2,7 +2,6 @@
 -- PostgreSQL database dump
 --
 
-\restrict sLw193cihpID2OBD9TtbiMEBIdmc8hwgcSXeeE144gmcSkkufWdKYRJRKoEwRju
 
 -- Dumped from database version 15.17
 -- Dumped by pg_dump version 15.17
@@ -52,7 +51,6 @@ CREATE FUNCTION public.fn_update_artist_song_counters_deletion() RETURNS trigger
             $$;
 
 
-ALTER FUNCTION public.fn_update_artist_song_counters_deletion() OWNER TO postgres;
 
 --
 -- Name: fn_update_artist_song_counters_pivot(); Type: FUNCTION; Schema: public; Owner: postgres
@@ -86,7 +84,6 @@ CREATE FUNCTION public.fn_update_artist_song_counters_pivot() RETURNS trigger
             $$;
 
 
-ALTER FUNCTION public.fn_update_artist_song_counters_pivot() OWNER TO postgres;
 
 --
 -- Name: fn_update_artist_song_counters_status(); Type: FUNCTION; Schema: public; Owner: postgres
@@ -112,7 +109,6 @@ CREATE FUNCTION public.fn_update_artist_song_counters_status() RETURNS trigger
             $$;
 
 
-ALTER FUNCTION public.fn_update_artist_song_counters_status() OWNER TO postgres;
 
 --
 -- Name: fn_update_daily_song_views(); Type: FUNCTION; Schema: public; Owner: postgres
@@ -133,7 +129,6 @@ CREATE FUNCTION public.fn_update_daily_song_views() RETURNS trigger
             $$;
 
 
-ALTER FUNCTION public.fn_update_daily_song_views() OWNER TO postgres;
 
 --
 -- Name: fn_update_daily_variant_views(); Type: FUNCTION; Schema: public; Owner: postgres
@@ -154,7 +149,6 @@ CREATE FUNCTION public.fn_update_daily_variant_views() RETURNS trigger
             $$;
 
 
-ALTER FUNCTION public.fn_update_daily_variant_views() OWNER TO postgres;
 
 --
 -- Name: fn_update_producer_anime_count(); Type: FUNCTION; Schema: public; Owner: postgres
@@ -174,7 +168,6 @@ CREATE FUNCTION public.fn_update_producer_anime_count() RETURNS trigger
             $$;
 
 
-ALTER FUNCTION public.fn_update_producer_anime_count() OWNER TO postgres;
 
 --
 -- Name: fn_update_studio_anime_count(); Type: FUNCTION; Schema: public; Owner: postgres
@@ -194,7 +187,6 @@ CREATE FUNCTION public.fn_update_studio_anime_count() RETURNS trigger
             $$;
 
 
-ALTER FUNCTION public.fn_update_studio_anime_count() OWNER TO postgres;
 
 --
 -- Name: handle_artist_song_change(); Type: FUNCTION; Schema: public; Owner: postgres
@@ -215,7 +207,6 @@ CREATE FUNCTION public.handle_artist_song_change() RETURNS trigger
             $$;
 
 
-ALTER FUNCTION public.handle_artist_song_change() OWNER TO postgres;
 
 --
 -- Name: handle_song_status_change(); Type: FUNCTION; Schema: public; Owner: postgres
@@ -238,7 +229,6 @@ CREATE FUNCTION public.handle_song_status_change() RETURNS trigger
             $$;
 
 
-ALTER FUNCTION public.handle_song_status_change() OWNER TO postgres;
 
 --
 -- Name: recount_artist_stats(bigint); Type: FUNCTION; Schema: public; Owner: postgres
@@ -266,7 +256,95 @@ CREATE FUNCTION public.recount_artist_stats(artist_id_param bigint) RETURNS void
             $$;
 
 
-ALTER FUNCTION public.recount_artist_stats(artist_id_param bigint) OWNER TO postgres;
+
+--
+-- Name: sync_search_index(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.sync_search_index() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+            DECLARE
+                v_title    TEXT;
+                v_subtitle TEXT;
+                v_slug     TEXT;
+                v_image    TEXT;
+                v_type     VARCHAR(50);
+            BEGIN
+                v_type := TG_ARGV[0];
+
+                -- Handle DELETE: remove the entry from the index
+                IF (TG_OP = 'DELETE') THEN
+                    DELETE FROM search_index
+                     WHERE item_type = v_type
+                       AND item_id   = OLD.uuid;
+                    RETURN OLD;
+                END IF;
+
+                -- Map each table to its searchable fields
+                CASE v_type
+                    WHEN 'anime' THEN
+                        v_title    := NEW.title;
+                        v_slug     := NEW.slug;
+                        v_image    := NEW.cover;
+                        v_subtitle := 'Anime';
+
+                    WHEN 'song' THEN
+                        v_title    := coalesce(NEW.song_romaji, NEW.song_en, NEW.song_jp);
+                        -- Fetch the anime slug to create the nested URL format
+                        SELECT slug INTO v_slug FROM animes WHERE id = NEW.anime_id;
+                        v_slug     := v_slug || '/' || NEW.slug;
+                        v_image    := NULL;
+                        v_subtitle := 'Song \u2022 ' || NEW.type;
+
+                    WHEN 'artist' THEN
+                        v_title    := NEW.name;
+                        v_slug     := NEW.slug;
+                        v_image    := NEW.avatar;
+                        v_subtitle := 'Artist';
+
+                    WHEN 'user' THEN
+                        v_title    := NEW.name;
+                        v_slug     := NEW.slug;
+                        v_image    := NEW.avatar;
+                        v_subtitle := 'User';
+
+                    WHEN 'studio' THEN
+                        v_title    := NEW.name;
+                        v_slug     := NEW.slug;
+                        v_image    := NEW.logo;
+                        v_subtitle := 'Studio';
+
+                    WHEN 'producer' THEN
+                        v_title    := NEW.name;
+                        v_slug     := NEW.slug;
+                        v_image    := NEW.logo;
+                        v_subtitle := 'Producer';
+
+                    ELSE
+                        RETURN NEW;
+                END CASE;
+
+                -- Guard: skip if there is no meaningful title to index
+                IF v_title IS NULL OR trim(v_title) = '' THEN
+                    RETURN NEW;
+                END IF;
+
+                -- UPSERT — insert or update on (item_type, item_id) conflict
+                INSERT INTO search_index (item_type, item_id, title, subtitle, slug, image_url, updated_at)
+                VALUES (v_type, NEW.uuid, v_title, v_subtitle, v_slug, v_image, NOW())
+                ON CONFLICT (item_type, item_id) DO UPDATE SET
+                    title      = EXCLUDED.title,
+                    subtitle   = EXCLUDED.subtitle,
+                    slug       = EXCLUDED.slug,
+                    image_url  = EXCLUDED.image_url,
+                    updated_at = NOW();
+
+                RETURN NEW;
+            END;
+            $$;
+
+
 
 --
 -- Name: update_anime_song_counts(); Type: FUNCTION; Schema: public; Owner: postgres
@@ -317,7 +395,6 @@ CREATE FUNCTION public.update_anime_song_counts() RETURNS trigger
             $$;
 
 
-ALTER FUNCTION public.update_anime_song_counts() OWNER TO postgres;
 
 --
 -- Name: update_anime_songs_count(); Type: FUNCTION; Schema: public; Owner: postgres
@@ -344,7 +421,6 @@ CREATE FUNCTION public.update_anime_songs_count() RETURNS trigger
             $$;
 
 
-ALTER FUNCTION public.update_anime_songs_count() OWNER TO postgres;
 
 --
 -- Name: update_artist_favorites_count(); Type: FUNCTION; Schema: public; Owner: postgres
@@ -364,7 +440,6 @@ CREATE FUNCTION public.update_artist_favorites_count() RETURNS trigger
             $$;
 
 
-ALTER FUNCTION public.update_artist_favorites_count() OWNER TO postgres;
 
 --
 -- Name: update_song_average_score(); Type: FUNCTION; Schema: public; Owner: postgres
@@ -384,7 +459,6 @@ CREATE FUNCTION public.update_song_average_score() RETURNS trigger
             $$;
 
 
-ALTER FUNCTION public.update_song_average_score() OWNER TO postgres;
 
 --
 -- Name: update_song_favorites_count(); Type: FUNCTION; Schema: public; Owner: postgres
@@ -404,7 +478,6 @@ CREATE FUNCTION public.update_song_favorites_count() RETURNS trigger
             $$;
 
 
-ALTER FUNCTION public.update_song_favorites_count() OWNER TO postgres;
 
 SET default_tablespace = '';
 
@@ -426,7 +499,6 @@ CREATE TABLE public.activities (
 );
 
 
-ALTER TABLE public.activities OWNER TO postgres;
 
 --
 -- Name: activities_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -440,7 +512,6 @@ CREATE SEQUENCE public.activities_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.activities_id_seq OWNER TO postgres;
 
 --
 -- Name: activities_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -462,7 +533,6 @@ CREATE TABLE public.anime_external_link (
 );
 
 
-ALTER TABLE public.anime_external_link OWNER TO postgres;
 
 --
 -- Name: anime_genre; Type: TABLE; Schema: public; Owner: postgres
@@ -477,7 +547,6 @@ CREATE TABLE public.anime_genre (
 );
 
 
-ALTER TABLE public.anime_genre OWNER TO postgres;
 
 --
 -- Name: anime_producer; Type: TABLE; Schema: public; Owner: postgres
@@ -492,7 +561,6 @@ CREATE TABLE public.anime_producer (
 );
 
 
-ALTER TABLE public.anime_producer OWNER TO postgres;
 
 --
 -- Name: anime_studio; Type: TABLE; Schema: public; Owner: postgres
@@ -507,7 +575,6 @@ CREATE TABLE public.anime_studio (
 );
 
 
-ALTER TABLE public.anime_studio OWNER TO postgres;
 
 --
 -- Name: animes; Type: TABLE; Schema: public; Owner: postgres
@@ -535,7 +602,6 @@ CREATE TABLE public.animes (
 );
 
 
-ALTER TABLE public.animes OWNER TO postgres;
 
 --
 -- Name: announcements; Type: TABLE; Schema: public; Owner: postgres
@@ -554,11 +620,11 @@ CREATE TABLE public.announcements (
     starts_at timestamp(0) without time zone,
     ends_at timestamp(0) without time zone,
     created_at timestamp(0) without time zone,
-    updated_at timestamp(0) without time zone
+    updated_at timestamp(0) without time zone,
+    uuid uuid NOT NULL
 );
 
 
-ALTER TABLE public.announcements OWNER TO postgres;
 
 --
 -- Name: announcements_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -572,7 +638,6 @@ CREATE SEQUENCE public.announcements_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.announcements_id_seq OWNER TO postgres;
 
 --
 -- Name: announcements_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -594,7 +659,6 @@ CREATE TABLE public.artist_song (
 );
 
 
-ALTER TABLE public.artist_song OWNER TO postgres;
 
 --
 -- Name: artist_song_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -608,7 +672,6 @@ CREATE SEQUENCE public.artist_song_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.artist_song_id_seq OWNER TO postgres;
 
 --
 -- Name: artist_song_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -630,7 +693,6 @@ CREATE TABLE public.artist_user (
 );
 
 
-ALTER TABLE public.artist_user OWNER TO postgres;
 
 --
 -- Name: artist_user_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -644,7 +706,6 @@ CREATE SEQUENCE public.artist_user_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.artist_user_id_seq OWNER TO postgres;
 
 --
 -- Name: artist_user_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -675,7 +736,6 @@ CREATE TABLE public.artists (
 );
 
 
-ALTER TABLE public.artists OWNER TO postgres;
 
 --
 -- Name: artists_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -689,7 +749,6 @@ CREATE SEQUENCE public.artists_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.artists_id_seq OWNER TO postgres;
 
 --
 -- Name: artists_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -717,7 +776,6 @@ CREATE TABLE public.audit_logs (
 );
 
 
-ALTER TABLE public.audit_logs OWNER TO postgres;
 
 --
 -- Name: audit_logs_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -731,7 +789,6 @@ CREATE SEQUENCE public.audit_logs_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.audit_logs_id_seq OWNER TO postgres;
 
 --
 -- Name: audit_logs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -754,7 +811,6 @@ CREATE TABLE public.badge_user (
 );
 
 
-ALTER TABLE public.badge_user OWNER TO postgres;
 
 --
 -- Name: badge_user_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -768,7 +824,6 @@ CREATE SEQUENCE public.badge_user_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.badge_user_id_seq OWNER TO postgres;
 
 --
 -- Name: badge_user_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -788,11 +843,14 @@ CREATE TABLE public.badges (
     is_active boolean DEFAULT true NOT NULL,
     created_at timestamp(0) without time zone,
     updated_at timestamp(0) without time zone,
-    icon character varying(191)
+    icon character varying(191),
+    is_automatic boolean DEFAULT false NOT NULL,
+    requirement_type character varying(191),
+    requirement_value integer,
+    uuid uuid NOT NULL
 );
 
 
-ALTER TABLE public.badges OWNER TO postgres;
 
 --
 -- Name: badges_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -806,7 +864,6 @@ CREATE SEQUENCE public.badges_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.badges_id_seq OWNER TO postgres;
 
 --
 -- Name: badges_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -826,7 +883,6 @@ CREATE TABLE public.cache (
 );
 
 
-ALTER TABLE public.cache OWNER TO postgres;
 
 --
 -- Name: cache_locks; Type: TABLE; Schema: public; Owner: postgres
@@ -839,7 +895,6 @@ CREATE TABLE public.cache_locks (
 );
 
 
-ALTER TABLE public.cache_locks OWNER TO postgres;
 
 --
 -- Name: comment_reactions; Type: TABLE; Schema: public; Owner: postgres
@@ -855,7 +910,6 @@ CREATE TABLE public.comment_reactions (
 );
 
 
-ALTER TABLE public.comment_reactions OWNER TO postgres;
 
 --
 -- Name: comment_reactions_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -869,7 +923,6 @@ CREATE SEQUENCE public.comment_reactions_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.comment_reactions_id_seq OWNER TO postgres;
 
 --
 -- Name: comment_reactions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -895,7 +948,6 @@ CREATE TABLE public.comment_reports (
 );
 
 
-ALTER TABLE public.comment_reports OWNER TO postgres;
 
 --
 -- Name: comment_reports_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -909,7 +961,6 @@ CREATE SEQUENCE public.comment_reports_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.comment_reports_id_seq OWNER TO postgres;
 
 --
 -- Name: comment_reports_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -931,11 +982,11 @@ CREATE TABLE public.comments (
     updated_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     song_id bigint,
     likes_count bigint DEFAULT '0'::bigint NOT NULL,
-    dislikes_count bigint DEFAULT '0'::bigint NOT NULL
+    dislikes_count bigint DEFAULT '0'::bigint NOT NULL,
+    uuid uuid NOT NULL
 );
 
 
-ALTER TABLE public.comments OWNER TO postgres;
 
 --
 -- Name: comments_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -949,7 +1000,6 @@ CREATE SEQUENCE public.comments_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.comments_id_seq OWNER TO postgres;
 
 --
 -- Name: comments_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -975,7 +1025,6 @@ CREATE TABLE public.daily_metrics (
 );
 
 
-ALTER TABLE public.daily_metrics OWNER TO postgres;
 
 --
 -- Name: daily_metrics_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -989,7 +1038,6 @@ CREATE SEQUENCE public.daily_metrics_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.daily_metrics_id_seq OWNER TO postgres;
 
 --
 -- Name: daily_metrics_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1010,7 +1058,6 @@ CREATE SEQUENCE public.external_link_post_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.external_link_post_id_seq OWNER TO postgres;
 
 --
 -- Name: external_link_post_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1030,11 +1077,11 @@ CREATE TABLE public.external_links (
     name character varying(191) NOT NULL,
     url character varying(191) NOT NULL,
     created_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+    updated_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    uuid uuid NOT NULL
 );
 
 
-ALTER TABLE public.external_links OWNER TO postgres;
 
 --
 -- Name: external_links_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -1048,7 +1095,6 @@ CREATE SEQUENCE public.external_links_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.external_links_id_seq OWNER TO postgres;
 
 --
 -- Name: external_links_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1072,7 +1118,6 @@ CREATE TABLE public.failed_jobs (
 );
 
 
-ALTER TABLE public.failed_jobs OWNER TO postgres;
 
 --
 -- Name: failed_jobs_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -1086,7 +1131,6 @@ CREATE SEQUENCE public.failed_jobs_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.failed_jobs_id_seq OWNER TO postgres;
 
 --
 -- Name: failed_jobs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1107,7 +1151,6 @@ CREATE TABLE public.follows (
 );
 
 
-ALTER TABLE public.follows OWNER TO postgres;
 
 --
 -- Name: formats; Type: TABLE; Schema: public; Owner: postgres
@@ -1118,11 +1161,11 @@ CREATE TABLE public.formats (
     name character varying(191) NOT NULL,
     slug character varying(191) NOT NULL,
     created_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+    updated_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    uuid uuid NOT NULL
 );
 
 
-ALTER TABLE public.formats OWNER TO postgres;
 
 --
 -- Name: formats_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -1136,7 +1179,6 @@ CREATE SEQUENCE public.formats_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.formats_id_seq OWNER TO postgres;
 
 --
 -- Name: formats_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1157,7 +1199,6 @@ CREATE SEQUENCE public.genre_post_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.genre_post_id_seq OWNER TO postgres;
 
 --
 -- Name: genre_post_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1175,11 +1216,11 @@ CREATE TABLE public.genres (
     name character varying(191) NOT NULL,
     slug character varying(191) NOT NULL,
     created_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+    updated_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    uuid uuid NOT NULL
 );
 
 
-ALTER TABLE public.genres OWNER TO postgres;
 
 --
 -- Name: genres_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -1193,7 +1234,6 @@ CREATE SEQUENCE public.genres_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.genres_id_seq OWNER TO postgres;
 
 --
 -- Name: genres_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1216,7 +1256,6 @@ CREATE TABLE public.levels (
 );
 
 
-ALTER TABLE public.levels OWNER TO postgres;
 
 --
 -- Name: migrations; Type: TABLE; Schema: public; Owner: postgres
@@ -1229,7 +1268,6 @@ CREATE TABLE public.migrations (
 );
 
 
-ALTER TABLE public.migrations OWNER TO postgres;
 
 --
 -- Name: migrations_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -1244,13 +1282,57 @@ CREATE SEQUENCE public.migrations_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.migrations_id_seq OWNER TO postgres;
 
 --
 -- Name: migrations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
 ALTER SEQUENCE public.migrations_id_seq OWNED BY public.migrations.id;
+
+
+--
+-- Name: music_genre_song; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.music_genre_song (
+    music_genre_id bigint NOT NULL,
+    song_id bigint NOT NULL
+);
+
+
+
+--
+-- Name: music_genres; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.music_genres (
+    id bigint NOT NULL,
+    uuid uuid DEFAULT gen_random_uuid() NOT NULL,
+    name text NOT NULL,
+    slug text NOT NULL,
+    created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+
+--
+-- Name: music_genres_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.music_genres_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+
+--
+-- Name: music_genres_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.music_genres_id_seq OWNED BY public.music_genres.id;
 
 
 --
@@ -1272,7 +1354,6 @@ CREATE TABLE public.notifications (
 );
 
 
-ALTER TABLE public.notifications OWNER TO postgres;
 
 --
 -- Name: password_resets; Type: TABLE; Schema: public; Owner: postgres
@@ -1285,7 +1366,6 @@ CREATE TABLE public.password_resets (
 );
 
 
-ALTER TABLE public.password_resets OWNER TO postgres;
 
 --
 -- Name: permissions; Type: TABLE; Schema: public; Owner: postgres
@@ -1301,7 +1381,6 @@ CREATE TABLE public.permissions (
 );
 
 
-ALTER TABLE public.permissions OWNER TO postgres;
 
 --
 -- Name: permissions_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -1315,7 +1394,6 @@ CREATE SEQUENCE public.permissions_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.permissions_id_seq OWNER TO postgres;
 
 --
 -- Name: permissions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1342,7 +1420,6 @@ CREATE TABLE public.personal_access_tokens (
 );
 
 
-ALTER TABLE public.personal_access_tokens OWNER TO postgres;
 
 --
 -- Name: personal_access_tokens_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -1356,7 +1433,6 @@ CREATE SEQUENCE public.personal_access_tokens_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.personal_access_tokens_id_seq OWNER TO postgres;
 
 --
 -- Name: personal_access_tokens_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1379,7 +1455,6 @@ CREATE TABLE public.playlist_song (
 );
 
 
-ALTER TABLE public.playlist_song OWNER TO postgres;
 
 --
 -- Name: playlist_song_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -1393,7 +1468,6 @@ CREATE SEQUENCE public.playlist_song_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.playlist_song_id_seq OWNER TO postgres;
 
 --
 -- Name: playlist_song_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1418,7 +1492,6 @@ CREATE TABLE public.playlists (
 );
 
 
-ALTER TABLE public.playlists OWNER TO postgres;
 
 --
 -- Name: playlists_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -1432,7 +1505,6 @@ CREATE SEQUENCE public.playlists_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.playlists_id_seq OWNER TO postgres;
 
 --
 -- Name: playlists_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1453,7 +1525,6 @@ CREATE SEQUENCE public.post_producer_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.post_producer_id_seq OWNER TO postgres;
 
 --
 -- Name: post_producer_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1474,7 +1545,6 @@ CREATE SEQUENCE public.post_studio_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.post_studio_id_seq OWNER TO postgres;
 
 --
 -- Name: post_studio_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1495,7 +1565,6 @@ CREATE SEQUENCE public.posts_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.posts_id_seq OWNER TO postgres;
 
 --
 -- Name: posts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1520,7 +1589,6 @@ CREATE TABLE public.producers (
 );
 
 
-ALTER TABLE public.producers OWNER TO postgres;
 
 --
 -- Name: producers_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -1534,7 +1602,6 @@ CREATE SEQUENCE public.producers_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.producers_id_seq OWNER TO postgres;
 
 --
 -- Name: producers_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1559,7 +1626,6 @@ CREATE TABLE public.ranking_histories (
 );
 
 
-ALTER TABLE public.ranking_histories OWNER TO postgres;
 
 --
 -- Name: ranking_histories_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -1573,7 +1639,6 @@ CREATE SEQUENCE public.ranking_histories_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.ranking_histories_id_seq OWNER TO postgres;
 
 --
 -- Name: ranking_histories_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1596,7 +1661,6 @@ CREATE TABLE public.song_ratings (
 );
 
 
-ALTER TABLE public.song_ratings OWNER TO postgres;
 
 --
 -- Name: ratings_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -1610,7 +1674,6 @@ CREATE SEQUENCE public.ratings_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.ratings_id_seq OWNER TO postgres;
 
 --
 -- Name: ratings_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1637,7 +1700,6 @@ CREATE TABLE public.song_reports (
 );
 
 
-ALTER TABLE public.song_reports OWNER TO postgres;
 
 --
 -- Name: reports_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -1651,7 +1713,6 @@ CREATE SEQUENCE public.reports_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.reports_id_seq OWNER TO postgres;
 
 --
 -- Name: reports_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1670,7 +1731,6 @@ CREATE TABLE public.role_permissions (
 );
 
 
-ALTER TABLE public.role_permissions OWNER TO postgres;
 
 --
 -- Name: role_user; Type: TABLE; Schema: public; Owner: postgres
@@ -1685,7 +1745,6 @@ CREATE TABLE public.role_user (
 );
 
 
-ALTER TABLE public.role_user OWNER TO postgres;
 
 --
 -- Name: role_user_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -1699,7 +1758,6 @@ CREATE SEQUENCE public.role_user_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.role_user_id_seq OWNER TO postgres;
 
 --
 -- Name: role_user_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1723,7 +1781,6 @@ CREATE TABLE public.roles (
 );
 
 
-ALTER TABLE public.roles OWNER TO postgres;
 
 --
 -- Name: roles_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -1737,7 +1794,6 @@ CREATE SEQUENCE public.roles_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.roles_id_seq OWNER TO postgres;
 
 --
 -- Name: roles_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1760,7 +1816,6 @@ CREATE TABLE public.score_formats (
 );
 
 
-ALTER TABLE public.score_formats OWNER TO postgres;
 
 --
 -- Name: score_formats_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -1774,13 +1829,51 @@ CREATE SEQUENCE public.score_formats_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.score_formats_id_seq OWNER TO postgres;
 
 --
 -- Name: score_formats_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
 ALTER SEQUENCE public.score_formats_id_seq OWNED BY public.score_formats.id;
+
+
+--
+-- Name: search_index; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.search_index (
+    id bigint NOT NULL,
+    item_type character varying(50) NOT NULL,
+    item_id uuid NOT NULL,
+    title text NOT NULL,
+    subtitle text,
+    slug text NOT NULL,
+    image_url text,
+    search_vector tsvector GENERATED ALWAYS AS ((setweight(to_tsvector('simple'::regconfig, COALESCE(title, ''::text)), 'A'::"char") || setweight(to_tsvector('simple'::regconfig, COALESCE(subtitle, ''::text)), 'B'::"char"))) STORED,
+    created_at timestamp without time zone DEFAULT now(),
+    updated_at timestamp without time zone DEFAULT now()
+);
+
+
+
+--
+-- Name: search_index_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.search_index_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+
+--
+-- Name: search_index_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.search_index_id_seq OWNED BY public.search_index.id;
 
 
 --
@@ -1793,11 +1886,11 @@ CREATE TABLE public.seasons (
     slug character varying(191) NOT NULL,
     created_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    current boolean DEFAULT false NOT NULL
+    current boolean DEFAULT false NOT NULL,
+    uuid uuid NOT NULL
 );
 
 
-ALTER TABLE public.seasons OWNER TO postgres;
 
 --
 -- Name: seasons_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -1811,7 +1904,6 @@ CREATE SEQUENCE public.seasons_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.seasons_id_seq OWNER TO postgres;
 
 --
 -- Name: seasons_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1834,7 +1926,6 @@ CREATE TABLE public.song_reactions (
 );
 
 
-ALTER TABLE public.song_reactions OWNER TO postgres;
 
 --
 -- Name: song_reactions_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -1848,13 +1939,47 @@ CREATE SEQUENCE public.song_reactions_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.song_reactions_id_seq OWNER TO postgres;
 
 --
 -- Name: song_reactions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
 ALTER SEQUENCE public.song_reactions_id_seq OWNED BY public.song_reactions.id;
+
+
+--
+-- Name: song_types; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.song_types (
+    id bigint NOT NULL,
+    uuid uuid NOT NULL,
+    name character varying(50) NOT NULL,
+    slug character varying(20) NOT NULL,
+    description text,
+    created_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+
+--
+-- Name: song_types_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.song_types_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+
+--
+-- Name: song_types_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.song_types_id_seq OWNED BY public.song_types.id;
 
 
 --
@@ -1870,7 +1995,6 @@ CREATE TABLE public.song_user (
 );
 
 
-ALTER TABLE public.song_user OWNER TO postgres;
 
 --
 -- Name: song_user_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -1884,7 +2008,6 @@ CREATE SEQUENCE public.song_user_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.song_user_id_seq OWNER TO postgres;
 
 --
 -- Name: song_user_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1909,11 +2032,11 @@ CREATE TABLE public.song_variants (
     updated_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     spoiler boolean DEFAULT false NOT NULL,
     status boolean DEFAULT false NOT NULL,
-    anime_themes_id bigint
+    anime_themes_id bigint,
+    uuid uuid NOT NULL
 );
 
 
-ALTER TABLE public.song_variants OWNER TO postgres;
 
 --
 -- Name: song_variants_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -1927,7 +2050,6 @@ CREATE SEQUENCE public.song_variants_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.song_variants_id_seq OWNER TO postgres;
 
 --
 -- Name: song_variants_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1963,11 +2085,12 @@ CREATE TABLE public.songs (
     average_score numeric(5,2) DEFAULT '0'::numeric NOT NULL,
     uuid uuid,
     anime_themes_id bigint,
+    type_id bigint,
+    external_metadata jsonb DEFAULT '{}'::jsonb,
     CONSTRAINT songs_type_check CHECK (((type)::text = ANY ((ARRAY['OP'::character varying, 'ED'::character varying, 'INS'::character varying, 'OTH'::character varying])::text[])))
 );
 
 
-ALTER TABLE public.songs OWNER TO postgres;
 
 --
 -- Name: songs_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -1981,7 +2104,6 @@ CREATE SEQUENCE public.songs_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.songs_id_seq OWNER TO postgres;
 
 --
 -- Name: songs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -2006,7 +2128,6 @@ CREATE TABLE public.studios (
 );
 
 
-ALTER TABLE public.studios OWNER TO postgres;
 
 --
 -- Name: studios_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -2020,7 +2141,6 @@ CREATE SEQUENCE public.studios_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.studios_id_seq OWNER TO postgres;
 
 --
 -- Name: studios_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -2050,7 +2170,6 @@ CREATE TABLE public.tournament_matchups (
 );
 
 
-ALTER TABLE public.tournament_matchups OWNER TO postgres;
 
 --
 -- Name: tournament_matchups_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -2064,7 +2183,6 @@ CREATE SEQUENCE public.tournament_matchups_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.tournament_matchups_id_seq OWNER TO postgres;
 
 --
 -- Name: tournament_matchups_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -2088,7 +2206,6 @@ CREATE TABLE public.tournament_votes (
 );
 
 
-ALTER TABLE public.tournament_votes OWNER TO postgres;
 
 --
 -- Name: tournament_votes_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -2102,7 +2219,6 @@ CREATE SEQUENCE public.tournament_votes_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.tournament_votes_id_seq OWNER TO postgres;
 
 --
 -- Name: tournament_votes_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -2134,7 +2250,6 @@ CREATE TABLE public.tournaments (
 );
 
 
-ALTER TABLE public.tournaments OWNER TO postgres;
 
 --
 -- Name: tournaments_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -2148,13 +2263,25 @@ CREATE SEQUENCE public.tournaments_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.tournaments_id_seq OWNER TO postgres;
 
 --
 -- Name: tournaments_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
 ALTER SEQUENCE public.tournaments_id_seq OWNED BY public.tournaments.id;
+
+
+--
+-- Name: user_notification_settings; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.user_notification_settings (
+    user_id bigint NOT NULL,
+    settings json DEFAULT '{"social_follow":true,"comment_reply":true}'::json NOT NULL,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone
+);
+
 
 
 --
@@ -2174,7 +2301,6 @@ CREATE TABLE public.user_reports (
 );
 
 
-ALTER TABLE public.user_reports OWNER TO postgres;
 
 --
 -- Name: user_reports_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -2188,7 +2314,6 @@ CREATE SEQUENCE public.user_reports_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.user_reports_id_seq OWNER TO postgres;
 
 --
 -- Name: user_reports_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -2213,7 +2338,6 @@ CREATE TABLE public.user_requests (
 );
 
 
-ALTER TABLE public.user_requests OWNER TO postgres;
 
 --
 -- Name: user_requests_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -2227,13 +2351,31 @@ CREATE SEQUENCE public.user_requests_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.user_requests_id_seq OWNER TO postgres;
 
 --
 -- Name: user_requests_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
 ALTER SEQUENCE public.user_requests_id_seq OWNED BY public.user_requests.id;
+
+
+--
+-- Name: user_social_identities; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.user_social_identities (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id bigint NOT NULL,
+    provider character varying(20) NOT NULL,
+    provider_id character varying(255) NOT NULL,
+    provider_username character varying(255),
+    access_token text,
+    refresh_token text,
+    expires_at timestamp(0) without time zone,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone
+);
+
 
 
 --
@@ -2257,22 +2399,11 @@ CREATE TABLE public.users (
     score_format_id bigint,
     xp bigint DEFAULT '0'::bigint NOT NULL,
     level integer DEFAULT 1 NOT NULL,
-    anilist_id bigint,
-    anilist_username character varying(191),
-    anilist_access_token text,
-    anilist_refresh_token text,
-    anilist_token_expires_at timestamp(0) without time zone,
-    google_id character varying(255),
-    google_email character varying(255),
-    google_access_token text,
-    google_refresh_token text,
-    google_token_expires_at timestamp(0) without time zone,
     profile_color character varying(191) DEFAULT '#7f13ec'::character varying,
     about text
 );
 
 
-ALTER TABLE public.users OWNER TO postgres;
 
 --
 -- Name: users_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -2286,7 +2417,6 @@ CREATE SEQUENCE public.users_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.users_id_seq OWNER TO postgres;
 
 --
 -- Name: users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -2310,7 +2440,6 @@ CREATE TABLE public.videos (
 );
 
 
-ALTER TABLE public.videos OWNER TO postgres;
 
 --
 -- Name: videos_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -2324,7 +2453,6 @@ CREATE SEQUENCE public.videos_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.videos_id_seq OWNER TO postgres;
 
 --
 -- Name: videos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -2348,7 +2476,6 @@ CREATE TABLE public.xp_activities (
 );
 
 
-ALTER TABLE public.xp_activities OWNER TO postgres;
 
 --
 -- Name: xp_activities_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -2362,7 +2489,6 @@ CREATE SEQUENCE public.xp_activities_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.xp_activities_id_seq OWNER TO postgres;
 
 --
 -- Name: xp_activities_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -2386,7 +2512,6 @@ CREATE TABLE public.xp_logs (
 );
 
 
-ALTER TABLE public.xp_logs OWNER TO postgres;
 
 --
 -- Name: xp_logs_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -2400,7 +2525,6 @@ CREATE SEQUENCE public.xp_logs_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.xp_logs_id_seq OWNER TO postgres;
 
 --
 -- Name: xp_logs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -2419,11 +2543,11 @@ CREATE TABLE public.years (
     slug character varying(191) NOT NULL,
     created_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    current boolean DEFAULT false NOT NULL
+    current boolean DEFAULT false NOT NULL,
+    uuid uuid NOT NULL
 );
 
 
-ALTER TABLE public.years OWNER TO postgres;
 
 --
 -- Name: years_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -2437,7 +2561,6 @@ CREATE SEQUENCE public.years_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.years_id_seq OWNER TO postgres;
 
 --
 -- Name: years_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -2601,6 +2724,13 @@ ALTER TABLE ONLY public.migrations ALTER COLUMN id SET DEFAULT nextval('public.m
 
 
 --
+-- Name: music_genres id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.music_genres ALTER COLUMN id SET DEFAULT nextval('public.music_genres_id_seq'::regclass);
+
+
+--
 -- Name: permissions id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -2664,6 +2794,13 @@ ALTER TABLE ONLY public.score_formats ALTER COLUMN id SET DEFAULT nextval('publi
 
 
 --
+-- Name: search_index id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.search_index ALTER COLUMN id SET DEFAULT nextval('public.search_index_id_seq'::regclass);
+
+
+--
 -- Name: seasons id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -2689,6 +2826,13 @@ ALTER TABLE ONLY public.song_reactions ALTER COLUMN id SET DEFAULT nextval('publ
 --
 
 ALTER TABLE ONLY public.song_reports ALTER COLUMN id SET DEFAULT nextval('public.reports_id_seq'::regclass);
+
+
+--
+-- Name: song_types id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.song_types ALTER COLUMN id SET DEFAULT nextval('public.song_types_id_seq'::regclass);
 
 
 --
@@ -2830,6 +2974,14 @@ ALTER TABLE ONLY public.announcements
 
 
 --
+-- Name: announcements announcements_uuid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.announcements
+    ADD CONSTRAINT announcements_uuid_unique UNIQUE (uuid);
+
+
+--
 -- Name: artist_song artist_song_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2910,6 +3062,14 @@ ALTER TABLE ONLY public.badges
 
 
 --
+-- Name: badges badges_uuid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.badges
+    ADD CONSTRAINT badges_uuid_unique UNIQUE (uuid);
+
+
+--
 -- Name: cache_locks cache_locks_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2958,6 +3118,14 @@ ALTER TABLE ONLY public.comments
 
 
 --
+-- Name: comments comments_uuid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.comments
+    ADD CONSTRAINT comments_uuid_unique UNIQUE (uuid);
+
+
+--
 -- Name: daily_metrics daily_metrics_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2987,6 +3155,14 @@ ALTER TABLE ONLY public.anime_external_link
 
 ALTER TABLE ONLY public.external_links
     ADD CONSTRAINT external_links_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: external_links external_links_uuid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.external_links
+    ADD CONSTRAINT external_links_uuid_unique UNIQUE (uuid);
 
 
 --
@@ -3022,6 +3198,14 @@ ALTER TABLE ONLY public.formats
 
 
 --
+-- Name: formats formats_uuid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.formats
+    ADD CONSTRAINT formats_uuid_unique UNIQUE (uuid);
+
+
+--
 -- Name: anime_genre genre_post_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3046,6 +3230,14 @@ ALTER TABLE ONLY public.genres
 
 
 --
+-- Name: genres genres_uuid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.genres
+    ADD CONSTRAINT genres_uuid_unique UNIQUE (uuid);
+
+
+--
 -- Name: levels levels_min_xp_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3067,6 +3259,30 @@ ALTER TABLE ONLY public.levels
 
 ALTER TABLE ONLY public.migrations
     ADD CONSTRAINT migrations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: music_genre_song music_genre_song_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.music_genre_song
+    ADD CONSTRAINT music_genre_song_pkey PRIMARY KEY (music_genre_id, song_id);
+
+
+--
+-- Name: music_genres music_genres_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.music_genres
+    ADD CONSTRAINT music_genres_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: music_genres music_genres_slug_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.music_genres
+    ADD CONSTRAINT music_genres_slug_key UNIQUE (slug);
 
 
 --
@@ -3294,6 +3510,22 @@ ALTER TABLE ONLY public.score_formats
 
 
 --
+-- Name: search_index search_index_item_type_item_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.search_index
+    ADD CONSTRAINT search_index_item_type_item_id_key UNIQUE (item_type, item_id);
+
+
+--
+-- Name: search_index search_index_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.search_index
+    ADD CONSTRAINT search_index_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: seasons seasons_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3310,6 +3542,14 @@ ALTER TABLE ONLY public.seasons
 
 
 --
+-- Name: seasons seasons_uuid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.seasons
+    ADD CONSTRAINT seasons_uuid_unique UNIQUE (uuid);
+
+
+--
 -- Name: song_reactions song_reactions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3323,6 +3563,30 @@ ALTER TABLE ONLY public.song_reactions
 
 ALTER TABLE ONLY public.song_reactions
     ADD CONSTRAINT song_reactions_user_id_song_id_unique UNIQUE (user_id, song_id);
+
+
+--
+-- Name: song_types song_types_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.song_types
+    ADD CONSTRAINT song_types_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: song_types song_types_slug_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.song_types
+    ADD CONSTRAINT song_types_slug_unique UNIQUE (slug);
+
+
+--
+-- Name: song_types song_types_uuid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.song_types
+    ADD CONSTRAINT song_types_uuid_unique UNIQUE (uuid);
 
 
 --
@@ -3347,6 +3611,14 @@ ALTER TABLE ONLY public.song_variants
 
 ALTER TABLE ONLY public.song_variants
     ADD CONSTRAINT song_variants_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: song_variants song_variants_uuid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.song_variants
+    ADD CONSTRAINT song_variants_uuid_unique UNIQUE (uuid);
 
 
 --
@@ -3438,6 +3710,14 @@ ALTER TABLE ONLY public.tournament_votes
 
 
 --
+-- Name: user_notification_settings user_notification_settings_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_notification_settings
+    ADD CONSTRAINT user_notification_settings_pkey PRIMARY KEY (user_id);
+
+
+--
 -- Name: user_reports user_reports_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3454,11 +3734,27 @@ ALTER TABLE ONLY public.user_requests
 
 
 --
--- Name: users users_anilist_id_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: user_social_identities user_social_identities_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.users
-    ADD CONSTRAINT users_anilist_id_unique UNIQUE (anilist_id);
+ALTER TABLE ONLY public.user_social_identities
+    ADD CONSTRAINT user_social_identities_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_social_identities user_social_identities_provider_provider_id_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_social_identities
+    ADD CONSTRAINT user_social_identities_provider_provider_id_unique UNIQUE (provider, provider_id);
+
+
+--
+-- Name: user_social_identities user_social_identities_user_id_provider_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_social_identities
+    ADD CONSTRAINT user_social_identities_user_id_provider_unique UNIQUE (user_id, provider);
 
 
 --
@@ -3467,22 +3763,6 @@ ALTER TABLE ONLY public.users
 
 ALTER TABLE ONLY public.users
     ADD CONSTRAINT users_email_unique UNIQUE (email);
-
-
---
--- Name: users users_google_email_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.users
-    ADD CONSTRAINT users_google_email_unique UNIQUE (google_email);
-
-
---
--- Name: users users_google_id_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.users
-    ADD CONSTRAINT users_google_id_unique UNIQUE (google_id);
 
 
 --
@@ -3550,6 +3830,14 @@ ALTER TABLE ONLY public.years
 
 
 --
+-- Name: years years_uuid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.years
+    ADD CONSTRAINT years_uuid_unique UNIQUE (uuid);
+
+
+--
 -- Name: activities_user_id_created_at_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3592,6 +3880,27 @@ CREATE INDEX genres_name_index ON public.genres USING btree (name);
 
 
 --
+-- Name: idx_activities_user_lookup; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_activities_user_lookup ON public.activities USING btree (user_id, created_at DESC);
+
+
+--
+-- Name: idx_animes_title_trgm; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_animes_title_trgm ON public.animes USING gin (title public.gin_trgm_ops);
+
+
+--
+-- Name: idx_artists_name_trgm; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_artists_name_trgm ON public.artists USING gin (name public.gin_trgm_ops);
+
+
+--
 -- Name: idx_audit_event_date; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3620,6 +3929,13 @@ CREATE INDEX idx_followed_user ON public.follows USING btree (followed_id);
 
 
 --
+-- Name: idx_music_genre_song_song_id; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_music_genre_song_song_id ON public.music_genre_song USING btree (song_id);
+
+
+--
 -- Name: idx_notif_subject; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3634,6 +3950,20 @@ CREATE INDEX idx_notif_user_unread ON public.notifications USING btree (user_id,
 
 
 --
+-- Name: idx_search_index_type; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_search_index_type ON public.search_index USING btree (item_type);
+
+
+--
+-- Name: idx_search_index_vector; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_search_index_vector ON public.search_index USING gin (search_vector);
+
+
+--
 -- Name: idx_songs_ranks; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3641,17 +3971,31 @@ CREATE INDEX idx_songs_ranks ON public.songs USING btree (prev_main_rank, prev_s
 
 
 --
--- Name: idx_users_google_email; Type: INDEX; Schema: public; Owner: postgres
+-- Name: idx_songs_seasonal_perf; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_users_google_email ON public.users USING btree (google_email);
+CREATE INDEX idx_songs_seasonal_perf ON public.songs USING btree (season_id, year_id, status, views DESC);
 
 
 --
--- Name: idx_users_google_id; Type: INDEX; Schema: public; Owner: postgres
+-- Name: idx_songs_status_score_desc; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_users_google_id ON public.users USING btree (google_id);
+CREATE INDEX idx_songs_status_score_desc ON public.songs USING btree (average_score DESC) WHERE (status = true);
+
+
+--
+-- Name: idx_songs_title_trgm; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_songs_title_trgm ON public.songs USING gin (song_romaji public.gin_trgm_ops, song_en public.gin_trgm_ops);
+
+
+--
+-- Name: idx_users_xp_ranking; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_users_xp_ranking ON public.users USING btree (xp DESC);
 
 
 --
@@ -3792,6 +4136,48 @@ CREATE TRIGGER trg_recount_artist_on_pivot_change AFTER INSERT OR DELETE OR UPDA
 --
 
 CREATE TRIGGER trg_recount_artists_on_status_change AFTER UPDATE OF status ON public.songs FOR EACH ROW EXECUTE FUNCTION public.handle_song_status_change();
+
+
+--
+-- Name: animes trg_search_anime; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER trg_search_anime AFTER INSERT OR DELETE OR UPDATE ON public.animes FOR EACH ROW EXECUTE FUNCTION public.sync_search_index('anime');
+
+
+--
+-- Name: artists trg_search_artist; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER trg_search_artist AFTER INSERT OR DELETE OR UPDATE ON public.artists FOR EACH ROW EXECUTE FUNCTION public.sync_search_index('artist');
+
+
+--
+-- Name: producers trg_search_producer; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER trg_search_producer AFTER INSERT OR DELETE OR UPDATE ON public.producers FOR EACH ROW EXECUTE FUNCTION public.sync_search_index('producer');
+
+
+--
+-- Name: songs trg_search_song; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER trg_search_song AFTER INSERT OR DELETE OR UPDATE ON public.songs FOR EACH ROW EXECUTE FUNCTION public.sync_search_index('song');
+
+
+--
+-- Name: studios trg_search_studio; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER trg_search_studio AFTER INSERT OR DELETE OR UPDATE ON public.studios FOR EACH ROW EXECUTE FUNCTION public.sync_search_index('studio');
+
+
+--
+-- Name: users trg_search_user; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER trg_search_user AFTER INSERT OR DELETE OR UPDATE ON public.users FOR EACH ROW EXECUTE FUNCTION public.sync_search_index('user');
 
 
 --
@@ -4044,6 +4430,22 @@ ALTER TABLE ONLY public.levels
 
 
 --
+-- Name: music_genre_song music_genre_song_music_genre_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.music_genre_song
+    ADD CONSTRAINT music_genre_song_music_genre_id_fkey FOREIGN KEY (music_genre_id) REFERENCES public.music_genres(id) ON DELETE CASCADE;
+
+
+--
+-- Name: music_genre_song music_genre_song_song_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.music_genre_song
+    ADD CONSTRAINT music_genre_song_song_id_fkey FOREIGN KEY (song_id) REFERENCES public.songs(id) ON DELETE CASCADE;
+
+
+--
 -- Name: notifications notifications_user_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4260,6 +4662,14 @@ ALTER TABLE ONLY public.songs
 
 
 --
+-- Name: songs songs_type_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.songs
+    ADD CONSTRAINT songs_type_id_foreign FOREIGN KEY (type_id) REFERENCES public.song_types(id) ON DELETE SET NULL;
+
+
+--
 -- Name: songs songs_year_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4332,6 +4742,14 @@ ALTER TABLE ONLY public.tournaments
 
 
 --
+-- Name: user_notification_settings user_notification_settings_user_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_notification_settings
+    ADD CONSTRAINT user_notification_settings_user_id_foreign FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
 -- Name: user_reports user_reports_reported_user_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4361,6 +4779,14 @@ ALTER TABLE ONLY public.user_requests
 
 ALTER TABLE ONLY public.user_requests
     ADD CONSTRAINT user_requests_user_id_foreign FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: user_social_identities user_social_identities_user_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_social_identities
+    ADD CONSTRAINT user_social_identities_user_id_foreign FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
 
 
 --
@@ -4399,5 +4825,4 @@ ALTER TABLE ONLY public.xp_logs
 -- PostgreSQL database dump complete
 --
 
-\unrestrict sLw193cihpID2OBD9TtbiMEBIdmc8hwgcSXeeE144gmcSkkufWdKYRJRKoEwRju
 

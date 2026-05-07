@@ -258,6 +258,41 @@ func (r *userRepository) GetBadgesByUserID(ctx context.Context, userID uint64) (
 	return badges, err
 }
 
+// GetBadgesByUserIDs fetches badges for multiple users in a single query,
+// returning a map[userID][]Badge for O(1) lookup — prevents N+1 in comment enrichment.
+func (r *userRepository) GetBadgesByUserIDs(ctx context.Context, userIDs []uint64) (map[uint64][]domain.Badge, error) {
+	if len(userIDs) == 0 {
+		return map[uint64][]domain.Badge{}, nil
+	}
+
+	type badgeWithUserID struct {
+		domain.Badge
+		UserID uint64 `db:"user_id"`
+	}
+
+	var rows []badgeWithUserID
+	query, args, err := sqlx.In(`
+		SELECT bu.user_id, b.id, b.uuid, b.name, b.description, b.icon, b.is_active
+		FROM badges b
+		JOIN badge_user bu ON b.id = bu.badge_id
+		WHERE bu.user_id IN (?)
+	`, userIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	query = r.db.Rebind(query)
+	if err := r.db.SelectContext(ctx, &rows, query, args...); err != nil {
+		return nil, err
+	}
+
+	result := make(map[uint64][]domain.Badge, len(userIDs))
+	for _, row := range rows {
+		result[row.UserID] = append(result[row.UserID], row.Badge)
+	}
+	return result, nil
+}
+
 func (r *userRepository) GetUsers(ctx context.Context, page, limit int, search string) ([]domain.User, int, error) {
 	var users []domain.User
 	var total int

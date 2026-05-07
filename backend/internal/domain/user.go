@@ -130,6 +130,7 @@ type UserRepository interface {
 
 	// Badges Loaders
 	GetBadgesByUserID(ctx context.Context, userID uint64) ([]Badge, error)
+	GetBadgesByUserIDs(ctx context.Context, userIDs []uint64) (map[uint64][]Badge, error) // Batch fetch — avoids N+1
 	UpdateBadges(ctx context.Context, userID uint64, badgeIDs []uint64) error
 
 	// Permissions

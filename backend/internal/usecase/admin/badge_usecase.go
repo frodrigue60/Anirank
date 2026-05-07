@@ -13,12 +13,13 @@ import (
 )
 
 type BadgeUsecase struct {
-	repo         domain.BadgeRepository
-	userRepo     domain.UserRepository
+	repo            domain.BadgeRepository
+	userRepo        domain.UserRepository
 	interactionRepo domain.InteractionRepository
 	commentRepo     domain.CommentRepository
-	storage      infrastructure.StorageService
-	auditUsecase domain.AuditLogUsecase
+	storage         infrastructure.StorageService
+	auditUsecase    domain.AuditLogUsecase
+	evaluators      map[string]BadgeEvaluator // Strategy pattern: triggerType → evaluator
 }
 
 func NewBadgeUsecase(
@@ -36,6 +37,7 @@ func NewBadgeUsecase(
 		commentRepo:     commentRepo,
 		storage:         storage,
 		auditUsecase:    auditUsecase,
+		evaluators:      buildEvaluators(userRepo, interactionRepo, commentRepo),
 	}
 }
 
@@ -156,7 +158,13 @@ func (u *BadgeUsecase) ResolveBadgesURLs(badges []domain.Badge) {
 }
 
 func (u *BadgeUsecase) CheckAndAwardBadges(ctx context.Context, userID uint64, triggerType string) error {
-	// 1. Get all automatic badges
+	// 1. Find the evaluator for this trigger type — if none registered, skip silently
+	evaluator, ok := u.evaluators[triggerType]
+	if !ok {
+		return nil
+	}
+
+	// 2. Get all automatic badges that match this trigger type
 	autoBadges, err := u.repo.GetAutomatic(ctx)
 	if err != nil {
 		return err
@@ -166,60 +174,40 @@ func (u *BadgeUsecase) CheckAndAwardBadges(ctx context.Context, userID uint64, t
 		return nil
 	}
 
-	// 2. Get user's current badges to avoid duplicates
+	// 3. Get user's already-earned badges to avoid duplicates
 	userBadgeIDs, err := u.repo.GetUserBadgeIDs(ctx, userID)
 	if err != nil {
 		return err
 	}
-	earnedMap := make(map[uint64]bool)
+	earnedMap := make(map[uint64]bool, len(userBadgeIDs))
 	for _, id := range userBadgeIDs {
 		earnedMap[id] = true
 	}
 
-	// 3. Evaluate each automatic badge if it matches the triggerType
+	// 4. Evaluate each eligible badge using the registered strategy
 	for _, badge := range autoBadges {
 		if earnedMap[badge.ID] {
-			continue
+			continue // Already earned
 		}
-
 		if badge.RequirementType == nil || *badge.RequirementType != triggerType {
-			continue
+			continue // Doesn't match this trigger
 		}
 
-		shouldAward := false
-		reqVal := 0
+		requiredValue := 0
 		if badge.RequirementValue != nil {
-			reqVal = *badge.RequirementValue
+			requiredValue = *badge.RequirementValue
 		}
 
-		switch triggerType {
-		case "level":
-			user, err := u.userRepo.GetByID(ctx, userID)
-			if err == nil && int(user.Level) >= reqVal {
-				shouldAward = true
-			}
-		case "ratings":
-			count, err := u.interactionRepo.CountRatingsByUser(ctx, userID)
-			if err == nil && count >= reqVal {
-				shouldAward = true
-			}
-		case "anilist":
-			user, err := u.userRepo.GetByID(ctx, userID)
-			if err == nil && user.GetSocialID("anilist") != nil {
-				shouldAward = true
-			}
-		case "comments":
-			count, err := u.commentRepo.GetCountByUser(ctx, userID)
-			if err == nil && count >= reqVal {
-				shouldAward = true
-			}
+		shouldAward, err := evaluator.CanAward(ctx, userID, requiredValue)
+		if err != nil {
+			// Log and continue — one failed evaluation shouldn't block others
+			fmt.Printf("[BadgeEvaluator] Error evaluating badge %d for user %d: %v\n", badge.ID, userID, err)
+			continue
 		}
 
 		if shouldAward {
-			err = u.repo.Award(ctx, userID, badge.ID)
-			if err != nil {
-				// Log error but continue with other badges
-				fmt.Printf("Error awarding badge %d to user %d: %v\n", badge.ID, userID, err)
+			if err := u.repo.Award(ctx, userID, badge.ID); err != nil {
+				fmt.Printf("[BadgeUsecase] Error awarding badge %d to user %d: %v\n", badge.ID, userID, err)
 			}
 		}
 	}

@@ -25,49 +25,45 @@ func NewResilientStorage(primary fiber.Storage) *ResilientStorage {
 }
 
 func (s *ResilientStorage) checkHealth() {
-	if time.Since(s.lastCheck) < 5*time.Second {
-		return
-	}
-	s.lastCheck = time.Now()
-	// A simple way to check health is to try a Get on a dummy key
-	// but here we just rely on the error reporting from operations
-}
-
-func (s *ResilientStorage) Get(key string) ([]byte, error) {
 	if !s.isHealthy && time.Since(s.lastCheck) > 30*time.Second {
+		log.Printf("[ResilientStorage] Attempting to reconnect to primary storage...")
 		s.isHealthy = true
 		s.lastCheck = time.Now()
 	}
+}
+
+
+func (s *ResilientStorage) Get(key string) ([]byte, error) {
+	s.checkHealth()
 
 	if s.isHealthy {
 		val, err := s.primary.Get(key)
 		if err == nil {
 			return val, nil
 		}
-		
-		log.Printf("[ResilientStorage] Primary storage error: %v. Falling back to memory.", err)
+
+		log.Printf("[ResilientStorage] Primary storage error on Get: %v. Falling back to memory.", err)
 		s.isHealthy = false
 		s.lastCheck = time.Now()
 	}
-	
+
 	return s.fallback.Get(key)
 }
 
 func (s *ResilientStorage) Set(key string, val []byte, exp time.Duration) error {
-	if !s.isHealthy && time.Since(s.lastCheck) > 30*time.Second {
-		s.isHealthy = true
-		s.lastCheck = time.Now()
-	}
+	s.checkHealth()
 
 	if s.isHealthy {
 		err := s.primary.Set(key, val, exp)
 		if err == nil {
 			return nil
 		}
-		log.Printf("[ResilientStorage] Primary storage error: %v. Falling back to memory.", err)
+
+		log.Printf("[ResilientStorage] Primary storage error on Set: %v. Falling back to memory.", err)
 		s.isHealthy = false
 		s.lastCheck = time.Now()
 	}
+
 	return s.fallback.Set(key, val, exp)
 }
 

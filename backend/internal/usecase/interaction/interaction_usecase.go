@@ -7,9 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"strconv"
-	"strings"
 )
 
 type InteractionUsecase struct {
@@ -222,24 +220,8 @@ func (u *InteractionUsecase) SongComment(ctx context.Context, userID, entityID u
 		parentComment, err := u.commentRepo.GetByID(ctx, *parentID)
 		if err == nil && parentComment != nil && parentComment.UserID != userID {
 			subjectType := "comment"
-			publicURL := os.Getenv("S3_PUBLIC_URL")
-			var avatarUrl, bannerUrl *string
-			if user.Avatar != nil {
-				if strings.HasPrefix(*user.Avatar, "http") {
-					avatarUrl = user.Avatar
-				} else {
-					u := publicURL + "/" + *user.Avatar
-					avatarUrl = &u
-				}
-			}
-			if user.Banner != nil {
-				if strings.HasPrefix(*user.Banner, "http") {
-					bannerUrl = user.Banner
-				} else {
-					u := publicURL + "/" + *user.Banner
-					bannerUrl = &u
-				}
-			}
+			avatarUrl := u.mediaService.Resolve(user.Avatar)
+			bannerUrl := u.mediaService.Resolve(user.Banner)
 
 			dataObj := map[string]interface{}{
 				"replied_by_name":   user.Name,
@@ -293,44 +275,54 @@ func (u *InteractionUsecase) SongComment(ctx context.Context, userID, entityID u
 }
 
 func (u *InteractionUsecase) enrichComments(ctx context.Context, comments []domain.Comment) {
-	publicURL := os.Getenv("S3_PUBLIC_URL")
+	// --- Step 1: Collect unique user IDs ---
+	userIDSet := make(map[uint64]struct{})
 	for i := range comments {
 		if comments[i].User != nil {
-			if comments[i].User.Avatar != nil {
-				if strings.HasPrefix(*comments[i].User.Avatar, "http") {
-					comments[i].User.AvatarUrl = comments[i].User.Avatar
-				} else {
-					url := publicURL + "/" + *comments[i].User.Avatar
-					comments[i].User.AvatarUrl = &url
-				}
+			userIDSet[comments[i].User.ID] = struct{}{}
+		}
+		for j := range comments[i].Replies {
+			if comments[i].Replies[j].User != nil {
+				userIDSet[comments[i].Replies[j].User.ID] = struct{}{}
 			}
-			if comments[i].User.Banner != nil {
-				if strings.HasPrefix(*comments[i].User.Banner, "http") {
-					comments[i].User.BannerUrl = comments[i].User.Banner
-				} else {
-					url := publicURL + "/" + *comments[i].User.Banner
-					comments[i].User.BannerUrl = &url
-				}
-			}
+		}
+	}
 
-			// Load Badges
-			badges, err := u.userRepo.GetBadgesByUserID(ctx, comments[i].User.ID)
-			if err == nil {
+	userIDs := make([]uint64, 0, len(userIDSet))
+	for id := range userIDSet {
+		userIDs = append(userIDs, id)
+	}
+
+	// --- Step 2: Batch fetch badges for all users in one query ---
+	badgesByUser := make(map[uint64][]domain.Badge)
+	if len(userIDs) > 0 {
+		if batchBadges, err := u.userRepo.GetBadgesByUserIDs(ctx, userIDs); err == nil {
+			badgesByUser = batchBadges
+		}
+	}
+
+	// --- Step 3: Hydrate comments in a single pass ---
+	u.hydrateComments(comments, badgesByUser)
+}
+
+// hydrateComments populates media URLs and badges onto a list of comments using
+// pre-fetched data maps to avoid any further DB or env calls.
+func (u *InteractionUsecase) hydrateComments(comments []domain.Comment, badgesByUser map[uint64][]domain.Badge) {
+	for i := range comments {
+		if comments[i].User != nil {
+			comments[i].User.AvatarUrl = u.mediaService.Resolve(comments[i].User.Avatar)
+			comments[i].User.BannerUrl = u.mediaService.Resolve(comments[i].User.Banner)
+
+			// Assign pre-fetched badges and resolve their icon URLs
+			if badges, ok := badgesByUser[comments[i].User.ID]; ok {
 				for j := range badges {
-					if badges[j].Icon != nil {
-						if strings.HasPrefix(*badges[j].Icon, "http") {
-							badges[j].IconUrl = badges[j].Icon
-						} else {
-							badgeURL := publicURL + "/" + *badges[j].Icon
-							badges[j].IconUrl = &badgeURL
-						}
-					}
+					badges[j].IconUrl = u.mediaService.Resolve(badges[j].Icon)
 				}
 				comments[i].User.Badges = badges
 			}
 		}
 		if len(comments[i].Replies) > 0 {
-			u.enrichComments(ctx, comments[i].Replies)
+			u.hydrateComments(comments[i].Replies, badgesByUser)
 		}
 	}
 }

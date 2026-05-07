@@ -10,7 +10,9 @@ RUN bun install
 # Copy source code and build
 COPY . .
 ARG VITE_API_URL
+ARG PUBLIC_API_URL
 ENV VITE_API_URL=$VITE_API_URL
+ENV PUBLIC_API_URL=$PUBLIC_API_URL
 RUN bun run svelte-kit sync && bun run build
 
 # Final stage - Serve with Nginx

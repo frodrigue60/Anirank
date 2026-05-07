@@ -6,7 +6,11 @@ const config = {
 		adapter: adapter({
 			fallback: 'index.html', // Required for SPA mode
 			strict: false
-		})
+		}),
+		prerender: {
+			handleHttpError: 'warn',
+			handleMissingId: 'warn'
+		}
 	}
 };
 

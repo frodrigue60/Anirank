@@ -14,7 +14,6 @@ import (
 // It uses the provided storage (Redis or Memory fallback).
 func NewCSRFMiddleware(storage fiber.Storage) fiber.Handler {
 	cookieDomain := os.Getenv("COOKIE_DOMAIN")
-	secure := os.Getenv("COOKIE_SECURE") != "false" // Default to true in prod
 
 	return csrf.New(csrf.Config{
 		KeyLookup:      "header:X-CSRF-Token",

@@ -69,32 +69,33 @@ func main() {
 	}
 
 	// Setup DB connection
-	dbURL := os.Getenv("DATABASE_URL")
+	// Priority 1: Connection URLs (Railway standard)
+	dbURL := getEnvWithFallback("DATABASE_URL", "DATABASE_PUBLIC_URL", "MYSQL_URL", "MYSQL_PRIVATE_URL")
+	
 	var db *sqlx.DB
 	var err error
 
 	if dbURL != "" {
 		db, err = infrastructure.NewDatabaseConnectionFromURL(dbURL)
 	} else {
-		// Priority: DB_DRIVER, then infer from vars
+		// Priority 2: Inferred driver from specific host variables
 		driver := os.Getenv("DB_DRIVER")
 		if driver == "" {
-			if os.Getenv("POSTGRES_HOST") != "" || os.Getenv("PGHOST") != "" {
+			if os.Getenv("PGHOST") != "" || os.Getenv("POSTGRES_USER") != "" {
 				driver = "postgres"
-			} else if os.Getenv("MYSQL_HOST") != "" {
+			} else if os.Getenv("MYSQLHOST") != "" || os.Getenv("MYSQLUSER") != "" {
 				driver = "mysql"
 			} else {
 				driver = "postgres" // default
 			}
 		}
 
-		// Support both generic and specific variables (12-factor fallback)
-		// Including MySQL standards from reference
-		dbUser := getEnvWithFallback("DB_USER", "POSTGRES_USER", "PGUSER", "MYSQL_USER")
-		dbPass := getEnvWithFallback("DB_PASSWORD", "POSTGRES_PASSWORD", "PGPASSWORD", "MYSQL_PASSWORD")
-		dbHost := getEnvWithFallback("DB_HOST", "POSTGRES_HOST", "PGHOST", "MYSQL_HOST")
-		dbPort := getEnvWithFallback("DB_PORT", "POSTGRES_PORT", "PGPORT", "MYSQL_PORT")
-		dbName := getEnvWithFallback("DB_NAME", "POSTGRES_DB", "PGDATABASE", "MYSQL_DATABASE")
+		// Support all Railway/Standard naming conventions (12-factor fallback)
+		dbUser := getEnvWithFallback("DB_USER", "PGUSER", "POSTGRES_USER", "MYSQLUSER", "MYSQL_USER")
+		dbPass := getEnvWithFallback("DB_PASSWORD", "PGPASSWORD", "POSTGRES_PASSWORD", "MYSQLPASSWORD", "MYSQL_PASSWORD")
+		dbHost := getEnvWithFallback("DB_HOST", "PGHOST", "POSTGRES_HOST", "MYSQLHOST", "MYSQL_HOST")
+		dbPort := getEnvWithFallback("DB_PORT", "PGPORT", "POSTGRES_PORT", "MYSQLPORT", "MYSQL_PORT")
+		dbName := getEnvWithFallback("DB_NAME", "PGDATABASE", "POSTGRES_DB", "MYSQLDATABASE", "MYSQL_DATABASE")
 
 		db, err = infrastructure.NewDatabaseConnection(driver, dbUser, dbPass, dbHost, dbPort, dbName)
 	}
@@ -233,21 +234,41 @@ func main() {
 		ErrorHandler: middleware.ErrorHandler,
 	})
 
-	// CORS — allow the SPA origin through
-	allowOrigins := os.Getenv("ALLOW_ORIGINS")
-	if allowOrigins == "" {
-		allowOrigins = "http://localhost:5173, http://localhost:4173, http://localhost:8080, https://anirank.work"
+	// --- Security & Middleware ---
+	securityEnabled := os.Getenv("SECURITY_HEADERS_ENABLED") != "false"
+	corsEnabled := os.Getenv("CORS_ENABLED") != "false"
+	originsFilterEnabled := os.Getenv("ALLOW_ORIGINS_FILTER") != "false"
+
+	if corsEnabled {
+		allowOrigins := os.Getenv("ALLOW_ORIGINS")
+		allowCredentials := true
+
+		if !originsFilterEnabled {
+			allowOrigins = "*"
+			allowCredentials = false // Fiber panics if Credentials=true with wildcard origins
+		} else if allowOrigins == "" {
+			allowOrigins = "http://localhost:5173, http://localhost:4173, http://localhost:8080, https://anirank.work"
+		}
+
+		app.Use(cors.New(cors.Config{
+			AllowOrigins:     allowOrigins,
+			AllowHeaders:     "Origin, Content-Type, Accept, Authorization, X-CSRF-Token",
+			AllowMethods:     "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+			AllowCredentials: allowCredentials,
+		}))
+		log.Printf("🛡️  CORS: Enabled (Origins: %s, Credentials: %v)", allowOrigins, allowCredentials)
+	} else {
+		log.Println("⚠️  CORS: Disabled (Middleware skipped)")
 	}
 
-	app.Use(cors.New(cors.Config{
-		AllowOrigins:     allowOrigins,
-		AllowHeaders:     "Origin, Content-Type, Accept, Authorization, X-CSRF-Token",
-		AllowMethods:     "GET, POST, PUT, PATCH, DELETE, OPTIONS",
-		AllowCredentials: true,
-	}))
-
 	app.Use(middleware.RequestLogger())
-	app.Use(middleware.SecurityHeaders())
+
+	if securityEnabled {
+		app.Use(middleware.SecurityHeaders())
+		log.Println("🛡️  Security Headers: Enabled")
+	} else {
+		log.Println("⚠️  Security Headers: Disabled (Middleware skipped)")
+	}
 
 	// Setup Daily Stats
 	statsRepo := postgres.NewStatsRepository(db)

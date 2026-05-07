@@ -3,7 +3,6 @@ package middleware
 import (
 	"anirank/api/internal/domain"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"

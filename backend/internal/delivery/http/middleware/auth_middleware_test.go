@@ -21,7 +21,7 @@ func TestAuthMiddleware(t *testing.T) {
 	mockRepo := &testutil.MockUserRepository{User: testUser}
 
 	app := testutil.NewTestApp()
-	app.Get("/protected", AuthMiddleware(jwtSvc, mockRepo), func(c *fiber.Ctx) error {
+	app.Get("/protected", AuthMiddleware(jwtSvc, mockRepo, nil), func(c *fiber.Ctx) error {
 		userID := c.Locals("user_id")
 		userUUID := c.Locals("user_uuid")
 		return c.Status(200).JSON(fiber.Map{
@@ -72,7 +72,7 @@ func TestAuthMiddleware(t *testing.T) {
 	t.Run("User Missing in DB", func(t *testing.T) {
 		mockRepoMissing := &testutil.MockUserRepository{Err: domain.ErrNotFound}
 		appMissing := testutil.NewTestApp()
-		appMissing.Get("/protected", AuthMiddleware(jwtSvc, mockRepoMissing), func(c *fiber.Ctx) error {
+		appMissing.Get("/protected", AuthMiddleware(jwtSvc, mockRepoMissing, nil), func(c *fiber.Ctx) error {
 			return c.SendStatus(200)
 		})
 
@@ -94,7 +94,7 @@ func TestOptionalAuthMiddleware(t *testing.T) {
 	mockRepo := &testutil.MockUserRepository{User: testUser}
 
 	app := testutil.NewTestApp()
-	app.Get("/optional", OptionalAuthMiddleware(jwtSvc, mockRepo), func(c *fiber.Ctx) error {
+	app.Get("/optional", OptionalAuthMiddleware(jwtSvc, mockRepo, nil), func(c *fiber.Ctx) error {
 		userID := c.Locals("user_id")
 		return c.Status(200).JSON(fiber.Map{"user_id": userID})
 	})

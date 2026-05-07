@@ -49,7 +49,7 @@ func TestAuthHandler_Profile(t *testing.T) {
 		},
 	})
 	// Apply Middleware + Handler
-	app.Get("/profile", middleware.AuthMiddleware(jwtSvc, mockRepo), handler.Profile)
+	app.Get("/profile", middleware.AuthMiddleware(jwtSvc, mockRepo, nil), handler.Profile)
 
 	t.Run("Get Profile - Authenticated", func(t *testing.T) {
 		token, _ := testutil.CreateTestToken(testUser.UUID, []string{"user"})

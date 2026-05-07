@@ -124,6 +124,20 @@ func (m *MockStorageService) GetURL(rP string) string { return rP }
 func (m *MockStorageService) DeleteFile(ctx context.Context, rP string) error { return nil }
 func (m *MockStorageService) FileExists(ctx context.Context, rP string) (bool, error) { return false, nil }
 func (m *MockStorageService) ListFiles(ctx context.Context, p string) ([]string, error) { return nil, nil }
+func (m *MockStorageService) GetEndpoint() string { return "http://mock-storage" }
+func (m *MockStorageService) GetPublicURL() string { return "http://public-url" }
+
+// MockCache implements domain.Cache
+type MockCache struct {
+	Data map[string]interface{}
+}
+
+func (m *MockCache) Get(ctx context.Context, key string, dest interface{}) error { return nil }
+func (m *MockCache) Set(ctx context.Context, key string, value interface{}, expiration time.Duration) error { return nil }
+func (m *MockCache) Delete(ctx context.Context, key string) error { return nil }
+func (m *MockCache) IsAvailable() bool { return true }
+func (m *MockCache) Publish(ctx context.Context, channel string, message interface{}) error { return nil }
+func (m *MockCache) Subscribe(ctx context.Context, channel string) (domain.Subscriber, error) { return nil, nil }
 
 // MockMediaService implements infrastructure.MediaService
 type MockMediaService struct{}

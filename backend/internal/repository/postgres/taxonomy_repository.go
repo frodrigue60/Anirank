@@ -21,28 +21,28 @@ func NewTaxonomyRepository(db *sqlx.DB) domain.TaxonomyRepository {
 
 func (r *taxonomyRepository) GetAllYears(ctx context.Context) ([]domain.Year, error) {
 	var years []domain.Year
-	query := "SELECT id, name, slug, current, created_at, updated_at FROM years ORDER BY name DESC"
+	query := "SELECT id, uuid, name, slug, current, created_at, updated_at FROM years ORDER BY name DESC"
 	err := r.db.SelectContext(ctx, &years, query)
 	return years, err
 }
 
 func (r *taxonomyRepository) GetAllSeasons(ctx context.Context) ([]domain.Season, error) {
 	var seasons []domain.Season
-	query := "SELECT id, name, slug, current, created_at, updated_at FROM seasons ORDER BY id ASC"
+	query := "SELECT id, uuid, name, slug, current, created_at, updated_at FROM seasons ORDER BY id ASC"
 	err := r.db.SelectContext(ctx, &seasons, query)
 	return seasons, err
 }
 
 func (r *taxonomyRepository) GetAllFormats(ctx context.Context) ([]domain.Format, error) {
 	var formats []domain.Format
-	query := "SELECT id, name, slug, created_at, updated_at FROM formats ORDER BY name ASC"
+	query := "SELECT id, uuid, name, slug, created_at, updated_at FROM formats ORDER BY name ASC"
 	err := r.db.SelectContext(ctx, &formats, query)
 	return formats, err
 }
 
 func (r *taxonomyRepository) GetAllGenres(ctx context.Context) ([]domain.Genre, error) {
 	var genres []domain.Genre
-	query := "SELECT id, name, slug, created_at, updated_at FROM genres ORDER BY name ASC"
+	query := "SELECT id, uuid, name, slug, created_at, updated_at FROM genres ORDER BY name ASC"
 	err := r.db.SelectContext(ctx, &genres, query)
 	return genres, err
 }
@@ -77,7 +77,7 @@ func (r *taxonomyRepository) SearchProducers(ctx context.Context, term string, l
 
 func (r *taxonomyRepository) SearchGenres(ctx context.Context, term string, limit int) ([]domain.Genre, error) {
 	var genres []domain.Genre
-	query := "SELECT id, name, slug, created_at, updated_at FROM genres WHERE name ILIKE $1 ORDER BY name ASC LIMIT $2"
+	query := "SELECT id, uuid, name, slug, created_at, updated_at FROM genres WHERE name ILIKE $1 ORDER BY name ASC LIMIT $2"
 	err := r.db.SelectContext(ctx, &genres, query, "%"+term+"%", limit)
 	return genres, err
 }
@@ -290,7 +290,7 @@ func (r *taxonomyRepository) CountProducers(ctx context.Context, filters domain.
 
 func (r *taxonomyRepository) GetCurrentYear(ctx context.Context) (*domain.Year, error) {
 	var y domain.Year
-	query := "SELECT id, name, slug, current, created_at, updated_at FROM years WHERE current = true LIMIT 1"
+	query := "SELECT id, uuid, name, slug, current, created_at, updated_at FROM years WHERE current = true LIMIT 1"
 	err := r.db.GetContext(ctx, &y, query)
 	if err != nil {
 		return nil, err
@@ -300,7 +300,7 @@ func (r *taxonomyRepository) GetCurrentYear(ctx context.Context) (*domain.Year, 
 
 func (r *taxonomyRepository) GetCurrentSeason(ctx context.Context) (*domain.Season, error) {
 	var s domain.Season
-	query := "SELECT id, name, slug, current, created_at, updated_at FROM seasons WHERE current = true LIMIT 1"
+	query := "SELECT id, uuid, name, slug, current, created_at, updated_at FROM seasons WHERE current = true LIMIT 1"
 	err := r.db.GetContext(ctx, &s, query)
 	if err != nil {
 		return nil, err
@@ -316,17 +316,19 @@ func makeSlug(s string) string {
 
 func (r *taxonomyRepository) GetOrCreateYear(ctx context.Context, name string) (*domain.Year, error) {
 	var y domain.Year
-	err := r.db.GetContext(ctx, &y, "SELECT id, name, slug, current, created_at, updated_at FROM years WHERE name = $1 LIMIT 1", name)
+	err := r.db.GetContext(ctx, &y, "SELECT id, uuid, name, slug, current, created_at, updated_at FROM years WHERE name = $1 LIMIT 1", name)
 	if err == nil {
 		return &y, nil
 	}
 
 	slug := makeSlug(name)
-	query := "INSERT INTO years (name, slug, current, created_at, updated_at) VALUES ($1, $2, false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id"
-	err = r.db.QueryRowContext(ctx, query, name, slug).Scan(&y.ID)
+	uid := uuid.New().String()
+	query := "INSERT INTO years (uuid, name, slug, current, created_at, updated_at) VALUES ($1, $2, $3, false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id"
+	err = r.db.QueryRowContext(ctx, query, uid, name, slug).Scan(&y.ID)
 	if err != nil {
 		return nil, err
 	}
+	y.UUID = uid
 	y.Name = name
 	y.Slug = slug
 	return &y, nil
@@ -335,17 +337,19 @@ func (r *taxonomyRepository) GetOrCreateYear(ctx context.Context, name string) (
 func (r *taxonomyRepository) GetOrCreateSeason(ctx context.Context, name string) (*domain.Season, error) {
 	name = strings.Title(strings.ToLower(name))
 	var s domain.Season
-	err := r.db.GetContext(ctx, &s, "SELECT id, name, slug, current, created_at, updated_at FROM seasons WHERE name = $1 LIMIT 1", name)
+	err := r.db.GetContext(ctx, &s, "SELECT id, uuid, name, slug, current, created_at, updated_at FROM seasons WHERE name = $1 LIMIT 1", name)
 	if err == nil {
 		return &s, nil
 	}
 
 	slug := makeSlug(name)
-	query := "INSERT INTO seasons (name, slug, current, created_at, updated_at) VALUES ($1, $2, false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id"
-	err = r.db.QueryRowContext(ctx, query, name, slug).Scan(&s.ID)
+	uid := uuid.New().String()
+	query := "INSERT INTO seasons (uuid, name, slug, current, created_at, updated_at) VALUES ($1, $2, $3, false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id"
+	err = r.db.QueryRowContext(ctx, query, uid, name, slug).Scan(&s.ID)
 	if err != nil {
 		return nil, err
 	}
+	s.UUID = uid
 	s.Name = name
 	s.Slug = slug
 	return &s, nil
@@ -353,17 +357,19 @@ func (r *taxonomyRepository) GetOrCreateSeason(ctx context.Context, name string)
 
 func (r *taxonomyRepository) GetOrCreateFormat(ctx context.Context, name string) (*domain.Format, error) {
 	var f domain.Format
-	err := r.db.GetContext(ctx, &f, "SELECT id, name, slug, created_at, updated_at FROM formats WHERE name = $1 LIMIT 1", name)
+	err := r.db.GetContext(ctx, &f, "SELECT id, uuid, name, slug, created_at, updated_at FROM formats WHERE name = $1 LIMIT 1", name)
 	if err == nil {
 		return &f, nil
 	}
 
 	slug := makeSlug(name)
-	query := "INSERT INTO formats (name, slug, created_at, updated_at) VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id"
-	err = r.db.QueryRowContext(ctx, query, name, slug).Scan(&f.ID)
+	uid := uuid.New().String()
+	query := "INSERT INTO formats (uuid, name, slug, created_at, updated_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id"
+	err = r.db.QueryRowContext(ctx, query, uid, name, slug).Scan(&f.ID)
 	if err != nil {
 		return nil, err
 	}
+	f.UUID = uid
 	f.Name = name
 	f.Slug = slug
 	return &f, nil
@@ -371,17 +377,19 @@ func (r *taxonomyRepository) GetOrCreateFormat(ctx context.Context, name string)
 
 func (r *taxonomyRepository) GetOrCreateGenre(ctx context.Context, name string) (*domain.Genre, error) {
 	var g domain.Genre
-	err := r.db.GetContext(ctx, &g, "SELECT id, name, slug, created_at, updated_at FROM genres WHERE name = $1 LIMIT 1", name)
+	err := r.db.GetContext(ctx, &g, "SELECT id, uuid, name, slug, created_at, updated_at FROM genres WHERE name = $1 LIMIT 1", name)
 	if err == nil {
 		return &g, nil
 	}
 
 	slug := makeSlug(name)
-	query := "INSERT INTO genres (name, slug, created_at, updated_at) VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id"
-	err = r.db.QueryRowContext(ctx, query, name, slug).Scan(&g.ID)
+	uid := uuid.New().String()
+	query := "INSERT INTO genres (uuid, name, slug, created_at, updated_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id"
+	err = r.db.QueryRowContext(ctx, query, uid, name, slug).Scan(&g.ID)
 	if err != nil {
 		return nil, err
 	}
+	g.UUID = uid
 	g.Name = name
 	g.Slug = slug
 	return &g, nil
@@ -429,7 +437,7 @@ func (r *taxonomyRepository) GetOrCreateProducer(ctx context.Context, name strin
 
 func (r *taxonomyRepository) GetByYear(ctx context.Context, name int) (*domain.Year, error) {
 	var y domain.Year
-	query := "SELECT id, name, slug, current, created_at, updated_at FROM years WHERE name = $1 LIMIT 1"
+	query := "SELECT id, uuid, name, slug, current, created_at, updated_at FROM years WHERE name = $1 LIMIT 1"
 	err := r.db.GetContext(ctx, &y, query, fmt.Sprintf("%d", name))
 	if err != nil {
 		return nil, err
@@ -439,7 +447,7 @@ func (r *taxonomyRepository) GetByYear(ctx context.Context, name int) (*domain.Y
 
 func (r *taxonomyRepository) GetBySeason(ctx context.Context, name string) (*domain.Season, error) {
 	var s domain.Season
-	query := "SELECT id, name, slug, current, created_at, updated_at FROM seasons WHERE name = $1 LIMIT 1"
+	query := "SELECT id, uuid, name, slug, current, created_at, updated_at FROM seasons WHERE name = $1 LIMIT 1"
 	err := r.db.GetContext(ctx, &s, query, name)
 	if err != nil {
 		return nil, err
@@ -449,7 +457,7 @@ func (r *taxonomyRepository) GetBySeason(ctx context.Context, name string) (*dom
 
 func (r *taxonomyRepository) GetByFormat(ctx context.Context, name string) (*domain.Format, error) {
 	var f domain.Format
-	query := "SELECT id, name, slug, created_at, updated_at FROM formats WHERE name = $1 LIMIT 1"
+	query := "SELECT id, uuid, name, slug, created_at, updated_at FROM formats WHERE name = $1 LIMIT 1"
 	err := r.db.GetContext(ctx, &f, query, name)
 	if err != nil {
 		return nil, err
@@ -459,7 +467,7 @@ func (r *taxonomyRepository) GetByFormat(ctx context.Context, name string) (*dom
 
 func (r *taxonomyRepository) GetByGenre(ctx context.Context, name string) (*domain.Genre, error) {
 	var g domain.Genre
-	query := "SELECT id, name, slug, created_at, updated_at FROM genres WHERE name = $1 LIMIT 1"
+	query := "SELECT id, uuid, name, slug, created_at, updated_at FROM genres WHERE name = $1 LIMIT 1"
 	err := r.db.GetContext(ctx, &g, query, name)
 	if err != nil {
 		return nil, err
@@ -489,7 +497,7 @@ func (r *taxonomyRepository) GetByProducer(ctx context.Context, name string) (*d
 
 func (r *taxonomyRepository) GetYearByID(ctx context.Context, id uint64) (*domain.Year, error) {
 	var y domain.Year
-	query := "SELECT id, name, slug, current, created_at, updated_at FROM years WHERE id = $1"
+	query := "SELECT id, uuid, name, slug, current, created_at, updated_at FROM years WHERE id = $1"
 	err := r.db.GetContext(ctx, &y, query, id)
 	if err != nil {
 		return nil, err
@@ -505,8 +513,11 @@ func (r *taxonomyRepository) CreateYear(ctx context.Context, year *domain.Year) 
 	if year.Slug == "" {
 		year.Slug = makeSlug(year.Name)
 	}
-	query := "INSERT INTO years (name, slug, current, created_at, updated_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id"
-	err := r.db.QueryRowContext(ctx, query, year.Name, year.Slug, year.Current).Scan(&year.ID)
+	if year.UUID == "" {
+		year.UUID = uuid.New().String()
+	}
+	query := "INSERT INTO years (uuid, name, slug, current, created_at, updated_at) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id"
+	err := r.db.QueryRowContext(ctx, query, year.UUID, year.Name, year.Slug, year.Current).Scan(&year.ID)
 	return err
 }
 
@@ -559,8 +570,11 @@ func (r *taxonomyRepository) CreateSeason(ctx context.Context, season *domain.Se
 	if season.Slug == "" {
 		season.Slug = makeSlug(season.Name)
 	}
-	query := "INSERT INTO seasons (name, slug, current, created_at, updated_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id"
-	err := r.db.QueryRowContext(ctx, query, season.Name, season.Slug, season.Current).Scan(&season.ID)
+	if season.UUID == "" {
+		season.UUID = uuid.New().String()
+	}
+	query := "INSERT INTO seasons (uuid, name, slug, current, created_at, updated_at) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id"
+	err := r.db.QueryRowContext(ctx, query, season.UUID, season.Name, season.Slug, season.Current).Scan(&season.ID)
 	return err
 }
 
@@ -610,8 +624,11 @@ func (r *taxonomyRepository) CreateFormat(ctx context.Context, format *domain.Fo
 	if format.Slug == "" {
 		format.Slug = makeSlug(format.Name)
 	}
-	query := "INSERT INTO formats (name, slug, created_at, updated_at) VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id"
-	err := r.db.QueryRowContext(ctx, query, format.Name, format.Slug).Scan(&format.ID)
+	if format.UUID == "" {
+		format.UUID = uuid.New().String()
+	}
+	query := "INSERT INTO formats (uuid, name, slug, created_at, updated_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id"
+	err := r.db.QueryRowContext(ctx, query, format.UUID, format.Name, format.Slug).Scan(&format.ID)
 	return err
 }
 
@@ -642,8 +659,11 @@ func (r *taxonomyRepository) CreateGenre(ctx context.Context, genre *domain.Genr
 	if genre.Slug == "" {
 		genre.Slug = makeSlug(genre.Name)
 	}
-	query := "INSERT INTO genres (name, slug, created_at, updated_at) VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id"
-	err := r.db.QueryRowContext(ctx, query, genre.Name, genre.Slug).Scan(&genre.ID)
+	if genre.UUID == "" {
+		genre.UUID = uuid.New().String()
+	}
+	query := "INSERT INTO genres (uuid, name, slug, created_at, updated_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id"
+	err := r.db.QueryRowContext(ctx, query, genre.UUID, genre.Name, genre.Slug).Scan(&genre.ID)
 	return err
 }
 

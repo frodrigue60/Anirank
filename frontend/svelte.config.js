@@ -4,7 +4,8 @@ import adapter from '@sveltejs/adapter-static';
 const config = {
 	kit: {
 		adapter: adapter({
-			fallback: 'index.html' // Required for SPA mode
+			fallback: 'index.html', // Required for SPA mode
+			strict: false
 		})
 	}
 };

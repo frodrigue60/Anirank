@@ -3,10 +3,9 @@ FROM oven/bun:alpine AS builder
 
 WORKDIR /app
 
-# Install dependencies with cache mount
+# Install dependencies
 COPY package.json bun.lockb ./
-RUN --mount=type=cache,target=/root/.bun/install/cache \
-    bun install
+RUN bun install
 
 # Copy source code and build
 COPY . .

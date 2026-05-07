@@ -297,6 +297,10 @@ func (u *InteractionUsecase) enrichComments(ctx context.Context, comments []doma
 	badgesByUser := make(map[uint64][]domain.Badge)
 	if len(userIDs) > 0 {
 		if batchBadges, err := u.userRepo.GetBadgesByUserIDs(ctx, userIDs); err == nil {
+			// Filter each user's badges to keep only the highest of each type
+			for id, list := range batchBadges {
+				batchBadges[id] = domain.FilterHighestBadges(list)
+			}
 			badgesByUser = batchBadges
 		}
 	}

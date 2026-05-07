@@ -64,6 +64,8 @@ func (u *UserAdminUsecase) GetUser(ctx context.Context, id uint64) (*domain.User
 	user.Roles = roles
 
 	badges, _ := u.userRepo.GetBadgesByUserID(ctx, id)
+	badges = domain.FilterHighestBadges(badges)
+	
 	// Resolve badge icons if necessary
 	if u.mediaService != nil {
 		for i := range badges {

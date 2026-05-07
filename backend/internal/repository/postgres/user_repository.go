@@ -249,7 +249,7 @@ func (r *userRepository) GetRoles(ctx context.Context) ([]domain.Role, error) {
 func (r *userRepository) GetBadgesByUserID(ctx context.Context, userID uint64) ([]domain.Badge, error) {
 	var badges []domain.Badge
 	query := `
-		SELECT b.id, b.uuid, b.name, b.description, b.icon, b.is_active 
+		SELECT b.id, b.uuid, b.name, b.description, b.icon, b.is_active, b.requirement_type, b.requirement_value 
 		FROM badges b 
 		JOIN badge_user bu ON b.id = bu.badge_id 
 		WHERE bu.user_id = $1
@@ -272,7 +272,7 @@ func (r *userRepository) GetBadgesByUserIDs(ctx context.Context, userIDs []uint6
 
 	var rows []badgeWithUserID
 	query, args, err := sqlx.In(`
-		SELECT bu.user_id, b.id, b.uuid, b.name, b.description, b.icon, b.is_active
+		SELECT bu.user_id, b.id, b.uuid, b.name, b.description, b.icon, b.is_active, b.requirement_type, b.requirement_value
 		FROM badges b
 		JOIN badge_user bu ON b.id = bu.badge_id
 		WHERE bu.user_id IN (?)

@@ -681,6 +681,7 @@ func (u *CatalogUsecase) enrichUserProfile(ctx context.Context, user *domain.Use
 	// Load Badges
 	badges, err := u.userRepo.GetBadgesByUserID(ctx, user.ID)
 	if err == nil {
+		badges = domain.FilterHighestBadges(badges)
 		for i := range badges {
 			badges[i].IconUrl = u.mediaService.Resolve(badges[i].Icon)
 		}

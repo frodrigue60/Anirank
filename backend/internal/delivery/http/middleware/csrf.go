@@ -15,16 +15,6 @@ import (
 func NewCSRFMiddleware(storage fiber.Storage) fiber.Handler {
 	cookieDomain := os.Getenv("COOKIE_DOMAIN")
 	secure := os.Getenv("COOKIE_SECURE") != "false" // Default to true in prod
-	
-	// Split ALLOW_ORIGINS into a slice for TrustedOrigins
-	allowOrigins := os.Getenv("ALLOW_ORIGINS")
-	var trustedOrigins []string
-	if allowOrigins != "" {
-		trustedOrigins = strings.Split(allowOrigins, ",")
-		for i := range trustedOrigins {
-			trustedOrigins[i] = strings.TrimSpace(trustedOrigins[i])
-		}
-	}
 
 	return csrf.New(csrf.Config{
 		KeyLookup:      "header:X-CSRF-Token",
@@ -33,7 +23,6 @@ func NewCSRFMiddleware(storage fiber.Storage) fiber.Handler {
 		CookieSecure:   secure,
 		CookieDomain:   cookieDomain,
 		CookieHTTPOnly: false,
-		TrustedOrigins: trustedOrigins,
 		Expiration:     1 * time.Hour,
 		Storage:        storage,
 		ErrorHandler: func(c *fiber.Ctx, err error) error {

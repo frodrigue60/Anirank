@@ -6,7 +6,8 @@ import { setUser } from '$lib/state/auth.svelte';
 // Esto convierte a SvelteKit en una Single Page Application (SPA) pura
 // Simplifica el manejo de cookies (Sanctum) porque todas las peticiones a la API salen del navegador del cliente
 export const ssr = false;
-export const prerender = false; 
+export const prerender = true;
+export const trailingSlash = 'always';
 
 export const load = async () => {
     try {

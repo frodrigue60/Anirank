@@ -6,8 +6,8 @@ import (
 )
 
 type Announcement struct {
-	ID        uint64     `db:"id" json:"id"`
-	UUID      string     `db:"uuid" json:"uuid"`
+	ID        uint64     `db:"id" json:"admin_id"`
+	UUID      string     `db:"uuid" json:"id"`
 	Title     string     `db:"title" json:"title" form:"title"`
 	Content   *string    `db:"content" json:"content" form:"content"`
 	Type      string     `db:"type" json:"type" form:"type"`

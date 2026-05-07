@@ -87,8 +87,8 @@ type Permission struct {
 }
 
 type Badge struct {
-	ID               uint64     `db:"id" json:"id"`
-	UUID             string     `db:"uuid" json:"uuid"`
+	ID               uint64     `db:"id" json:"admin_id"`
+	UUID             string     `db:"uuid" json:"id"`
 	Name             string     `db:"name" json:"name"`
 	Description      *string    `db:"description" json:"description"`
 	Icon             *string    `db:"icon" json:"-"`

@@ -127,8 +127,10 @@ func (s *mediaService) UploadImageOptimized(ctx context.Context, prefix string, 
 
 	// 4. Upload
 	filename := s.GeneratePath(prefix, id, ext)
+	fmt.Printf("[MEDIA-DEBUG] Uploading processed image: %s (%d bytes, %s)\n", filename, len(processedData), finalContentType)
 	_, err = s.storage.UploadFile(ctx, filename, bytes.NewReader(processedData), int64(len(processedData)), finalContentType)
 	if err != nil {
+		fmt.Printf("[MEDIA-ERROR] Upload failed for %s: %v\n", filename, err)
 		return "", "", err
 	}
 
@@ -171,8 +173,10 @@ func (s *mediaService) UploadWithResolutions(ctx context.Context, prefix string,
 		return "", "", fmt.Errorf("failed to encode fallback: %w", err)
 	}
 	originalPath := s.GeneratePath(prefix, id, "jpg")
+	fmt.Printf("[MEDIA-DEBUG] Uploading fallback: %s (%d bytes)\n", originalPath, buf.Len())
 	_, err = s.storage.UploadFile(ctx, originalPath, bytes.NewReader(buf.Bytes()), int64(buf.Len()), "image/jpeg")
 	if err != nil {
+		fmt.Printf("[MEDIA-ERROR] Fallback upload failed for %s: %v\n", originalPath, err)
 		return "", "", fmt.Errorf("failed to upload fallback image: %w", err)
 	}
 
@@ -212,7 +216,10 @@ func (s *mediaService) UploadWithResolutions(ctx context.Context, prefix string,
 		}
 
 		resPath := pathWithoutExt + suffix + ".avif"
-		_, _ = s.storage.UploadFile(ctx, resPath, bytes.NewReader(avifData), int64(len(avifData)), "image/avif")
+		fmt.Printf("[MEDIA-DEBUG] Uploading variant: %s (%d bytes)\n", resPath, len(avifData))
+		if _, err := s.storage.UploadFile(ctx, resPath, bytes.NewReader(avifData), int64(len(avifData)), "image/avif"); err != nil {
+			fmt.Printf("[MEDIA-ERROR] Variant upload failed for %s: %v\n", resPath, err)
+		}
 	}
 
 	return originalPath, s.storage.GetURL(originalPath), nil

@@ -1089,6 +1089,9 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 	totalAnime := len(animeList)
 	sendProgress(fmt.Sprintf("Found %d animes. Collecting IDs for enrichment...", totalAnime))
 
+	fmt.Printf("[INFO] Starting sync of %d animes from AnimeThemes...\n", totalAnime)
+	var createdCount, updatedCount, skippedCount int
+
 	allProcessedArtistIDs := make(map[uint64]bool)
 
 	// --- Phase 1: ID Collection ---
@@ -1224,6 +1227,7 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 
 	// --- Phase 3: Processing ---
 	for i, a := range animeList {
+		fmt.Printf("[%d/%d] [INFO] Processing Anime: %s (atID: %d)\n", i+1, totalAnime, a.Name, a.ID)
 		sendProgress(fmt.Sprintf("[%d/%d] Processing: %s", i+1, totalAnime, a.Name))
 		// 1. Resolve Taxonomies
 		var yearObj *domain.Year
@@ -1234,7 +1238,10 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 			yearObj, _ = u.taxonomyRepo.GetByYear(ctx, a.Year)
 		}
 		if err != nil || yearObj == nil {
-			sendProgress(fmt.Sprintf("[SKIP] %s: Year %v not found and creation not allowed/failed.", a.Name, a.Year))
+			msg := fmt.Sprintf("[SKIP] %s: Year %v not found and creation not allowed/failed. Err: %v", a.Name, a.Year, err)
+			fmt.Println(msg)
+			sendProgress(msg)
+			skippedCount++
 			continue
 		}
 
@@ -1246,7 +1253,10 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 			seasonObj, _ = u.taxonomyRepo.GetBySeason(ctx, normalizedSeason)
 		}
 		if err != nil || seasonObj == nil {
-			sendProgress(fmt.Sprintf("[SKIP] %s: Season %s not found and creation not allowed/failed.", a.Name, a.Season))
+			msg := fmt.Sprintf("[SKIP] %s: Season %s not found and creation not allowed/failed. Err: %v", a.Name, a.Season, err)
+			fmt.Println(msg)
+			sendProgress(msg)
+			skippedCount++
 			continue
 		}
 
@@ -1263,6 +1273,7 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 			msg := fmt.Sprintf("[SKIP] %s: Format %s not found and creation not allowed/failed. Err: %v", a.Name, a.MediaFormat, err)
 			fmt.Println(msg)
 			sendProgress(msg)
+			skippedCount++
 			continue
 		}
 
@@ -1377,6 +1388,9 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 				errMsg := fmt.Sprintf("[ERROR] Failed to update anime %d (%s): %v", anime.ID, anime.Title, err)
 				fmt.Println(errMsg)
 				sendProgress(errMsg)
+				skippedCount++
+			} else {
+				updatedCount++
 			}
 			_ = u.auditUsecase.LogActions(ctx, meta.ActorID, "hydrated_update", anime.ID, "anime", nil, anime, &meta.URL, &meta.IPAddress, &meta.UserAgent)
 			go u.ensureLocalImages(context.Background(), anime, coverUrl, bannerUrl, anilistID)
@@ -1405,8 +1419,10 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 				errMsg := fmt.Sprintf("[ERROR] Failed to create anime %s: %v", anime.Title, err)
 				fmt.Println(errMsg)
 				sendProgress(errMsg)
+				skippedCount++
 				continue
 			}
+			createdCount++
 			_ = u.auditUsecase.LogActions(ctx, meta.ActorID, "hydrated_create", anime.ID, "anime", nil, anime, &meta.URL, &meta.IPAddress, &meta.UserAgent)
 			go u.ensureLocalImages(context.Background(), anime, coverUrl, bannerUrl, anilistID)
 		}
@@ -1727,7 +1743,9 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 		fmt.Printf("[ERROR] Anime stats recount failed: %v\n", err)
 	}
 
-	sendProgress("Hydration completed successfully!")
+	summary := fmt.Sprintf("Hydration completed! Created: %d, Updated: %d, Skipped: %d", createdCount, updatedCount, skippedCount)
+	fmt.Printf("[SUCCESS] %s\n", summary)
+	sendProgress(summary)
 	return nil
 }
 

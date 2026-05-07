@@ -99,6 +99,11 @@ func SetupPublicRoutes(app *fiber.App,
 	// --- SWAGGER DOCS ---
 	api.Get("/swagger/*", swagger.HandlerDefault)
 
+	// --- HEALTH CHECK ---
+	api.Get("/health", func(c *fiber.Ctx) error {
+		return c.SendStatus(fiber.StatusOK)
+	})
+
 	// --- PUBLIC ROUTES ---
 	authLimiter := middleware.NewAuthLimiter(storage)
 	publicLimiter := middleware.NewPublicApiLimiter(storage)

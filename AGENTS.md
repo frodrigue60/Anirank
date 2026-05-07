@@ -79,6 +79,7 @@ The internal `uint64` IDs in the database (e.g. `user.ID`, `song.ID`) are **stri
 - **Required Verification:** 
     - Always run `go test ./internal/dto/...` after modifying mappers/DTOs to ensure the security reflection helper passes with zero violations.
     - Always run `go test ./internal/usecase/auth/...` after modifying any authentication or identity logic to ensure security flows (encryption, linking) are intact.
+    - Always run `go build ./cmd/api/main.go` and `go vet ./...` after any structural change (new interface method, new file, dependency injection). A clean build is the minimum bar.
 
 ### JWT Token Policy
 - The JWT payload contains only `user_uuid` (string) and `roles` ([]string). Never put `user_id` (numeric) in the token.
@@ -144,6 +145,9 @@ The internal `uint64` IDs in the database (e.g. `user.ID`, `song.ID`) are **stri
 - **Don't** run `migrate reset` on the production database. Only on local/dev environments.
 - **Don't** implement custom social unlinking logic in handlers; use the standard `DELETE /api/auth/:provider/unlink` pattern.
 - **Don't** use `{@html}` directly with raw strings. Always wrap the content with `createTrustedHTML()` from `$lib/trusted` to comply with the CSP Trusted Types policy.
+- **Don't** read `os.Getenv(...)` inside a UseCase to construct URLs or config values. Inject dependencies (e.g. `MediaService`) via the constructor instead.
+- **Don't** add a `case` to the switch in `badge_usecase.go` for new badge types. Implement `BadgeEvaluator` and register it in `buildEvaluators()` in `badge_evaluator.go`.
+- **Don't** call `GetBadgesByUserID` (singular) inside a loop over comments or any list. Use `GetBadgesByUserIDs` (plural) for batch fetching.
 
 ---
 
@@ -155,9 +159,20 @@ The internal `uint64` IDs in the database (e.g. `user.ID`, `song.ID`) are **stri
 - Use `REDIS_ENABLED=false` in `.env` to skip Redis connectivity entirely in restricted environments.
 
 ### Eager Loading (N+1 Prevention)
-- In any UseCase returning a list of entities (Feeds, Rankings, Catalogs), DO NOT loop and call repositories inside the loop.
+- In any UseCase returning a list of entities (Feeds, Rankings, Catalogs, Comments), DO NOT loop and call repositories inside the loop.
 - Use the **Batch Enrichment Pattern**:
-    1. Collect all required IDs into maps.
-    2. Fetch all related entities (Users, Songs, Artists) in bulk using `GetMany`.
-    3. Hydrate the original list in a single pass.
+    1. Collect all required IDs into maps/sets (including nested entities like comment replies).
+    2. Fetch all related entities (Users, Songs, Artists, Badges) in bulk using `GetMany` or `GetXxxByIDs`.
+    3. Hydrate the original list in a single pass using a separate `hydrateXxx()` helper.
 - Target latency for list endpoints: **< 50ms**.
+- **Badge enrichment**: Use `UserRepository.GetBadgesByUserIDs(ctx, []uint64)` to batch-load badges for all comment authors at once. Never call `GetBadgesByUserID` (singular) inside a loop.
+
+### Media URL Resolution
+- **NEVER** call `os.Getenv("S3_PUBLIC_URL")` or construct media URLs manually inside a UseCase.
+- **ALWAYS** use `mediaService.Resolve(*string) *string` or `mediaService.GetURL(string) string` — these are already injected as a dependency and handle both absolute URLs and relative R2/S3 paths transparently.
+- The `MediaService` interface is defined in `internal/infrastructure/media_service.go`.
+
+### Badge Evaluator Strategy
+- Automatic badge logic lives in `internal/usecase/admin/badge_evaluator.go`.
+- To add a new badge trigger type, add a new `BadgeEvaluator` implementation and register it in `buildEvaluators()`. **Do not** add a new `case` to a switch in `badge_usecase.go`.
+- The `triggerType` string (e.g. `"ratings"`, `"level"`) must match the `requirement_type` column in the `badges` table.

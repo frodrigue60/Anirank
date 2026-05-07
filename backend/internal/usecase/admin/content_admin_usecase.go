@@ -1140,7 +1140,9 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 			chunk := ids[i:end]
 			medias, err := u.anilistClient.GetMediaByIDs(ctx, chunk)
 			if err != nil {
-				fmt.Printf("[ERROR] Batch fetch failed: %v\n", err)
+				errMsg := fmt.Sprintf("[ERROR] AniList batch fetch failed: %v", err)
+				fmt.Println(errMsg)
+				sendProgress(errMsg)
 			} else {
 				for _, m := range medias {
 					alDataMap[int64(m.ID)] = m
@@ -1199,8 +1201,12 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 							artistImagesMap[artData.ID] = artData.Images[0].Link
 						}
 					}
+				} else {
+					fmt.Printf("[ERROR] Failed to decode artist batch response: %v\n", err)
 				}
 				aResp.Body.Close()
+			} else {
+				fmt.Printf("[ERROR] Artist batch fetch failed: %v\n", err)
 			}
 			if end < len(artistIDs) {
 				time.Sleep(500 * time.Millisecond)
@@ -1254,7 +1260,9 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 			formatObj, _ = u.taxonomyRepo.GetByFormat(ctx, a.MediaFormat)
 		}
 		if err != nil || formatObj == nil {
-			sendProgress(fmt.Sprintf("[SKIP] %s: Format %s not found and creation not allowed/failed.", a.Name, a.MediaFormat))
+			msg := fmt.Sprintf("[SKIP] %s: Format %s not found and creation not allowed/failed. Err: %v", a.Name, a.MediaFormat, err)
+			fmt.Println(msg)
+			sendProgress(msg)
 			continue
 		}
 
@@ -1305,7 +1313,7 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 				a.Synopsis = alData.Description
 			}
 		} else if anilistID > 0 {
-			fmt.Printf("[WARN] AniList data missing in batch for ID %d\n", anilistID)
+			fmt.Printf("[WARN] AniList data missing in batch for ID %d (Anime: %s)\n", anilistID, a.Name)
 		}
 
 		coverUrl := ""
@@ -1366,7 +1374,9 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 			anime.FormatID = formatObj.ID
 			err := u.animeRepo.Update(ctx, anime)
 			if err != nil {
-				fmt.Printf("[ERROR] Failed to update anime %d: %v\n", anime.ID, err)
+				errMsg := fmt.Sprintf("[ERROR] Failed to update anime %d (%s): %v", anime.ID, anime.Title, err)
+				fmt.Println(errMsg)
+				sendProgress(errMsg)
 			}
 			_ = u.auditUsecase.LogActions(ctx, meta.ActorID, "hydrated_update", anime.ID, "anime", nil, anime, &meta.URL, &meta.IPAddress, &meta.UserAgent)
 			go u.ensureLocalImages(context.Background(), anime, coverUrl, bannerUrl, anilistID)
@@ -1392,6 +1402,9 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 			u.validateStatusPermissions(meta.Role, &anime.Status, true)
 
 			if err := u.animeRepo.Create(ctx, anime); err != nil {
+				errMsg := fmt.Sprintf("[ERROR] Failed to create anime %s: %v", anime.Title, err)
+				fmt.Println(errMsg)
+				sendProgress(errMsg)
 				continue
 			}
 			_ = u.auditUsecase.LogActions(ctx, meta.ActorID, "hydrated_create", anime.ID, "anime", nil, anime, &meta.URL, &meta.IPAddress, &meta.UserAgent)
@@ -1403,16 +1416,22 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 		var studioIDs []uint64
 		for _, s := range a.Studios {
 			var obj *domain.Studio
+			var err error
 			if canCreateStudios {
 				obj, err = u.taxonomyRepo.GetOrCreateStudio(ctx, s.Name)
 			} else {
-				obj, _ = u.taxonomyRepo.GetByStudio(ctx, s.Name)
+				obj, err = u.taxonomyRepo.GetByStudio(ctx, s.Name)
 			}
+
 			if err == nil && obj != nil {
 				studioIDs = append(studioIDs, obj.ID)
+			} else {
+				fmt.Printf("[ERROR] Failed to get/create studio %s for anime %s: %v\n", s.Name, anime.Title, err)
 			}
 		}
-		_ = u.animeRepo.UpdateStudios(ctx, anime.ID, studioIDs)
+		if err := u.animeRepo.UpdateStudios(ctx, anime.ID, studioIDs); err != nil {
+			fmt.Printf("[ERROR] Failed to sync studios for anime %s: %v\n", anime.Title, err)
+		}
 
 		// Sync Resources from AnimeThemes as External Links
 		if len(a.Resources) > 0 {
@@ -1424,12 +1443,16 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 					Type: strings.ToLower(r.Site),
 				})
 			}
-			_ = u.animeRepo.UpdateExternalLinks(ctx, anime.ID, links)
+			if err := u.animeRepo.UpdateExternalLinks(ctx, anime.ID, links); err != nil {
+				fmt.Printf("[ERROR] Failed to update external links for anime %s: %v\n", anime.Title, err)
+			}
 		}
 
 		// Enrichment with AniList
 		if alData != nil {
-			_ = u.SyncAnimeWithAnilist(ctx, anime, alData, pm, meta)
+			if err := u.SyncAnimeWithAnilist(ctx, anime, alData, pm, meta); err != nil {
+				fmt.Printf("[ERROR] Failed to enrich anime %s with AniList data: %v\n", anime.Title, err)
+			}
 		}
 
 		// 6. Process Songs & Themes
@@ -1500,6 +1523,7 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 				u.validateStatusPermissions(meta.Role, &song.Status, true)
 
 				if err := u.songRepo.Create(ctx, song); err != nil {
+					fmt.Printf("[ERROR] Failed to create song %s for anime %s: %v\n", *song.SongRomaji, anime.Title, err)
 					continue
 				}
 				processedSongs[song.ID] = true
@@ -1547,7 +1571,9 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 					variant.AnimeThemesID = &atvID
 					variant.YearID = yearObj.ID
 					variant.SeasonID = seasonObj.ID
-					_ = u.variantRepo.Update(ctx, variant)
+					if err := u.variantRepo.Update(ctx, variant); err != nil {
+						fmt.Printf("[ERROR] Failed to update variant %s for song %s: %v\n", variant.Slug, *song.SongRomaji, err)
+					}
 					processedVariants[variant.ID] = true
 				} else {
 					// Create
@@ -1565,7 +1591,9 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 					// Force Draft status for creators
 					u.validateStatusPermissions(meta.Role, &variant.Status, true)
 
-					if err := u.variantRepo.Create(ctx, variant); err == nil {
+					if err := u.variantRepo.Create(ctx, variant); err != nil {
+						fmt.Printf("[ERROR] Failed to create variant %s for song %s: %v\n", variant.Slug, *song.SongRomaji, err)
+					} else {
 						processedVariants[variant.ID] = true
 					}
 				}
@@ -1620,7 +1648,9 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 					if alID != nil {
 						artist.AnilistID = alID
 					}
-					_ = u.artistRepo.Update(ctx, artist)
+					if err := u.artistRepo.Update(ctx, artist); err != nil {
+						fmt.Printf("[ERROR] Failed to update artist %s (atID: %d): %v\n", artist.Name, atArtID, err)
+					}
 				} else {
 					// Create
 					artist = &domain.Artist{
@@ -1636,6 +1666,7 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 					u.validateStatusPermissions(meta.Role, &artist.Status, true)
 
 					if err := u.artistRepo.Create(ctx, artist); err != nil {
+						fmt.Printf("[ERROR] Failed to create artist %s (atID: %d): %v\n", artist.Name, atArtID, err)
 						continue
 					}
 				}
@@ -1647,7 +1678,9 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 					options := infrastructure.ImageOptions{Format: "avif", Quality: 85}
 					if imgUrl, err := u.downloadAndStore(ctx, atImage, "artists/avatars", artist.ID, options); err == nil {
 						artist.Avatar = &imgUrl
-						_ = u.artistRepo.Update(ctx, artist)
+						if err := u.artistRepo.Update(ctx, artist); err != nil {
+							fmt.Printf("[ERROR] Failed to update artist %d with AT avatar: %v\n", artist.ID, err)
+						}
 						avatarDownloaded = true
 						fmt.Printf("[INFO] Downloaded AnimeThemes avatar for artist %d\n", artist.ID)
 					} else {
@@ -1667,7 +1700,9 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 				}
 			}
 			if len(artistIDs) > 0 {
-				_ = u.songRepo.SyncArtists(ctx, song.ID, artistIDs)
+				if err := u.songRepo.SyncArtists(ctx, song.ID, artistIDs); err != nil {
+					fmt.Printf("[ERROR] Failed to sync artists for song %d: %v\n", song.ID, err)
+				}
 			}
 		}
 	}
@@ -1679,12 +1714,18 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 		for id := range allProcessedArtistIDs {
 			ids = append(ids, id)
 		}
-		_ = u.BatchGenerateArtistAvatars(ctx, ids, progress)
+		if err := u.BatchGenerateArtistAvatars(ctx, ids, progress); err != nil {
+			fmt.Printf("[ERROR] Batch avatar generation failed: %v\n", err)
+		}
 	}
 
 	// Recount all stats once after batch processing for accuracy
-	_ = u.artistRepo.RecountArtistStats(ctx, nil)
-	_ = u.animeRepo.RecountAnimeStats(ctx, nil)
+	if err := u.artistRepo.RecountArtistStats(ctx, nil); err != nil {
+		fmt.Printf("[ERROR] Artist stats recount failed: %v\n", err)
+	}
+	if err := u.animeRepo.RecountAnimeStats(ctx, nil); err != nil {
+		fmt.Printf("[ERROR] Anime stats recount failed: %v\n", err)
+	}
 
 	sendProgress("Hydration completed successfully!")
 	return nil
@@ -2130,7 +2171,10 @@ func (u *ContentAdminUsecase) BatchGenerateArtistAvatars(ctx context.Context, id
 				continue
 			}
 
-			_ = u.artistRepo.UpdateAvatar(ctx, a.ID, url)
+			if err := u.artistRepo.UpdateAvatar(ctx, a.ID, url); err != nil {
+				sendProgress(fmt.Sprintf("✗ [DB] Failed to update avatar for %s: %v", a.Name, err))
+				continue
+			}
 			sendProgress(fmt.Sprintf("[%d/%d] ✓ [Avatar-UI] Generated placeholder: %s", i+1, len(stillMissing), a.Name))
 
 			// Small delay for avatar-ui fallback to be safe

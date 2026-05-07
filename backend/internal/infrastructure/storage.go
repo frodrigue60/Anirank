@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -19,12 +20,15 @@ type StorageService interface {
 	DeleteFile(ctx context.Context, relativePath string) error
 	FileExists(ctx context.Context, relativePath string) (bool, error)
 	ListFiles(ctx context.Context, prefix string) ([]string, error)
+	GetEndpoint() string
+	GetPublicURL() string
 }
 
 type S3Storage struct {
 	client    *s3.Client
 	bucket    string
 	region    string
+	endpoint  string
 	publicUrl string
 }
 
@@ -63,8 +67,44 @@ func NewS3Storage(ctx context.Context, accessKey, secretKey, region, bucket, end
 		client:    client,
 		bucket:    bucket,
 		region:    region,
+		endpoint:  endpoint,
 		publicUrl: publicUrl,
 	}, nil
+}
+
+// InitStorageFromEnv initializes the storage service based on environment variables.
+// It supports STORAGE_TYPE=s3 (default) and STORAGE_TYPE=r2.
+func InitStorageFromEnv(ctx context.Context) (StorageService, error) {
+	storageType := os.Getenv("STORAGE_TYPE")
+	if storageType == "" {
+		storageType = "s3"
+	}
+
+	var accessKey, secretKey, region, bucket, endpoint, publicUrl string
+
+	if storageType == "r2" {
+		accountID := os.Getenv("R2_ACCOUNT_ID")
+		accessKey = os.Getenv("R2_ACCESS_KEY_ID")
+		secretKey = os.Getenv("R2_SECRET_ACCESS_KEY")
+		bucket = os.Getenv("R2_BUCKET_NAME")
+		publicUrl = os.Getenv("R2_PUBLIC_URL")
+		endpoint = fmt.Sprintf("https://%s.r2.cloudflarestorage.com", accountID)
+		region = "auto"
+	} else {
+		accessKey = os.Getenv("S3_ACCESS_KEY")
+		secretKey = os.Getenv("S3_SECRET_KEY")
+		region = os.Getenv("S3_REGION")
+		bucket = os.Getenv("S3_BUCKET")
+		endpoint = os.Getenv("S3_ENDPOINT")
+		publicUrl = os.Getenv("S3_PUBLIC_URL")
+
+		// Ensure endpoint has protocol if not set natively
+		if endpoint != "" && !strings.HasPrefix(endpoint, "http") {
+			endpoint = "http://" + endpoint
+		}
+	}
+
+	return NewS3Storage(ctx, accessKey, secretKey, region, bucket, endpoint, publicUrl)
 }
 
 func (s *S3Storage) UploadFile(ctx context.Context, relativePath string, file io.Reader, size int64, contentType string) (string, error) {
@@ -134,4 +174,12 @@ func (s *S3Storage) ListFiles(ctx context.Context, prefix string) ([]string, err
 	}
 
 	return files, nil
+}
+
+func (s *S3Storage) GetEndpoint() string {
+	return s.endpoint
+}
+
+func (s *S3Storage) GetPublicURL() string {
+	return s.publicUrl
 }

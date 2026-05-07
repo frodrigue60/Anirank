@@ -108,22 +108,9 @@ func main() {
 	xpRepo := postgres.NewXPRepository(db)
 	searchRepo := postgres.NewSearchRepository(db)
 
-	// Setup S3 Storage
-	s3Access := os.Getenv("S3_ACCESS_KEY")
-	s3Secret := os.Getenv("S3_SECRET_KEY")
-	s3Region := os.Getenv("S3_REGION")
-	s3Bucket := os.Getenv("S3_BUCKET")
-	s3Endpoint := os.Getenv("S3_ENDPOINT")
-	s3PublicUrl := os.Getenv("S3_PUBLIC_URL")
-
-	// Ensure endpoint has protocol if not set natively
-	if s3Endpoint != "" && len(s3Endpoint) > 4 && s3Endpoint[:4] != "http" {
-		s3Endpoint = "http://" + s3Endpoint
-	}
-
-	storageService, err := infrastructure.NewS3Storage(context.Background(), s3Access, s3Secret, s3Region, s3Bucket, s3Endpoint, s3PublicUrl)
+	storageService, err := infrastructure.InitStorageFromEnv(context.Background())
 	if err != nil {
-		log.Printf("Warning: Could not initialize S3 Storage: %v", err)
+		log.Printf("Warning: Could not initialize Storage Service: %v", err)
 	}
 
 	mediaService := infrastructure.NewMediaService(storageService)
@@ -213,7 +200,7 @@ func main() {
 	contentAdminUsecase := admin.NewContentAdminUsecase(animeRepo, songRepo, variantRepo, artistRepo, taxonomyRepo, userRepo, anilistClient, mediaService, auditUsecase, interactionRepo, notificationUsecase)
 	adminUsecase := admin.NewAdminUsecase(userAdminUsecase, contentAdminUsecase, adminRepo, moderationRepo, jobsRepo)
 
-	ogGenerator := og.NewGenerator(s3PublicUrl, s3Endpoint)
+	ogGenerator := og.NewGenerator(storageService.GetPublicURL(), storageService.GetEndpoint())
 	shareHandler := v1.NewShareHandler(animeUsecase, catalogUsecase, playlistUsecase)
 
 	seoUsecase := public.NewSEOUsecase(animeRepo, songRepo, artistRepo, userRepo, playlistRepo, ogGenerator.GetVersion)

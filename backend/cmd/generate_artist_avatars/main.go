@@ -36,16 +36,8 @@ func main() {
 	}
 	defer pool.Close()
 
-	// 2. Storage Initialization (R2/S3)
-	storage, err := infrastructure.NewS3Storage(
-		ctx,
-		os.Getenv("S3_ACCESS_KEY"),
-		os.Getenv("S3_SECRET_KEY"),
-		os.Getenv("S3_REGION"),
-		os.Getenv("S3_BUCKET"),
-		os.Getenv("S3_ENDPOINT"),
-		os.Getenv("S3_PUBLIC_URL"),
-	)
+	// 2. Storage Initialization (Dynamic R2/S3)
+	storage, err := infrastructure.InitStorageFromEnv(ctx)
 	if err != nil {
 		log.Fatalf("Unable to initialize storage: %v\n", err)
 	}

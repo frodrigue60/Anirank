@@ -30,8 +30,8 @@ func NewCSRFMiddleware(storage fiber.Storage) fiber.Handler {
 			return strings.HasSuffix(path, "/callback") || strings.HasSuffix(path, "/login-callback")
 		},
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
-			// Return a clean AppError for CSRF failures
-			return domain.NewAppError(403, "Invalid or missing CSRF token", err)
+			// Return a descriptive error for debugging
+			return domain.NewAppError(403, "CSRF Error: "+err.Error(), err)
 		},
 	})
 }

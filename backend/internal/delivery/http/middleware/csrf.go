@@ -19,8 +19,8 @@ func NewCSRFMiddleware(storage fiber.Storage) fiber.Handler {
 	return csrf.New(csrf.Config{
 		KeyLookup:      "header:X-CSRF-Token",
 		CookieName:     "csrf_token",
-		CookieSameSite: "Lax",
-		CookieSecure:   secure,
+		CookieSameSite: "None",
+		CookieSecure:   true, // Must be true for SameSite: None
 		CookieDomain:   cookieDomain,
 		CookieHTTPOnly: false,
 		Expiration:     1 * time.Hour,

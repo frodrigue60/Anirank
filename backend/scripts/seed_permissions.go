@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -20,7 +21,12 @@ func main() {
 	port := os.Getenv("DB_PORT")
 	name := os.Getenv("DB_NAME")
 
-	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", user, pass, host, port, name)
+	addr := host
+	if port != "" && !strings.Contains(host, ":") {
+		addr = fmt.Sprintf("%s:%s", host, port)
+	}
+
+	dsn := fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", user, pass, addr, name)
 	db, err := sqlx.Connect("pgx", dsn)
 	if err != nil {
 		log.Fatalf("Failed to connect: %v", err)

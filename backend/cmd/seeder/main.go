@@ -26,13 +26,19 @@ func main() {
 	var err error
 
 	if dbURL == "" {
-		dbUser := os.Getenv("DB_USER")
-		dbPass := os.Getenv("DB_PASSWORD")
-		dbHost := os.Getenv("DB_HOST")
-		dbPort := os.Getenv("DB_PORT")
-		dbName := os.Getenv("DB_NAME")
-		dbURL = fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
-			dbUser, dbPass, dbHost, dbPort, dbName)
+		host := os.Getenv("DB_HOST")
+		port := os.Getenv("DB_PORT")
+		user := os.Getenv("DB_USER")
+		pass := os.Getenv("DB_PASSWORD")
+		name := os.Getenv("DB_NAME")
+
+		addr := host
+		if port != "" && !strings.Contains(host, ":") {
+			addr = fmt.Sprintf("%s:%s", host, port)
+		}
+
+		dbURL = fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable",
+			user, pass, addr, name)
 	}
 
 	db, err = sqlx.Connect("pgx", dbURL)

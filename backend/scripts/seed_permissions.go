@@ -15,19 +15,28 @@ func main() {
 	// Load .env
 	_ = godotenv.Load(".env")
 
-	user := os.Getenv("DB_USER")
-	pass := os.Getenv("DB_PASSWORD")
-	host := os.Getenv("DB_HOST")
-	port := os.Getenv("DB_PORT")
-	name := os.Getenv("DB_NAME")
+	dbURL := os.Getenv("DATABASE_URL")
+	var db *sqlx.DB
+	var err error
 
-	addr := host
-	if port != "" && !strings.Contains(host, ":") {
-		addr = fmt.Sprintf("%s:%s", host, port)
+	if dbURL != "" {
+		// Simple URL connection
+		db, err = sqlx.Connect("pgx", dbURL)
+	} else {
+		user := os.Getenv("DB_USER")
+		pass := os.Getenv("DB_PASSWORD")
+		host := os.Getenv("DB_HOST")
+		port := os.Getenv("DB_PORT")
+		name := os.Getenv("DB_NAME")
+
+		addr := host
+		if port != "" && !strings.Contains(host, ":") {
+			addr = fmt.Sprintf("%s:%s", host, port)
+		}
+
+		dsn := fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", user, pass, addr, name)
+		db, err = sqlx.Connect("pgx", dsn)
 	}
-
-	dsn := fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", user, pass, addr, name)
-	db, err := sqlx.Connect("pgx", dsn)
 	if err != nil {
 		log.Fatalf("Failed to connect: %v", err)
 	}

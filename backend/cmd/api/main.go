@@ -76,12 +76,27 @@ func main() {
 	if dbURL != "" {
 		db, err = infrastructure.NewDatabaseConnectionFromURL(dbURL)
 	} else {
-		dbUser := os.Getenv("DB_USER")
-		dbPass := os.Getenv("DB_PASSWORD")
-		dbHost := os.Getenv("DB_HOST")
-		dbPort := os.Getenv("DB_PORT")
-		dbName := os.Getenv("DB_NAME")
-		db, err = infrastructure.NewDatabaseConnection(dbUser, dbPass, dbHost, dbPort, dbName)
+		// Priority: DB_DRIVER, then infer from vars
+		driver := os.Getenv("DB_DRIVER")
+		if driver == "" {
+			if os.Getenv("POSTGRES_HOST") != "" || os.Getenv("PGHOST") != "" {
+				driver = "postgres"
+			} else if os.Getenv("MYSQL_HOST") != "" {
+				driver = "mysql"
+			} else {
+				driver = "postgres" // default
+			}
+		}
+
+		// Support both generic and specific variables (12-factor fallback)
+		// Including MySQL standards from reference
+		dbUser := getEnvWithFallback("DB_USER", "POSTGRES_USER", "PGUSER", "MYSQL_USER")
+		dbPass := getEnvWithFallback("DB_PASSWORD", "POSTGRES_PASSWORD", "PGPASSWORD", "MYSQL_PASSWORD")
+		dbHost := getEnvWithFallback("DB_HOST", "POSTGRES_HOST", "PGHOST", "MYSQL_HOST")
+		dbPort := getEnvWithFallback("DB_PORT", "POSTGRES_PORT", "PGPORT", "MYSQL_PORT")
+		dbName := getEnvWithFallback("DB_NAME", "POSTGRES_DB", "PGDATABASE", "MYSQL_DATABASE")
+
+		db, err = infrastructure.NewDatabaseConnection(driver, dbUser, dbPass, dbHost, dbPort, dbName)
 	}
 
 	if err != nil {
@@ -246,4 +261,14 @@ func main() {
 	if err := app.Listen(":" + appPort); err != nil {
 		log.Fatalf("Server fell over: %v", err)
 	}
+}
+
+func getEnvWithFallback(keys ...string) string {
+	for _, key := range keys {
+		val := os.Getenv(key)
+		if val != "" {
+			return val
+		}
+	}
+	return ""
 }

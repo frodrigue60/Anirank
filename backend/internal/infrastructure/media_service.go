@@ -167,22 +167,22 @@ func (s *mediaService) UploadWithResolutions(ctx context.Context, prefix string,
 		resolutions = []int{600}
 	}
 
-	// 2. Upload Fallback (as JPEG for compatibility)
-	var buf bytes.Buffer
-	if err := jpeg.Encode(&buf, img, &jpeg.Options{Quality: 90}); err != nil {
-		return "", "", fmt.Errorf("failed to encode fallback: %w", err)
-	}
-	originalPath := s.GeneratePath(prefix, id, "jpg")
-	fmt.Printf("[MEDIA-DEBUG] Uploading fallback: %s (%d bytes)\n", originalPath, buf.Len())
-	_, err = s.storage.UploadFile(ctx, originalPath, bytes.NewReader(buf.Bytes()), int64(buf.Len()), "image/jpeg")
+	// 2. Upload Base Image (as AVIF)
+	avifData, err := imageutil.EncodeAVIF(img, 80)
 	if err != nil {
-		fmt.Printf("[MEDIA-ERROR] Fallback upload failed for %s: %v\n", originalPath, err)
-		return "", "", fmt.Errorf("failed to upload fallback image: %w", err)
+		return "", "", fmt.Errorf("failed to encode base image: %w", err)
+	}
+	originalPath := s.GeneratePath(prefix, id, "avif")
+	fmt.Printf("[MEDIA-DEBUG] Uploading base image: %s (%d bytes)\n", originalPath, len(avifData))
+	_, err = s.storage.UploadFile(ctx, originalPath, bytes.NewReader(avifData), int64(len(avifData)), "image/avif")
+	if err != nil {
+		fmt.Printf("[MEDIA-ERROR] Base image upload failed for %s: %v\n", originalPath, err)
+		return "", "", fmt.Errorf("failed to upload base image: %w", err)
 	}
 
 	// 3. Generate and Upload AVIF versions
-	// Path example: path/to/image.jpg -> path/to/image_sm.avif
-	pathWithoutExt := strings.TrimSuffix(originalPath, ".jpg")
+	// Path example: path/to/image.avif -> path/to/image_sm.avif
+	pathWithoutExt := strings.TrimSuffix(originalPath, ".avif")
 
 	for _, w := range resolutions {
 		var suffix string
@@ -231,7 +231,12 @@ func (s *mediaService) GetImageSources(path string) []domain.ImageSource {
 	}
 
 	// Deterministic mapping: we expect _sm, _md, _lg to exist if the original is there
-	pathWithoutExt := strings.TrimSuffix(path, ".jpg")
+	pathWithoutExt := path
+	if strings.HasSuffix(path, ".jpg") {
+		pathWithoutExt = strings.TrimSuffix(path, ".jpg")
+	} else if strings.HasSuffix(path, ".avif") {
+		pathWithoutExt = strings.TrimSuffix(path, ".avif")
+	}
 
 	// Check what kind of path it is to determine width labels
 	isSquare := strings.Contains(path, "avatars") || strings.Contains(path, "users")

@@ -1,4 +1,4 @@
-import type { PageLoad } from './$types';
+import { getAuthToken } from '$lib/state/auth.svelte';
 
 const apiBase =
     import.meta.env.PUBLIC_API_URL ||
@@ -7,11 +7,15 @@ const apiBase =
 
 export const load: PageLoad = async ({ fetch }) => {
     try {
-        const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+        const token = getAuthToken();
+        const headers: Record<string, string> = {};
+        
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
         const res = await fetch(`${apiBase}/admin/dashboard`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
+            headers
         });
         
         if (!res.ok) {

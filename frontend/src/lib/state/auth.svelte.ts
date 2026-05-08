@@ -63,13 +63,31 @@ export function setUser(user: User | null) {
 // Persist and Retrieve token
 export function setAuthToken(token: string) {
     if (typeof window !== 'undefined') {
+        if (!token || typeof token !== 'string') {
+            console.error("Attempted to set an invalid token type:", typeof token);
+            return;
+        }
         localStorage.setItem('auth_token', token);
     }
 }
 
 export function getAuthToken(): string | null {
     if (typeof window !== 'undefined') {
-        return localStorage.getItem('auth_token');
+        const token = localStorage.getItem('auth_token');
+        
+        // Basic filtering for empty or stringified null/undefined
+        if (!token || token === 'null' || token === 'undefined') {
+            return null;
+        }
+
+        // Structural validation for JWT (header.payload.signature)
+        if (token.split('.').length !== 3) {
+            console.warn("Malformed token found in localStorage. Clearing state.");
+            localStorage.removeItem('auth_token');
+            return null;
+        }
+
+        return token;
     }
     return null;
 }

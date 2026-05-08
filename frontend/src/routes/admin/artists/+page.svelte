@@ -109,7 +109,7 @@
           credentials: "include",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${getAuthToken()}`,
+            ...(getAuthToken() ? { "Authorization": `Bearer ${getAuthToken()}` } : {}),
             "X-CSRF-Token": typeof document !== 'undefined' && document.cookie.includes('csrf_token=') ? `; ${document.cookie}`.split(`; csrf_token=`)[1].split(';')[0] : '',
           },
           body: JSON.stringify({
@@ -174,7 +174,7 @@
           credentials: "include",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${getAuthToken()}`,
+            ...(getAuthToken() ? { "Authorization": `Bearer ${getAuthToken()}` } : {}),
             "X-CSRF-Token": typeof document !== 'undefined' && document.cookie.includes('csrf_token=') ? `; ${document.cookie}`.split(`; csrf_token=`)[1].split(';')[0] : '',
           },
         },
@@ -235,7 +235,7 @@
           credentials: "include",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${getAuthToken()}`,
+            ...(getAuthToken() ? { "Authorization": `Bearer ${getAuthToken()}` } : {}),
             "X-CSRF-Token": typeof document !== 'undefined' && document.cookie.includes('csrf_token=') ? `; ${document.cookie}`.split(`; csrf_token=`)[1].split(';')[0] : '',
           },
         },

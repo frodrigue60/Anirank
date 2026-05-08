@@ -86,7 +86,7 @@ import ChevronDown from "lucide-svelte/icons/chevron-down";
           if (authState.user) {
             setUser({
               ...authState.user,
-              avatar_url: `${response.data.avatar_url}?t=${Date.now()}`,
+              avatar_url: `${response.data.data.avatar_url}?t=${Date.now()}`,
             });
           }
           toastState.addToast("Avatar updated successfully!", "success");
@@ -117,7 +117,7 @@ import ChevronDown from "lucide-svelte/icons/chevron-down";
           if (authState.user) {
             setUser({
               ...authState.user,
-              banner_url: `${response.data.banner_url}?t=${Date.now()}`,
+              banner_url: `${response.data.data.banner_url}?t=${Date.now()}`,
             });
           }
           toastState.addToast("Banner updated successfully!", "success");

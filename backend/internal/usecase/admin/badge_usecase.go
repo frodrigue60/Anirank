@@ -1,12 +1,14 @@
 package admin
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"time"
 
 	"anirank/api/internal/domain"
 	"anirank/api/internal/infrastructure"
+	"anirank/api/internal/pkg/imageutil"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -103,42 +105,45 @@ func (u *BadgeUsecase) Delete(ctx context.Context, id uint64, meta domain.AuditM
 	return nil
 }
 
-// HandleBadgeIcon manages the multipart file upload parsing and passing to storage
+// HandleBadgeIcon manages the multipart file upload parsing, processing, and passing to storage
 func (u *BadgeUsecase) HandleBadgeIcon(c *fiber.Ctx, badge *domain.Badge) error {
 	file, err := c.FormFile("icon")
 	if err == nil && file != nil {
-		// Found an uploaded image
-		ext := "png" // Default, you could parse content-type
-		if len(file.Filename) > 4 && file.Filename[len(file.Filename)-4:] == ".jpg" {
-			ext = "jpg"
-		} else if len(file.Filename) > 4 && file.Filename[len(file.Filename)-4:] == "jpeg" {
-			ext = "jpeg"
-		} else if len(file.Filename) > 4 && file.Filename[len(file.Filename)-4:] == ".gif" {
-			ext = "gif"
-		} else if len(file.Filename) > 4 && file.Filename[len(file.Filename)-4:] == "webp" {
-			ext = "webp"
+		f, err := file.Open()
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+
+		// 1. Decode image
+		img, _, err := imageutil.Decode(f)
+		if err != nil {
+			return fmt.Errorf("failed to decode image: %w", err)
 		}
 
-		f, err := file.Open()
-		if err == nil {
-			defer f.Close()
+		// 2. Resize to standard badge size (128x128)
+		processedImg := imageutil.Fill(img, 128, 128)
 
-			path := fmt.Sprintf("badges/%s-%d.%s", time.Now().Format("20060102150405"), badge.ID, ext)
-			contentType := "image/" + ext
-			if ext == "jpg" {
-				contentType = "image/jpeg"
-			}
+		// 3. Encode to AVIF
+		avifData, err := imageutil.EncodeAVIF(processedImg, 80)
+		if err != nil {
+			return fmt.Errorf("failed to encode to avif: %w", err)
+		}
 
-			// Delete old if exists (optonal, depends on requirements)
-			if badge.Icon != nil && *badge.Icon != "" {
-				_ = u.storage.DeleteFile(c.Context(), *badge.Icon)
-			}
+		// 4. Prepare path and storage
+		path := fmt.Sprintf("badges/%s-%d.avif", time.Now().Format("20060102150405"), badge.ID)
+		
+		// Delete old if exists
+		if badge.Icon != nil && *badge.Icon != "" {
+			_ = u.storage.DeleteFile(c.Context(), *badge.Icon)
+		}
 
-			if _, err := u.storage.UploadFile(c.Context(), path, f, file.Size, contentType); err == nil {
-				// Update icon in DB
-				_ = u.repo.UpdateIcon(c.Context(), badge.ID, path)
-				badge.Icon = &path
-			}
+		// Upload processed data
+		reader := bytes.NewReader(avifData)
+		if _, err := u.storage.UploadFile(c.Context(), path, reader, int64(len(avifData)), "image/avif"); err == nil {
+			// Update icon in DB
+			_ = u.repo.UpdateIcon(c.Context(), badge.ID, path)
+			badge.Icon = &path
 		}
 	}
 	return nil

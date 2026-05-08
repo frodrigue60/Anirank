@@ -78,7 +78,7 @@
 
   let selectedVariantIndex = $state(0);
   let selectedVariant = $derived(
-    currentSong.song_variants?.[selectedVariantIndex],
+    currentSong.variants?.[selectedVariantIndex],
   );
 
   // svelte-ignore state_referenced_locally
@@ -537,10 +537,10 @@
       <div
         class="relative w-full aspect-video rounded-md overflow-hidden bg-black group border border-outline-variant/10 shadow-2xl"
       >
-        {#if selectedVariant?.video}
-          {#if selectedVariant.video.type === "embed"}
+        {#if selectedVariant?.video_url}
+          {#if selectedVariant.video_url.includes("youtube") || selectedVariant.video_url.includes("youtu.be")}
             <iframe
-              src={getAutoplayUrl(selectedVariant.video.embed_url)}
+              src={getAutoplayUrl(selectedVariant.video_url)}
               class="w-full h-full"
               frameborder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -550,7 +550,7 @@
           {:else}
             <video
               bind:this={videoElement}
-              src={selectedVariant.video.local_url}
+              src={selectedVariant.video_url}
               class="w-full h-full"
               controls
               autoplay
@@ -574,11 +574,11 @@
               class="text-on-surface-variant/20 mb-4"
             />
             <span class="text-on-surface-variant/60 font-bold text-lg"
-              >{(currentSong.song_variants?.length ?? 0) > 0
+              >{(currentSong.variants?.length ?? 0) > 0
                 ? "No video available for this variant"
                 : "No video versions available for this theme song"}</span
             >
-            {#if currentSong.song_variants?.length === 0}
+            {#if !currentSong.variants || currentSong.variants.length === 0}
               <p class="text-on-surface-variant/30 text-sm mt-2 max-w-md">
                 We don't have a video file or embed for this theme yet. If you
                 have it, you can contribute it on our community server!
@@ -603,11 +603,11 @@
               </span>
             </div>
             <!-- Version Selector -->
-            {#if currentSong.song_variants && currentSong.song_variants.length > 1}
+            {#if currentSong.variants && currentSong.variants.length > 1}
               <div
                 class="flex bg-surface-highest rounded-full p-1 border border-on-surface-variant/10 shadow-sm"
               >
-                {#each currentSong.song_variants as variant, i}
+                {#each currentSong.variants as variant, i}
                   <button
                     class="px-3 py-1.5 rounded-full text-[10px] font-bold transition-all {selectedVariantIndex ===
                     i

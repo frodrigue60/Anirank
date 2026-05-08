@@ -28,7 +28,7 @@ export interface Song {
         id: number;
         name: string;
     };
-    song_variants?: SongVariant[];
+    variants?: SongVariant[];
     artists?: Artist[];
     views: number;
     likes_count: number;
@@ -53,18 +53,12 @@ export interface Artist {
 }
 
 export interface SongVariant {
-    id: number;
+    id: string;
     version_number: number;
-    song_id: number;
+    song_id: string;
     slug: string;
-    views: number;
-    video?: SongVariantVideo;
-}
-
-export interface SongVariantVideo {
-    type: 'file' | 'embed';
-    embed_url?: string;
-    local_url?: string;
+    video_url?: string;
+    spoiler: boolean;
 }
 
 export interface SongType {

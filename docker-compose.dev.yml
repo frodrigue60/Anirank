@@ -8,6 +8,8 @@ services:
       dockerfile: Dockerfile.dev
     container_name: anirank_backend_dev
     command: go run cmd/api/main.go
+    env_file:
+      - ./backend/.env
     volumes:
       - ./backend:/app
       - go_cache:/root/.cache/go-build
@@ -22,6 +24,8 @@ services:
     container_name: anirank_frontend_dev
     working_dir: /app
     command: bun dev --host 0.0.0.0
+    env_file:
+      - ./frontend/.env
     volumes:
       - ./frontend:/app
       - /app/node_modules

@@ -4,10 +4,8 @@ services:
     image: postgres:15-alpine
     container_name: anirank_db
     restart: always
-    environment:
-      POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
-      POSTGRES_DB: ${DB_NAME:-anirank}
+    env_file:
+      - ./backend/.env
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -26,9 +24,8 @@ services:
     image: minio/minio
     container_name: anirank_minio
     restart: always
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-admin}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-admin123}
+    env_file:
+      - ./backend/.env
     volumes:
       - minio_data:/data
     command: server /data --console-address ":9001"
@@ -58,44 +55,13 @@ services:
       - db
       - redis
       - minio
+    env_file:
+      - ./backend/.env
     environment:
-      APP_PORT: 8080
-      APP_ENV: ${APP_ENV:-development}
-      ALLOW_ORIGINS: ${ALLOW_ORIGINS:-https://anirank.work, http://localhost:5173, http://localhost:4173, http://localhost:8080}
-      APP_URL: ${APP_URL:-}
-      ANILIST_LOGIN_REDIRECT_URL: ${ANILIST_LOGIN_REDIRECT_URL:-}
-      # Database
       DB_HOST: db
-      DB_PORT: 5432
-      DB_USER: ${DB_USER:-postgres}
-      DB_PASSWORD: ${DB_PASSWORD:-postgres}
-      DB_NAME: ${DB_NAME:-anirank}
-      # Cache
       REDIS_URL: redis://redis:6379
-      # Storage (MinIO)
-      STORAGE_TYPE: s3
       S3_ENDPOINT: http://minio:9000
-      S3_REGION: ${S3_REGION:-us-east-1}
-      S3_ACCESS_KEY: ${MINIO_ROOT_USER:-admin}
-      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-admin123}
-      S3_BUCKET: ${MINIO_BUCKET:-anirank}
-      S3_PUBLIC_URL: ${S3_PUBLIC_URL:-https://s3.anirank.work/anirank}
       S3_USE_SSL: "false"
-      # Security
-      JWT_SECRET: ${JWT_SECRET:-super-secret-key-change-me-in-production}
-      JWT_EXPIRATION_HOURS: ${JWT_EXPIRATION_HOURS:-72}
-      # Admin
-      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@anirank.com}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme}
-      # External APIs
-      ANILIST_API_URL: ${ANILIST_API_URL:-https://graphql.anilist.co}
-      ANILIST_CLIENT_ID: ${ANILIST_CLIENT_ID}
-      ANILIST_CLIENT_SECRET: ${ANILIST_CLIENT_SECRET}
-      ANILIST_REDIRECT_URL: ${ANILIST_REDIRECT_URL}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
-      GOOGLE_REDIRECT_URL: ${GOOGLE_REDIRECT_URL}
-      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
     ports:
       - "8080:8080"
 
@@ -107,19 +73,10 @@ services:
         VITE_API_URL: ${PUBLIC_API_URL:-http://localhost:8080/api}
     container_name: anirank_frontend
     restart: always
-    environment:
-      VITE_API_URL: ${PUBLIC_API_URL:-http://localhost:8080/api}
+    env_file:
+      - ./frontend/.env
     ports:
       - "80:80"
-
-  # --- CLOUDFLARE TUNNEL ---
-  cloudflared:
-    image: cloudflare/cloudflared:latest
-    container_name: anirank_tunnel
-    restart: always
-    command: tunnel run
-    environment:
-      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN}
 
 volumes:
   postgres_data:

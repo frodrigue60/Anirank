@@ -250,8 +250,8 @@ func (u *ContentAdminUsecase) HandleAnimeImages(c *fiber.Ctx, anime *domain.Anim
 		if file, err := fileHeader.Open(); err == nil {
 			defer file.Close()
 			oldCover := anime.Cover
-			if _, url, err := u.mediaService.UploadWithResolutions(c.Context(), "animes/covers", anime.ID, file, infrastructure.PresetPoster); err == nil {
-				anime.Cover = &url
+			if path, _, err := u.mediaService.UploadWithResolutions(c.Context(), "animes/covers", anime.ID, file, infrastructure.PresetPoster); err == nil {
+				anime.Cover = &path
 				if err := u.animeRepo.Update(c.Context(), anime); err == nil && oldCover != nil {
 					u.mediaService.DeleteMedia(c.Context(), *oldCover)
 				}
@@ -264,8 +264,8 @@ func (u *ContentAdminUsecase) HandleAnimeImages(c *fiber.Ctx, anime *domain.Anim
 		if file, err := fileHeader.Open(); err == nil {
 			defer file.Close()
 			oldBanner := anime.Banner
-			if _, url, err := u.mediaService.UploadWithResolutions(c.Context(), "animes/banners", anime.ID, file, infrastructure.PresetLandscape); err == nil {
-				anime.Banner = &url
+			if path, _, err := u.mediaService.UploadWithResolutions(c.Context(), "animes/banners", anime.ID, file, infrastructure.PresetLandscape); err == nil {
+				anime.Banner = &path
 				if err := u.animeRepo.Update(c.Context(), anime); err == nil && oldBanner != nil {
 					u.mediaService.DeleteMedia(c.Context(), *oldBanner)
 				}
@@ -880,9 +880,8 @@ func (u *ContentAdminUsecase) downloadAndStore(ctx context.Context, url string, 
 		return "", err
 	}
 
-	path, url, err := u.mediaService.UploadImageOptimized(ctx, prefix, id, bytes.NewReader(buf), opts)
-	_ = path // avoid unused
-	return url, err
+	path, _, err := u.mediaService.UploadImageOptimized(ctx, prefix, id, bytes.NewReader(buf), opts)
+	return path, err
 }
 
 type ATAnimeData struct {
@@ -2655,12 +2654,12 @@ func (u *ContentAdminUsecase) UploadArtistAvatar(ctx context.Context, artistID u
 
 	oldAvatar := artist.Avatar
 
-	_, url, err := u.mediaService.UploadWithResolutions(ctx, "artists", artistID, file, infrastructure.PresetSquare)
+	path, _, err := u.mediaService.UploadWithResolutions(ctx, "artists", artistID, file, infrastructure.PresetSquare)
 	if err != nil {
 		return err
 	}
 
-	artist.Avatar = &url
+	artist.Avatar = &path
 	if err := u.artistRepo.Update(ctx, artist); err != nil {
 		return err
 	}

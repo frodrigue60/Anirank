@@ -232,9 +232,20 @@ func (u *AuthUsecase) UpdateAvatar(ctx context.Context, userID uint64, file io.R
 		return "", domain.NewAppError(500, "Storage service is not configured", nil)
 	}
 
+	// Fetch user to get current avatar for cleanup
+	user, err := u.userRepo.FindByID(ctx, userID)
+	if err != nil {
+		return "", domain.NewAppError(404, "User not found", err)
+	}
+
 	path, url, err := u.media.UploadWithResolutions(ctx, "users/avatars", userID, file, infrastructure.PresetSquare)
 	if err != nil {
 		return "", domain.NewAppError(500, "Failed to upload avatar", err)
+	}
+
+	// Delete old avatar if it exists
+	if user.Avatar != nil {
+		u.media.DeleteMedia(ctx, *user.Avatar)
 	}
 
 	if err := u.userRepo.SetImage(ctx, userID, "avatar", path); err != nil {
@@ -249,9 +260,20 @@ func (u *AuthUsecase) UpdateBanner(ctx context.Context, userID uint64, file io.R
 		return "", domain.NewAppError(500, "Storage service is not configured", nil)
 	}
 
+	// Fetch user to get current banner for cleanup
+	user, err := u.userRepo.FindByID(ctx, userID)
+	if err != nil {
+		return "", domain.NewAppError(404, "User not found", err)
+	}
+
 	path, url, err := u.media.UploadWithResolutions(ctx, "users/banners", userID, file, infrastructure.PresetLandscape)
 	if err != nil {
 		return "", domain.NewAppError(500, "Failed to upload banner", err)
+	}
+
+	// Delete old banner if it exists
+	if user.Banner != nil {
+		u.media.DeleteMedia(ctx, *user.Banner)
 	}
 
 	if err := u.userRepo.SetImage(ctx, userID, "banner", path); err != nil {

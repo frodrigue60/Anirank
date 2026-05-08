@@ -249,9 +249,12 @@ func (u *ContentAdminUsecase) HandleAnimeImages(c *fiber.Ctx, anime *domain.Anim
 	if fileHeader, err := c.FormFile("cover"); err == nil {
 		if file, err := fileHeader.Open(); err == nil {
 			defer file.Close()
+			oldCover := anime.Cover
 			if _, url, err := u.mediaService.UploadWithResolutions(c.Context(), "animes/covers", anime.ID, file, infrastructure.PresetPoster); err == nil {
 				anime.Cover = &url
-				_ = u.animeRepo.Update(c.Context(), anime)
+				if err := u.animeRepo.Update(c.Context(), anime); err == nil && oldCover != nil {
+					u.mediaService.DeleteMedia(c.Context(), *oldCover)
+				}
 			}
 		}
 	}
@@ -260,9 +263,12 @@ func (u *ContentAdminUsecase) HandleAnimeImages(c *fiber.Ctx, anime *domain.Anim
 	if fileHeader, err := c.FormFile("banner"); err == nil {
 		if file, err := fileHeader.Open(); err == nil {
 			defer file.Close()
+			oldBanner := anime.Banner
 			if _, url, err := u.mediaService.UploadWithResolutions(c.Context(), "animes/banners", anime.ID, file, infrastructure.PresetLandscape); err == nil {
 				anime.Banner = &url
-				_ = u.animeRepo.Update(c.Context(), anime)
+				if err := u.animeRepo.Update(c.Context(), anime); err == nil && oldBanner != nil {
+					u.mediaService.DeleteMedia(c.Context(), *oldBanner)
+				}
 			}
 		}
 	}
@@ -2065,12 +2071,21 @@ func (u *ContentAdminUsecase) GenerateArtistAvatar(ctx context.Context, artistID
 	}
 
 	// 3. Upload to S3
+	oldAvatar := artist.Avatar
 	_, url, err := u.mediaService.UploadImage(ctx, "artists/avatars", artistID, bytes.NewReader(avatarData), avatarSize, avatarContentType)
 	if err != nil {
 		return err
 	}
 
-	return u.artistRepo.UpdateAvatar(ctx, artistID, url)
+	if err := u.artistRepo.UpdateAvatar(ctx, artistID, url); err != nil {
+		return err
+	}
+
+	if oldAvatar != nil {
+		u.mediaService.DeleteMedia(ctx, *oldAvatar)
+	}
+
+	return nil
 }
 
 func (u *ContentAdminUsecase) notifyFollowersOfNewSong(ctx context.Context, songID uint64) {
@@ -2638,13 +2653,23 @@ func (u *ContentAdminUsecase) UploadArtistAvatar(ctx context.Context, artistID u
 		return err
 	}
 
+	oldAvatar := artist.Avatar
+
 	_, url, err := u.mediaService.UploadWithResolutions(ctx, "artists", artistID, file, infrastructure.PresetSquare)
 	if err != nil {
 		return err
 	}
 
 	artist.Avatar = &url
-	return u.artistRepo.Update(ctx, artist)
+	if err := u.artistRepo.Update(ctx, artist); err != nil {
+		return err
+	}
+
+	if oldAvatar != nil {
+		u.mediaService.DeleteMedia(ctx, *oldAvatar)
+	}
+
+	return nil
 }
 
 // validateStatusPermissions ensures role-based status control

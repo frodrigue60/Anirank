@@ -23,6 +23,7 @@ type MediaService interface {
 	UploadImageOptimized(ctx context.Context, prefix string, id uint64, file io.Reader, options ImageOptions) (string, string, error)
 	UploadWithResolutions(ctx context.Context, prefix string, id uint64, file io.Reader, preset ResolutionPreset) (string, string, error)
 	GetImageSources(path string) []domain.ImageSource
+	DeleteMedia(ctx context.Context, path string)
 }
 
 type ResolutionPreset string
@@ -264,4 +265,42 @@ func (s *mediaService) GetImageSources(path string) []domain.ImageSource {
 	}
 
 	return sources
+}
+
+func (s *mediaService) DeleteMedia(ctx context.Context, path string) {
+	if path == "" {
+		return
+	}
+
+	// Clean up full URLs to get relative path if needed, or ignore external ones
+	if strings.HasPrefix(path, "http") {
+		if !strings.HasPrefix(path, s.baseURL) {
+			return // External URL, don't delete
+		}
+		path = strings.TrimPrefix(path, s.baseURL)
+	}
+
+	// We launch a goroutine to prevent the upload request from hanging
+	// while we issue multiple AWS S3 delete commands.
+	go func() {
+		// Use a detached background context because the original request ctx will be cancelled
+		bgCtx := context.Background()
+
+		fmt.Printf("[MEDIA-DEBUG] Deleting orphan media: %s\n", path)
+		_ = s.storage.DeleteFile(bgCtx, path)
+
+		// Also try to delete standard resolution variants
+		pathWithoutExt := path
+		if strings.HasSuffix(path, ".jpg") {
+			pathWithoutExt = strings.TrimSuffix(path, ".jpg")
+		} else if strings.HasSuffix(path, ".avif") {
+			pathWithoutExt = strings.TrimSuffix(path, ".avif")
+		}
+
+		variants := []string{"_sm", "_md", "_lg"}
+		for _, v := range variants {
+			_ = s.storage.DeleteFile(bgCtx, pathWithoutExt+v+".avif")
+			_ = s.storage.DeleteFile(bgCtx, pathWithoutExt+v+".jpg")
+		}
+	}()
 }

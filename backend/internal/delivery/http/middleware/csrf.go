@@ -64,15 +64,18 @@ func issueCSRFCookie(c *fiber.Ctx, cookieDomain string) {
 	if c.Cookies("csrf_token") != "" {
 		return // Token already exists in the request — no need to regenerate
 	}
+
+	cookieSecure := os.Getenv("COOKIE_SECURE") != "false"
+
 	token := uuid.New().String()
 	c.Cookie(&fiber.Cookie{
 		Name:     "csrf_token",
 		Value:    token,
 		Domain:   cookieDomain,
 		Path:     "/",
-		Secure:   true,
-		HTTPOnly: false,    // Must be false — JS needs to read this value
-		SameSite: "Lax",   // Lax is safe here: we validate via header, not SameSite
+		Secure:   cookieSecure,
+		HTTPOnly: false, // Must be false — JS needs to read this value
+		SameSite: "Lax",  // Lax is safe here: we validate via header, not SameSite
 		Expires:  time.Now().Add(24 * time.Hour),
 	})
 }

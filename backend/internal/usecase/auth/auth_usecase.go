@@ -233,7 +233,7 @@ func (u *AuthUsecase) UpdateAvatar(ctx context.Context, userID uint64, file io.R
 	}
 
 	// Fetch user to get current avatar for cleanup
-	user, err := u.userRepo.FindByID(ctx, userID)
+	user, err := u.userRepo.GetByID(ctx, userID)
 	if err != nil {
 		return "", domain.NewAppError(404, "User not found", err)
 	}
@@ -261,7 +261,7 @@ func (u *AuthUsecase) UpdateBanner(ctx context.Context, userID uint64, file io.R
 	}
 
 	// Fetch user to get current banner for cleanup
-	user, err := u.userRepo.FindByID(ctx, userID)
+	user, err := u.userRepo.GetByID(ctx, userID)
 	if err != nil {
 		return "", domain.NewAppError(404, "User not found", err)
 	}

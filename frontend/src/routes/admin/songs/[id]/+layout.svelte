@@ -2,6 +2,9 @@
   import type { LayoutData } from "./$types";
   import { getSongName } from "$lib/song-utils";
   import { page } from "$app/stores";
+  import { adminNav } from "$lib/state/admin-nav.svelte";
+  import AdminBreadcrumb from "$lib/components/admin/AdminBreadcrumb.svelte";
+  import ArrowLeft from "lucide-svelte/icons/arrow-left";
 
   let { data, children } = $props<{ data: LayoutData; children: any }>();
   let song = $derived(data.song);
@@ -11,32 +14,61 @@
     { label: "Edit Info", href: `/admin/songs/${song.id}/edit`, match: (path: string) => path === `/admin/songs/${song.id}/edit` },
     { label: "Variants", href: `/admin/songs/${song.id}/variants`, match: (path: string) => path.startsWith(`/admin/songs/${song.id}/variants`) },
   ]);
+
+  // Build breadcrumb context from the song's parent relationships
+  let crumbs = $derived(() => {
+    const trail: any[] = [
+      { label: "Animes", href: "/admin/animes", type: "list" as const },
+    ];
+    if (song.anime) {
+      trail.push({
+        label: song.anime.title,
+        href: `/admin/animes/${song.anime.id}`,
+        type: "anime" as const,
+      });
+      trail.push({
+        label: "Songs",
+        href: `/admin/animes/${song.anime.id}/songs`,
+        type: "list" as const,
+      });
+    } else {
+      trail.push({ label: "Songs", href: "/admin/songs", type: "list" as const });
+    }
+    trail.push({
+      label: getSongName(song),
+      href: `/admin/songs/${song.id}`,
+      type: "song" as const,
+    });
+    return trail;
+  });
+
+  // Set navigation context
+  $effect(() => {
+    adminNav.setContext(crumbs());
+  });
+
+  // Smart back: go to the parent anime's songs tab if available, else flat list
+  let backUrl = $derived(
+    song.anime
+      ? `/admin/animes/${song.anime.id}/songs`
+      : "/admin/songs"
+  );
 </script>
 
 <svelte:head>
   <title>{getSongName(song)} | Song Hub</title>
 </svelte:head>
 
+<AdminBreadcrumb crumbs={crumbs()} />
+
 <div class="mb-8">
   <div class="flex items-center gap-4 mb-2">
     <a
-      href="/admin/songs"
-      aria-label="Back to Songs"
+      href={backUrl}
+      aria-label="Back"
       class="text-on-surface-variant/70 hover:text-on-surface transition-colors p-2 -ml-2 rounded-lg hover:bg-surface-highest"
     >
-      <svg
-        class="w-5 h-5"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M10 19l-7-7m0 0l7-7m-7 7h18"
-        />
-      </svg>
+      <ArrowLeft size={20} />
     </a>
     <h1 class="text-3xl font-bold tracking-tight text-on-surface line-clamp-1">
       {getSongName(song)}

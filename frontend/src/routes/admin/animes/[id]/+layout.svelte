@@ -1,6 +1,10 @@
 <script lang="ts">
   import type { LayoutData } from "./$types";
   import { page } from "$app/stores";
+  import { adminNav } from "$lib/state/admin-nav.svelte";
+  import AdminBreadcrumb from "$lib/components/admin/AdminBreadcrumb.svelte";
+  import ArrowLeft from "lucide-svelte/icons/arrow-left";
+
   let { data, children } = $props<{ data: LayoutData; children: any }>();
   let anime = $derived(data.anime);
 
@@ -22,32 +26,35 @@
         path.startsWith(`/admin/animes/${anime.id}/songs`),
     },
   ]);
+
+  // Build breadcrumb context for this anime
+  let crumbs = $derived([
+    { label: "Animes", href: "/admin/animes", type: "list" as const },
+    { label: anime.title, href: `/admin/animes/${anime.id}`, type: "anime" as const },
+  ]);
+
+  // Set navigation context when this layout mounts
+  $effect(() => {
+    adminNav.setContext(crumbs);
+  });
+
+  let backUrl = $derived(adminNav.getBackUrl("anime", "/admin/animes"));
 </script>
 
 <svelte:head>
   <title>{anime.title} | Admin Hub</title>
 </svelte:head>
 
+<AdminBreadcrumb {crumbs} />
+
 <div class="mb-8">
   <div class="flex items-center gap-4 mb-2">
     <a
-      href="/admin/animes"
+      href={backUrl}
       aria-label="Back to Animes"
       class="text-on-surface-variant/70 hover:text-on-surface transition-colors p-2 -ml-2 rounded-lg hover:bg-surface-highest"
     >
-      <svg
-        class="w-5 h-5"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M10 19l-7-7m0 0l7-7m-7 7h18"
-        />
-      </svg>
+      <ArrowLeft size={20} />
     </a>
     <h1 class="text-3xl font-bold tracking-tight text-on-surface line-clamp-1">
       {anime.title}

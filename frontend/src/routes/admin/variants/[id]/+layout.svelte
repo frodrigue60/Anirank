@@ -2,6 +2,9 @@
   import type { LayoutData } from "./$types";
   import { getSongName } from "$lib/song-utils";
   import { page } from "$app/stores";
+  import { adminNav } from "$lib/state/admin-nav.svelte";
+  import AdminBreadcrumb from "$lib/components/admin/AdminBreadcrumb.svelte";
+  import ArrowLeft from "lucide-svelte/icons/arrow-left";
 
   let { data, children } = $props<{ data: LayoutData; children: any }>();
   let variant = $derived(data.variant);
@@ -13,32 +16,66 @@
     { label: "Edit Info", href: `/admin/variants/${variant.id}/edit`, match: (path: string) => path === `/admin/variants/${variant.id}/edit` },
     { label: "Video Source", href: `/admin/variants/${variant.id}/video`, match: (path: string) => path.startsWith(`/admin/variants/${variant.id}/video`) },
   ]);
+
+  // Build full breadcrumb chain: Anime → Song → Variant
+  let crumbs = $derived(() => {
+    const trail: any[] = [];
+    if (anime) {
+      trail.push({ label: "Animes", href: "/admin/animes", type: "list" as const });
+      trail.push({
+        label: anime.title,
+        href: `/admin/animes/${anime.id}`,
+        type: "anime" as const,
+      });
+    }
+    if (song) {
+      trail.push({
+        label: getSongName(song),
+        href: `/admin/songs/${song.id}`,
+        type: "song" as const,
+      });
+      trail.push({
+        label: "Variants",
+        href: `/admin/songs/${song.id}/variants`,
+        type: "list" as const,
+      });
+    } else {
+      trail.push({ label: "Variants", href: "/admin/variants", type: "list" as const });
+    }
+    trail.push({
+      label: variant.slug,
+      href: `/admin/variants/${variant.id}`,
+      type: "variant" as const,
+    });
+    return trail;
+  });
+
+  $effect(() => {
+    adminNav.setContext(crumbs());
+  });
+
+  // Smart back: go to the parent song's variants tab if available
+  let backUrl = $derived(
+    song
+      ? `/admin/songs/${song.id}/variants`
+      : "/admin/variants"
+  );
 </script>
 
 <svelte:head>
   <title>{variant.slug} | Variant Hub</title>
 </svelte:head>
 
+<AdminBreadcrumb crumbs={crumbs()} />
+
 <div class="mb-8">
   <div class="flex items-center gap-4 mb-2">
     <a
-      href={song ? `/admin/songs/${song.id}/variants` : "/admin/variants"}
+      href={backUrl}
       aria-label="Back to Variants"
       class="text-on-surface-variant/70 hover:text-on-surface transition-colors p-2 -ml-2 rounded-lg hover:bg-surface-highest"
     >
-      <svg
-        class="w-5 h-5"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M10 19l-7-7m0 0l7-7m-7 7h18"
-        />
-      </svg>
+      <ArrowLeft size={20} />
     </a>
     <h1 class="text-3xl font-bold tracking-tight text-on-surface line-clamp-1 uppercase">
       {variant.slug}

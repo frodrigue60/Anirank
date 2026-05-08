@@ -50,7 +50,7 @@ func SecurityHeaders() fiber.Handler {
 		c.Set("Referrer-Policy", "strict-origin-when-cross-origin")
 
 		// 7. Permissions Policy (Minimal for now)
-		c.Set("Permissions-Policy", "geolocation=(), microphone=(), camera=(), interest-cohort=()")
+		c.Set("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
 
 		return c.Next()
 	}

@@ -1,3 +1,5 @@
+import { untrack } from 'svelte';
+
 /**
  * Admin Navigation State
  * 
@@ -46,14 +48,16 @@ function createAdminNav() {
      * to that point and replace it (prevents duplicate levels).
      */
     function pushContext(crumb: NavCrumb) {
-        const existingIdx = state.stack.findIndex(c => c.type === crumb.type);
-        if (existingIdx !== -1) {
-            // Truncate stack to this level and replace
-            state.stack = [...state.stack.slice(0, existingIdx), crumb];
-        } else {
-            state.stack = [...state.stack, crumb];
-        }
-        saveState(state);
+        untrack(() => {
+            const existingIdx = state.stack.findIndex(c => c.type === crumb.type);
+            if (existingIdx !== -1) {
+                // Truncate stack to this level and replace
+                state.stack = [...state.stack.slice(0, existingIdx), crumb];
+            } else {
+                state.stack = [...state.stack, crumb];
+            }
+            saveState(state);
+        });
     }
 
     /**
@@ -62,16 +66,20 @@ function createAdminNav() {
      * the breadcrumb trail based on the entity's parent relationships.
      */
     function setContext(crumbs: NavCrumb[]) {
-        state.stack = crumbs;
-        saveState(state);
+        untrack(() => {
+            state.stack = crumbs;
+            saveState(state);
+        });
     }
 
     /**
      * Clear the navigation stack (e.g. when returning to a top-level list).
      */
     function clearContext() {
-        state.stack = [];
-        saveState(state);
+        untrack(() => {
+            state.stack = [];
+            saveState(state);
+        });
     }
 
     /**

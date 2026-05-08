@@ -18,7 +18,7 @@
   ]);
 
   // Build full breadcrumb chain: Anime → Song → Variant
-  let crumbs = $derived(() => {
+  let crumbs = $derived.by(() => {
     const trail: any[] = [];
     if (anime) {
       trail.push({ label: "Animes", href: "/admin/animes", type: "list" as const });
@@ -51,7 +51,7 @@
   });
 
   $effect(() => {
-    adminNav.setContext(crumbs());
+    adminNav.setContext(crumbs);
   });
 
   // Smart back: go to the parent song's variants tab if available
@@ -66,7 +66,7 @@
   <title>{variant.slug} | Variant Hub</title>
 </svelte:head>
 
-<AdminBreadcrumb crumbs={crumbs()} />
+<AdminBreadcrumb {crumbs} />
 
 <div class="mb-8">
   <div class="flex items-center gap-4 mb-2">

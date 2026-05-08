@@ -16,7 +16,7 @@
   ]);
 
   // Build breadcrumb context from the song's parent relationships
-  let crumbs = $derived(() => {
+  let crumbs = $derived.by(() => {
     const trail: any[] = [
       { label: "Animes", href: "/admin/animes", type: "list" as const },
     ];
@@ -44,7 +44,7 @@
 
   // Set navigation context
   $effect(() => {
-    adminNav.setContext(crumbs());
+    adminNav.setContext(crumbs);
   });
 
   // Smart back: go to the parent anime's songs tab if available, else flat list
@@ -59,7 +59,7 @@
   <title>{getSongName(song)} | Song Hub</title>
 </svelte:head>
 
-<AdminBreadcrumb crumbs={crumbs()} />
+<AdminBreadcrumb {crumbs} />
 
 <div class="mb-8">
   <div class="flex items-center gap-4 mb-2">

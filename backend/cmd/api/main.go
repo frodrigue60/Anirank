@@ -232,6 +232,7 @@ func main() {
 	// 3. Setup Fiber Framework
 	app := fiber.New(fiber.Config{
 		ErrorHandler: middleware.ErrorHandler,
+		BodyLimit:    10 * 1024 * 1024, // 10MB global limit to let handlers manage specific limits
 	})
 
 	// --- Security & Middleware ---

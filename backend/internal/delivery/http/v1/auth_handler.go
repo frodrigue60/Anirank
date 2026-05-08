@@ -145,6 +145,10 @@ func (h *AuthHandler) UpdateAvatar(c *fiber.Ctx) error {
 		return domain.NewAppError(400, "Image file is required", err)
 	}
 
+	if fileHeader.Size > 2*1024*1024 {
+		return domain.NewAppError(400, "El avatar no puede superar los 2MB", nil)
+	}
+
 	file, err := fileHeader.Open()
 	if err != nil {
 		return domain.NewAppError(500, "Failed to open image file", err)
@@ -183,6 +187,10 @@ func (h *AuthHandler) UpdateBanner(c *fiber.Ctx) error {
 	fileHeader, err := c.FormFile("banner")
 	if err != nil {
 		return domain.NewAppError(400, "Banner file is required", err)
+	}
+
+	if fileHeader.Size > 4*1024*1024 {
+		return domain.NewAppError(400, "El banner no puede superar los 4MB", nil)
 	}
 
 	file, err := fileHeader.Open()

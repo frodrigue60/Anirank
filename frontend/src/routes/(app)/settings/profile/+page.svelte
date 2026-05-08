@@ -71,12 +71,46 @@ import ChevronDown from "lucide-svelte/icons/chevron-down";
     await updateProfile();
   }
 
+  const validateImageFile = (file: File, maxSizeMB: number): Promise<boolean> => {
+    return new Promise((resolve) => {
+      if (file.size > maxSizeMB * 1024 * 1024) {
+        toastState.addToast(`El archivo excede el límite de ${maxSizeMB}MB`, "error");
+        resolve(false);
+        return;
+      }
+
+      const img = new Image();
+      img.src = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(img.src);
+        if (img.width > 4000 || img.height > 4000) {
+          toastState.addToast("La resolución de la imagen excede el máximo permitido (4000x4000px)", "error");
+          resolve(false);
+          return;
+        }
+        resolve(true);
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(img.src);
+        toastState.addToast("Archivo de imagen inválido", "error");
+        resolve(false);
+      };
+    });
+  };
+
   async function handleAvatarUpload(e: Event) {
     const target = e.target as HTMLInputElement;
     if (target.files && target.files[0]) {
+      const file = target.files[0];
+      const isValid = await validateImageFile(file, 2);
+      if (!isValid) {
+        target.value = ""; // Reset input
+        return;
+      }
+
       isUploadingAvatar = true;
       const formData = new FormData();
-      formData.append("image", target.files[0]);
+      formData.append("image", file);
 
       try {
         const response = await api.post("/users/avatar", formData, {
@@ -105,9 +139,16 @@ import ChevronDown from "lucide-svelte/icons/chevron-down";
   async function handleBannerUpload(e: Event) {
     const target = e.target as HTMLInputElement;
     if (target.files && target.files[0]) {
+      const file = target.files[0];
+      const isValid = await validateImageFile(file, 4);
+      if (!isValid) {
+        target.value = ""; // Reset input
+        return;
+      }
+
       isUploadingBanner = true;
       const formData = new FormData();
-      formData.append("banner", target.files[0]);
+      formData.append("banner", file);
 
       try {
         const response = await api.post("/users/banner", formData, {
@@ -418,7 +459,7 @@ import ChevronDown from "lucide-svelte/icons/chevron-down";
         <p
           class="text-[10px] text-on-surface-variant mt-3 px-1 font-medium italic"
         >
-          Optimal: 1700x330px. Max 6MB.
+          Optimal: 1700x330px. Max 4MB.
         </p>
       </div>
 
@@ -479,8 +520,9 @@ import ChevronDown from "lucide-svelte/icons/chevron-down";
           <p
             class="text-[10px] text-on-surface-variant mt-2 font-medium italic"
           >
-            Optimal: 230x230px. Max 3MB.
-          </p>
+          Optimal: 230x230px. Max 2MB.
+          <br/><span class="text-[9px] opacity-70">Max resolution 4000x4000px</span>
+        </p>
         </div>
       </div>
     </div>

@@ -26,10 +26,21 @@ func Decode(r io.Reader) (image.Image, string, error) {
 		return nil, "", fmt.Errorf("failed to read data: %w", err)
 	}
 
-	// 1. Try standard decode
-	img, format, err := image.Decode(bytes.NewReader(data))
+	// 1. Try to read config first to validate dimensions and prevent pixel bombs
+	cfg, cfgFormat, err := image.DecodeConfig(bytes.NewReader(data))
 	if err == nil {
-		return img, format, nil
+		if cfg.Width > 4000 || cfg.Height > 4000 {
+			return nil, "", fmt.Errorf("image resolution exceeds maximum allowed (4000x4000): got %dx%d", cfg.Width, cfg.Height)
+		}
+		
+		// If config decoding succeeded, we can proceed to full standard decode
+		img, _, err := image.Decode(bytes.NewReader(data))
+		if err == nil {
+			return img, cfgFormat, nil
+		}
+	} else {
+		// Even if DecodeConfig fails, it might be an AVIF/HEIC that the standard library doesn't support yet.
+		// So we continue to the CLI fallback.
 	}
 
 	// 2. Fallback to CLI tools (specifically for AVIF/HEIC support)
@@ -70,6 +81,18 @@ func decodeFromFile(path string) (image.Image, string, error) {
 	if err != nil {
 		return nil, "", err
 	}
+
+	cfg, cfgFormat, err := image.DecodeConfig(bytes.NewReader(data))
+	if err == nil {
+		if cfg.Width > 4000 || cfg.Height > 4000 {
+			return nil, "", fmt.Errorf("image resolution exceeds maximum allowed (4000x4000): got %dx%d", cfg.Width, cfg.Height)
+		}
+		
+		img, _, err := image.Decode(bytes.NewReader(data))
+		return img, cfgFormat, err
+	}
+	
+	// Fallback to decode without config if config parsing fails
 	return image.Decode(bytes.NewReader(data))
 }
 

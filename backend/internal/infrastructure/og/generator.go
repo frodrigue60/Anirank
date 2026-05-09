@@ -1,43 +1,49 @@
-package og
-
 import (
+	"embed"
 	"fmt"
 	"image"
 	"image/color"
 	"net/http"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"anirank/api/internal/pkg/imageutil"
 
 	"github.com/disintegration/gift"
 	"github.com/fogleman/gg"
+	"github.com/golang/freetype/truetype"
+	"golang.org/x/image/font"
 )
 
+//go:embed assets/fonts/*.ttf
+var fontAssets embed.FS
+
 type Generator struct {
-	fontBlackPath string
-	fontBoldPath  string
-	fontMediPath  string
-	fontReguPath  string
-	version       int
-	cacheDir      string
-	s3PublicURL   string
-	s3Endpoint    string
+	fontBlack []byte
+	fontBold  []byte
+	fontMedi  []byte
+	fontRegu  []byte
+	version   int
+	cacheDir  string
+	s3PublicURL string
+	s3Endpoint  string
 }
 
 func NewGenerator(s3PublicURL, s3Endpoint string) *Generator {
-	_, b, _, _ := runtime.Caller(0)
-	basePath := filepath.Dir(b)
-
-	// Initialize font paths
-	fontAssetsPath := filepath.Join(basePath, "assets/fonts")
+	// Initialize font paths from embedded FS
+	fBlack, _ := fontAssets.ReadFile("assets/fonts/Inter-Black.ttf")
+	fBold, _  := fontAssets.ReadFile("assets/fonts/Inter-Bold.ttf")
+	fMedi, _  := fontAssets.ReadFile("assets/fonts/Inter-Medium.ttf")
+	fRegu, _  := fontAssets.ReadFile("assets/fonts/Inter-Regular.ttf")
 
 	// Create cache directory if it doesn't exist
-	cacheDir := filepath.Join(basePath, "storage/og_cache")
+	// We use a relative path from the CWD or a standard location
+	cacheDir := "storage/og_cache"
 	if _, err := os.Stat(cacheDir); os.IsNotExist(err) {
-		os.MkdirAll(cacheDir, 0755)
+		if err := os.MkdirAll(cacheDir, 0755); err != nil {
+			fmt.Printf("[OG] Warning: Failed to create cache directory: %v\n", err)
+		}
 	}
 
 	// Load version from file
@@ -48,15 +54,28 @@ func NewGenerator(s3PublicURL, s3Endpoint string) *Generator {
 	}
 
 	return &Generator{
-		fontBlackPath: filepath.Join(fontAssetsPath, "Inter-Black.ttf"),
-		fontBoldPath:  filepath.Join(fontAssetsPath, "Inter-Bold.ttf"),
-		fontMediPath:  filepath.Join(fontAssetsPath, "Inter-Medium.ttf"),
-		fontReguPath:  filepath.Join(fontAssetsPath, "Inter-Regular.ttf"),
-		version:       version,
-		cacheDir:      cacheDir,
-		s3PublicURL:   s3PublicURL,
-		s3Endpoint:    s3Endpoint,
+		fontBlack: fBlack,
+		fontBold:  fBold,
+		fontMedi:  fMedi,
+		fontRegu:  fRegu,
+		version:   version,
+		cacheDir:  cacheDir,
+		s3PublicURL: s3PublicURL,
+		s3Endpoint:  s3Endpoint,
 	}
+}
+
+func (g *Generator) loadFont(data []byte, size float64) (font.Face, error) {
+	if len(data) == 0 {
+		return nil, fmt.Errorf("font data is empty")
+	}
+	f, err := truetype.Parse(data)
+	if err != nil {
+		return nil, err
+	}
+	return truetype.NewFace(f, &truetype.Options{
+		Size: size,
+	}), nil
 }
 
 func (g *Generator) GetVersion() int {
@@ -127,20 +146,23 @@ func (g *Generator) GenerateSongOG(title, artists, animeTitle, songType string, 
 	dc.Fill()
 
 	// 3. Branding
-	if err := dc.LoadFontFace(g.fontBlackPath, 42); err == nil {
+	if face, err := g.loadFont(g.fontBlack, 42); err == nil {
+		dc.SetFontFace(face)
 		dc.SetRGBA(1, 1, 1, 0.9)
 		dc.DrawStringAnchored("ANIRANK", W-80, 60, 1, 0.5)
 	}
 
 	// 4. Song Type Badge
-	if err := dc.LoadFontFace(g.fontBlackPath, 32); err == nil {
+	if face, err := g.loadFont(g.fontBlack, 32); err == nil {
+		dc.SetFontFace(face)
 		dc.SetHexColor("#ff4e50")
 		dc.DrawStringAnchored(strings.ToUpper(songType), 80, 110, 0, 0.5)
 	}
 
 	// 5. Song Title
 	title = g.truncate(title, 55)
-	if err := dc.LoadFontFace(g.fontBlackPath, 90); err == nil {
+	if face, err := g.loadFont(g.fontBlack, 90); err == nil {
+		dc.SetFontFace(face)
 		dc.SetRGB(1, 1, 1)
 		dc.DrawStringWrapped(title, 80, 160, 0, 0, 1000, 1.1, gg.AlignLeft)
 	}
@@ -148,7 +170,8 @@ func (g *Generator) GenerateSongOG(title, artists, animeTitle, songType string, 
 	// 6. Artist
 	if artists != "" {
 		artists = g.truncate(artists, 70)
-		if err := dc.LoadFontFace(g.fontBoldPath, 36); err == nil {
+		if face, err := g.loadFont(g.fontBold, 36); err == nil {
+			dc.SetFontFace(face)
 			dc.SetRGBA(1, 1, 1, 0.7)
 			dc.DrawStringAnchored(artists, 80, 380, 0, 0.5)
 		}
@@ -157,11 +180,13 @@ func (g *Generator) GenerateSongOG(title, artists, animeTitle, songType string, 
 	// 7. Info Bar (Bottom)
 	if animeTitle != "" {
 		animeTitle = g.truncate(animeTitle, 60)
-		if err := dc.LoadFontFace(g.fontBoldPath, 20); err == nil {
+		if face, err := g.loadFont(g.fontBold, 20); err == nil {
+			dc.SetFontFace(face)
 			dc.SetRGBA(1, 1, 1, 0.5)
 			dc.DrawStringAnchored("FEATURED IN", 80, 500, 0, 0.5)
 		}
-		if err := dc.LoadFontFace(g.fontBlackPath, 42); err == nil {
+		if face, err := g.loadFont(g.fontBlack, 42); err == nil {
+			dc.SetFontFace(face)
 			dc.SetRGB(1, 1, 1)
 			dc.DrawStringAnchored(animeTitle, 80, 550, 0, 0.5)
 		}
@@ -169,11 +194,13 @@ func (g *Generator) GenerateSongOG(title, artists, animeTitle, songType string, 
 
 	// Score
 	if score > 0 {
-		if err := dc.LoadFontFace(g.fontBoldPath, 20); err == nil {
+		if face, err := g.loadFont(g.fontBold, 20); err == nil {
+			dc.SetFontFace(face)
 			dc.SetRGBA(1, 1, 1, 0.5)
 			dc.DrawStringAnchored("COMMUNITY SCORE", W-80, 500, 1, 0.5)
 		}
-		if err := dc.LoadFontFace(g.fontBlackPath, 64); err == nil {
+		if face, err := g.loadFont(g.fontBlack, 64); err == nil {
+			dc.SetFontFace(face)
 			dc.SetHexColor("#FFD700")
 			dc.DrawStringAnchored(fmt.Sprintf("★ %.1f%%", score), W-80, 550, 1, 0.5)
 		}
@@ -210,7 +237,8 @@ func (g *Generator) GenerateArtistOG(name string, songCount int, favoriteCount i
 	dc.Fill()
 
 	// 3. Branding
-	if err := dc.LoadFontFace(g.fontBlackPath, 42); err == nil {
+	if face, err := g.loadFont(g.fontBlack, 42); err == nil {
+		dc.SetFontFace(face)
 		dc.SetRGBA(1, 1, 1, 0.9)
 		dc.DrawStringAnchored("ANIRANK", W-80, 60, 1, 0.5)
 	}
@@ -241,20 +269,23 @@ func (g *Generator) GenerateArtistOG(name string, songCount int, favoriteCount i
 
 	// 5. Name
 	name = g.truncate(name, 40)
-	if err := dc.LoadFontFace(g.fontBlackPath, 84); err == nil {
+	if face, err := g.loadFont(g.fontBlack, 84); err == nil {
+		dc.SetFontFace(face)
 		dc.SetRGB(1, 1, 1)
 		dc.DrawStringAnchored(name, W/2, H-200, 0.5, 0.5)
 	}
 
 	// 6. Stats
-	if err := dc.LoadFontFace(g.fontBoldPath, 34); err == nil {
+	if face, err := g.loadFont(g.fontBold, 34); err == nil {
+		dc.SetFontFace(face)
 		dc.SetRGBA(1, 1, 1, 0.4)
 		statsText := fmt.Sprintf("%d SONGS • %d FAVORITES", songCount, favoriteCount)
 		dc.DrawStringAnchored(statsText, W/2, H-120, 0.5, 0.5)
 	}
 
 	// Branding URL
-	if err := dc.LoadFontFace(g.fontBoldPath, 18); err == nil {
+	if face, err := g.loadFont(g.fontBold, 18); err == nil {
+		dc.SetFontFace(face)
 		dc.SetRGBA(1, 1, 1, 0.3)
 		dc.DrawStringAnchored("ANIRANK.WORK", W/2, H-40, 0.5, 0.5)
 	}
@@ -285,20 +316,23 @@ func (g *Generator) GeneratePlaylistOG(name, creator string, songCount int, bann
 	dc.Fill()
 
 	// 3. Branding
-	if err := dc.LoadFontFace(g.fontBlackPath, 42); err == nil {
+	if face, err := g.loadFont(g.fontBlack, 42); err == nil {
+		dc.SetFontFace(face)
 		dc.SetRGBA(1, 1, 1, 0.9)
 		dc.DrawStringAnchored("ANIRANK", W-80, 60, 1, 0.5)
 	}
 
 	// 4. Playlist Icon Badge
-	if err := dc.LoadFontFace(g.fontBlackPath, 32); err == nil {
+	if face, err := g.loadFont(g.fontBlack, 32); err == nil {
+		dc.SetFontFace(face)
 		dc.SetHexColor("#7f13ec")
 		dc.DrawStringAnchored("PLAYLIST", W/2, H/2-180, 0.5, 0.5)
 	}
 
 	// 5. Name
 	name = g.truncate(name, 50)
-	if err := dc.LoadFontFace(g.fontBlackPath, 90); err == nil {
+	if face, err := g.loadFont(g.fontBlack, 90); err == nil {
+		dc.SetFontFace(face)
 		dc.SetRGB(1, 1, 1)
 		dc.DrawStringAnchored(name, W/2, H/2-80, 0.5, 0.5)
 	}
@@ -308,19 +342,22 @@ func (g *Generator) GeneratePlaylistOG(name, creator string, songCount int, bann
 	if creator != "" {
 		creatorText = fmt.Sprintf("Curated by %s", creator)
 	}
-	if err := dc.LoadFontFace(g.fontBoldPath, 36); err == nil {
+	if face, err := g.loadFont(g.fontBold, 36); err == nil {
+		dc.SetFontFace(face)
 		dc.SetRGBA(1, 1, 1, 0.7)
 		dc.DrawStringAnchored(creatorText, W/2, H/2+20, 0.5, 0.5)
 	}
 
 	// 7. Stats
-	if err := dc.LoadFontFace(g.fontBoldPath, 34); err == nil {
+	if face, err := g.loadFont(g.fontBold, 34); err == nil {
+		dc.SetFontFace(face)
 		dc.SetRGBA(1, 1, 1, 0.5)
 		dc.DrawStringAnchored(fmt.Sprintf("%d SONGS", songCount), W/2, H/2+120, 0.5, 0.5)
 	}
 
 	// Branding URL
-	if err := dc.LoadFontFace(g.fontBoldPath, 18); err == nil {
+	if face, err := g.loadFont(g.fontBold, 18); err == nil {
+		dc.SetFontFace(face)
 		dc.SetRGBA(1, 1, 1, 0.3)
 		dc.DrawStringAnchored("ANIRANK.WORK", W/2, H-40, 0.5, 0.5)
 	}
@@ -357,7 +394,8 @@ func (g *Generator) GenerateUserOG(name string, level int, xp int, followers, ra
 	dc.Fill()
 
 	// 3. Branding
-	if err := dc.LoadFontFace(g.fontBlackPath, 42); err == nil {
+	if face, err := g.loadFont(g.fontBlack, 42); err == nil {
+		dc.SetFontFace(face)
 		dc.SetRGBA(1, 1, 1, 0.9)
 		dc.DrawStringAnchored("ANIRANK", W-80, 60, 1, 0.5)
 	}
@@ -393,7 +431,8 @@ func (g *Generator) GenerateUserOG(name string, level int, xp int, followers, ra
 
 	// 5. Name
 	name = g.truncate(name, 30)
-	if err := dc.LoadFontFace(g.fontBlackPath, 80); err == nil {
+	if face, err := g.loadFont(g.fontBlack, 80); err == nil {
+		dc.SetFontFace(face)
 		dc.SetRGB(1, 1, 1)
 		dc.DrawStringAnchored(name, 380, H-barHeight-40, 0, 0.5)
 	}
@@ -404,13 +443,17 @@ func (g *Generator) GenerateUserOG(name string, level int, xp int, followers, ra
 	spacing := 280.0
 
 	drawStat := func(x float64, label string, value string) {
-		dc.LoadFontFace(g.fontBlackPath, 64)
-		dc.SetHexColor("#7f13ec")
-		dc.DrawStringAnchored(value, x, statsY-10, 0.5, 0.5)
+		if face, err := g.loadFont(g.fontBlack, 64); err == nil {
+			dc.SetFontFace(face)
+			dc.SetHexColor("#7f13ec")
+			dc.DrawStringAnchored(value, x, statsY-10, 0.5, 0.5)
+		}
 
-		dc.LoadFontFace(g.fontBoldPath, 24)
-		dc.SetRGBA(1, 1, 1, 0.6)
-		dc.DrawStringAnchored(strings.ToUpper(label), x, statsY+40, 0.5, 0.5)
+		if face, err := g.loadFont(g.fontBold, 24); err == nil {
+			dc.SetFontFace(face)
+			dc.SetRGBA(1, 1, 1, 0.6)
+			dc.DrawStringAnchored(strings.ToUpper(label), x, statsY+40, 0.5, 0.5)
+		}
 	}
 
 	drawStat(statsStartX, "Level", fmt.Sprintf("%d", level))
@@ -439,14 +482,16 @@ func (g *Generator) GenerateAnimeOG(title, studios string, songCount int, score 
 	}
 
 	// Branding
-	if err := dc.LoadFontFace(g.fontBlackPath, 42); err == nil {
+	if face, err := g.loadFont(g.fontBlack, 42); err == nil {
+		dc.SetFontFace(face)
 		dc.SetRGBA(1, 1, 1, 0.9)
 		dc.DrawStringAnchored("ANIRANK", W-80, 60, 1, 0.5)
 	}
 
 	// Title
 	title = g.truncate(title, 60)
-	if err := dc.LoadFontFace(g.fontBlackPath, 80); err == nil {
+	if face, err := g.loadFont(g.fontBlack, 80); err == nil {
+		dc.SetFontFace(face)
 		dc.SetRGB(1, 1, 1)
 		// Start higher and align top
 		dc.DrawStringWrapped(title, 80, 130, 0, 0, 1000, 1.1, gg.AlignLeft)
@@ -455,7 +500,8 @@ func (g *Generator) GenerateAnimeOG(title, studios string, songCount int, score 
 	// Studios
 	if studios != "" {
 		studios = g.truncate(studios, 80)
-		if err := dc.LoadFontFace(g.fontBoldPath, 34); err == nil {
+		if face, err := g.loadFont(g.fontBold, 34); err == nil {
+			dc.SetFontFace(face)
 			dc.SetRGBA(1, 1, 1, 0.7)
 			// Positioned much lower to avoid overlap with 3-line title
 			dc.DrawStringAnchored(strings.ToUpper(studios), 80, 440, 0, 0.5)
@@ -464,7 +510,8 @@ func (g *Generator) GenerateAnimeOG(title, studios string, songCount int, score 
 
 	// Score
 	if score > 0 {
-		if err := dc.LoadFontFace(g.fontBlackPath, 64); err == nil {
+		if face, err := g.loadFont(g.fontBlack, 64); err == nil {
+			dc.SetFontFace(face)
 			dc.SetHexColor("#FFD700")
 			dc.DrawStringAnchored(fmt.Sprintf("★ %.1f", score), 80, 510, 0, 0.5)
 		}
@@ -476,7 +523,8 @@ func (g *Generator) GenerateAnimeOG(title, studios string, songCount int, score 
 		bottomText = fmt.Sprintf("%d Songs Available", songCount)
 	}
 
-	if err := dc.LoadFontFace(g.fontBoldPath, 28); err == nil {
+	if face, err := g.loadFont(g.fontBold, 28); err == nil {
+		dc.SetFontFace(face)
 		dc.SetRGBA(1, 1, 1, 0.4)
 		dc.DrawStringAnchored(bottomText, 80, 580, 0, 0.5)
 	}
@@ -501,13 +549,15 @@ func (g *Generator) GenerateHomeOG(totalSongs, totalUsers, totalAnimes, totalArt
 	dc.Fill()
 
 	// Title
-	if err := dc.LoadFontFace(g.fontBlackPath, 130); err == nil {
+	if face, err := g.loadFont(g.fontBlack, 130); err == nil {
+		dc.SetFontFace(face)
 		dc.SetRGB(1, 1, 1)
 		dc.DrawStringAnchored("ANIRANK", W/2, H/2-250, 0.5, 0.5)
 	}
 
 	// Tagline
-	if err := dc.LoadFontFace(g.fontBoldPath, 34); err == nil {
+	if face, err := g.loadFont(g.fontBold, 34); err == nil {
+		dc.SetFontFace(face)
 		dc.SetRGBA(1, 1, 1, 0.9)
 		dc.DrawStringAnchored("The Ultimate Anime Music Ranking Platform", W/2, H/2-170, 0.5, 0.5)
 	}
@@ -520,12 +570,14 @@ func (g *Generator) GenerateHomeOG(totalSongs, totalUsers, totalAnimes, totalArt
 
 	drawStatItem := func(x, y float64, label string, value int) {
 		// Value
-		if err := dc.LoadFontFace(g.fontBlackPath, 54); err == nil {
+		if face, err := g.loadFont(g.fontBlack, 54); err == nil {
+			dc.SetFontFace(face)
 			dc.SetRGB(1, 1, 1)
 			dc.DrawStringAnchored(fmt.Sprintf("%d", value), x, y, 0.5, 0.5)
 		}
 		// Label
-		if err := dc.LoadFontFace(g.fontBoldPath, 22); err == nil {
+		if face, err := g.loadFont(g.fontBold, 22); err == nil {
+			dc.SetFontFace(face)
 			dc.SetRGBA(1, 1, 1, 0.6)
 			dc.DrawStringAnchored(strings.ToUpper(label), x, y+40, 0.5, 0.5)
 		}
@@ -537,13 +589,15 @@ func (g *Generator) GenerateHomeOG(totalSongs, totalUsers, totalAnimes, totalArt
 	drawStatItem(col2X, statsY+rowHeight, "Users", totalUsers)
 
 	// Sub-tagline
-	if err := dc.LoadFontFace(g.fontBoldPath, 24); err == nil {
+	if face, err := g.loadFont(g.fontBold, 24); err == nil {
+		dc.SetFontFace(face)
 		dc.SetRGBA(1, 1, 1, 0.4)
 		dc.DrawStringAnchored("Discover • Rate • Share", W/2, H-100, 0.5, 0.5)
 	}
 
 	// Branding URL
-	if err := dc.LoadFontFace(g.fontBoldPath, 18); err == nil {
+	if face, err := g.loadFont(g.fontBold, 18); err == nil {
+		dc.SetFontFace(face)
 		dc.SetRGBA(1, 1, 1, 0.3)
 		dc.DrawStringAnchored("ANIRANK.WORK", W/2, H-40, 0.5, 0.5)
 	}

@@ -29,9 +29,6 @@ RUN apk add --no-cache ca-certificates vips vips-tools libavif-apps libwebp-tool
 # Copy the binary
 COPY --from=builder /app/main .
 
-# Copy assets for OG generation
-COPY --from=builder /app/internal/infrastructure/og/assets/fonts ./internal/infrastructure/og/assets/fonts
-
 # Expose port (Backend port 8080)
 EXPOSE 8080
 

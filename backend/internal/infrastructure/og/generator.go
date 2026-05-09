@@ -1,3 +1,5 @@
+package og
+
 import (
 	"embed"
 	"fmt"

@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"anirank/api/internal/pkg/imageutil"
 
@@ -381,8 +382,11 @@ func (g *Generator) GenerateUserOG(name string, level int, xp int, followers, ra
 		bgUrl = avatarUrl
 	}
 
+	fmt.Printf("[OG] User=%s, bgUrl=%s, avatarUrl=%s\n", name, bgUrl, avatarUrl)
+
 	if bgUrl != "" {
 		if err := g.drawBlurredBackground(dc, bgUrl, W, H); err != nil {
+			fmt.Printf("[OG] Failed to draw background for %s: %v\n", name, err)
 			drawGradientBackground(dc, W, H)
 		}
 	} else {
@@ -594,14 +598,19 @@ func (g *Generator) GenerateHomeOG(totalSongs, totalUsers, totalAnimes, totalArt
 	if face, err := g.loadFont(g.fontBold, 24); err == nil {
 		dc.SetFontFace(face)
 		dc.SetRGBA(1, 1, 1, 0.4)
-		dc.DrawStringAnchored("Discover • Rate • Share", W/2, H-100, 0.5, 0.5)
+		dc.DrawStringAnchored("Discover • Rate • Share", W/2, H-120, 0.5, 0.5)
 	}
 
+	// Subtle accent line
+	dc.SetRGBA(127.0/255.0, 19.0/255.0, 236.0/255.0, 0.5)
+	dc.DrawRectangle(W/2-60, H-90, 120, 4)
+	dc.Fill()
+
 	// Branding URL
-	if face, err := g.loadFont(g.fontBold, 18); err == nil {
+	if face, err := g.loadFont(g.fontBold, 22); err == nil {
 		dc.SetFontFace(face)
-		dc.SetRGBA(1, 1, 1, 0.3)
-		dc.DrawStringAnchored("ANIRANK.WORK", W/2, H-40, 0.5, 0.5)
+		dc.SetRGBA(1, 1, 1, 0.6)
+		dc.DrawStringAnchored("ANIRANK.WORK", W/2, H-50, 0.5, 0.5)
 	}
 
 	return dc.Image(), nil
@@ -644,35 +653,12 @@ func drawGradientBackground(dc *gg.Context, w, h float64) {
 }
 
 func (g *Generator) fetchImage(urlStr string) (image.Image, error) {
-	// If the URL is our public S3 URL, swap it for the internal endpoint
-	if g.s3PublicURL != "" && g.s3Endpoint != "" && strings.HasPrefix(urlStr, g.s3PublicURL) {
-		oldUrl := urlStr
-
-		// Extract host from public URL (e.g., https://s3.anirank.work/anirank -> s3.anirank.work)
-		pHost := g.s3PublicURL
-		pHost = strings.TrimPrefix(pHost, "http://")
-		pHost = strings.TrimPrefix(pHost, "https://")
-		if idx := strings.Index(pHost, "/"); idx != -1 {
-			pHost = pHost[:idx]
-		}
-
-		// Extract host from internal endpoint (e.g., http://minio:9000 -> minio:9000)
-		iHost := g.s3Endpoint
-		iHost = strings.TrimPrefix(iHost, "http://")
-		iHost = strings.TrimPrefix(iHost, "https://")
-
-		// Replace only the host part
-		urlStr = strings.Replace(urlStr, pHost, iHost, 1)
-
-		// Ensure it uses http internally if it was https
-		urlStr = strings.Replace(urlStr, "https://", "http://", 1)
-
-		fmt.Printf("[OG] Internal redirect: %s -> %s\n", oldUrl, urlStr)
-	}
-
 	fmt.Printf("[OG] Fetching image: %s\n", urlStr)
 	
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: 10 * time.Second,
+	}
+	
 	req, err := http.NewRequest("GET", urlStr, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %v", err)

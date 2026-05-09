@@ -15,6 +15,7 @@ import (
 
 	"github.com/disintegration/gift"
 	"github.com/gen2brain/avif"
+	_ "github.com/gen2brain/avif" // Register AVIF decoder for image.Decode
 	_ "golang.org/x/image/webp"
 )
 

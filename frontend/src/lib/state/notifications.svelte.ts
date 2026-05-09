@@ -1,6 +1,6 @@
 import { fetchEventSource } from "@microsoft/fetch-event-source";
 import { getAuthToken, logout } from "./auth.svelte";
-import api from "$lib/api";
+import api, { PUBLIC_API_URL } from "$lib/api";
 
 class FatalError extends Error {}
 
@@ -32,11 +32,7 @@ class NotificationsState {
 
     if (!token) return;
 
-    // Use full API base path
-    const apiBase =
-      import.meta.env.PUBLIC_API_URL ||
-      import.meta.env.VITE_API_URL ||
-      "http://localhost:8080/api";
+    const apiBase = PUBLIC_API_URL;
 
     const getCookie = (name: string) => {
       if (typeof document === "undefined") return undefined;

@@ -11,8 +11,7 @@
   import ChevronUp from "lucide-svelte/icons/chevron-up";
   import Star from "lucide-svelte/icons/star";
   import Play from "lucide-svelte/icons/play";
-  const PUBLIC_API_URL =
-    import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+  import { PUBLIC_API_URL } from "$lib/api";
 
   let { data }: { data: PageData } = $props();
   let anime = $derived(data.data);

@@ -1,8 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { authState } from "$lib/state/auth.svelte";
-  const PUBLIC_API_URL =
-    import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+  import { PUBLIC_API_URL } from "$lib/api";
   import {
     getSongArtistNames,
     getSongName,

@@ -258,7 +258,7 @@ func (h *OGHandler) UserOG(c *fiber.Ctx) error {
 }
 
 func (h *OGHandler) HomeOG(c *fiber.Ctx) error {
-	cacheKey := fmt.Sprintf("home_v6_v%d", h.generator.GetVersion())
+	cacheKey := fmt.Sprintf("home_v7_v%d", h.generator.GetVersion())
 
 	nocache := c.Query("nocache") == "true"
 

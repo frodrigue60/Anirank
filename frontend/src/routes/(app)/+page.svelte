@@ -44,8 +44,7 @@
     return getFormattedScore(score as any, authState.user?.score_format);
   }
 
-  const PUBLIC_API_URL =
-    import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+  import { PUBLIC_API_URL } from "$lib/api";
 </script>
 
 <SEO

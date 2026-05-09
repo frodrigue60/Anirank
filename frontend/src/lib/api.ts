@@ -3,10 +3,12 @@ import { getAuthToken, removeAuthToken, setUser } from "$lib/state/auth.svelte";
 
 // Usamos el cliente HTTP para nuestra SPA
 // PUBLIC_API_URL from repo .env (e.g. https://api.anirank.work/api); VITE_API_URL legacy fallback; localhost for local API only
-const apiBase =
+export const PUBLIC_API_URL =
   import.meta.env.PUBLIC_API_URL ||
   import.meta.env.VITE_API_URL ||
   "http://localhost:8080/api";
+
+const apiBase = PUBLIC_API_URL;
 
 const api = axios.create({
   baseURL: apiBase,

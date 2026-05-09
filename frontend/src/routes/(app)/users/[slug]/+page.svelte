@@ -9,8 +9,7 @@
   import Heart from "lucide-svelte/icons/heart";
   import Mic2 from "lucide-svelte/icons/mic-2";
   import History from "lucide-svelte/icons/history";
-  const PUBLIC_API_URL =
-    import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+  import { PUBLIC_API_URL } from "$lib/api";
 
   let { data } = $props();
 

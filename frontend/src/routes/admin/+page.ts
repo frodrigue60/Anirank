@@ -1,9 +1,8 @@
+import type { PageLoad } from './$types';
 import { getAuthToken } from '$lib/state/auth.svelte';
+import { PUBLIC_API_URL } from '$lib/api';
 
-const apiBase =
-    import.meta.env.PUBLIC_API_URL ||
-    import.meta.env.VITE_API_URL ||
-    'http://localhost:8080/api';
+const apiBase = PUBLIC_API_URL;
 
 export const load: PageLoad = async ({ fetch }) => {
     try {

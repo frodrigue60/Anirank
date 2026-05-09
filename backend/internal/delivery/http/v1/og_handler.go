@@ -74,6 +74,7 @@ func (h *OGHandler) SongOG(c *fiber.Ctx) error {
 
 	img, err := h.generator.GenerateSongOG(title, artists, animeTitle, song.Type, song.AverageRating, bgUrl)
 	if err != nil {
+		fmt.Printf("[OG Handler] Error generating Song OG for %s/%s: %v\n", animeSlug, songSlug, err)
 		return c.Status(http.StatusInternalServerError).SendString(err.Error())
 	}
 
@@ -130,6 +131,7 @@ func (h *OGHandler) AnimeOG(c *fiber.Ctx) error {
 
 	img, err := h.generator.GenerateAnimeOG(anime.Title, studios, anime.SongsCount, 0, bannerUrl)
 	if err != nil {
+		fmt.Printf("[OG Handler] Error generating Anime OG for %s: %v\n", slug, err)
 		return c.Status(http.StatusInternalServerError).SendString(err.Error())
 	}
 
@@ -181,6 +183,7 @@ func (h *OGHandler) ArtistOG(c *fiber.Ctx) error {
 
 	img, err := h.generator.GenerateArtistOG(artist.Name, totalSongs, int(artist.FavoritesCount), avatarUrl, bannerUrl)
 	if err != nil {
+		fmt.Printf("[OG Handler] Error generating Artist OG for %s: %v\n", slug, err)
 		return c.Status(http.StatusInternalServerError).SendString(err.Error())
 	}
 
@@ -233,6 +236,7 @@ func (h *OGHandler) UserOG(c *fiber.Ctx) error {
 
 	img, err := h.generator.GenerateUserOG(user.Name, int(user.Level), int(user.XP), user.FollowersCount, user.RatingsCount, avatarUrl, bannerUrl)
 	if err != nil {
+		fmt.Printf("[OG Handler] Error generating User OG for %s: %v\n", slug, err)
 		return c.Status(http.StatusInternalServerError).SendString(err.Error())
 	}
 
@@ -280,6 +284,7 @@ func (h *OGHandler) HomeOG(c *fiber.Ctx) error {
 		stats.Overviews.TotalArtists,
 	)
 	if err != nil {
+		fmt.Printf("[OG Handler] Error generating Home OG: %v\n", err)
 		return c.Status(http.StatusInternalServerError).SendString(err.Error())
 	}
 
@@ -334,6 +339,7 @@ func (h *OGHandler) PlaylistOG(c *fiber.Ctx) error {
 
 	img, err := h.generator.GeneratePlaylistOG(playlist.Name, userName, playlist.SongCount, bannerUrl)
 	if err != nil {
+		fmt.Printf("[OG Handler] Error generating Playlist OG for %s: %v\n", idStr, err)
 		return c.Status(http.StatusInternalServerError).SendString(err.Error())
 	}
 

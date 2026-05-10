@@ -28,6 +28,7 @@ COPY --from=builder /app/package.json ./package.json
 # Environment variables for production
 ENV NODE_ENV=production
 ENV PORT=80
+ENV HOST=0.0.0.0
 
 # Expose the port (Railway typically expects port 80 or the PORT env var)
 EXPOSE 80

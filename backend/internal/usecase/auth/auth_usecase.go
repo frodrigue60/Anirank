@@ -605,6 +605,13 @@ func (u *AuthUsecase) LoginWithGoogle(ctx context.Context, code, redirectURI str
 				if err := u.userRepo.SaveSocialIdentity(ctx, identity); err != nil {
 					log.Printf("Failed to update user google info during login: %v", err)
 				}
+
+				// If user email wasn't verified in our DB but Google says it's verified, update it
+				if user.EmailVerifiedAt == nil && googleUser.EmailVerified {
+					now := time.Now()
+					user.EmailVerifiedAt = &now
+					_ = u.userRepo.Update(ctx, user)
+				}
 			} else {
 				return nil, domain.NewAppError(http.StatusUnauthorized, "Google account not linked and email not verified", nil)
 			}
@@ -751,9 +758,14 @@ func (u *AuthUsecase) autoRegisterGoogleUser(ctx context.Context, googleUser *go
 	newUser := &domain.User{
 		UUID:        uuid.New().String(),
 		Name:        googleUser.Name,
-		Email:       googleUser.Email,
+		Email:       strings.ToLower(strings.TrimSpace(googleUser.Email)),
 		Password:    string(dummyPass),
 		ScoreFormat: &sFormat,
+	}
+
+	if googleUser.EmailVerified {
+		now := time.Now()
+		newUser.EmailVerifiedAt = &now
 	}
 
 	slug := u.generateUniqueUserSlug(ctx, googleUser.Name)
@@ -823,7 +835,7 @@ func (u *AuthUsecase) RegisterWithAnilist(ctx context.Context, tempToken, email 
 	newUser := &domain.User{
 		UUID:        uuid.New().String(),
 		Name:        anilistName,
-		Email:       email,
+		Email:       strings.ToLower(strings.TrimSpace(email)),
 		Password:    string(dummyPass),
 		ScoreFormat: &sFormat,
 	}
@@ -859,6 +871,18 @@ func (u *AuthUsecase) RegisterWithAnilist(ctx context.Context, tempToken, email 
 
 	// Automatic Badge Check
 	_ = u.badgeUsecase.CheckAndAwardBadges(ctx, newUser.ID, "anilist")
+
+	// Send verification email
+	vToken := strings.ReplaceAll(uuid.New().String(), "-", "")
+	_ = u.tokenRepo.Create(ctx, &domain.AuthToken{
+		UserID:    newUser.ID,
+		Token:     vToken,
+		Type:      "email_verification",
+		ExpiresAt: time.Now().Add(24 * time.Hour),
+	})
+	go func() {
+		_ = u.mail.SendVerificationEmail(context.Background(), newUser.Email, newUser.Name, vToken)
+	}()
 
 	go u.GenerateUserAvatar(context.Background(), newUser.ID, newUser.Name)
 
@@ -980,6 +1004,13 @@ func (u *AuthUsecase) LoginWithDiscord(ctx context.Context, code string) (*AuthT
 				if err != nil && err != domain.ErrNotFound {
 					return nil, domain.NewAppError(http.StatusInternalServerError, "Database error", err)
 				}
+
+				// If user found by email and it's not verified in our DB but Discord says it is
+				if user != nil && user.EmailVerifiedAt == nil {
+					now := time.Now()
+					user.EmailVerifiedAt = &now
+					_ = u.userRepo.Update(ctx, user)
+				}
 			}
 
 			if user == nil {
@@ -1051,9 +1082,14 @@ func (u *AuthUsecase) autoRegisterDiscordUser(ctx context.Context, discordUser *
 	newUser := &domain.User{
 		UUID:        uuid.New().String(),
 		Name:        discordUser.Username,
-		Email:       discordUser.Email,
+		Email:       strings.ToLower(strings.TrimSpace(discordUser.Email)),
 		Password:    string(dummyPass),
 		ScoreFormat: &sFormat,
+	}
+
+	if discordUser.Verified {
+		now := time.Now()
+		newUser.EmailVerifiedAt = &now
 	}
 
 	slug := u.generateUniqueUserSlug(ctx, discordUser.Username)

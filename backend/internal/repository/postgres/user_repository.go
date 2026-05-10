@@ -47,7 +47,7 @@ func (r *userRepository) GetByEmail(ctx context.Context, email string) (*domain.
 		SELECT u.*, sf.slug AS score_format
 		FROM users u
 		LEFT JOIN score_formats sf ON u.score_format_id = sf.id
-		WHERE u.email = $1
+		WHERE LOWER(u.email) = LOWER($1)
 	`
 	err := r.db.GetContext(ctx, &user, query, email)
 	if errors.Is(err, sql.ErrNoRows) {

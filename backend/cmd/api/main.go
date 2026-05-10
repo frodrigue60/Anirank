@@ -138,8 +138,48 @@ func main() {
 	mediaService := infrastructure.NewMediaService(storageService)
 
 	// Setup Cache (Optional Redis)
-	redisURL := os.Getenv("REDIS_URL")
 	redisEnabled := os.Getenv("REDIS_ENABLED") != "false"
+	
+	// Resolve Redis URL (Railway/Production Compatibility)
+	redisURL := os.Getenv("REDIS_URL")
+	if redisURL == "" {
+		// Try to construct from individual components
+		host := os.Getenv("REDIS_HOST")
+		if host == "" {
+			host = os.Getenv("REDISHOST") // Railway format
+		}
+		
+		if host != "" {
+			port := os.Getenv("REDIS_PORT")
+			if port == "" {
+				port = os.Getenv("REDISPORT")
+			}
+			if port == "" {
+				port = "6379"
+			}
+			
+			user := os.Getenv("REDIS_USER")
+			if user == "" {
+				user = os.Getenv("REDISUSER")
+			}
+			
+			pass := os.Getenv("REDIS_PASSWORD")
+			if pass == "" {
+				pass = os.Getenv("REDISPASSWORD")
+			}
+			
+			db := os.Getenv("REDIS_DB")
+			if db == "" {
+				db = "0"
+			}
+			
+			if pass != "" {
+				redisURL = fmt.Sprintf("redis://%s:%s@%s:%s/%s", user, pass, host, port, db)
+			} else {
+				redisURL = fmt.Sprintf("redis://%s:%s/%s", host, port, db)
+			}
+		}
+	}
 	
 	var appCache domain.Cache
 	if redisURL != "" && redisEnabled {

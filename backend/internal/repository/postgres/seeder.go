@@ -17,7 +17,14 @@ func NewScoreFormatSeeder(db *sqlx.DB) *ScoreFormatSeeder {
 }
 
 func (s *ScoreFormatSeeder) Seed(ctx context.Context) error {
-	log.Println("🌱 Syncing score formats...")
+	// Only run if data doesn't exist
+	var count int
+	err := s.db.GetContext(ctx, &count, "SELECT COUNT(*) FROM score_formats")
+	if err == nil && count > 0 {
+		return nil
+	}
+
+	log.Println("🌱 Seeding score formats (initial data missing)...")
 
 	formats := []struct {
 		Name        string
@@ -87,7 +94,14 @@ func NewSongTypeSeeder(db *sqlx.DB) *SongTypeSeeder {
 }
 
 func (s *SongTypeSeeder) Seed(ctx context.Context) error {
-	log.Println("🌱 Syncing song types...")
+	// Only run if data doesn't exist
+	var count int
+	err := s.db.GetContext(ctx, &count, "SELECT COUNT(*) FROM song_types")
+	if err == nil && count > 0 {
+		return nil
+	}
+
+	log.Println("🌱 Seeding song types (initial data missing)...")
 
 	types := []struct {
 		Name        string

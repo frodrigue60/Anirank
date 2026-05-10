@@ -15,16 +15,22 @@ ENV VITE_API_URL=$VITE_API_URL
 ENV PUBLIC_API_URL=$PUBLIC_API_URL
 RUN bun run svelte-kit sync && bun run build
 
-# Final stage - Serve with Nginx
-FROM nginx:stable-alpine
+# Final stage
+FROM oven/bun:alpine
 
-# Copy built assets to Nginx html directory
-COPY --from=builder /app/build /usr/share/nginx/html
+WORKDIR /app
 
-# Copy custom nginx config
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copy the built application and dependencies
+COPY --from=builder /app/build ./build
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
 
-# Expose port (Frontend port 80)
+# Environment variables for production
+ENV NODE_ENV=production
+ENV PORT=80
+
+# Expose the port (Railway typically expects port 80 or the PORT env var)
 EXPOSE 80
 
-CMD ["nginx", "-g", "daemon off;"]
+# Run the SvelteKit server
+CMD ["bun", "./build/index.js"]

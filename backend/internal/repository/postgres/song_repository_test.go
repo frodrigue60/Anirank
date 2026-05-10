@@ -26,7 +26,7 @@ func TestSongRepository_GetPaginated_Cursor(t *testing.T) {
 		AddRow(2, "uuid-2", "Song 2")
 
 	// 1. Test Offset Pagination (Fallback)
-	mock.ExpectQuery("SELECT s.\\*").
+	mock.ExpectQuery("SELECT s.id, s.uuid").
 		WithArgs(10, 0).
 		WillReturnRows(rows)
 
@@ -39,7 +39,7 @@ func TestSongRepository_GetPaginated_Cursor(t *testing.T) {
 	rows2 := sqlmock.NewRows([]string{"id", "uuid", "song_romaji"}).
 		AddRow(3, "uuid-3", "Song 3")
 
-	mock.ExpectQuery("SELECT s.\\*").
+	mock.ExpectQuery("SELECT s.id, s.uuid").
 		WithArgs(500, 10). // 500 is the cursor ID from "500"
 		WillReturnRows(rows2)
 

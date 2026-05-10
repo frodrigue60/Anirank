@@ -166,6 +166,8 @@ func (u *CatalogUsecase) enrichSongsBulk(ctx context.Context, userID *uint64, so
 			s.Name = *s.SongEN
 		} else if s.SongJP != nil && *s.SongJP != "" {
 			s.Name = *s.SongJP
+		} else if s.Anime != nil && s.Anime.Title != "" {
+			s.Name = s.Anime.Title
 		} else {
 			s.Name = "N/A"
 		}
@@ -886,6 +888,8 @@ func (u *CatalogUsecase) enrichSong(ctx context.Context, userID *uint64, s *doma
 		s.Name = *s.SongEN
 	} else if s.SongJP != nil && *s.SongJP != "" {
 		s.Name = *s.SongJP
+	} else if s.Anime != nil && s.Anime.Title != "" {
+		s.Name = s.Anime.Title
 	} else {
 		s.Name = "N/A"
 	}

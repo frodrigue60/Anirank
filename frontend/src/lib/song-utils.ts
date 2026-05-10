@@ -1,6 +1,6 @@
 export function getSongName(song: any): string {
   if (!song) return "N/A";
-  return song.song_romaji || song.song_en || song.song_jp || "N/A";
+  return song.name || song.song_romaji || song.song_en || song.song_jp || "N/A";
 }
 
 export function getSongArtistNames(

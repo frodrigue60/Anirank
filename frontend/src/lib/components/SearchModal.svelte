@@ -9,6 +9,7 @@
     clearSearchHistory,
     type HistoryItem,
   } from "$lib/utils/history";
+  import { getSongName } from "$lib/song-utils";
   import { goto } from "$app/navigation";
   import Search from "lucide-svelte/icons/search";
   import X from "lucide-svelte/icons/x";
@@ -351,8 +352,7 @@
                         handleResultClick({
                           id: `song:${song.slug}`,
                           type: "song",
-                          label:
-                            song.song_romaji || song.song_en || "Untitled Song",
+                          label: getSongName(song),
                           description: `${song.type} - ${song.anime?.title || ""}`,
                           slug: song.slug,
                           animeSlug: song.anime?.slug,
@@ -368,9 +368,7 @@
                       <div class="flex flex-col">
                         <span
                           class="text-on-surface font-black group-hover:text-primary transition-colors line-clamp-1"
-                          >{song.song_romaji ||
-                            song.song_en ||
-                            "Untitled Song"}</span
+                          >{getSongName(song)}</span
                         >
                         {#if song.anime}
                           <span

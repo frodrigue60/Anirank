@@ -5,6 +5,8 @@
 import VideoOff from "lucide-svelte/icons/video-off";
 import CheckCircle2 from "lucide-svelte/icons/check-circle-2";
 
+  import { getSongName } from "$lib/song-utils";
+
   interface Props {
     matchup: TournamentMatchup;
     canVote?: boolean;
@@ -53,7 +55,8 @@ import CheckCircle2 from "lucide-svelte/icons/check-circle-2";
   // Helper for song names
   function songDisplayName(song: Song | undefined) {
     if (!song) return "Waiting...";
-    return song.song_romaji || song.song_en || song.song_jp || "Untitled";
+    const name = getSongName(song);
+    return name === "N/A" ? "Untitled" : name;
   }
 </script>
 

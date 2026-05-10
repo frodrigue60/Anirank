@@ -614,7 +614,7 @@
                     ? 'text-white neon-text'
                     : 'text-white/90'}"
                 >
-                  {song.song_romaji ?? song.song_en ?? song.song_jp ?? "Song"}
+                  {getSongName(song)}
                 </h4>
                 <p class="text-[10px] text-white/40 line-clamp-1">
                   by {song.artists?.map((a) => a.name).join(", ") ||
@@ -886,7 +886,7 @@
                     ? 'text-white neon-text'
                     : 'text-white/90'}"
                 >
-                  {song.song_romaji ?? song.song_en ?? song.song_jp ?? "Song"}
+                  {getSongName(song)}
                 </h4>
                 <span class="text-[11px] text-white/50 truncate">
                   {song.artists?.map((a: any) => a.name).join(", ") ||

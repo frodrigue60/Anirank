@@ -153,6 +153,7 @@ func ToSongMinimalDTO(s *domain.Song) SongMinimalDTO {
 
 	res := SongMinimalDTO{
 		ID:             s.UUID,
+		Name:           s.Name,
 		SongRomaji:     s.SongRomaji,
 		SongEN:         s.SongEN,
 		SongJP:         s.SongJP,

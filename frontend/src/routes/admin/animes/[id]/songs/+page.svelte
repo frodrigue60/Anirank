@@ -3,6 +3,7 @@
   import api from "$lib/api";
   import { toastState } from "$lib/state/toast.svelte";
   import { getApiErrorMessage } from "$lib/api-errors";
+  import { getSongName } from "$lib/song-utils";
   import type { PageData } from "./$types";
   import AlertTriangle from "lucide-svelte/icons/alert-triangle";
   import Plus from "lucide-svelte/icons/plus";
@@ -110,11 +111,11 @@
                 </td>
                 <td
                   class="px-6 py-4 font-medium text-on-surface max-w-[250px] truncate"
-                  title={song.song_romaji || song.song_jp || song.song_en}
+                  title={getSongName(song)}
                 >
                   <div class="flex flex-col">
                     <span class="text-on-surface"
-                      >{song.song_romaji || song.song_jp || song.song_en}</span
+                      >{getSongName(song)}</span
                     >
                     <span class="text-[10px] text-on-surface-variant/40 font-mono"
                       >ID: #{song.id}</span

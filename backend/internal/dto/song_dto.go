@@ -9,6 +9,7 @@ type SongTypeDTO struct {
 
 type SongMinimalDTO struct {
 	ID               string        `json:"id"`
+	Name             string        `json:"name"`
 	SongRomaji       *string       `json:"song_romaji,omitempty"`
 	SongEN           *string       `json:"song_en,omitempty"`
 	SongJP           *string       `json:"song_jp,omitempty"`

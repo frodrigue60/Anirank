@@ -8,6 +8,7 @@ import CheckCircle2 from "lucide-svelte/icons/check-circle-2";
 import Loader2 from "lucide-svelte/icons/loader-2";
 import AlertCircle from "lucide-svelte/icons/alert-circle";
   import api from "$lib/api";
+  import { getSongName } from "$lib/song-utils";
   import { fade, scale } from "svelte/transition";
 
   interface Props {
@@ -143,7 +144,7 @@ import AlertCircle from "lucide-svelte/icons/alert-circle";
           <h3
             class="text-2xl font-bold leading-tight tracking-tight text-on-surface"
           >
-            {song.song_romaji || "Theme"}
+            {getSongName(song)}
           </h3>
           <p class="text-xs text-on-surface-variant mt-1 font-medium">
             {song.post?.title || "Anime"} • {song.type}

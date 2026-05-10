@@ -1,5 +1,6 @@
 <script lang="ts">
   import api from "$lib/api";
+  import { getSongName } from "$lib/song-utils";
   import { goto } from "$app/navigation";
   import { toastState } from "$lib/state/toast.svelte";
   import ArrowLeft from "lucide-svelte/icons/arrow-left";
@@ -181,10 +182,7 @@
                       target="_blank"
                       class="text-lg font-bold text-on-surface hover:text-blue-400 transition-colors"
                     >
-                      {report.song?.song_romaji ||
-                        report.song?.song_en ||
-                        report.song?.song_jp ||
-                        "Unknown Song"}
+                      {getSongName(report.song)}
                     </a>
                   </div>
 

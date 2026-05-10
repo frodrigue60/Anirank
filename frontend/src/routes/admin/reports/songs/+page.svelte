@@ -1,5 +1,6 @@
 <script lang="ts">
   import api from "$lib/api";
+  import { getSongName } from "$lib/song-utils";
   import Inbox from "lucide-svelte/icons/inbox";
 
   let { data } = $props();
@@ -112,7 +113,7 @@
             <td class="px-6 py-4">
               <div class="font-mono text-xs text-blue-400 mb-1">Song Theme</div>
               <div class="text-xs font-bold text-on-surface mb-0.5">
-                {rpt.song?.song_romaji || rpt.song?.song_en || rpt.song?.song_jp || "Unknown Song"}
+                {getSongName(rpt.song)}
               </div>
               <div class="text-[10px] text-on-surface-variant/40">
                 ID: {rpt.song_id}

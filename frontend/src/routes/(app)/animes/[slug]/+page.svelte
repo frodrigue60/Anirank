@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { PageData } from "./$types";
-  import { getSongArtistNames, getFormattedScore } from "$lib/song-utils";
+  import { getSongName, getSongArtistNames, getFormattedScore } from "$lib/song-utils";
   import SEO from "$lib/components/SEO.svelte";
   import { authState } from "$lib/state/auth.svelte";
   import { createTrustedHTML } from "$lib/trusted";
@@ -270,10 +270,7 @@
                       class="font-bold text-on-surface text-base hover:text-primary transition-colors"
                     >
                       <a href="/songs/{anime.slug}/{song.slug}"
-                        >{song.song_romaji ||
-                          song.song_en ||
-                          song.song_jp ||
-                          "N/A"}</a
+                        >{getSongName(song)}</a
                       >
                     </div>
                   </td>
@@ -293,7 +290,7 @@
                     <a
                       href="/songs/{anime.slug}/{song.slug}"
                       class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface bg-primary/20 hover:bg-primary hover:text-white/50 transition-colors"
-                      title="Play theme: {song.song_romaji || song.song_en}"
+                      title="Play theme: {getSongName(song)}"
                     >
                       <Play size={18} class="fill-current" />
 

@@ -5,14 +5,17 @@ import (
 	"context"
 	"fmt"
 	"hash/crc32"
-	"path/filepath"
-	"runtime"
 	"strings"
 	"unicode"
+	_ "embed"
 
 	"github.com/fogleman/gg"
 	"github.com/gen2brain/avif"
+	"github.com/golang/freetype/truetype"
 )
+
+//go:embed assets/font.ttf
+var defaultFont []byte
 
 // Result contains the avatar image data and metadata
 type Result struct {
@@ -49,14 +52,15 @@ func Generate(ctx context.Context, name string, size int) (*Result, error) {
 		dc.SetRGB(0, 0, 0)
 	}
 
-	// 4. Load Font
-	_, b, _, _ := runtime.Caller(0)
-	basePath := filepath.Dir(b)
-	fontPath := filepath.Join(basePath, "../../infrastructure/og/assets/fonts/Inter-Bold.ttf")
-
-	if err := dc.LoadFontFace(fontPath, float64(size)/2); err != nil {
-		// Fallback logging if font fails to load
-		fmt.Printf("[Avatar] Warning: failed to load font at %s: %v\n", fontPath, err)
+	// 4. Load Font (Embedded)
+	f, err := truetype.Parse(defaultFont)
+	if err != nil {
+		fmt.Printf("[Avatar] Warning: failed to parse embedded font: %v\n", err)
+	} else {
+		face := truetype.NewFace(f, &truetype.Options{
+			Size: float64(size) / 2,
+		})
+		dc.SetFontFace(face)
 	}
 
 	// 5. Draw Text

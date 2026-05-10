@@ -59,7 +59,7 @@ describe('Auth State (Svelte 5 Runes)', () => {
 
     it('should handle logout', () => {
         setUser({ id: 1, uuid: 'u', name: 'N', email: 'E', slug: 'S' });
-        setAuthToken('some-token');
+        setAuthToken('header.payload.signature');
         
         logout();
 
@@ -69,7 +69,7 @@ describe('Auth State (Svelte 5 Runes)', () => {
     });
 
     it('should persist and retrieve token in localStorage', () => {
-        const token = 'secret-jwt-token';
+        const token = 'header.payload.signature';
         setAuthToken(token);
         expect(getAuthToken()).toBe(token);
         

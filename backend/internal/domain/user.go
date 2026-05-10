@@ -47,6 +47,15 @@ type User struct {
 	SocialIdentities []UserSocialIdentity `db:"-" json:"social_identities,omitempty"`
 }
 
+type AuthToken struct {
+	ID        uint64    `db:"id"`
+	UserID    uint64    `db:"user_id"`
+	Token     string    `db:"token"`
+	Type      string    `db:"type"` // 'email_verification', 'password_reset'
+	ExpiresAt time.Time `db:"expires_at"`
+	CreatedAt time.Time `db:"created_at"`
+}
+
 func (u *User) GetSocialID(provider string) *string {
 	for _, si := range u.SocialIdentities {
 		if si.Provider == provider {
@@ -152,4 +161,12 @@ type UserRepository interface {
 	GetFollowers(ctx context.Context, userID uint64, limit, offset int) ([]User, error)
 	GetFollowing(ctx context.Context, userID uint64, limit, offset int) ([]User, error)
 	GetMany(ctx context.Context, ids []uint64) ([]User, error)
+}
+
+type AuthTokenRepository interface {
+	Create(ctx context.Context, token *AuthToken) error
+	GetByToken(ctx context.Context, token string, tokenType string) (*AuthToken, error)
+	DeleteByUser(ctx context.Context, userID uint64, tokenType string) error
+	Delete(ctx context.Context, id uint64) error
+	CleanupExpired(ctx context.Context) error
 }

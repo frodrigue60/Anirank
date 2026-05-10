@@ -615,3 +615,69 @@ func (h *AuthHandler) UnlinkSocial(c *fiber.Ctx) error {
 		"message": fmt.Sprintf("%s account unlinked successfully", strings.Title(provider)),
 	})
 }
+
+func (h *AuthHandler) VerifyEmail(c *fiber.Ctx) error {
+	token := c.Query("token")
+	if token == "" {
+		return domain.NewAppError(400, "Verification token is required", nil)
+	}
+
+	if err := h.usecase.VerifyEmail(c.Context(), token); err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "Email verified successfully",
+	})
+}
+
+func (h *AuthHandler) ForgotPassword(c *fiber.Ctx) error {
+	type ForgotRequest struct {
+		Email string `json:"email"`
+	}
+
+	var req ForgotRequest
+	if err := c.BodyParser(&req); err != nil {
+		return domain.NewAppError(400, "Invalid JSON body payload", err)
+	}
+
+	if req.Email == "" {
+		return domain.NewAppError(422, "Email is required", nil)
+	}
+
+	if err := h.usecase.ForgotPassword(c.Context(), req.Email); err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "If an account with that email exists, we have sent instructions to reset your password",
+	})
+}
+
+func (h *AuthHandler) ResetPassword(c *fiber.Ctx) error {
+	type ResetRequest struct {
+		Token       string `json:"token"`
+		NewPassword string `json:"password"`
+	}
+
+	var req ResetRequest
+	if err := c.BodyParser(&req); err != nil {
+		return domain.NewAppError(400, "Invalid JSON body payload", err)
+	}
+
+	if req.Token == "" || req.NewPassword == "" {
+		return domain.NewAppError(422, "Token and password are required", nil)
+	}
+
+	if len(req.NewPassword) < 8 {
+		return domain.NewAppError(422, "Password must be at least 8 characters long", nil)
+	}
+
+	if err := h.usecase.ResetPassword(c.Context(), req.Token, req.NewPassword); err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "Password has been successfully reset",
+	})
+}

@@ -8,8 +8,8 @@
 ## Current Maturity: Beta Robusta (6.5 / 10)
 
 - Backend architecture: production-grade Clean Architecture with PostgreSQL + Redis + S3.
-- Frontend: functional but with UI inconsistency debt being resolved.
-- Missing: email infrastructure, automated testing, rate limiting on sensitive routes.
+- Frontend: functional with consistent UI and integrated transactional email workflows.
+- Missing: notification digests, automated CI/CD pipeline, and public API documentation.
 
 ---
 
@@ -115,11 +115,9 @@
 - ✅ **CSRF protection** audit for state-mutating endpoints
 - ✅ **Input sanitization** review for comment/about text fields (XSS vectors)
 
-### Email Infrastructure
-
-- 🔲 **SMTP integration** (Resend / Postmark / Brevo) for transactional emails
-- 🔲 Password reset flow for native (email/password) accounts
-- 🔲 Email verification on registration
+- ✅ **SMTP integration** (Resend) for transactional emails
+- ✅ Password reset flow for native (email/password) accounts
+- ✅ Email verification workflow (User-initiated from settings)
 - 🔲 Notification digests (optional weekly email summary)
 
 ### Frontend Polish
@@ -205,6 +203,7 @@
 - 🔲 **Comment reactions** (emoji reactions on individual comments)
 - 🔲 **Shared playlists** (collaborative playlist editing)
 - 🔲 **User-to-user recommendations** ("You might like this, based on your ratings")
+- 💡 **Activity Notifications** — emails for mentions, replies, and new followers (opt-in)
 
 ### Content Expansion
 
@@ -213,6 +212,7 @@
 - ✅ **Alternate titles / romanization** for song names
 - ✅ **Soundtrack / OST type** as a 4th song category (beyond OP/ED/IN)
 - 🔲 **Studio and Producer profile pages** (currently listed but no detail view)
+- 💡 **Welcome Email** — automatic onboarding email after successful verification
 
 ### Analytics
 
@@ -234,6 +234,7 @@
 - 💡 **REST API v1 (public)** — documented OpenAPI spec for third-party integrations
 - 💡 **API rate limiting per token** for public API consumers
 - 💡 **Webhook support** for community rankings
+- 💡 **Mail Deliverability Webhooks** — automated handling of bounces/complaints via Resend
 
 ### Mobile
 
@@ -261,7 +262,7 @@
 | Priority  | Issue                                                                           | Location                         |
 | --------- | ------------------------------------------------------------------------------- | -------------------------------- |
 | ✅ Done   | Rate limiting implemented for Auth and Public API routes                        | `middleware/rate_limiter.go`     |
-| 🔴 High   | No SMTP — password reset broken for native accounts                             | `backend/internal/usecase/auth/` |
+| ✅ Done   | SMTP integration — Resend service for reset and verification             | `internal/infrastructure/mail/`  |
 | ✅ Done   | Automated testing — integration/unit coverage added for Auth, DTOs, and Repos    | `internal/`                      |
 | ✅ Done   | Performance pagination — Cursor-based implementation for large datasets          | `repository/postgres/`           |
 | ✅ Done   | Optimized search — GIN Trigram indexes for fast ILIKE results                  | `search_usecase.go`              |

@@ -14,12 +14,23 @@ import (
 )
 
 func main() {
-	// Load .env from root
-	_ = godotenv.Load("../.env")
+	// Load .env
+	_ = godotenv.Load()        // Try local backend/.env
+	_ = godotenv.Load("../.env") // Try root .env
 
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
-		log.Fatal("DATABASE_URL not found in .env")
+		// Fallback to individual variables
+		dbUser := os.Getenv("DB_USER")
+		dbPass := os.Getenv("DB_PASSWORD")
+		dbHost := os.Getenv("DB_HOST")
+		dbPort := os.Getenv("DB_PORT")
+		dbName := os.Getenv("DB_NAME")
+		if dbUser != "" && dbHost != "" {
+			dbURL = fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", dbUser, dbPass, dbHost, dbPort, dbName)
+		} else {
+			log.Fatal("DATABASE_URL or DB_USER/DB_HOST not found in .env")
+		}
 	}
 
 	db, err := sqlx.Connect("pgx", dbURL)

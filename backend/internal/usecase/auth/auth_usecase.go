@@ -36,10 +36,12 @@ type AuthUsecase struct {
 	anilist       anilist.AnilistClient
 	google        google.GoogleClient
 	discord       discord.DiscordClient
+	mail          domain.MailService
+	tokenRepo     domain.AuthTokenRepository
 	encryptionKey string
 }
 
-func NewAuthUsecase(userRepo domain.UserRepository, jwtService *JWTService, storage infrastructure.StorageService, media infrastructure.MediaService, xu domain.XPUsecase, bu domain.BadgeUsecase, ac anilist.AnilistClient, gc google.GoogleClient, dc discord.DiscordClient, eKey string) *AuthUsecase {
+func NewAuthUsecase(userRepo domain.UserRepository, jwtService *JWTService, storage infrastructure.StorageService, media infrastructure.MediaService, xu domain.XPUsecase, bu domain.BadgeUsecase, ac anilist.AnilistClient, gc google.GoogleClient, dc discord.DiscordClient, mail domain.MailService, tr domain.AuthTokenRepository, eKey string) *AuthUsecase {
 	return &AuthUsecase{
 		userRepo:      userRepo,
 		jwtService:    jwtService,
@@ -50,6 +52,8 @@ func NewAuthUsecase(userRepo domain.UserRepository, jwtService *JWTService, stor
 		anilist:       ac,
 		google:        gc,
 		discord:       dc,
+		mail:          mail,
+		tokenRepo:     tr,
 		encryptionKey: eKey,
 	}
 }
@@ -155,6 +159,20 @@ func (u *AuthUsecase) Register(ctx context.Context, name, email, password string
 	}
 
 	newUser.Password = ""
+
+	// Generate verification token
+	vToken := strings.ReplaceAll(uuid.New().String(), "-", "")
+	_ = u.tokenRepo.Create(ctx, &domain.AuthToken{
+		UserID:    newUser.ID,
+		Token:     vToken,
+		Type:      "email_verification",
+		ExpiresAt: time.Now().Add(24 * time.Hour),
+	})
+
+	// Send email in background
+	go func() {
+		_ = u.mail.SendVerificationEmail(context.Background(), newUser.Email, newUser.Name, vToken)
+	}()
 
 	// Generate avatar in background
 	go u.GenerateUserAvatar(context.Background(), newUser.ID, newUser.Name)
@@ -1009,4 +1027,72 @@ func (u *AuthUsecase) UnlinkSocial(ctx context.Context, userID uint64, provider 
 	}
 
 	return u.userRepo.DeleteSocialIdentity(ctx, userID, provider)
+}
+
+func (u *AuthUsecase) VerifyEmail(ctx context.Context, token string) error {
+	t, err := u.tokenRepo.GetByToken(ctx, token, "email_verification")
+	if err != nil {
+		return domain.NewAppError(400, "Invalid or expired verification token", err)
+	}
+
+	user, err := u.userRepo.GetByID(ctx, t.UserID)
+	if err != nil {
+		return domain.NewAppError(404, "User not found", err)
+	}
+
+	now := time.Now()
+	user.EmailVerifiedAt = &now
+	if err := u.userRepo.Update(ctx, user); err != nil {
+		return domain.NewAppError(500, "Failed to verify email", err)
+	}
+
+	_ = u.tokenRepo.Delete(ctx, t.ID)
+	return nil
+}
+
+func (u *AuthUsecase) ForgotPassword(ctx context.Context, email string) error {
+	email = strings.ToLower(strings.TrimSpace(email))
+	user, err := u.userRepo.GetByEmail(ctx, email)
+	if err != nil {
+		// Silent fail for security (don't reveal if email exists)
+		return nil
+	}
+
+	// Cleanup old tokens
+	_ = u.tokenRepo.DeleteByUser(ctx, user.ID, "password_reset")
+
+	// Generate reset token
+	rToken := strings.ReplaceAll(uuid.New().String(), "-", "")
+	_ = u.tokenRepo.Create(ctx, &domain.AuthToken{
+		UserID:    user.ID,
+		Token:     rToken,
+		Type:      "password_reset",
+		ExpiresAt: time.Now().Add(1 * time.Hour),
+	})
+
+	// Send email
+	go func() {
+		_ = u.mail.SendPasswordResetEmail(context.Background(), user.Email, user.Name, rToken)
+	}()
+
+	return nil
+}
+
+func (u *AuthUsecase) ResetPassword(ctx context.Context, token, newPassword string) error {
+	t, err := u.tokenRepo.GetByToken(ctx, token, "password_reset")
+	if err != nil {
+		return domain.NewAppError(400, "Invalid or expired reset token", err)
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return domain.NewAppError(500, "Failed to secure new password", err)
+	}
+
+	if err := u.userRepo.UpdatePassword(ctx, t.UserID, string(hash)); err != nil {
+		return domain.NewAppError(500, "Failed to update password", err)
+	}
+
+	_ = u.tokenRepo.DeleteByUser(ctx, t.UserID, "password_reset")
+	return nil
 }

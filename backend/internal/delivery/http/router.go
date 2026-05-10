@@ -115,6 +115,9 @@ func SetupPublicRoutes(app *fiber.App,
 	// Auth
 	api.Post("/login", authLimiter, authHandler.Login)
 	api.Post("/register", authLimiter, authHandler.Register)
+	api.Post("/forgot-password", authLimiter, authHandler.ForgotPassword)
+	api.Post("/reset-password", authLimiter, authHandler.ResetPassword)
+	api.Get("/verify-email", authLimiter, authHandler.VerifyEmail)
 	api.Get("/auth/google/login", authHandler.GoogleLogin)
 	api.Post("/auth/google/login-callback", authLimiter, authHandler.GoogleLoginCallback)
 	api.Get("/auth/anilist/login", authHandler.AnilistLogin)

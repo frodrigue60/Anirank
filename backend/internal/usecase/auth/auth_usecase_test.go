@@ -29,8 +29,10 @@ func TestAuthUsecase_Login(t *testing.T) {
 	mockRepo := &testutil.MockUserRepository{User: testUser}
 	jwtSvc := auth.NewJWTService()
 	xpMock := &testutil.MockXPUsecase{}
+	mailMock := &testutil.MockMailService{}
+	tokenRepoMock := &testutil.MockAuthTokenRepository{}
 	
-	uc := auth.NewAuthUsecase(mockRepo, jwtSvc, &testutil.MockStorageService{}, &testutil.MockMediaService{}, xpMock, &testutil.MockBadgeUsecase{}, &testutil.MockAnilistClient{}, &testutil.MockGoogleClient{}, &testutil.MockDiscordClient{}, "test-key-32-chars-long-1234567890")
+	uc := auth.NewAuthUsecase(mockRepo, jwtSvc, &testutil.MockStorageService{}, &testutil.MockMediaService{}, xpMock, &testutil.MockBadgeUsecase{}, &testutil.MockAnilistClient{}, &testutil.MockGoogleClient{}, &testutil.MockDiscordClient{}, mailMock, tokenRepoMock, "test-key-32-chars-long-1234567890")
 
 	t.Run("Success", func(t *testing.T) {
 		resp, err := uc.Login(ctx, testUser.Email, password)
@@ -63,8 +65,10 @@ func TestAuthUsecase_Register(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := &testutil.MockUserRepository{User: nil} // Simulate user doesn't exist initially
 	jwtSvc := auth.NewJWTService()
+	mailMock := &testutil.MockMailService{}
+	tokenRepoMock := &testutil.MockAuthTokenRepository{}
 	
-	uc := auth.NewAuthUsecase(mockRepo, jwtSvc, &testutil.MockStorageService{}, &testutil.MockMediaService{}, &testutil.MockXPUsecase{}, &testutil.MockBadgeUsecase{}, &testutil.MockAnilistClient{}, &testutil.MockGoogleClient{}, &testutil.MockDiscordClient{}, "test-key-32-chars-long-1234567890")
+	uc := auth.NewAuthUsecase(mockRepo, jwtSvc, &testutil.MockStorageService{}, &testutil.MockMediaService{}, &testutil.MockXPUsecase{}, &testutil.MockBadgeUsecase{}, &testutil.MockAnilistClient{}, &testutil.MockGoogleClient{}, &testutil.MockDiscordClient{}, mailMock, tokenRepoMock, "test-key-32-chars-long-1234567890")
 
 	t.Run("Success", func(t *testing.T) {
 		// Mock unique slug generation logic if needed, but generateUniqueUserSlug is internal
@@ -102,7 +106,9 @@ func TestAuthUsecase_LinkAnilist(t *testing.T) {
 	os.Setenv("APP_URL", "http://localhost")
 
 	encryptionKey := "abc123abc123abc123abc123abc123ab" // 32 chars
-	uc := auth.NewAuthUsecase(mockRepo, auth.NewJWTService(), &testutil.MockStorageService{}, &testutil.MockMediaService{}, &testutil.MockXPUsecase{}, &testutil.MockBadgeUsecase{}, &testutil.MockAnilistClient{}, &testutil.MockGoogleClient{}, &testutil.MockDiscordClient{}, encryptionKey)
+	mailMock := &testutil.MockMailService{}
+	tokenRepoMock := &testutil.MockAuthTokenRepository{}
+	uc := auth.NewAuthUsecase(mockRepo, auth.NewJWTService(), &testutil.MockStorageService{}, &testutil.MockMediaService{}, &testutil.MockXPUsecase{}, &testutil.MockBadgeUsecase{}, &testutil.MockAnilistClient{}, &testutil.MockGoogleClient{}, &testutil.MockDiscordClient{}, mailMock, tokenRepoMock, encryptionKey)
 
 	t.Run("Success - Verify Encryption", func(t *testing.T) {
 		err := uc.LinkAnilist(ctx, 1, "test-code")
@@ -125,7 +131,9 @@ func TestAuthUsecase_LoginWithGoogle(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := &testutil.MockUserRepository{}
 	
-	uc := auth.NewAuthUsecase(mockRepo, auth.NewJWTService(), &testutil.MockStorageService{}, &testutil.MockMediaService{}, &testutil.MockXPUsecase{}, &testutil.MockBadgeUsecase{}, &testutil.MockAnilistClient{}, &testutil.MockGoogleClient{}, &testutil.MockDiscordClient{}, "test-key-32-chars-long-1234567890")
+	mailMock := &testutil.MockMailService{}
+	tokenRepoMock := &testutil.MockAuthTokenRepository{}
+	uc := auth.NewAuthUsecase(mockRepo, auth.NewJWTService(), &testutil.MockStorageService{}, &testutil.MockMediaService{}, &testutil.MockXPUsecase{}, &testutil.MockBadgeUsecase{}, &testutil.MockAnilistClient{}, &testutil.MockGoogleClient{}, &testutil.MockDiscordClient{}, mailMock, tokenRepoMock, "test-key-32-chars-long-1234567890")
 
 	t.Run("Login Existing User", func(t *testing.T) {
 		mockRepo.User = &domain.User{ID: 10, UUID: "google-user-uuid"}
@@ -166,7 +174,9 @@ func TestAuthUsecase_LinkSocials(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := &testutil.MockUserRepository{}
 	encryptionKey := "abc123abc123abc123abc123abc123ab"
-	uc := auth.NewAuthUsecase(mockRepo, auth.NewJWTService(), &testutil.MockStorageService{}, &testutil.MockMediaService{}, &testutil.MockXPUsecase{}, &testutil.MockBadgeUsecase{}, &testutil.MockAnilistClient{}, &testutil.MockGoogleClient{}, &testutil.MockDiscordClient{}, encryptionKey)
+	mailMock := &testutil.MockMailService{}
+	tokenRepoMock := &testutil.MockAuthTokenRepository{}
+	uc := auth.NewAuthUsecase(mockRepo, auth.NewJWTService(), &testutil.MockStorageService{}, &testutil.MockMediaService{}, &testutil.MockXPUsecase{}, &testutil.MockBadgeUsecase{}, &testutil.MockAnilistClient{}, &testutil.MockGoogleClient{}, &testutil.MockDiscordClient{}, mailMock, tokenRepoMock, encryptionKey)
 
 	os.Setenv("GOOGLE_CLIENT_ID", "test")
 	os.Setenv("GOOGLE_CLIENT_SECRET", "test")

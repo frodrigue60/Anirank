@@ -13,6 +13,7 @@ import (
 	"anirank/api/internal/infrastructure/anilist"
 	"anirank/api/internal/infrastructure/discord"
 	"anirank/api/internal/infrastructure/google"
+	"anirank/api/internal/infrastructure/mail"
 	"anirank/api/internal/infrastructure/og"
 	"anirank/api/internal/jobs"
 	"anirank/api/internal/repository/postgres"
@@ -260,7 +261,21 @@ func main() {
 
 	xpUsecase := usecase.NewXPUsecase(xpRepo, userRepo, badgeUsecase)
 	activityUsecase := usecase.NewActivityUsecase(postgres.NewActivityRepository(db), userRepo, songRepo, artistRepo, mediaService)
-	authUsecase := auth.NewAuthUsecase(userRepo, jwtService, storageService, mediaService, xpUsecase, badgeUsecase, anilistClient, googleClient, discordClient, os.Getenv("ENCRYPTION_KEY"))
+
+	// Auth specialized services
+	tokenRepo := postgres.NewAuthTokenRepository(db)
+	resendAPIKey := os.Getenv("RESEND_API_KEY")
+	resendFrom := os.Getenv("RESEND_FROM_EMAIL")
+	if resendFrom == "" {
+		resendFrom = "AniRank <noreply@anirank.com>"
+	}
+	appURL := os.Getenv("APP_URL")
+	if appURL == "" {
+		appURL = "http://localhost:5173" // Default frontend dev URL
+	}
+	mailService := mail.NewResendService(resendAPIKey, resendFrom, appURL)
+
+	authUsecase := auth.NewAuthUsecase(userRepo, jwtService, storageService, mediaService, xpUsecase, badgeUsecase, anilistClient, googleClient, discordClient, mailService, tokenRepo, os.Getenv("ENCRYPTION_KEY"))
 	interactionUsecase := interaction.NewInteractionUsecase(interactionRepo, commentRepo, userRepo, notificationUsecase, songRepo, animeRepo, artistRepo, mediaService, xpUsecase, activityUsecase, badgeUsecase)
 	playlistUsecase := playlist.NewPlaylistUsecase(playlistRepo, songRepo, animeRepo, interactionRepo, mediaService, xpUsecase, userRepo)
 

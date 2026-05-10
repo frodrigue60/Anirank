@@ -149,6 +149,7 @@ func (m *MockMediaService) UploadImage(ctx context.Context, p string, id uint64,
 func (m *MockMediaService) UploadImageOptimized(ctx context.Context, p string, id uint64, f io.Reader, o infrastructure.ImageOptions) (string, string, error) { return "", "", nil }
 func (m *MockMediaService) UploadWithResolutions(ctx context.Context, p string, id uint64, f io.Reader, pr infrastructure.ResolutionPreset) (string, string, error) { return "", "", nil }
 func (m *MockMediaService) GetImageSources(p string) []domain.ImageSource { return nil }
+func (m *MockMediaService) DeleteMedia(ctx context.Context, p string) {}
 
 // Gamification Mocks
 type MockXPUsecase struct{}
@@ -255,4 +256,54 @@ func (m *MockDiscordClient) GetUserInfo(ctx context.Context, accessToken string)
 		return m.GetUserInfoFunc(accessToken)
 	}
 	return &discord.DiscordUser{ID: "d-123", Username: "DiscordUser", Email: "discord@test.com"}, nil
+}
+
+type MockMailService struct {
+	SendVerificationFunc  func(to, name, token string) error
+	SendPasswordResetFunc func(to, name, token string) error
+}
+
+func (m *MockMailService) SendVerificationEmail(ctx context.Context, to string, name string, token string) error {
+	if m.SendVerificationFunc != nil {
+		return m.SendVerificationFunc(to, name, token)
+	}
+	return nil
+}
+
+func (m *MockMailService) SendPasswordResetEmail(ctx context.Context, to string, name string, token string) error {
+	if m.SendPasswordResetFunc != nil {
+		return m.SendPasswordResetFunc(to, name, token)
+	}
+	return nil
+}
+
+type MockAuthTokenRepository struct {
+	CreateFunc     func(token *domain.AuthToken) error
+	GetByTokenFunc func(token string, tokenType string) (*domain.AuthToken, error)
+}
+
+func (m *MockAuthTokenRepository) Create(ctx context.Context, token *domain.AuthToken) error {
+	if m.CreateFunc != nil {
+		return m.CreateFunc(token)
+	}
+	return nil
+}
+
+func (m *MockAuthTokenRepository) GetByToken(ctx context.Context, token string, tokenType string) (*domain.AuthToken, error) {
+	if m.GetByTokenFunc != nil {
+		return m.GetByTokenFunc(token, tokenType)
+	}
+	return &domain.AuthToken{}, nil
+}
+
+func (m *MockAuthTokenRepository) DeleteByUser(ctx context.Context, userID uint64, tokenType string) error {
+	return nil
+}
+
+func (m *MockAuthTokenRepository) Delete(ctx context.Context, id uint64) error {
+	return nil
+}
+
+func (m *MockAuthTokenRepository) CleanupExpired(ctx context.Context) error {
+	return nil
 }

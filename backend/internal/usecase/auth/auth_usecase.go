@@ -1078,9 +1078,9 @@ func (u *AuthUsecase) LoginWithDiscord(ctx context.Context, code string) (*AuthT
 		roleSlugs = append(roleSlugs, "user")
 	}
 	// Ensure email is synced if missing and Discord has it
-	if user.Email == "" && discordUser.Email != nil && *discordUser.Email != "" {
-		user.Email = strings.ToLower(strings.TrimSpace(*discordUser.Email))
-		if discordUser.Verified != nil && *discordUser.Verified && user.EmailVerifiedAt == nil {
+	if user.Email == "" && discordUser.Email != "" {
+		user.Email = strings.ToLower(strings.TrimSpace(discordUser.Email))
+		if discordUser.Verified && user.EmailVerifiedAt == nil {
 			now := time.Now()
 			user.EmailVerifiedAt = &now
 		}

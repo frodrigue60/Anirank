@@ -178,6 +178,37 @@
     }
   }
 
+  let email = $state(authState.user?.email || "");
+  let isUpdatingEmail = $state(false);
+
+  $effect(() => {
+    if (authState.user?.email && !email) {
+      email = authState.user.email;
+    }
+  });
+
+  async function handleUpdateEmail() {
+    if (!email || !email.includes("@")) {
+      toastState.addToast("Please enter a valid email address.", "error");
+      return;
+    }
+    
+    isUpdatingEmail = true;
+    try {
+      await api.put("/users/email", { email });
+      toastState.addToast("Email updated! Please check your inbox to verify it.", "success");
+      
+      if (authState.user) {
+        authState.user.email = email;
+        authState.user.email_verified_at = null;
+      }
+    } catch (err: any) {
+      toastState.addToast(getApiErrorMessage(err, "Failed to update email."), "error");
+    } finally {
+      isUpdatingEmail = false;
+    }
+  }
+
   // Derived social identity helpers
   const getIdentity = (provider: string) => 
     authState.user?.social_identities?.find(s => s.provider === provider);
@@ -239,6 +270,50 @@
       </div>
     </section>
   {/if}
+
+  <!-- Email Address -->
+  <section
+    class="bg-surface-container border border-white/5 rounded-md overflow-hidden shadow-sm transition-all duration-500 animate-in fade-in slide-in-from-bottom-4"
+  >
+    <div class="px-8 py-6 border-b border-white/5 bg-surface-highest">
+      <h2 class="text-lg font-bold text-on-surface tracking-tight">
+        Email Address
+      </h2>
+    </div>
+    <div class="p-8">
+      <div class="grid gap-4">
+        <label for="email" class="text-xs font-bold text-on-surface-variant uppercase tracking-widest">Contact Email</label>
+        <div class="flex gap-4">
+          <div class="relative flex-1">
+            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <Mail class="w-4 h-4 text-on-surface-variant/40" />
+            </div>
+            <input
+              id="email"
+              type="email"
+              bind:value={email}
+              placeholder="your@email.com"
+              class="w-full bg-surface-lowest border border-on-surface-variant/10 rounded-sm py-3 pl-11 pr-4 text-sm text-on-surface placeholder:text-on-surface-variant/20 focus:outline-none focus:border-primary/50 transition-colors"
+            />
+          </div>
+          <button
+            onclick={handleUpdateEmail}
+            disabled={isUpdatingEmail || email === authState.user?.email}
+            class="px-8 py-3 bg-primary text-on-primary font-bold text-xs uppercase tracking-widest rounded-sm hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:scale-100 disabled:shadow-none"
+          >
+            {isUpdatingEmail ? "Updating..." : "Update"}
+          </button>
+        </div>
+        <p class="text-[10px] text-on-surface-variant/60 leading-relaxed">
+          {#if authState.user?.email_verified_at}
+            Your email is currently verified. Changing it will require a new verification.
+          {:else}
+            Provide an email address to receive notifications and recover your account if you lose access.
+          {/if}
+        </p>
+      </div>
+    </div>
+  </section>
 
   <!-- Account Connections -->
   <section

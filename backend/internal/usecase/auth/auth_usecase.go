@@ -321,6 +321,61 @@ func (u *AuthUsecase) UpdateProfile(ctx context.Context, userID uint64, about, p
 	return u.userRepo.Update(ctx, user)
 }
 
+func (u *AuthUsecase) UpdateEmail(ctx context.Context, userID uint64, newEmail string) error {
+	newEmail = strings.ToLower(strings.TrimSpace(newEmail))
+	if newEmail == "" {
+		return domain.NewAppError(422, "Email is required", nil)
+	}
+
+	// Fetch current user
+	user, err := u.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return domain.NewAppError(404, "User not found", err)
+	}
+
+	// If it's the same email, do nothing
+	if user.Email == newEmail {
+		return nil
+	}
+
+	// Ensure new email is unique
+	existing, _ := u.userRepo.GetByEmail(ctx, newEmail)
+	if existing != nil {
+		return domain.NewAppError(400, "Email is already in use by another account", nil)
+	}
+
+	// Update user
+	user.Email = newEmail
+	user.EmailVerifiedAt = nil // Reset verification
+
+	if err := u.userRepo.Update(ctx, user); err != nil {
+		return domain.NewAppError(500, "Failed to update email", err)
+	}
+
+	// Generate and send new verification token
+	vToken := strings.ReplaceAll(uuid.New().String(), "-", "")
+	
+	// Delete old verification tokens
+	_ = u.tokenRepo.DeleteByUser(ctx, userID, "email_verification")
+	
+	err = u.tokenRepo.Create(ctx, &domain.AuthToken{
+		UserID:    userID,
+		Token:     vToken,
+		Type:      "email_verification",
+		ExpiresAt: time.Now().Add(24 * time.Hour),
+	})
+	if err != nil {
+		return domain.NewAppError(500, "Email updated but failed to create verification token", err)
+	}
+
+	// Send email in background
+	go func() {
+		_ = u.mail.SendVerificationEmail(context.Background(), user.Email, user.Name, vToken)
+	}()
+
+	return nil
+}
+
 func (u *AuthUsecase) generateUniqueUserSlug(ctx context.Context, name string) string {
 	return utils.GenerateUniqueSlug(name, func(slug string) bool {
 		existing, err := u.userRepo.GetBySlug(ctx, slug)

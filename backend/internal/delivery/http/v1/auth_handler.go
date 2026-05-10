@@ -328,6 +328,29 @@ func (h *AuthHandler) UpdateProfile(c *fiber.Ctx) error {
 	})
 }
 
+func (h *AuthHandler) UpdateEmail(c *fiber.Ctx) error {
+	userID, ok := c.Locals("user_id").(uint64)
+	if !ok {
+		return domain.NewAppError(401, "Unauthorized", nil)
+	}
+
+	var req struct {
+		Email string `json:"email"`
+	}
+	if err := c.BodyParser(&req); err != nil {
+		return domain.NewAppError(400, "Invalid payload", err)
+	}
+
+	if err := h.usecase.UpdateEmail(c.Context(), userID, req.Email); err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{
+		"success": true,
+		"message": "Email updated successfully. Please check your new email to verify it.",
+	})
+}
+
 // AnilistLink redirects to the Anilist authorization page
 // @Summary Redirect to Anilist Auth
 // @Description Generates the Anilist OAuth2 authorization URL and redirects the user.

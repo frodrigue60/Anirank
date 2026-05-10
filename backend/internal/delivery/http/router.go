@@ -232,6 +232,7 @@ func SetupPublicRoutes(app *fiber.App,
 	protected.Post("/users/avatar", authHandler.UpdateAvatar)
 	protected.Post("/users/banner", authHandler.UpdateBanner)
 	protected.Post("/users/score-format", authHandler.UpdateScoreFormat)
+	protected.Put("/users/email", authHandler.UpdateEmail)
 	protected.Patch("/users/profile", authHandler.UpdateProfile)
 
 	// Anilist Link

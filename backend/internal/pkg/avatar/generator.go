@@ -57,14 +57,17 @@ func Generate(ctx context.Context, name string, size int) (*Result, error) {
 	if err != nil {
 		fmt.Printf("[Avatar] Warning: failed to parse embedded font: %v\n", err)
 	} else {
+		// Reduced size slightly for better visual balance (from /2 to /2.2)
 		face := truetype.NewFace(f, &truetype.Options{
-			Size: float64(size) / 2,
+			Size: float64(size) / 2.2,
 		})
 		dc.SetFontFace(face)
 	}
 
 	// 5. Draw Text
-	dc.DrawStringAnchored(initials, float64(size)/2, float64(size)/2, 0.5, 0.5)
+	// We apply a slight vertical offset (-0.05 * size) because initials 
+	// usually look better a bit higher than the mathematical center due to descenders.
+	dc.DrawStringAnchored(initials, float64(size)/2, (float64(size)/2)-(float64(size)*0.02), 0.5, 0.5)
 
 	// 6. Encode to AVIF
 	var buf bytes.Buffer

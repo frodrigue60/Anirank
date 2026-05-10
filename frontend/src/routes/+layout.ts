@@ -2,10 +2,8 @@ import api from '$lib/api';
 import { setConfig } from '$lib/state/config.svelte';
 import { setUser } from '$lib/state/auth.svelte';
 
-// Desactivamos Server-Side Rendering (SSR)
-// Esto convierte a SvelteKit en una Single Page Application (SPA) pura
-// Simplifica el manejo de cookies (Sanctum) porque todas las peticiones a la API salen del navegador del cliente
-export const ssr = false;
+// Habilitamos Server-Side Rendering (SSR) para que los bots de Discord/Twitter puedan leer las etiquetas OG
+export const ssr = true;
 export const prerender = true;
 export const trailingSlash = 'always';
 

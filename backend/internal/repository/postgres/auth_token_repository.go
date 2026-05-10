@@ -34,7 +34,8 @@ func (r *authTokenRepository) Create(ctx context.Context, token *domain.AuthToke
 
 func (r *authTokenRepository) GetByToken(ctx context.Context, token string, tokenType string) (*domain.AuthToken, error) {
 	var t domain.AuthToken
-	query := `SELECT * FROM auth_tokens WHERE token = $1 AND type = $2 AND expires_at > NOW()`
+	// Quitamos el filtro de expires_at > NOW() para manejarlo en el usecase y poder debuguear mejor
+	query := `SELECT * FROM auth_tokens WHERE token = $1 AND type = $2`
 	err := r.db.GetContext(ctx, &t, query, token, tokenType)
 	if err != nil {
 		return nil, err

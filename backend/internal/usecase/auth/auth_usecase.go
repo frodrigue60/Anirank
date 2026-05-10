@@ -1148,10 +1148,20 @@ func (u *AuthUsecase) UnlinkSocial(ctx context.Context, userID uint64, provider 
 }
 
 func (u *AuthUsecase) VerifyEmail(ctx context.Context, token string) error {
+	log.Printf("[VerifyEmail] Attempting to verify with token: %s", token)
 	t, err := u.tokenRepo.GetByToken(ctx, token, "email_verification")
 	if err != nil {
+		log.Printf("[VerifyEmail] Token not found in DB: %v", err)
 		return domain.NewAppError(400, "Invalid or expired verification token", err)
 	}
+
+	// Verificar expiración manualmente
+	if time.Now().After(t.ExpiresAt) {
+		log.Printf("[VerifyEmail] Token found but EXPIRED. ExpiresAt: %v, Now: %v", t.ExpiresAt, time.Now())
+		return domain.NewAppError(400, "Verification link has expired", nil)
+	}
+
+	log.Printf("[VerifyEmail] Found valid token for user ID: %d", t.UserID)
 
 	user, err := u.userRepo.GetByID(ctx, t.UserID)
 	if err != nil {

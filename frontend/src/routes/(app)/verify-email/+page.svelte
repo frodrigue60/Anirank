@@ -11,8 +11,10 @@
 
   let status = $state<'loading' | 'success' | 'error'>('loading');
   let errorMessage = $state("");
+  let processing = false;
 
   onMount(async () => {
+    if (processing) return;
     const token = page.url.searchParams.get("token");
 
     if (!token) {
@@ -20,6 +22,8 @@
       errorMessage = "No verification token found in URL.";
       return;
     }
+
+    processing = true;
 
     try {
       await api.get(`/verify-email?token=${token}`);

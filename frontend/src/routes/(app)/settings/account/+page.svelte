@@ -139,12 +139,7 @@
 
   async function handleResendVerification() {
     try {
-      await api.post("/forgot-password", { email: authState.user?.email }); // Reusing forgot-password to send verification/reset instructions if not verified
-      // Wait, I should probably have a dedicated resend-verification endpoint if I want specific text,
-      // but for now, forgot-password serves as a "send me a link" utility.
-      // Actually, let's use the forgot-password logic which also works for verification links if the user is unverified in some systems,
-      // but in our backend ResetPassword and VerifyEmail are different.
-      // I'll add a check or just call forgot-password which is safe.
+      await api.post("/users/resend-verification");
       toastState.addToast("Verification instructions sent to your email!", "success");
     } catch (err: unknown) {
       toastState.addToast(
@@ -196,7 +191,7 @@
     isUpdatingEmail = true;
     try {
       await api.put("/users/email", { email });
-      toastState.addToast("Email updated! Please check your inbox to verify it.", "success");
+      toastState.addToast("Email updated successfully!", "success");
       
       if (authState.user) {
         authState.user.email = email;
@@ -241,13 +236,18 @@
           <div>
             <h2 class="text-sm font-bold text-amber-500 uppercase tracking-widest">Verify your account</h2>
             <p class="text-xs text-on-surface-variant mt-1 max-w-md">
-              Your account is not verified. Please check your email for the verification link or request a new one below.
+              {#if !authState.user?.email}
+                You need to associate an email address with your account before you can verify it.
+              {:else}
+                Your account is not verified. Please check your email for the verification link or request a new one below.
+              {/if}
             </p>
           </div>
         </div>
         <button
           onclick={handleResendVerification}
-          class="px-5 py-2 bg-amber-500 text-black font-bold text-xs uppercase tracking-widest rounded-sm hover:scale-105 active:scale-95 transition-all shadow-lg shadow-amber-500/20 whitespace-nowrap"
+          disabled={!authState.user?.email || !authState.user.email.includes("@")}
+          class="px-5 py-2 bg-amber-500 text-black font-bold text-xs uppercase tracking-widest rounded-sm hover:scale-105 active:scale-95 transition-all shadow-lg shadow-amber-500/20 whitespace-nowrap disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:grayscale"
         >
           Resend Link
         </button>

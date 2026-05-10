@@ -370,7 +370,12 @@ func (u *AuthUsecase) UpdateEmail(ctx context.Context, userID uint64, newEmail s
 
 	// Send email in background
 	go func() {
-		_ = u.mail.SendVerificationEmail(context.Background(), user.Email, user.Name, vToken)
+		err := u.mail.SendVerificationEmail(context.Background(), user.Email, user.Name, vToken)
+		if err != nil {
+			log.Printf("❌ Failed to send verification email after email update for user %d: %v", userID, err)
+		} else {
+			log.Printf("✅ Verification email sent to %s after update", user.Email)
+		}
 	}()
 
 	return nil
@@ -1185,5 +1190,42 @@ func (u *AuthUsecase) ResetPassword(ctx context.Context, token, newPassword stri
 	}
 
 	_ = u.tokenRepo.DeleteByUser(ctx, t.UserID, "password_reset")
+	return nil
+}
+
+func (u *AuthUsecase) ResendVerification(ctx context.Context, userID uint64) error {
+	user, err := u.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return domain.NewAppError(404, "User not found", err)
+	}
+
+	if user.Email == "" {
+		return domain.NewAppError(400, "User has no email associated", nil)
+	}
+
+	if user.EmailVerifiedAt != nil {
+		return domain.NewAppError(400, "Email is already verified", nil)
+	}
+
+	// Cleanup old tokens
+	_ = u.tokenRepo.DeleteByUser(ctx, user.ID, "email_verification")
+
+	// Generate verification token
+	vToken := strings.ReplaceAll(uuid.New().String(), "-", "")
+	_ = u.tokenRepo.Create(ctx, &domain.AuthToken{
+		UserID:    user.ID,
+		Token:     vToken,
+		Type:      "email_verification",
+		ExpiresAt: time.Now().Add(24 * time.Hour),
+	})
+
+	// Send email
+	go func() {
+		err := u.mail.SendVerificationEmail(context.Background(), user.Email, user.Name, vToken)
+		if err != nil {
+			log.Printf("Failed to resend verification email to %s: %v", user.Email, err)
+		}
+	}()
+
 	return nil
 }

@@ -704,3 +704,18 @@ func (h *AuthHandler) ResetPassword(c *fiber.Ctx) error {
 		"message": "Password has been successfully reset",
 	})
 }
+
+func (h *AuthHandler) ResendVerification(c *fiber.Ctx) error {
+	userID, ok := c.Locals("user_id").(uint64)
+	if !ok {
+		return domain.NewAppError(401, "Unauthorized", nil)
+	}
+
+	if err := h.usecase.ResendVerification(c.Context(), userID); err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "Verification email sent",
+	})
+}

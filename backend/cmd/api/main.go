@@ -272,6 +272,9 @@ func main() {
 	appURL := os.Getenv("APP_URL")
 	if appURL == "" {
 		appURL = "http://localhost:5173" // Default frontend dev URL
+		log.Println("⚠️ APP_URL not set, defaulting to http://localhost:5173 for email links")
+	} else {
+		log.Printf("📧 Email service initialized with APP_URL: %s", appURL)
 	}
 	mailService := mail.NewResendService(resendAPIKey, resendFrom, appURL)
 

@@ -971,6 +971,12 @@ func (u *CatalogUsecase) enrichPlaylist(p *domain.Playlist) {
 }
 
 func (u *CatalogUsecase) GetSitemapData(ctx context.Context) ([]domain.SitemapItem, error) {
+	cacheKey := "sitemap:data"
+	var cachedItems []domain.SitemapItem
+	if err := u.safeCacheGet(ctx, cacheKey, &cachedItems); err == nil && len(cachedItems) > 0 {
+		return cachedItems, nil
+	}
+
 	allItems := []domain.SitemapItem{}
 
 	// 1. Animes (High Priority)
@@ -1005,6 +1011,9 @@ func (u *CatalogUsecase) GetSitemapData(ctx context.Context) ([]domain.SitemapIt
 		}
 		allItems = append(allItems, artists...)
 	}
+
+	// Cache for 6 hours as sitemap doesn't change that often
+	u.safeCacheSet(ctx, cacheKey, allItems, 6*time.Hour)
 
 	return allItems, nil
 }

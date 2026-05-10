@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"anirank/api/internal/domain"
@@ -538,43 +539,60 @@ func (h *CatalogHandler) GetSitemapXML(c *fiber.Ctx) error {
 		siteURL = "https://anirank.work"
 	}
 
-	// Manual XML construction to match the frontend template
-	xml := `<?xml version="1.0" encoding="UTF-8"?>
+	var sb strings.Builder
+	sb.WriteString(`<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>` + siteURL + `/</loc>
+    <loc>`)
+	sb.WriteString(siteURL)
+	sb.WriteString(`/</loc>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>` + siteURL + `/animes</loc>
+    <loc>`)
+	sb.WriteString(siteURL)
+	sb.WriteString(`/animes</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>` + siteURL + `/songs</loc>
+    <loc>`)
+	sb.WriteString(siteURL)
+	sb.WriteString(`/songs</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>` + siteURL + `/artists</loc>
+    <loc>`)
+	sb.WriteString(siteURL)
+	sb.WriteString(`/artists</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
-  </url>`
+  </url>`)
 
 	for _, item := range data {
-		xml += `
+		sb.WriteString(`
   <url>
-    <loc>` + siteURL + item.Loc + `</loc>
-    <lastmod>` + item.LastMod.Format(time.RFC3339) + `</lastmod>
-    <changefreq>` + item.ChangeFreq + `</changefreq>
-    <priority>` + fmt.Sprintf("%.1f", item.Priority) + `</priority>
-  </url>`
+    <loc>`)
+		sb.WriteString(siteURL)
+		sb.WriteString(item.Loc)
+		sb.WriteString(`</loc>
+    <lastmod>`)
+		sb.WriteString(item.LastMod.Format(time.RFC3339))
+		sb.WriteString(`</lastmod>
+    <changefreq>`)
+		sb.WriteString(item.ChangeFreq)
+		sb.WriteString(`</changefreq>
+    <priority>`)
+		sb.WriteString(fmt.Sprintf("%.1f", item.Priority))
+		sb.WriteString(`</priority>
+  </url>`)
 	}
 
-	xml += `
-</urlset>`
+	sb.WriteString(`
+</urlset>`)
 
 	c.Set("Content-Type", "application/xml")
-	return c.SendString(xml)
+	return c.SendString(sb.String())
 }

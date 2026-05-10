@@ -5,61 +5,24 @@ export const prerender = false;
 
 export const GET: RequestHandler = async ({ fetch }) => {
   try {
-    // PUBLIC_API_URL should be available in SvelteKit
     const apiBase = PUBLIC_API_URL;
-    const siteUrl = import.meta.env?.APP_URL || 'https://anirank.work';
-
-    const response = await fetch(`${apiBase}/catalog/sitemap`);
+    // Fetch the pre-constructed XML from the backend
+    const response = await fetch(`${apiBase}/catalog/sitemap.xml`);
     
     if (!response.ok) {
-      throw new Error(`Failed to fetch sitemap data: ${response.statusText}`);
+      throw new Error(`Failed to fetch sitemap from backend: ${response.statusText}`);
     }
 
-    const json = await response.json();
-    const data = json.data || [];
+    const xml = await response.text();
 
-    const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <!-- Static Pages -->
-  <url>
-    <loc>${siteUrl}/</loc>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>${siteUrl}/animes</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>${siteUrl}/songs</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>${siteUrl}/artists</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-
-  <!-- Dynamic Content -->
-  ${data.map((item: any) => `
-  <url>
-    <loc>${siteUrl}${item.loc}</loc>
-    <lastmod>${new Date(item.lastmod).toISOString()}</lastmod>
-    <changefreq>${item.changefreq || 'monthly'}</changefreq>
-    <priority>${item.priority || 0.5}</priority>
-  </url>`).join('')}
-</urlset>`;
-
-    return new Response(sitemap, {
+    return new Response(xml, {
       headers: {
         'Content-Type': 'application/xml',
-        'Cache-Control': 'max-age=0, s-maxage=3600' // Cache for 1 hour on CDN
+        'Cache-Control': 'public, max-age=3600' // 1 hour
       }
     });
   } catch (error) {
-    console.error('Sitemap generation error:', error);
-    return new Response('Error generating sitemap', { status: 500 });
+    console.error('Sitemap proxy error:', error);
+    return new Response('Error loading sitemap', { status: 500 });
   }
 };

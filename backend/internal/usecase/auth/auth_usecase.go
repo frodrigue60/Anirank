@@ -612,9 +612,12 @@ func (u *AuthUsecase) LoginWithGoogle(ctx context.Context, code, redirectURI str
 				}
 
 				// If user email wasn't verified in our DB but Google says it's verified, update it
-				if user.EmailVerifiedAt == nil && googleUser.EmailVerified {
+				if (user.EmailVerifiedAt == nil || user.Email == "") && googleUser.EmailVerified {
 					now := time.Now()
 					user.EmailVerifiedAt = &now
+					if user.Email == "" {
+						user.Email = strings.ToLower(strings.TrimSpace(googleUser.Email))
+					}
 					_ = u.userRepo.Update(ctx, user)
 				}
 			} else {
@@ -634,6 +637,16 @@ func (u *AuthUsecase) LoginWithGoogle(ctx context.Context, code, redirectURI str
 	if len(roleSlugs) == 0 {
 		roleSlugs = append(roleSlugs, "user") // Fallback
 	}
+	// Ensure email is synced if missing and Google has it
+	if user.Email == "" && googleUser.Email != "" {
+		user.Email = strings.ToLower(strings.TrimSpace(googleUser.Email))
+		if googleUser.EmailVerified && user.EmailVerifiedAt == nil {
+			now := time.Now()
+			user.EmailVerifiedAt = &now
+		}
+		_ = u.userRepo.Update(ctx, user)
+	}
+
 	user.Roles = roles
 
 	token, err := u.jwtService.GenerateToken(user.UUID, roleSlugs)
@@ -1063,6 +1076,15 @@ func (u *AuthUsecase) LoginWithDiscord(ctx context.Context, code string) (*AuthT
 	}
 	if len(roleSlugs) == 0 {
 		roleSlugs = append(roleSlugs, "user")
+	}
+	// Ensure email is synced if missing and Discord has it
+	if user.Email == "" && discordUser.Email != nil && *discordUser.Email != "" {
+		user.Email = strings.ToLower(strings.TrimSpace(*discordUser.Email))
+		if discordUser.Verified != nil && *discordUser.Verified && user.EmailVerifiedAt == nil {
+			now := time.Now()
+			user.EmailVerifiedAt = &now
+		}
+		_ = u.userRepo.Update(ctx, user)
 	}
 	user.Roles = roles
 

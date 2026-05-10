@@ -171,7 +171,7 @@ func (r *userRepository) Create(ctx context.Context, user *domain.User) error {
 }
 
 func (r *userRepository) Update(ctx context.Context, user *domain.User) error {
-	query := `UPDATE users SET name=:name, slug=:slug, email=:email, score_format_id=(SELECT id FROM score_formats WHERE slug = :score_format), avatar=:avatar, banner=:banner, about=:about, profile_color=:profile_color, updated_at=CURRENT_TIMESTAMP WHERE id=:id`
+	query := `UPDATE users SET name=:name, slug=:slug, email=:email, email_verified_at=:email_verified_at, score_format_id=(SELECT id FROM score_formats WHERE slug = :score_format), avatar=:avatar, banner=:banner, about=:about, profile_color=:profile_color, updated_at=CURRENT_TIMESTAMP WHERE id=:id`
 	_, err := r.db.NamedExecContext(ctx, query, user)
 	return err
 }

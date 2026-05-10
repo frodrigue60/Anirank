@@ -81,9 +81,10 @@ func ToAuthUserDTO(u *domain.User) AuthUserDTO {
 	}
 
 	return AuthUserDTO{
-		UserDTO:       ToUserDTO(u),
-		Email:         u.Email,
-		ScoreFormat:   u.ScoreFormat,
+		UserDTO:         ToUserDTO(u),
+		Email:           u.Email,
+		EmailVerifiedAt: u.EmailVerifiedAt,
+		ScoreFormat:     u.ScoreFormat,
 	}
 }
 

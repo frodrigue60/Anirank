@@ -120,7 +120,7 @@ func (h *AuthHandler) Profile(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"data": dto.ToUserDTO(profile),
+		"data": dto.ToAuthUserDTO(profile),
 	})
 }
 

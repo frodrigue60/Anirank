@@ -47,8 +47,9 @@ type UserDTO struct {
 
 type AuthUserDTO struct {
 	UserDTO
-	Email         string  `json:"email"`
-	ScoreFormat   *string `json:"score_format,omitempty"`
+	Email           string     `json:"email"`
+	EmailVerifiedAt *time.Time `json:"email_verified_at,omitempty"`
+	ScoreFormat     *string    `json:"score_format,omitempty"`
 }
 
 type AuthResponseDTO struct {

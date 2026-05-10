@@ -11,7 +11,7 @@ import Loader2 from "lucide-svelte/icons/loader-2";
 import Lock from "lucide-svelte/icons/lock";
 import ChevronDown from "lucide-svelte/icons/chevron-down";
 
-  let scoreFormat = $state(authState.user?.score_format_id || 1);
+  let scoreFormat = $state(authState.user?.score_format || "POINT_10_DECIMAL");
   let profileColor = $state(authState.user?.profile_color || "#3db4f2");
   let about = $state(authState.user?.about || "");
   let isUploadingAvatar = $state(false);
@@ -28,7 +28,7 @@ import ChevronDown from "lucide-svelte/icons/chevron-down";
 
   $effect(() => {
     if (authState.user) {
-      scoreFormat = authState.user.score_format_id || 1;
+      scoreFormat = authState.user.score_format || "POINT_10_DECIMAL";
       profileColor = authState.user.profile_color || "#3db4f2";
       about = authState.user.about || "";
     }
@@ -182,11 +182,9 @@ import ChevronDown from "lucide-svelte/icons/chevron-down";
       });
       if (response.data.success) {
         if (authState.user) {
-          const selectedFormat = scoreFormats.find((f) => f.id === scoreFormat);
           setUser({
             ...authState.user,
-            score_format_id: scoreFormat,
-            score_format: selectedFormat?.slug || "",
+            score_format: scoreFormat,
           });
         }
         toastState.addToast("Settings saved successfully!", "success");
@@ -552,7 +550,7 @@ import ChevronDown from "lucide-svelte/icons/chevron-down";
             class="w-full bg-surface-low border border-on-surface-variant/10 rounded-sm px-4 py-4 text-sm text-on-surface font-medium focus:outline-none focus:border-primary/50 transition-all appearance-none cursor-pointer"
           >
             {#each scoreFormats as format}
-              <option value={format.id}>{format.name}</option>
+              <option value={format.slug}>{format.name}</option>
             {/each}
           </select>
           <div

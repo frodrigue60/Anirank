@@ -5,6 +5,16 @@
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<link rel="icon" href="/favicon.png" />
+	<script>
+		(function () {
+			try {
+				const theme = localStorage.getItem('theme');
+				if (theme === 'dark' || theme === 'contrast') {
+					document.documentElement.classList.add(theme);
+				}
+			} catch (e) { }
+		})();
+	</script>
 	%sveltekit.head%
 </head>
 

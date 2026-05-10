@@ -4,7 +4,7 @@ import { setUser } from '$lib/state/auth.svelte';
 
 // Habilitamos Server-Side Rendering (SSR) para que los bots de Discord/Twitter puedan leer las etiquetas OG
 export const ssr = true;
-export const prerender = true;
+export const prerender = false;
 export const trailingSlash = 'always';
 
 export const load = async () => {

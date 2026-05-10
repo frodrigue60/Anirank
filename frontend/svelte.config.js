@@ -1,12 +1,9 @@
-import adapter from '@sveltejs/adapter-static';
+import adapter from '@sveltejs/adapter-node';
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
 	kit: {
-		adapter: adapter({
-			fallback: 'index.html', // Required for SPA mode
-			strict: false
-		}),
+		adapter: adapter(),
 		prerender: {
 			handleHttpError: 'warn',
 			handleMissingId: 'warn',

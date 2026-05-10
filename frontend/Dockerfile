@@ -16,7 +16,7 @@ ENV PUBLIC_API_URL=$PUBLIC_API_URL
 RUN bun run svelte-kit sync && bun run build
 
 # Final stage
-FROM oven/bun:alpine
+FROM node:20-alpine
 
 WORKDIR /app
 
@@ -27,11 +27,10 @@ COPY --from=builder /app/package.json ./package.json
 
 # Environment variables for production
 ENV NODE_ENV=production
-ENV PORT=80
 ENV HOST=0.0.0.0
 
-# Expose the port (Railway typically expects port 80 or the PORT env var)
-EXPOSE 80
+# Expose a default port (Railway will override this via the PORT env var)
+EXPOSE 3000
 
 # Run the SvelteKit server
-CMD ["bun", "./build/index.js"]
+CMD ["node", "build"]

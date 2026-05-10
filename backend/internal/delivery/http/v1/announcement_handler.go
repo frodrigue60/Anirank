@@ -113,11 +113,19 @@ func (h *AnnouncementHandler) CreateAnnouncement(c *fiber.Ctx) error {
 // UpdateAnnouncement handles updating an existing announcement.
 func (h *AnnouncementHandler) UpdateAnnouncement(c *fiber.Ctx) error {
 	id, _ := strconv.ParseUint(c.Params("id"), 10, 64)
+
+	// 1. Get existing announcement to preserve fields
+	existing, err := h.usecase.GetByID(c.Context(), id)
+	if err != nil {
+		return err
+	}
+
 	var a domain.Announcement
 	if err := c.BodyParser(&a); err != nil {
 		return domain.NewAppError(400, "Invalid request body", err)
 	}
 	a.ID = id
+	a.UUID = existing.UUID // Preserve UUID
 
 	// Manual override for dates
 	a.StartsAt = parseOptionalTime(c.FormValue("starts_at"))
@@ -131,6 +139,9 @@ func (h *AnnouncementHandler) UpdateAnnouncement(c *fiber.Ctx) error {
 			return domain.NewAppError(500, "Failed to upload image", err)
 		}
 		a.Image = &path
+	} else {
+		// No new file uploaded, preserve existing image
+		a.Image = existing.Image
 	}
 
 	if err := h.usecase.Update(c.Context(), &a); err != nil {

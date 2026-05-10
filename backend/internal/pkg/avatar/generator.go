@@ -65,9 +65,9 @@ func Generate(ctx context.Context, name string, size int) (*Result, error) {
 	}
 
 	// 5. Draw Text
-	// We apply a slight vertical offset (-0.05 * size) because initials 
-	// usually look better a bit higher than the mathematical center due to descenders.
-	dc.DrawStringAnchored(initials, float64(size)/2, (float64(size)/2)-(float64(size)*0.02), 0.5, 0.5)
+	// We apply a visual vertical offset (-0.07 * size) to compensate for font descender metrics
+	// ensuring capital initials look optically centered.
+	dc.DrawStringAnchored(initials, float64(size)/2, (float64(size)/2)-(float64(size)*0.07), 0.5, 0.5)
 
 	// 6. Encode to AVIF
 	var buf bytes.Buffer

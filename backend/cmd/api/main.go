@@ -123,6 +123,12 @@ func main() {
 	adminRepo := postgres.NewAdminRepository(db)
 	xpRepo := postgres.NewXPRepository(db)
 	searchRepo := postgres.NewSearchRepository(db)
+	
+	// Seed base data (Score Formats)
+	sfSeeder := postgres.NewScoreFormatSeeder(db)
+	if err := sfSeeder.Seed(context.Background()); err != nil {
+		log.Printf("Warning: Failed to seed score formats: %v", err)
+	}
 
 	storageService, err := infrastructure.InitStorageFromEnv(context.Background())
 	if err != nil {

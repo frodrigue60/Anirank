@@ -106,7 +106,7 @@ func (u *AuthUsecase) Login(ctx context.Context, email, password string) (*AuthT
 
 	// Default score format for users who haven't set one
 	if user.ScoreFormat == nil || *user.ScoreFormat == "" {
-		defaultFormat := "POINT_10"
+		defaultFormat := "POINT_10_DECIMAL"
 		user.ScoreFormat = &defaultFormat
 	}
 
@@ -132,7 +132,7 @@ func (u *AuthUsecase) Register(ctx context.Context, name, email, password string
 		return nil, domain.NewAppError(500, "Failed to secure password", err)
 	}
 
-	sFormat := "POINT_10"
+	sFormat := "POINT_10_DECIMAL"
 
 	newUser := &domain.User{
 		UUID:        uuid.New().String(),
@@ -199,7 +199,7 @@ func (u *AuthUsecase) GetProfile(ctx context.Context, userID uint64) (*domain.Us
 
 	// Default score format for users who haven't set one
 	if user.ScoreFormat == nil || *user.ScoreFormat == "" {
-		defaultFormat := "POINT_10"
+		defaultFormat := "POINT_10_DECIMAL"
 		user.ScoreFormat = &defaultFormat
 	}
 
@@ -659,7 +659,7 @@ func (u *AuthUsecase) LoginWithAnilist(ctx context.Context, code string) (*AuthT
 
 	user.Password = ""
 	if user.ScoreFormat == nil || *user.ScoreFormat == "" {
-		defaultFormat := "POINT_10"
+		defaultFormat := "POINT_10_DECIMAL"
 		user.ScoreFormat = &defaultFormat
 	}
 	u.enrichUserImages(user)
@@ -673,7 +673,7 @@ func (u *AuthUsecase) LoginWithAnilist(ctx context.Context, code string) (*AuthT
 func (u *AuthUsecase) autoRegisterGoogleUser(ctx context.Context, googleUser *google.GoogleUser, tokenResp *google.TokenResponse) (*AuthTokenResponse, error) {
 	// Generate random password for DB requirements (never used for real login)
 	dummyPass, _ := bcrypt.GenerateFromPassword([]byte(uuid.New().String()), bcrypt.DefaultCost)
-	sFormat := "POINT_10"
+	sFormat := "POINT_10_DECIMAL"
 
 	newUser := &domain.User{
 		UUID:        uuid.New().String(),
@@ -745,7 +745,7 @@ func (u *AuthUsecase) RegisterWithAnilist(ctx context.Context, tempToken, email 
 	}
 
 	dummyPass, _ := bcrypt.GenerateFromPassword([]byte(uuid.New().String()), bcrypt.DefaultCost)
-	sFormat := "POINT_10"
+	sFormat := "POINT_10_DECIMAL"
 
 	newUser := &domain.User{
 		UUID:        uuid.New().String(),

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 
 	"anirank/api/internal/domain"
 
@@ -145,6 +146,13 @@ func (r *userRepository) GetByUUID(ctx context.Context, uuid string) (*domain.Us
 }
 
 func (r *userRepository) Create(ctx context.Context, user *domain.User) error {
+	// Defensive check: Ensure score formats are seeded before creation
+	// to prevent FK constraint failures if the startup seeder was skipped
+	seeder := NewScoreFormatSeeder(r.db)
+	if err := seeder.Seed(ctx); err != nil {
+		log.Printf("Warning: Failed to ensure score formats during user creation: %v", err)
+	}
+
 	query := `
 		INSERT INTO users (uuid, name, slug, email, password, score_format_id, avatar, banner, about, profile_color, created_at, updated_at)
 		VALUES (:uuid, :name, :slug, :email, :password, (SELECT id FROM score_formats WHERE slug = :score_format), :avatar, :banner, :about, :profile_color, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)

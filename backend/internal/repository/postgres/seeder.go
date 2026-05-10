@@ -62,7 +62,7 @@ func (s *ScoreFormatSeeder) Seed(ctx context.Context) error {
 	// Delete formats not in our valid list
 	query, args, _ := sqlx.In("DELETE FROM score_formats WHERE slug NOT IN (?)", validSlugs)
 	query = s.db.Rebind(query)
-	_, err := s.db.ExecContext(ctx, query, args...)
+	_, err = s.db.ExecContext(ctx, query, args...)
 	if err != nil {
 		log.Printf("Warning: failed to cleanup old score formats: %v", err)
 	}
@@ -139,7 +139,7 @@ func (s *SongTypeSeeder) Seed(ctx context.Context) error {
 	// Delete types not in our valid list
 	query, args, _ := sqlx.In("DELETE FROM song_types WHERE slug NOT IN (?)", validSlugs)
 	query = s.db.Rebind(query)
-	_, err := s.db.ExecContext(ctx, query, args...)
+	_, err = s.db.ExecContext(ctx, query, args...)
 	if err != nil {
 		log.Printf("Warning: failed to cleanup old song types: %v", err)
 	}

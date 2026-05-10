@@ -77,3 +77,72 @@ func (s *ScoreFormatSeeder) Seed(ctx context.Context) error {
 	log.Println("✅ Score formats seeded successfully")
 	return nil
 }
+
+type SongTypeSeeder struct {
+	db *sqlx.DB
+}
+
+func NewSongTypeSeeder(db *sqlx.DB) *SongTypeSeeder {
+	return &SongTypeSeeder{db: db}
+}
+
+func (s *SongTypeSeeder) Seed(ctx context.Context) error {
+	log.Println("🌱 Syncing song types...")
+
+	types := []struct {
+		Name        string
+		Slug        string
+		Description string
+	}{
+		{
+			Name:        "Opening",
+			Slug:        "OP",
+			Description: "Anime Opening Theme",
+		},
+		{
+			Name:        "Ending",
+			Slug:        "ED",
+			Description: "Anime Ending Theme",
+		},
+		{
+			Name:        "Insert Song",
+			Slug:        "INS",
+			Description: "Songs played during anime episodes",
+		},
+		{
+			Name:        "Soundtrack",
+			Slug:        "OST",
+			Description: "Original Soundtrack pieces",
+		},
+	}
+
+	// Prepare valid slugs for exclusion
+	validSlugs := []string{}
+	for _, t := range types {
+		validSlugs = append(validSlugs, t.Slug)
+	}
+
+	// Delete types not in our valid list
+	query, args, _ := sqlx.In("DELETE FROM song_types WHERE slug NOT IN (?)", validSlugs)
+	query = s.db.Rebind(query)
+	_, err := s.db.ExecContext(ctx, query, args...)
+	if err != nil {
+		log.Printf("Warning: failed to cleanup old song types: %v", err)
+	}
+
+	for _, t := range types {
+		_, err := s.db.ExecContext(ctx, `
+			INSERT INTO song_types (uuid, name, slug, description, created_at)
+			VALUES (gen_random_uuid(), $1, $2, $3, NOW())
+			ON CONFLICT (slug) DO UPDATE SET 
+				name = EXCLUDED.name,
+				description = EXCLUDED.description
+		`, t.Name, t.Slug, t.Description)
+		if err != nil {
+			return fmt.Errorf("failed to seed song type %s: %v", t.Slug, err)
+		}
+	}
+
+	log.Println("✅ Song types seeded successfully")
+	return nil
+}

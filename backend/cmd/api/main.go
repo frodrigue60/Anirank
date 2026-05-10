@@ -125,10 +125,15 @@ func main() {
 	xpRepo := postgres.NewXPRepository(db)
 	searchRepo := postgres.NewSearchRepository(db)
 	
-	// Seed base data (Score Formats)
+	// Seed base data (Score Formats, Song Types)
 	sfSeeder := postgres.NewScoreFormatSeeder(db)
 	if err := sfSeeder.Seed(context.Background()); err != nil {
 		log.Printf("Warning: Failed to seed score formats: %v", err)
+	}
+
+	stSeeder := postgres.NewSongTypeSeeder(db)
+	if err := stSeeder.Seed(context.Background()); err != nil {
+		log.Printf("Warning: Failed to seed song types: %v", err)
 	}
 
 	storageService, err := infrastructure.InitStorageFromEnv(context.Background())

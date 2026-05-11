@@ -26,8 +26,9 @@ WORKDIR /app
 # Install runtime dependencies (like CA certificates for TLS)
 RUN apk add --no-cache ca-certificates vips vips-tools libavif-apps libwebp-tools
 
-# Copy the binary
+# Copy the binary and database files
 COPY --from=builder /app/main .
+COPY --from=builder /app/database ./database
 
 # Expose port (Backend port 8080)
 EXPOSE 8080

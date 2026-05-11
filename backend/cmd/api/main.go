@@ -107,6 +107,14 @@ func main() {
 	}
 	defer db.Close()
 
+	// Run migrations
+	if err := infrastructure.RunMigrations(db, "./database/migrations"); err != nil {
+		log.Printf("⚠️  Migration warning: %v", err)
+		// We don't necessarily want to fatal here if the DB is already mostly correct,
+		// but for production it might be safer to stop.
+		// For now, let's just log it to avoid blocking startup if it's a minor issue.
+	}
+
 	// 1. Dependency Injection: Repositories
 	animeRepo := postgres.NewAnimeRepository(db)
 	taxonomyRepo := postgres.NewTaxonomyRepository(db)

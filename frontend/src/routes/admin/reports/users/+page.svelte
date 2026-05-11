@@ -5,7 +5,10 @@ import Flag from "lucide-svelte/icons/flag";
 import Eye from "lucide-svelte/icons/eye";
 import ExternalLink from "lucide-svelte/icons/external-link";
 import Inbox from "lucide-svelte/icons/inbox";
-  import { fade } from "svelte/transition";
+import History from "lucide-svelte/icons/history";
+import Trash2 from "lucide-svelte/icons/trash-2";
+import { fade } from "svelte/transition";
+import { toastState } from "$lib/state/toast.svelte";
 
   let { data } = $props();
   // svelte-ignore state_referenced_locally
@@ -23,6 +26,22 @@ import Inbox from "lucide-svelte/icons/inbox";
       console.error("Error loading reports:", err);
     } finally {
       isLoading = false;
+    }
+  }
+
+  async function deleteReport(id: number) {
+    if (!confirm("Are you sure you want to delete this report? This action cannot be undone.")) return;
+    try {
+      // Optimistic update
+      reports = reports.filter((r: any) => r.id !== id);
+      const resp = await api.delete(`/admin/users/reports/${id}`);
+      toastState.addToast(resp.data.message || "Report deleted", "success");
+    } catch (err: any) {
+      console.error("Error deleting report:", err);
+      const msg = err.response?.data?.message || "Failed to delete report";
+      toastState.addToast(msg, "error");
+      // Rollback if needed (simplification: reload)
+      loadReports(status);
     }
   }
 
@@ -90,6 +109,12 @@ import Inbox from "lucide-svelte/icons/inbox";
               <div class="text-[10px] font-bold px-2 py-0.5 rounded-full w-fit {rpt.status ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'} capitalize">
                 {rpt.status ? 'Resolved' : 'Pending'}
               </div>
+              {#if rpt.snapshot}
+                <div class="mt-1 flex items-center gap-1 text-[9px] font-bold text-amber-400/60 uppercase">
+                  <History size={10} />
+                  Snap
+                </div>
+              {/if}
             </td>
             <td class="px-6 py-4">
               <div class="flex items-center gap-3">
@@ -153,6 +178,15 @@ import Inbox from "lucide-svelte/icons/inbox";
                 >
                   <Eye size={18} />
                 </a>
+                {#if status === 'resolved'}
+                  <button
+                    onclick={() => deleteReport(rpt.id)}
+                    class="p-2 bg-surface-highest hover:bg-rose-500/10 text-on-surface/60 hover:text-rose-400 rounded-lg transition-all"
+                    title="Delete Report"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                {/if}
               </div>
             </td>
           </tr>

@@ -6,10 +6,26 @@
   import User from "lucide-svelte/icons/user";
   import CheckCircle2 from "lucide-svelte/icons/check-circle-2";
   import Trash2 from "lucide-svelte/icons/trash-2";
+  import ShieldAlert from "lucide-svelte/icons/shield-alert";
+  import History from "lucide-svelte/icons/history";
+  import ChevronDown from "lucide-svelte/icons/chevron-down";
+  import ChevronUp from "lucide-svelte/icons/chevron-up";
+  import { fade, scale } from "svelte/transition";
 
   let { data } = $props();
   // svelte-ignore state_referenced_locally
   let report = $state(data.report);
+  let showSnapshot = $state(false);
+
+  const snapshotData = $derived(() => {
+    if (!report?.snapshot) return null;
+    try {
+      return JSON.parse(report.snapshot);
+    } catch (e) {
+      console.error("Failed to parse snapshot:", e);
+      return null;
+    }
+  });
 
   async function resolveReport(isAccepted: boolean) {
     if (!report) return;
@@ -35,7 +51,7 @@
   }
 </script>
 
-<div class="space-y-6">
+<div class="space-y-6 max-w-5xl mx-auto px-4 py-6">
   <!-- Header & Navigation -->
   <div class="flex items-center gap-4">
     <a
@@ -47,7 +63,7 @@
     <div>
       <div class="flex items-center gap-3">
         <h1 class="text-3xl font-bold tracking-tight text-on-surface/90">
-          Report #{report?.id}
+          Report <span class="text-on-surface/30">#{report?.id}</span>
         </h1>
         {#if !report?.status}
           <span
@@ -86,7 +102,7 @@
         </div>
         
         <div class="bg-black/20 rounded-xl p-4 text-on-surface/80 whitespace-pre-wrap border-l-4 border-blue-600/50">
-          {report?.comment?.content || "Comment content not found"}
+          {report?.comment?.content || "Comment content not found (possibly deleted)"}
         </div>
         
         <div class="pt-4 border-t border-outline-variant space-y-2">
@@ -97,6 +113,69 @@
           {/if}
         </div>
       </div>
+
+      <!-- Snapshot Evidence (Immutable) -->
+      {#if report.snapshot}
+        <div class="bg-surface-container border border-outline-variant rounded-2xl overflow-hidden shadow-sm">
+          <div class="p-4 border-b border-outline-variant bg-white/2 flex justify-between items-center">
+            <h2 class="font-bold text-on-surface flex items-center gap-2">
+              <History size={18} class="text-amber-400" />
+              Evidence Snapshot
+            </h2>
+            <button
+              onclick={() => (showSnapshot = !showSnapshot)}
+              class="text-xs font-bold text-primary hover:underline flex items-center gap-1"
+            >
+              {showSnapshot ? "Hide JSON" : "View Raw Source"}
+              {#if showSnapshot}
+                <ChevronUp size={14} />
+              {:else}
+                <ChevronDown size={14} />
+              {/if}
+            </button>
+          </div>
+          <div class="p-6">
+            <div class="flex items-start gap-4 bg-amber-500/5 p-4 rounded-xl border border-amber-500/10 mb-4">
+              <div class="p-2 bg-amber-500/20 rounded-lg text-amber-400 shrink-0">
+                <ShieldAlert size={20} />
+              </div>
+              <div class="flex-1">
+                <h4 class="text-sm font-bold text-amber-200">Point-in-time Evidence</h4>
+                <p class="text-xs text-amber-500/70 mt-1 leading-relaxed">
+                  Captured exact state when reported. This content is <b>immutable</b> and remains available even if the current comment is edited or purged.
+                </p>
+              </div>
+            </div>
+
+            {#if snapshotData()}
+              <div class="space-y-4">
+                <div class="space-y-1">
+                  <span class="text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest">Comment Content (Captured)</span>
+                  <div class="bg-black/40 rounded-xl p-4 text-sm text-on-surface border border-outline-variant italic">
+                    "{snapshotData().content}"
+                  </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                   <div class="space-y-1">
+                      <span class="text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest">UUID (Captured)</span>
+                      <p class="text-[10px] font-mono text-on-surface-variant truncate">{snapshotData().uuid}</p>
+                    </div>
+                    <div class="space-y-1">
+                      <span class="text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest">Last Updated (Captured)</span>
+                      <p class="text-[10px] font-mono text-on-surface-variant">{new Date(snapshotData().updated_at).toLocaleString()}</p>
+                    </div>
+                </div>
+              </div>
+            {/if}
+
+            {#if showSnapshot}
+              <div class="mt-6 border-t border-outline-variant pt-4" transition:fade>
+                <pre class="bg-black/40 p-4 rounded-xl text-[10px] font-mono text-emerald-400/80 overflow-x-auto border border-outline-variant max-h-60 custom-scrollbar">{JSON.stringify(snapshotData(), null, 2)}</pre>
+              </div>
+            {/if}
+          </div>
+        </div>
+      {/if}
     </div>
 
     <!-- Sidebar Info (Right Column) -->
@@ -138,14 +217,14 @@
             <div class="grid grid-cols-2 gap-2">
               <button
                 onclick={() => resolveReport(true)}
-                class="flex items-center justify-center gap-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 py-3 rounded-xl font-bold text-xs transition-all border border-blue-600/30"
+                class="flex items-center justify-center gap-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 py-3 rounded-xl font-bold text-xs transition-all border border-blue-600/30 active:scale-95"
               >
                 <CheckCircle2 size={16} />
                 Accept
               </button>
               <button
                 onclick={() => resolveReport(false)}
-                class="flex items-center justify-center gap-2 bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 py-3 rounded-xl font-bold text-xs transition-all border border-amber-600/30"
+                class="flex items-center justify-center gap-2 bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 py-3 rounded-xl font-bold text-xs transition-all border border-amber-600/30 active:scale-95"
               >
                 <Trash2 size={16} />
                 Reject
@@ -155,7 +234,7 @@
 
           <button
             onclick={deleteReport}
-            class="w-full flex items-center justify-center gap-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 py-3 rounded-xl font-bold text-sm transition-all"
+            class="w-full flex items-center justify-center gap-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 py-3 rounded-xl font-bold text-sm transition-all active:scale-95"
           >
             <Trash2 size={18} />
             Delete Report

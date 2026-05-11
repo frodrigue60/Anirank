@@ -6,6 +6,7 @@
   import User from "lucide-svelte/icons/user";
   import Eye from "lucide-svelte/icons/eye";
   import Trash2 from "lucide-svelte/icons/trash-2";
+  import History from "lucide-svelte/icons/history";
 
   let { data } = $props();
   // svelte-ignore state_referenced_locally
@@ -108,7 +109,15 @@
           <tbody class="divide-y divide-white/5">
             {#each reports as report (report.id)}
               <tr class="hover:bg-surface-highest transition-colors group">
-                <td class="p-4 text-sm text-on-surface/60">#{report.id}</td>
+                <td class="p-4">
+                  <div class="text-sm text-on-surface/60">#{report.id}</div>
+                  {#if report.snapshot}
+                    <div class="mt-1 flex items-center gap-1 text-[9px] font-bold text-amber-400/60 uppercase tracking-tighter">
+                      <History size={10} />
+                      Snap
+                    </div>
+                  {/if}
+                </td>
                 <td class="p-4">
                   <span class="text-sm font-bold text-on-surface/90">
                     {report.title}

@@ -9,6 +9,10 @@ import Trash2 from "lucide-svelte/icons/trash-2";
 import ArrowLeft from "lucide-svelte/icons/arrow-left";
 import ExternalLink from "lucide-svelte/icons/external-link";
 import ShieldAlert from "lucide-svelte/icons/shield-alert";
+import History from "lucide-svelte/icons/history";
+import ChevronDown from "lucide-svelte/icons/chevron-down";
+import ChevronUp from "lucide-svelte/icons/chevron-up";
+import XCircle from "lucide-svelte/icons/x-circle";
   import { fade, scale } from "svelte/transition";
 
   let { data } = $props();
@@ -21,6 +25,17 @@ import ShieldAlert from "lucide-svelte/icons/shield-alert";
 
   let isResolving = $state(false);
   let isDeleting = $state(false);
+  let showSnapshot = $state(false);
+
+  const snapshotData = $derived(() => {
+    if (!report?.snapshot) return null;
+    try {
+      return JSON.parse(report.snapshot);
+    } catch (e) {
+      console.error("Failed to parse snapshot:", e);
+      return null;
+    }
+  });
 
   async function resolveReport(isAccepted: boolean = true) {
     if (!report) return;
@@ -98,7 +113,7 @@ import ShieldAlert from "lucide-svelte/icons/shield-alert";
           disabled={isResolving || isDeleting}
           class="flex-1 sm:flex-none px-6 py-2.5 bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 border border-amber-600/20 rounded-xl font-bold text-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2"
         >
-          <Trash2 size={16} />
+          <XCircle size={16} />
           {isResolving ? "Resolving..." : "Reject"}
         </button>
         <button
@@ -192,6 +207,73 @@ import ShieldAlert from "lucide-svelte/icons/shield-alert";
             </div>
           </div>
         </div>
+
+        <!-- Snapshot Evidence (Immutable) -->
+        {#if report.snapshot}
+          <div class="bg-surface-container border border-outline-variant rounded-3xl overflow-hidden shadow-xl">
+            <div class="p-5 border-b border-outline-variant bg-white/2 flex justify-between items-center">
+              <h2 class="font-bold text-on-surface flex items-center gap-2">
+                <History size={18} class="text-amber-400" />
+                Snapshot Evidence
+              </h2>
+              <button
+                onclick={() => (showSnapshot = !showSnapshot)}
+                class="text-[10px] font-bold text-primary hover:underline flex items-center gap-1 uppercase tracking-wider"
+              >
+                {showSnapshot ? "Hide JSON" : "Raw Source"}
+                {#if showSnapshot}
+                  <ChevronUp size={12} />
+                {:else}
+                  <ChevronDown size={12} />
+                {/if}
+              </button>
+            </div>
+            <div class="p-8">
+              <div class="flex items-start gap-4 bg-amber-500/5 p-4 rounded-xl border border-amber-500/10 mb-6">
+                <div class="p-2 bg-amber-500/20 rounded-lg text-amber-400 shrink-0">
+                  <ShieldAlert size={20} />
+                </div>
+                <div>
+                  <h4 class="text-sm font-bold text-amber-200">Point-in-time Capture</h4>
+                  <p class="text-[10px] text-amber-500/70 mt-1 leading-relaxed uppercase tracking-tight">
+                    Captured on {new Date(report.created_at).toLocaleDateString()}. Even if the user deletes their account, this evidence persists.
+                  </p>
+                </div>
+              </div>
+
+              {#if snapshotData()}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div class="space-y-1">
+                    <span class="text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest">Username (Captured)</span>
+                    <p class="text-on-surface font-black text-xl">{snapshotData().name || 'Unknown'}</p>
+                  </div>
+                  <div class="space-y-1">
+                    <span class="text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest">Truth Score (Captured)</span>
+                    <p class="text-on-surface font-mono">{snapshotData().truth_score || 0}</p>
+                  </div>
+                   <div class="space-y-1">
+                    <span class="text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest">Level / XP (Captured)</span>
+                    <p class="text-on-surface text-sm">LVL {snapshotData().level || 1} — {snapshotData().xp || 0} XP</p>
+                  </div>
+                  <div class="space-y-1">
+                    <span class="text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest">Status (Captured)</span>
+                    <p class="text-on-surface text-sm">
+                      {snapshotData().is_shadowbanned ? 'Shadowbanned' : 'Clear'} 
+                      / {snapshotData().is_softbanned ? 'Softbanned' : 'Normal'}
+                    </p>
+                  </div>
+                </div>
+              {/if}
+
+              {#if showSnapshot}
+                <div class="mt-8 border-t border-outline-variant pt-6" transition:fade>
+                   <span class="text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest block mb-2">Immutable JSON Payload</span>
+                  <pre class="bg-black/40 p-4 rounded-xl text-[10px] font-mono text-emerald-400/80 overflow-x-auto border border-outline-variant max-h-60 custom-scrollbar">{JSON.stringify(snapshotData(), null, 2)}</pre>
+                </div>
+              {/if}
+            </div>
+          </div>
+        {/if}
       </div>
 
       <!-- Sidebar -->

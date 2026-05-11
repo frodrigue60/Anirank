@@ -11,6 +11,9 @@
   import ExternalLink from "lucide-svelte/icons/external-link";
   import User from "lucide-svelte/icons/user";
   import Gavel from "lucide-svelte/icons/gavel";
+  import History from "lucide-svelte/icons/history";
+  import ChevronDown from "lucide-svelte/icons/chevron-down";
+  import ChevronUp from "lucide-svelte/icons/chevron-up";
 
   let { data } = $props();
   // svelte-ignore state_referenced_locally
@@ -22,6 +25,17 @@
 
   let isResolving = $state(false);
   let isDeleting = $state(false);
+  let showSnapshot = $state(false);
+
+  const snapshotData = $derived(() => {
+    if (!report?.snapshot) return null;
+    try {
+      return JSON.parse(report.snapshot);
+    } catch (e) {
+      console.error("Failed to parse snapshot:", e);
+      return null;
+    }
+  });
 
   async function resolveReport(isAccepted: boolean) {
     if (!report) return;
@@ -223,6 +237,74 @@
             {/if}
           </div>
         </div>
+
+        <!-- Snapshot Evidence (Immutable) -->
+        {#if report.snapshot}
+          <div
+            class="bg-surface-container border border-outline-variant rounded-2xl overflow-hidden shadow-sm"
+          >
+            <div
+              class="p-4 border-b border-outline-variant bg-white/2 flex justify-between items-center"
+            >
+              <h2 class="font-bold text-on-surface flex items-center gap-2">
+                <History size={18} class="text-amber-400" />
+                Snapshot Evidence
+              </h2>
+              <button
+                onclick={() => (showSnapshot = !showSnapshot)}
+                class="text-xs font-bold text-primary hover:underline flex items-center gap-1"
+              >
+                {showSnapshot ? "Hide JSON" : "View Raw Source"}
+                {#if showSnapshot}
+                  <ChevronUp size={14} />
+                {:else}
+                  <ChevronDown size={14} />
+                {/if}
+              </button>
+            </div>
+            <div class="p-6">
+              <div class="flex items-start gap-4 bg-amber-500/5 p-4 rounded-xl border border-amber-500/10 mb-4">
+                <div class="p-2 bg-amber-500/20 rounded-lg text-amber-400 shrink-0">
+                  <ShieldAlert size={20} />
+                </div>
+                <div>
+                  <h4 class="text-sm font-bold text-amber-200">Point-in-time Evidence</h4>
+                  <p class="text-xs text-amber-500/70 mt-1">
+                    This data represents the exact state of the entity when it was reported. 
+                    It is immutable and serves as primary evidence even if the current entity is deleted.
+                  </p>
+                </div>
+              </div>
+
+              {#if snapshotData()}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div class="space-y-1">
+                    <span class="text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest">Song Name (Captured)</span>
+                    <p class="text-on-surface font-medium truncate">{snapshotData().song_romaji || snapshotData().song_en || 'Unknown'}</p>
+                  </div>
+                  <div class="space-y-1">
+                    <span class="text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest">Type (Captured)</span>
+                    <p class="text-on-surface font-medium capitalize">{snapshotData().type || 'N/A'}</p>
+                  </div>
+                  <div class="space-y-1">
+                    <span class="text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest">Slug (Captured)</span>
+                    <p class="text-on-surface font-mono text-xs">{snapshotData().slug}</p>
+                  </div>
+                  <div class="space-y-1">
+                    <span class="text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest">UUID (Captured)</span>
+                    <p class="text-on-surface font-mono text-xs truncate">{snapshotData().uuid}</p>
+                  </div>
+                </div>
+              {/if}
+
+              {#if showSnapshot}
+                <div class="mt-6 border-t border-outline-variant pt-4" transition:fade>
+                  <pre class="bg-black/40 p-4 rounded-xl text-[10px] font-mono text-emerald-400/80 overflow-x-auto border border-outline-variant max-h-60 custom-scrollbar">{JSON.stringify(snapshotData(), null, 2)}</pre>
+                </div>
+              {/if}
+            </div>
+          </div>
+        {/if}
       </div>
 
       <!-- Sidebar -->

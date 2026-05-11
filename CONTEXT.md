@@ -298,3 +298,34 @@ Due to Svelte 5's architecture, Vitest is configured with `resolve.conditions: [
 ### Infrastructure Health
 - **Timeouts:** All external I/O (Redis, S3, AniList) must have a context timeout (typically 1s-3s).
 - **Graceful Degradation:** The system must remain functional (even if slower) if non-critical services like Redis or MinIO are down.
+---
+
+## 17. Automated Moderation (Automod)
+
+The system features a centralized moderation engine (`ModerationUsecase`) that validates user interactions (ratings, comments) based on reputation and behavioral rules.
+
+### Reputation System (TruthScore)
+Every user has a `truth_score` (default: 100).
+- **Incentives:** Successful reports (+5), positive engagement.
+- **Penalties:** Rejected reports (-5), accepted reports against the user (-10), spam detection.
+- **Auto-Recovery:** TruthScore is dynamic and can be recovered through positive contributions.
+
+### Core Moderation Rules
+| Rule | Condition | Action |
+|------|-----------|--------|
+| **Softban** | `TruthScore < 30` AND `PendingReports > 3` | Block all new interactions (Ratings, Comments). |
+| **Rate Limit** | `Level < 5` (120s), `Level < 10` (60s) | Prevents rapid spamming. |
+| **Link Filter** | `Level < 5` | Rejects content containing URLs. |
+| **Auto-Shadowban** | `Level 5-10` + URL | Content is allowed but marked `is_shadowbanned=true` (hidden from others). |
+| **Truth Shadowban** | `TruthScore < 50` | Automatically shadowbans all subsequent user interactions. |
+
+### Implementation Details
+- **Validation:** Controlled by `ValidateInteraction(ctx, userID, content)`.
+- **Enforcement:** Applied in `CreateComment` and `RateSong` before data persistence.
+- **Auto-Lifting:** Softbans are automatically lifted if `TruthScore >= 40`.
+- **Shadowban Logic:** Shadowbanned comments/ratings are only visible to the author and staff. They do not affect public ranking averages or comment counts.
+### Immutable Moderation Snapshots
+To ensure a tamper-proof audit trail for administrative review, the system captures **Immutable Snapshots** of reported entities at the exact moment a report is created.
+- **Mechanism:** The `ModerationUsecase` fetches the current state of the reported entity (Song, Comment, or User) from the database, serializes it into a JSON string, and stores it in the `snapshot` column of the report.
+- **Integrity:** Once a report is created, its snapshot remains unchanged even if the original entity is edited or deleted.
+- **Workflow:** `Fetch -> Marshal -> Assign`. This allows staff to see the exact content that was reported, regardless of subsequent changes by the user.

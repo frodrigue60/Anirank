@@ -2,6 +2,7 @@
   import api from "$lib/api";
   import { getSongName } from "$lib/song-utils";
   import Inbox from "lucide-svelte/icons/inbox";
+  import History from "lucide-svelte/icons/history";
 
   let { data } = $props();
   // svelte-ignore state_referenced_locally
@@ -109,6 +110,12 @@
               >
                 {rpt.status}
               </div>
+              {#if rpt.snapshot}
+                <div class="mt-1 flex items-center gap-1 text-[9px] font-bold text-amber-400/60 uppercase tracking-tighter">
+                  <History size={10} />
+                  Snap
+                </div>
+              {/if}
             </td>
             <td class="px-6 py-4">
               <div class="font-mono text-xs text-blue-400 mb-1">Song Theme</div>

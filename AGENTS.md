@@ -31,6 +31,7 @@ Handles cross-cutting concerns (auth flows, API contract changes, Docker, env fi
 1. **Compilation**: Always run `go build ./cmd/api/main.go` (backend) after any logic change to ensure no type errors.
 2. **Backend Tests**: Run `go test ./internal/dto/...` and `go test ./internal/repository/postgres/...` (or relevant package) to verify core logic.
 3. **Frontend Tests**: Run `bun run test:unit` if any reactive state or shared component was modified.
+4. **Moderation Tests**: Run `go test ./internal/usecase/moderation/...` after any change to moderation rules or `TruthScore` logic.
 
 ### Before Writing Code
 1. Check if a relevant **KI (Knowledge Item)** exists for the task.
@@ -153,6 +154,8 @@ The internal `uint64` IDs in the database (e.g. `user.ID`, `song.ID`) are **stri
 - **Don't** read `os.Getenv(...)` inside a UseCase to construct URLs or config values. Inject dependencies (e.g. `MediaService`) via the constructor instead.
 - **Don't** add a `case` to the switch in `badge_usecase.go` for new badge types. Implement `BadgeEvaluator` and register it in `buildEvaluators()` in `badge_evaluator.go`.
 - **Don't** call `GetBadgesByUserID` (singular) inside a loop over comments or any list. Use `GetBadgesByUserIDs` (plural) for batch fetching.
+- **Don't** bypass `moderationUsecase.ValidateInteraction` when creating new types of user-generated content. All public interactions must be filtered.
+- **Don't** manually update `user.is_softbanned` in a repository. Use the `checkAndApplyShadowban` (internal) or `UpdateSoftbanStatus` logic to ensure consistency with `TruthScore`.
 
 ---
 

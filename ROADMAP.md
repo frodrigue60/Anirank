@@ -115,7 +115,8 @@
 - ✅ **CSRF protection** audit for state-mutating endpoints
 - ✅ **Input sanitization** review for comment/about text fields (XSS vectors)
 
-### Advanced Moderation (AutoMod) 🔲
+- ✅ **Immutable Moderation Snapshots**: Automatically capture the state of reported entities (songs, comments, users) at the time of reporting to ensure a tamper-proof audit trail.
+- 🔲 **Advanced Moderation (AutoMod)**: 🚧 In Progress
 
 - 🔲 **Shadow Banning**: Automatically hide content from toxic users without alerting them (Internal `shadow_banned` flag).
 - 🔲 **Profanity & Scam Filter**: Regex-based blocking of harmful keywords and known scam URLs.

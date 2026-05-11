@@ -219,6 +219,8 @@ func (h *ModerationHandler) GetSongReports(c *fiber.Ctx) error {
 		return err
 	}
 
+	// For admin, we return the domain object directly as it contains the Snapshot field.
+	// The frontend expects the 'snapshot' field in the JSON response.
 	return c.JSON(fiber.Map{"data": reports})
 }
 

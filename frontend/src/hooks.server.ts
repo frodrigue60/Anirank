@@ -8,7 +8,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 		"default-src 'self'",
 		"script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.google.com https://*.anilist.co",
 		"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-		"img-src 'self' data: blob: http://localhost:8080 http://localhost:9000 https://*.anirank.work https://*.googleusercontent.com https://*.anilist.co https://*.discordapp.com https://*.media-amazon.com",
+		"img-src 'self' data: blob: http://localhost:8080 http://localhost:9000 https://*.anirank.work https://*.googleusercontent.com https://*.anilist.co https://*.discordapp.com https://*.media-amazon.com https://*.r2.dev",
 		"font-src 'self' https://fonts.gstatic.com",
 		"connect-src 'self' http://localhost:8080 https://api.anirank.work https://*.google.com https://*.anilist.co",
 		"frame-src 'self' https://www.youtube-nocookie.com https://www.youtube.com https://*.google.com",

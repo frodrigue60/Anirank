@@ -117,6 +117,8 @@ type ModerationRepository interface {
 	SetRatingShadowban(ctx context.Context, ratingID uint64, isShadowbanned bool) error
 	UpdateUserTruthScore(ctx context.Context, userID uint64, delta int) error
 	GetPendingReportsCount(ctx context.Context, userID uint64) (int, error)
+	GetCommentReportsCountByTrustedUsers(ctx context.Context, commentID uint64, minScore int) (int, error)
+	GetUserReportsCountByTrustedUsers(ctx context.Context, reportedUserID uint64, minScore int) (int, error)
 }
 
 type ModerationUsecase interface {

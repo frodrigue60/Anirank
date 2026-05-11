@@ -842,3 +842,27 @@ func (r *moderationRepository) GetPendingReportsCount(ctx context.Context, userI
 	err := r.db.GetContext(ctx, &count, query, userID)
 	return count, err
 }
+
+func (r *moderationRepository) GetCommentReportsCountByTrustedUsers(ctx context.Context, commentID uint64, minScore int) (int, error) {
+	var count int
+	query := `
+		SELECT COUNT(DISTINCT cr.user_id) 
+		FROM comment_reports cr
+		JOIN users u ON cr.user_id = u.id
+		WHERE cr.comment_id = $1 AND cr.status = false AND u.truth_score >= $2
+	`
+	err := r.db.GetContext(ctx, &count, query, commentID, minScore)
+	return count, err
+}
+
+func (r *moderationRepository) GetUserReportsCountByTrustedUsers(ctx context.Context, reportedUserID uint64, minScore int) (int, error) {
+	var count int
+	query := `
+		SELECT COUNT(DISTINCT ur.reporter_user_id) 
+		FROM user_reports ur
+		JOIN users u ON ur.reporter_user_id = u.id
+		WHERE ur.reported_user_id = $1 AND ur.status = false AND u.truth_score >= $2
+	`
+	err := r.db.GetContext(ctx, &count, query, reportedUserID, minScore)
+	return count, err
+}

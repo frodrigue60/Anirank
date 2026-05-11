@@ -118,9 +118,9 @@
 - ✅ **Immutable Moderation Snapshots**: Automatically capture the state of reported entities (songs, comments, users) at the time of reporting to ensure a tamper-proof audit trail.
 - 🔲 **Advanced Moderation (AutoMod)**: 🚧 In Progress
 
-- 🔲 **Shadow Banning**: Automatically hide content from toxic users without alerting them (Internal `shadow_banned` flag).
+- ✅ **Shadow Banning**: Automatically hide content from toxic users without alerting them (Internal `shadow_banned` flag).
 - 🔲 **Profanity & Scam Filter**: Regex-based blocking of harmful keywords and known scam URLs.
-- 🔲 **Reputation Gates (XP-based)**: Restrict link-sharing and frequent posting for users below Nivel 5.
+- ✅ **Reputation Gates (XP-based)**: Restrict link-sharing and frequent posting for users below Nivel 5.
 - 🔲 **Auto-Hide Threshold**: Automatically hide comments/users after X reports until admin review.
 - 🔲 **Spam Detection**: Velocity limits and duplicate content detection across different entities.
 - 🔲 **AI Image Moderation**: Automated NSFW scanning for custom avatars and banners.

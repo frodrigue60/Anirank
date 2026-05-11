@@ -24,6 +24,12 @@ type ModerationUsecase struct {
 	mediaService        infrastructure.MediaService
 }
 
+const (
+	CommentHideThreshold = 5
+	UserSoftbanThreshold = 10
+	TrustedReporterScore = 70
+)
+
 func NewModerationUsecase(
 	repo domain.ModerationRepository,
 	userRepo domain.UserRepository,
@@ -108,7 +114,23 @@ func (u *ModerationUsecase) CreateCommentReport(ctx context.Context, userID uint
 	}
 
 	req.UserID = userID
-	return u.repo.CreateCommentReport(ctx, req)
+	err = u.repo.CreateCommentReport(ctx, req)
+	if err != nil {
+		return err
+	}
+
+	// Trigger Auto-Hide Check
+	u.checkCommentThreshold(ctx, req.CommentID)
+
+	return nil
+}
+
+func (u *ModerationUsecase) checkCommentThreshold(ctx context.Context, commentID uint64) {
+	// Count unique reports from trusted users
+	reports, err := u.repo.GetCommentReportsCountByTrustedUsers(ctx, commentID, TrustedReporterScore)
+	if err == nil && reports >= CommentHideThreshold {
+		_ = u.repo.SetCommentShadowban(ctx, commentID, true)
+	}
 }
 
 // ---- Admin Facing (Read & Update) ----
@@ -283,7 +305,23 @@ func (u *ModerationUsecase) CreateUserReport(ctx context.Context, userID uint64,
 	}
 
 	req.ReporterUserID = userID
-	return u.repo.CreateUserReport(ctx, req)
+	err = u.repo.CreateUserReport(ctx, req)
+	if err != nil {
+		return err
+	}
+
+	// Trigger Auto-Hide / Softban Check
+	u.checkUserThreshold(ctx, req.ReportedUserID)
+
+	return nil
+}
+
+func (u *ModerationUsecase) checkUserThreshold(ctx context.Context, userID uint64) {
+	// Count unique reports from trusted users
+	reports, err := u.repo.GetUserReportsCountByTrustedUsers(ctx, userID, TrustedReporterScore)
+	if err == nil && reports >= UserSoftbanThreshold {
+		_ = u.userRepo.UpdateSoftbanStatus(ctx, userID, true)
+	}
 }
 
 func (u *ModerationUsecase) GetUserReports(ctx context.Context, status *bool, limit, offset int) ([]domain.UserReport, error) {

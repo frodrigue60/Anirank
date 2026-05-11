@@ -24,6 +24,7 @@ func (r *userRepository) GetByID(ctx context.Context, id uint64) (*domain.User, 
 	var user domain.User
 	query := `
 		SELECT u.*, sf.slug AS score_format,
+		       u.truth_score, u.is_shadowbanned,
 		       (SELECT COUNT(*) FROM follows WHERE followed_id = u.id) as followers_count,
 		       (SELECT COUNT(*) FROM follows WHERE follower_id = u.id) as following_count
 		FROM users u
@@ -44,7 +45,7 @@ func (r *userRepository) GetByID(ctx context.Context, id uint64) (*domain.User, 
 func (r *userRepository) GetByEmail(ctx context.Context, email string) (*domain.User, error) {
 	var user domain.User
 	query := `
-		SELECT u.*, sf.slug AS score_format
+		SELECT u.*, sf.slug AS score_format, u.truth_score, u.is_shadowbanned
 		FROM users u
 		LEFT JOIN score_formats sf ON u.score_format_id = sf.id
 		WHERE LOWER(u.email) = LOWER($1)
@@ -63,7 +64,7 @@ func (r *userRepository) GetByEmail(ctx context.Context, email string) (*domain.
 func (r *userRepository) GetByGoogleID(ctx context.Context, googleID string) (*domain.User, error) {
 	var user domain.User
 	query := `
-		SELECT u.*, sf.slug AS score_format
+		SELECT u.*, sf.slug AS score_format, u.truth_score, u.is_shadowbanned
 		FROM users u
 		JOIN user_social_identities usi ON u.id = usi.user_id
 		LEFT JOIN score_formats sf ON u.score_format_id = sf.id
@@ -83,7 +84,7 @@ func (r *userRepository) GetByGoogleID(ctx context.Context, googleID string) (*d
 func (r *userRepository) GetByAnilistID(ctx context.Context, anilistID uint64) (*domain.User, error) {
 	var user domain.User
 	query := `
-		SELECT u.*, sf.slug AS score_format
+		SELECT u.*, sf.slug AS score_format, u.truth_score, u.is_shadowbanned
 		FROM users u
 		JOIN user_social_identities usi ON u.id = usi.user_id
 		LEFT JOIN score_formats sf ON u.score_format_id = sf.id
@@ -103,7 +104,7 @@ func (r *userRepository) GetByAnilistID(ctx context.Context, anilistID uint64) (
 func (r *userRepository) GetBySlug(ctx context.Context, slug string) (*domain.User, error) {
 	var user domain.User
 	query := `
-		SELECT u.*, sf.slug AS score_format,
+		SELECT u.*, sf.slug AS score_format, u.truth_score, u.is_shadowbanned,
 		       (SELECT COUNT(*) FROM follows WHERE followed_id = u.id) as followers_count,
 		       (SELECT COUNT(*) FROM follows WHERE follower_id = u.id) as following_count,
 		       (SELECT COUNT(*) FROM song_ratings WHERE user_id = u.id) as ratings_count
@@ -126,7 +127,7 @@ func (r *userRepository) GetBySlug(ctx context.Context, slug string) (*domain.Us
 func (r *userRepository) GetByUUID(ctx context.Context, uuid string) (*domain.User, error) {
 	var user domain.User
 	query := `
-		SELECT u.*, sf.slug AS score_format,
+		SELECT u.*, sf.slug AS score_format, u.truth_score, u.is_shadowbanned,
 		       (SELECT COUNT(*) FROM follows WHERE followed_id = u.id) as followers_count,
 		       (SELECT COUNT(*) FROM follows WHERE follower_id = u.id) as following_count,
 		       (SELECT COUNT(*) FROM song_ratings WHERE user_id = u.id) as ratings_count
@@ -154,8 +155,8 @@ func (r *userRepository) Create(ctx context.Context, user *domain.User) error {
 	}
 
 	query := `
-		INSERT INTO users (uuid, name, slug, email, password, score_format_id, avatar, banner, about, profile_color, created_at, updated_at)
-		VALUES (:uuid, :name, :slug, :email, :password, (SELECT id FROM score_formats WHERE slug = :score_format), :avatar, :banner, :about, :profile_color, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		INSERT INTO users (uuid, name, slug, email, password, score_format_id, avatar, banner, about, profile_color, truth_score, is_shadowbanned, created_at, updated_at)
+		VALUES (:uuid, :name, :slug, :email, :password, (SELECT id FROM score_formats WHERE slug = :score_format), :avatar, :banner, :about, :profile_color, 100, false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 		RETURNING id
 	`
 	rows, err := r.db.NamedQueryContext(ctx, query, user)
@@ -171,7 +172,7 @@ func (r *userRepository) Create(ctx context.Context, user *domain.User) error {
 }
 
 func (r *userRepository) Update(ctx context.Context, user *domain.User) error {
-	query := `UPDATE users SET name=:name, slug=:slug, email=:email, email_verified_at=:email_verified_at, score_format_id=(SELECT id FROM score_formats WHERE slug = :score_format), avatar=:avatar, banner=:banner, about=:about, profile_color=:profile_color, updated_at=CURRENT_TIMESTAMP WHERE id=:id`
+	query := `UPDATE users SET name=:name, slug=:slug, email=:email, email_verified_at=:email_verified_at, score_format_id=(SELECT id FROM score_formats WHERE slug = :score_format), avatar=:avatar, banner=:banner, about=:about, profile_color=:profile_color, truth_score=:truth_score, is_shadowbanned=:is_shadowbanned, updated_at=CURRENT_TIMESTAMP WHERE id=:id`
 	_, err := r.db.NamedExecContext(ctx, query, user)
 	return err
 }

@@ -11,9 +11,9 @@ import (
 )
 
 type InteractionUsecase struct {
-	interactionRepo  domain.InteractionRepository
-	commentRepo      domain.CommentRepository
-	userRepo         domain.UserRepository
+	interactionRepo     domain.InteractionRepository
+	commentRepo         domain.CommentRepository
+	userRepo            domain.UserRepository
 	notificationUsecase domain.NotificationUsecase
 	songRepo            domain.SongRepository
 	animeRepo           domain.AnimeRepository
@@ -79,7 +79,7 @@ func (u *InteractionUsecase) RateSong(ctx context.Context, userID, songID uint64
 	avg, err := u.interactionRepo.GetAverageRating(ctx, songID)
 	if err == nil {
 		_ = u.xpUsecase.AwardXP(ctx, userID, "rate_song", map[string]interface{}{"song_id": songID})
-		
+
 		// Log Activity
 		scoreStr := strconv.FormatFloat(score, 'f', 1, 64)
 		_ = u.activityUsecase.LogActivity(ctx, userID, "rate", songID, "song", &scoreStr)
@@ -142,7 +142,7 @@ func (u *InteractionUsecase) ToggleFavorite(ctx context.Context, userID, entityI
 	wasFavorited, err := u.interactionRepo.ToggleFavorite(ctx, fav)
 	if err == nil && wasFavorited {
 		_ = u.xpUsecase.AwardXP(ctx, userID, "add_favorite", map[string]interface{}{"song_id": entityID})
-		
+
 		// Log Activity
 		_ = u.activityUsecase.LogActivity(ctx, userID, "favorite", entityID, entityType, nil)
 	}
@@ -210,7 +210,7 @@ func (u *InteractionUsecase) SongComment(ctx context.Context, userID, entityID u
 	if user != nil {
 		comment.User = user
 	}
-	
+
 	enrichedComments := []domain.Comment{*comment}
 	u.enrichComments(ctx, enrichedComments)
 	*comment = enrichedComments[0]
@@ -329,6 +329,23 @@ func (u *InteractionUsecase) hydrateComments(comments []domain.Comment, badgesBy
 			u.hydrateComments(comments[i].Replies, badgesByUser)
 		}
 	}
+}
+
+func (u *InteractionUsecase) UpdateComment(ctx context.Context, commentID, userID uint64, content string) error {
+	comment, err := u.commentRepo.GetByID(ctx, commentID)
+	if err != nil {
+		return err
+	}
+
+	if comment.UserID != userID {
+		return domain.NewAppError(403, "You can only edit your own comments", nil)
+	}
+
+	if len(content) < 2 {
+		return domain.NewAppError(400, "Comment content is too short", nil)
+	}
+
+	return u.commentRepo.Update(ctx, commentID, security.SanitizeStrict(content))
 }
 
 func (u *InteractionUsecase) DeleteComment(ctx context.Context, commentID, userID uint64) error {
@@ -461,12 +478,12 @@ func (u *InteractionUsecase) FollowUser(ctx context.Context, followerID uint64, 
 	follower, _ := u.userRepo.GetByID(ctx, followerID)
 	if follower != nil {
 		subjectType := "user"
-		
+
 		followerSlug := ""
 		if follower.Slug != nil {
 			followerSlug = *follower.Slug
 		}
-		
+
 		// Prepare notification data
 		dataObj := map[string]interface{}{
 			"follower_name":   follower.Name,
@@ -485,11 +502,11 @@ func (u *InteractionUsecase) FollowUser(ctx context.Context, followerID uint64, 
 			Data:        dataJSON,
 		}
 		err := u.notificationUsecase.Create(ctx, notif)
-		
+
 		// Log Activity
 		val := fmt.Sprintf("%d", followedID)
 		_ = u.activityUsecase.LogActivity(ctx, followerID, "follow", followedID, "user", &val)
-		
+
 		return err
 	}
 	return nil

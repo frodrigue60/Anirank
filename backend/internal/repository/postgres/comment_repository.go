@@ -45,7 +45,9 @@ func (r *commentRepository) GetByEntity(ctx context.Context, userID *uint64, ent
 		RCount       int     `db:"rcount"`
 		Likes        int     `db:"likes_count"`
 		Dislikes     int     `db:"dislikes_count"`
-		UserReaction int8    `db:"user_reaction"`
+		UserReaction int8      `db:"user_reaction"`
+		IsShadowbanned bool    `db:"is_shadowbanned"`
+		UIsShadowbanned bool   `db:"uis_shadowbanned"`
 	}
 
 	var querySafe string
@@ -55,6 +57,7 @@ func (r *commentRepository) GetByEntity(ctx context.Context, userID *uint64, ent
 		querySafe = `
 			SELECT 
 				c.id, c.uuid, c.parent_id, c.song_id, c.user_id, c.content, c.likes_count, c.dislikes_count, c.created_at, c.updated_at,
+				c.is_shadowbanned, u.is_shadowbanned as uis_shadowbanned,
 				u.id as uid, u.uuid as uuuid, u.name as uname, u.slug as uslug, u.avatar as uavatar, sf.slug as uscore,
 				(SELECT COUNT(*) FROM comments WHERE parent_id = c.id) as rcount,
 				COALESCE(cr.type, 0) as user_reaction
@@ -63,6 +66,7 @@ func (r *commentRepository) GetByEntity(ctx context.Context, userID *uint64, ent
 			LEFT JOIN score_formats sf ON u.score_format_id = sf.id
 			LEFT JOIN comment_reactions cr ON c.id = cr.comment_id AND cr.user_id = $1
 			WHERE c.song_id = $2 AND c.parent_id IS NULL
+			AND ((c.is_shadowbanned = false AND u.is_shadowbanned = false) OR c.user_id = $1)
 			ORDER BY c.created_at DESC
 			LIMIT $3 OFFSET $4
 		`
@@ -71,6 +75,7 @@ func (r *commentRepository) GetByEntity(ctx context.Context, userID *uint64, ent
 		querySafe = `
 			SELECT 
 				c.id, c.uuid, c.parent_id, c.song_id, c.user_id, c.content, c.likes_count, c.dislikes_count, c.created_at, c.updated_at,
+				c.is_shadowbanned, u.is_shadowbanned as uis_shadowbanned,
 				u.id as uid, u.uuid as uuuid, u.name as uname, u.slug as uslug, u.avatar as uavatar, sf.slug as uscore,
 				(SELECT COUNT(*) FROM comments WHERE parent_id = c.id) as rcount,
 				0 as user_reaction
@@ -78,6 +83,7 @@ func (r *commentRepository) GetByEntity(ctx context.Context, userID *uint64, ent
 			JOIN users u ON c.user_id = u.id
 			LEFT JOIN score_formats sf ON u.score_format_id = sf.id
 			WHERE c.song_id = $1 AND c.parent_id IS NULL
+			AND (c.is_shadowbanned = false AND u.is_shadowbanned = false)
 			ORDER BY c.created_at DESC
 			LIMIT $2 OFFSET $3
 		`
@@ -98,22 +104,21 @@ func (r *commentRepository) GetByEntity(ctx context.Context, userID *uint64, ent
 			SongID:        row.SongID,
 			UserID:        row.UserID,
 			Content:       row.Content,
+			CreatedAt:     row.Created_At,
+			UpdatedAt:     row.Updated_At,
 			LikesCount:    row.Likes,
 			DislikesCount: row.Dislikes,
-			Created_At:    row.Created_At,
-			Updated_At:    row.Updated_At,
-			RepliesCount:  row.RCount,
-			IsLiked:       row.UserReaction == 1,
-			IsDisliked:    row.UserReaction == -1,
-		}
-
-		c.User = &domain.User{
-			ID:          row.UID,
-			UUID:        row.UUUID,
-			Name:        row.UName,
-			Slug:        row.USlug,
-			Avatar:      row.UAvatar,
-			ScoreFormat: row.UScore,
+			UserReaction:  row.UserReaction,
+			ReplyCount:    uint64(row.RCount),
+			IsShadowbanned: row.IsShadowbanned || row.UIsShadowbanned,
+			User: &domain.User{
+				ID:          row.UID,
+				UUID:        row.UUUID,
+				Name:        row.UName,
+				Slug:        row.USlug,
+				Avatar:      row.UAvatar,
+				ScoreFormat: row.UScore,
+			},
 		}
 
 		comments = append(comments, c)
@@ -126,16 +131,25 @@ func (r *commentRepository) GetReplies(ctx context.Context, userID *uint64, pare
 	var comments []domain.Comment
 
 	type commentWithUser struct {
-		domain.Comment
-		LikesCount    int     `db:"likes_count"`
-		DislikesCount int     `db:"dislikes_count"`
-		UserID        uint64  `db:"uid"`
-		UserName      string  `db:"uname"`
-		UserSlug      *string `db:"uslug"`
-		UserAvatar    *string `db:"uavatar"`
-		UserScoreFmt  *string `db:"uscore"`
-		UserUUID      string  `db:"uuuid"`
-		UserReaction  int8    `db:"user_reaction"`
+		ID         uint64    `db:"id"`
+		UUID       string    `db:"uuid"`
+		ParentID   *uint64   `db:"parent_id"`
+		SongID     *uint64   `db:"song_id"`
+		UserID     uint64    `db:"user_id"`
+		Content    string    `db:"content"`
+		Created_At time.Time `db:"created_at"`
+		Updated_At time.Time `db:"updated_at"`
+		Likes      int       `db:"likes_count"`
+		Dislikes   int       `db:"dislikes_count"`
+		UID          uint64  `db:"uid"`
+		UUUID        string  `db:"uuuid"`
+		UName        string  `db:"uname"`
+		USlug        *string `db:"uslug"`
+		UScore       *string `db:"uscore"`
+		UAvatar      *string `db:"uavatar"`
+		UserReaction int8    `db:"user_reaction"`
+		IsShadowbanned bool    `db:"is_shadowbanned"`
+		UIsShadowbanned bool   `db:"uis_shadowbanned"`
 	}
 
 	var querySafe string
@@ -145,8 +159,7 @@ func (r *commentRepository) GetReplies(ctx context.Context, userID *uint64, pare
 		querySafe = `
 			SELECT 
 				c.id, c.uuid, c.parent_id, c.song_id, c.user_id, c.content, c.likes_count, c.dislikes_count, c.created_at, c.updated_at,
-				c.likes_count,
-				c.dislikes_count,
+				c.is_shadowbanned, u.is_shadowbanned as uis_shadowbanned,
 				u.id as uid, u.uuid as uuuid, u.name as uname, u.slug as uslug, u.avatar as uavatar, sf.slug as uscore,
 				COALESCE(cr.type, 0) as user_reaction
 			FROM comments c
@@ -154,6 +167,7 @@ func (r *commentRepository) GetReplies(ctx context.Context, userID *uint64, pare
 			LEFT JOIN score_formats sf ON u.score_format_id = sf.id
 			LEFT JOIN comment_reactions cr ON c.id = cr.comment_id AND cr.user_id = $1
 			WHERE c.parent_id = $2
+			AND ((c.is_shadowbanned = false AND u.is_shadowbanned = false) OR c.user_id = $1)
 			ORDER BY c.created_at ASC
 			LIMIT $3 OFFSET $4
 		`
@@ -162,14 +176,14 @@ func (r *commentRepository) GetReplies(ctx context.Context, userID *uint64, pare
 		querySafe = `
 			SELECT 
 				c.id, c.uuid, c.parent_id, c.song_id, c.user_id, c.content, c.likes_count, c.dislikes_count, c.created_at, c.updated_at,
-				c.likes_count,
-				c.dislikes_count,
+				c.is_shadowbanned, u.is_shadowbanned as uis_shadowbanned,
 				u.id as uid, u.uuid as uuuid, u.name as uname, u.slug as uslug, u.avatar as uavatar, sf.slug as uscore,
 				0 as user_reaction
 			FROM comments c
 			JOIN users u ON c.user_id = u.id
 			LEFT JOIN score_formats sf ON u.score_format_id = sf.id
 			WHERE c.parent_id = $1
+			AND (c.is_shadowbanned = false AND u.is_shadowbanned = false)
 			ORDER BY c.created_at ASC
 			LIMIT $2 OFFSET $3
 		`
@@ -183,25 +197,28 @@ func (r *commentRepository) GetReplies(ctx context.Context, userID *uint64, pare
 	}
 
 	for _, row := range rows {
-		c := row.Comment
-
-		c.User = &domain.User{
-			ID:          row.UserID,
-			UUID:        row.UserUUID,
-			Name:        row.UserName,
-			Slug:        row.UserSlug,
-			Avatar:      row.UserAvatar,
-			ScoreFormat: row.UserScoreFmt,
+		c := domain.Comment{
+			ID:            row.ID,
+			UUID:          row.UUID,
+			ParentID:      row.ParentID,
+			SongID:        row.SongID,
+			UserID:        row.UserID,
+			Content:       row.Content,
+			CreatedAt:     row.Created_At,
+			UpdatedAt:     row.Updated_At,
+			LikesCount:    row.Likes,
+			DislikesCount: row.Dislikes,
+			UserReaction:  row.UserReaction,
+			IsShadowbanned: row.IsShadowbanned || row.UIsShadowbanned,
+			User: &domain.User{
+				ID:          row.UID,
+				UUID:        row.UUUID,
+				Name:        row.UName,
+				Slug:        row.USlug,
+				Avatar:      row.UAvatar,
+				ScoreFormat: row.UScore,
+			},
 		}
-
-		// Map timestamps and counters explicitly
-		c.UUID = row.UUID
-		c.Created_At = row.Comment.Created_At
-		c.Updated_At = row.Comment.Updated_At
-		c.LikesCount = row.LikesCount
-		c.DislikesCount = row.DislikesCount
-		c.IsLiked = row.UserReaction == 1
-		c.IsDisliked = row.UserReaction == -1
 
 		comments = append(comments, c)
 	}
@@ -211,8 +228,9 @@ func (r *commentRepository) GetReplies(ctx context.Context, userID *uint64, pare
 
 func (r *commentRepository) Create(ctx context.Context, comment *domain.Comment) error {
 	query := `
-		INSERT INTO comments (uuid, parent_id, song_id, user_id, content, created_at, updated_at)
-		VALUES (COALESCE(NULLIF($1, '')::uuid, gen_random_uuid()), $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		INSERT INTO comments (uuid, parent_id, song_id, user_id, content, is_shadowbanned, created_at, updated_at)
+		SELECT COALESCE(NULLIF($1, '')::uuid, gen_random_uuid()), $2, $3, $4, $5, is_shadowbanned, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+		FROM users WHERE id = $4
 		RETURNING id, uuid, created_at, updated_at
 	`
 	err := r.db.QueryRowContext(ctx, query,
@@ -221,7 +239,7 @@ func (r *commentRepository) Create(ctx context.Context, comment *domain.Comment)
 		comment.SongID,
 		comment.UserID,
 		comment.Content,
-	).Scan(&comment.ID, &comment.UUID, &comment.Created_At, &comment.Updated_At)
+	).Scan(&comment.ID, &comment.UUID, &comment.CreatedAt, &comment.UpdatedAt)
 	return err
 }
 
@@ -237,6 +255,12 @@ func (r *commentRepository) Delete(ctx context.Context, id, userID uint64) error
 		return errors.New("unauthorized or comment not found")
 	}
 
+	return err
+}
+
+func (r *commentRepository) Update(ctx context.Context, id uint64, content string) error {
+	query := "UPDATE comments SET content = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2"
+	_, err := r.db.ExecContext(ctx, query, content, id)
 	return err
 }
 

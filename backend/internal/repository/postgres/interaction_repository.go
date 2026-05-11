@@ -22,13 +22,14 @@ func NewInteractionRepository(db *sqlx.DB) domain.InteractionRepository {
 // Ratings
 func (r *interactionRepository) UpsertRating(ctx context.Context, rating *domain.Rating) error {
 	query := `
-		INSERT INTO song_ratings (rating, song_id, user_id, created_at, updated_at) 
-		VALUES (:rating, :song_id, :user_id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		INSERT INTO song_ratings (rating, song_id, user_id, is_shadowbanned, created_at, updated_at) 
+		SELECT $1, $2, $3, is_shadowbanned, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+		FROM users WHERE id = $3
 		ON CONFLICT (song_id, user_id) DO UPDATE SET 
 			rating = EXCLUDED.rating, 
 			updated_at = CURRENT_TIMESTAMP
 	`
-	_, err := r.db.NamedExecContext(ctx, query, rating)
+	_, err := r.db.ExecContext(ctx, query, rating.Rating, rating.SongID, rating.UserID)
 	return err
 }
 
@@ -44,7 +45,7 @@ func (r *interactionRepository) GetRatingByUser(ctx context.Context, userID, son
 
 func (r *interactionRepository) GetAverageRating(ctx context.Context, songID uint64) (float64, error) {
 	var avg sql.NullFloat64
-	query := "SELECT AVG(rating) FROM song_ratings WHERE song_id = $1"
+	query := "SELECT AVG(rating) FROM song_ratings WHERE song_id = $1 AND is_shadowbanned = false"
 	err := r.db.GetContext(ctx, &avg, query, songID)
 	if err != nil {
 		return 0, err
@@ -67,7 +68,7 @@ func (r *interactionRepository) GetAverageRatingsBySongIDs(ctx context.Context, 
 		return map[uint64]float64{}, nil
 	}
 
-	query, args, err := sqlx.In("SELECT song_id, AVG(rating) as avg_rating FROM song_ratings WHERE song_id IN (?) GROUP BY song_id", songIDs)
+	query, args, err := sqlx.In("SELECT song_id, AVG(rating) as avg_rating FROM song_ratings WHERE song_id IN (?) AND is_shadowbanned = false GROUP BY song_id", songIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -234,7 +235,7 @@ func (r *interactionRepository) UpsertSongReaction(ctx context.Context, userID, 
 	// Actually, toggling is hard with ON CONFLICT because we might want to DELETE.
 	// A better way is to SELECT FOR UPDATE to lock the row.
 	err = tx.QueryRowContext(ctx, "SELECT id, type FROM song_reactions WHERE user_id = $1 AND song_id = $2 FOR UPDATE", userID, songID).Scan(&reactionID, &existing)
-	
+
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return 0, 0, err
 	}
@@ -254,7 +255,7 @@ func (r *interactionRepository) UpsertSongReaction(ctx context.Context, userID, 
 		}
 	} else {
 		// New reaction
-		_, err = tx.ExecContext(ctx, "INSERT INTO song_reactions (user_id, song_id, type, created_at, updated_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)", userID, songID, reactionType)
+		_, err = tx.ExecContext(ctx, "INSERT INTO song_reactions (user_id, song_id, type, is_shadowbanned, created_at, updated_at) SELECT $1, $2, $3, is_shadowbanned, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP FROM users WHERE id = $1", userID, songID, reactionType)
 		if err != nil {
 			return 0, 0, err
 		}
@@ -264,8 +265,8 @@ func (r *interactionRepository) UpsertSongReaction(ctx context.Context, userID, 
 	var newLikes, newDislikes int
 	updateQuery := `
 		UPDATE songs 
-		SET likes_count = (SELECT count(*) FROM song_reactions WHERE song_id = $1 AND type = 1),
-		    dislikes_count = (SELECT count(*) FROM song_reactions WHERE song_id = $1 AND type = -1),
+		SET likes_count = (SELECT count(*) FROM song_reactions WHERE song_id = $1 AND type = 1 AND is_shadowbanned = false),
+		    dislikes_count = (SELECT count(*) FROM song_reactions WHERE song_id = $1 AND type = -1 AND is_shadowbanned = false),
 			updated_at = CURRENT_TIMESTAMP
 		WHERE id = $1
 		RETURNING likes_count, dislikes_count
@@ -274,7 +275,6 @@ func (r *interactionRepository) UpsertSongReaction(ctx context.Context, userID, 
 	if err != nil {
 		return 0, 0, err
 	}
-
 
 	if err := tx.Commit(); err != nil {
 		return 0, 0, err
@@ -314,7 +314,7 @@ func (r *interactionRepository) UpsertCommentReaction(ctx context.Context, userI
 		}
 	} else {
 		// New reaction
-		_, err = tx.ExecContext(ctx, "INSERT INTO comment_reactions (user_id, comment_id, type, created_at, updated_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)", userID, commentID, reactionType)
+		_, err = tx.ExecContext(ctx, "INSERT INTO comment_reactions (user_id, comment_id, type, is_shadowbanned, created_at, updated_at) SELECT $1, $2, $3, is_shadowbanned, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP FROM users WHERE id = $1", userID, commentID, reactionType)
 		if err != nil {
 			return 0, 0, err
 		}
@@ -324,8 +324,8 @@ func (r *interactionRepository) UpsertCommentReaction(ctx context.Context, userI
 	var newLikes, newDislikes int
 	updateQuery := `
 		UPDATE comments 
-		SET likes_count = (SELECT count(*) FROM comment_reactions WHERE comment_id = $1 AND type = 1),
-		    dislikes_count = (SELECT count(*) FROM comment_reactions WHERE comment_id = $1 AND type = -1),
+		SET likes_count = (SELECT count(*) FROM comment_reactions WHERE comment_id = $1 AND type = 1 AND is_shadowbanned = false),
+		    dislikes_count = (SELECT count(*) FROM comment_reactions WHERE comment_id = $1 AND type = -1 AND is_shadowbanned = false),
 			updated_at = CURRENT_TIMESTAMP
 		WHERE id = $1
 		RETURNING likes_count, dislikes_count
@@ -407,18 +407,23 @@ func (r *interactionRepository) GetRecentActivities(ctx context.Context, limit i
 		SELECT * FROM (
 			SELECT 'rating' as activity_type, r.id as activity_id, r.user_id, u.name as user_name, r.song_id as target_id, 'song' as target_type, r.rating::text as value, r.created_at
 			FROM song_ratings r JOIN users u ON r.user_id = u.id
+			WHERE r.is_shadowbanned = false AND u.is_shadowbanned = false
 			UNION ALL
 			SELECT 'favorite' as activity_type, f.id as activity_id, f.user_id, u.name as user_name, f.song_id as target_id, 'song' as target_type, NULL as value, f.created_at
 			FROM song_user f JOIN users u ON f.user_id = u.id
+			WHERE u.is_shadowbanned = false
 			UNION ALL
 			SELECT 'favorite' as activity_type, f.id as activity_id, f.user_id, u.name as user_name, f.artist_id as target_id, 'artist' as target_type, NULL as value, f.created_at
 			FROM artist_user f JOIN users u ON f.user_id = u.id
+			WHERE u.is_shadowbanned = false
 			UNION ALL
 			SELECT 'comment' as activity_type, c.id as activity_id, c.user_id, u.name as user_name, c.song_id as target_id, 'song' as target_type, c.content as value, c.created_at
 			FROM comments c JOIN users u ON c.user_id = u.id
+			WHERE c.is_shadowbanned = false AND u.is_shadowbanned = false
 			UNION ALL
 			SELECT 'follow' as activity_type, f.followed_id as activity_id, f.follower_id as user_id, u.name as user_name, f.followed_id as target_id, 'user' as target_type, NULL as value, f.created_at
 			FROM follows f JOIN users u ON f.follower_id = u.id
+			WHERE u.is_shadowbanned = false
 		) as activities
 		ORDER BY created_at DESC
 		LIMIT $1
@@ -434,9 +439,9 @@ func (r *interactionRepository) GetRecentActivities(ctx context.Context, limit i
 	var feed []domain.ActivityItem
 	for _, row := range rows {
 		item := domain.ActivityItem{
-			Type:     row.ActivityType,
-			UserID:   row.UserID,
-			TargetID: row.TargetID,
+			Type:       row.ActivityType,
+			UserID:     row.UserID,
+			TargetID:   row.TargetID,
 			TargetType: row.TargetType,
 			User: domain.User{
 				ID:   row.UserID,

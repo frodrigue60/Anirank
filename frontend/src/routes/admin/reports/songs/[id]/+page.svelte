@@ -23,13 +23,14 @@
   let isResolving = $state(false);
   let isDeleting = $state(false);
 
-  async function resolveReport() {
+  async function resolveReport(isAccepted: boolean) {
     if (!report) return;
     isResolving = true;
     try {
-      await api.put(`/admin/songs/reports/${report.id}/resolve`);
-      toastState.addToast("Report marked as resolved", "success");
-      report.status = "fixed";
+      await api.put(`/admin/songs/reports/${report.id}/resolve`, { is_accepted: isAccepted });
+      toastState.addToast(`Report marked as ${isAccepted ? 'Accepted' : 'Rejected'}`, "success");
+      report.status = true;
+      report.is_accepted = isAccepted;
       goto("/admin/reports/songs");
     } catch (err: any) {
       console.error("Error resolving report:", err);
@@ -89,7 +90,7 @@
       <p class="text-on-surface-variant/70">Reviewing violation report submitted by user.</p>
     </div>
 
-    {#if report?.status === "pending"}
+    {#if !report?.status}
       <div class="flex gap-3 w-full sm:w-auto">
         <button
           onclick={deleteReport}
@@ -99,11 +100,18 @@
           {isDeleting ? "Deleting..." : "Delete Report"}
         </button>
         <button
-          onclick={resolveReport}
+          onclick={() => resolveReport(true)}
           disabled={isResolving || isDeleting}
-          class="flex-1 sm:flex-none px-6 py-2 bg-emerald-500 text-on-surface hover:bg-emerald-600 rounded-xl font-medium transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+          class="flex-1 sm:flex-none px-6 py-2 bg-blue-600 text-on-surface hover:bg-blue-700 rounded-xl font-medium transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50"
         >
-          {isResolving ? "Resolving..." : "Mark as Fixed"}
+          {isResolving ? "Accepting..." : "Accept (Valid)"}
+        </button>
+        <button
+          onclick={() => resolveReport(false)}
+          disabled={isResolving || isDeleting}
+          class="flex-1 sm:flex-none px-6 py-2 bg-amber-600 text-on-surface hover:bg-amber-700 rounded-xl font-medium transition-all shadow-lg shadow-amber-500/20 disabled:opacity-50"
+        >
+          {isResolving ? "Rejecting..." : "Reject (False)"}
         </button>
       </div>
     {/if}
@@ -133,13 +141,20 @@
 
               Report Content
             </h2>
-            <span
-              class="px-2 py-0.5 rounded-full text-xs font-bold border capitalize {statusColors[
-                report.status
-              ] || ''}"
-            >
-              {report.status}
-            </span>
+            <div class="flex items-center gap-2">
+              <span
+                class="px-2 py-0.5 rounded-full text-xs font-bold border capitalize {report.status ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'}"
+              >
+                {report.status ? 'Resolved' : 'Pending'}
+              </span>
+              {#if report.status}
+                <span
+                  class="px-2 py-0.5 rounded-full text-xs font-bold border capitalize {report.is_accepted ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'}"
+                >
+                  {report.is_accepted ? 'Accepted' : 'Rejected'}
+                </span>
+              {/if}
+            </div>
           </div>
           <div class="p-6">
             <h3 class="text-xl font-bold text-on-surface mb-4">{report.title}</h3>
@@ -238,7 +253,17 @@
                 >
                   {report.user?.name}
                 </a>
-                <div class="text-xs text-on-surface-variant/40">#{report.user?.id}</div>
+                <div class="flex items-center gap-2 mt-0.5">
+                  <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-sm bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                    Score: {report.user?.truth_score}
+                  </span>
+                  {#if report.user?.is_shadowbanned}
+                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-sm bg-red-500/10 text-red-400 border border-red-500/20">
+                      Shadowbanned
+                    </span>
+                  {/if}
+                </div>
+                <div class="text-xs text-on-surface-variant/40 mt-1">#{report.user?.id}</div>
               </div>
             </div>
             <div class="space-y-3 text-sm">

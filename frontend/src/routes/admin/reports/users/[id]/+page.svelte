@@ -8,7 +8,7 @@ import CheckCircle from "lucide-svelte/icons/check-circle";
 import Trash2 from "lucide-svelte/icons/trash-2";
 import ArrowLeft from "lucide-svelte/icons/arrow-left";
 import ExternalLink from "lucide-svelte/icons/external-link";
-import ShieldAlert from "lucide-svelte/icons/shield-alert";;
+import ShieldAlert from "lucide-svelte/icons/shield-alert";
   import { fade, scale } from "svelte/transition";
 
   let { data } = $props();
@@ -22,14 +22,17 @@ import ShieldAlert from "lucide-svelte/icons/shield-alert";;
   let isResolving = $state(false);
   let isDeleting = $state(false);
 
-  async function resolveReport() {
+  async function resolveReport(isAccepted: boolean = true) {
     if (!report) return;
     isResolving = true;
     try {
-      const response = await api.put(`/admin/users/reports/${report.id}/resolve`);
-      toastState.addToast(response.data.message || "User report marked as resolved", "success");
+      const response = await api.put(`/admin/users/reports/${report.id}/resolve`, {
+        is_accepted: isAccepted
+      });
+      toastState.addToast(response.data.message || "User report resolved", "success");
       report.status = true;
-      goto("/admin/reports/users");
+      report.is_accepted = isAccepted;
+      // Optionally stay on page to see result
     } catch (err: any) {
       console.error("Error resolving report:", err);
       const msg = err.response?.data?.message || "Failed to resolve report";
@@ -91,12 +94,20 @@ import ShieldAlert from "lucide-svelte/icons/shield-alert";;
           {isDeleting ? "Deleting..." : "Delete Report"}
         </button>
         <button
-          onclick={resolveReport}
+          onclick={() => resolveReport(false)}
+          disabled={isResolving || isDeleting}
+          class="flex-1 sm:flex-none px-6 py-2.5 bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 border border-amber-600/20 rounded-xl font-bold text-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+        >
+          <Trash2 size={16} />
+          {isResolving ? "Resolving..." : "Reject"}
+        </button>
+        <button
+          onclick={() => resolveReport(true)}
           disabled={isResolving || isDeleting}
           class="flex-1 sm:flex-none px-6 py-2.5 bg-primary text-on-surface hover:opacity-90 rounded-xl font-bold text-sm transition-all shadow-lg shadow-primary/20 disabled:opacity-50 flex items-center justify-center gap-2"
         >
           <CheckCircle size={16} />
-          {isResolving ? "Resolving..." : "Mark as Resolved"}
+          {isResolving ? "Resolving..." : "Accept"}
         </button>
       </div>
     {/if}
@@ -118,8 +129,15 @@ import ShieldAlert from "lucide-svelte/icons/shield-alert";;
               <Flag size={18} class="text-primary" />
               Report Details
             </h2>
-            <div class="text-[10px] font-bold px-3 py-1 rounded-full border {report.status ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'} uppercase tracking-wider">
-              {report.status ? 'Resolved' : 'Pending'}
+            <div class="flex items-center gap-2">
+              <div class="text-[10px] font-bold px-3 py-1 rounded-full border {report.status ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'} uppercase tracking-wider">
+                {report.status ? 'Resolved' : 'Pending'}
+              </div>
+              {#if report.status}
+                <div class="text-[10px] font-bold px-3 py-1 rounded-full border {report.is_accepted ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'} uppercase tracking-wider">
+                  {report.is_accepted ? 'Accepted' : 'Rejected'}
+                </div>
+              {/if}
             </div>
           </div>
           <div class="p-8">
@@ -162,9 +180,13 @@ import ShieldAlert from "lucide-svelte/icons/shield-alert";;
                   </a>
                 </div>
                 <p class="text-sm text-on-surface-variant/40 mt-1 font-mono">UUID: {report.reported_user?.uuid || 'N/A'}</p>
-                <div class="mt-4 flex gap-2">
+                <div class="mt-4 flex flex-wrap gap-2">
                   <span class="px-3 py-1 bg-surface-highest rounded-full text-[10px] font-bold text-on-surface-variant/70">LEVEL {report.reported_user?.level || 1}</span>
                   <span class="px-3 py-1 bg-surface-highest rounded-full text-[10px] font-bold text-on-surface-variant/70">XP {report.reported_user?.xp || 0}</span>
+                  <span class="px-3 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full text-[10px] font-bold">SCORE: {report.reported_user?.truth_score}</span>
+                  {#if report.reported_user?.is_shadowbanned}
+                    <span class="px-3 py-1 bg-red-500/10 text-red-400 border border-red-500/20 rounded-full text-[10px] font-bold">SHADOWBANNED</span>
+                  {/if}
                 </div>
               </div>
             </div>

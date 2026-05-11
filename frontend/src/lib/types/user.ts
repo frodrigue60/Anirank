@@ -21,6 +21,8 @@ export interface User {
     about?: string;
     score_format_id?: number;
     score_format?: string;
+    truth_score?: number;
+    is_shadowbanned?: boolean;
 }
 
 export interface RankingUser extends User {

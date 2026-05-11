@@ -13,6 +13,7 @@
   import ReportModal from "$lib/components/ReportModal.svelte";
   import CommentReportModal from "$lib/components/CommentReportModal.svelte";
   import PlaylistModal from "$lib/components/PlaylistModal.svelte";
+  import UserReportModal from "$lib/components/UserReportModal.svelte";
   import SEO from "$lib/components/SEO.svelte";
   import ThumbsUp from "lucide-svelte/icons/thumbs-up";
   import ThumbsDown from "lucide-svelte/icons/thumbs-down";
@@ -24,6 +25,7 @@
   import VideoOff from "lucide-svelte/icons/video-off";
   import Trash2 from "lucide-svelte/icons/trash-2";
   import MoreVertical from "lucide-svelte/icons/more-vertical";
+  import Edit2 from "lucide-svelte/icons/edit-2";
   import CornerDownRight from "lucide-svelte/icons/corner-down-right";
   import MessageCircle from "lucide-svelte/icons/message-circle";
   import Play from "lucide-svelte/icons/play";
@@ -40,6 +42,8 @@
     avatar_url?: string;
     score_format?: string;
     role?: string;
+    truth_score?: number;
+    is_shadowbanned?: boolean;
   }
 
   interface Comment {
@@ -53,6 +57,7 @@
     is_disliked?: boolean;
     likes_count?: number;
     dislikes_count?: number;
+    is_shadowbanned?: boolean;
   }
 
   function mapComment(c: any): Comment {
@@ -102,7 +107,13 @@
   let showReportModal = $state(false);
   let showPlaylistModal = $state(false);
   let showCommentReportModal = $state(false);
+  let showUserReportModal = $state(false);
   let reportingCommentUuid = $state<string | null>(null);
+  let reportingUser = $state<any>(null);
+
+  let editingCommentUuid = $state<string | null>(null);
+  let editText = $state("");
+  let openDropdownUuid = $state<string | null>(null);
 
   function openCommentReportModal(uuid: string) {
     if (!authState.isAuthenticated) {
@@ -111,6 +122,58 @@
     }
     reportingCommentUuid = uuid;
     showCommentReportModal = true;
+    openDropdownUuid = null;
+  }
+
+  function openUserReportModal(user: any) {
+    if (!authState.isAuthenticated) {
+      goto(`/login?redirect=${encodeURIComponent(page.url.pathname)}`);
+      return;
+    }
+    reportingUser = user;
+    showUserReportModal = true;
+    openDropdownUuid = null;
+  }
+
+  function startEditing(comment: Comment) {
+    editingCommentUuid = comment.uuid;
+    editText = comment.content;
+    openDropdownUuid = null;
+  }
+
+  function cancelEditing() {
+    editingCommentUuid = null;
+    editText = "";
+  }
+
+  async function saveEdit() {
+    if (!editingCommentUuid || !editText.trim()) return;
+    try {
+      await api.put(`/comments/${editingCommentUuid}`, {
+        content: editText,
+      });
+      
+      // Update local state
+      const updateLocal = (list: Comment[]) => {
+        for (let i = 0; i < list.length; i++) {
+          if (list[i].uuid === editingCommentUuid) {
+            list[i].content = editText;
+            return true;
+          }
+          if (list[i].replies && updateLocal(list[i].replies)) return true;
+        }
+        return false;
+      };
+      
+      updateLocal(comments);
+      comments = [...comments]; // Trigger reactivity
+      editingCommentUuid = null;
+      editText = "";
+      toastState.addToast("Comment updated", "success");
+    } catch (error) {
+      console.error("Error updating comment:", error);
+      toastState.addToast("Failed to update comment", "error");
+    }
   }
 
   function handleRatingClick() {
@@ -900,11 +963,33 @@
                       >
                     </div>
                   </div>
-                  <p
-                    class="text-sm text-on-surface-variant whitespace-pre-wrap"
-                  >
-                    {comment.content}
-                  </p>
+                  {#if editingCommentUuid === comment.uuid}
+                    <div class="space-y-2">
+                      <textarea
+                        bind:value={editText}
+                        class="w-full bg-surface-container border border-primary/30 rounded-sm p-3 text-sm text-on-surface focus:outline-none focus:border-primary transition-colors resize-none"
+                        rows="3"
+                      ></textarea>
+                      <div class="flex justify-end gap-2">
+                        <button
+                          onclick={cancelEditing}
+                          class="text-xs font-bold text-on-surface-variant hover:text-on-surface px-3 py-1.5 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onclick={saveEdit}
+                          class="bg-primary text-white text-xs font-bold px-3 py-1.5 rounded-sm hover:bg-primary/80 transition-colors"
+                        >
+                          Save
+                        </button>
+                      </div>
+                    </div>
+                  {:else}
+                    <p class="text-sm text-on-surface-variant whitespace-pre-wrap">
+                      {comment.content}
+                    </p>
+                  {/if}
                 </div>
                 <div class="flex justify-between text-md">
                   <div class="flex gap-2 items-center">
@@ -958,25 +1043,50 @@
                     </button>
                   </div>
 
-                  <div class="flex gap-2">
+                  <div class="relative">
                     <button
-                      onclick={() => openCommentReportModal(comment.uuid)}
-                      class="shrink-0 p-1 hover:bg-surface-highest text-on-surface-variant/40 hover:text-on-surface transition-colors rounded-sm"
-                      title="Report Comment"
-                      aria-label="Report comment"
+                      onclick={(e) => {
+                        e.stopPropagation();
+                        openDropdownUuid = openDropdownUuid === comment.uuid ? null : comment.uuid;
+                      }}
+                      class="p-1 hover:bg-surface-highest text-on-surface-variant/40 hover:text-on-surface transition-colors rounded-sm"
+                      title="More options"
+                      aria-label="More options"
                     >
-                      <Flag size={16} />
+                      <MoreVertical size={16} />
                     </button>
 
-                    {#if authState.user && (authState.user.uuid === comment.user?.uuid || authState.isAdmin)}
-                      <button
-                        onclick={() => deleteComment(comment.uuid)}
-                        class="text-on-surface-variant/20 hover:text-red-400 transition-colors p-1"
-                        title="Delete Comment"
-                        aria-label="Delete comment"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                    {#if openDropdownUuid === comment.uuid}
+                      <div class="absolute right-0 top-full mt-1 w-48 bg-surface-container border border-outline-variant/10 rounded-md shadow-xl z-20 py-1 overflow-hidden">
+                        {#if authState.user && authState.user.uuid === comment.user?.uuid}
+                          <button
+                            onclick={() => startEditing(comment)}
+                            class="w-full text-left px-4 py-2 text-xs font-bold text-on-surface-variant hover:bg-surface-low hover:text-primary transition-colors flex items-center gap-2"
+                          >
+                             <Edit2 size={14} /> Edit Comment
+                          </button>
+                        {/if}
+                        {#if authState.user && (authState.user.uuid === comment.user?.uuid || authState.isAdmin)}
+                          <button
+                            onclick={() => deleteComment(comment.uuid)}
+                            class="w-full text-left px-4 py-2 text-xs font-bold text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-2"
+                          >
+                             <Trash2 size={14} /> Delete Comment
+                          </button>
+                        {/if}
+                        <button
+                          onclick={() => openCommentReportModal(comment.uuid)}
+                          class="w-full text-left px-4 py-2 text-xs font-bold text-on-surface-variant hover:bg-surface-low hover:text-red-400 transition-colors flex items-center gap-2"
+                        >
+                          <Flag size={14} /> Report Comment
+                        </button>
+                        <button
+                          onclick={() => openUserReportModal(comment.user)}
+                          class="w-full text-left px-4 py-2 text-xs font-bold text-on-surface-variant hover:bg-surface-low hover:text-red-400 transition-colors flex items-center gap-2"
+                        >
+                          <User size={14} /> Report User
+                        </button>
+                      </div>
                     {/if}
                   </div>
                 </div>
@@ -1053,34 +1163,80 @@
                                     : "Just now"}</span
                                 >
                               </div>
-                              <div class="flex items-center gap-2">
-                                {#if authState.user && (authState.user.uuid === reply.user?.uuid || authState.isAdmin)}
-                                  <button
-                                    onclick={() =>
-                                      deleteComment(reply.uuid, comment.uuid)}
-                                    class="text-on-surface-variant/20 hover:text-red-400 transition-colors"
-                                    title="Delete Reply"
-                                    aria-label="Delete reply"
-                                  >
-                                    <Trash2 size={14} />
-                                  </button>
-                                {/if}
+                              <div class="relative">
                                 <button
-                                  onclick={() =>
-                                    openCommentReportModal(reply.uuid)}
-                                  class="text-on-surface-variant/20 hover:text-primary transition-colors"
-                                  title="Report Reply"
-                                  aria-label="Report reply"
+                                  onclick={(e) => {
+                                    e.stopPropagation();
+                                    openDropdownUuid = openDropdownUuid === reply.uuid ? null : reply.uuid;
+                                  }}
+                                  class="p-1 hover:bg-surface-highest text-on-surface-variant/40 hover:text-on-surface transition-colors rounded-sm"
+                                  title="More options"
+                                  aria-label="More options"
                                 >
-                                    <Flag size={14} />
+                                  <MoreVertical size={14} />
                                 </button>
+
+                                {#if openDropdownUuid === reply.uuid}
+                                  <div class="absolute right-0 top-full mt-1 w-48 bg-surface-container border border-outline-variant/10 rounded-md shadow-xl z-20 py-1 overflow-hidden">
+                                    {#if authState.user && authState.user.uuid === reply.user?.uuid}
+                                      <button
+                                        onclick={() => startEditing(reply)}
+                                        class="w-full text-left px-4 py-2 text-[11px] font-bold text-on-surface-variant hover:bg-surface-low hover:text-primary transition-colors flex items-center gap-2"
+                                      >
+                                         <Edit2 size={12} /> Edit Reply
+                                      </button>
+                                    {/if}
+                                    {#if authState.user && (authState.user.uuid === reply.user?.uuid || authState.isAdmin)}
+                                      <button
+                                        onclick={() => deleteComment(reply.uuid, comment.uuid)}
+                                        class="w-full text-left px-4 py-2 text-[11px] font-bold text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-2"
+                                      >
+                                         <Trash2 size={12} /> Delete Reply
+                                      </button>
+                                    {/if}
+                                    <button
+                                      onclick={() => openCommentReportModal(reply.uuid)}
+                                      class="w-full text-left px-4 py-2 text-[11px] font-bold text-on-surface-variant hover:bg-surface-low hover:text-red-400 transition-colors flex items-center gap-2"
+                                    >
+                                      <Flag size={12} /> Report Reply
+                                    </button>
+                                    <button
+                                      onclick={() => openUserReportModal(reply.user)}
+                                      class="w-full text-left px-4 py-2 text-[11px] font-bold text-on-surface-variant hover:bg-surface-low hover:text-red-400 transition-colors flex items-center gap-2"
+                                    >
+                                      <User size={12} /> Report User
+                                    </button>
+                                  </div>
+                                {/if}
                               </div>
                             </div>
-                            <p
-                              class="text-[13px] text-on-surface-variant whitespace-pre-wrap"
-                            >
-                              {reply.content}
-                            </p>
+                            {#if editingCommentUuid === reply.uuid}
+                              <div class="space-y-2 mt-2">
+                                <textarea
+                                  bind:value={editText}
+                                  class="w-full bg-surface-container border border-primary/30 rounded-sm p-3 text-sm text-on-surface focus:outline-none focus:border-primary transition-colors resize-none"
+                                  rows="2"
+                                ></textarea>
+                                <div class="flex justify-end gap-2">
+                                  <button
+                                    onclick={cancelEditing}
+                                    class="text-xs font-bold text-on-surface-variant hover:text-on-surface px-3 py-1.5 transition-colors"
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    onclick={saveEdit}
+                                    class="bg-primary text-white text-xs font-bold px-3 py-1.5 rounded-sm hover:bg-primary/80 transition-colors"
+                                  >
+                                    Save
+                                  </button>
+                                </div>
+                              </div>
+                            {:else}
+                              <p class="text-[13px] text-on-surface-variant whitespace-pre-wrap mt-1">
+                                {reply.content}
+                              </p>
+                            {/if}
                             <div class="flex gap-4 items-center mt-2">
                               <button
                                 onclick={() =>
@@ -1257,3 +1413,16 @@
   song={currentSong}
   onClose={() => (showPlaylistModal = false)}
 />
+
+{#if showUserReportModal && reportingUser}
+  <UserReportModal
+    show={showUserReportModal}
+    reportedUser={reportingUser}
+    onClose={() => {
+      showUserReportModal = false;
+      reportingUser = null;
+    }}
+  />
+{/if}
+
+<svelte:window onclick={() => (openDropdownUuid = null)} />

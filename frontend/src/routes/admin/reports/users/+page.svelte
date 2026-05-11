@@ -2,20 +2,16 @@
   import api from "$lib/api";
   import User from "lucide-svelte/icons/user";
 import Flag from "lucide-svelte/icons/flag";
-import Trash2 from "lucide-svelte/icons/trash-2";
-import CheckCircle from "lucide-svelte/icons/check-circle";
+import Eye from "lucide-svelte/icons/eye";
 import ExternalLink from "lucide-svelte/icons/external-link";
 import Inbox from "lucide-svelte/icons/inbox";
   import { fade } from "svelte/transition";
-  import { toastState } from "$lib/state/toast.svelte";
 
   let { data } = $props();
   // svelte-ignore state_referenced_locally
   let reports = $state(data.reports || []);
   let status = $state("pending");
   let isLoading = $state(false);
-  let loadingDelete = $state<number | null>(null);
-  let loadingResolve = $state<number | null>(null);
 
   async function loadReports(newStatus: string) {
     status = newStatus;
@@ -33,48 +29,6 @@ import Inbox from "lucide-svelte/icons/inbox";
   $effect(() => {
     reports = data.reports || [];
   });
-
-  async function deleteReport(id: number) {
-    if (!confirm("Are you sure you want to delete this report?")) return;
-
-    loadingDelete = id;
-    try {
-      const response = await api.delete(`/admin/users/reports/${id}`);
-      if (response.data.success) {
-        toastState.addToast(response.data.message || "Report deleted successfully", "success");
-        reports = reports.filter((r: any) => r.id !== id);
-      } else {
-        toastState.addToast(response.data.message || "Failed to delete report", "error");
-      }
-    } catch (err: any) {
-      console.error("Error deleting report:", err);
-      const msg = err.response?.data?.message || "Failed to delete report.";
-      toastState.addToast(msg, "error");
-    } finally {
-      loadingDelete = null;
-    }
-  }
-
-  async function resolveReport(id: number) {
-    loadingResolve = id;
-    try {
-      const response = await api.put(`/admin/users/reports/${id}/resolve`);
-      toastState.addToast(response.data.message || "User report resolved successfully", "success");
-      
-      if (status === 'pending') {
-        reports = reports.filter((r: any) => r.id !== id);
-      } else {
-        // Refresh if in resolved tab (though unlikely to resolve a resolved one)
-        loadReports(status);
-      }
-    } catch (err: any) {
-      console.error("Error resolving report:", err);
-      const msg = err.response?.data?.message || "Failed to resolve report.";
-      toastState.addToast(msg, "error");
-    } finally {
-      loadingResolve = null;
-    }
-  }
 </script>
 
 <svelte:head>
@@ -153,7 +107,17 @@ import Inbox from "lucide-svelte/icons/inbox";
                     {rpt.reported_user?.name || 'Unknown'}
                     <ExternalLink size={12} class="opacity-40" />
                   </a>
-                  <p class="text-[10px] text-on-surface-variant/40">ID: {rpt.reported_user_id}</p>
+                  <div class="flex items-center gap-1.5 mt-0.5">
+                    <span class="text-[9px] font-bold px-1 py-0.5 rounded-sm bg-blue-500/10 text-blue-400 border border-blue-500/10">
+                      Score: {rpt.reported_user?.truth_score}
+                    </span>
+                    {#if rpt.reported_user?.is_shadowbanned}
+                      <span class="text-[9px] font-bold px-1 py-0.5 rounded-sm bg-red-500/10 text-red-400 border border-red-500/10">
+                        SB
+                      </span>
+                    {/if}
+                  </div>
+                  <p class="text-[10px] text-on-surface-variant/40 mt-0.5">ID: {rpt.reported_user_id}</p>
                 </div>
               </div>
             </td>
@@ -170,38 +134,25 @@ import Inbox from "lucide-svelte/icons/inbox";
               <a href="/users/{rpt.reporter_user?.slug}" target="_blank" class="text-on-surface hover:text-primary font-medium transition-colors">
                 {rpt.reporter_user?.name || 'Unknown'}
               </a>
-              <div class="text-[10px] text-on-surface-variant/40 mt-1">
+              <div class="flex items-center gap-1 mt-1">
+                <span class="text-[9px] font-medium text-on-surface-variant/50">Score: {rpt.reporter_user?.truth_score}</span>
+                {#if rpt.reporter_user?.is_shadowbanned}
+                  <span class="text-[9px] text-red-400 font-bold">SB</span>
+                {/if}
+              </div>
+              <div class="text-[10px] text-on-surface-variant/40 mt-0.5">
                 {new Date(rpt.created_at).toLocaleDateString()}
               </div>
             </td>
             <td class="px-6 py-4 text-right">
               <div class="flex items-center justify-end gap-2">
-                {#if !rpt.status}
-                  <button
-                    class="p-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-lg transition-colors border border-emerald-500/20 disabled:opacity-50"
-                    title="Mark as resolved"
-                    onclick={() => resolveReport(rpt.id)}
-                    disabled={loadingResolve === rpt.id}
-                  >
-                    {#if loadingResolve === rpt.id}
-                      <div class="size-4 border-2 border-emerald-400/20 border-t-emerald-400 rounded-full animate-spin"></div>
-                    {:else}
-                      <CheckCircle size={18} />
-                    {/if}
-                  </button>
-                {/if}
-                <button
-                  class="p-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-lg transition-colors border border-rose-500/20 disabled:opacity-50"
-                  title="Delete report"
-                  onclick={() => deleteReport(rpt.id)}
-                  disabled={loadingDelete === rpt.id}
+                <a
+                  href="/admin/reports/users/{rpt.id}"
+                  class="p-2 bg-surface-highest hover:bg-surface-highest text-on-surface/60 hover:text-primary rounded-lg transition-all"
+                  title="View Details"
                 >
-                  {#if loadingDelete === rpt.id}
-                    <div class="size-4 border-2 border-rose-400/20 border-t-rose-400 rounded-full animate-spin"></div>
-                  {:else}
-                    <Trash2 size={18} />
-                  {/if}
-                </button>
+                  <Eye size={18} />
+                </a>
               </div>
             </td>
           </tr>

@@ -104,6 +104,7 @@ func (r *moderationRepository) GetSongReports(ctx context.Context, status *bool,
 	query := `
 		SELECT r.*, 
 		       u.id as "user.id", u.name as "user.name", u.slug as "user.slug",
+		       u.truth_score as "user.truth_score", u.is_shadowbanned as "user.is_shadowbanned",
 		       s.id as "song.id", s.slug as "song.slug", s.song_romaji as "song.song_romaji",
 		       s.song_en as "song.song_en", s.song_jp as "song.song_jp",
 		       a.id as "anime.id", a.slug as "anime.slug", a.title as "anime.title"
@@ -127,18 +128,21 @@ func (r *moderationRepository) GetSongReports(ctx context.Context, status *bool,
 	args = append(args, limit, offset)
 
 	type ReportRow struct {
+		IsAccepted bool `db:"is_accepted"`
 		domain.SongReport
-		UserID     uint64  `db:"user.id"`
-		UserName   string  `db:"user.name"`
-		UserSlug   *string `db:"user.slug"`
-		SongID     uint64  `db:"song.id"`
-		SongSlug   string  `db:"song.slug"`
-		SongTitle  *string `db:"song.song_romaji"`
-		SongEN     *string `db:"song.song_en"`
-		SongJP     *string `db:"song.song_jp"`
-		AnimeID    *uint64 `db:"anime.id"`
-		AnimeSlug  *string `db:"anime.slug"`
-		AnimeTitle *string `db:"anime.title"`
+		UserID         uint64  `db:"user.id"`
+		UserName       string  `db:"user.name"`
+		UserSlug       *string `db:"user.slug"`
+		UserTruthScore int     `db:"user.truth_score"`
+		UserShadow     bool    `db:"user.is_shadowbanned"`
+		SongID         uint64  `db:"song.id"`
+		SongSlug       string  `db:"song.slug"`
+		SongTitle      *string `db:"song.song_romaji"`
+		SongEN         *string `db:"song.song_en"`
+		SongJP         *string `db:"song.song_jp"`
+		AnimeID        *uint64 `db:"anime.id"`
+		AnimeSlug      *string `db:"anime.slug"`
+		AnimeTitle     *string `db:"anime.title"`
 	}
 
 	var rows []ReportRow
@@ -150,10 +154,13 @@ func (r *moderationRepository) GetSongReports(ctx context.Context, status *bool,
 	var reports []domain.SongReport
 	for _, row := range rows {
 		rep := row.SongReport
+		rep.IsAccepted = row.IsAccepted
 		rep.User = &domain.User{
-			ID:   row.UserID,
-			Name: row.UserName,
-			Slug: row.UserSlug,
+			ID:             row.UserID,
+			Name:           row.UserName,
+			Slug:           row.UserSlug,
+			TruthScore:     row.UserTruthScore,
+			IsShadowbanned: row.UserShadow,
 		}
 		rep.Song = &domain.Song{
 			ID:         row.SongID,
@@ -183,6 +190,7 @@ func (r *moderationRepository) GetSongReport(ctx context.Context, reportID uint6
 	query := `
 		SELECT r.*, 
 		       u.id as "user.id", u.name as "user.name", u.slug as "user.slug",
+		       u.truth_score as "user.truth_score", u.is_shadowbanned as "user.is_shadowbanned",
 		       s.id as "song.id", s.slug as "song.slug", s.song_romaji as "song.song_romaji",
 		       s.song_en as "song.song_en", s.song_jp as "song.song_jp",
 		       a.id as "anime.id", a.slug as "anime.slug", a.title as "anime.title"
@@ -194,13 +202,16 @@ func (r *moderationRepository) GetSongReport(ctx context.Context, reportID uint6
 	`
 
 	type ReportRow struct {
+		IsAccepted bool `db:"is_accepted"`
 		domain.SongReport
-		UserID     uint64  `db:"user.id"`
-		UserName   string  `db:"user.name"`
-		UserSlug   *string `db:"user.slug"`
-		SongID     uint64  `db:"song.id"`
-		SongSlug   string  `db:"song.slug"`
-		SongTitle  *string `db:"song.song_romaji"`
+		UserID         uint64  `db:"user.id"`
+		UserName       string  `db:"user.name"`
+		UserSlug       *string `db:"user.slug"`
+		UserTruthScore int     `db:"user.truth_score"`
+		UserShadow     bool    `db:"user.is_shadowbanned"`
+		SongID         uint64  `db:"song.id"`
+		SongSlug       string  `db:"song.slug"`
+		SongTitle      *string `db:"song.song_romaji"`
 		SongEN     *string `db:"song.song_en"`
 		SongJP     *string `db:"song.song_jp"`
 		AnimeID    *uint64 `db:"anime.id"`
@@ -215,10 +226,13 @@ func (r *moderationRepository) GetSongReport(ctx context.Context, reportID uint6
 	}
 
 	rep := row.SongReport
+	rep.IsAccepted = row.IsAccepted
 	rep.User = &domain.User{
-		ID:   row.UserID,
-		Name: row.UserName,
-		Slug: row.UserSlug,
+		ID:             row.UserID,
+		Name:           row.UserName,
+		Slug:           row.UserSlug,
+		TruthScore:     row.UserTruthScore,
+		IsShadowbanned: row.UserShadow,
 	}
 	rep.Song = &domain.Song{
 		ID:         row.SongID,
@@ -238,9 +252,9 @@ func (r *moderationRepository) GetSongReport(ctx context.Context, reportID uint6
 	return &rep, nil
 }
 
-func (r *moderationRepository) ResolveSongReport(ctx context.Context, reportID uint64) error {
-	query := "UPDATE song_reports SET status = true, updated_at = CURRENT_TIMESTAMP WHERE id = $1"
-	res, err := r.db.ExecContext(ctx, query, reportID)
+func (r *moderationRepository) ResolveSongReport(ctx context.Context, reportID uint64, isAccepted bool) error {
+	query := "UPDATE song_reports SET status = true, is_accepted = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2"
+	res, err := r.db.ExecContext(ctx, query, isAccepted, reportID)
 	if err != nil {
 		return err
 	}
@@ -257,7 +271,8 @@ func (r *moderationRepository) GetCommentReports(ctx context.Context, status *bo
 	query := `
 		SELECT r.*, 
 		       u.id as "user.id", u.name as "user.name", u.slug as "user.slug",
-		       c.id as "comment.id", c.content as "comment.content"
+		       u.truth_score as "user.truth_score", u.is_shadowbanned as "user.is_shadowbanned",
+		       c.id as "comment.id", c.content as "comment.content", c.user_id as "comment.user_id"
 		FROM comment_reports r
 		JOIN users u ON r.user_id = u.id
 		JOIN comments c ON r.comment_id = c.id
@@ -277,12 +292,16 @@ func (r *moderationRepository) GetCommentReports(ctx context.Context, status *bo
 	args = append(args, limit, offset)
 
 	type ReportRow struct {
+		IsAccepted bool `db:"is_accepted"`
 		domain.CommentReport
 		UserID         uint64  `db:"user.id"`
 		UserName       string  `db:"user.name"`
 		UserSlug       *string `db:"user.slug"`
+		UserTruthScore int     `db:"user.truth_score"`
+		UserShadow     bool    `db:"user.is_shadowbanned"`
 		CommentID      uint64  `db:"comment.id"`
 		CommentContent string  `db:"comment.content"`
+		CommentUserID  uint64  `db:"comment.user_id"`
 	}
 
 	var rows []ReportRow
@@ -294,14 +313,18 @@ func (r *moderationRepository) GetCommentReports(ctx context.Context, status *bo
 	var reports []domain.CommentReport
 	for _, row := range rows {
 		rep := row.CommentReport
+		rep.IsAccepted = row.IsAccepted
 		rep.User = &domain.User{
-			ID:   row.UserID,
-			Name: row.UserName,
-			Slug: row.UserSlug,
+			ID:             row.UserID,
+			Name:           row.UserName,
+			Slug:           row.UserSlug,
+			TruthScore:     row.UserTruthScore,
+			IsShadowbanned: row.UserShadow,
 		}
 		rep.Comment = &domain.Comment{
 			ID:      row.CommentID,
 			Content: row.CommentContent,
+			UserID:  row.CommentUserID,
 		}
 		reports = append(reports, rep)
 	}
@@ -317,7 +340,8 @@ func (r *moderationRepository) GetCommentReport(ctx context.Context, reportID ui
 	query := `
 		SELECT r.*, 
 		       u.id as "user.id", u.name as "user.name", u.slug as "user.slug",
-		       c.id as "comment.id", c.content as "comment.content"
+		       u.truth_score as "user.truth_score", u.is_shadowbanned as "user.is_shadowbanned",
+		       c.id as "comment.id", c.content as "comment.content", c.user_id as "comment.user_id"
 		FROM comment_reports r
 		JOIN users u ON r.user_id = u.id
 		JOIN comments c ON r.comment_id = c.id
@@ -325,12 +349,16 @@ func (r *moderationRepository) GetCommentReport(ctx context.Context, reportID ui
 	`
 
 	type ReportRow struct {
+		IsAccepted bool `db:"is_accepted"`
 		domain.CommentReport
 		UserID         uint64  `db:"user.id"`
 		UserName       string  `db:"user.name"`
 		UserSlug       *string `db:"user.slug"`
+		UserTruthScore int     `db:"user.truth_score"`
+		UserShadow     bool    `db:"user.is_shadowbanned"`
 		CommentID      uint64  `db:"comment.id"`
 		CommentContent string  `db:"comment.content"`
+		CommentUserID  uint64  `db:"comment.user_id"`
 	}
 
 	var row ReportRow
@@ -340,22 +368,26 @@ func (r *moderationRepository) GetCommentReport(ctx context.Context, reportID ui
 	}
 
 	rep := row.CommentReport
+	rep.IsAccepted = row.IsAccepted
 	rep.User = &domain.User{
-		ID:   row.UserID,
-		Name: row.UserName,
-		Slug: row.UserSlug,
+		ID:             row.UserID,
+		Name:           row.UserName,
+		Slug:           row.UserSlug,
+		TruthScore:     row.UserTruthScore,
+		IsShadowbanned: row.UserShadow,
 	}
 	rep.Comment = &domain.Comment{
 		ID:      row.CommentID,
 		Content: row.CommentContent,
+			UserID:  row.CommentUserID,
 	}
 
 	return &rep, nil
 }
 
-func (r *moderationRepository) ResolveCommentReport(ctx context.Context, reportID uint64) error {
-	query := "UPDATE comment_reports SET status = true, updated_at = CURRENT_TIMESTAMP WHERE id = $1"
-	res, err := r.db.ExecContext(ctx, query, reportID)
+func (r *moderationRepository) ResolveCommentReport(ctx context.Context, reportID uint64, isAccepted bool) error {
+	query := "UPDATE comment_reports SET status = true, is_accepted = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2"
+	res, err := r.db.ExecContext(ctx, query, isAccepted, reportID)
 	if err != nil {
 		return err
 	}
@@ -549,7 +581,9 @@ func (r *moderationRepository) GetUserReports(ctx context.Context, status *bool,
 	query := `
 		SELECT r.*, 
 		       u1.id as "reported.id", u1.name as "reported.name", u1.slug as "reported.slug", u1.avatar as "reported.avatar",
-		       u2.id as "reporter.id", u2.name as "reporter.name", u2.slug as "reporter.slug", u2.avatar as "reporter.avatar"
+		       u1.truth_score as "reported.truth_score", u1.is_shadowbanned as "reported.is_shadowbanned",
+		       u2.id as "reporter.id", u2.name as "reporter.name", u2.slug as "reporter.slug", u2.avatar as "reporter.avatar",
+		       u2.truth_score as "reporter.truth_score", u2.is_shadowbanned as "reporter.is_shadowbanned"
 		FROM user_reports r
 		JOIN users u1 ON r.reported_user_id = u1.id
 		JOIN users u2 ON r.reporter_user_id = u2.id
@@ -569,15 +603,20 @@ func (r *moderationRepository) GetUserReports(ctx context.Context, status *bool,
 	args = append(args, limit, offset)
 
 	type ReportRow struct {
+		IsAccepted bool `db:"is_accepted"`
 		domain.UserReport
 		ReportedID     uint64  `db:"reported.id"`
 		ReportedName   string  `db:"reported.name"`
 		ReportedSlug   *string `db:"reported.slug"`
 		ReportedAvatar *string `db:"reported.avatar"`
+		ReportedScore  int     `db:"reported.truth_score"`
+		ReportedShadow bool    `db:"reported.is_shadowbanned"`
 		ReporterID     uint64  `db:"reporter.id"`
 		ReporterName   string  `db:"reporter.name"`
 		ReporterSlug   *string `db:"reporter.slug"`
 		ReporterAvatar *string `db:"reporter.avatar"`
+		ReporterScore  int     `db:"reporter.truth_score"`
+		ReporterShadow bool    `db:"reporter.is_shadowbanned"`
 	}
 
 	var rows []ReportRow
@@ -589,17 +628,22 @@ func (r *moderationRepository) GetUserReports(ctx context.Context, status *bool,
 	var reports []domain.UserReport
 	for _, row := range rows {
 		rep := row.UserReport
+		rep.IsAccepted = row.IsAccepted
 		rep.ReportedUser = &domain.User{
-			ID:     row.ReportedID,
-			Name:   row.ReportedName,
-			Slug:   row.ReportedSlug,
-			Avatar: row.ReportedAvatar,
+			ID:             row.ReportedID,
+			Name:           row.ReportedName,
+			Slug:           row.ReportedSlug,
+			Avatar:         row.ReportedAvatar,
+			TruthScore:     row.ReportedScore,
+			IsShadowbanned: row.ReportedShadow,
 		}
 		rep.ReporterUser = &domain.User{
-			ID:     row.ReporterID,
-			Name:   row.ReporterName,
-			Slug:   row.ReporterSlug,
-			Avatar: row.ReporterAvatar,
+			ID:             row.ReporterID,
+			Name:           row.ReporterName,
+			Slug:           row.ReporterSlug,
+			Avatar:         row.ReporterAvatar,
+			TruthScore:     row.ReporterScore,
+			IsShadowbanned: row.ReporterShadow,
 		}
 		reports = append(reports, rep)
 	}
@@ -615,7 +659,9 @@ func (r *moderationRepository) GetUserReport(ctx context.Context, reportID uint6
 	query := `
 		SELECT r.*, 
 		       u1.id as "reported.id", u1.name as "reported.name", u1.slug as "reported.slug", u1.avatar as "reported.avatar",
-		       u2.id as "reporter.id", u2.name as "reporter.name", u2.slug as "reporter.slug", u2.avatar as "reporter.avatar"
+		       u1.truth_score as "reported.truth_score", u1.is_shadowbanned as "reported.is_shadowbanned",
+		       u2.id as "reporter.id", u2.name as "reporter.name", u2.slug as "reporter.slug", u2.avatar as "reporter.avatar",
+		       u2.truth_score as "reporter.truth_score", u2.is_shadowbanned as "reporter.is_shadowbanned"
 		FROM user_reports r
 		JOIN users u1 ON r.reported_user_id = u1.id
 		JOIN users u2 ON r.reporter_user_id = u2.id
@@ -623,15 +669,20 @@ func (r *moderationRepository) GetUserReport(ctx context.Context, reportID uint6
 	`
 
 	type ReportRow struct {
+		IsAccepted bool `db:"is_accepted"`
 		domain.UserReport
 		ReportedID     uint64  `db:"reported.id"`
 		ReportedName   string  `db:"reported.name"`
 		ReportedSlug   *string `db:"reported.slug"`
 		ReportedAvatar *string `db:"reported.avatar"`
+		ReportedScore  int     `db:"reported.truth_score"`
+		ReportedShadow bool    `db:"reported.is_shadowbanned"`
 		ReporterID     uint64  `db:"reporter.id"`
 		ReporterName   string  `db:"reporter.name"`
 		ReporterSlug   *string `db:"reporter.slug"`
 		ReporterAvatar *string `db:"reporter.avatar"`
+		ReporterScore  int     `db:"reporter.truth_score"`
+		ReporterShadow bool    `db:"reporter.is_shadowbanned"`
 	}
 
 	var row ReportRow
@@ -641,25 +692,30 @@ func (r *moderationRepository) GetUserReport(ctx context.Context, reportID uint6
 	}
 
 	rep := row.UserReport
+	rep.IsAccepted = row.IsAccepted
 	rep.ReportedUser = &domain.User{
-		ID:     row.ReportedID,
-		Name:   row.ReportedName,
-		Slug:   row.ReportedSlug,
-		Avatar: row.ReportedAvatar,
+		ID:             row.ReportedID,
+		Name:           row.ReportedName,
+		Slug:           row.ReportedSlug,
+		Avatar:         row.ReportedAvatar,
+		TruthScore:     row.ReportedScore,
+		IsShadowbanned: row.ReportedShadow,
 	}
 	rep.ReporterUser = &domain.User{
-		ID:     row.ReporterID,
-		Name:   row.ReporterName,
-		Slug:   row.ReporterSlug,
-		Avatar: row.ReporterAvatar,
+		ID:             row.ReporterID,
+		Name:           row.ReporterName,
+		Slug:           row.ReporterSlug,
+		Avatar:         row.ReporterAvatar,
+		TruthScore:     row.ReporterScore,
+		IsShadowbanned: row.ReporterShadow,
 	}
 
 	return &rep, nil
 }
 
-func (r *moderationRepository) ResolveUserReport(ctx context.Context, reportID uint64) error {
-	query := "UPDATE user_reports SET status = true, updated_at = CURRENT_TIMESTAMP WHERE id = $1"
-	res, err := r.db.ExecContext(ctx, query, reportID)
+func (r *moderationRepository) ResolveUserReport(ctx context.Context, reportID uint64, isAccepted bool) error {
+	query := "UPDATE user_reports SET status = true, is_accepted = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2"
+	res, err := r.db.ExecContext(ctx, query, isAccepted, reportID)
 	if err != nil {
 		return err
 	}
@@ -684,5 +740,90 @@ func (r *moderationRepository) DeleteUserReport(ctx context.Context, reportID ui
 		return errors.New("report not found")
 	}
 
+	return err
+}
+
+// Shadowban & Truth Score Management
+
+func (r *moderationRepository) ShadowbanUser(ctx context.Context, userID uint64) error {
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// 1. Update user
+	_, err = tx.ExecContext(ctx, "UPDATE users SET is_shadowbanned = true, updated_at = CURRENT_TIMESTAMP WHERE id = $1", userID)
+	if err != nil {
+		return err
+	}
+
+	// 2. Shadowban all existing interactions
+	_, err = tx.ExecContext(ctx, "UPDATE comments SET is_shadowbanned = true WHERE user_id = $1", userID)
+	if err != nil {
+		return err
+	}
+	_, err = tx.ExecContext(ctx, "UPDATE song_ratings SET is_shadowbanned = true WHERE user_id = $1", userID)
+	if err != nil {
+		return err
+	}
+	_, err = tx.ExecContext(ctx, "UPDATE song_reactions SET is_shadowbanned = true WHERE user_id = $1", userID)
+	if err != nil {
+		return err
+	}
+	_, err = tx.ExecContext(ctx, "UPDATE comment_reactions SET is_shadowbanned = true WHERE user_id = $1", userID)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func (r *moderationRepository) UnshadowbanUser(ctx context.Context, userID uint64) error {
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// 1. Update user
+	_, err = tx.ExecContext(ctx, "UPDATE users SET is_shadowbanned = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1", userID)
+	if err != nil {
+		return err
+	}
+
+	// 2. Unshadowban all interactions
+	_, err = tx.ExecContext(ctx, "UPDATE comments SET is_shadowbanned = false WHERE user_id = $1", userID)
+	if err != nil {
+		return err
+	}
+	_, err = tx.ExecContext(ctx, "UPDATE song_ratings SET is_shadowbanned = false WHERE user_id = $1", userID)
+	if err != nil {
+		return err
+	}
+	_, err = tx.ExecContext(ctx, "UPDATE song_reactions SET is_shadowbanned = false WHERE user_id = $1", userID)
+	if err != nil {
+		return err
+	}
+	_, err = tx.ExecContext(ctx, "UPDATE comment_reactions SET is_shadowbanned = false WHERE user_id = $1", userID)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func (r *moderationRepository) SetCommentShadowban(ctx context.Context, commentID uint64, isShadowbanned bool) error {
+	_, err := r.db.ExecContext(ctx, "UPDATE comments SET is_shadowbanned = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2", isShadowbanned, commentID)
+	return err
+}
+
+func (r *moderationRepository) SetRatingShadowban(ctx context.Context, ratingID uint64, isShadowbanned bool) error {
+	_, err := r.db.ExecContext(ctx, "UPDATE song_ratings SET is_shadowbanned = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2", isShadowbanned, ratingID)
+	return err
+}
+
+func (r *moderationRepository) UpdateUserTruthScore(ctx context.Context, userID uint64, delta int) error {
+	_, err := r.db.ExecContext(ctx, "UPDATE users SET truth_score = truth_score + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2", delta, userID)
 	return err
 }

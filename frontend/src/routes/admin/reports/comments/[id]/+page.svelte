@@ -11,11 +11,12 @@
   // svelte-ignore state_referenced_locally
   let report = $state(data.report);
 
-  async function resolveReport() {
+  async function resolveReport(isAccepted: boolean) {
     if (!report) return;
     try {
-      await api.put(`/admin/comments/reports/${report.id}/resolve`);
-      report.status = "fixed";
+      await api.put(`/admin/comments/reports/${report.id}/resolve`, { is_accepted: isAccepted });
+      report.status = true;
+      report.is_accepted = isAccepted;
     } catch (e) {
       console.error("Failed to resolve report:", e);
       alert("Error resolving report.");
@@ -48,18 +49,25 @@
         <h1 class="text-3xl font-bold tracking-tight text-on-surface/90">
           Report #{report?.id}
         </h1>
-        {#if report?.status === "pending"}
+        {#if !report?.status}
           <span
             class="px-3 py-1 bg-yellow-500/20 text-yellow-400 text-xs font-bold uppercase tracking-wider rounded-lg"
           >
             Pending
           </span>
         {:else}
-          <span
-            class="px-3 py-1 bg-green-500/20 text-green-400 text-xs font-bold uppercase tracking-wider rounded-lg"
-          >
-            Resolved
-          </span>
+          <div class="flex items-center gap-2">
+            <span
+              class="px-3 py-1 bg-green-500/20 text-green-400 text-xs font-bold uppercase tracking-wider rounded-lg"
+            >
+              Resolved
+            </span>
+            <span
+              class="px-3 py-1 {report.is_accepted ? 'bg-blue-500/20 text-blue-400' : 'bg-red-500/20 text-red-400'} text-xs font-bold uppercase tracking-wider rounded-lg"
+            >
+              {report.is_accepted ? 'Accepted' : 'Rejected'}
+            </span>
+          </div>
         {/if}
       </div>
       <p class="text-on-surface/50 text-sm mt-1">
@@ -104,7 +112,17 @@
           </div>
           <div>
             <p class="font-bold text-on-surface/90">{report?.user?.name}</p>
-            <p class="text-xs text-on-surface/50">ID: {report?.user?.id}</p>
+            <div class="flex items-center gap-2 mt-0.5">
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-sm bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                Score: {report?.user?.truth_score}
+              </span>
+              {#if report?.user?.is_shadowbanned}
+                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-sm bg-red-500/10 text-red-400 border border-red-500/20">
+                  Shadowbanned
+                </span>
+              {/if}
+            </div>
+            <p class="text-xs text-on-surface/50 mt-1">ID: {report?.user?.id}</p>
           </div>
         </div>
       </div>
@@ -116,14 +134,23 @@
         </h3>
         
         <div class="space-y-3">
-          {#if report?.status === "pending"}
-            <button
-              onclick={resolveReport}
-              class="w-full flex items-center justify-center gap-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 py-3 rounded-xl font-bold text-sm transition-all"
-            >
-              <CheckCircle2 size={18} />
-              Mark as Resolved
-            </button>
+          {#if !report?.status}
+            <div class="grid grid-cols-2 gap-2">
+              <button
+                onclick={() => resolveReport(true)}
+                class="flex items-center justify-center gap-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 py-3 rounded-xl font-bold text-xs transition-all border border-blue-600/30"
+              >
+                <CheckCircle2 size={16} />
+                Accept
+              </button>
+              <button
+                onclick={() => resolveReport(false)}
+                class="flex items-center justify-center gap-2 bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 py-3 rounded-xl font-bold text-xs transition-all border border-amber-600/30"
+              >
+                <Trash2 size={16} />
+                Reject
+              </button>
+            </div>
           {/if}
 
           <button

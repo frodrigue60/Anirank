@@ -226,37 +226,38 @@ func SetupPublicRoutes(app *fiber.App,
 
 	// --- PROTECTED ROUTES ---
 	protected := api.Group("/", middleware.AuthMiddleware(jwtService, userRepo, appCache))
+	vRequired := middleware.VerifiedMiddleware()
 
 	// User Profile
 	protected.Get("/profile", authHandler.Profile)
-	protected.Post("/users/avatar", authHandler.UpdateAvatar)
-	protected.Post("/users/banner", authHandler.UpdateBanner)
+	protected.Post("/users/avatar", vRequired, authHandler.UpdateAvatar)
+	protected.Post("/users/banner", vRequired, authHandler.UpdateBanner)
 	protected.Post("/users/score-format", authHandler.UpdateScoreFormat)
 	protected.Put("/users/email", authHandler.UpdateEmail)
 	protected.Post("/users/resend-verification", authHandler.ResendVerification)
-	protected.Patch("/users/profile", authHandler.UpdateProfile)
+	protected.Patch("/users/profile", vRequired, authHandler.UpdateProfile)
 
 	// Anilist Link
-	protected.Get("/auth/anilist/link", authHandler.AnilistLink)
-	protected.Post("/auth/anilist/callback", authHandler.AnilistCallback)
+	protected.Get("/auth/anilist/link", vRequired, authHandler.AnilistLink)
+	protected.Post("/auth/anilist/callback", vRequired, authHandler.AnilistCallback)
 
 	// Google Link
-	protected.Get("/auth/google/link", authHandler.GoogleLink)
-	protected.Post("/auth/google/callback", authHandler.GoogleCallback)
+	protected.Get("/auth/google/link", vRequired, authHandler.GoogleLink)
+	protected.Post("/auth/google/callback", vRequired, authHandler.GoogleCallback)
 
 	// Discord Link
-	protected.Delete("/auth/:provider/unlink", authHandler.UnlinkSocial)
-	protected.Get("/auth/discord/link", authHandler.DiscordLink)
-	protected.Post("/auth/discord/callback", authHandler.DiscordCallback)
+	protected.Delete("/auth/:provider/unlink", vRequired, authHandler.UnlinkSocial)
+	protected.Get("/auth/discord/link", vRequired, authHandler.DiscordLink)
+	protected.Post("/auth/discord/callback", vRequired, authHandler.DiscordCallback)
 
-	protected.Post("/interactions/ratings", interactionHandler.Rate)
-	protected.Post("/interactions/reactions", interactionHandler.React)
-	protected.Post("/interactions/favorites", interactionHandler.ToggleFavorite)
-	protected.Post("/comments", interactionHandler.SongComment)
-	protected.Delete("/comments/:id", interactionHandler.DeleteComment)
+	protected.Post("/interactions/ratings", vRequired, interactionHandler.Rate)
+	protected.Post("/interactions/reactions", vRequired, interactionHandler.React)
+	protected.Post("/interactions/favorites", vRequired, interactionHandler.ToggleFavorite)
+	protected.Post("/comments", vRequired, interactionHandler.SongComment)
+	protected.Delete("/comments/:id", vRequired, interactionHandler.DeleteComment)
 
-	protected.Post("/users/:id/follow", interactionHandler.FollowUser)
-	protected.Delete("/users/:id/follow", interactionHandler.UnfollowUser)
+	protected.Post("/users/:id/follow", vRequired, interactionHandler.FollowUser)
+	protected.Delete("/users/:id/follow", vRequired, interactionHandler.UnfollowUser)
 	protected.Get("/users/:id/is-following", interactionHandler.IsFollowing)
 
 	// Notifications
@@ -273,21 +274,21 @@ func SetupPublicRoutes(app *fiber.App,
 
 	// --- PROTECTED PLAYLISTS ---
 	protected.Get("/me/playlists", playlistHandler.GetMyPlaylists)
-	protected.Post("/playlists", playlistHandler.Create)
-	protected.Put("/playlists/:id", playlistHandler.Update)
-	protected.Delete("/playlists/:id", playlistHandler.Delete)
-	protected.Post("/playlists/:id/songs", playlistHandler.AddSong)
-	protected.Delete("/playlists/:id/songs/:songID", playlistHandler.RemoveSong)
-	protected.Put("/playlists/:id/songs/reorder", playlistHandler.ReorderSongs)
+	protected.Post("/playlists", vRequired, playlistHandler.Create)
+	protected.Put("/playlists/:id", vRequired, playlistHandler.Update)
+	protected.Delete("/playlists/:id", vRequired, playlistHandler.Delete)
+	protected.Post("/playlists/:id/songs", vRequired, playlistHandler.AddSong)
+	protected.Delete("/playlists/:id/songs/:songID", vRequired, playlistHandler.RemoveSong)
+	protected.Put("/playlists/:id/songs/reorder", vRequired, playlistHandler.ReorderSongs)
 
 	// Protected Moderation / User Support
-	protected.Post("/songs/reports", moderationHandler.CreateSongReport)
-	protected.Post("/comments/reports", moderationHandler.CreateCommentReport)
-	protected.Post("/users/reports", moderationHandler.CreateUserReport)
-	protected.Post("/user-requests", moderationHandler.CreateUserRequest)
+	protected.Post("/songs/reports", vRequired, moderationHandler.CreateSongReport)
+	protected.Post("/comments/reports", vRequired, moderationHandler.CreateCommentReport)
+	protected.Post("/users/reports", vRequired, moderationHandler.CreateUserReport)
+	protected.Post("/user-requests", vRequired, moderationHandler.CreateUserRequest)
 
 	// Protected Tournament Voting
-	protected.Post("/tournaments/matchups/:id/vote", tournamentHandler.SubmitVote)
+	protected.Post("/tournaments/matchups/:id/vote", vRequired, tournamentHandler.SubmitVote)
 
 	// --- STAFF EXCLUSIVE ROUTES ---
 	adminOnly := protected.Group("/admin", middleware.StaffMiddleware())

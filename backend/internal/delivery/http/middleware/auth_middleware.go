@@ -38,8 +38,9 @@ func AuthMiddleware(jwtService *auth.JWTService, userRepo domain.UserRepository,
 		// 1. Try Cache First
 		cacheKey := "session:" + claims.UserUUID
 		var cachedUser struct {
-			ID   uint64
-			UUID string
+			ID         uint64
+			UUID       string
+			IsVerified bool
 		}
 		
 		if cache != nil {
@@ -47,6 +48,7 @@ func AuthMiddleware(jwtService *auth.JWTService, userRepo domain.UserRepository,
 				c.Locals("user_id", cachedUser.ID)
 				c.Locals("user_uuid", cachedUser.UUID)
 				c.Locals("user_roles", claims.Roles)
+				c.Locals("user_verified", cachedUser.IsVerified)
 				return c.Next()
 			}
 		}
@@ -61,15 +63,18 @@ func AuthMiddleware(jwtService *auth.JWTService, userRepo domain.UserRepository,
 		}
 
 		// 3. Store in Cache (Short TTL)
+		isVerified := user.EmailVerifiedAt != nil
 		if cache != nil {
 			cachedUser.ID = user.ID
 			cachedUser.UUID = user.UUID
+			cachedUser.IsVerified = isVerified
 			_ = cache.Set(c.Context(), cacheKey, cachedUser, 2*time.Minute)
 		}
 
 		c.Locals("user_id", user.ID)
 		c.Locals("user_uuid", user.UUID)
 		c.Locals("user_roles", claims.Roles)
+		c.Locals("user_verified", isVerified)
 
 		return c.Next()
 	}
@@ -91,28 +96,33 @@ func OptionalAuthMiddleware(jwtService *auth.JWTService, userRepo domain.UserRep
 				// 1. Try Cache
 				cacheKey := "session:" + claims.UserUUID
 				var cachedUser struct {
-					ID   uint64
-					UUID string
+					ID         uint64
+					UUID       string
+					IsVerified bool
 				}
 				if cache != nil {
 					if err := cache.Get(c.Context(), cacheKey, &cachedUser); err == nil {
 						c.Locals("user_id", cachedUser.ID)
 						c.Locals("user_uuid", cachedUser.UUID)
 						c.Locals("user_roles", claims.Roles)
+						c.Locals("user_verified", cachedUser.IsVerified)
 						return c.Next()
 					}
 				}
 
 				// 2. DB Fallback
 				if user, uErr := userRepo.GetByUUID(c.Context(), claims.UserUUID); uErr == nil {
+					isVerified := user.EmailVerifiedAt != nil
 					if cache != nil {
 						cachedUser.ID = user.ID
 						cachedUser.UUID = user.UUID
+						cachedUser.IsVerified = isVerified
 						_ = cache.Set(c.Context(), cacheKey, cachedUser, 2*time.Minute)
 					}
 					c.Locals("user_id", user.ID)
 					c.Locals("user_uuid", user.UUID)
 					c.Locals("user_roles", claims.Roles)
+					c.Locals("user_verified", isVerified)
 				}
 			}
 		}

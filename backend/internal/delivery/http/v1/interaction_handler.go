@@ -489,6 +489,42 @@ func (h *InteractionHandler) SongComment(c *fiber.Ctx) error {
 	return c.Status(201).JSON(fiber.Map{"data": dto.ToCommentDTO(comment)})
 }
 
+func (h *InteractionHandler) UpdateComment(c *fiber.Ctx) error {
+	userID, ok := c.Locals("user_id").(uint64)
+	if !ok {
+		return domain.NewAppError(401, "Unauthorized", nil)
+	}
+
+	commentIDParam := c.Params("id")
+	commentID, err := strconv.ParseUint(commentIDParam, 10, 64)
+	if err != nil {
+		comment, err := h.commentRepo.GetByUUID(c.Context(), commentIDParam)
+		if err != nil {
+			return domain.NewAppError(404, "Comment not found", err)
+		}
+		commentID = comment.ID
+	}
+
+	type reqBody struct {
+		Content string `json:"content"`
+	}
+	var req reqBody
+	if err := c.BodyParser(&req); err != nil {
+		return domain.NewAppError(400, "Invalid JSON payload", err)
+	}
+
+	err = h.usecase.UpdateComment(c.Context(), commentID, userID, req.Content)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{
+		"data": fiber.Map{
+			"message": "Comment updated successfully",
+		},
+	})
+}
+
 func (h *InteractionHandler) DeleteComment(c *fiber.Ctx) error {
 	userID, ok := c.Locals("user_id").(uint64)
 	if !ok {

@@ -69,6 +69,8 @@ func ToUserDTO(u *domain.User) UserDTO {
 		FollowersCount:   u.FollowersCount,
 		FollowingCount:   u.FollowingCount,
 		IsFollowing:      u.IsFollowing,
+		TruthScore:       u.TruthScore,
+		IsShadowbanned:   u.IsShadowbanned,
 		Roles:            roles,
 		Badges:           badges,
 		SocialIdentities: identities,
@@ -142,7 +144,7 @@ func ToSongMinimalDTO(s *domain.Song) SongMinimalDTO {
 			seasonID = s.Anime.Season.UUID
 		}
 	} else {
-		// Fallback for standalone IDs if relations aren't loaded 
+		// Fallback for standalone IDs if relations aren't loaded
 		// (though in this architecture we prefer relations)
 	}
 
@@ -582,8 +584,8 @@ func ToCommentDTO(c *domain.Comment) CommentDTO {
 		LikesCount:    c.LikesCount,
 		DislikesCount: c.DislikesCount,
 		RepliesCount:  c.RepliesCount,
-		CreatedAt:     c.Created_At,
-		UpdatedAt:     c.Updated_At,
+		CreatedAt:     c.CreatedAt,
+		UpdatedAt:     c.UpdatedAt,
 		IsLiked:       c.IsLiked,
 		IsDisliked:    c.IsDisliked,
 		User:          ToUserMinimalDTO(c.User),
@@ -635,13 +637,13 @@ func ToActivityItemDTO(item domain.ActivityItem) ActivityItemDTO {
 	}
 
 	return ActivityItemDTO{
-		Type:      item.Type,
+		Type:       item.Type,
 		User:       ToUserMinimalDTO(&item.User),
 		TargetID:   targetID,
 		TargetType: item.TargetType,
 		Target:     target,
 		Value:      item.Value,
-		CreatedAt: item.CreatedAt,
+		CreatedAt:  item.CreatedAt,
 	}
 }
 
@@ -762,19 +764,19 @@ func ToTournamentMatchupDTO(m *domain.TournamentMatchup) TournamentMatchupDTO {
 
 func ToAnnouncementDTO(a domain.Announcement) AnnouncementDTO {
 	return AnnouncementDTO{
-		ID:        a.UUID,
-		UUID:      a.UUID,
-		Title:     a.Title,
-		Content:   a.Content,
-		Type:      a.Type,
-		Icon:      a.Icon,
-		URL:       a.URL,
-		ImageUrl:  a.ImageUrl,
+		ID:           a.UUID,
+		UUID:         a.UUID,
+		Title:        a.Title,
+		Content:      a.Content,
+		Type:         a.Type,
+		Icon:         a.Icon,
+		URL:          a.URL,
+		ImageUrl:     a.ImageUrl,
 		ImageSources: a.ImageSources,
-		Priority:  a.Priority,
-		IsActive:  a.IsActive,
-		StartsAt:  a.StartsAt,
-		EndsAt:    a.EndsAt,
+		Priority:     a.Priority,
+		IsActive:     a.IsActive,
+		StartsAt:     a.StartsAt,
+		EndsAt:       a.EndsAt,
 	}
 }
 

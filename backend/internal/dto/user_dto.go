@@ -40,6 +40,8 @@ type UserDTO struct {
 	FollowersCount   int                     `json:"followers_count"`
 	FollowingCount   int                     `json:"following_count"`
 	IsFollowing      bool                    `json:"is_following"`
+	TruthScore       int                     `json:"truth_score"`
+	IsShadowbanned   bool                    `json:"is_shadowbanned"`
 	Roles            []string                `json:"roles,omitempty"`
 	Badges           []BadgeDTO              `json:"badges,omitempty"`
 	SocialIdentities []UserSocialIdentityDTO `json:"social_identities,omitempty"`

@@ -42,7 +42,7 @@ func AuthMiddleware(jwtService *auth.JWTService, userRepo domain.UserRepository,
 			UUID       string
 			IsVerified bool
 		}
-		
+
 		if cache != nil {
 			if err := cache.Get(c.Context(), cacheKey, &cachedUser); err == nil {
 				c.Locals("user_id", cachedUser.ID)
@@ -92,7 +92,7 @@ func OptionalAuthMiddleware(jwtService *auth.JWTService, userRepo domain.UserRep
 		if len(parts) == 2 && parts[0] == "Bearer" {
 			tokenString := parts[1]
 			if claims, err := jwtService.ValidateToken(tokenString); err == nil && claims.UserUUID != "" {
-				
+
 				// 1. Try Cache
 				cacheKey := "session:" + claims.UserUUID
 				var cachedUser struct {

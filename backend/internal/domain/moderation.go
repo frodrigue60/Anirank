@@ -13,7 +13,8 @@ type SongReport struct {
 	Source    string    `db:"source" json:"source"` // E.g., 'web', 'app', 'ext'
 	Title     string    `db:"title" json:"title"`
 	Content   string    `db:"content" json:"content"`
-	Status    bool      `db:"status" json:"status"` // false: pending, true: fixed
+	Status     bool      `db:"status" json:"status"` // false: pending, true: fixed
+	IsAccepted bool      `db:"is_accepted" json:"is_accepted"`
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
 
@@ -30,7 +31,8 @@ type CommentReport struct {
 	Source    string    `db:"source" json:"source"` // E.g., 'web', 'app', 'ext'
 	Title     string    `db:"title" json:"title"`
 	Content   string    `db:"content" json:"content"`
-	Status    bool      `db:"status" json:"status"` // false: pending, true: fixed
+	Status     bool      `db:"status" json:"status"` // false: pending, true: fixed
+	IsAccepted bool      `db:"is_accepted" json:"is_accepted"`
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
 
@@ -64,6 +66,7 @@ type UserReport struct {
 	Reason         string    `db:"reason" json:"reason"`
 	Content        string    `db:"content" json:"content"`
 	Status         bool      `db:"status" json:"status"` // false: pending, true: fixed
+	IsAccepted     bool      `db:"is_accepted" json:"is_accepted"`
 	CreatedAt      time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt      time.Time `db:"updated_at" json:"updated_at"`
 
@@ -83,12 +86,12 @@ type ModerationRepository interface {
 	// Admin Facing
 	GetSongReports(ctx context.Context, status *bool, limit, offset int) ([]SongReport, error)
 	GetSongReport(ctx context.Context, reportID uint64) (*SongReport, error)
-	ResolveSongReport(ctx context.Context, reportID uint64) error
+	ResolveSongReport(ctx context.Context, reportID uint64, isAccepted bool) error
 	DeleteSongReport(ctx context.Context, reportID uint64) error
 
 	GetCommentReports(ctx context.Context, status *bool, limit, offset int) ([]CommentReport, error)
 	GetCommentReport(ctx context.Context, reportID uint64) (*CommentReport, error)
-	ResolveCommentReport(ctx context.Context, reportID uint64) error
+	ResolveCommentReport(ctx context.Context, reportID uint64, isAccepted bool) error
 	DeleteCommentReport(ctx context.Context, reportID uint64) error
 
 	GetUserRequests(ctx context.Context, status *bool, limit, offset int) ([]UserRequest, error)
@@ -101,6 +104,13 @@ type ModerationRepository interface {
 	IsUserReportedByReporter(ctx context.Context, reporterID, reportedID uint64) (bool, error)
 	GetUserReports(ctx context.Context, status *bool, limit, offset int) ([]UserReport, error)
 	GetUserReport(ctx context.Context, reportID uint64) (*UserReport, error)
-	ResolveUserReport(ctx context.Context, reportID uint64) error
+	ResolveUserReport(ctx context.Context, reportID uint64, isAccepted bool) error
 	DeleteUserReport(ctx context.Context, reportID uint64) error
+
+	// Shadowban & Truth Score Management
+	ShadowbanUser(ctx context.Context, userID uint64) error
+	UnshadowbanUser(ctx context.Context, userID uint64) error
+	SetCommentShadowban(ctx context.Context, commentID uint64, isShadowbanned bool) error
+	SetRatingShadowban(ctx context.Context, ratingID uint64, isShadowbanned bool) error
+	UpdateUserTruthScore(ctx context.Context, userID uint64, delta int) error
 }

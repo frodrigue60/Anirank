@@ -1,10 +1,6 @@
 package main
 
 import (
-	"context"
-	"fmt"
-	"log"
-	"os"
 	"anirank/api/internal/delivery/http"
 	"anirank/api/internal/delivery/http/middleware"
 	v1 "anirank/api/internal/delivery/http/v1"
@@ -23,12 +19,18 @@ import (
 	"anirank/api/internal/usecase/auth"
 	"anirank/api/internal/usecase/interaction"
 	"anirank/api/internal/usecase/moderation"
+	"anirank/api/internal/usecase/notification"
 	"anirank/api/internal/usecase/playlist"
 	"anirank/api/internal/usecase/public"
-	"anirank/api/internal/usecase/notification"
 	"anirank/api/internal/usecase/tournament"
+	"context"
+	"fmt"
+	"log"
+	"os"
 
 	"anirank/api/internal/infrastructure/cache"
+
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -36,7 +38,6 @@ import (
 	"github.com/gofiber/storage/redis/v3"
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
-	"time"
 	goredis "github.com/redis/go-redis/v9"
 )
 
@@ -73,7 +74,7 @@ func main() {
 	// Setup DB connection
 	// Priority 1: Connection URLs (Railway standard)
 	dbURL := getEnvWithFallback("DATABASE_URL", "DATABASE_PUBLIC_URL", "MYSQL_URL", "MYSQL_PRIVATE_URL")
-	
+
 	var db *sqlx.DB
 	var err error
 
@@ -133,7 +134,7 @@ func main() {
 	adminRepo := postgres.NewAdminRepository(db)
 	xpRepo := postgres.NewXPRepository(db)
 	searchRepo := postgres.NewSearchRepository(db)
-	
+
 	// Seed base data (Score Formats, Song Types)
 	sfSeeder := postgres.NewScoreFormatSeeder(db)
 	if err := sfSeeder.Seed(context.Background()); err != nil {
@@ -154,7 +155,7 @@ func main() {
 
 	// Setup Cache (Optional Redis)
 	redisEnabled := os.Getenv("REDIS_ENABLED") != "false"
-	
+
 	// Resolve Redis URL (Railway/Production Compatibility)
 	redisURL := os.Getenv("REDIS_URL")
 	if redisURL == "" {
@@ -163,7 +164,7 @@ func main() {
 		if host == "" {
 			host = os.Getenv("REDISHOST") // Railway format
 		}
-		
+
 		if host != "" {
 			port := os.Getenv("REDIS_PORT")
 			if port == "" {
@@ -172,22 +173,22 @@ func main() {
 			if port == "" {
 				port = "6379"
 			}
-			
+
 			user := os.Getenv("REDIS_USER")
 			if user == "" {
 				user = os.Getenv("REDISUSER")
 			}
-			
+
 			pass := os.Getenv("REDIS_PASSWORD")
 			if pass == "" {
 				pass = os.Getenv("REDISPASSWORD")
 			}
-			
+
 			db := os.Getenv("REDIS_DB")
 			if db == "" {
 				db = "0"
 			}
-			
+
 			if pass != "" {
 				redisURL = fmt.Sprintf("redis://%s:%s@%s:%s/%s", user, pass, host, port, db)
 			} else {
@@ -195,7 +196,7 @@ func main() {
 			}
 		}
 	}
-	
+
 	var appCache domain.Cache
 	if redisURL != "" && redisEnabled {
 		rc, err := cache.NewRedisCache(redisURL)
@@ -239,7 +240,7 @@ func main() {
 
 			client := goredis.NewClient(opts)
 			primaryStorage := redis.NewFromConnection(client)
-			
+
 			limitStorage = cache.NewResilientStorage(primaryStorage)
 			log.Println("✅ Rate Limiter: Resilient Redis storage initialized with custom timeouts")
 		}()
@@ -261,7 +262,7 @@ func main() {
 	animeUsecase := public.NewAnimeUsecase(animeRepo, songRepo, mediaService)
 	searchUsecase := public.NewSearchUsecase(searchRepo, storageService)
 	catalogUsecase := public.NewCatalogUsecase(animeRepo, songRepo, artistRepo, taxonomyRepo, userRepo, playlistRepo, interactionRepo, moderationRepo, anilistClient, mediaService, appCache, os.Getenv("ENCRYPTION_KEY"))
-	
+
 	badgeRepo := postgres.NewBadgeRepository(db)
 	auditUsecase := audit.NewAuditLogUsecase(auditRepo)
 	badgeUsecase := admin.NewBadgeUsecase(badgeRepo, userRepo, interactionRepo, commentRepo, storageService, auditUsecase)
@@ -300,7 +301,7 @@ func main() {
 	seoUsecase := public.NewSEOUsecase(animeRepo, songRepo, artistRepo, userRepo, playlistRepo, ogGenerator.GetVersion)
 	seoHandler := v1.NewSEOHandler(seoUsecase)
 
-	moderationUsecase := moderation.NewModerationUsecase(moderationRepo, notificationUsecase, mediaService)
+	moderationUsecase := moderation.NewModerationUsecase(moderationRepo, userRepo, notificationUsecase, mediaService)
 	tournamentUsecase := tournament.NewTournamentUsecase(tournamentRepo, songRepo, animeRepo, storageService)
 
 	// --- 1.5 Start Background Cron Scheduler ---

@@ -14,10 +14,16 @@ import (
 // RunMigrations executes all pending SQL migrations in the specified directory.
 // It tracks already executed migrations in a 'migrations' table.
 func RunMigrations(db *sqlx.DB, migrationDir string) error {
-	log.Printf("🔍 Checking for pending migrations in: %s", migrationDir)
+	absPath, err := filepath.Abs(migrationDir)
+	if err != nil {
+		log.Printf("⚠️  Warning: Could not resolve absolute path for migrations: %v", err)
+		absPath = migrationDir
+	}
+
+	log.Printf("🔍 Checking for pending migrations in: %s", absPath)
 
 	// 1. Ensure migrations table exists
-	_, err := db.Exec(`
+	_, err = db.Exec(`
 		CREATE TABLE IF NOT EXISTS migrations (
 			id SERIAL PRIMARY KEY,
 			migration VARCHAR(191) NOT NULL,
@@ -28,17 +34,16 @@ func RunMigrations(db *sqlx.DB, migrationDir string) error {
 		return fmt.Errorf("failed to create migrations table: %w", err)
 	}
 
-	// 2. Check if DB is empty (only migrations table)
+	// 2. Check current DB state
 	var tableCount int
 	err = db.Get(&tableCount, "SELECT count(*) FROM pg_catalog.pg_tables WHERE schemaname = 'public'")
 	if err != nil {
 		return fmt.Errorf("failed to count tables: %w", err)
 	}
 
-	// If only 'migrations' table exists or empty, we might want to run schema_dump.sql
-	// but in production we should be careful. The original script does it.
+	// If only 'migrations' table exists or empty, we run schema_dump.sql
 	if tableCount <= 1 {
-		dumpPath := filepath.Join(migrationDir, "schema_dump.sql")
+		dumpPath := filepath.Join(absPath, "schema_dump.sql")
 		if _, err := os.Stat(dumpPath); err == nil {
 			log.Println("📂 Database appears empty. Executing schema_dump.sql...")
 			content, err := os.ReadFile(dumpPath)
@@ -46,11 +51,12 @@ func RunMigrations(db *sqlx.DB, migrationDir string) error {
 				return fmt.Errorf("failed to read schema_dump.sql: %w", err)
 			}
 
-			// Clean SQL for generic execution
+			// Clean SQL for generic execution (remove \ commands)
 			lines := strings.Split(string(content), "\n")
 			var cleanLines []string
 			for _, line := range lines {
-				if strings.HasPrefix(strings.TrimSpace(line), "\\") {
+				trimmed := strings.TrimSpace(line)
+				if strings.HasPrefix(trimmed, "\\") || strings.HasPrefix(trimmed, "--") && (strings.Contains(trimmed, "PostgreSQL") || strings.Contains(trimmed, "Dumped")) {
 					continue
 				}
 				cleanLines = append(cleanLines, line)
@@ -59,7 +65,7 @@ func RunMigrations(db *sqlx.DB, migrationDir string) error {
 
 			_, err = db.Exec(cleanSQL)
 			if err != nil {
-				log.Printf("⚠️  Warning: schema_dump.sql had some errors (likely owner/permission related): %v", err)
+				log.Printf("⚠️  Warning: schema_dump.sql had some errors (continuing...): %v", err)
 			} else {
 				log.Println("✅ schema_dump.sql executed successfully")
 			}
@@ -73,7 +79,7 @@ func RunMigrations(db *sqlx.DB, migrationDir string) error {
 	var runMigrations []string
 	err = db.Select(&runMigrations, "SELECT migration FROM migrations")
 	if err != nil {
-		log.Printf("ℹ️  Note: Could not fetch from migrations table (might be empty): %v", err)
+		log.Printf("ℹ️  Note: Could not fetch from migrations table: %v", err)
 	}
 
 	runMap := make(map[string]bool)
@@ -82,7 +88,7 @@ func RunMigrations(db *sqlx.DB, migrationDir string) error {
 	}
 
 	// 4. Find all migration files
-	files, err := os.ReadDir(migrationDir)
+	files, err := os.ReadDir(absPath)
 	if err != nil {
 		return fmt.Errorf("failed to read migrations directory: %w", err)
 	}
@@ -112,7 +118,7 @@ func RunMigrations(db *sqlx.DB, migrationDir string) error {
 
 	for _, filename := range pendingFiles {
 		log.Printf("🔨 Running migration: %s", filename)
-		content, err := os.ReadFile(filepath.Join(migrationDir, filename))
+		content, err := os.ReadFile(filepath.Join(absPath, filename))
 		if err != nil {
 			return fmt.Errorf("failed to read migration file %s: %w", filename, err)
 		}
@@ -125,6 +131,8 @@ func RunMigrations(db *sqlx.DB, migrationDir string) error {
 		_, err = tx.Exec(string(content))
 		if err != nil {
 			tx.Rollback()
+			// Check if error is "already exists" - if so, maybe we should record it and continue?
+			// But it's safer to use IF NOT EXISTS in the SQL.
 			return fmt.Errorf("failed to execute migration %s: %w", filename, err)
 		}
 

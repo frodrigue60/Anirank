@@ -16,12 +16,13 @@ const (
 // Interactions & Polymorphic Emulations
 
 type Rating struct {
-	ID            uint64    `db:"id" json:"id"`
-	Rating        float64   `db:"rating" json:"rating"`
-	SongID        uint64    `db:"song_id" json:"song_id"`
-	UserID        uint64    `db:"user_id" json:"user_id"`
-	CreatedAt     time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt     time.Time `db:"updated_at" json:"updated_at"`
+	ID        uint64    `db:"id" json:"id"`
+	Rating    float64   `db:"rating" json:"rating"`
+	SongID    uint64    `db:"song_id" json:"song_id"`
+	UserID    uint64    `db:"user_id" json:"user_id"`
+	CreatedAt time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
+	IsShadowbanned bool      `db:"is_shadowbanned" json:"is_shadowbanned"`
 }
 
 type Reaction struct {
@@ -41,6 +42,7 @@ type SongReaction struct {
 	Type      int8      `db:"type" json:"type"` // 1 = like, -1 = dislike
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
+	IsShadowbanned bool      `db:"is_shadowbanned" json:"is_shadowbanned"`
 }
 
 type ReactionCounter struct {
@@ -65,7 +67,7 @@ type Favorite struct {
 type UserSongInteraction struct {
 	SongID      uint64
 	IsFavorited bool
-	Reaction    int8     // 1 for like, -1 for dislike, 0 for none
+	Reaction    int8 // 1 for like, -1 for dislike, 0 for none
 	Rating      *float64
 }
 
@@ -87,8 +89,9 @@ type Comment struct {
 	SongID     *uint64   `db:"song_id" json:"song_id,omitempty"`
 	UserID     uint64    `db:"user_id" json:"user_id"`
 	Content    string    `db:"content" json:"content"`
-	Created_At time.Time `db:"created_at" json:"created_at"`
-	Updated_At time.Time `db:"updated_at" json:"updated_at"`
+	CreatedAt  time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt  time.Time `db:"updated_at" json:"updated_at"`
+	IsShadowbanned bool      `db:"is_shadowbanned" json:"is_shadowbanned"`
 
 	// Relational Output Data
 	User          *User     `db:"-" json:"user,omitempty"`
@@ -98,6 +101,8 @@ type Comment struct {
 	DislikesCount int       `db:"dislikes_count" json:"dislikes_count"`
 	IsLiked       bool      `db:"-" json:"is_liked,omitempty"`
 	IsDisliked    bool      `db:"-" json:"is_disliked,omitempty"`
+	UserReaction  int8      `db:"-" json:"user_reaction,omitempty"`
+	ReplyCount    uint64    `db:"-" json:"reply_count,omitempty"`
 }
 
 // Repositories
@@ -138,5 +143,6 @@ type CommentRepository interface {
 	GetRepliesCount(ctx context.Context, parentID uint64) (int, error)
 	GetCount(ctx context.Context, songID uint64) (int, error)
 	Create(ctx context.Context, comment *Comment) error
+	Update(ctx context.Context, id uint64, content string) error
 	Delete(ctx context.Context, id, userID uint64) error // Authorization baked in via userID verification
 }

@@ -6,27 +6,27 @@ import (
 )
 
 type User struct {
-	ID              uint64     `db:"id" json:"id"`
-	UUID            string     `db:"uuid" json:"uuid"`
-	Name            string     `db:"name" json:"name"`
-	Slug            *string    `db:"slug" json:"slug"`
-	Email           string     `db:"email" json:"email"`
-	EmailVerifiedAt *time.Time `db:"email_verified_at" json:"email_verified_at,omitempty"`
-	Password        string     `db:"password" json:"-"` // Hidden from JSON
-	LastLoginAt     *time.Time `db:"last_login_at" json:"last_login_at,omitempty"`
-	ScoreFormatID   *uint64    `db:"score_format_id" json:"score_format_id,omitempty"`
-	ScoreFormat     *string    `db:"score_format" json:"score_format"`
-	Avatar          *string    `db:"avatar" json:"-"`
-	AvatarUrl       *string    `db:"-" json:"avatar_url,omitempty"`
-	Banner          *string    `db:"banner" json:"-"`
-	BannerUrl       *string    `db:"-" json:"banner_url,omitempty"`
+	ID              uint64        `db:"id" json:"id"`
+	UUID            string        `db:"uuid" json:"uuid"`
+	Name            string        `db:"name" json:"name"`
+	Slug            *string       `db:"slug" json:"slug"`
+	Email           string        `db:"email" json:"email"`
+	EmailVerifiedAt *time.Time    `db:"email_verified_at" json:"email_verified_at,omitempty"`
+	Password        string        `db:"password" json:"-"` // Hidden from JSON
+	LastLoginAt     *time.Time    `db:"last_login_at" json:"last_login_at,omitempty"`
+	ScoreFormatID   *uint64       `db:"score_format_id" json:"score_format_id,omitempty"`
+	ScoreFormat     *string       `db:"score_format" json:"score_format"`
+	Avatar          *string       `db:"avatar" json:"-"`
+	AvatarUrl       *string       `db:"-" json:"avatar_url,omitempty"`
+	Banner          *string       `db:"banner" json:"-"`
+	BannerUrl       *string       `db:"-" json:"banner_url,omitempty"`
 	AvatarSources   []ImageSource `db:"-" json:"avatar_sources,omitempty"`
 	BannerSources   []ImageSource `db:"-" json:"banner_sources,omitempty"`
-	RememberToken   *string    `db:"remember_token" json:"-"`
-	XP              uint64     `db:"xp" json:"xp"`
-	Level           uint32     `db:"level" json:"level"`
-	CreatedAt       time.Time  `db:"created_at" json:"created_at"`
-	UpdatedAt       time.Time  `db:"updated_at" json:"updated_at"`
+	RememberToken   *string       `db:"remember_token" json:"-"`
+	XP              uint64        `db:"xp" json:"xp"`
+	Level           uint32        `db:"level" json:"level"`
+	CreatedAt       time.Time     `db:"created_at" json:"created_at"`
+	UpdatedAt       time.Time     `db:"updated_at" json:"updated_at"`
 
 	// RBAC Relations
 	Roles  []Role  `db:"-" json:"roles,omitempty"`
@@ -45,6 +45,10 @@ type User struct {
 
 	// Normalized Social Identities
 	SocialIdentities []UserSocialIdentity `db:"-" json:"social_identities,omitempty"`
+
+	// Moderation
+	TruthScore     int  `db:"truth_score" json:"truth_score"`
+	IsShadowbanned bool `db:"is_shadowbanned" json:"is_shadowbanned"`
 }
 
 type AuthToken struct {
@@ -82,15 +86,15 @@ type Role struct {
 	Weight      int          `db:"weight" json:"weight"`
 	Description *string      `db:"description" json:"description"`
 	Permissions []Permission `db:"-" json:"permissions,omitempty"`
-	CreatedAt   *time.Time    `db:"created_at" json:"created_at"`
-	UpdatedAt   *time.Time    `db:"updated_at" json:"updated_at"`
+	CreatedAt   *time.Time   `db:"created_at" json:"created_at"`
+	UpdatedAt   *time.Time   `db:"updated_at" json:"updated_at"`
 }
 
 type Permission struct {
-	ID          uint64    `db:"id" json:"id"`
-	Name        string    `db:"name" json:"name"`
-	Slug        string    `db:"slug" json:"slug"`
-	Description *string   `db:"description" json:"description"`
+	ID          uint64     `db:"id" json:"id"`
+	Name        string     `db:"name" json:"name"`
+	Slug        string     `db:"slug" json:"slug"`
+	Description *string    `db:"description" json:"description"`
 	CreatedAt   *time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt   *time.Time `db:"updated_at" json:"updated_at"`
 }

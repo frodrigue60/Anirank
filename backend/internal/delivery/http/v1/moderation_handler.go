@@ -263,7 +263,18 @@ func (h *ModerationHandler) ResolveSongReport(c *fiber.Ctx) error {
 		return domain.NewAppError(400, "Invalid ID", nil)
 	}
 
-	if err := h.usecase.ResolveSongReport(c.Context(), id); err != nil {
+	type resolveReq struct {
+		IsAccepted bool `json:"is_accepted"`
+	}
+	var body resolveReq
+	if err := c.BodyParser(&body); err != nil {
+		// Default to false or error? 
+		// For backward compatibility we could default to true, 
+		// but it's safer to require it or default to a safe value.
+		body.IsAccepted = true 
+	}
+
+	if err := h.usecase.ResolveSongReport(c.Context(), id, body.IsAccepted); err != nil {
 		return err
 	}
 
@@ -376,7 +387,15 @@ func (h *ModerationHandler) ResolveCommentReport(c *fiber.Ctx) error {
 		return domain.NewAppError(400, "Invalid ID", nil)
 	}
 
-	if err := h.usecase.ResolveCommentReport(c.Context(), id); err != nil {
+	type resolveReq struct {
+		IsAccepted bool `json:"is_accepted"`
+	}
+	var body resolveReq
+	if err := c.BodyParser(&body); err != nil {
+		body.IsAccepted = true
+	}
+
+	if err := h.usecase.ResolveCommentReport(c.Context(), id, body.IsAccepted); err != nil {
 		return err
 	}
 
@@ -669,7 +688,15 @@ func (h *ModerationHandler) ResolveUserReport(c *fiber.Ctx) error {
 		return domain.NewAppError(400, "Invalid ID", nil)
 	}
 
-	if err := h.usecase.ResolveUserReport(c.Context(), id); err != nil {
+	type resolveReq struct {
+		IsAccepted bool `json:"is_accepted"`
+	}
+	var body resolveReq
+	if err := c.BodyParser(&body); err != nil {
+		body.IsAccepted = true
+	}
+
+	if err := h.usecase.ResolveUserReport(c.Context(), id, body.IsAccepted); err != nil {
 		return err
 	}
 

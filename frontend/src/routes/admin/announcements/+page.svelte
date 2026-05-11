@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import api from '$lib/api';
+  import { toastState } from '$lib/state/toast.svelte';
   import Pencil from "lucide-svelte/icons/pencil";
   import Trash2 from "lucide-svelte/icons/trash-2";
 
@@ -10,6 +11,8 @@
     type: string;
     priority: number;
     is_active: boolean;
+    starts_at: string | null;
+    ends_at: string | null;
     created_at: string;
   }
 
@@ -33,22 +36,28 @@
   async function toggleActive(id: number) {
     try {
       await api.patch(`/admin/announcements/${id}/toggle`);
-      loadAnnouncements();
-    } catch (error) {
+      const index = announcements.findIndex(a => a.id === id);
+      if (index !== -1) {
+        announcements[index].is_active = !announcements[index].is_active;
+      }
+      toastState.addToast("Status updated", "success");
+    } catch (error: any) {
       console.error('Error toggling announcement:', error);
-      alert('Failed to toggle status.');
+      toastState.addToast(error.response?.data?.message || 'Failed to toggle status', "error");
     }
   }
+
 
   async function handleDelete(id: number) {
     if (!confirm('Are you sure you want to delete this announcement?')) return;
     
     try {
       await api.delete(`/admin/announcements/${id}`);
-      loadAnnouncements();
-    } catch (error) {
+      announcements = announcements.filter(a => a.id !== id);
+      toastState.addToast("Announcement deleted", "success");
+    } catch (error: any) {
       console.error('Error deleting announcement:', error);
-      alert('Failed to delete announcement.');
+      toastState.addToast(error.response?.data?.message || 'Failed to delete announcement', "error");
     }
   }
 </script>
@@ -72,8 +81,8 @@
             <th class="py-4 font-bold">Title</th>
             <th class="py-4 font-bold">Type</th>
             <th class="py-4 font-bold">Priority</th>
-            <th class="py-4 font-bold">Created At</th>
-            <th class="py-4 font-bold">Actions</th>
+            <th class="py-4 font-bold">Active Period</th>
+            <th class="py-4 font-bold text-right pr-6">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -94,9 +103,18 @@
                 <span class="px-2 py-1 rounded text-[10px] uppercase font-bold bg-surface-highest border border-outline-variant">{a.type}</span>
               </td>
               <td class="py-4 font-mono">{a.priority}</td>
-              <td class="py-4 text-sm opacity-60 font-mono">{new Date(a.created_at).toLocaleDateString()}</td>
-              <td class="py-4">
-                <div class="flex gap-3">
+              <td class="py-4 text-[10px] uppercase font-bold tracking-tighter">
+                {#if !a.starts_at && !a.ends_at}
+                  <span class="text-primary/50 italic">No limit</span>
+                {:else}
+                   <div class="flex flex-col opacity-60">
+                     <span>S: {a.starts_at ? new Date(a.starts_at).toLocaleDateString() : '∞'}</span>
+                     <span>E: {a.ends_at ? new Date(a.ends_at).toLocaleDateString() : '∞'}</span>
+                   </div>
+                {/if}
+              </td>
+              <td class="py-4 text-right pr-6">
+                <div class="flex items-center justify-end gap-3">
                   <a 
                     href="/admin/announcements/{a.id}/edit" 
                     title="Edit announcement"

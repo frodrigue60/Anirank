@@ -1,15 +1,12 @@
 <script lang="ts">
   import api from "$lib/api";
+  import { toastState } from "$lib/state/toast.svelte";
 
   let { data } = $props();
 
   // Local State
-  let items = $state<any[]>([]);
+  let items = $state<any[]>(data.seasons || []);
   let errorMsg = $state("");
-
-  $effect(() => {
-    items = data.seasons || [];
-  });
 
   // Modal State
   let showModal = $state(false);
@@ -73,11 +70,14 @@
             }
           }
         }
+        toastState.addToast(`Season ${modalMode === 'create' ? 'created' : 'updated'} successfully`, 'success');
       }
       showModal = false;
     } catch (err: any) {
       console.error(err);
-      errorMsg = err.response?.data?.message || "Failed to save season";
+      const msg = err.response?.data?.message || `Failed to ${modalMode} season`;
+      errorMsg = msg;
+      toastState.addToast(msg, 'error');
     } finally {
       isSubmitting = false;
     }
@@ -86,15 +86,16 @@
   async function toggleCurrent(id: number) {
     try {
       const res = await api.patch(`/admin/taxonomies/seasons/${id}/current`);
-      if (res.data) {
+      if (res.status === 200 || res.status === 204) {
         items = items.map((i) => ({
           ...i,
           current: i.id === id,
         }));
+        toastState.addToast("Primary season updated", "success");
       }
     } catch (err: any) {
       console.error(err);
-      alert(err.response?.data?.message || "Failed to change status");
+      toastState.addToast(err.response?.data?.message || "Failed to change status", "error");
     }
   }
 
@@ -104,9 +105,10 @@
     try {
       await api.delete(`/admin/taxonomies/seasons/${id}`);
       items = items.filter((i) => i.id !== id);
+      toastState.addToast("Season deleted successfully", "success");
     } catch (err: any) {
       console.error(err);
-      alert(err.response?.data?.message || "Delete failed");
+      toastState.addToast(err.response?.data?.message || "Delete failed", "error");
     }
   }
 </script>
@@ -144,7 +146,7 @@
           </tr>
         </thead>
         <tbody class="divide-y divide-white/5">
-          {#each items as item}
+          {#each items as item (item.id)}
             <tr class="hover:bg-white/2 transition-colors group">
               <td class="px-6 py-4 font-mono text-xs opacity-40">#{item.id}</td>
               <td class="px-6 py-4">
@@ -156,26 +158,14 @@
                 </div>
               </td>
               <td class="px-6 py-4">
-                {#if item.current}
-                  <button 
-                    onclick={() => toggleCurrent(item.id)}
-                    aria-label="Toggle active status"
-                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 text-primary border border-primary/20 text-[10px] font-bold uppercase tracking-wider"
-                  >
-                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24">
-                      <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-                    </svg>
-                    Primary Season
-                  </button>
-                {:else}
-                  <button 
-                    onclick={() => toggleCurrent(item.id)}
-                    aria-label="Set as primary"
-                    class="inline-flex items-center px-2.5 py-1 rounded-lg bg-surface-highest text-on-surface-variant/40 hover:text-primary transition-colors text-[10px] font-bold uppercase tracking-wider border border-outline-variant"
-                  >
-                    Set Primary
-                  </button>
-                {/if}
+                <button
+                  onclick={() => toggleCurrent(item.id)}
+                  class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border transition-all duration-200 hover:scale-105 active:scale-95 {item.current ? 'bg-primary/10 text-primary border-primary/20 hover:bg-primary/20' : 'bg-surface-highest text-on-surface-variant/40 border-outline-variant hover:text-primary'}"
+                  title={item.current ? "Primary Season" : "Set as Primary"}
+                >
+                  <div class="w-1.5 h-1.5 rounded-full mr-2 {item.current ? 'bg-primary shadow-[0_0_8px_rgba(var(--color-primary),0.5)]' : 'bg-on-surface-variant/20'}"></div>
+                  {item.current ? "Primary" : "Inactive"}
+                </button>
               </td>
               <td class="px-6 py-4 text-right">
                 <div class="flex items-center justify-end gap-2">

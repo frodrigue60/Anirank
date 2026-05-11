@@ -591,7 +591,7 @@ func (r *songRepository) SyncArtists(ctx context.Context, songID uint64, artistI
 	return tx.Commit()
 }
 
-func (r *songRepository) GetByAnimeID(ctx context.Context, animeID uint64) ([]domain.Song, error) {
+func (r *songRepository) GetByAnimeID(ctx context.Context, animeID uint64, isAdmin bool) ([]domain.Song, error) {
 	var songs []domain.Song
 	query := fmt.Sprintf(`
 		SELECT %s, 
@@ -600,9 +600,12 @@ func (r *songRepository) GetByAnimeID(ctx context.Context, animeID uint64) ([]do
 		FROM songs s
 		JOIN animes a ON s.anime_id = a.id
 		LEFT JOIN song_types st ON s.type_id = st.id
-		WHERE s.anime_id = $1 AND a.status = true AND s.status = true
-		ORDER BY s.type_id ASC, s.theme_num ASC
+		WHERE s.anime_id = $1
 	`, songColumns)
+	if !isAdmin {
+		query += " AND a.status = true AND s.status = true"
+	}
+	query += " ORDER BY s.type_id ASC, s.theme_num ASC"
 	err := r.db.SelectContext(ctx, &songs, query, animeID)
 	if songs == nil {
 		songs = []domain.Song{}

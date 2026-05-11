@@ -27,6 +27,11 @@ Handles cross-cutting concerns (auth flows, API contract changes, Docker, env fi
 
 ## 2. Mandatory Behaviours (All Agents)
 
+### After Writing Code (Mandatory Verification)
+1. **Compilation**: Always run `go build ./cmd/api/main.go` (backend) after any logic change to ensure no type errors.
+2. **Backend Tests**: Run `go test ./internal/dto/...` and `go test ./internal/repository/postgres/...` (or relevant package) to verify core logic.
+3. **Frontend Tests**: Run `bun run test:unit` if any reactive state or shared component was modified.
+
 ### Before Writing Code
 1. Check if a relevant **KI (Knowledge Item)** exists for the task.
 2. Read `DESIGN.md` if the task touches UI.

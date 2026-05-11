@@ -49,15 +49,38 @@
     variant.status = !variant.status;
     variants = [...variants]; // trigger reactivity
     try {
-      await api.put(`/admin/variants/${variant.id}`, {
-        ...variant,
-        status: variant.status,
-      });
+      await api.patch(`/admin/variants/${variant.id}/status`);
     } catch (err: any) {
       variant.status = prev;
       variants = [...variants];
       errorMsg =
         err.response?.data?.message || "Failed to update variant status";
+    }
+  }
+
+  async function toggleVariantSpoiler(variant: any) {
+    const prev = variant.spoiler;
+    variant.spoiler = !variant.spoiler;
+    variants = [...variants];
+    try {
+      await api.patch(`/admin/variants/${variant.id}/spoiler`);
+    } catch (err: any) {
+      variant.spoiler = prev;
+      variants = [...variants];
+      errorMsg = err.response?.data?.message || "Failed to toggle spoiler";
+    }
+  }
+
+  async function toggleVariantNSFW(variant: any) {
+    const prev = variant.nsfw;
+    variant.nsfw = !variant.nsfw;
+    variants = [...variants];
+    try {
+      await api.patch(`/admin/variants/${variant.id}/nsfw`);
+    } catch (err: any) {
+      variant.nsfw = prev;
+      variants = [...variants];
+      errorMsg = err.response?.data?.message || "Failed to toggle NSFW";
     }
   }
 
@@ -204,6 +227,14 @@
             >
             <th
               class="px-6 py-4 text-xs font-bold text-zinc-400 uppercase tracking-widest text-center"
+              >Spoiler</th
+            >
+            <th
+              class="px-6 py-4 text-xs font-bold text-zinc-400 uppercase tracking-widest text-center"
+              >NSFW</th
+            >
+            <th
+              class="px-6 py-4 text-xs font-bold text-zinc-400 uppercase tracking-widest text-center"
               >Video</th
             >
             <th
@@ -232,31 +263,56 @@
                   </span>
                 </div>
               </td>
-              <td class="px-6 py-4">
+              <td class="px-6 py-4 whitespace-nowrap">
                 <button
                   onclick={() => toggleVariantStatus(variant)}
-                  class="flex items-center gap-2 group/toggle"
+                  class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all duration-200 hover:scale-105 active:scale-95 {variant.status
+                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20'
+                    : 'bg-orange-500/10 text-orange-400 border-orange-500/20 hover:bg-orange-500/20'}"
                   title="Toggle status"
                 >
-                  <div class="relative">
-                    <div
-                      class="w-9 h-5 rounded-full transition-colors {variant.status
-                        ? 'bg-emerald-500'
-                        : 'bg-zinc-700'}"
-                    ></div>
-                    <div
-                      class="absolute top-[2px] {variant.status
-                        ? 'left-[18px]'
-                        : 'left-[2px]'} w-4 h-4 bg-white rounded-full transition-all shadow"
-                    ></div>
-                  </div>
-                  <span
-                    class="text-[10px] font-black uppercase tracking-widest {variant.status
-                      ? 'text-emerald-400'
-                      : 'text-zinc-500'}"
-                  >
-                    {variant.status ? "Active" : "Inactive"}
-                  </span>
+                  <div
+                    class="w-1.5 h-1.5 rounded-full mr-2 {variant.status
+                      ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]'
+                      : 'bg-orange-400 shadow-[0_0_8px_rgba(251,146,60,0.5)]'}"
+                  ></div>
+                  {variant.status ? "Active" : "Inactive"}
+                </button>
+              </td>
+
+              <!-- Spoiler Toggle -->
+              <td class="px-6 py-4 text-center whitespace-nowrap">
+                <button
+                  onclick={() => toggleVariantSpoiler(variant)}
+                  class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all duration-200 hover:scale-105 active:scale-95 {variant.spoiler
+                    ? 'bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20'
+                    : 'bg-zinc-800 text-zinc-500 border-zinc-700 hover:bg-zinc-700'}"
+                  title="Toggle Spoiler"
+                >
+                  <div
+                    class="w-1.5 h-1.5 rounded-full mr-2 {variant.spoiler
+                      ? 'bg-red-400 shadow-[0_0_8px_rgba(239,68,68,0.5)]'
+                      : 'bg-zinc-600'}"
+                  ></div>
+                  {variant.spoiler ? "Spoiler" : "Clean"}
+                </button>
+              </td>
+
+              <!-- NSFW Toggle -->
+              <td class="px-6 py-4 text-center whitespace-nowrap">
+                <button
+                  onclick={() => toggleVariantNSFW(variant)}
+                  class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all duration-200 hover:scale-105 active:scale-95 {variant.nsfw
+                    ? 'bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/20 hover:bg-fuchsia-500/20'
+                    : 'bg-zinc-800 text-zinc-500 border-zinc-700 hover:bg-zinc-700'}"
+                  title="Toggle NSFW"
+                >
+                  <div
+                    class="w-1.5 h-1.5 rounded-full mr-2 {variant.nsfw
+                      ? 'bg-fuchsia-400 shadow-[0_0_8px_rgba(192,38,211,0.5)]'
+                      : 'bg-zinc-600'}"
+                  ></div>
+                  {variant.nsfw ? "NSFW" : "Safe"}
                 </button>
               </td>
               <td class="px-6 py-4 text-center">
@@ -366,7 +422,7 @@
             </tr>
           {:else}
             <tr>
-              <td colspan="4" class="px-6 py-12 text-center">
+              <td colspan="7" class="px-6 py-12 text-center">
                 <div class="flex flex-col items-center">
                   <svg
                     class="w-12 h-12 text-zinc-700 mb-4"

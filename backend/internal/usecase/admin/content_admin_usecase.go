@@ -922,8 +922,11 @@ type ATAnimeData struct {
 			} `json:"artists"`
 		} `json:"song"`
 		AnimeThemeEntries []struct {
-			ID      uint64 `json:"id"`
-			Version int    `json:"version"`
+			ID       uint64 `json:"id"`
+			Version  int    `json:"version"`
+			Episodes string `json:"episodes"`
+			Spoiler  bool   `json:"spoiler"`
+			NSFW     bool   `json:"nsfw"`
 		} `json:"animethemeentries"`
 	} `json:"animethemes"`
 }
@@ -961,7 +964,7 @@ func (u *ContentAdminUsecase) HydrateSeason(ctx context.Context, year int, seaso
 	}
 
 	sendProgress(fmt.Sprintf("Fetching %s %d from AnimeThemes...", seasonName, year))
-	url := fmt.Sprintf("https://api.animethemes.moe/anime?include=animethemes.song.artists,images,animethemes.animethemeentries,studios,resources&filter[year]=%d&filter[season]=%s&page[size]=100", year, strings.ToLower(seasonName))
+	url := fmt.Sprintf("https://api.animethemes.moe/anime?include=animethemes.song.artists,animethemes.group,images,animethemes.animethemeentries,studios,resources&filter[year]=%d&filter[season]=%s&page[size]=100", year, strings.ToLower(seasonName))
 
 	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Get(url)
@@ -1065,7 +1068,7 @@ func (u *ContentAdminUsecase) HydrateAnimeThemes(ctx context.Context, ids []uint
 	var fullAnimeList []ATAnimeData
 	for i, a := range atResp.Anime {
 		sendProgress(fmt.Sprintf("[%d/%d] Fetching full record for: %s", i+1, len(atResp.Anime), a.Name))
-		detailUrl := fmt.Sprintf("https://api.animethemes.moe/anime/%s?include=animethemes.song.artists,images,animethemes.animethemeentries,studios,resources", a.Slug)
+		detailUrl := fmt.Sprintf("https://api.animethemes.moe/anime/%s?include=animethemes.song.artists,animethemes.group,images,animethemes.animethemeentries,studios,resources", a.Slug)
 
 		dResp, err := client.Get(detailUrl)
 		if err != nil {
@@ -1482,7 +1485,7 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 
 		// 6. Process Songs & Themes
 		// We need to load songs for the anime to check for existence
-		animeSongs, _ := u.songRepo.GetByAnimeID(ctx, anime.ID)
+		animeSongs, _ := u.songRepo.GetByAnimeID(ctx, anime.ID, true)
 		processedSongs := make(map[uint64]bool) // Track processed IDs in this batch
 
 		for _, t := range a.AnimeThemes {
@@ -1490,12 +1493,21 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 				continue
 			}
 
-			// Language filtering
-			if lang == "ja" && t.Group != nil {
-				continue // Skip non-Japanese versions
+			// Language filtering & Dub Exclusions
+			// 1. Explicit 4Kids exclusion (as requested)
+			if t.Group != nil && (t.Group.Slug == "EN4Kids" || strings.Contains(strings.ToLower(t.Group.Name), "4kids")) {
+				continue
 			}
-			if lang == "en" && (t.Group == nil || t.Group.Slug != "EN") {
-				continue // Skip if not English
+
+			// 2. Strict Version Filtering: Default to original (Group == nil) if no language or 'ja' is specified
+			if lang == "" || lang == "ja" {
+				if t.Group != nil {
+					continue // Skip dubbed/alternative versions
+				}
+			} else if lang == "en" {
+				if t.Group == nil || (t.Group.Slug != "EN" && t.Group.Slug != "English") {
+					continue // Skip if not the standard English version
+				}
 			}
 
 			atID := t.ID
@@ -1530,12 +1542,11 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 
 			title := t.Song.Title
 			if song != nil {
-				// Update
-				song.SongRomaji = &title
-				song.YearID = yearObj.ID
-				song.SeasonID = seasonObj.ID
-				song.AnimeThemesID = &atID
-				_ = u.songRepo.Update(ctx, song)
+				// Incremental: Only update if not linked or essential metadata missing
+				if song.AnimeThemesID == nil {
+					song.AnimeThemesID = &atID
+					_ = u.songRepo.Update(ctx, song)
+				}
 				processedSongs[song.ID] = true
 			} else {
 				// Create
@@ -1598,18 +1609,30 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 				}
 
 				if variant != nil {
-					// Update
-					variant.VersionNumber = version
-					variant.Slug = variantSlug
-					variant.AnimeThemesID = &atvID
-					variant.YearID = yearObj.ID
-					variant.SeasonID = seasonObj.ID
-					if err := u.variantRepo.Update(ctx, variant); err != nil {
-						fmt.Printf("[ERROR] Failed to update variant %s for song %s: %v\n", variant.Slug, *song.SongRomaji, err)
+					// Incremental: Only update if not linked or if we need to sync the new metadata (Episodes, NSFW)
+					// We'll update if AnimeThemesID is missing OR if Episodes/NSFW are default/empty
+					needsUpdate := variant.AnimeThemesID == nil || 
+						(variant.Episodes == nil || *variant.Episodes == "") ||
+						(!variant.NSFW && entry.NSFW)
+
+					if needsUpdate {
+						episodes := entry.Episodes
+						variant.VersionNumber = version
+						variant.Slug = variantSlug
+						variant.AnimeThemesID = &atvID
+						variant.YearID = yearObj.ID
+						variant.SeasonID = seasonObj.ID
+						variant.Episodes = &episodes
+						variant.Spoiler = entry.Spoiler
+						variant.NSFW = entry.NSFW
+						if err := u.variantRepo.Update(ctx, variant); err != nil {
+							fmt.Printf("[ERROR] Failed to update variant %s for song %s: %v\n", variant.Slug, *song.SongRomaji, err)
+						}
 					}
 					processedVariants[variant.ID] = true
 				} else {
 					// Create
+					episodes := entry.Episodes
 					variant = &domain.SongVariant{
 						SongID:        song.ID,
 						Slug:          variantSlug,
@@ -1618,6 +1641,9 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 						YearID:        yearObj.ID,
 						SeasonID:      seasonObj.ID,
 						AnimeThemesID: &atvID,
+						Episodes:      &episodes,
+						Spoiler:       entry.Spoiler,
+						NSFW:          entry.NSFW,
 						UUID:          uuid.New().String(),
 					}
 
@@ -1674,15 +1700,17 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 				}
 
 				if artist != nil {
-					// Update and ensure ID is saved
-					artist.Name = cleanName
-					artist.Slug = aSlug
-					artist.AnimeThemesID = &atArtID
-					if alID != nil {
-						artist.AnilistID = alID
-					}
-					if err := u.artistRepo.Update(ctx, artist); err != nil {
-						fmt.Printf("[ERROR] Failed to update artist %s (atID: %d): %v\n", artist.Name, atArtID, err)
+					// Incremental: Only update if missing AnimeThemes ID or AniList ID
+					if artist.AnimeThemesID == nil || (artist.AnilistID == nil && alID != nil) {
+						artist.Name = cleanName
+						artist.Slug = aSlug
+						artist.AnimeThemesID = &atArtID
+						if alID != nil {
+							artist.AnilistID = alID
+						}
+						if err := u.artistRepo.Update(ctx, artist); err != nil {
+							fmt.Printf("[ERROR] Failed to update artist %s (atID: %d): %v\n", artist.Name, atArtID, err)
+						}
 					}
 				} else {
 					// Create
@@ -1888,7 +1916,7 @@ func (u *ContentAdminUsecase) CreateSong(ctx context.Context, s *domain.Song, me
 }
 
 func (u *ContentAdminUsecase) GetNextSongNumber(ctx context.Context, animeID uint64, songType string) (int, error) {
-	songs, err := u.songRepo.GetByAnimeID(ctx, animeID)
+	songs, err := u.songRepo.GetByAnimeID(ctx, animeID, true)
 	if err != nil {
 		return 0, err
 	}
@@ -2748,6 +2776,26 @@ func (u *ContentAdminUsecase) ToggleVariantStatus(ctx context.Context, id uint64
 	}
 	newVariant, _ := u.variantRepo.GetByID(ctx, id)
 	_ = u.auditUsecase.LogActions(ctx, meta.ActorID, "status_toggled", id, "variant", existing, newVariant, &meta.URL, &meta.IPAddress, &meta.UserAgent)
+	return nil
+}
+
+func (u *ContentAdminUsecase) ToggleVariantSpoiler(ctx context.Context, id uint64, meta domain.AuditMetadata) error {
+	existing, _ := u.variantRepo.GetByID(ctx, id)
+	if err := u.variantRepo.ToggleSpoiler(ctx, id); err != nil {
+		return err
+	}
+	newVariant, _ := u.variantRepo.GetByID(ctx, id)
+	_ = u.auditUsecase.LogActions(ctx, meta.ActorID, "spoiler_toggled", id, "variant", existing, newVariant, &meta.URL, &meta.IPAddress, &meta.UserAgent)
+	return nil
+}
+
+func (u *ContentAdminUsecase) ToggleVariantNSFW(ctx context.Context, id uint64, meta domain.AuditMetadata) error {
+	existing, _ := u.variantRepo.GetByID(ctx, id)
+	if err := u.variantRepo.ToggleNSFW(ctx, id); err != nil {
+		return err
+	}
+	newVariant, _ := u.variantRepo.GetByID(ctx, id)
+	_ = u.auditUsecase.LogActions(ctx, meta.ActorID, "nsfw_toggled", id, "variant", existing, newVariant, &meta.URL, &meta.IPAddress, &meta.UserAgent)
 	return nil
 }
 

@@ -249,6 +249,14 @@ func (u *AdminUsecase) ToggleVariantStatus(ctx context.Context, id uint64, meta 
 	return u.contentAdmin.ToggleVariantStatus(ctx, id, meta)
 }
 
+func (u *AdminUsecase) ToggleVariantSpoiler(ctx context.Context, id uint64, meta domain.AuditMetadata) error {
+	return u.contentAdmin.ToggleVariantSpoiler(ctx, id, meta)
+}
+
+func (u *AdminUsecase) ToggleVariantNSFW(ctx context.Context, id uint64, meta domain.AuditMetadata) error {
+	return u.contentAdmin.ToggleVariantNSFW(ctx, id, meta)
+}
+
 
 // ---- ARTISTS ----
 func (u *AdminUsecase) GetArtists(ctx context.Context, page, limit int, search string) ([]domain.Artist, int, error) {

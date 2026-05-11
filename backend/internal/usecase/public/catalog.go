@@ -235,7 +235,7 @@ func (u *CatalogUsecase) GetSongByAnimeSongSlug(ctx context.Context, userID *uin
 
 	// enrichment now handles variants and iframe cleanup
 
-	related, _ := u.songRepo.GetByAnimeID(ctx, anime.ID)
+	related, _ := u.songRepo.GetByAnimeID(ctx, anime.ID, false)
 	var filtered []domain.Song
 	for _, s := range related {
 		if s.ID != song.ID {

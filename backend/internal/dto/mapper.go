@@ -267,7 +267,9 @@ func ToSongDTO(s *domain.Song) SongDTO {
 			VersionNumber: v.VersionNumber,
 			Slug:          v.Slug,
 			VideoUrl:      videoUrl,
+			Episodes:      v.Episodes,
 			Spoiler:       v.Spoiler,
+			NSFW:          v.NSFW,
 		})
 	}
 

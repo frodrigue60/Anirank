@@ -69,7 +69,9 @@ type SongVariantDTO struct {
 	VersionNumber uint64  `json:"version_number"`
 	Slug          string  `json:"slug"`
 	VideoUrl      *string `json:"video_url,omitempty"`
+	Episodes      *string `json:"episodes,omitempty"`
 	Spoiler       bool    `json:"spoiler"`
+	NSFW          bool    `json:"nsfw"`
 }
 
 type HomeDTO struct {

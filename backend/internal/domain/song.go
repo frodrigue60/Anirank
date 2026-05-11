@@ -67,7 +67,9 @@ type SongVariant struct {
 	Views         uint64    `db:"views" json:"views"`
 	SeasonID      uint64    `db:"season_id" json:"season_id"`
 	YearID        uint64    `db:"year_id" json:"year_id"`
+	Episodes      *string   `db:"episodes" json:"episodes"`
 	Spoiler       bool      `db:"spoiler" json:"spoiler"`
+	NSFW          bool      `db:"nsfw" json:"nsfw"`
 	Status        bool      `db:"status" json:"status"`
 	CreatedAt     time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt     time.Time `db:"updated_at" json:"updated_at"`
@@ -148,7 +150,7 @@ type SongRepository interface {
 	GetBySlug(ctx context.Context, slug string) (*Song, error)
 	GetByAnimeIDAndSlug(ctx context.Context, animeID uint64, slug string) (*Song, error)
 	GetPaginated(ctx context.Context, limit, offset int, filters SongFilters) ([]Song, error)
-	GetByAnimeID(ctx context.Context, animeID uint64) ([]Song, error)
+	GetByAnimeID(ctx context.Context, animeID uint64, isAdmin bool) ([]Song, error)
 	GetByArtistID(ctx context.Context, artistID uint64, limit, offset int, filters SongFilters) ([]Song, error)
 	GetRanking(ctx context.Context, rankingType, songType string, limit, offset int) ([]Song, error)
 	Count(ctx context.Context, filters SongFilters) (int, error)
@@ -190,6 +192,8 @@ type SongVariantRepository interface {
 	Update(ctx context.Context, variant *SongVariant) error
 	Delete(ctx context.Context, id uint64) error
 	ToggleStatus(ctx context.Context, id uint64) error
+	ToggleSpoiler(ctx context.Context, id uint64) error
+	ToggleNSFW(ctx context.Context, id uint64) error
 }
 
 type ArtistRepository interface {

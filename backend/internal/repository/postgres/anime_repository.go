@@ -8,6 +8,7 @@ import (
 
 	"anirank/api/internal/domain"
 
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -769,9 +770,9 @@ func (r *animeRepository) UpdateExternalLinks(ctx context.Context, animeID uint6
 			linkType = "info"
 		}
 
-		query := "INSERT INTO external_links (name, url, type, created_at, updated_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id"
+		query := "INSERT INTO external_links (uuid, name, url, type, created_at, updated_at) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id"
 		var linkID uint64
-		err := tx.QueryRowContext(ctx, query, link.Name, link.URL, linkType).Scan(&linkID)
+		err := tx.QueryRowContext(ctx, query, uuid.New().String(), link.Name, link.URL, linkType).Scan(&linkID)
 		if err != nil {
 			return err
 		}

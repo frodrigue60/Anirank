@@ -834,6 +834,22 @@ func (h *AdminHandler) ToggleVariantStatus(c *fiber.Ctx) error {
 	return c.SendStatus(204)
 }
 
+func (h *AdminHandler) ToggleVariantSpoiler(c *fiber.Ctx) error {
+	id, _ := strconv.ParseUint(c.Params("id"), 10, 64)
+	if err := h.usecase.ToggleVariantSpoiler(c.Context(), id, h.getAuditMetadata(c)); err != nil {
+		return err
+	}
+	return c.SendStatus(204)
+}
+
+func (h *AdminHandler) ToggleVariantNSFW(c *fiber.Ctx) error {
+	id, _ := strconv.ParseUint(c.Params("id"), 10, 64)
+	if err := h.usecase.ToggleVariantNSFW(c.Context(), id, h.getAuditMetadata(c)); err != nil {
+		return err
+	}
+	return c.SendStatus(204)
+}
+
 
 // ARTISTS
 func (h *AdminHandler) GetArtists(c *fiber.Ctx) error {

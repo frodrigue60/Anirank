@@ -14,30 +14,52 @@
 
   let { data } = $props<{ data: PageData }>();
   let anime = $derived(data.anime);
+  // svelte-ignore state_referenced_locally
+  let songs = $state(data.anime.songs || []);
+
+  $effect(() => {
+    songs = data.anime.songs || [];
+  });
 
   async function deleteSong(id: number) {
-    if (!confirm("Are you sure you want to delete this song? This will also remove its variants/videos.")) return;
+    if (
+      !confirm(
+        "Are you sure you want to delete this song? This will also remove its variants/videos.",
+      )
+    )
+      return;
 
     try {
       await api.delete(`/admin/songs/${id}`);
       toastState.addToast("Song deleted successfully", "success");
       await invalidateAll();
     } catch (err: any) {
-      toastState.addToast(getApiErrorMessage(err, "Failed to delete song"), "error");
+      toastState.addToast(
+        getApiErrorMessage(err, "Failed to delete song"),
+        "error",
+      );
     }
   }
 
   async function handleStatusChange(id: number, currentStatus: boolean) {
+    const index = songs.findIndex((s: any) => s.id === id);
+    if (index === -1) return;
+
+    // Optimistic UI
+    const prevStatus = songs[index].status;
+    songs[index].status = !currentStatus;
+
     try {
       await api.patch(`/admin/songs/${id}/status`);
-      const index = anime.songs.findIndex((s: any) => s.id === id);
-      if (index !== -1) {
-        anime.songs[index].status = !currentStatus;
-      }
       toastState.addToast("Status updated successfully", "success");
     } catch (err: any) {
+      // Rollback
+      songs[index].status = prevStatus;
       console.error(err);
-      toastState.addToast(getApiErrorMessage(err, "Failed to update status"), "error");
+      toastState.addToast(
+        getApiErrorMessage(err, "Failed to update status"),
+        "error",
+      );
     }
   }
 </script>
@@ -84,7 +106,7 @@
     </div>
 
     <div class="overflow-x-auto">
-      {#if anime.songs && anime.songs.length > 0}
+      {#if songs.length > 0}
         <table class="w-full text-left text-sm text-on-surface-variant">
           <thead
             class="text-xs text-on-surface-variant/70 uppercase bg-black/20 border-b border-outline-variant"
@@ -99,7 +121,7 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-white/5">
-            {#each anime.songs as song}
+            {#each songs as song}
               <tr class="hover:bg-white/2 transition-colors">
                 <td class="px-6 py-4 whitespace-nowrap">
                   <span

@@ -22,7 +22,7 @@ func NewSongVariantRepository(db *sqlx.DB) domain.SongVariantRepository {
 func (r *songVariantRepository) GetByID(ctx context.Context, id uint64) (*domain.SongVariant, error) {
 	query := `
 		SELECT 
-			sv.id, sv.version_number, sv.song_id, sv.slug, sv.views, sv.season_id, sv.year_id, sv.spoiler, sv.status, sv.created_at, sv.updated_at,
+			sv.id, sv.version_number, sv.song_id, sv.slug, sv.views, sv.season_id, sv.year_id, sv.episodes, sv.spoiler, sv.nsfw, sv.status, sv.created_at, sv.updated_at,
 			v.video_src, v.embed_code
 		FROM song_variants sv
 		LEFT JOIN videos v ON sv.id = v.song_variant_id
@@ -162,8 +162,8 @@ func (r *songVariantRepository) Create(ctx context.Context, variant *domain.Song
 	defer tx.Rollback()
 
 	query := `
-		INSERT INTO song_variants (uuid, version_number, song_id, slug, views, season_id, year_id, spoiler, status, anime_themes_id, created_at, updated_at) 
-		VALUES (:uuid, :version_number, :song_id, :slug, :views, :season_id, :year_id, :spoiler, :status, :anime_themes_id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		INSERT INTO song_variants (uuid, version_number, song_id, slug, views, season_id, year_id, episodes, spoiler, nsfw, status, anime_themes_id, created_at, updated_at) 
+		VALUES (:uuid, :version_number, :song_id, :slug, :views, :season_id, :year_id, :episodes, :spoiler, :nsfw, :status, :anime_themes_id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 		RETURNING id
 	`
 	stmt, err := tx.PrepareNamedContext(ctx, query)
@@ -200,7 +200,7 @@ func (r *songVariantRepository) Update(ctx context.Context, variant *domain.Song
 	query := `
 		UPDATE song_variants 
 		SET version_number = :version_number, song_id = :song_id, slug = :slug, views = :views, 
-		    season_id = :season_id, year_id = :year_id, spoiler = :spoiler, status = :status, 
+		    season_id = :season_id, year_id = :year_id, episodes = :episodes, spoiler = :spoiler, nsfw = :nsfw, status = :status, 
 		    anime_themes_id = :anime_themes_id, updated_at = CURRENT_TIMESTAMP
 		WHERE id = :id
 	`
@@ -246,6 +246,18 @@ func (r *songVariantRepository) Delete(ctx context.Context, id uint64) error {
 
 func (r *songVariantRepository) ToggleStatus(ctx context.Context, id uint64) error {
 	query := "UPDATE song_variants SET status = NOT status WHERE id = $1"
+	_, err := r.db.ExecContext(ctx, query, id)
+	return err
+}
+
+func (r *songVariantRepository) ToggleSpoiler(ctx context.Context, id uint64) error {
+	query := "UPDATE song_variants SET spoiler = NOT spoiler WHERE id = $1"
+	_, err := r.db.ExecContext(ctx, query, id)
+	return err
+}
+
+func (r *songVariantRepository) ToggleNSFW(ctx context.Context, id uint64) error {
+	query := "UPDATE song_variants SET nsfw = NOT nsfw WHERE id = $1"
 	_, err := r.db.ExecContext(ctx, query, id)
 	return err
 }

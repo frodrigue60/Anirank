@@ -113,4 +113,29 @@ type ModerationRepository interface {
 	SetCommentShadowban(ctx context.Context, commentID uint64, isShadowbanned bool) error
 	SetRatingShadowban(ctx context.Context, ratingID uint64, isShadowbanned bool) error
 	UpdateUserTruthScore(ctx context.Context, userID uint64, delta int) error
+	GetPendingReportsCount(ctx context.Context, userID uint64) (int, error)
+}
+
+type ModerationUsecase interface {
+	CreateSongReport(ctx context.Context, userID uint64, req *SongReport) error
+	CreateUserRequest(ctx context.Context, userID uint64, req *UserRequest) error
+	CreateCommentReport(ctx context.Context, userID uint64, req *CommentReport) error
+	GetSongReports(ctx context.Context, status *bool, limit, offset int) ([]SongReport, error)
+	GetSongReport(ctx context.Context, reportID uint64) (*SongReport, error)
+	ResolveSongReport(ctx context.Context, reportID uint64, isAccepted bool) error
+	DeleteSongReport(ctx context.Context, reportID uint64) error
+	GetCommentReports(ctx context.Context, status *bool, limit, offset int) ([]CommentReport, error)
+	GetCommentReport(ctx context.Context, reportID uint64) (*CommentReport, error)
+	ResolveCommentReport(ctx context.Context, reportID uint64, isAccepted bool) error
+	DeleteCommentReport(ctx context.Context, reportID uint64) error
+	GetUserRequests(ctx context.Context, status *bool, limit, offset int) ([]UserRequest, error)
+	GetUserRequest(ctx context.Context, requestID uint64) (*UserRequest, error)
+	UpdateUserRequestStatus(ctx context.Context, requestID uint64, status bool, adminID uint64) error
+	DeleteUserRequest(ctx context.Context, requestID uint64) error
+	CreateUserReport(ctx context.Context, userID uint64, req *UserReport) error
+	GetUserReports(ctx context.Context, status *bool, limit, offset int) ([]UserReport, error)
+	GetUserReport(ctx context.Context, reportID uint64) (*UserReport, error)
+	ResolveUserReport(ctx context.Context, reportID uint64, isAccepted bool) error
+	DeleteUserReport(ctx context.Context, reportID uint64) error
+	ValidateInteraction(ctx context.Context, userID uint64, content string) (bool, error)
 }

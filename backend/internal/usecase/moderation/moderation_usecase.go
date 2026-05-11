@@ -3,6 +3,9 @@ package moderation
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"strings"
+	"time"
 
 	"anirank/api/internal/domain"
 	"anirank/api/internal/infrastructure"
@@ -319,13 +322,62 @@ func (u *ModerationUsecase) checkAndApplyShadowban(ctx context.Context, userID u
 		return
 	}
 
+	// 1. Global Shadowban logic (TruthScore < 50)
 	if user.TruthScore < 50 && !user.IsShadowbanned {
 		u.repo.ShadowbanUser(ctx, userID)
-	} else if user.TruthScore >= 50 && user.IsShadowbanned {
-		// Auto-unshadowban if they recover? 
-		// User didn't specify, but it's a good safety measure.
-		// However, usually unshadowban is manual. I'll leave it manual for now.
 	}
+
+	// 2. Softban logic (TruthScore < 30 AND PendingReports > 3)
+	pendingCount, err := u.repo.GetPendingReportsCount(ctx, userID)
+	if err == nil {
+		if user.TruthScore < 30 && pendingCount > 3 && !user.IsSoftbanned {
+			u.userRepo.UpdateSoftbanStatus(ctx, userID, true)
+		} else if user.TruthScore >= 40 && user.IsSoftbanned {
+			// Auto-lift softban if reputation recovers
+			u.userRepo.UpdateSoftbanStatus(ctx, userID, false)
+		}
+	}
+}
+
+func (u *ModerationUsecase) ValidateInteraction(ctx context.Context, userID uint64, content string) (bool, error) {
+	user, err := u.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return false, err
+	}
+
+	// 1. Softban Check
+	if user.IsSoftbanned {
+		return false, domain.NewAppError(403, "Your account is currently restricted due to low reputation or pending reports.", nil)
+	}
+
+	// 2. Rate Limit Check
+	lastTime, err := u.userRepo.GetLastInteractionTime(ctx, userID)
+	if err == nil && !lastTime.IsZero() {
+		limitSeconds := 0
+		if user.Level < 5 {
+			limitSeconds = 120 // 2 mins
+		} else if user.Level < 10 {
+			limitSeconds = 60 // 1 min
+		}
+
+		if limitSeconds > 0 && time.Since(lastTime).Seconds() < float64(limitSeconds) {
+			remaining := limitSeconds - int(time.Since(lastTime).Seconds())
+			return false, domain.NewAppError(429, fmt.Sprintf("You are posting too fast. Please wait %d seconds.", remaining), nil)
+		}
+	}
+
+	// 3. Link Detection
+	hasLinks := strings.Contains(content, "http://") || strings.Contains(content, "https://") || strings.Contains(content, "www.")
+	if hasLinks {
+		if user.Level < 5 {
+			return false, domain.NewAppError(400, "Users below level 5 are not allowed to post links.", nil)
+		} else if user.Level < 10 {
+			// Auto-shadowban: Allow post but mark as shadowbanned
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 func (u *ModerationUsecase) DeleteUserReport(ctx context.Context, reportID uint64) error {

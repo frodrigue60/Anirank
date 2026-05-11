@@ -49,6 +49,7 @@ type User struct {
 	// Moderation
 	TruthScore     int  `db:"truth_score" json:"truth_score"`
 	IsShadowbanned bool `db:"is_shadowbanned" json:"is_shadowbanned"`
+	IsSoftbanned   bool `db:"is_softbanned" json:"is_softbanned"`
 }
 
 type AuthToken struct {
@@ -165,6 +166,8 @@ type UserRepository interface {
 	GetFollowers(ctx context.Context, userID uint64, limit, offset int) ([]User, error)
 	GetFollowing(ctx context.Context, userID uint64, limit, offset int) ([]User, error)
 	GetMany(ctx context.Context, ids []uint64) ([]User, error)
+	GetLastInteractionTime(ctx context.Context, userID uint64) (time.Time, error)
+	UpdateSoftbanStatus(ctx context.Context, userID uint64, status bool) error
 }
 
 type AuthTokenRepository interface {

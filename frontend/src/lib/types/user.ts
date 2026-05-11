@@ -23,6 +23,7 @@ export interface User {
     score_format?: string;
     truth_score?: number;
     is_shadowbanned?: boolean;
+    is_softbanned?: boolean;
 }
 
 export interface RankingUser extends User {

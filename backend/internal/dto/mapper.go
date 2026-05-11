@@ -71,6 +71,7 @@ func ToUserDTO(u *domain.User) UserDTO {
 		IsFollowing:      u.IsFollowing,
 		TruthScore:       u.TruthScore,
 		IsShadowbanned:   u.IsShadowbanned,
+		IsSoftbanned:     u.IsSoftbanned,
 		Roles:            roles,
 		Badges:           badges,
 		SocialIdentities: identities,

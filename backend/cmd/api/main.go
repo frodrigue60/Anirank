@@ -288,7 +288,8 @@ func main() {
 	mailService := mail.NewResendService(resendAPIKey, resendFrom, appURL)
 
 	authUsecase := auth.NewAuthUsecase(userRepo, jwtService, storageService, mediaService, xpUsecase, badgeUsecase, anilistClient, googleClient, discordClient, mailService, tokenRepo, os.Getenv("ENCRYPTION_KEY"))
-	interactionUsecase := interaction.NewInteractionUsecase(interactionRepo, commentRepo, userRepo, notificationUsecase, songRepo, animeRepo, artistRepo, mediaService, xpUsecase, activityUsecase, badgeUsecase)
+	moderationUsecase := moderation.NewModerationUsecase(moderationRepo, userRepo, notificationUsecase, mediaService)
+	interactionUsecase := interaction.NewInteractionUsecase(interactionRepo, commentRepo, userRepo, notificationUsecase, songRepo, animeRepo, artistRepo, mediaService, xpUsecase, activityUsecase, badgeUsecase, moderationUsecase)
 	playlistUsecase := playlist.NewPlaylistUsecase(playlistRepo, songRepo, animeRepo, interactionRepo, mediaService, xpUsecase, userRepo)
 
 	userAdminUsecase := admin.NewUserAdminUsecase(userRepo, mediaService, auditUsecase)
@@ -301,7 +302,6 @@ func main() {
 	seoUsecase := public.NewSEOUsecase(animeRepo, songRepo, artistRepo, userRepo, playlistRepo, ogGenerator.GetVersion)
 	seoHandler := v1.NewSEOHandler(seoUsecase)
 
-	moderationUsecase := moderation.NewModerationUsecase(moderationRepo, userRepo, notificationUsecase, mediaService)
 	tournamentUsecase := tournament.NewTournamentUsecase(tournamentRepo, songRepo, animeRepo, storageService)
 
 	// --- 1.5 Start Background Cron Scheduler ---

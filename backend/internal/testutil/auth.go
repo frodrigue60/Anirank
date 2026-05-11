@@ -28,6 +28,8 @@ type MockUserRepository struct {
 	GetByGoogleIDFunc func(googleID string) (*domain.User, error)
 	SaveSocialIdentityFunc func(identity *domain.UserSocialIdentity) error
 	CreateFunc             func(user *domain.User) error
+	GetLastInteractionTimeFunc func(userID uint64) (time.Time, error)
+	UpdateSoftbanStatusFunc    func(userID uint64, status bool) error
 }
 
 func (m *MockUserRepository) GetByID(ctx context.Context, id uint64) (*domain.User, error) {
@@ -102,6 +104,18 @@ func (m *MockUserRepository) GetFollowingCount(ctx context.Context, uID uint64) 
 func (m *MockUserRepository) GetFollowers(ctx context.Context, uID uint64, l, o int) ([]domain.User, error) { return nil, nil }
 func (m *MockUserRepository) GetFollowing(ctx context.Context, uID uint64, l, o int) ([]domain.User, error) { return nil, nil }
 func (m *MockUserRepository) GetMany(ctx context.Context, ids []uint64) ([]domain.User, error)         { return nil, nil }
+func (m *MockUserRepository) GetLastInteractionTime(ctx context.Context, userID uint64) (time.Time, error) {
+	if m.GetLastInteractionTimeFunc != nil {
+		return m.GetLastInteractionTimeFunc(userID)
+	}
+	return time.Time{}, nil
+}
+func (m *MockUserRepository) UpdateSoftbanStatus(ctx context.Context, userID uint64, status bool) error {
+	if m.UpdateSoftbanStatusFunc != nil {
+		return m.UpdateSoftbanStatusFunc(userID, status)
+	}
+	return nil
+}
 func (m *MockUserRepository) GetSocialIdentity(ctx context.Context, provider, providerID string) (*domain.UserSocialIdentity, error) {
 	return nil, nil
 }

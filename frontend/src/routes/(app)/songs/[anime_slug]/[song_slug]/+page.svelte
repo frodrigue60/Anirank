@@ -361,8 +361,9 @@
       }
       comments = comments ? [newComment, ...comments] : [newComment];
       newCommentText = "";
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      toastState.addToast(e.response?.data?.message || "Failed to post comment", "error");
     }
   }
 
@@ -398,8 +399,9 @@
       }
       replyingToUuid = null;
       replyText = "";
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      toastState.addToast(e.response?.data?.message || "Failed to post reply", "error");
     }
   }
 
@@ -897,29 +899,38 @@
               <User size={24} class="text-white/40" />
             {/if}
           </div>
-          <div class="flex-1 flex flex-col gap-2">
-            <textarea
-              bind:value={newCommentText}
-              placeholder={authState.isAuthenticated
-                ? "Add a comment..."
-                : "Sign in to comment..."}
-              class="w-full bg-surface-container border border-outline-variant/20 rounded-md p-3 text-sm text-on-surface focus:outline-none focus:border-primary transition-colors resize-none disabled:opacity-50 shadow-inner"
-              rows="2"
-              disabled={!authState.isAuthenticated}
-              aria-label="Add a new comment"
-            ></textarea>
-            <div class="flex justify-end">
-              <button
-                onclick={postComment}
-                disabled={!newCommentText.trim() || !authState.isAuthenticated}
-                class="bg-primary hover:bg-primary/80 text-white font-bold text-xs px-4 py-2 rounded-sm transition-colors disabled:opacity-50"
-                title="Post comment"
-                aria-label="Post comment"
-              >
-                Comment
-              </button>
+          {#if authState.user?.is_softbanned}
+            <div class="flex-1 bg-red-500/5 border border-red-500/20 rounded-md p-4 flex items-center gap-3">
+              <AlertTriangle class="text-red-500" size={20} />
+              <p class="text-[11px] text-red-500 font-black uppercase tracking-widest leading-relaxed">
+                Your account is currently restricted due to low reputation or pending reports. You cannot post comments or ratings at this time.
+              </p>
             </div>
-          </div>
+          {:else}
+            <div class="flex-1 flex flex-col gap-2">
+              <textarea
+                bind:value={newCommentText}
+                placeholder={authState.isAuthenticated
+                  ? "Add a comment..."
+                  : "Sign in to comment..."}
+                class="w-full bg-surface-container border border-outline-variant/20 rounded-md p-3 text-sm text-on-surface focus:outline-none focus:border-primary transition-colors resize-none disabled:opacity-50 shadow-inner"
+                rows="2"
+                disabled={!authState.isAuthenticated}
+                aria-label="Add a new comment"
+              ></textarea>
+              <div class="flex justify-end">
+                <button
+                  onclick={postComment}
+                  disabled={!newCommentText.trim() || !authState.isAuthenticated}
+                  class="bg-primary hover:bg-primary/80 text-white font-bold text-xs px-4 py-2 rounded-sm transition-colors disabled:opacity-50"
+                  title="Post comment"
+                  aria-label="Post comment"
+                >
+                  Comment
+                </button>
+              </div>
+            </div>
+          {/if}
         </div>
 
         <!-- Comments List -->

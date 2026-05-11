@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"time"
 
 	"anirank/api/internal/domain"
 
@@ -172,7 +173,7 @@ func (r *userRepository) Create(ctx context.Context, user *domain.User) error {
 }
 
 func (r *userRepository) Update(ctx context.Context, user *domain.User) error {
-	query := `UPDATE users SET name=:name, slug=:slug, email=:email, email_verified_at=:email_verified_at, score_format_id=(SELECT id FROM score_formats WHERE slug = :score_format), avatar=:avatar, banner=:banner, about=:about, profile_color=:profile_color, truth_score=:truth_score, is_shadowbanned=:is_shadowbanned, updated_at=CURRENT_TIMESTAMP WHERE id=:id`
+	query := `UPDATE users SET name=:name, slug=:slug, email=:email, email_verified_at=:email_verified_at, score_format_id=(SELECT id FROM score_formats WHERE slug = :score_format), avatar=:avatar, banner=:banner, about=:about, profile_color=:profile_color, truth_score=:truth_score, is_shadowbanned=:is_shadowbanned, is_softbanned=:is_softbanned, updated_at=CURRENT_TIMESTAMP WHERE id=:id`
 	_, err := r.db.NamedExecContext(ctx, query, user)
 	return err
 }
@@ -617,6 +618,33 @@ func (r *userRepository) SaveSocialIdentity(ctx context.Context, identity *domai
 func (r *userRepository) DeleteSocialIdentity(ctx context.Context, userID uint64, provider string) error {
 	query := `DELETE FROM user_social_identities WHERE user_id = $1 AND provider = $2`
 	_, err := r.db.ExecContext(ctx, query, userID, provider)
+	return err
+}
+
+func (r *userRepository) GetLastInteractionTime(ctx context.Context, userID uint64) (time.Time, error) {
+	var lastTime time.Time
+	query := `
+		SELECT MAX(created_at)
+		FROM (
+			SELECT created_at FROM comments WHERE user_id = $1
+			UNION ALL
+			SELECT created_at FROM song_ratings WHERE user_id = $1
+		) AS interactions
+	`
+	err := r.db.GetContext(ctx, &lastTime, query, userID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return time.Time{}, nil
+		}
+		// Check if it's just a NULL result from MAX() on empty set
+		return time.Time{}, nil 
+	}
+	return lastTime, nil
+}
+
+func (r *userRepository) UpdateSoftbanStatus(ctx context.Context, userID uint64, status bool) error {
+	query := `UPDATE users SET is_softbanned = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`
+	_, err := r.db.ExecContext(ctx, query, status, userID)
 	return err
 }
 

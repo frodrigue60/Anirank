@@ -827,3 +827,18 @@ func (r *moderationRepository) UpdateUserTruthScore(ctx context.Context, userID 
 	_, err := r.db.ExecContext(ctx, "UPDATE users SET truth_score = truth_score + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2", delta, userID)
 	return err
 }
+
+func (r *moderationRepository) GetPendingReportsCount(ctx context.Context, userID uint64) (int, error) {
+	var count int
+	query := `
+		SELECT (
+			SELECT COUNT(*) FROM user_reports WHERE reported_user_id = $1 AND status = false
+		) + (
+			SELECT COUNT(*) FROM comment_reports cr 
+			JOIN comments c ON cr.comment_id = c.id 
+			WHERE c.user_id = $1 AND cr.status = false
+		)
+	`
+	err := r.db.GetContext(ctx, &count, query, userID)
+	return count, err
+}

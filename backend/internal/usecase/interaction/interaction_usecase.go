@@ -22,6 +22,7 @@ type InteractionUsecase struct {
 	activityUsecase     domain.ActivityUsecase
 	badgeUsecase        domain.BadgeUsecase
 	artistRepo          domain.ArtistRepository
+	moderationUsecase   domain.ModerationUsecase
 }
 
 func NewInteractionUsecase(
@@ -36,6 +37,7 @@ func NewInteractionUsecase(
 	xu domain.XPUsecase,
 	au domain.ActivityUsecase,
 	bu domain.BadgeUsecase,
+	mu domain.ModerationUsecase,
 ) *InteractionUsecase {
 	return &InteractionUsecase{
 		interactionRepo:     ir,
@@ -49,6 +51,7 @@ func NewInteractionUsecase(
 		xpUsecase:           xu,
 		activityUsecase:     au,
 		badgeUsecase:        bu,
+		moderationUsecase:   mu,
 	}
 }
 
@@ -65,11 +68,18 @@ func (u *InteractionUsecase) RateSong(ctx context.Context, userID, songID uint64
 		return 0, 0, domain.NewAppError(400, "Rating score must be between 0 and 100", nil)
 	}
 
+	// Automod check
+	isShadowbanned, err := u.moderationUsecase.ValidateInteraction(ctx, userID, "")
+	if err != nil {
+		return 0, 0, err
+	}
+
 	// The frontend always sends the raw 0-100 score, so no normalization is needed.
 	rating := &domain.Rating{
-		Rating: score,
-		SongID: songID,
-		UserID: userID,
+		Rating:         score,
+		SongID:         songID,
+		UserID:         userID,
+		IsShadowbanned: isShadowbanned,
 	}
 
 	if err := u.interactionRepo.UpsertRating(ctx, rating); err != nil {
@@ -190,17 +200,24 @@ func (u *InteractionUsecase) SongComment(ctx context.Context, userID, entityID u
 		return nil, domain.NewAppError(400, "Comment content is too short", nil)
 	}
 
+	// Automod check
+	isShadowbanned, err := u.moderationUsecase.ValidateInteraction(ctx, userID, content)
+	if err != nil {
+		return nil, err
+	}
+
 	comment := &domain.Comment{
-		ParentID: parentID,
-		UserID:   userID,
-		Content:  security.SanitizeStrict(content),
+		ParentID:       parentID,
+		UserID:         userID,
+		Content:        security.SanitizeStrict(content),
+		IsShadowbanned: isShadowbanned,
 	}
 
 	if entityType == "song" || entityType == "App\\Models\\Song" {
 		comment.SongID = &entityID
 	}
 
-	err := u.commentRepo.Create(ctx, comment)
+	err = u.commentRepo.Create(ctx, comment)
 	if err != nil {
 		return nil, domain.NewAppError(500, "Could not post comment", err)
 	}

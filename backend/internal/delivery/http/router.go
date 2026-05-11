@@ -70,7 +70,7 @@ func SetupPublicRoutes(app *fiber.App,
 	badgeRepo := postgres.NewBadgeRepository(db)
 	badgeUsecase := admin.NewBadgeUsecase(badgeRepo, userRepo, interactionRepo, commentRepo, storageService, auditLogUsecase)
 
-	interactionUsecase = interaction.NewInteractionUsecase(interactionRepo, commentRepo, userRepo, notificationUsecase, songRepo, animeRepo, artistRepo, mediaService, xpUsecase, activityUsecase, badgeUsecase)
+	interactionUsecase = interaction.NewInteractionUsecase(interactionRepo, commentRepo, userRepo, notificationUsecase, songRepo, animeRepo, artistRepo, mediaService, xpUsecase, activityUsecase, badgeUsecase, moderationUsecase)
 	interactionHandler := v1.NewInteractionHandler(interactionUsecase, activityUsecase, songRepo, userRepo, animeRepo, artistRepo, commentRepo)
 	playlistHandler := v1.NewPlaylistHandler(playlistUsecase, playlistRepo, songRepo, userRepo)
 	adminHandler := v1.NewAdminHandler(adminUsecase, songRepo, userRepo, animeRepo, artistRepo, playlistRepo)

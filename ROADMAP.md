@@ -115,6 +115,16 @@
 - ✅ **CSRF protection** audit for state-mutating endpoints
 - ✅ **Input sanitization** review for comment/about text fields (XSS vectors)
 
+### Advanced Moderation (AutoMod) 🔲
+
+- 🔲 **Shadow Banning**: Automatically hide content from toxic users without alerting them (Internal `shadow_banned` flag).
+- 🔲 **Profanity & Scam Filter**: Regex-based blocking of harmful keywords and known scam URLs.
+- 🔲 **Reputation Gates (XP-based)**: Restrict link-sharing and frequent posting for users below Nivel 5.
+- 🔲 **Auto-Hide Threshold**: Automatically hide comments/users after X reports until admin review.
+- 🔲 **Spam Detection**: Velocity limits and duplicate content detection across different entities.
+- 🔲 **AI Image Moderation**: Automated NSFW scanning for custom avatars and banners.
+- 🔲 **Ban Manager**: Advanced admin UI for temporary/permanent bans, IP blocking, and moderation notes.
+
 - ✅ **SMTP integration** (Resend) for transactional emails
 - ✅ Password reset flow for native (email/password) accounts
 - ✅ Email verification workflow (User-initiated from settings)

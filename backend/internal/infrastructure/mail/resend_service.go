@@ -25,22 +25,22 @@ func NewResendService(apiKey string, fromEmail string, appURL string) domain.Mai
 func (s *resendService) SendVerificationEmail(ctx context.Context, to string, name string, token string) error {
 	verifyURL := fmt.Sprintf("%s/verify-email?token=%s", s.appURL, token)
 	
-	subject := "Verifica tu cuenta en AniRank"
+	subject := "Verify your AniRank account"
 	html := fmt.Sprintf(`
 		<div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-			<h2 style="color: #7f13ec;">¡Hola, %s!</h2>
-			<p>Gracias por unirte a AniRank. Para completar tu registro, por favor verifica tu dirección de correo electrónico haciendo clic en el siguiente botón:</p>
+			<h2 style="color: #7f13ec;">Hello, %s!</h2>
+			<p>Thanks for joining AniRank. To complete your registration, please verify your email address by clicking the button below:</p>
 			<div style="text-align: center; margin: 30px 0;">
-				<a href="%s" style="background-color: #7f13ec; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Verificar mi cuenta</a>
+				<a href="%s" style="background-color: #7f13ec; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Verify my account</a>
 			</div>
-			<p style="color: #666; font-size: 0.9em;">Si no puedes hacer clic en el botón, copia y pega este enlace en tu navegador:</p>
+			<p style="color: #666; font-size: 0.9em;">If you cannot click the button, copy and paste this link into your browser:</p>
 			<p style="color: #666; font-size: 0.8em; word-break: break-all;">%s</p>
 			<hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-			<p style="font-size: 0.8em; color: #999; text-align: center;">Este enlace expirará en 24 horas.</p>
+			<p style="font-size: 0.8em; color: #999; text-align: center;">This link will expire in 24 hours.</p>
 		</div>
 	`, name, verifyURL, verifyURL)
 
-	text := fmt.Sprintf("¡Hola, %s!\n\nGracias por unirte a AniRank. Para completar tu registro, por favor verifica tu cuenta en el siguiente enlace:\n\n%s\n\nEste enlace expirará en 24 horas.\n\n© AniRank", name, verifyURL)
+	text := fmt.Sprintf("Hello, %s!\n\nThanks for joining AniRank. To complete your registration, please verify your account at the following link:\n\n%s\n\nThis link will expire in 24 hours.\n\n© AniRank", name, verifyURL)
 
 	params := &resend.SendEmailRequest{
 		From:    s.fromEmail,
@@ -61,23 +61,23 @@ func (s *resendService) SendVerificationEmail(ctx context.Context, to string, na
 func (s *resendService) SendPasswordResetEmail(ctx context.Context, to string, name string, token string) error {
 	resetURL := fmt.Sprintf("%s/reset-password?token=%s", s.appURL, token)
 	
-	subject := "Restablecer tu contraseña en AniRank"
+	subject := "Reset your AniRank password"
 	html := fmt.Sprintf(`
 		<div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-			<h2 style="color: #7f13ec;">Hola, %s</h2>
-			<p>Recibimos una solicitud para restablecer la contraseña de tu cuenta en AniRank. Si no realizaste esta solicitud, puedes ignorar este correo.</p>
-			<p>Para elegir una nueva contraseña, haz clic en el siguiente botón:</p>
+			<h2 style="color: #7f13ec;">Hello, %s</h2>
+			<p>We received a request to reset the password for your AniRank account. If you did not make this request, you can safely ignore this email.</p>
+			<p>To choose a new password, click the button below:</p>
 			<div style="text-align: center; margin: 30px 0;">
-				<a href="%s" style="background-color: #7f13ec; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Restablecer contraseña</a>
+				<a href="%s" style="background-color: #7f13ec; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Reset password</a>
 			</div>
-			<p style="color: #666; font-size: 0.9em;">Si no puedes hacer clic en el botón, copia y pega este enlace en tu navegador:</p>
+			<p style="color: #666; font-size: 0.9em;">If you cannot click the button, copy and paste this link into your browser:</p>
 			<p style="color: #666; font-size: 0.8em; word-break: break-all;">%s</p>
 			<hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-			<p style="font-size: 0.8em; color: #999; text-align: center;">Este enlace expirará en 1 hora por seguridad.</p>
+			<p style="font-size: 0.8em; color: #999; text-align: center;">This link will expire in 1 hour for security reasons.</p>
 		</div>
 	`, name, resetURL, resetURL)
 
-	text := fmt.Sprintf("Hola, %s\n\nRecibimos una solicitud para restablecer tu contraseña en AniRank. Si no realizaste esta solicitud, puedes ignorar este correo.\n\nPara elegir una nueva contraseña, visita el siguiente enlace:\n\n%s\n\nEste enlace expirará en 1 hora por seguridad.\n\n© AniRank", name, resetURL)
+	text := fmt.Sprintf("Hello, %s\n\nWe received a request to reset your password on AniRank. If you did not make this request, you can safely ignore this email.\n\nTo choose a new password, visit the following link:\n\n%s\n\nThis link will expire in 1 hour for security reasons.\n\n© AniRank", name, resetURL)
 
 	params := &resend.SendEmailRequest{
 		From:    s.fromEmail,

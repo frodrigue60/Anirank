@@ -29,6 +29,7 @@
   // Hydration Form State
   let atYear = $state(new Date().getFullYear());
   let atSeason = $state("");
+  let atLanguage = $state("ja");
   let progressMessage = $state("");
 
   // AnimeThemes Hydration State
@@ -139,6 +140,7 @@
           },
           body: JSON.stringify({
             ids: Array.from(selectedAnimeThemesIDs),
+            language: atLanguage,
           }),
         },
       );
@@ -281,6 +283,7 @@
           body: JSON.stringify({
             year: atYear,
             season: atSeason,
+            language: atLanguage,
           }),
         },
       );
@@ -622,7 +625,7 @@
         </div>
 
         <form onsubmit={handleATHydration} class="space-y-6 relative">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div class="space-y-2">
               <label
                 for="atYear"
@@ -659,6 +662,24 @@
                 <option value="SPRING">Spring</option>
                 <option value="SUMMER">Summer</option>
                 <option value="FALL">Fall</option>
+              </select>
+            </div>
+
+            <div class="space-y-2">
+              <label
+                for="atLanguage"
+                class="text-[10px] font-bold uppercase text-on-surface-variant/70 ml-1"
+                >Language Filter</label
+              >
+              <select
+                id="atLanguage"
+                bind:value={atLanguage}
+                required
+                class="w-full bg-black/60 border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface focus:outline-none focus:border-purple-500 transition-all shadow-inner"
+              >
+                <option value="all">All (Multi-lang)</option>
+                <option value="ja">Japanese Only (Original)</option>
+                <option value="en">English Only</option>
               </select>
             </div>
           </div>
@@ -801,12 +822,28 @@
             >
           </p>
         </div>
-        <button
-          onclick={() => (showResultsModal = false)}
-          class="p-2 hover:bg-surface-highest rounded-full transition-colors text-on-surface-variant/70"
-        >
-          <X size={20} />
-        </button>
+
+        <div class="flex items-center gap-4">
+          <div class="flex flex-col items-end">
+            <label for="modalLanguage" class="text-[10px] font-bold uppercase text-on-surface-variant/40 tracking-wider">Hydration Filter</label>
+            <select
+              id="modalLanguage"
+              bind:value={atLanguage}
+              class="bg-surface-container border border-outline-variant rounded-lg py-1 px-3 text-xs text-on-surface focus:outline-none focus:border-primary transition-all"
+            >
+              <option value="all">All (Multi-lang)</option>
+              <option value="ja">Japanese Only</option>
+              <option value="en">English Only</option>
+            </select>
+          </div>
+          
+          <button
+            onclick={() => (showResultsModal = false)}
+            class="p-2 hover:bg-surface-highest rounded-full transition-colors text-on-surface-variant/70"
+          >
+            <X size={20} />
+          </button>
+        </div>
       </div>
 
       <!-- Results List -->

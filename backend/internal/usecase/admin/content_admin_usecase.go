@@ -906,9 +906,13 @@ type ATAnimeData struct {
 		Slug string `json:"slug"`
 	} `json:"studios"`
 	AnimeThemes []struct {
-		ID       uint64 `json:"id"`
-		Type     string `json:"type"`
-		Sequence int    `json:"sequence"`
+		ID       uint64  `json:"id"`
+		Type     string  `json:"type"`
+		Sequence int     `json:"sequence"`
+		Group    *struct {
+			Slug string `json:"slug"`
+			Name string `json:"name"`
+		} `json:"group"`
 		Song     *struct {
 			Title   string `json:"title"`
 			Artists []struct {
@@ -946,7 +950,7 @@ type ATArtistResponse struct {
 	Artists []ATArtistData `json:"artists"`
 }
 
-func (u *ContentAdminUsecase) HydrateSeason(ctx context.Context, year int, seasonName string, meta domain.AuditMetadata, progress chan<- string) error {
+func (u *ContentAdminUsecase) HydrateSeason(ctx context.Context, year int, seasonName string, lang string, meta domain.AuditMetadata, progress chan<- string) error {
 	sendProgress := func(msg string) {
 		if progress != nil {
 			select {
@@ -981,7 +985,7 @@ func (u *ContentAdminUsecase) HydrateSeason(ctx context.Context, year int, seaso
 		return nil
 	}
 
-	return u.syncAnimeThemesCollection(ctx, atResp.Anime, meta, progress)
+	return u.syncAnimeThemesCollection(ctx, atResp.Anime, lang, meta, progress)
 }
 
 func (u *ContentAdminUsecase) SearchAnimeThemes(ctx context.Context, query string) ([]ATAnimeData, error) {
@@ -1017,7 +1021,7 @@ func (u *ContentAdminUsecase) SearchAnimeThemes(ctx context.Context, query strin
 	return atResp.Anime, nil
 }
 
-func (u *ContentAdminUsecase) HydrateAnimeThemes(ctx context.Context, ids []uint64, meta domain.AuditMetadata, progress chan<- string) error {
+func (u *ContentAdminUsecase) HydrateAnimeThemes(ctx context.Context, ids []uint64, lang string, meta domain.AuditMetadata, progress chan<- string) error {
 	sendProgress := func(msg string) {
 		if progress != nil {
 			select {
@@ -1078,10 +1082,10 @@ func (u *ContentAdminUsecase) HydrateAnimeThemes(ctx context.Context, ids []uint
 		dResp.Body.Close()
 	}
 
-	return u.syncAnimeThemesCollection(ctx, fullAnimeList, meta, progress)
+	return u.syncAnimeThemesCollection(ctx, fullAnimeList, lang, meta, progress)
 }
 
-func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, animeList []ATAnimeData, meta domain.AuditMetadata, progress chan<- string) error {
+func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, animeList []ATAnimeData, lang string, meta domain.AuditMetadata, progress chan<- string) error {
 	sendProgress := func(msg string) {
 		if progress != nil {
 			select {
@@ -1484,6 +1488,14 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 		for _, t := range a.AnimeThemes {
 			if t.Song == nil {
 				continue
+			}
+
+			// Language filtering
+			if lang == "ja" && t.Group != nil {
+				continue // Skip non-Japanese versions
+			}
+			if lang == "en" && (t.Group == nil || t.Group.Slug != "EN") {
+				continue // Skip if not English
 			}
 
 			atID := t.ID

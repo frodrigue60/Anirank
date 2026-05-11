@@ -24,7 +24,8 @@ func (h *AdminHandler) SearchAnimeThemes(c *fiber.Ctx) error {
 
 func (h *AdminHandler) HydrateAnimeThemes(c *fiber.Ctx) error {
 	var req struct {
-		IDs []uint64 `json:"ids"`
+		IDs      []uint64 `json:"ids"`
+		Language string   `json:"language"`
 	}
 	if err := c.BodyParser(&req); err != nil {
 		return domain.NewAppError(400, "Invalid payload", err)
@@ -45,7 +46,7 @@ func (h *AdminHandler) HydrateAnimeThemes(c *fiber.Ctx) error {
 	go func() {
 		defer close(progress)
 		// Use Background() instead of c.Context() because Fiber context is recycled
-		_ = h.usecase.HydrateAnimeThemes(context.Background(), req.IDs, meta, progress)
+		_ = h.usecase.HydrateAnimeThemes(context.Background(), req.IDs, req.Language, meta, progress)
 	}()
 
 	c.Context().SetBodyStreamWriter(func(w *bufio.Writer) {

@@ -10,8 +10,9 @@ import (
 
 func (h *AdminHandler) HydrateAnimeSeason(c *fiber.Ctx) error {
 	var req struct {
-		Year   int    `json:"year"`
-		Season string `json:"season"`
+		Year     int    `json:"year"`
+		Season   string `json:"season"`
+		Language string `json:"language"`
 	}
 	if err := c.BodyParser(&req); err != nil {
 		return domain.NewAppError(400, "Invalid payload", err)
@@ -32,7 +33,7 @@ func (h *AdminHandler) HydrateAnimeSeason(c *fiber.Ctx) error {
 	go func() {
 		defer close(progress)
 		// Use Background() instead of c.Context() because Fiber context is recycled
-		_ = h.usecase.HydrateAnimeSeason(context.Background(), req.Year, req.Season, meta, progress)
+		_ = h.usecase.HydrateAnimeSeason(context.Background(), req.Year, req.Season, req.Language, meta, progress)
 	}()
 
 	c.Context().SetBodyStreamWriter(func(w *bufio.Writer) {

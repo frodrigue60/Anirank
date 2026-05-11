@@ -146,16 +146,16 @@ func (u *AdminUsecase) ResolveArtistsURLs(artists []domain.Artist) {
 	u.contentAdmin.ResolveArtistsURLs(artists)
 }
 
-func (u *AdminUsecase) HydrateAnimeSeason(ctx context.Context, year int, season string, meta domain.AuditMetadata, progress chan<- string) error {
-	return u.contentAdmin.HydrateSeason(ctx, year, season, meta, progress)
+func (u *AdminUsecase) HydrateAnimeSeason(ctx context.Context, year int, season string, lang string, meta domain.AuditMetadata, progress chan<- string) error {
+	return u.contentAdmin.HydrateSeason(ctx, year, season, lang, meta, progress)
 }
 
 func (u *AdminUsecase) SearchAnimeThemes(ctx context.Context, query string) ([]ATAnimeData, error) {
 	return u.contentAdmin.SearchAnimeThemes(ctx, query)
 }
 
-func (u *AdminUsecase) HydrateAnimeThemes(ctx context.Context, ids []uint64, meta domain.AuditMetadata, progress chan<- string) error {
-	return u.contentAdmin.HydrateAnimeThemes(ctx, ids, meta, progress)
+func (u *AdminUsecase) HydrateAnimeThemes(ctx context.Context, ids []uint64, lang string, meta domain.AuditMetadata, progress chan<- string) error {
+	return u.contentAdmin.HydrateAnimeThemes(ctx, ids, lang, meta, progress)
 }
 
 func (u *AdminUsecase) ResolveSongsURLs(songs []domain.Song) {

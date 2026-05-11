@@ -254,6 +254,7 @@ func SetupPublicRoutes(app *fiber.App,
 	protected.Post("/interactions/reactions", vRequired, interactionHandler.React)
 	protected.Post("/interactions/favorites", vRequired, interactionHandler.ToggleFavorite)
 	protected.Post("/comments", vRequired, interactionHandler.SongComment)
+	protected.Put("/comments/:id", vRequired, interactionHandler.UpdateComment)
 	protected.Delete("/comments/:id", vRequired, interactionHandler.DeleteComment)
 
 	protected.Post("/users/:id/follow", vRequired, interactionHandler.FollowUser)

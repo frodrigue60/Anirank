@@ -15,6 +15,7 @@ type SongReport struct {
 	Content   string    `db:"content" json:"content"`
 	Status     bool      `db:"status" json:"status"` // false: pending, true: fixed
 	IsAccepted bool      `db:"is_accepted" json:"is_accepted"`
+	Snapshot   *string   `db:"snapshot" json:"snapshot,omitempty"`
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
 
@@ -33,6 +34,7 @@ type CommentReport struct {
 	Content   string    `db:"content" json:"content"`
 	Status     bool      `db:"status" json:"status"` // false: pending, true: fixed
 	IsAccepted bool      `db:"is_accepted" json:"is_accepted"`
+	Snapshot   *string   `db:"snapshot" json:"snapshot,omitempty"`
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
 
@@ -67,6 +69,7 @@ type UserReport struct {
 	Content        string    `db:"content" json:"content"`
 	Status         bool      `db:"status" json:"status"` // false: pending, true: fixed
 	IsAccepted     bool      `db:"is_accepted" json:"is_accepted"`
+	Snapshot       *string   `db:"snapshot" json:"snapshot,omitempty"` // JSON string
 	CreatedAt      time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt      time.Time `db:"updated_at" json:"updated_at"`
 

@@ -11,9 +11,15 @@ import (
 	"anirank/api/internal/infrastructure"
 )
 
+func strPtr(s string) *string {
+	return &s
+}
+
 type ModerationUsecase struct {
 	repo                domain.ModerationRepository
 	userRepo            domain.UserRepository
+	songRepo            domain.SongRepository
+	commentRepo         domain.CommentRepository
 	notificationUsecase domain.NotificationUsecase
 	mediaService        infrastructure.MediaService
 }
@@ -21,12 +27,16 @@ type ModerationUsecase struct {
 func NewModerationUsecase(
 	repo domain.ModerationRepository,
 	userRepo domain.UserRepository,
+	songRepo domain.SongRepository,
+	commentRepo domain.CommentRepository,
 	nu domain.NotificationUsecase,
 	ms infrastructure.MediaService,
 ) *ModerationUsecase {
 	return &ModerationUsecase{
 		repo:                repo,
 		userRepo:            userRepo,
+		songRepo:            songRepo,
+		commentRepo:         commentRepo,
 		notificationUsecase: nu,
 		mediaService:        ms,
 	}
@@ -51,6 +61,13 @@ func (u *ModerationUsecase) CreateSongReport(ctx context.Context, userID uint64,
 	}
 	if len(req.Content) > 1000 {
 		return domain.NewAppError(400, "content cannot exceed 1000 characters", nil)
+	}
+
+	// Fetch Snapshot
+	song, err := u.songRepo.GetByID(ctx, req.SongID)
+	if err == nil && song != nil {
+		snapshot, _ := json.Marshal(song)
+		req.Snapshot = strPtr(string(snapshot))
 	}
 
 	req.UserID = userID
@@ -81,6 +98,13 @@ func (u *ModerationUsecase) CreateCommentReport(ctx context.Context, userID uint
 	}
 	if len(req.Content) > 1000 {
 		return domain.NewAppError(400, "content cannot exceed 1000 characters", nil)
+	}
+
+	// Fetch Snapshot
+	comment, err := u.commentRepo.GetByID(ctx, req.CommentID)
+	if err == nil && comment != nil {
+		snapshot, _ := json.Marshal(comment)
+		req.Snapshot = strPtr(string(snapshot))
 	}
 
 	req.UserID = userID
@@ -249,6 +273,13 @@ func (u *ModerationUsecase) CreateUserReport(ctx context.Context, userID uint64,
 	}
 	if len(req.Content) > 1000 {
 		return domain.NewAppError(400, "content cannot exceed 1000 characters", nil)
+	}
+
+	// Fetch Snapshot
+	user, err := u.userRepo.GetByID(ctx, req.ReportedUserID)
+	if err == nil && user != nil {
+		snapshot, _ := json.Marshal(user)
+		req.Snapshot = strPtr(string(snapshot))
 	}
 
 	req.ReporterUserID = userID

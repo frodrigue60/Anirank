@@ -168,10 +168,12 @@ func TestModerationUsecase_ValidateInteraction(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(MockModerationRepository)
 	mockUserRepo := new(testutil.MockUserRepository)
+	mockSongRepo := new(testutil.MockSongRepository)
+	mockCommentRepo := new(testutil.MockCommentRepository)
 	mockNotif := new(MockNotificationUsecase)
 	mockMedia := new(testutil.MockMediaService)
 
-	uc := moderation.NewModerationUsecase(mockRepo, mockUserRepo, mockNotif, mockMedia)
+	uc := moderation.NewModerationUsecase(mockRepo, mockUserRepo, mockSongRepo, mockCommentRepo, mockNotif, mockMedia)
 
 	t.Run("Blocked by Softban", func(t *testing.T) {
 		userID := uint64(1)
@@ -264,10 +266,12 @@ func TestModerationUsecase_ShadowbanTriggers(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(MockModerationRepository)
 	mockUserRepo := new(testutil.MockUserRepository)
+	mockSongRepo := new(testutil.MockSongRepository)
+	mockCommentRepo := new(testutil.MockCommentRepository)
 	mockNotif := new(MockNotificationUsecase)
 	mockMedia := new(testutil.MockMediaService)
 
-	uc := moderation.NewModerationUsecase(mockRepo, mockUserRepo, mockNotif, mockMedia)
+	uc := moderation.NewModerationUsecase(mockRepo, mockUserRepo, mockSongRepo, mockCommentRepo, mockNotif, mockMedia)
 
 	t.Run("Trigger Shadowban on TruthScore < 50", func(t *testing.T) {
 		reportID := uint64(10)

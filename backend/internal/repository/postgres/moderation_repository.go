@@ -23,8 +23,8 @@ func NewModerationRepository(db *sqlx.DB) domain.ModerationRepository {
 
 func (r *moderationRepository) CreateSongReport(ctx context.Context, report *domain.SongReport) error {
 	query := `
-		INSERT INTO song_reports (song_id, user_id, source, title, content, status, created_at, updated_at) 
-		VALUES (:song_id, :user_id, :source, :title, :content, false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		INSERT INTO song_reports (song_id, user_id, source, title, content, status, snapshot, created_at, updated_at) 
+		VALUES (:song_id, :user_id, :source, :title, :content, false, :snapshot, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 		RETURNING id
 	`
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
@@ -72,8 +72,8 @@ func (r *moderationRepository) GetSongReportsByUserAndSongIDs(ctx context.Contex
 
 func (r *moderationRepository) CreateCommentReport(ctx context.Context, report *domain.CommentReport) error {
 	query := `
-		INSERT INTO comment_reports (comment_id, user_id, source, title, content, status, created_at, updated_at) 
-		VALUES (:comment_id, :user_id, :source, :title, :content, false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		INSERT INTO comment_reports (comment_id, user_id, source, title, content, status, snapshot, created_at, updated_at) 
+		VALUES (:comment_id, :user_id, :source, :title, :content, false, :snapshot, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 		RETURNING id
 	`
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
@@ -379,7 +379,7 @@ func (r *moderationRepository) GetCommentReport(ctx context.Context, reportID ui
 	rep.Comment = &domain.Comment{
 		ID:      row.CommentID,
 		Content: row.CommentContent,
-			UserID:  row.CommentUserID,
+		UserID:  row.CommentUserID,
 	}
 
 	return &rep, nil
@@ -558,8 +558,8 @@ func (r *moderationRepository) DeleteUserRequest(ctx context.Context, requestID 
 
 func (r *moderationRepository) CreateUserReport(ctx context.Context, report *domain.UserReport) error {
 	query := `
-		INSERT INTO user_reports (reported_user_id, reporter_user_id, source, reason, content, status, created_at, updated_at) 
-		VALUES (:reported_user_id, :reporter_user_id, :source, :reason, :content, false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		INSERT INTO user_reports (reported_user_id, reporter_user_id, source, reason, content, status, snapshot, created_at, updated_at) 
+		VALUES (:reported_user_id, :reporter_user_id, :source, :reason, :content, false, :snapshot, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 		RETURNING id
 	`
 	stmt, err := r.db.PrepareNamedContext(ctx, query)

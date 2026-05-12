@@ -188,6 +188,7 @@ func ToSongMinimalDTO(s *domain.Song) SongMinimalDTO {
 		SongJP:         s.SongJP,
 		Slug:           s.Slug,
 		Type:           s.Type,
+		ThemeNum:       s.ThemeNum,
 		SongType:       songType,
 		Season:         seasonDTO,
 		Year:           yearDTO,

@@ -15,6 +15,7 @@ type SongMinimalDTO struct {
 	SongJP           *string       `json:"song_jp,omitempty"`
 	Slug             string        `json:"slug"`
 	Type             string        `json:"type"`
+	ThemeNum         string        `json:"theme_num"`
 	TypeID           string        `json:"type_id"`
 	SongType         *SongTypeDTO  `json:"song_type,omitempty"`
 	AverageRating    float64       `json:"average_rating"`

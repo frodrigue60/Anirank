@@ -464,15 +464,13 @@ func (u *ContentAdminUsecase) BatchFetchAnimes(ctx context.Context, season strin
 					defer wg.Done()
 					updated := false
 					if a.Cover == nil && m.CoverImage.ExtraLarge != "" {
-						options := infrastructure.ImageOptions{Width: 220, Format: "avif", Quality: 75}
-						if imgUrl, err := u.downloadAndStore(ctx, m.CoverImage.ExtraLarge, "animes/covers", uint64(m.ID), options); err == nil {
+						if imgUrl, err := u.downloadAndStore(ctx, m.CoverImage.ExtraLarge, "animes/covers", uint64(m.ID), infrastructure.PresetPoster); err == nil {
 							a.Cover = &imgUrl
 							updated = true
 						}
 					}
 					if a.Banner == nil && m.BannerImage != "" {
-						options := infrastructure.ImageOptions{Format: "avif", Quality: 75}
-						if imgUrl, err := u.downloadAndStore(ctx, m.BannerImage, "animes/banners", uint64(m.ID), options); err == nil {
+						if imgUrl, err := u.downloadAndStore(ctx, m.BannerImage, "animes/banners", uint64(m.ID), infrastructure.PresetLandscape); err == nil {
 							a.Banner = &imgUrl
 							updated = true
 						}
@@ -818,8 +816,7 @@ func (u *ContentAdminUsecase) ensureLocalImages(ctx context.Context, anime *doma
 			if id == 0 {
 				id = anime.ID
 			}
-			options := infrastructure.ImageOptions{Width: 220, Format: "avif", Quality: 75}
-			if imgUrl, err := u.downloadAndStore(ctx, preferredCover, "animes/covers", id, options); err == nil {
+			if imgUrl, err := u.downloadAndStore(ctx, preferredCover, "animes/covers", id, infrastructure.PresetPoster); err == nil {
 				anime.Cover = &imgUrl
 				updated = true
 			} else {
@@ -835,8 +832,7 @@ func (u *ContentAdminUsecase) ensureLocalImages(ctx context.Context, anime *doma
 			if id == 0 {
 				id = anime.ID
 			}
-			options := infrastructure.ImageOptions{Format: "avif", Quality: 75} // No resize for banners
-			if imgUrl, err := u.downloadAndStore(ctx, preferredBanner, "animes/banners", id, options); err == nil {
+			if imgUrl, err := u.downloadAndStore(ctx, preferredBanner, "animes/banners", id, infrastructure.PresetLandscape); err == nil {
 				anime.Banner = &imgUrl
 				updated = true
 			} else {
@@ -854,7 +850,7 @@ func (u *ContentAdminUsecase) ensureLocalImages(ctx context.Context, anime *doma
 	}
 }
 
-func (u *ContentAdminUsecase) downloadAndStore(ctx context.Context, url string, prefix string, id uint64, opts infrastructure.ImageOptions) (string, error) {
+func (u *ContentAdminUsecase) downloadAndStore(ctx context.Context, url string, prefix string, id uint64, preset infrastructure.ResolutionPreset) (string, error) {
 	if u.mediaService == nil {
 		return "", fmt.Errorf("no media service configured")
 	}
@@ -881,7 +877,7 @@ func (u *ContentAdminUsecase) downloadAndStore(ctx context.Context, url string, 
 		return "", err
 	}
 
-	path, _, err := u.mediaService.UploadImageOptimized(ctx, prefix, id, bytes.NewReader(buf), opts)
+	path, _, err := u.mediaService.UploadWithResolutions(ctx, prefix, id, bytes.NewReader(buf), preset)
 	return path, err
 }
 
@@ -1644,7 +1640,7 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 						Status:        true,
 						YearID:        yearObj.ID,
 						SeasonID:      seasonObj.ID,
-						AnimeThemesID: &atvID,
+						AnimeThemesID: &atID,
 						Episodes:      &episodes,
 						Spoiler:       entry.Spoiler,
 						NSFW:          entry.NSFW,
@@ -1739,9 +1735,7 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 				// Download avatar from AnimeThemes if available
 				avatarDownloaded := false
 				if atImage, ok := artistImagesMap[atArtID]; ok && atImage != "" && !u.isLocalImage(artist.Avatar) {
-					// Solo encode a avif (mantener el formato solicitado por el usuario, sin redimensionar ancho)
-					options := infrastructure.ImageOptions{Format: "avif", Quality: 85}
-					if imgUrl, err := u.downloadAndStore(ctx, atImage, "artists/avatars", artist.ID, options); err == nil {
+					if imgUrl, err := u.downloadAndStore(ctx, atImage, "artists/avatars", artist.ID, infrastructure.PresetSquare); err == nil {
 						artist.Avatar = &imgUrl
 						if err := u.artistRepo.Update(ctx, artist); err != nil {
 							fmt.Printf("[ERROR] Failed to update artist %d with AT avatar: %v\n", artist.ID, err)
@@ -2117,31 +2111,21 @@ func (u *ContentAdminUsecase) GenerateArtistAvatar(ctx context.Context, artistID
 		return err
 	}
 
-	// Bypassed AniList search per configuration
-	var avatarData []byte
-	var avatarSize int64
-	var avatarContentType string
-
 	// 2. Fallback Logic
-	if len(avatarData) == 0 {
-		// Fallback to avatar-ui (ui-avatars.com)
-		res, err := avatar.Generate(ctx, artist.Name, 180)
-		if err != nil {
-			return err
-		}
-		avatarData = res.Data
-		avatarSize = res.Size
-		avatarContentType = res.ContentType
+	res, err := avatar.Generate(ctx, artist.Name, 180)
+	if err != nil {
+		return err
 	}
+	avatarData := res.Data
 
-	// 3. Upload to S3
+	// 3. Upload to Storage
 	oldAvatar := artist.Avatar
-	_, url, err := u.mediaService.UploadImage(ctx, "artists/avatars", artistID, bytes.NewReader(avatarData), avatarSize, avatarContentType)
+	path, _, err := u.mediaService.UploadWithResolutions(ctx, "artists/avatars", artistID, bytes.NewReader(avatarData), infrastructure.PresetSquare)
 	if err != nil {
 		return err
 	}
 
-	if err := u.artistRepo.UpdateAvatar(ctx, artistID, url); err != nil {
+	if err := u.artistRepo.UpdateAvatar(ctx, artistID, path); err != nil {
 		return err
 	}
 
@@ -2262,13 +2246,14 @@ func (u *ContentAdminUsecase) BatchGenerateArtistAvatars(ctx context.Context, id
 				continue
 			}
 
-			_, url, err := u.mediaService.UploadImage(ctx, "artists/avatars", a.ID, bytes.NewReader(res.Data), res.Size, res.ContentType)
+			buf := bytes.NewReader(res.Data)
+			path, _, err := u.mediaService.UploadWithResolutions(ctx, "artists/avatars", a.ID, buf, infrastructure.PresetSquare)
 			if err != nil {
 				sendProgress(fmt.Sprintf("✗ [Upload] Failed %s: %v", a.Name, err))
 				continue
 			}
 
-			if err := u.artistRepo.UpdateAvatar(ctx, a.ID, url); err != nil {
+			if err := u.artistRepo.UpdateAvatar(ctx, a.ID, path); err != nil {
 				sendProgress(fmt.Sprintf("✗ [DB] Failed to update avatar for %s: %v", a.Name, err))
 				continue
 			}
@@ -2859,8 +2844,7 @@ func (u *ContentAdminUsecase) SyncArtistAvatar(ctx context.Context, id uint64, m
 				if len(staffs) > 0 && staffs[0].Image.Large != "" {
 					img := staffs[0].Image.Large
 					if !strings.Contains(img, "default.jpg") {
-						options := infrastructure.ImageOptions{Format: "avif", Quality: 85}
-						imgUrl, err := u.downloadAndStore(ctx, img, "artists/avatars", artist.ID, options)
+						imgUrl, err := u.downloadAndStore(ctx, img, "artists/avatars", artist.ID, infrastructure.PresetSquare)
 						if err == nil {
 							newAvatarURL = imgUrl
 							avatarDownloaded = true
@@ -2893,8 +2877,7 @@ func (u *ContentAdminUsecase) SyncArtistAvatar(ctx context.Context, id uint64, m
 					if match {
 						img := st.Image.Large
 						if img != "" && !strings.Contains(img, "default.jpg") {
-							options := infrastructure.ImageOptions{Format: "avif", Quality: 85}
-							imgUrl, err := u.downloadAndStore(ctx, img, "artists/avatars", artist.ID, options)
+							imgUrl, err := u.downloadAndStore(ctx, img, "artists/avatars", artist.ID, infrastructure.PresetSquare)
 							if err == nil {
 								newAvatarURL = imgUrl
 								avatarDownloaded = true
@@ -2934,8 +2917,7 @@ func (u *ContentAdminUsecase) SyncArtistAvatar(ctx context.Context, id uint64, m
 				}
 
 				if atImage != "" {
-					options := infrastructure.ImageOptions{Format: "avif", Quality: 85}
-					imgUrl, err := u.downloadAndStore(ctx, atImage, "artists/avatars", artist.ID, options)
+					imgUrl, err := u.downloadAndStore(ctx, atImage, "artists/avatars", artist.ID, infrastructure.PresetSquare)
 					if err == nil {
 						newAvatarURL = imgUrl
 						avatarDownloaded = true

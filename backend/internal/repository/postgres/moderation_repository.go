@@ -105,12 +105,13 @@ func (r *moderationRepository) GetSongReports(ctx context.Context, status *bool,
 		SELECT r.*, 
 		       u.id as "user.id", u.name as "user.name", u.slug as "user.slug",
 		       u.truth_score as "user.truth_score", u.is_shadowbanned as "user.is_shadowbanned",
-		       s.id as "song.id", s.slug as "song.slug", s.song_romaji as "song.song_romaji",
+		       s.id as "song.id", (st.slug || s.theme_num) as "song.slug", s.song_romaji as "song.song_romaji",
 		       s.song_en as "song.song_en", s.song_jp as "song.song_jp",
 		       a.id as "anime.id", a.slug as "anime.slug", a.title as "anime.title"
 		FROM song_reports r
 		JOIN users u ON r.user_id = u.id
 		JOIN songs s ON r.song_id = s.id
+		JOIN song_types st ON s.type_id = st.id
 		LEFT JOIN animes a ON s.anime_id = a.id
 		WHERE 1=1
 	`
@@ -191,12 +192,13 @@ func (r *moderationRepository) GetSongReport(ctx context.Context, reportID uint6
 		SELECT r.*, 
 		       u.id as "user.id", u.name as "user.name", u.slug as "user.slug",
 		       u.truth_score as "user.truth_score", u.is_shadowbanned as "user.is_shadowbanned",
-		       s.id as "song.id", s.slug as "song.slug", s.song_romaji as "song.song_romaji",
+		       s.id as "song.id", (st.slug || s.theme_num) as "song.slug", s.song_romaji as "song.song_romaji",
 		       s.song_en as "song.song_en", s.song_jp as "song.song_jp",
 		       a.id as "anime.id", a.slug as "anime.slug", a.title as "anime.title"
 		FROM song_reports r
 		JOIN users u ON r.user_id = u.id
 		JOIN songs s ON r.song_id = s.id
+		JOIN song_types st ON s.type_id = st.id
 		LEFT JOIN animes a ON s.anime_id = a.id
 		WHERE r.id = $1
 	`

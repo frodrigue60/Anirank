@@ -191,15 +191,14 @@ func (u *AuthUsecase) GenerateUserAvatar(ctx context.Context, userID uint64, nam
 	}
 
 	buf := bytes.NewReader(res.Data)
-	filename := fmt.Sprintf("users/avatars/%d_%s.avif", userID, uuid.New().String())
 
-	_, err = u.storage.UploadFile(ctx, filename, buf, res.Size, res.ContentType)
+	path, _, err := u.media.UploadWithResolutions(ctx, "users/avatars", userID, buf, infrastructure.PresetSquare)
 	if err != nil {
 		log.Printf("ERROR: failed to upload generated avatar for user %d: %v", userID, err)
 		return
 	}
 
-	if err := u.userRepo.SetImage(ctx, userID, "avatar", filename); err != nil {
+	if err := u.userRepo.SetImage(ctx, userID, "avatar", path); err != nil {
 		log.Printf("ERROR: failed to save user avatar reference in DB for user %d: %v", userID, err)
 	}
 }

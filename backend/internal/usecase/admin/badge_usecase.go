@@ -1,15 +1,12 @@
 package admin
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"anirank/api/internal/domain"
 	"anirank/api/internal/infrastructure"
-	"anirank/api/internal/pkg/imageutil"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -119,44 +116,26 @@ func (u *BadgeUsecase) HandleBadgeIcon(c *fiber.Ctx, badge *domain.Badge) error 
 		}
 		defer f.Close()
 
-		// 1. Decode image
-		img, _, err := imageutil.Decode(f)
+		// Use MediaService with Square preset (256x256 base, with sm 128x128 variant)
+		path, _, err := u.mediaService.UploadWithResolutions(c.Context(), "badges", badge.ID, f, infrastructure.PresetSquare)
 		if err != nil {
-			return fmt.Errorf("failed to decode image: %w", err)
+			return fmt.Errorf("failed to upload badge icon: %w", err)
 		}
 
-		// 2. Resize to standard badge size (128x128)
-		processedImg := imageutil.Fill(img, 128, 128)
-
-		// 3. Encode to AVIF
-		avifData, err := imageutil.EncodeAVIF(processedImg, 80)
-		if err != nil {
-			return fmt.Errorf("failed to encode to avif: %w", err)
+		// Update icon in DB
+		if err := u.repo.UpdateIcon(c.Context(), badge.ID, path); err != nil {
+			return fmt.Errorf("failed to update badge icon in DB: %w", err)
 		}
-
-		// 4. Prepare path and storage
-		path := fmt.Sprintf("badges/%s-%d.avif", time.Now().Format("20060102150405"), badge.ID)
-		
-		// Delete old if exists
-		if badge.Icon != nil && *badge.Icon != "" {
-			_ = u.storage.DeleteFile(c.Context(), *badge.Icon)
-		}
-
-		// Upload processed data
-		reader := bytes.NewReader(avifData)
-		if _, err := u.storage.UploadFile(c.Context(), path, reader, int64(len(avifData)), "image/avif"); err == nil {
-			// Update icon in DB
-			_ = u.repo.UpdateIcon(c.Context(), badge.ID, path)
-			badge.Icon = &path
-		}
+		badge.Icon = &path
 	}
 	return nil
 }
 
 func (u *BadgeUsecase) ResolveBadgeURL(badge *domain.Badge) {
 	if badge.Icon != nil && *badge.Icon != "" {
-		url := u.storage.GetURL(*badge.Icon)
+		url := u.mediaService.GetURL(*badge.Icon)
 		badge.IconUrl = &url
+		badge.IconSources = u.mediaService.GetImageSources(*badge.Icon)
 	}
 }
 

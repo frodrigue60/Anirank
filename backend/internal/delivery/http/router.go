@@ -376,6 +376,9 @@ func SetupPublicRoutes(app *fiber.App,
 	adminOnly.Patch("/variants/:id<int>/nsfw", middleware.HasPermissionMiddleware("song.edit", userRepo), adminHandler.ToggleVariantNSFW)
 	adminOnly.Delete("/variants/:id<int>", middleware.HasPermissionMiddleware("song.delete", userRepo), adminHandler.DeleteVariant)
 
+	// Admin Init Data (Taxonomies with numeric IDs)
+	adminOnly.Get("/init", adminHandler.GetInitData)
+
 	// Artist Operations
 	adminOnly.Get("/artists", adminHandler.GetArtists)
 	adminOnly.Get("/artists/:id", adminHandler.GetArtist)

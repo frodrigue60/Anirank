@@ -126,11 +126,11 @@ func TestToSongMappers(t *testing.T) {
 		if dto.AnimeID != animeUUID {
 			t.Errorf("Expected AnimeID UUID %s, got %s", animeUUID, dto.AnimeID)
 		}
-		if dto.YearID != "55555" {
-			t.Errorf("Expected YearID 55555, got %s", dto.YearID)
+		if dto.YearID != "year-uuid-1" {
+			t.Errorf("Expected YearID year-uuid-1, got %s", dto.YearID)
 		}
-		if dto.TypeID != "44444" {
-			t.Errorf("Expected TypeID 44444, got %s", dto.TypeID)
+		if dto.TypeID != "type-uuid-1" {
+			t.Errorf("Expected TypeID type-uuid-1, got %s", dto.TypeID)
 		}
 		testutil.AssertNoInternalIDs(t, dto, forbiddenID)
 		testutil.AssertNoInternalIDs(t, dto, animeID)
@@ -211,10 +211,10 @@ func TestToAnimeMappers(t *testing.T) {
 
 	t.Run("ToAnimeMinimalDTO", func(t *testing.T) {
 		dto := ToAnimeMinimalDTO(anime)
-		if dto.Year == nil || dto.Year.ID != "111" {
+		if dto.Year == nil || dto.Year.ID != "year-uuid-anime" {
 			t.Errorf("Year ID not mapped correctly, got %v", dto.Year.ID)
 		}
-		if dto.Season == nil || dto.Season.ID != "222" {
+		if dto.Season == nil || dto.Season.ID != "season-uuid-anime" {
 			t.Errorf("Season ID not mapped correctly, got %v", dto.Season.ID)
 		}
 		testutil.AssertNoInternalIDs(t, dto, forbiddenID)
@@ -222,10 +222,10 @@ func TestToAnimeMappers(t *testing.T) {
 
 	t.Run("ToAnimeDTO", func(t *testing.T) {
 		dto := ToAnimeDTO(anime)
-		if len(dto.Genres) != 1 || dto.Genres[0].ID != "333" {
+		if len(dto.Genres) != 1 || dto.Genres[0].ID != genreUUID {
 			t.Errorf("Genre ID not mapped correctly")
 		}
-		if len(dto.Studios) != 1 || dto.Studios[0].ID != "77777" {
+		if len(dto.Studios) != 1 || dto.Studios[0].ID != studioUUID {
 			t.Errorf("Studio ID not mapped correctly")
 		}
 		if len(dto.ExternalLinks) != 1 || dto.ExternalLinks[0].ID != "link-uuid-1" {

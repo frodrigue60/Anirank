@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
+	"reflect"
 )
 
 type AdminHandler struct {
@@ -1067,6 +1068,66 @@ func (h *AdminHandler) GetSongTypes(c *fiber.Ctx) error {
 		return err
 	}
 	return c.JSON(fiber.Map{"data": types})
+}
+
+func (h *AdminHandler) GetInitData(c *fiber.Ctx) error {
+	ctx := c.Context()
+
+	years, _ := h.usecase.GetYears(ctx)
+	seasons, _ := h.usecase.GetSeasons(ctx)
+	formats, _ := h.usecase.GetFormats(ctx)
+	genres, _ := h.usecase.SearchGenres(ctx, "", 0)
+	songTypes, _ := h.usecase.GetSongTypes(ctx)
+
+	mapTaxonomy := func(items interface{}) []fiber.Map {
+		v := reflect.ValueOf(items)
+		if v.Kind() != reflect.Slice {
+			return []fiber.Map{}
+		}
+		res := make([]fiber.Map, v.Len())
+		for i := 0; i < v.Len(); i++ {
+			item := v.Index(i)
+			if item.Kind() == reflect.Ptr {
+				item = item.Elem()
+			}
+			
+			// Helper to get value from field or pointer to field
+			getVal := func(fieldName string) string {
+				f := item.FieldByName(fieldName)
+				if !f.IsValid() {
+					return ""
+				}
+				if f.Kind() == reflect.Ptr {
+					if f.IsNil() {
+						return ""
+					}
+					f = f.Elem()
+				}
+				
+				if f.Kind() == reflect.Uint64 {
+					return strconv.FormatUint(f.Uint(), 10)
+				}
+				return f.String()
+			}
+
+			res[i] = fiber.Map{
+				"id":   getVal("ID"),
+				"name": getVal("Name"),
+				"slug": getVal("Slug"),
+			}
+		}
+		return res
+	}
+
+	return c.JSON(fiber.Map{
+		"data": fiber.Map{
+			"years":      mapTaxonomy(years),
+			"seasons":    mapTaxonomy(seasons),
+			"formats":    mapTaxonomy(formats),
+			"genres":     mapTaxonomy(genres),
+			"song_types": mapTaxonomy(songTypes),
+		},
+	})
 }
 
 func (h *AdminHandler) CreateYear(c *fiber.Ctx) error {

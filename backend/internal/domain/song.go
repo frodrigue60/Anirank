@@ -220,7 +220,7 @@ type ArtistRepository interface {
 
 	// Merging
 	MergeDuplicateArtists(ctx context.Context, progress chan<- string) error
-	RecountArtistStats(ctx context.Context, artistID *uint64) error
+	RecountArtistStats(ctx context.Context, ids []uint64) error
 
 	// Sitemap
 	GetPublicSlugs(ctx context.Context) ([]SitemapItem, error)

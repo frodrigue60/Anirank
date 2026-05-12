@@ -287,8 +287,8 @@ func (u *AdminUsecase) SyncArtistAvatar(ctx context.Context, id uint64, meta dom
 	return u.contentAdmin.SyncArtistAvatar(ctx, id, meta)
 }
 
-func (u *AdminUsecase) RecountArtistStats(ctx context.Context, artistID *uint64, progress chan<- string) error {
-	return u.contentAdmin.RecountArtistStats(ctx, artistID, progress)
+func (u *AdminUsecase) RecountArtistStats(ctx context.Context, ids []uint64, progress chan<- string) error {
+	return u.contentAdmin.RecountArtistStats(ctx, ids, progress)
 }
 
 func (u *AdminUsecase) UpdateArtist(ctx context.Context, a *domain.Artist, meta domain.AuditMetadata) error {

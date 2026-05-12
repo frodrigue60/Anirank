@@ -785,16 +785,16 @@ func (r *animeRepository) UpdateExternalLinks(ctx context.Context, animeID uint6
 	return tx.Commit()
 }
 
-func (r *animeRepository) RecountAnimeStats(ctx context.Context, animeID *uint64) error {
+func (r *animeRepository) RecountAnimeStats(ctx context.Context, ids []uint64) error {
 	query := `
 		UPDATE animes 
 		SET 
 			enabled_songs = (SELECT COUNT(*) FROM songs s WHERE s.anime_id = animes.id AND s.status = true),
 			disabled_songs = (SELECT COUNT(*) FROM songs s WHERE s.anime_id = animes.id AND s.status = false),
 			songs_count = (SELECT COUNT(*) FROM songs s WHERE s.anime_id = animes.id)
-		WHERE ($1::bigint IS NULL OR id = $1)
+		WHERE ($1::bigint[] IS NULL OR id = ANY($1))
 	`
-	_, err := r.db.ExecContext(ctx, query, animeID)
+	_, err := r.db.ExecContext(ctx, query, ids)
 	return err
 }
 

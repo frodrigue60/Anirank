@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"regexp"
 	"strings"
 	"sync"
@@ -638,7 +639,7 @@ func (u *ContentAdminUsecase) SyncAnimeWithAnilist(ctx context.Context, anime *d
 		}
 	}
 	if err := u.animeRepo.UpdateGenres(ctx, anime.ID, genreIDs); err != nil {
-		fmt.Printf("[ERROR] Failed to update genres for anime %d: %v\n", anime.ID, err)
+		log.Printf("[ERROR] Failed to update genres for anime %d: %v\n", anime.ID, err)
 	}
 
 	// 2. Sync Studios & Producers
@@ -670,12 +671,12 @@ func (u *ContentAdminUsecase) SyncAnimeWithAnilist(ctx context.Context, anime *d
 		}
 	}
 	if err := u.animeRepo.UpdateStudios(ctx, anime.ID, studioIDs); err != nil {
-		fmt.Printf("[ERROR] Failed to update studios for anime %d: %v\n", anime.ID, err)
+		log.Printf("[ERROR] Failed to update studios for anime %d: %v\n", anime.ID, err)
 	}
 	if err := u.animeRepo.UpdateProducers(ctx, anime.ID, producerIDs); err != nil {
-		fmt.Printf("[ERROR] Failed to update producers for anime %d: %v\n", anime.ID, err)
+		log.Printf("[ERROR] Failed to update producers for anime %d: %v\n", anime.ID, err)
 	}
-	fmt.Printf("[INFO] Synced %d studios and %d producers for anime %d\n", len(studioIDs), len(producerIDs), anime.ID)
+	log.Printf("[INFO] Synced %d studios and %d producers for anime %d\n", len(studioIDs), len(producerIDs), anime.ID)
 
 	// 3. Sync External Links
 	if len(alData.ExternalLinks) > 0 {
@@ -688,7 +689,7 @@ func (u *ContentAdminUsecase) SyncAnimeWithAnilist(ctx context.Context, anime *d
 			})
 		}
 		if err := u.animeRepo.UpdateExternalLinks(ctx, anime.ID, links); err != nil {
-			fmt.Printf("[ERROR] Failed to update external links for anime %d: %v\n", anime.ID, err)
+			log.Printf("[ERROR] Failed to update external links for anime %d: %v\n", anime.ID, err)
 		}
 	}
 
@@ -800,7 +801,7 @@ func (u *ContentAdminUsecase) SyncArtistsFromString(ctx context.Context, songID 
 		// Recount for affected artists
 		for _, id := range artistIDs {
 			artistID := id
-			_ = u.artistRepo.RecountArtistStats(ctx, &artistID)
+			_ = u.artistRepo.RecountArtistStats(ctx, []uint64{artistID})
 		}
 		return nil
 	}
@@ -848,7 +849,7 @@ func (u *ContentAdminUsecase) ensureLocalImages(ctx context.Context, anime *doma
 		if err := u.animeRepo.Update(ctx, anime); err != nil {
 			fmt.Printf("[ERROR] Failed to save local image paths for anime %d: %v\n", anime.ID, err)
 		} else {
-			fmt.Printf("[INFO] Successfully saved local image paths for anime %d\n", anime.ID)
+			log.Printf("[INFO] Successfully saved local image paths for anime %d\n", anime.ID)
 		}
 	}
 }
@@ -1072,7 +1073,7 @@ func (u *ContentAdminUsecase) HydrateAnimeThemes(ctx context.Context, ids []uint
 
 		dResp, err := client.Get(detailUrl)
 		if err != nil {
-			fmt.Printf("[ERROR] Failed to deep-fetch slug %s: %v\n", a.Slug, err)
+			log.Printf("[ERROR] Failed to deep-fetch slug %s: %v\n", a.Slug, err)
 			continue
 		}
 
@@ -1101,10 +1102,11 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 	totalAnime := len(animeList)
 	sendProgress(fmt.Sprintf("Found %d animes. Collecting IDs for enrichment...", totalAnime))
 
-	fmt.Printf("[INFO] Starting sync of %d animes from AnimeThemes...\n", totalAnime)
+	log.Printf("[INFO] Starting sync of %d animes from AnimeThemes...\n", totalAnime)
 	var createdCount, updatedCount, skippedCount int
 
 	allProcessedArtistIDs := make(map[uint64]bool)
+	allProcessedAnimeIDs := make(map[uint64]bool)
 
 	// --- Phase 1: ID Collection ---
 	uniqueAlIDs := make(map[int64]bool)
@@ -1156,7 +1158,7 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 			medias, err := u.anilistClient.GetMediaByIDs(ctx, chunk)
 			if err != nil {
 				errMsg := fmt.Sprintf("[ERROR] AniList batch fetch failed: %v", err)
-				fmt.Println(errMsg)
+				log.Println(errMsg)
 				sendProgress(errMsg)
 			} else {
 				for _, m := range medias {
@@ -1217,11 +1219,11 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 						}
 					}
 				} else {
-					fmt.Printf("[ERROR] Failed to decode artist batch response: %v\n", err)
+					log.Printf("[ERROR] Failed to decode artist batch response: %v\n", err)
 				}
 				aResp.Body.Close()
 			} else {
-				fmt.Printf("[ERROR] Artist batch fetch failed: %v\n", err)
+				log.Printf("[ERROR] Artist batch fetch failed: %v\n", err)
 			}
 			if end < len(artistIDs) {
 				time.Sleep(500 * time.Millisecond)
@@ -1239,7 +1241,7 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 
 	// --- Phase 3: Processing ---
 	for i, a := range animeList {
-		fmt.Printf("[%d/%d] [INFO] Processing Anime: %s (atID: %d)\n", i+1, totalAnime, a.Name, a.ID)
+		log.Printf("[%d/%d] [INFO] Processing Anime: %s (atID: %d)\n", i+1, totalAnime, a.Name, a.ID)
 		sendProgress(fmt.Sprintf("[%d/%d] Processing: %s", i+1, totalAnime, a.Name))
 		// 1. Resolve Taxonomies
 		var yearObj *domain.Year
@@ -1251,7 +1253,7 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 		}
 		if err != nil || yearObj == nil {
 			msg := fmt.Sprintf("[SKIP] %s: Year %v not found and creation not allowed/failed. Err: %v", a.Name, a.Year, err)
-			fmt.Println(msg)
+			log.Println(msg)
 			sendProgress(msg)
 			skippedCount++
 			continue
@@ -1266,7 +1268,7 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 		}
 		if err != nil || seasonObj == nil {
 			msg := fmt.Sprintf("[SKIP] %s: Season %s not found and creation not allowed/failed. Err: %v", a.Name, a.Season, err)
-			fmt.Println(msg)
+			log.Println(msg)
 			sendProgress(msg)
 			skippedCount++
 			continue
@@ -1283,7 +1285,7 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 		}
 		if err != nil || formatObj == nil {
 			msg := fmt.Sprintf("[SKIP] %s: Format %s not found and creation not allowed/failed. Err: %v", a.Name, a.MediaFormat, err)
-			fmt.Println(msg)
+			log.Println(msg)
 			sendProgress(msg)
 			skippedCount++
 			continue
@@ -1336,7 +1338,7 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 				a.Synopsis = alData.Description
 			}
 		} else if anilistID > 0 {
-			fmt.Printf("[WARN] AniList data missing in batch for ID %d (Anime: %s)\n", anilistID, a.Name)
+			log.Printf("[WARN] AniList data missing in batch for ID %d (Anime: %s)\n", anilistID, a.Name)
 		}
 
 		coverUrl := ""
@@ -1398,11 +1400,12 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 			err := u.animeRepo.Update(ctx, anime)
 			if err != nil {
 				errMsg := fmt.Sprintf("[ERROR] Failed to update anime %d (%s): %v", anime.ID, anime.Title, err)
-				fmt.Println(errMsg)
+				log.Println(errMsg)
 				sendProgress(errMsg)
 				skippedCount++
 			} else {
 				updatedCount++
+				allProcessedAnimeIDs[anime.ID] = true
 			}
 			_ = u.auditUsecase.LogActions(ctx, meta.ActorID, "hydrated_update", anime.ID, "anime", nil, anime, &meta.URL, &meta.IPAddress, &meta.UserAgent)
 			go u.ensureLocalImages(context.Background(), anime, coverUrl, bannerUrl, anilistID)
@@ -1429,12 +1432,13 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 
 			if err := u.animeRepo.Create(ctx, anime); err != nil {
 				errMsg := fmt.Sprintf("[ERROR] Failed to create anime %s: %v", anime.Title, err)
-				fmt.Println(errMsg)
+				log.Println(errMsg)
 				sendProgress(errMsg)
 				skippedCount++
 				continue
 			}
 			createdCount++
+			allProcessedAnimeIDs[anime.ID] = true
 			_ = u.auditUsecase.LogActions(ctx, meta.ActorID, "hydrated_create", anime.ID, "anime", nil, anime, &meta.URL, &meta.IPAddress, &meta.UserAgent)
 			go u.ensureLocalImages(context.Background(), anime, coverUrl, bannerUrl, anilistID)
 		}
@@ -1770,26 +1774,46 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 
 	// Phase 4: Generate Artist Avatars for all processed artists
 	if len(allProcessedArtistIDs) > 0 {
+		log.Printf("[PHASE] Starting avatar generation for %d artists...\n", len(allProcessedArtistIDs))
 		sendProgress(fmt.Sprintf("Syncing avatars for %d artists...", len(allProcessedArtistIDs)))
 		ids := make([]uint64, 0, len(allProcessedArtistIDs))
 		for id := range allProcessedArtistIDs {
 			ids = append(ids, id)
 		}
 		if err := u.BatchGenerateArtistAvatars(ctx, ids, progress); err != nil {
-			fmt.Printf("[ERROR] Batch avatar generation failed: %v\n", err)
+			log.Printf("[ERROR] Batch avatar generation failed: %v\n", err)
+		}
+		log.Printf("[PHASE] Avatar generation completed.\n")
+	}
+
+	// Recount only affected stats for performance
+	log.Printf("[PHASE] Starting targeted stats recount for %d animes and %d artists...\n", len(allProcessedAnimeIDs), len(allProcessedArtistIDs))
+	recountStart := time.Now()
+
+	artistIDs := make([]uint64, 0, len(allProcessedArtistIDs))
+	for id := range allProcessedArtistIDs {
+		artistIDs = append(artistIDs, id)
+	}
+	animeIDs := make([]uint64, 0, len(allProcessedAnimeIDs))
+	for id := range allProcessedAnimeIDs {
+		animeIDs = append(animeIDs, id)
+	}
+
+	if len(artistIDs) > 0 {
+		if err := u.artistRepo.RecountArtistStats(ctx, artistIDs); err != nil {
+			log.Printf("[ERROR] Artist stats recount failed: %v\n", err)
+		}
+	}
+	if len(animeIDs) > 0 {
+		if err := u.animeRepo.RecountAnimeStats(ctx, animeIDs); err != nil {
+			log.Printf("[ERROR] Anime stats recount failed: %v\n", err)
 		}
 	}
 
-	// Recount all stats once after batch processing for accuracy
-	if err := u.artistRepo.RecountArtistStats(ctx, nil); err != nil {
-		fmt.Printf("[ERROR] Artist stats recount failed: %v\n", err)
-	}
-	if err := u.animeRepo.RecountAnimeStats(ctx, nil); err != nil {
-		fmt.Printf("[ERROR] Anime stats recount failed: %v\n", err)
-	}
+	log.Printf("[PHASE] Targeted stats recount completed in %v\n", time.Since(recountStart))
 
 	summary := fmt.Sprintf("Hydration completed! Created: %d, Updated: %d, Skipped: %d", createdCount, updatedCount, skippedCount)
-	fmt.Printf("[SUCCESS] %s\n", summary)
+	log.Printf("[SUCCESS] %s\n", summary)
 	sendProgress(summary)
 	return nil
 }
@@ -2006,15 +2030,16 @@ func (u *ContentAdminUsecase) SyncSongArtists(ctx context.Context, songID uint64
 	}
 
 	// Recount stats for each artist to update enabled/disabled counters
+	_ = u.artistRepo.RecountArtistStats(ctx, artistIDs)
 	for _, id := range artistIDs {
-		artistID := id
-		_ = u.artistRepo.RecountArtistStats(ctx, &artistID)
 		_ = u.GenerateArtistAvatar(ctx, id, false)
 	}
 
 	// Also recount for the anime associated with the song
 	if song, err := u.songRepo.GetByID(ctx, songID); err == nil && song != nil {
-		_ = u.animeRepo.RecountAnimeStats(ctx, &song.AnimeID)
+		if song.AnimeID > 0 {
+			_ = u.animeRepo.RecountAnimeStats(ctx, []uint64{song.AnimeID})
+		}
 	}
 
 	return nil
@@ -2248,13 +2273,25 @@ func (u *ContentAdminUsecase) BatchGenerateArtistAvatars(ctx context.Context, id
 				continue
 			}
 			sendProgress(fmt.Sprintf("[%d/%d] ✓ [Avatar-UI] Generated placeholder: %s", i+1, len(stillMissing), a.Name))
-
-			// Small delay for avatar-ui fallback to be safe
-			time.Sleep(500 * time.Millisecond)
 		}
 	}
 
 	sendProgress("Batch generation completed successfully!")
+	return nil
+}
+
+func (u *ContentAdminUsecase) RecountArtistStats(ctx context.Context, ids []uint64, progress chan<- string) error {
+	sendProgress := func(msg string) {
+		if progress != nil {
+			progress <- msg
+		}
+	}
+
+	sendProgress("Starting manual recount of artist stats...")
+	if err := u.artistRepo.RecountArtistStats(ctx, ids); err != nil {
+		return err
+	}
+	sendProgress("Recalculation complete!")
 	return nil
 }
 
@@ -2799,27 +2836,6 @@ func (u *ContentAdminUsecase) ToggleVariantNSFW(ctx context.Context, id uint64, 
 	return nil
 }
 
-func (u *ContentAdminUsecase) RecountArtistStats(ctx context.Context, artistID *uint64, progress chan<- string) error {
-	sendProgress := func(msg string) {
-		if progress != nil {
-			progress <- msg
-		}
-	}
-
-	if artistID != nil {
-		sendProgress(fmt.Sprintf("Recalculating statistics for artist ID %d...", *artistID))
-	} else {
-		sendProgress("Recalculating statistics for ALL artists...")
-	}
-
-	if err := u.artistRepo.RecountArtistStats(ctx, artistID); err != nil {
-		sendProgress(fmt.Sprintf("Error: %v", err))
-		return err
-	}
-
-	sendProgress("Recalculation complete!")
-	return nil
-}
 
 func (u *ContentAdminUsecase) SyncArtistAvatar(ctx context.Context, id uint64, meta domain.AuditMetadata) (*domain.Artist, error) {
 	artist, err := u.artistRepo.GetByID(ctx, id)

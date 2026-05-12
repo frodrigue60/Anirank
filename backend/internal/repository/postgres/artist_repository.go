@@ -519,7 +519,7 @@ func (r *artistRepository) MergeDuplicateArtists(ctx context.Context, progress c
 	return nil
 }
 
-func (r *artistRepository) RecountArtistStats(ctx context.Context, artistID *uint64) error {
+func (r *artistRepository) RecountArtistStats(ctx context.Context, ids []uint64) error {
 	// 1. Recount enabled songs
 	enabledQuery := `
 		UPDATE artists SET enabled_songs = sub.cnt
@@ -528,12 +528,12 @@ func (r *artistRepository) RecountArtistStats(ctx context.Context, artistID *uin
 			FROM artists a
 			LEFT JOIN artist_song asng ON asng.artist_id = a.id
 			LEFT JOIN songs s ON s.id = asng.song_id AND s.status = true
-			WHERE ($1::bigint IS NULL OR a.id = $1)
+			WHERE ($1::bigint[] IS NULL OR a.id = ANY($1))
 			GROUP BY a.id
 		) sub
-		WHERE artists.id = sub.id AND ($1::bigint IS NULL OR artists.id = $1)
+		WHERE artists.id = sub.id AND ($1::bigint[] IS NULL OR artists.id = ANY($1))
 	`
-	_, err := r.db.ExecContext(ctx, enabledQuery, artistID)
+	_, err := r.db.ExecContext(ctx, enabledQuery, ids)
 	if err != nil {
 		return fmt.Errorf("failed to recount enabled songs: %w", err)
 	}
@@ -546,22 +546,29 @@ func (r *artistRepository) RecountArtistStats(ctx context.Context, artistID *uin
 			FROM artists a
 			LEFT JOIN artist_song asng ON asng.artist_id = a.id
 			LEFT JOIN songs s ON s.id = asng.song_id AND s.status = false
-			WHERE ($1::bigint IS NULL OR a.id = $1)
+			WHERE ($1::bigint[] IS NULL OR a.id = ANY($1))
 			GROUP BY a.id
 		) sub
-		WHERE artists.id = sub.id AND ($1::bigint IS NULL OR artists.id = $1)
+		WHERE artists.id = sub.id AND ($1::bigint[] IS NULL OR artists.id = ANY($1))
 	`
-	_, err = r.db.ExecContext(ctx, disabledQuery, artistID)
+	_, err = r.db.ExecContext(ctx, disabledQuery, ids)
 	if err != nil {
 		return fmt.Errorf("failed to recount disabled songs: %w", err)
 	}
 
 	// 3. Recount favorites_count
 	favQuery := `
-		UPDATE artists SET favorites_count = (SELECT COUNT(*) FROM artist_user WHERE artist_id = artists.id)
-		WHERE ($1::bigint IS NULL OR id = $1)
+		UPDATE artists SET favorites_count = sub.cnt
+		FROM (
+			SELECT a.id, COALESCE(COUNT(f.user_id), 0) AS cnt
+			FROM artists a
+			LEFT JOIN artist_user f ON f.artist_id = a.id
+			WHERE ($1::bigint[] IS NULL OR a.id = ANY($1))
+			GROUP BY a.id
+		) sub
+		WHERE artists.id = sub.id AND ($1::bigint[] IS NULL OR artists.id = ANY($1))
 	`
-	_, err = r.db.ExecContext(ctx, favQuery, artistID)
+	_, err = r.db.ExecContext(ctx, favQuery, ids)
 	if err != nil {
 		return fmt.Errorf("failed to recount favorites: %w", err)
 	}

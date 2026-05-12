@@ -179,7 +179,7 @@ type AnimeRepository interface {
 	UpdateGenres(ctx context.Context, animeID uint64, genreIDs []uint64) error
 	UpdateProducers(ctx context.Context, animeID uint64, producerIDs []uint64) error
 	UpdateExternalLinks(ctx context.Context, animeID uint64, links []ExternalLink) error
-	RecountAnimeStats(ctx context.Context, animeID *uint64) error
+	RecountAnimeStats(ctx context.Context, ids []uint64) error
 	BatchDelete(ctx context.Context, ids []uint64) error
 
 	// Sitemap

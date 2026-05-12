@@ -18,8 +18,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 		"form-action 'self'",
 		"frame-ancestors 'none'",
 		"upgrade-insecure-requests",
-		"trusted-types svelte-trusted-html 'allow-duplicates'",
-		"require-trusted-types-for 'script'"
+		"trusted-types svelte-trusted-html 'allow-duplicates'"
 	].join('; ');
 
 	response.headers.set('Content-Security-Policy', csp);

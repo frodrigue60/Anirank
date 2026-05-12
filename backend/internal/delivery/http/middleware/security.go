@@ -29,8 +29,7 @@ func SecurityHeaders() fiber.Handler {
 			"form-action 'self'; " +
 			"frame-ancestors 'none'; " +
 			"upgrade-insecure-requests; " +
-			"trusted-types svelte-trusted-html 'allow-duplicates'; " +
-			"require-trusted-types-for 'script';"
+			"trusted-types svelte-trusted-html 'allow-duplicates';"
 
 		c.Set("Content-Security-Policy", csp)
 

@@ -212,7 +212,7 @@
     <div class="overflow-x-auto">
       <table class="w-full text-left border-collapse">
         <thead>
-          <tr class="bg-zinc-950/50 border-b border-zinc-800">
+          <tr class="bg-zinc-950/50 border-b border-zinc-800 hidden md:table-row">
             <th
               class="px-6 py-4 text-xs font-bold text-zinc-400 uppercase tracking-widest"
               >ID</th
@@ -220,6 +220,10 @@
             <th
               class="px-6 py-4 text-xs font-bold text-zinc-400 uppercase tracking-widest"
               >Variant Slug</th
+            >
+            <th
+              class="px-6 py-4 text-xs font-bold text-zinc-400 uppercase tracking-widest"
+              >Episodes</th
             >
             <th
               class="px-6 py-4 text-xs font-bold text-zinc-400 uppercase tracking-widest"
@@ -245,11 +249,15 @@
         </thead>
         <tbody class="divide-y divide-zinc-800/50">
           {#each variants as variant (variant.id)}
-            <tr class="hover:bg-zinc-800/30 transition-colors group">
-              <td class="px-6 py-4 text-sm font-mono text-zinc-500"
-                >#{variant.id}</td
-              >
-              <td class="px-6 py-4">
+            <tr class="hover:bg-zinc-800/30 transition-colors group flex flex-col md:table-row p-4 md:p-0">
+              <!-- Row 1 (Mobile) / Cell 1 (Desktop) -->
+              <td class="px-2 md:px-6 py-2 md:py-4 text-sm font-mono text-zinc-500 md:table-cell">
+                <span class="md:hidden text-[10px] uppercase font-black text-zinc-600 block mb-1">ID</span>
+                #{variant.id}
+              </td>
+
+              <td class="px-2 md:px-6 py-2 md:py-4 md:table-cell">
+                <span class="md:hidden text-[10px] uppercase font-black text-zinc-600 block mb-1">Variant</span>
                 <div class="flex flex-col">
                   <span
                     class="text-sm font-bold text-on-surface group-hover:text-blue-400 transition-colors uppercase"
@@ -263,7 +271,16 @@
                   </span>
                 </div>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap">
+
+              <td class="px-2 md:px-6 py-2 md:py-4 md:table-cell">
+                <span class="md:hidden text-[10px] uppercase font-black text-zinc-600 block mb-1">Episodes</span>
+                <span class="text-xs font-bold text-zinc-300 bg-zinc-800 px-2 py-1 rounded-md border border-zinc-700">
+                  {variant.episodes || "Full"}
+                </span>
+              </td>
+
+              <td class="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap md:table-cell">
+                <span class="md:hidden text-[10px] uppercase font-black text-zinc-600 block mb-1">Status</span>
                 <button
                   onclick={() => toggleVariantStatus(variant)}
                   class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all duration-200 hover:scale-105 active:scale-95 {variant.status
@@ -280,8 +297,39 @@
                 </button>
               </td>
 
-              <!-- Spoiler Toggle -->
-              <td class="px-6 py-4 text-center whitespace-nowrap">
+              <!-- Row 2 (Mobile) Container -->
+              <td class="md:hidden" colspan="8">
+                <div class="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-zinc-800">
+                  <!-- Spoiler Toggle -->
+                  <div class="space-y-1">
+                    <span class="text-[10px] uppercase font-black text-zinc-600">Spoiler</span>
+                    <button
+                      onclick={() => toggleVariantSpoiler(variant)}
+                      class="w-full flex items-center justify-center px-2.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all {variant.spoiler
+                        ? 'bg-red-500/10 text-red-400 border-red-500/20'
+                        : 'bg-zinc-800 text-zinc-500 border-zinc-700'}"
+                    >
+                      {variant.spoiler ? "Spoiler" : "Clean"}
+                    </button>
+                  </div>
+
+                  <!-- NSFW Toggle -->
+                  <div class="space-y-1">
+                    <span class="text-[10px] uppercase font-black text-zinc-600">NSFW</span>
+                    <button
+                      onclick={() => toggleVariantNSFW(variant)}
+                      class="w-full flex items-center justify-center px-2.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all {variant.nsfw
+                        ? 'bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/20'
+                        : 'bg-zinc-800 text-zinc-500 border-zinc-700'}"
+                    >
+                      {variant.nsfw ? "NSFW" : "Safe"}
+                    </button>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Desktop-only cells for Spoiler, NSFW, Video -->
+              <td class="hidden md:table-cell px-6 py-4 text-center whitespace-nowrap">
                 <button
                   onclick={() => toggleVariantSpoiler(variant)}
                   class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all duration-200 hover:scale-105 active:scale-95 {variant.spoiler
@@ -298,8 +346,7 @@
                 </button>
               </td>
 
-              <!-- NSFW Toggle -->
-              <td class="px-6 py-4 text-center whitespace-nowrap">
+              <td class="hidden md:table-cell px-6 py-4 text-center whitespace-nowrap">
                 <button
                   onclick={() => toggleVariantNSFW(variant)}
                   class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all duration-200 hover:scale-105 active:scale-95 {variant.nsfw
@@ -315,7 +362,9 @@
                   {variant.nsfw ? "NSFW" : "Safe"}
                 </button>
               </td>
-              <td class="px-6 py-4 text-center">
+
+              <td class="px-2 md:px-6 py-2 md:py-4 md:text-center md:table-cell">
+                <span class="md:hidden text-[10px] uppercase font-black text-zinc-600 block mb-1">Video</span>
                 {#if variant.video}
                   <a
                     href="/admin/variants/{variant.id}/video"
@@ -360,8 +409,10 @@
                   </span>
                 {/if}
               </td>
-              <td class="px-6 py-4">
-                <div class="flex items-center justify-end gap-2">
+
+              <td class="px-2 md:px-6 py-2 md:py-4 md:table-cell">
+                <span class="md:hidden text-[10px] uppercase font-black text-zinc-600 block mb-1">Actions</span>
+                <div class="flex items-center md:justify-end gap-2">
                   <!-- Edit Variant -->
                   <a
                     href="/admin/variants/{variant.id}/edit"
@@ -422,7 +473,7 @@
             </tr>
           {:else}
             <tr>
-              <td colspan="7" class="px-6 py-12 text-center">
+              <td colspan="8" class="px-6 py-12 text-center">
                 <div class="flex flex-col items-center">
                   <svg
                     class="w-12 h-12 text-zinc-700 mb-4"

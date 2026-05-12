@@ -414,7 +414,7 @@ func (r *songRepository) GetVariantsBySongIDs(ctx context.Context, songIDs []uin
 
 	query, args, err := sqlx.In(`
 		SELECT 
-			sv.id, sv.uuid, sv.version_number, sv.song_id, sv.slug, sv.views, sv.season_id, sv.year_id, sv.spoiler, sv.status, sv.created_at, sv.updated_at,
+			sv.id, sv.uuid, sv.version_number, sv.song_id, sv.slug, sv.views, sv.season_id, sv.year_id, sv.episodes, sv.spoiler, sv.nsfw, sv.status, sv.created_at, sv.updated_at,
 			v.video_src, v.embed_code
 		FROM song_variants sv
 		LEFT JOIN videos v ON sv.id = v.song_variant_id
@@ -462,7 +462,7 @@ func (r *songRepository) GetVariantsBySongIDs(ctx context.Context, songIDs []uin
 func (r *songRepository) GetVariantsBySongID(ctx context.Context, songID uint64) ([]domain.SongVariant, error) {
 	query := `
 		SELECT 
-			sv.id, sv.uuid, sv.version_number, sv.song_id, sv.slug, sv.views, sv.season_id, sv.year_id, sv.spoiler, sv.status, sv.created_at, sv.updated_at,
+			sv.id, sv.uuid, sv.version_number, sv.song_id, sv.slug, sv.views, sv.season_id, sv.year_id, sv.episodes, sv.spoiler, sv.nsfw, sv.status, sv.created_at, sv.updated_at,
 			v.video_src, v.embed_code
 		FROM song_variants sv
 		LEFT JOIN videos v ON sv.id = v.song_variant_id

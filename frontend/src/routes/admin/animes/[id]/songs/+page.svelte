@@ -4,6 +4,7 @@
   import { toastState } from "$lib/state/toast.svelte";
   import { getApiErrorMessage } from "$lib/api-errors";
   import { getSongName } from "$lib/song-utils";
+  import { configState } from "$lib/state/config.svelte";
   import type { PageData } from "./$types";
   import AlertTriangle from "lucide-svelte/icons/alert-triangle";
   import Plus from "lucide-svelte/icons/plus";
@@ -14,11 +15,39 @@
 
   let { data } = $props<{ data: PageData }>();
   let anime = $derived(data.anime);
-  // svelte-ignore state_referenced_locally
-  let songs = $state(data.anime.songs || []);
+
+  let rawSongs = $state(data.anime.songs || []);
+  let filterType = $state("all");
 
   $effect(() => {
-    songs = data.anime.songs || [];
+    rawSongs = data.anime.songs || [];
+  });
+
+  let filteredSongs = $derived.by(() => {
+    let list = [...rawSongs];
+
+    // Filter
+    if (filterType !== "all") {
+      list = list.filter(
+        (s) => s.type?.toLowerCase() === filterType.toLowerCase(),
+      );
+    }
+
+    // Sort by type then natural numeric order
+    list.sort((a, b) => {
+      if (a.type !== b.type) {
+        const order: Record<string, number> = {};
+        configState.songTypes.forEach((st, i) => {
+          order[st.slug] = i + 1;
+        });
+        return (order[a.type] || 99) - (order[b.type] || 99);
+      }
+      return (a.theme_num || "").localeCompare(b.theme_num || "", undefined, {
+        numeric: true,
+      });
+    });
+
+    return list;
   });
 
   async function deleteSong(id: number) {
@@ -42,19 +71,19 @@
   }
 
   async function handleStatusChange(id: number, currentStatus: boolean) {
-    const index = songs.findIndex((s: any) => s.id === id);
+    const index = rawSongs.findIndex((s: any) => s.id === id);
     if (index === -1) return;
 
     // Optimistic UI
-    const prevStatus = songs[index].status;
-    songs[index].status = !currentStatus;
+    const prevStatus = rawSongs[index].status;
+    rawSongs[index].status = !currentStatus;
 
     try {
       await api.patch(`/admin/songs/${id}/status`);
       toastState.addToast("Status updated successfully", "success");
     } catch (err: any) {
       // Rollback
-      songs[index].status = prevStatus;
+      rawSongs[index].status = prevStatus;
       console.error(err);
       toastState.addToast(
         getApiErrorMessage(err, "Failed to update status"),
@@ -78,35 +107,53 @@
   <div
     class="bg-surface-container border border-outline-variant rounded-2xl overflow-hidden shadow-sm shadow-black/20"
   >
-    <div class="p-6 border-b border-outline-variant flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-      <div>
-        <h2 class="text-xl font-semibold text-on-surface">Songs Management</h2>
-        <p class="text-sm text-on-surface-variant/70 mt-1">
-          Manage themes, openings and endings for this anime.
-        </p>
+    <div class="p-6 border-b border-outline-variant">
+      <div
+        class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+      >
+        <div>
+          <h2 class="text-xl font-semibold text-on-surface">
+            Songs Management
+          </h2>
+          <p class="text-sm text-on-surface-variant/70 mt-1">
+            Manage themes, openings and endings for this anime.
+          </p>
+        </div>
+        <div class="flex items-center gap-3">
+          <select
+            bind:value={filterType}
+            class="text-sm bg-surface-container border border-outline-variant text-on-surface rounded-lg px-3 py-2 outline-hidden focus:border-primary transition-colors"
+          >
+            <option value="all">All Types</option>
+            {#each configState.songTypes as type}
+              <option value={type.slug}>{type.name} ({type.slug})</option>
+            {/each}
+          </select>
+
+          {#if !anime.season_id || !anime.year_id}
+            <button
+              disabled
+              class="text-sm px-4 py-2 bg-surface-highest border border-outline-variant text-on-surface-variant/40 rounded-lg cursor-not-allowed flex items-center gap-2"
+              title="Season and Year required"
+            >
+              <Plus size={16} />
+              Add Song
+            </button>
+          {:else}
+            <a
+              href="/admin/songs/create?anime_id={anime.id}"
+              class="text-sm px-4 py-2 bg-primary hover:bg-primary-container text-on-surface rounded-lg transition-colors flex items-center gap-2 shadow-lg shadow-anirank-primary/20"
+            >
+              <Plus size={16} />
+              Add Song
+            </a>
+          {/if}
+        </div>
       </div>
-      {#if !anime.season_id || !anime.year_id}
-        <button
-          disabled
-          class="text-sm px-4 py-2 bg-surface-highest border border-outline-variant text-on-surface-variant/40 rounded-lg cursor-not-allowed flex items-center gap-2"
-          title="Season and Year required"
-        >
-          <Plus size={16} />
-          Add Song
-        </button>
-      {:else}
-        <a
-          href="/admin/songs/create?anime_id={anime.id}"
-          class="text-sm px-4 py-2 bg-primary hover:bg-primary-container text-on-surface rounded-lg transition-colors flex items-center gap-2 shadow-lg shadow-anirank-primary/20"
-        >
-          <Plus size={16} />
-          Add Song
-        </a>
-      {/if}
     </div>
 
     <div class="overflow-x-auto">
-      {#if songs.length > 0}
+      {#if filteredSongs.length > 0}
         <table class="w-full text-left text-sm text-on-surface-variant">
           <thead
             class="text-xs text-on-surface-variant/70 uppercase bg-black/20 border-b border-outline-variant"
@@ -114,14 +161,15 @@
             <tr>
               <th class="px-6 py-4 font-semibold">Type</th>
               <th class="px-6 py-4 font-semibold">Title</th>
-              <th class="px-6 py-4 font-semibold hidden md:table-cell">Artists</th
+              <th class="px-6 py-4 font-semibold hidden md:table-cell"
+                >Artists</th
               >
               <th class="px-6 py-4 font-semibold">Status</th>
               <th class="px-6 py-4 font-semibold text-right">Actions</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-white/5">
-            {#each songs as song}
+            {#each filteredSongs as song}
               <tr class="hover:bg-white/2 transition-colors">
                 <td class="px-6 py-4 whitespace-nowrap">
                   <span

@@ -3,6 +3,7 @@
   import { getSongName, getSongArtistNames, getFormattedScore } from "$lib/song-utils";
   import SEO from "$lib/components/SEO.svelte";
   import { authState } from "$lib/state/auth.svelte";
+  import { configState } from "$lib/state/config.svelte";
   import { createTrustedHTML } from "$lib/trusted";
   import { page } from "$app/state";
   import Globe from "lucide-svelte/icons/globe";
@@ -21,6 +22,41 @@
   }
 
   let isExpanded = $state(false);
+  let filterType = $state("all");
+  let sortBy = $state("theme_num");
+
+  let filteredAndSortedSongs = $derived.by(() => {
+    let songs = anime.songs ? [...anime.songs] : [];
+
+    // Filter
+    if (filterType !== "all") {
+      songs = songs.filter(
+        (s) => s.type?.toLowerCase() === filterType.toLowerCase(),
+      );
+    }
+
+    // Sort
+    songs.sort((a, b) => {
+      if (sortBy === "theme_num") {
+        // Sort by type first based on DB order
+        if (a.type !== b.type) {
+          const order: Record<string, number> = {};
+          configState.songTypes.forEach((st, i) => {
+            order[st.slug] = i + 1;
+          });
+          return (order[a.type] || 99) - (order[b.type] || 99);
+        }
+        // Then natural numeric sort by theme_num
+        return (a.theme_num || "").localeCompare(b.theme_num || "", undefined, {
+          numeric: true,
+        });
+      } else {
+        return (b.average_rating || 0) - (a.average_rating || 0);
+      }
+    });
+
+    return songs;
+  });
 </script>
 
 <SEO
@@ -236,6 +272,46 @@
             Music Themes
           </h2>
         </div>
+
+        <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+          <div class="flex flex-wrap items-center gap-1 bg-surface-container p-1 rounded-sm border border-white/5">
+            <button
+              onclick={() => (filterType = "all")}
+              class="px-4 py-1.5 rounded-sm text-[10px] font-bold uppercase tracking-widest transition-all {filterType ===
+              'all'
+                ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                : 'text-on-surface-variant hover:text-on-surface'}"
+            >
+              all
+            </button>
+            {#each configState.songTypes as type}
+              <button
+                onclick={() => (filterType = type.slug)}
+                class="px-4 py-1.5 rounded-sm text-[10px] font-bold uppercase tracking-widest transition-all {filterType ===
+                type.slug
+                  ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                  : 'text-on-surface-variant hover:text-on-surface'}"
+              >
+                {type.slug}
+              </button>
+            {/each}
+          </div>
+
+          <div class="flex items-center gap-3">
+            <span
+              class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest"
+              >Sort By</span
+            >
+            <select
+              bind:value={sortBy}
+              class="bg-surface-container border border-white/5 text-on-surface text-xs font-bold py-2 px-4 rounded-sm outline-hidden focus:border-primary/50 transition-colors"
+            >
+              <option value="theme_num">Theme Number</option>
+              <option value="score">Avg Score</option>
+            </select>
+          </div>
+        </div>
+
         <div
           class="bg-surface-container border border-white/5 rounded-md overflow-hidden"
         >
@@ -252,7 +328,7 @@
               </tr>
             </thead>
             <tbody class="text-sm">
-              {#each anime.songs as song}
+              {#each filteredAndSortedSongs as song}
                 <tr
                   class="hover:bg-primary/10 border-b border-primary/10 group transition-colors"
                 >

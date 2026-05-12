@@ -363,18 +363,29 @@ func (h *AdminHandler) ToggleAnimeStatus(c *fiber.Ctx) error {
 }
 
 func (h *AdminHandler) CreateAnime(c *fiber.Ctx) error {
-	var anime domain.Anime
-	if err := c.BodyParser(&anime); err != nil {
+	var req struct {
+		domain.Anime
+		SeasonIDRaw interface{} `json:"season_id"`
+		YearIDRaw   interface{} `json:"year_id"`
+	}
+	if err := c.BodyParser(&req); err != nil {
 		return domain.NewAppError(400, "Invalid payload", err)
 	}
 
-	h.usecase.HandleAnimeImages(c, &anime)
+	if req.SeasonIDRaw != nil {
+		req.Anime.SeasonID = h.resolveUint64(req.SeasonIDRaw)
+	}
+	if req.YearIDRaw != nil {
+		req.Anime.YearID = h.resolveUint64(req.YearIDRaw)
+	}
 
-	if err := h.usecase.CreateAnime(c.Context(), &anime, h.getAuditMetadata(c)); err != nil {
+	h.usecase.HandleAnimeImages(c, &req.Anime)
+
+	if err := h.usecase.CreateAnime(c.Context(), &req.Anime, h.getAuditMetadata(c)); err != nil {
 		return err
 	}
 
-	return c.Status(201).JSON(fiber.Map{"data": anime})
+	return c.Status(201).JSON(fiber.Map{"data": req.Anime})
 }
 
 func (h *AdminHandler) UpdateAnime(c *fiber.Ctx) error {
@@ -382,18 +393,30 @@ func (h *AdminHandler) UpdateAnime(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	var anime domain.Anime
-	if err := c.BodyParser(&anime); err != nil {
+	var req struct {
+		domain.Anime
+		SeasonIDRaw interface{} `json:"season_id"`
+		YearIDRaw   interface{} `json:"year_id"`
+	}
+	if err := c.BodyParser(&req); err != nil {
 		return domain.NewAppError(400, "Invalid payload", err)
 	}
-	anime.ID = id
-	h.usecase.HandleAnimeImages(c, &anime)
+	req.Anime.ID = id
 
-	if err := h.usecase.UpdateAnime(c.Context(), &anime, h.getAuditMetadata(c)); err != nil {
+	if req.SeasonIDRaw != nil {
+		req.Anime.SeasonID = h.resolveUint64(req.SeasonIDRaw)
+	}
+	if req.YearIDRaw != nil {
+		req.Anime.YearID = h.resolveUint64(req.YearIDRaw)
+	}
+
+	h.usecase.HandleAnimeImages(c, &req.Anime)
+
+	if err := h.usecase.UpdateAnime(c.Context(), &req.Anime, h.getAuditMetadata(c)); err != nil {
 		return err
 	}
 
-	return c.JSON(fiber.Map{"data": anime})
+	return c.JSON(fiber.Map{"data": req.Anime})
 }
 
 func (h *AdminHandler) DeleteAnime(c *fiber.Ctx) error {
@@ -593,9 +616,11 @@ func (h *AdminHandler) GetSong(c *fiber.Ctx) error {
 func (h *AdminHandler) CreateSong(c *fiber.Ctx) error {
 	var req struct {
 		domain.Song
-		TypeIDRaw interface{} `json:"type_id"`
-		ArtistIDs  []uint64 `json:"artist_ids"`
-		ArtistsStr string   `json:"artists_string"`
+		TypeIDRaw   interface{} `json:"type_id"`
+		SeasonIDRaw interface{} `json:"season_id"`
+		YearIDRaw   interface{} `json:"year_id"`
+		ArtistIDs   []uint64    `json:"artist_ids"`
+		ArtistsStr  string      `json:"artists_string"`
 	}
 
 	if err := c.BodyParser(&req); err != nil {
@@ -609,6 +634,14 @@ func (h *AdminHandler) CreateSong(c *fiber.Ctx) error {
 		if err == nil {
 			req.Song.TypeID = resolvedID
 		}
+	}
+
+	// Resolve SeasonID and YearID (can be strings from configState)
+	if req.SeasonIDRaw != nil {
+		req.Song.SeasonID = h.resolveUint64(req.SeasonIDRaw)
+	}
+	if req.YearIDRaw != nil {
+		req.Song.YearID = h.resolveUint64(req.YearIDRaw)
 	}
 
 	if err := h.usecase.CreateSong(c.Context(), &req.Song, h.getAuditMetadata(c)); err != nil {
@@ -636,9 +669,11 @@ func (h *AdminHandler) UpdateSong(c *fiber.Ctx) error {
 	}
 	var req struct {
 		domain.Song
-		TypeIDRaw interface{} `json:"type_id"`
-		ArtistIDs  []uint64 `json:"artist_ids"`
-		ArtistsStr string   `json:"artists_string"`
+		TypeIDRaw   interface{} `json:"type_id"`
+		SeasonIDRaw interface{} `json:"season_id"`
+		YearIDRaw   interface{} `json:"year_id"`
+		ArtistIDs   []uint64    `json:"artist_ids"`
+		ArtistsStr  string      `json:"artists_string"`
 	}
 	if err := c.BodyParser(&req); err != nil {
 		return domain.NewAppError(400, "Invalid payload", err)
@@ -652,6 +687,14 @@ func (h *AdminHandler) UpdateSong(c *fiber.Ctx) error {
 		if err == nil {
 			req.Song.TypeID = resolvedID
 		}
+	}
+
+	// Resolve SeasonID and YearID (can be strings from configState)
+	if req.SeasonIDRaw != nil {
+		req.Song.SeasonID = h.resolveUint64(req.SeasonIDRaw)
+	}
+	if req.YearIDRaw != nil {
+		req.Song.YearID = h.resolveUint64(req.YearIDRaw)
 	}
 
 	if err := h.usecase.UpdateSong(c.Context(), &req.Song, h.getAuditMetadata(c)); err != nil {
@@ -694,6 +737,28 @@ func (h *AdminHandler) resolveTypeID(ctx context.Context, uuidOrID string) (*uin
 	}
 
 	return nil, fmt.Errorf("song type not found: %s", uuidOrID)
+}
+
+func (h *AdminHandler) resolveUint64(val interface{}) uint64 {
+	if val == nil {
+		return 0
+	}
+	switch v := val.(type) {
+	case float64:
+		return uint64(v)
+	case string:
+		if v == "" {
+			return 0
+		}
+		if id, err := strconv.ParseUint(v, 10, 64); err == nil {
+			return id
+		}
+	case int:
+		return uint64(v)
+	case uint64:
+		return v
+	}
+	return 0
 }
 
 func (h *AdminHandler) DeleteSong(c *fiber.Ctx) error {
@@ -779,29 +844,51 @@ func (h *AdminHandler) getVariantsInternal(c *fiber.Ctx) error {
 }
 
 func (h *AdminHandler) CreateVariant(c *fiber.Ctx) error {
-	var v domain.SongVariant
-	if err := c.BodyParser(&v); err != nil {
+	var req struct {
+		domain.SongVariant
+		SeasonIDRaw interface{} `json:"season_id"`
+		YearIDRaw   interface{} `json:"year_id"`
+	}
+	if err := c.BodyParser(&req); err != nil {
 		return domain.NewAppError(400, "Invalid payload", err)
 	}
 
-	if err := h.usecase.CreateVariant(c.Context(), &v, h.getAuditMetadata(c)); err != nil {
+	if req.SeasonIDRaw != nil {
+		req.SongVariant.SeasonID = h.resolveUint64(req.SeasonIDRaw)
+	}
+	if req.YearIDRaw != nil {
+		req.SongVariant.YearID = h.resolveUint64(req.YearIDRaw)
+	}
+
+	if err := h.usecase.CreateVariant(c.Context(), &req.SongVariant, h.getAuditMetadata(c)); err != nil {
 		return err
 	}
-	return c.Status(201).JSON(fiber.Map{"data": v})
+	return c.Status(201).JSON(fiber.Map{"data": req.SongVariant})
 }
 
 func (h *AdminHandler) UpdateVariant(c *fiber.Ctx) error {
 	id, _ := strconv.ParseUint(c.Params("id"), 10, 64)
-	var v domain.SongVariant
-	if err := c.BodyParser(&v); err != nil {
+	var req struct {
+		domain.SongVariant
+		SeasonIDRaw interface{} `json:"season_id"`
+		YearIDRaw   interface{} `json:"year_id"`
+	}
+	if err := c.BodyParser(&req); err != nil {
 		return domain.NewAppError(400, "Invalid payload", err)
 	}
-	v.ID = id
+	req.SongVariant.ID = id
 
-	if err := h.usecase.UpdateVariant(c.Context(), &v, h.getAuditMetadata(c)); err != nil {
+	if req.SeasonIDRaw != nil {
+		req.SongVariant.SeasonID = h.resolveUint64(req.SeasonIDRaw)
+	}
+	if req.YearIDRaw != nil {
+		req.SongVariant.YearID = h.resolveUint64(req.YearIDRaw)
+	}
+
+	if err := h.usecase.UpdateVariant(c.Context(), &req.SongVariant, h.getAuditMetadata(c)); err != nil {
 		return err
 	}
-	return c.JSON(fiber.Map{"data": v})
+	return c.JSON(fiber.Map{"data": req.SongVariant})
 }
 
 func (h *AdminHandler) UpdateVariantVideo(c *fiber.Ctx) error {

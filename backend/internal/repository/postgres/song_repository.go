@@ -4,8 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"regexp"
 	"fmt"
+	"regexp"
 
 	"anirank/api/internal/domain"
 
@@ -122,7 +122,7 @@ func (r *songRepository) GetPaginated(ctx context.Context, limit, offset int, fi
 	}
 
 	i := 1
-	
+
 	if filters.IsAdmin {
 		if filters.YearID > 0 {
 			whereClauses = append(whereClauses, fmt.Sprintf("s.year_id = $%d", i))
@@ -490,7 +490,7 @@ func (r *songRepository) GetVariantsBySongID(ctx context.Context, songID uint64)
 				EmbedUrl: extractSrcFromIframe(row.EmbedCode),
 				LocalUrl: row.VideoSrc,
 			}
-			
+
 			if row.VideoSrc != nil && *row.VideoSrc != "" {
 				v.Video.Type = "file"
 			} else if row.EmbedCode != nil && *row.EmbedCode != "" {

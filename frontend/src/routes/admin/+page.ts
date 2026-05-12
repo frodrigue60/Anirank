@@ -1,43 +1,21 @@
 import type { PageLoad } from './$types';
-import { getAuthToken } from '$lib/state/auth.svelte';
-import { PUBLIC_API_URL } from '$lib/api';
+import api from '$lib/api';
 
-const apiBase = PUBLIC_API_URL;
-
-export const load: PageLoad = async ({ fetch }) => {
+export const load: PageLoad = async () => {
     try {
-        const token = getAuthToken();
-        const headers: Record<string, string> = {};
+        const res = await api.get('/admin/dashboard');
         
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
-        }
-
-        const res = await fetch(`${apiBase}/admin/dashboard`, {
-            headers
-        });
-        
-        if (!res.ok) {
-            const errData = await res.json();
-            return {
-                stats: null,
-                metrics: [],
-                error: errData.message || 'Failed to load dashboard data'
-            };
-        }
-
-        const data = await res.json();
         return {
-            stats: data.stats,
-            metrics: data.metrics,
+            stats: res.data.stats,
+            metrics: res.data.metrics,
             error: null
         };
-    } catch (err) {
+    } catch (err: any) {
         console.error('Dashboard load error:', err);
         return {
             stats: null,
             metrics: [],
-            error: 'Connection error'
+            error: err.response?.data?.message || 'Failed to load dashboard data'
         };
     }
 };

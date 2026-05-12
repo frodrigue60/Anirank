@@ -4,6 +4,7 @@ import (
 	"anirank/api/internal/domain"
 	"anirank/api/internal/usecase/auth"
 	"anirank/api/internal/usecase/public"
+	"strconv"
 	"time"
 )
 
@@ -131,18 +132,18 @@ func ToSongMinimalDTO(s *domain.Song) SongMinimalDTO {
 	}
 
 	var typeID string
-	if s.SongType != nil && s.SongType.UUID != nil {
-		typeID = *s.SongType.UUID
+	if s.SongType != nil {
+		typeID = ToSongTypeDTO(s.SongType).ID
 	}
 
 	var animeID, yearID, seasonID string
 	if s.Anime != nil {
-		animeID = s.Anime.UUID
+		animeID = s.Anime.UUID // Anime still uses UUID
 		if s.Anime.Year != nil {
-			yearID = s.Anime.Year.UUID
+			yearID = ToYearDTO(s.Anime.Year).ID
 		}
 		if s.Anime.Season != nil {
-			seasonID = s.Anime.Season.UUID
+			seasonID = ToSeasonDTO(s.Anime.Season).ID
 		}
 	}
 
@@ -283,8 +284,8 @@ func ToSongTypeDTO(st *domain.SongType) SongTypeDTO {
 	}
 
 	id := ""
-	if st.UUID != nil {
-		id = *st.UUID
+	if st.ID != nil {
+		id = strconv.FormatUint(*st.ID, 10)
 	}
 	name := ""
 	if st.Name != nil {
@@ -540,7 +541,7 @@ func ToStudioDTO(s *domain.Studio) StudioDTO {
 		return StudioDTO{}
 	}
 	return StudioDTO{
-		ID:         s.UUID,
+		ID:         strconv.FormatUint(s.ID, 10),
 		Name:       s.Name,
 		Slug:       s.Slug,
 		LogoUrl:    s.LogoUrl,
@@ -554,7 +555,7 @@ func ToProducerDTO(p *domain.Producer) ProducerDTO {
 		return ProducerDTO{}
 	}
 	return ProducerDTO{
-		ID:         p.UUID,
+		ID:         strconv.FormatUint(p.ID, 10),
 		Name:       p.Name,
 		Slug:       p.Slug,
 		LogoUrl:    p.LogoUrl,
@@ -568,7 +569,7 @@ func ToGenreDTO(g *domain.Genre) GenreDTO {
 		return GenreDTO{}
 	}
 	return GenreDTO{
-		ID:   g.UUID,
+		ID:   strconv.FormatUint(g.ID, 10),
 		Name: g.Name,
 		Slug: g.Slug,
 	}
@@ -579,7 +580,7 @@ func ToYearDTO(y *domain.Year) YearDTO {
 		return YearDTO{}
 	}
 	return YearDTO{
-		ID:   y.UUID,
+		ID:   strconv.FormatUint(y.ID, 10),
 		Name: y.Name,
 		Slug: y.Slug,
 	}
@@ -590,7 +591,7 @@ func ToSeasonDTO(s *domain.Season) SeasonDTO {
 		return SeasonDTO{}
 	}
 	return SeasonDTO{
-		ID:   s.UUID,
+		ID:   strconv.FormatUint(s.ID, 10),
 		Name: s.Name,
 		Slug: s.Slug,
 	}
@@ -601,7 +602,7 @@ func ToFormatDTO(f *domain.Format) FormatDTO {
 		return FormatDTO{}
 	}
 	return FormatDTO{
-		ID:   f.UUID,
+		ID:   strconv.FormatUint(f.ID, 10),
 		Name: f.Name,
 		Slug: f.Slug,
 	}

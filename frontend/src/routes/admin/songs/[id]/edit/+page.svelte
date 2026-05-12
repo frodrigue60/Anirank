@@ -16,7 +16,7 @@
   // Form State
   let anime_id = $state<number | null>(song.anime_id);
   let selectedAnimeTitle = $state(song.anime?.title || "");
-  let type_id = $state(song.type_id || 0);
+  let type_id = $state(song.type_id?.toString() || "");
   let type = $state(song.type || "OP");
 
   $effect(() => {
@@ -29,8 +29,8 @@
   let song_romaji = $state(song.song_romaji || "");
   let song_en = $state(song.song_en || "");
   let song_jp = $state(song.song_jp || "");
-  let season_id = $state(song.season_id || 0);
-  let year_id = $state(song.year_id || 0);
+  let season_id = $state(song.season_id?.toString() || "");
+  let year_id = $state(song.year_id?.toString() || "");
   let status = $state(song.status);
 
   // Parse artist names instead of IDs for the tags input
@@ -143,8 +143,8 @@
         song_romaji,
         song_en,
         song_jp,
-        season_id: season_id && season_id > 0 ? season_id : 0,
-        year_id: year_id && year_id > 0 ? year_id : 0,
+        season_id: season_id && season_id !== "" ? season_id : null,
+        year_id: year_id && year_id !== "" ? year_id : null,
         artists_string: artistsString,
         status,
       };
@@ -366,7 +366,7 @@
             required
             class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all [&>option]:bg-surface-container"
           >
-            <option value={0} disabled selected>Select a type...</option>
+            <option value="" disabled selected>Select a type...</option>
             {#each config.songTypes as t}
               <option value={t.id}>{t.name}</option>
             {/each}
@@ -492,7 +492,7 @@
           bind:value={year_id}
           class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all [&>option]:bg-surface-container"
         >
-          <option value={0}>Inherit from Anime</option>
+          <option value="">Inherit from Anime</option>
           {#each config.years as year}
             <option value={year.id}>{year.name}</option>
           {/each}
@@ -509,7 +509,7 @@
           bind:value={season_id}
           class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all [&>option]:bg-surface-container"
         >
-          <option value={0}>Inherit from Anime</option>
+          <option value="">Inherit from Anime</option>
           {#each config.seasons as season}
             <option value={season.id}>{season.name}</option>
           {/each}

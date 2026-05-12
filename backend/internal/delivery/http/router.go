@@ -1,23 +1,23 @@
 package http
 
 import (
+	_ "anirank/api/docs" // Import swagger docs
 	"anirank/api/internal/delivery/http/middleware"
-	"anirank/api/internal/domain"
 	v1 "anirank/api/internal/delivery/http/v1"
+	"anirank/api/internal/domain"
 	"anirank/api/internal/infrastructure"
+	"anirank/api/internal/infrastructure/og"
 	"anirank/api/internal/repository/postgres"
 	"anirank/api/internal/usecase/admin"
+	"anirank/api/internal/usecase/announcement"
 	"anirank/api/internal/usecase/auth"
 	"anirank/api/internal/usecase/interaction"
 	"anirank/api/internal/usecase/moderation"
+	"anirank/api/internal/usecase/notification"
 	"anirank/api/internal/usecase/playlist"
 	"anirank/api/internal/usecase/public"
-	"anirank/api/internal/infrastructure/og"
 	"anirank/api/internal/usecase/tournament"
-	"anirank/api/internal/usecase/announcement"
-	"anirank/api/internal/usecase/notification"
 	"time"
-	_ "anirank/api/docs" // Import swagger docs
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/swagger"
@@ -66,7 +66,7 @@ func SetupPublicRoutes(app *fiber.App,
 	searchHandler := v1.NewSearchHandler(searchUsecase)
 	catalogHandler := v1.NewCatalogHandler(catalogUsecase)
 	authHandler := v1.NewAuthHandler(authUsecase)
-	
+
 	badgeRepo := postgres.NewBadgeRepository(db)
 	badgeUsecase := admin.NewBadgeUsecase(badgeRepo, userRepo, interactionRepo, commentRepo, storageService, auditLogUsecase)
 
@@ -203,10 +203,9 @@ func SetupPublicRoutes(app *fiber.App,
 	api.Get("/og/playlist/:pid", ogHandler.PlaylistOG)
 	api.Get("/og/user/:slug", ogHandler.UserOG)
 	api.Get("/og/home", ogHandler.HomeOG)
-	
+
 	// SEO Bot Proxy route
 	app.Get("/seo-bot/*", seoHandler.GetMetadata)
-
 
 	// Comments Public
 	api.Get("/comments", middleware.OptionalAuthMiddleware(jwtService, userRepo, appCache), interactionHandler.GetComments)
@@ -304,7 +303,7 @@ func SetupPublicRoutes(app *fiber.App,
 	adminOnly.Get("/songs/reports/:id", moderationHandler.GetSongReport)
 	adminOnly.Put("/songs/reports/:id/resolve", middleware.HasPermissionMiddleware("reports.manage", userRepo), moderationHandler.ResolveSongReport)
 	adminOnly.Delete("/songs/reports/:id", middleware.HasPermissionMiddleware("reports.manage", userRepo), moderationHandler.DeleteSongReport)
-	
+
 	adminOnly.Get("/comments/reports", moderationHandler.GetCommentReports)
 	adminOnly.Get("/comments/reports/:id", moderationHandler.GetCommentReport)
 	adminOnly.Put("/comments/reports/:id/resolve", middleware.HasPermissionMiddleware("reports.manage", userRepo), moderationHandler.ResolveCommentReport)

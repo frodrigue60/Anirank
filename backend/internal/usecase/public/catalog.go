@@ -226,7 +226,7 @@ func (u *CatalogUsecase) GetSongByAnimeSongSlug(ctx context.Context, userID *uin
 		// Use the new cache interface instead of viewCache
 		var lastView time.Time
 		err := u.safeCacheGet(ctx, cacheKey, &lastView)
-		
+
 		if err != nil { // Cache miss or error
 			_ = u.songRepo.IncrementViews(ctx, song.ID)
 			u.safeCacheSet(ctx, cacheKey, time.Now(), 24*time.Hour)
@@ -243,7 +243,7 @@ func (u *CatalogUsecase) GetSongByAnimeSongSlug(ctx context.Context, userID *uin
 			filtered = append(filtered, s)
 		}
 	}
-	
+
 	if len(filtered) > 0 {
 		u.enrichSongsBulk(ctx, userID, filtered)
 	} else {
@@ -582,7 +582,6 @@ func (u *CatalogUsecase) GetUserRanking(ctx context.Context, sortBy string, limi
 
 	return users, total, nil
 }
-
 
 type AnilistHybridItem struct {
 	AnilistID  int    `json:"anilist_id"`

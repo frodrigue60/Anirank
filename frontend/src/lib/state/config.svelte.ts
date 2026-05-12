@@ -1,5 +1,5 @@
 export interface TaxonomyItem {
-    id: number;
+    id: string;
     name: string;
     slug: string;
 }

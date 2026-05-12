@@ -96,9 +96,11 @@ func TestToSongMappers(t *testing.T) {
 			UUID:  animeUUID,
 			Title: "Demon Slayer",
 			Year: &domain.Year{
+				ID:   55555,
 				UUID: "year-uuid-1",
 			},
 			Season: &domain.Season{
+				ID:   66666,
 				UUID: "season-uuid-1",
 			},
 		},
@@ -124,11 +126,11 @@ func TestToSongMappers(t *testing.T) {
 		if dto.AnimeID != animeUUID {
 			t.Errorf("Expected AnimeID UUID %s, got %s", animeUUID, dto.AnimeID)
 		}
-		if dto.YearID != "year-uuid-1" {
-			t.Errorf("Expected YearID UUID, got %s", dto.YearID)
+		if dto.YearID != "55555" {
+			t.Errorf("Expected YearID 55555, got %s", dto.YearID)
 		}
-		if dto.TypeID != "type-uuid-1" {
-			t.Errorf("Expected TypeID UUID, got %s", dto.TypeID)
+		if dto.TypeID != "44444" {
+			t.Errorf("Expected TypeID 44444, got %s", dto.TypeID)
 		}
 		testutil.AssertNoInternalIDs(t, dto, forbiddenID)
 		testutil.AssertNoInternalIDs(t, dto, animeID)
@@ -187,15 +189,17 @@ func TestToAnimeMappers(t *testing.T) {
 		Slug:      "aot",
 		AnilistID: pointer(int64(16498)),
 		Year: &domain.Year{
+			ID:   111,
 			UUID: "year-uuid-anime",
 			Name: "2013",
 		},
 		Season: &domain.Season{
+			ID:   222,
 			UUID: "season-uuid-anime",
 			Name: "Spring",
 		},
 		Genres: []domain.Genre{
-			{UUID: genreUUID, Name: "Action", Slug: "action"},
+			{ID: 333, UUID: genreUUID, Name: "Action", Slug: "action"},
 		},
 		Studios: []domain.Studio{
 			{ID: 77777, UUID: studioUUID, Name: "WIT Studio", Slug: "wit-studio"},
@@ -207,22 +211,22 @@ func TestToAnimeMappers(t *testing.T) {
 
 	t.Run("ToAnimeMinimalDTO", func(t *testing.T) {
 		dto := ToAnimeMinimalDTO(anime)
-		if dto.Year == nil || dto.Year.ID != "year-uuid-anime" {
-			t.Errorf("Year UUID not mapped")
+		if dto.Year == nil || dto.Year.ID != "111" {
+			t.Errorf("Year ID not mapped correctly, got %v", dto.Year.ID)
 		}
-		if dto.Season == nil || dto.Season.ID != "season-uuid-anime" {
-			t.Errorf("Season UUID not mapped")
+		if dto.Season == nil || dto.Season.ID != "222" {
+			t.Errorf("Season ID not mapped correctly, got %v", dto.Season.ID)
 		}
 		testutil.AssertNoInternalIDs(t, dto, forbiddenID)
 	})
 
 	t.Run("ToAnimeDTO", func(t *testing.T) {
 		dto := ToAnimeDTO(anime)
-		if len(dto.Genres) != 1 || dto.Genres[0].ID != genreUUID {
-			t.Errorf("Genre UUID not mapped correctly")
+		if len(dto.Genres) != 1 || dto.Genres[0].ID != "333" {
+			t.Errorf("Genre ID not mapped correctly")
 		}
-		if len(dto.Studios) != 1 || dto.Studios[0].ID != studioUUID {
-			t.Errorf("Studio UUID not mapped correctly")
+		if len(dto.Studios) != 1 || dto.Studios[0].ID != "77777" {
+			t.Errorf("Studio ID not mapped correctly")
 		}
 		if len(dto.ExternalLinks) != 1 || dto.ExternalLinks[0].ID != "link-uuid-1" {
 			t.Errorf("ExternalLink UUID not mapped correctly")

@@ -10,7 +10,7 @@
   // Form State
   let anime_id = $state<number | null>(null);
   let selectedAnimeTitle = $state("");
-  let type_id = $state(0);
+  let type_id = $state("");
   let type = $state("OP");
 
   $effect(() => {
@@ -26,8 +26,8 @@
   let song_en = $state("");
   let song_jp = $state("");
   let status = $state(true);
-  let season_id = $state(0);
-  let year_id = $state(0);
+  let season_id = $state("");
+  let year_id = $state("");
   let artistsString = $state("");
 
   // Search State
@@ -73,8 +73,8 @@
   async function selectAnime(anime: any) {
     anime_id = anime.id;
     selectedAnimeTitle = anime.title;
-    season_id = anime.season_id || 0;
-    year_id = anime.year_id || 0;
+    season_id = anime.season_id?.toString() || "";
+    year_id = anime.year_id?.toString() || "";
     searchQuery = "";
     searchResults = [];
     showResults = false;
@@ -86,8 +86,8 @@
   function clearAnime() {
     anime_id = null;
     selectedAnimeTitle = "";
-    season_id = 0;
-    year_id = 0;
+    season_id = "";
+    year_id = "";
     theme_num = "";
   }
 
@@ -120,8 +120,8 @@
         const anime = res.data.data;
         anime_id = anime.id;
         selectedAnimeTitle = anime.title;
-        season_id = anime.season_id || 0;
-        year_id = anime.year_id || 0;
+        season_id = anime.season_id?.toString() || "";
+        year_id = anime.year_id?.toString() || "";
 
         // After selecting anime, fetch latest song number
         fetchLatestNumber();
@@ -163,8 +163,8 @@
         song_romaji,
         song_en,
         song_jp,
-        season_id: season_id && season_id > 0 ? season_id : 0,
-        year_id: year_id && year_id > 0 ? year_id : 0,
+        season_id: season_id && season_id !== "" ? season_id : null,
+        year_id: year_id && year_id !== "" ? year_id : null,
         artists_string: artistsString, // Backend processes names
         status,
       };
@@ -415,7 +415,7 @@
             required
             class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all [&>option]:bg-surface-container"
           >
-            <option value={0} disabled selected>Select a type...</option>
+            <option value="" disabled selected>Select a type...</option>
             {#each config.songTypes as t}
               <option value={t.id}>{t.name}</option>
             {/each}
@@ -548,7 +548,7 @@
           bind:value={year_id}
           class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all [&>option]:bg-surface-container"
         >
-          <option value={0}>Inherit from Anime</option>
+          <option value="">Inherit from Anime</option>
           {#each config.years as year}
             <option value={year.id}>{year.name}</option>
           {/each}

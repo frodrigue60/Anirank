@@ -107,6 +107,7 @@ type Badge struct {
 	Description      *string    `db:"description" json:"description"`
 	Icon             *string    `db:"icon" json:"-"`
 	IconUrl          *string    `db:"-" json:"icon_url,omitempty"`
+	IconSources      []ImageSource `db:"-" json:"icon_sources,omitempty"`
 	IsActive         bool       `db:"is_active" json:"is_active"`
 	IsAutomatic      bool       `db:"is_automatic" json:"is_automatic"`
 	RequirementType  *string    `db:"requirement_type" json:"requirement_type,omitempty"`

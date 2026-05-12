@@ -12,6 +12,7 @@
   import UserPlus from "lucide-svelte/icons/user-plus";
   import Flag from "lucide-svelte/icons/flag";
   import UserX from "lucide-svelte/icons/user-x";
+  import OptimizedImage from "$lib/components/OptimizedImage.svelte";
 
   let { data, children } = $props();
 
@@ -80,8 +81,14 @@
   const avatarUrl = $derived(
     isOwnProfile ? authState.user?.avatar_url : data.profile?.avatar_url,
   );
+  const avatarSources = $derived(
+    isOwnProfile ? authState.user?.avatar_sources : data.profile?.avatar_sources,
+  );
   const bannerUrl = $derived(
     isOwnProfile ? authState.user?.banner_url : data.profile?.banner_url,
+  );
+  const bannerSources = $derived(
+    isOwnProfile ? authState.user?.banner_sources : data.profile?.banner_sources,
   );
 
   // Quadratic XP formula: Min XP = Level * (Level - 1) / 2 * 1000
@@ -113,18 +120,19 @@
       ></div>
       <!-- svelte-ignore a11y_img_redundant_alt -->
       {#if bannerUrl}
-        <img
+        <OptimizedImage
+          src={bannerUrl}
+          sources={bannerSources}
           alt="Cover Image"
           class="w-full h-full object-cover"
-          data-alt="User banner image"
-          src={bannerUrl}
+          sizes="100vw"
         />
       {:else}
-        <img
+        <OptimizedImage
+          src="/images/placeholders/default-banner.svg"
           alt="Cover Image"
           class="w-full h-full object-cover"
-          data-alt="User banner image"
-          src="/images/placeholders/default-banner.svg"
+          sizes="100vw"
         />
       {/if}
       <div
@@ -134,18 +142,19 @@
           <div class="relative group">
             <div class="size-32 md:size-44 rounded-full overflow-hidden">
               {#if avatarUrl}
-                <img
+                <OptimizedImage
+                  src={avatarUrl}
+                  sources={avatarSources}
                   alt="Profile"
                   class="w-full h-full object-cover"
-                  data-alt="User avatar image"
-                  src={avatarUrl}
+                  sizes="(max-width: 768px) 128px, 176px"
                 />
               {:else}
-                <img
+                <OptimizedImage
+                  src="/images/placeholders/default.svg"
                   alt="Profile"
                   class="w-full h-full object-cover"
-                  data-alt="User avatar image"
-                  src="/images/placeholders/default.svg"
+                  sizes="(max-width: 768px) 128px, 176px"
                 />
               {/if}
             </div>
@@ -174,11 +183,12 @@
               {#if data.profile.badges}
                 <div class="flex gap-1 items-center">
                   {#each data.profile.badges as badge}
-                    <img
-                      src={badge.icon_url}
+                    <OptimizedImage
+                      src={badge.icon_url || badge.image_url}
+                      sources={badge.icon_sources}
                       alt={badge.name}
                       class="w-5 h-5"
-                      title={badge.name}
+                      sizes="20px"
                     />
                   {/each}
                 </div>

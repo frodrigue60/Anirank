@@ -11,6 +11,7 @@
   import Bell from "lucide-svelte/icons/bell";
   import Settings from "lucide-svelte/icons/settings";
   import BellOff from "lucide-svelte/icons/bell-off";
+  import OptimizedImage from "$lib/components/OptimizedImage.svelte";
 
   let { data } = $props();
   // svelte-ignore state_referenced_locally
@@ -210,18 +211,20 @@
                     )}"
                   >
                     {#if notification.type === "follow"}
-                      <img
-                        src={notification.data.follower_avatar ||
-                          "/images/placeholders/default.svg"}
+                      <OptimizedImage
+                        src={notification.data.follower_avatar}
+                        sources={notification.data.follower_avatar_sources}
                         alt=""
                         class="w-full h-full object-cover"
+                        sizes="48px"
                       />
                     {:else if notification.type === "reply" || notification.type === "comment_reply"}
-                      <img
-                        src={notification.data.replied_by_avatar ||
-                          "/images/placeholders/default.svg"}
+                      <OptimizedImage
+                        src={notification.data.replied_by_avatar}
+                        sources={notification.data.replied_by_avatar_sources}
                         alt=""
                         class="w-full h-full object-cover"
+                        sizes="48px"
                       />
                     {:else}
                       {@const Icon = getNotificationIcon(notification.type)}
@@ -309,10 +312,12 @@
                     <div
                       class="shrink-0 w-16 h-20 rounded-sm overflow-hidden border border-white/10 ml-2"
                     >
-                      <img
+                      <OptimizedImage
                         src={notification.data.anime_cover}
+                        sources={notification.data.anime_cover_sources}
                         alt=""
                         class="w-full h-full object-cover"
+                        sizes="64px"
                       />
                     </div>
                   {/if}

@@ -15,16 +15,22 @@ import (
 func AuthMiddleware(jwtService *auth.JWTService, userRepo domain.UserRepository, cache domain.Cache) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		authHeader := c.Get("Authorization")
-		if authHeader == "" {
+		tokenString := ""
+
+		if authHeader != "" {
+			parts := strings.Split(authHeader, " ")
+			if len(parts) == 2 && parts[0] == "Bearer" {
+				tokenString = parts[1]
+			}
+		}
+
+		if tokenString == "" {
+			tokenString = c.Query("token")
+		}
+
+		if tokenString == "" {
 			return domain.NewAppError(401, "Missing authorization header", nil)
 		}
-
-		parts := strings.Split(authHeader, " ")
-		if len(parts) != 2 || parts[0] != "Bearer" {
-			return domain.NewAppError(401, "Invalid authorization header format", nil)
-		}
-
-		tokenString := parts[1]
 		claims, err := jwtService.ValidateToken(tokenString)
 		if err != nil {
 			log.Printf("Auth Error: %v", err)

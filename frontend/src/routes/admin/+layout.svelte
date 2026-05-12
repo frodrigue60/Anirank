@@ -1,5 +1,6 @@
 <script lang="ts">
   import { authState } from "$lib/state/auth.svelte";
+  import OptimizedImage from "$lib/components/OptimizedImage.svelte";
   import { goto } from "$app/navigation";
   import Menu from "lucide-svelte/icons/menu";
   import LayoutDashboard from "lucide-svelte/icons/layout-dashboard";
@@ -380,11 +381,12 @@
 
       <div class="flex items-center gap-4">
         <div class="flex items-center gap-3 pl-4 border-l border-gray-500">
-          <img
-            src={authState.user?.avatar_url ||
-              "/images/placeholders/default.svg"}
+          <OptimizedImage
+            src={authState.user?.avatar_url}
+            sources={authState.user?.avatar_sources}
             alt={authState.user?.name || "Admin"}
             class="w-8 h-8 rounded-full object-cover ring-2 ring-white/10"
+            sizes="32px"
           />
           <div class="hidden md:block">
             <p class="text-sm font-medium text-on-surface">

@@ -18,6 +18,7 @@ type StorageService interface {
 	UploadFile(ctx context.Context, relativePath string, file io.Reader, size int64, contentType string) (string, error)
 	GetURL(relativePath string) string
 	DeleteFile(ctx context.Context, relativePath string) error
+	GetFile(ctx context.Context, relativePath string) (io.ReadCloser, error)
 	FileExists(ctx context.Context, relativePath string) (bool, error)
 	ListFiles(ctx context.Context, prefix string) ([]string, error)
 	GetEndpoint() string
@@ -155,6 +156,17 @@ func (s *S3Storage) GetURL(relativePath string) string {
 		return fmt.Sprintf("%s/%s", s.publicUrl, relativePath)
 	}
 	return fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", s.bucket, s.region, relativePath)
+}
+
+func (s *S3Storage) GetFile(ctx context.Context, relativePath string) (io.ReadCloser, error) {
+	resp, err := s.client.GetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(s.bucket),
+		Key:    aws.String(relativePath),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get file: %w", err)
+	}
+	return resp.Body, nil
 }
 
 func (s *S3Storage) DeleteFile(ctx context.Context, relativePath string) error {

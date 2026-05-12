@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"anirank/api/internal/domain"
@@ -20,6 +21,7 @@ type BadgeUsecase struct {
 	interactionRepo domain.InteractionRepository
 	commentRepo     domain.CommentRepository
 	storage         infrastructure.StorageService
+	mediaService    infrastructure.MediaService
 	auditUsecase    domain.AuditLogUsecase
 	evaluators      map[string]BadgeEvaluator // Strategy pattern: triggerType → evaluator
 }
@@ -30,6 +32,7 @@ func NewBadgeUsecase(
 	interactionRepo domain.InteractionRepository,
 	commentRepo domain.CommentRepository,
 	storage infrastructure.StorageService,
+	mediaService infrastructure.MediaService,
 	auditUsecase domain.AuditLogUsecase,
 ) domain.BadgeUsecase {
 	return &BadgeUsecase{
@@ -38,6 +41,7 @@ func NewBadgeUsecase(
 		interactionRepo: interactionRepo,
 		commentRepo:     commentRepo,
 		storage:         storage,
+		mediaService:    mediaService,
 		auditUsecase:    auditUsecase,
 		evaluators:      buildEvaluators(userRepo, interactionRepo, commentRepo),
 	}
@@ -217,5 +221,59 @@ func (u *BadgeUsecase) CheckAndAwardBadges(ctx context.Context, userID uint64, t
 		}
 	}
 
+	return nil
+}
+
+func (u *BadgeUsecase) ProcessBadgeIcons(ctx context.Context, progress chan<- string) error {
+	sendProgress := func(msg string) {
+		if progress != nil {
+			select {
+			case progress <- msg:
+			default:
+			}
+		}
+	}
+
+	badges, err := u.repo.GetAll(ctx)
+	if err != nil {
+		return err
+	}
+
+	sendProgress(fmt.Sprintf("Processing %d badges for icons...", len(badges)))
+
+	for i, badge := range badges {
+		if badge.Icon == nil || *badge.Icon == "" {
+			continue
+		}
+
+		sendProgress(fmt.Sprintf("[%d/%d] Processing icon for: %s", i+1, len(badges), badge.Name))
+
+		file, err := u.mediaService.GetFile(ctx, *badge.Icon)
+		if err != nil {
+			sendProgress(fmt.Sprintf("✗ Failed to get file for %s: %v", badge.Name, err))
+			continue
+		}
+
+		newPath, _, err := u.mediaService.UploadWithResolutions(ctx, "badges", badge.ID, file, infrastructure.PresetSquare)
+		file.Close()
+		if err != nil {
+			sendProgress(fmt.Sprintf("✗ Failed to process %s: %v", badge.Name, err))
+			continue
+		}
+
+		oldPath := *badge.Icon
+		if err := u.repo.UpdateIcon(ctx, badge.ID, newPath); err != nil {
+			sendProgress(fmt.Sprintf("✗ Failed to update DB for %s: %v", badge.Name, err))
+			continue
+		}
+
+		if oldPath != newPath && !strings.HasPrefix(oldPath, "http") {
+			_ = u.storage.DeleteFile(ctx, oldPath)
+		}
+
+		sendProgress(fmt.Sprintf("✓ Success: %s", badge.Name))
+	}
+
+	sendProgress("Completed badge icon processing!")
 	return nil
 }

@@ -42,6 +42,7 @@ func ToUserDTO(u *domain.User) UserDTO {
 			Name:        b.Name,
 			Description: b.Description,
 			IconUrl:     b.IconUrl,
+			IconSources: b.IconSources,
 		})
 	}
 
@@ -543,9 +544,11 @@ func ToStudioDTO(s *domain.Studio) StudioDTO {
 		ID:         s.UUID,
 		Name:       s.Name,
 		Slug:       s.Slug,
-		LogoUrl:    s.LogoUrl,
-		BannerUrl:  s.BannerUrl,
-		AnimeCount: s.AnimeCount,
+		LogoUrl:       s.LogoUrl,
+		LogoSources:   s.LogoSources,
+		BannerUrl:     s.BannerUrl,
+		BannerSources: s.BannerSources,
+		AnimeCount:    s.AnimeCount,
 	}
 }
 
@@ -557,9 +560,11 @@ func ToProducerDTO(p *domain.Producer) ProducerDTO {
 		ID:         p.UUID,
 		Name:       p.Name,
 		Slug:       p.Slug,
-		LogoUrl:    p.LogoUrl,
-		BannerUrl:  p.BannerUrl,
-		AnimeCount: p.AnimeCount,
+		LogoUrl:       p.LogoUrl,
+		LogoSources:   p.LogoSources,
+		BannerUrl:     p.BannerUrl,
+		BannerSources: p.BannerSources,
+		AnimeCount:    p.AnimeCount,
 	}
 }
 
@@ -617,7 +622,8 @@ func ToPlaylistMinimalDTO(p *domain.Playlist) PlaylistMinimalDTO {
 		ID:           p.UUID,
 		Name:         p.Name,
 		Slug:         p.Name,
-		BannerUrl:    p.BannerUrl,
+		BannerUrl:     p.BannerUrl,
+		BannerSources: p.BannerSources,
 		SongCount:    p.SongCount,
 		IsPublic:     p.IsPublic,
 		ContainsSong: p.ContainsSong,

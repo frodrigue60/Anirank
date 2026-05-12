@@ -30,7 +30,11 @@ type BadgeUsecase interface {
 
 	// Automation
 	CheckAndAwardBadges(ctx context.Context, userID uint64, triggerType string) error
+
+	// Batch Processing
+	ProcessBadgeIcons(ctx context.Context, progress chan<- string) error
 }
+
 // FilterHighestBadges groups badges by requirement_type and keeps only the one with the highest requirement_value.
 // Badges without a requirement_type are always included.
 func FilterHighestBadges(badges []Badge) []Badge {

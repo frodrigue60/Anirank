@@ -76,8 +76,9 @@ func (u *activityUsecase) enrichActivitiesBatch(ctx context.Context, activities 
 		}
 		users, _ := u.userRepo.GetMany(ctx, ids)
 		for i := range users {
+			users[i].AvatarUrl = u.mediaService.Resolve(users[i].Avatar)
 			if users[i].Avatar != nil {
-				users[i].AvatarUrl = u.mediaService.Resolve(users[i].Avatar)
+				users[i].AvatarSources = u.mediaService.GetImageSources(*users[i].Avatar)
 			}
 			usersMap[users[i].ID] = &users[i]
 		}
@@ -93,6 +94,13 @@ func (u *activityUsecase) enrichActivitiesBatch(ctx context.Context, activities 
 		for i := range songs {
 			if songs[i].Anime != nil {
 				songs[i].Anime.CoverUrl = u.mediaService.Resolve(songs[i].Anime.Cover)
+				if songs[i].Anime.Cover != nil {
+					songs[i].Anime.CoverSources = u.mediaService.GetImageSources(*songs[i].Anime.Cover)
+				}
+				songs[i].Anime.BannerUrl = u.mediaService.Resolve(songs[i].Anime.Banner)
+				if songs[i].Anime.Banner != nil {
+					songs[i].Anime.BannerSources = u.mediaService.GetImageSources(*songs[i].Anime.Banner)
+				}
 			}
 			// Set computed fields (fallback logic)
 			if songs[i].SongRomaji != nil && *songs[i].SongRomaji != "" {
@@ -116,8 +124,9 @@ func (u *activityUsecase) enrichActivitiesBatch(ctx context.Context, activities 
 		}
 		artists, _ := u.artistRepo.GetMany(ctx, ids)
 		for i := range artists {
+			artists[i].AvatarUrl = u.mediaService.Resolve(artists[i].Avatar)
 			if artists[i].Avatar != nil {
-				artists[i].AvatarUrl = u.mediaService.Resolve(artists[i].Avatar)
+				artists[i].AvatarSources = u.mediaService.GetImageSources(*artists[i].Avatar)
 			}
 			artistsMap[artists[i].ID] = &artists[i]
 		}
@@ -131,8 +140,9 @@ func (u *activityUsecase) enrichActivitiesBatch(ctx context.Context, activities 
 		}
 		tUsers, _ := u.userRepo.GetMany(ctx, ids)
 		for i := range tUsers {
+			tUsers[i].AvatarUrl = u.mediaService.Resolve(tUsers[i].Avatar)
 			if tUsers[i].Avatar != nil {
-				tUsers[i].AvatarUrl = u.mediaService.Resolve(tUsers[i].Avatar)
+				tUsers[i].AvatarSources = u.mediaService.GetImageSources(*tUsers[i].Avatar)
 			}
 			targetUsersMap[tUsers[i].ID] = &tUsers[i]
 		}

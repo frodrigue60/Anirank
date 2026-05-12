@@ -33,6 +33,8 @@
   import Flag from "lucide-svelte/icons/flag";
   import RotateCcw from "lucide-svelte/icons/rotate-ccw";
   import Library from "lucide-svelte/icons/library";
+  import OptimizedImage from "$lib/components/OptimizedImage.svelte";
+  import type { ImageSource } from "$lib/types/media";
   import api from "$lib/api";
   import type { Song, Artist, SongVariant as Variant } from "$lib/types/song";
   interface User {
@@ -40,7 +42,7 @@
     uuid: string;
     name: string;
     avatar_url?: string;
-    score_format?: string;
+    avatar_sources?: ImageSource[];
     role?: string;
     truth_score?: number;
     is_shadowbanned?: boolean;
@@ -897,12 +899,12 @@
             class="w-10 h-10 rounded-full bg-white/10 overflow-hidden shrink-0"
           >
             {#if authState.isAuthenticated && authState.user}
-              <img
-                src={authState.user.avatar_url ||
-                  "/images/placeholders/default.svg"}
+              <OptimizedImage
+                src={authState.user.avatar_url}
+                sources={authState.user.avatar_sources}
                 alt="{authState.user.name}'s avatar"
-                title="{authState.user.name}'s avatar"
                 class="w-full h-full object-cover"
+                sizes="40px"
               />
             {:else}
               <User size={24} class="text-white/40" />
@@ -949,12 +951,12 @@
               <div
                 class="w-10 h-10 rounded-full bg-surface-highest overflow-hidden shrink-0 border border-outline-variant/10"
               >
-                <img
-                  src={comment.user?.avatar_url ||
-                    "/images/placeholders/default.svg"}
+                <OptimizedImage
+                  src={comment.user?.avatar_url}
+                  sources={comment.user?.avatar_sources}
                   alt={comment.user?.name}
-                  title={comment.user?.name}
                   class="w-full h-full object-cover"
+                  sizes="40px"
                 />
               </div>
               <div class="flex-1 space-y-2">
@@ -968,11 +970,12 @@
                       >
                       {#if comment.user?.badges}
                         {#each comment.user.badges as badge}
-                          <img
-                            src={badge.image_url}
+                          <OptimizedImage
+                            src={badge.icon_url || badge.image_url}
+                            sources={badge.icon_sources}
                             alt={badge.name}
                             class="w-4 h-4"
-                            title={badge.name}
+                            sizes="16px"
                           />
                         {/each}
                       {/if}
@@ -1145,12 +1148,12 @@
                         <div
                           class="w-8 h-8 rounded-full bg-surface-highest overflow-hidden shrink-0 border border-outline-variant/10"
                         >
-                          <img
-                            src={reply.user?.avatar_url ||
-                              "/images/placeholders/default.svg"}
+                          <OptimizedImage
+                            src={reply.user?.avatar_url}
+                            sources={reply.user?.avatar_sources}
                             alt={reply.user?.name}
-                            title={reply.user?.name}
                             class="w-full h-full object-cover"
+                            sizes="32px"
                           />
                         </div>
                         <div class="flex-1 space-y-1">
@@ -1165,11 +1168,12 @@
                                 {#if reply.user?.badges}
                                   <div class="flex gap-1 ml-1">
                                     {#each reply.user.badges as badge}
-                                      <img
-                                        src={badge.image_url}
+                                      <OptimizedImage
+                                        src={badge.icon_url || badge.image_url}
+                                        sources={badge.icon_sources}
                                         alt={badge.name}
                                         class="w-3.5 h-3.5"
-                                        title={badge.name}
+                                        sizes="14px"
                                       />
                                     {/each}
                                   </div>
@@ -1341,12 +1345,12 @@
             <div
               class="w-32 aspect-video rounded-md overflow-hidden shrink-0 border border-outline-variant/10"
             >
-              <img
-                src={currentSong.anime?.cover_url ||
-                  "https://placehold.co/400x225/2a2136/white?text=No+Art"}
+              <OptimizedImage
+                src={currentSong.anime?.cover_url}
+                sources={currentSong.anime?.cover_sources}
                 alt={getSongName(related)}
-                title={getSongName(related)}
                 class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                sizes="(max-width: 1024px) 128px, 160px"
               />
             </div>
             <div class="flex-1 min-w-0 flex flex-col justify-center">

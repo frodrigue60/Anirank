@@ -10,6 +10,7 @@
   import ChevronLeft from "lucide-svelte/icons/chevron-left";
   import ChevronRight from "lucide-svelte/icons/chevron-right";
   import User from "lucide-svelte/icons/user";
+  import OptimizedImage from "$lib/components/OptimizedImage.svelte";
 
   let { data } = $props();
 
@@ -497,10 +498,12 @@
                 class="w-10 h-10 rounded-full bg-surface-highest overflow-hidden border border-outline-variant"
               >
                 {#if artist.avatar_url}
-                  <img
+                  <OptimizedImage
                     src={artist.avatar_url}
+                    sources={artist.avatar_sources}
                     alt={artist.name}
                     class="w-full h-full object-cover"
+                    sizes="40px"
                   />
                 {:else}
                   <div

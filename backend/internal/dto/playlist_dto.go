@@ -1,12 +1,16 @@
 package dto
 
-import "time"
+import (
+	"anirank/api/internal/domain"
+	"time"
+)
 
 type PlaylistMinimalDTO struct {
 	ID           string  `json:"id"`
 	Name         string  `json:"name"`
 	Slug         string  `json:"slug"`
-	BannerUrl    *string `json:"banner_url,omitempty"`
+	BannerUrl     *string `json:"banner_url,omitempty"`
+	BannerSources []domain.ImageSource `json:"banner_sources,omitempty"`
 	SongCount    int     `json:"song_count"`
 	IsPublic     bool    `json:"is_public"`
 	ContainsSong bool    `json:"contains_song,omitempty"`

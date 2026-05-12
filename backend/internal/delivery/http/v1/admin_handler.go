@@ -182,6 +182,46 @@ func (h *AdminHandler) SnapshotRankingPositions(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"message": "Ranking snapshot created successfully"})
 }
 
+func (h *AdminHandler) StartImageProcessingJob(c *fiber.Ctx) error {
+	entityType := c.Query("type")
+	if entityType == "" {
+		return domain.NewAppError(400, "Missing entity type", nil)
+	}
+
+	c.Set("Content-Type", "text/event-stream")
+	c.Set("Cache-Control", "no-cache")
+	c.Set("Connection", "keep-alive")
+	c.Set("Transfer-Encoding", "chunked")
+
+	progress := make(chan string, 10)
+
+	// Start processing in a goroutine so we can stream the channel
+	errChan := make(chan error, 1)
+	go func() {
+		errChan <- h.usecase.ProcessEntityImages(context.Background(), entityType, progress)
+		close(progress)
+	}()
+
+	c.Context().SetBodyStreamWriter(func(w *bufio.Writer) {
+		for msg := range progress {
+			fmt.Fprintf(w, "data: %s\n\n", msg)
+			if err := w.Flush(); err != nil {
+				return
+			}
+		}
+
+		// Check for final error
+		if err := <-errChan; err != nil {
+			fmt.Fprintf(w, "data: ERROR: %v\n\n", err)
+		} else {
+			fmt.Fprintf(w, "data: DONE\n\n")
+		}
+		_ = w.Flush()
+	})
+
+	return nil
+}
+
 // USERS
 func (h *AdminHandler) GetUsers(c *fiber.Ctx) error {
 	page, _ := strconv.Atoi(c.Query("page", "1"))

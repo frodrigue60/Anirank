@@ -6,7 +6,8 @@
   import api from "$lib/api";
   import Search from "lucide-svelte/icons/search";
 import Music from "lucide-svelte/icons/music";
-import User from "lucide-svelte/icons/user";;
+import User from "lucide-svelte/icons/user";
+import OptimizedImage from "$lib/components/OptimizedImage.svelte";
 
   let { data }: { data: any } = $props();
 
@@ -148,10 +149,13 @@ import User from "lucide-svelte/icons/user";;
         >
           <!-- Background Image -->
           {#if playlist.banner_url}
-            <div
-              class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
-              style="background-image: url('{playlist.banner_url}'); filter:brightness(0.5)"
-            ></div>
+            <OptimizedImage
+              src={playlist.banner_url}
+              sources={playlist.banner_sources}
+              alt={playlist.name}
+              class="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105 brightness-50"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 400px"
+            />
           {:else}
             <div
               class="absolute inset-0 bg-slate-700 transition-transform duration-500 group-hover:scale-105"

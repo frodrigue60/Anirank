@@ -2,8 +2,8 @@
   import { getFormattedScore } from "$lib/song-utils";
   import { authState } from "$lib/state/auth.svelte";
   import { createTrustedHTML } from "$lib/trusted";
-  import { getSrcset } from "$lib/utils/image";
   import Smile from "lucide-svelte/icons/smile";
+  import OptimizedImage from "$lib/components/OptimizedImage.svelte";
 
   let { anime, view = "grid" } = $props<{
     anime: any;
@@ -31,14 +31,12 @@
       class="relative aspect-2/3 rounded-md shadow-sm overflow-hidden card-shadow group block"
       title="View details for {anime.title}"
     >
-      <img
+      <OptimizedImage
+        src={anime.cover_url}
+        sources={anime.cover_sources}
         alt={anime.title}
-        title={anime.title}
         class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-        src={anime.cover_url ?? "/images/placeholders/default.svg"}
-        srcset={getSrcset(anime.cover_sources)}
         sizes="(max-width: 640px) 150px, (max-width: 1024px) 200px, 300px"
-        loading="lazy"
       />
       <div
         class="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent opacity-100 transition-opacity"
@@ -91,13 +89,12 @@
     <div class="flex flex-row h-full">
       <!-- Media Section -->
       <div class="relative w-28 sm:w-40 aspect-2/3 shrink-0 overflow-hidden">
-        <img
-          src={anime.cover_url ?? "/images/placeholders/default.svg"}
-          srcset={getSrcset(anime.cover_sources)}
-          sizes="(max-width: 640px) 112px, 160px"
+        <OptimizedImage
+          src={anime.cover_url}
+          sources={anime.cover_sources}
           alt={anime.title}
           class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-          loading="lazy"
+          sizes="(max-width: 640px) 112px, 160px"
         />
         <div
           class="absolute inset-0 bg-linear-to-t from-black/90 via-black/20 to-transparent"
@@ -202,15 +199,13 @@
     class="group block bg-surface-container hover:bg-surface-highest rounded-md shadow-sm overflow-hidden transition-all duration-300"
   >
     <div class="flex items-center h-20 sm:h-24 pr-4 sm:pr-8">
-      <!-- Media Section -->
       <div class="h-full aspect-2/3 shrink-0 overflow-hidden">
-        <img
-          src={anime.cover_url ?? "/images/placeholders/default.svg"}
-          srcset={getSrcset(anime.cover_sources)}
-          sizes="80px"
+        <OptimizedImage
+          src={anime.cover_url}
+          sources={anime.cover_sources}
           alt={anime.title}
           class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-          loading="lazy"
+          sizes="80px"
         />
       </div>
 

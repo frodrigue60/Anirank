@@ -1,6 +1,7 @@
 <script lang="ts">
   import api from "$lib/api";
   import { toastState } from "$lib/state/toast.svelte";
+  import { getAuthToken } from "$lib/state/auth.svelte";
   import { getApiErrorMessage } from "$lib/api-errors";
   import Film from "lucide-svelte/icons/film";
   import Music from "lucide-svelte/icons/music";
@@ -18,6 +19,7 @@
   import RefreshCw from "lucide-svelte/icons/refresh-cw";
   import TrendingUp from "lucide-svelte/icons/trending-up";
   import Loader2 from "lucide-svelte/icons/loader-2";
+  import Image from "lucide-svelte/icons/image";
 
   let { data } = $props();
 
@@ -140,6 +142,49 @@
     } finally {
       isFlushing = false;
     }
+  }
+
+  // --- Image Processing Job ---
+  let activeJob = $state<string | null>(null);
+  let jobLogs = $state<string[]>([]);
+  let showLogs = $state(false);
+
+  function handleJob(type: string) {
+    if (activeJob) return;
+
+    activeJob = type;
+    jobLogs = [`Starting image processing job for ${type}...`];
+    showLogs = true;
+
+    // Use absolute URL for EventSource to avoid issues with baseURL
+    // Append token as query param since EventSource doesn't support custom headers
+    const token = getAuthToken();
+    const url = `${api.defaults.baseURL}/admin/jobs/image-processing?type=${type}&token=${token}`;
+    const eventSource = new EventSource(url, { withCredentials: true });
+
+    eventSource.onmessage = (event) => {
+      if (event.data === "DONE") {
+        jobLogs = [...jobLogs, "✅ Job completed successfully."];
+        eventSource.close();
+        activeJob = null;
+        toastState.addToast(`Image processing for ${type} finished`, "success");
+      } else if (event.data.startsWith("ERROR:")) {
+        jobLogs = [...jobLogs, `❌ ${event.data}`];
+        eventSource.close();
+        activeJob = null;
+        toastState.addToast(`Image processing for ${type} failed`, "error");
+      } else {
+        // Keep only last 100 logs to avoid UI lag
+        jobLogs = [...jobLogs.slice(-99), event.data];
+      }
+    };
+
+    eventSource.onerror = (err) => {
+      console.error("SSE Error:", err);
+      jobLogs = [...jobLogs, "❌ Connection lost or error occurred."];
+      eventSource.close();
+      activeJob = null;
+    };
   }
 
   // --- Chart Logic ---
@@ -507,6 +552,34 @@
           >View all pending items &rarr;</a
         >
       </div>
+
+      {#if showLogs}
+        <div class="mt-8 pt-6 border-t border-outline-variant">
+          <div class="flex items-center justify-between mb-4">
+            <h4 class="text-sm font-bold text-on-surface uppercase tracking-wider">Processing Logs</h4>
+            <button 
+              onclick={() => showLogs = false}
+              class="text-[10px] font-bold text-on-surface-variant hover:text-on-surface transition-colors uppercase"
+            >
+              Close Logs
+            </button>
+          </div>
+          <div class="bg-black/40 rounded-xl p-4 font-mono text-[11px] h-64 overflow-y-auto space-y-1 custom-scrollbar">
+            {#each jobLogs as log}
+              <div class="text-on-surface-variant/80 border-l-2 border-primary/20 pl-3 py-0.5">
+                <span class="text-primary/40 mr-2">[{new Date().toLocaleTimeString()}]</span>
+                {log}
+              </div>
+            {/each}
+            {#if activeJob}
+              <div class="flex items-center gap-2 text-primary animate-pulse py-1">
+                <Loader2 size={12} class="animate-spin" />
+                Processing...
+              </div>
+            {/if}
+          </div>
+        </div>
+      {/if}
     </div>
 
     <div class="bg-surface-container border border-outline-variant rounded-2xl p-6">
@@ -574,6 +647,44 @@
             >{isFlushing ? "Flushing..." : "Flush OG Image Cache"}</span
           >
         </button>
+
+        <div class="pt-4 mt-2 border-t border-outline-variant">
+          <p class="text-[10px] font-bold text-on-surface-variant/60 uppercase tracking-widest mb-3">Optimize Assets</p>
+          <div class="grid grid-cols-2 gap-2">
+            <button
+              onclick={() => handleJob('anime')}
+              disabled={!!activeJob}
+              class="flex items-center gap-2 p-3 rounded-lg bg-surface-highest hover:bg-white/5 transition-colors border border-outline-variant/30 text-left disabled:opacity-50"
+            >
+              <Image size={14} class="text-blue-400" />
+              <span class="text-[11px] font-bold text-on-surface uppercase">Animes</span>
+            </button>
+            <button
+              onclick={() => handleJob('artist')}
+              disabled={!!activeJob}
+              class="flex items-center gap-2 p-3 rounded-lg bg-surface-highest hover:bg-white/5 transition-colors border border-outline-variant/30 text-left disabled:opacity-50"
+            >
+              <Image size={14} class="text-purple-400" />
+              <span class="text-[11px] font-bold text-on-surface uppercase">Artists</span>
+            </button>
+            <button
+              onclick={() => handleJob('user')}
+              disabled={!!activeJob}
+              class="flex items-center gap-2 p-3 rounded-lg bg-surface-highest hover:bg-white/5 transition-colors border border-outline-variant/30 text-left disabled:opacity-50"
+            >
+              <User size={14} class="text-emerald-400" />
+              <span class="text-[11px] font-bold text-on-surface uppercase">Users</span>
+            </button>
+            <button
+              onclick={() => handleJob('badge')}
+              disabled={!!activeJob}
+              class="flex items-center gap-2 p-3 rounded-lg bg-surface-highest hover:bg-white/5 transition-colors border border-outline-variant/30 text-left disabled:opacity-50"
+            >
+              <Zap size={14} class="text-amber-400" />
+              <span class="text-[11px] font-bold text-on-surface uppercase">Badges</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>

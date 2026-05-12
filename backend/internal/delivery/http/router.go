@@ -68,7 +68,7 @@ func SetupPublicRoutes(app *fiber.App,
 	authHandler := v1.NewAuthHandler(authUsecase)
 
 	badgeRepo := postgres.NewBadgeRepository(db)
-	badgeUsecase := admin.NewBadgeUsecase(badgeRepo, userRepo, interactionRepo, commentRepo, storageService, auditLogUsecase)
+	badgeUsecase := admin.NewBadgeUsecase(badgeRepo, userRepo, interactionRepo, commentRepo, storageService, mediaService, auditLogUsecase)
 
 	interactionUsecase = interaction.NewInteractionUsecase(interactionRepo, commentRepo, userRepo, notificationUsecase, songRepo, animeRepo, artistRepo, mediaService, xpUsecase, activityUsecase, badgeUsecase, moderationUsecase)
 	interactionHandler := v1.NewInteractionHandler(interactionUsecase, activityUsecase, songRepo, userRepo, animeRepo, artistRepo, commentRepo)
@@ -320,6 +320,9 @@ func SetupPublicRoutes(app *fiber.App,
 
 	// Ranking Operations
 	adminOnly.Post("/ranking/snapshot", adminHandler.SnapshotRankingPositions)
+
+	// Maintenance Jobs
+	adminOnly.Get("/jobs/image-processing", adminHandler.StartImageProcessingJob)
 
 	// Audit Logs
 	adminOnly.Get("/audit-logs", adminHandler.GetAuditLogs)

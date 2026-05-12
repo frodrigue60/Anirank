@@ -8,6 +8,7 @@
   import Sparkles from "lucide-svelte/icons/sparkles";
   import ChevronRight from "lucide-svelte/icons/chevron-right";
   import ArrowLeft from "lucide-svelte/icons/arrow-left";
+  import OptimizedImage from "$lib/components/OptimizedImage.svelte";
 
   let { recentOnly = false } = $props();
 
@@ -121,30 +122,34 @@
           <div class="relative shrink-0">
             <!-- Target Cover -->
             {#if isSong && target}
-              <img
-                src={target.anime?.cover_url ||
-                  "/images/placeholders/default.svg"}
+              <OptimizedImage
+                src={target.anime?.cover_url}
+                sources={target.anime?.cover_sources}
                 alt={target.anime?.title}
                 class="h-20 w-14 rounded-sm object-cover border border-outline-variant/10 shadow-lg"
+                sizes="56px"
               />
             {:else if isArtist && target}
-              <img
-                src={target.avatar_url || "/images/placeholders/default.svg"}
+              <OptimizedImage
+                src={target.avatar_url}
+                sources={target.avatar_sources}
                 alt={target.name}
                 class="h-20 w-14 rounded-sm object-cover border border-outline-variant/10 shadow-lg"
+                sizes="56px"
               />
             {:else if isUser && target}
-              <img
-                src={target.avatar_url || "/images/placeholders/default.svg"}
+              <OptimizedImage
+                src={target.avatar_url}
+                sources={target.avatar_sources}
                 alt={target.name}
                 class="w-14 h-14 rounded-sm object-cover border border-outline-variant/10 shadow-lg"
+                sizes="56px"
               />
             {:else}
               <div
                 class="flex h-14 w-14 items-center justify-center rounded-sm border border-outline-variant/10 bg-surface-highest/30 shadow-inner"
               >
                 <Sparkles size={30} />
-
               </div>
             {/if}
 
@@ -152,19 +157,13 @@
             <div
               class="absolute -right-2 -bottom-2 h-8 w-8 overflow-hidden rounded-full border-4 border-surface shadow-xl shadow-black/10 transition-transform group-hover:scale-110"
             >
-              {#if activity.user?.avatar_url}
-                <img
-                  src={activity.user.avatar_url}
-                  alt={activity.user.name}
-                  class="w-full h-full object-cover"
-                />
-              {:else}
-                <img
-                  src={"/images/placeholders/default.svg"}
-                  alt={activity.user.name}
-                  class="w-full h-full object-cover"
-                />
-              {/if}
+              <OptimizedImage
+                src={activity.user?.avatar_url}
+                sources={activity.user?.avatar_sources}
+                alt={activity.user?.name}
+                class="w-full h-full object-cover"
+                sizes="32px"
+              />
             </div>
           </div>
 

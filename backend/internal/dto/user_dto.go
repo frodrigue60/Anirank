@@ -26,6 +26,7 @@ type BadgeDTO struct {
 	Name        string  `json:"name"`
 	Description *string `json:"description"`
 	IconUrl     *string `json:"icon_url,omitempty"`
+	IconSources []domain.ImageSource `json:"icon_sources,omitempty"`
 }
 
 type UserSocialIdentityDTO struct {

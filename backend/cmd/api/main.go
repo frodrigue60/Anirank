@@ -260,12 +260,12 @@ func main() {
 
 	discoveryUsecase := public.NewDiscoveryUsecase(taxonomyRepo, songRepo)
 	animeUsecase := public.NewAnimeUsecase(animeRepo, songRepo, mediaService)
-	searchUsecase := public.NewSearchUsecase(searchRepo, storageService)
+	searchUsecase := public.NewSearchUsecase(searchRepo, mediaService)
 	catalogUsecase := public.NewCatalogUsecase(animeRepo, songRepo, artistRepo, taxonomyRepo, userRepo, playlistRepo, interactionRepo, moderationRepo, anilistClient, mediaService, appCache, os.Getenv("ENCRYPTION_KEY"))
 
 	badgeRepo := postgres.NewBadgeRepository(db)
 	auditUsecase := audit.NewAuditLogUsecase(auditRepo)
-	badgeUsecase := admin.NewBadgeUsecase(badgeRepo, userRepo, interactionRepo, commentRepo, storageService, auditUsecase)
+	badgeUsecase := admin.NewBadgeUsecase(badgeRepo, userRepo, interactionRepo, commentRepo, storageService, mediaService, auditUsecase)
 	notificationUsecase := notification.NewNotificationUsecase(notificationRepo, appCache)
 
 	xpUsecase := usecase.NewXPUsecase(xpRepo, userRepo, badgeUsecase)
@@ -294,7 +294,7 @@ func main() {
 
 	userAdminUsecase := admin.NewUserAdminUsecase(userRepo, mediaService, auditUsecase)
 	contentAdminUsecase := admin.NewContentAdminUsecase(animeRepo, songRepo, variantRepo, artistRepo, taxonomyRepo, userRepo, anilistClient, mediaService, auditUsecase, interactionRepo, notificationUsecase)
-	adminUsecase := admin.NewAdminUsecase(userAdminUsecase, contentAdminUsecase, adminRepo, moderationRepo, jobsRepo)
+	adminUsecase := admin.NewAdminUsecase(userAdminUsecase, contentAdminUsecase, adminRepo, moderationRepo, jobsRepo, badgeUsecase)
 
 	ogGenerator := og.NewGenerator(storageService.GetPublicURL(), storageService.GetEndpoint())
 	shareHandler := v1.NewShareHandler(animeUsecase, catalogUsecase, playlistUsecase)

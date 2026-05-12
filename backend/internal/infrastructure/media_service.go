@@ -9,6 +9,7 @@ import (
 	"image/jpeg"
 	"image/png"
 	"io"
+	"net/http"
 	"strings"
 
 	"anirank/api/internal/domain"
@@ -24,6 +25,7 @@ type MediaService interface {
 	UploadImageOptimized(ctx context.Context, prefix string, id uint64, file io.Reader, options ImageOptions) (string, string, error)
 	UploadWithResolutions(ctx context.Context, prefix string, id uint64, file io.Reader, preset ResolutionPreset) (string, string, error)
 	GetImageSources(path string) []domain.ImageSource
+	GetFile(ctx context.Context, path string) (io.ReadCloser, error)
 	DeleteMedia(ctx context.Context, path string)
 }
 
@@ -201,12 +203,10 @@ func (s *mediaService) UploadWithResolutions(ctx context.Context, prefix string,
 
 		if isSquare {
 			resized = imageutil.Fill(img, w, w)
-		} else if preset == PresetPoster {
-			resized = imageutil.Resize(img, w, int(float64(w)*1.5))
 		} else {
-			// Only downscale if original is larger than target width
+			// Base measurement: Width, preserving aspect ratio
 			if img.Bounds().Dx() > w {
-				resized = imageutil.Resize(img, w, 0) // Preserve aspect ratio
+				resized = imageutil.Resize(img, w, 0)
 			} else {
 				resized = img
 			}
@@ -266,6 +266,33 @@ func (s *mediaService) GetImageSources(path string) []domain.ImageSource {
 	}
 
 	return sources
+}
+
+func (s *mediaService) GetFile(ctx context.Context, path string) (io.ReadCloser, error) {
+	if path == "" {
+		return nil, fmt.Errorf("empty path")
+	}
+
+	// If it's a full URL, we might need to fetch it via HTTP if it's external,
+	// or get it from storage if it's internal.
+	if strings.HasPrefix(path, "http") {
+		if s.baseURL != "" && strings.HasPrefix(path, s.baseURL) {
+			path = strings.TrimPrefix(path, s.baseURL)
+		} else {
+			// External URL
+			resp, err := http.Get(path)
+			if err != nil {
+				return nil, err
+			}
+			if resp.StatusCode != http.StatusOK {
+				resp.Body.Close()
+				return nil, fmt.Errorf("failed to fetch external image: %s", resp.Status)
+			}
+			return resp.Body, nil
+		}
+	}
+
+	return s.storage.GetFile(ctx, path)
 }
 
 func (s *mediaService) DeleteMedia(ctx context.Context, path string) {

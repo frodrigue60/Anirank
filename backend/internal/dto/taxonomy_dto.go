@@ -1,11 +1,15 @@
 package dto
 
+import "anirank/api/internal/domain"
+
 type StudioDTO struct {
 	ID         string  `json:"id"`
 	Name       string  `json:"name"`
 	Slug       string  `json:"slug"`
 	LogoUrl    *string `json:"logo_url,omitempty"`
 	BannerUrl  *string `json:"banner_url,omitempty"`
+	LogoSources   []domain.ImageSource `json:"logo_sources,omitempty"`
+	BannerSources []domain.ImageSource `json:"banner_sources,omitempty"`
 	AnimeCount int     `json:"anime_count"`
 }
 
@@ -15,6 +19,8 @@ type ProducerDTO struct {
 	Slug       string  `json:"slug"`
 	LogoUrl    *string `json:"logo_url,omitempty"`
 	BannerUrl  *string `json:"banner_url,omitempty"`
+	LogoSources   []domain.ImageSource `json:"logo_sources,omitempty"`
+	BannerSources []domain.ImageSource `json:"banner_sources,omitempty"`
 	AnimeCount int     `json:"anime_count"`
 }
 

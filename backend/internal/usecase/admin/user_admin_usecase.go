@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"errors"
+	"fmt"
 	"math/big"
 	"strings"
 
@@ -321,4 +322,63 @@ func (u *UserAdminUsecase) ResolveUsersURLs(users []domain.User) {
 	for i := range users {
 		u.ResolveUserURLs(&users[i])
 	}
+}
+
+func (u *UserAdminUsecase) ProcessUserImages(ctx context.Context, progress chan<- string) error {
+	sendProgress := func(msg string) {
+		if progress != nil {
+			select {
+			case progress <- msg:
+			default:
+			}
+		}
+	}
+
+	users, _, err := u.userRepo.GetUsers(ctx, 1, 10000, "")
+	if err != nil {
+		return err
+	}
+
+	sendProgress(fmt.Sprintf("Processing %d users for avatars and banners...", len(users)))
+
+	for i, user := range users {
+		// Process Avatar
+		if user.Avatar != nil && *user.Avatar != "" {
+			sendProgress(fmt.Sprintf("[%d/%d] Processing avatar for: %s", i+1, len(users), user.Name))
+			file, err := u.mediaService.GetFile(ctx, *user.Avatar)
+			if err == nil {
+				newPath, _, err := u.mediaService.UploadWithResolutions(ctx, "users/avatars", user.ID, file, infrastructure.PresetSquare)
+				file.Close()
+				if err == nil {
+					oldPath := *user.Avatar
+					if err := u.userRepo.SetImage(ctx, user.ID, "avatar", newPath); err == nil {
+						if oldPath != newPath && !strings.HasPrefix(oldPath, "http") {
+							u.mediaService.DeleteMedia(ctx, oldPath)
+						}
+					}
+				}
+			}
+		}
+
+		// Process Banner
+		if user.Banner != nil && *user.Banner != "" {
+			sendProgress(fmt.Sprintf("[%d/%d] Processing banner for: %s", i+1, len(users), user.Name))
+			file, err := u.mediaService.GetFile(ctx, *user.Banner)
+			if err == nil {
+				newPath, _, err := u.mediaService.UploadWithResolutions(ctx, "users/banners", user.ID, file, infrastructure.PresetLandscape)
+				file.Close()
+				if err == nil {
+					oldPath := *user.Banner
+					if err := u.userRepo.SetImage(ctx, user.ID, "banner", newPath); err == nil {
+						if oldPath != newPath && !strings.HasPrefix(oldPath, "http") {
+							u.mediaService.DeleteMedia(ctx, oldPath)
+						}
+					}
+				}
+			}
+		}
+	}
+
+	sendProgress("Completed user image processing!")
+	return nil
 }

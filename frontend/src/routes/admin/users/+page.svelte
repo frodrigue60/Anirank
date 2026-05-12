@@ -7,6 +7,7 @@
   import Search from "lucide-svelte/icons/search";
   import ChevronLeft from "lucide-svelte/icons/chevron-left";
   import ChevronRight from "lucide-svelte/icons/chevron-right";
+  import OptimizedImage from "$lib/components/OptimizedImage.svelte";
   let { data } = $props();
 
   let searchQuery = $state("");
@@ -116,10 +117,12 @@
             <td class="px-6 py-4">
               <div class="flex items-center gap-3">
                 {#if user.avatar_url}
-                  <img
+                  <OptimizedImage
                     src={user.avatar_url}
+                    sources={user.avatar_sources}
                     alt={user.name}
                     class="w-10 h-10 rounded-full object-cover shadow-sm bg-surface-highest border border-outline-variant"
+                    sizes="40px"
                   />
                 {:else}
                   <div

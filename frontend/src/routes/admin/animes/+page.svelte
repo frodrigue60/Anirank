@@ -11,6 +11,7 @@
   import ChevronRight from "lucide-svelte/icons/chevron-right";
 
   import { onMount } from "svelte";
+  import OptimizedImage from "$lib/components/OptimizedImage.svelte";
 
   let { data } = $props();
 
@@ -325,10 +326,12 @@
               />
             </td>
             <td class="px-6 py-4">
-              <img
-                src={anime.cover_url || "/images/placeholders/default.svg"}
+              <OptimizedImage
+                src={anime.cover_url}
+                sources={anime.cover_sources}
                 alt="{anime.title} cover"
                 class="w-10 h-14 object-cover rounded shadow-sm"
+                sizes="40px"
               />
             </td>
             <td class="px-6 py-4">

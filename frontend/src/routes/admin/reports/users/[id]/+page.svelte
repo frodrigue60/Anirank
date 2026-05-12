@@ -14,6 +14,7 @@ import ChevronDown from "lucide-svelte/icons/chevron-down";
 import ChevronUp from "lucide-svelte/icons/chevron-up";
 import XCircle from "lucide-svelte/icons/x-circle";
   import { fade, scale } from "svelte/transition";
+  import OptimizedImage from "$lib/components/OptimizedImage.svelte";
 
   let { data } = $props();
   // svelte-ignore state_referenced_locally
@@ -180,7 +181,13 @@ import XCircle from "lucide-svelte/icons/x-circle";
             <div class="flex items-center gap-6 bg-surface-highest p-6 rounded-2xl border border-outline-variant">
               <div class="size-20 rounded-full overflow-hidden border-2 border-outline-variant shadow-2xl bg-black/50">
                 {#if report.reported_user?.avatar_url}
-                  <img src={report.reported_user.avatar_url} alt="" class="size-full object-cover" />
+                  <OptimizedImage
+                    src={report.reported_user.avatar_url}
+                    sources={report.reported_user.avatar_sources}
+                    alt=""
+                    class="size-full object-cover"
+                    sizes="80px"
+                  />
                 {:else}
                   <div class="size-full flex items-center justify-center text-gray-700">
                     <User size={40} />
@@ -290,7 +297,13 @@ import XCircle from "lucide-svelte/icons/x-circle";
             <div class="flex items-center gap-3 mb-6">
               <div class="size-12 rounded-full overflow-hidden bg-surface-highest border border-outline-variant">
                 {#if report.reporter_user?.avatar_url}
-                  <img src={report.reporter_user.avatar_url} alt="" class="size-full object-cover" />
+                  <OptimizedImage
+                    src={report.reporter_user.avatar_url}
+                    sources={report.reporter_user.avatar_sources}
+                    alt=""
+                    class="size-full object-cover"
+                    sizes="48px"
+                  />
                 {:else}
                   <div class="size-full flex items-center justify-center text-gray-700">
                     <User size={20} />

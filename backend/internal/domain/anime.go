@@ -91,6 +91,8 @@ type Studio struct {
 	AnimeCount   int     `db:"anime_count" json:"anime_count"`
 	LatestBanner *string `db:"latest_banner" json:"latest_banner,omitempty"`
 	BannerUrl    *string `db:"-" json:"banner_url,omitempty"`
+	LogoSources   []ImageSource `db:"-" json:"logo_sources,omitempty"`
+	BannerSources []ImageSource `db:"-" json:"banner_sources,omitempty"`
 }
 
 type Producer struct {
@@ -107,6 +109,8 @@ type Producer struct {
 	AnimeCount   int     `db:"anime_count" json:"anime_count"`
 	LatestBanner *string `db:"latest_banner" json:"latest_banner,omitempty"`
 	BannerUrl    *string `db:"-" json:"banner_url,omitempty"`
+	LogoSources   []ImageSource `db:"-" json:"logo_sources,omitempty"`
+	BannerSources []ImageSource `db:"-" json:"banner_sources,omitempty"`
 }
 
 type Genre struct {

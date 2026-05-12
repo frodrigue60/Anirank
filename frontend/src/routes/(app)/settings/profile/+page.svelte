@@ -10,6 +10,7 @@ import Save from "lucide-svelte/icons/save";
 import Loader2 from "lucide-svelte/icons/loader-2";
 import Lock from "lucide-svelte/icons/lock";
 import ChevronDown from "lucide-svelte/icons/chevron-down";
+import OptimizedImage from "$lib/components/OptimizedImage.svelte";
 
   let scoreFormat = $state(authState.user?.score_format || "POINT_10_DECIMAL");
   let profileColor = $state(authState.user?.profile_color || "#3db4f2");
@@ -415,10 +416,12 @@ import ChevronDown from "lucide-svelte/icons/chevron-down";
           class="relative group rounded-md overflow-hidden h-48 bg-surface-low border border-white/5"
         >
           {#if authState.user?.banner_url}
-            <img
+            <OptimizedImage
               src={authState.user.banner_url}
+              sources={authState.user.banner_sources}
               alt="Banner"
               class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              sizes="(max-width: 1024px) 100vw, 800px"
             />
           {:else}
             <div
@@ -468,16 +471,19 @@ import ChevronDown from "lucide-svelte/icons/chevron-down";
             class="w-32 h-32 rounded-md overflow-hidden border-4 border-surface-container bg-surface-low shadow-sm relative"
           >
             {#if authState.user?.avatar_url}
-              <img
+              <OptimizedImage
                 src={authState.user.avatar_url}
+                sources={authState.user.avatar_sources}
                 alt="Avatar"
                 class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                sizes="128px"
               />
             {:else}
-              <img
+              <OptimizedImage
                 src="/images/placeholders/default.svg"
                 alt="Default Avatar"
                 class="w-full h-full object-cover"
+                sizes="128px"
               />
             {/if}
             <div

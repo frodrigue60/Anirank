@@ -11,6 +11,7 @@
   import Check from "lucide-svelte/icons/check";
   import Image from "lucide-svelte/icons/image";
   import Download from "lucide-svelte/icons/download";
+  import OptimizedImage from "$lib/components/OptimizedImage.svelte";
 
   interface AnilistBatchImportError {
     anilist_id: number;
@@ -294,10 +295,11 @@
           aria-label="Toggle selection"
         >
           {#if media.coverImage?.extraLarge}
-            <img
+            <OptimizedImage
               src={media.coverImage.extraLarge}
               alt={media.title?.romaji}
               class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 200px"
             />
           {:else}
             <div

@@ -4,6 +4,7 @@
   import InfiniteScroll from "$lib/components/InfiniteScroll.svelte";
   import ChevronRight from "lucide-svelte/icons/chevron-right";
   import Users from "lucide-svelte/icons/users";
+  import OptimizedImage from "$lib/components/OptimizedImage.svelte";
 
   let { data } = $props();
 
@@ -71,10 +72,12 @@
           <div
             class="size-14 rounded-md overflow-hidden bg-surface-low border border-on-surface-variant/10 group-hover:border-primary/50 transition-colors shadow-inner"
           >
-            <img
-              src={user.avatar_url || "/images/placeholders/default.svg"}
+            <OptimizedImage
+              src={user.avatar_url}
+              sources={user.avatar_sources}
               alt={user.name}
               class="w-full h-full object-cover"
+              sizes="56px"
             />
           </div>
           <div class="flex-1 min-w-0">

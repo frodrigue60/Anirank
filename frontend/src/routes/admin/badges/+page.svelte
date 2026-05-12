@@ -1,6 +1,7 @@
 <script lang="ts">
   import api from "$lib/api";
   import BadgeModal from "./BadgeModal.svelte";
+  import OptimizedImage from "$lib/components/OptimizedImage.svelte";
 
   let { data } = $props();
   // svelte-ignore state_referenced_locally
@@ -102,13 +103,15 @@
         <tbody class="divide-y divide-white/5">
           {#each badges as badge (badge.id)}
             <tr class="hover:bg-white/2 transition-colors group">
-              <td class="px-6 py-4">
-                <img
-                  src={badge?.icon_url || "/images/placeholders/default.svg"}
-                  alt={badge.name}
-                  class="w-10 h-10 object-contain rounded-md bg-black/20 p-1"
-                />
-              </td>
+               <td class="px-6 py-4">
+                 <OptimizedImage
+                   src={badge?.icon_url || "/images/placeholders/default.svg"}
+                   sources={badge?.icon_sources}
+                   alt={badge.name}
+                   class="w-10 h-10 object-contain rounded-md bg-black/20 p-1"
+                   sizes="40px"
+                 />
+               </td>
               <td class="px-6 py-4 font-medium text-on-surface">
                 {badge.name}
               </td>

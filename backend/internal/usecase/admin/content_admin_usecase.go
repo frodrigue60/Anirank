@@ -3034,3 +3034,158 @@ func (u *ContentAdminUsecase) CheckAnimeThemesStatus(ctx context.Context) (bool,
 
 	return online, msg
 }
+func (u *ContentAdminUsecase) ProcessEntityImages(ctx context.Context, entityType string, progress chan<- string) error {
+
+	switch entityType {
+	case "anime":
+		if err := u.processAnimeImages(ctx, "cover", progress); err != nil {
+			return err
+		}
+		return u.processAnimeImages(ctx, "banner", progress)
+	case "artist":
+		return u.processArtistImages(ctx, progress)
+	case "anime_covers":
+		return u.processAnimeImages(ctx, "cover", progress)
+	case "anime_banners":
+		return u.processAnimeImages(ctx, "banner", progress)
+	case "artist_avatars":
+		return u.processArtistImages(ctx, progress)
+	default:
+		return fmt.Errorf("unsupported entity type: %s", entityType)
+	}
+}
+
+func (u *ContentAdminUsecase) processAnimeImages(ctx context.Context, facet string, progress chan<- string) error {
+	sendProgress := func(msg string) {
+		if progress != nil {
+			select {
+			case progress <- msg:
+			default:
+			}
+		}
+	}
+
+	// 1. Get all animes
+	animes, err := u.animeRepo.GetPaginated(ctx, 10000, 0, domain.AnimeFilters{IsAdmin: true})
+	if err != nil {
+		return err
+	}
+
+	sendProgress(fmt.Sprintf("Processing %d animes for %s...", len(animes), facet))
+
+	for i, a := range animes {
+		var imgPath *string
+		if facet == "cover" {
+			imgPath = a.Cover
+		} else {
+			imgPath = a.Banner
+		}
+
+		if imgPath == nil || *imgPath == "" {
+			continue
+		}
+
+		// Check if it already has variants (simple check: if it's already an AVIF and not an external URL, 
+		// we assume it's one of ours, but we might want to re-process anyway to be sure variants exist)
+		// For now, let's just re-process everything that isn't a variant itself.
+
+		sendProgress(fmt.Sprintf("[%d/%d] Processing %s for: %s", i+1, len(animes), facet, a.Title))
+
+		file, err := u.mediaService.GetFile(ctx, *imgPath)
+		if err != nil {
+			sendProgress(fmt.Sprintf("✗ Failed to get file for %s: %v", a.Title, err))
+			continue
+		}
+
+		preset := infrastructure.PresetPoster
+		prefix := "animes/covers"
+		if facet == "banner" {
+			preset = infrastructure.PresetLandscape
+			prefix = "animes/banners"
+		}
+
+		newPath, _, err := u.mediaService.UploadWithResolutions(ctx, prefix, a.ID, file, preset)
+		file.Close()
+		if err != nil {
+			sendProgress(fmt.Sprintf("✗ Failed to process %s: %v", a.Title, err))
+			continue
+		}
+
+		// Update DB
+		oldPath := *imgPath
+		if facet == "cover" {
+			a.Cover = &newPath
+		} else {
+			a.Banner = &newPath
+		}
+
+		if err := u.animeRepo.Update(ctx, &a); err != nil {
+			sendProgress(fmt.Sprintf("✗ Failed to update DB for %s: %v", a.Title, err))
+			continue
+		}
+
+		// Delete old if it was one of ours and path changed
+		if oldPath != newPath && !strings.HasPrefix(oldPath, "http") {
+			u.mediaService.DeleteMedia(ctx, oldPath)
+		}
+
+		sendProgress(fmt.Sprintf("✓ Success: %s", a.Title))
+	}
+
+	sendProgress("Completed anime image processing!")
+	return nil
+}
+
+func (u *ContentAdminUsecase) processArtistImages(ctx context.Context, progress chan<- string) error {
+	sendProgress := func(msg string) {
+		if progress != nil {
+			select {
+			case progress <- msg:
+			default:
+			}
+		}
+	}
+
+	artists, err := u.artistRepo.GetPaginated(ctx, 10000, 0, domain.ArtistFilters{IsAdmin: true})
+	if err != nil {
+		return err
+	}
+
+	sendProgress(fmt.Sprintf("Processing %d artists for avatars...", len(artists)))
+
+	for i, a := range artists {
+		if a.Avatar == nil || *a.Avatar == "" {
+			continue
+		}
+
+		sendProgress(fmt.Sprintf("[%d/%d] Processing avatar for: %s", i+1, len(artists), a.Name))
+
+		file, err := u.mediaService.GetFile(ctx, *a.Avatar)
+		if err != nil {
+			sendProgress(fmt.Sprintf("✗ Failed to get file for %s: %v", a.Name, err))
+			continue
+		}
+
+		newPath, _, err := u.mediaService.UploadWithResolutions(ctx, "artists/avatars", a.ID, file, infrastructure.PresetSquare)
+		file.Close()
+		if err != nil {
+			sendProgress(fmt.Sprintf("✗ Failed to process %s: %v", a.Name, err))
+			continue
+		}
+
+		oldPath := *a.Avatar
+		if err := u.artistRepo.UpdateAvatar(ctx, a.ID, newPath); err != nil {
+			sendProgress(fmt.Sprintf("✗ Failed to update DB for %s: %v", a.Name, err))
+			continue
+		}
+
+		if oldPath != newPath && !strings.HasPrefix(oldPath, "http") {
+			u.mediaService.DeleteMedia(ctx, oldPath)
+		}
+
+		sendProgress(fmt.Sprintf("✓ Success: %s", a.Name))
+	}
+
+	sendProgress("Completed artist image processing!")
+	return nil
+}

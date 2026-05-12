@@ -14,6 +14,7 @@
   import Heart from "lucide-svelte/icons/heart";
   import Eye from "lucide-svelte/icons/eye";
   import ChevronRight from "lucide-svelte/icons/chevron-right";
+  import OptimizedImage from "$lib/components/OptimizedImage.svelte";
 
   let { data } = $props();
   let homeData = $derived(data.homeData);
@@ -74,11 +75,13 @@
         <section
           class="group relative min-h-[400px] w-full overflow-hidden rounded-md shadow-sm bg-surface-container"
         >
-          <div
-            class="absolute inset-0 bg-cover bg-center opacity-40 transition-transform duration-700 group-hover:scale-105 group-hover:opacity-50"
-            style="background-image: url('{homeData.featured_song.anime
-              ?.banner_url ?? '/images/placeholders/default-banner.svg'}');"
-          ></div>
+          <OptimizedImage
+            src={homeData.featured_song.anime?.banner_url}
+            sources={homeData.featured_song.anime?.banner_sources}
+            alt={homeData.featured_song.anime?.title}
+            class="absolute inset-0 h-full w-full object-cover opacity-40 transition-transform duration-700 group-hover:scale-105 group-hover:opacity-50"
+            sizes="100vw"
+          />
           <!-- gradient -->
           <div
             class="absolute inset-0 bg-linear-to-t from-surface/80 via-surface/40 to-transparent sm:bg-linear-to-r sm:from-surface/80 sm:via-surface/40 sm:to-transparent"
@@ -90,16 +93,14 @@
               <div
                 class="relative h-48 w-48 overflow-hidden rounded-md border border-outline-variant/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] md:h-64 md:w-64"
               >
-                <img
-                  alt="Cover art for {homeData.featured_song.anime?.title ||
-                    'featured theme'}"
-                  title="Cover art for {homeData.featured_song.anime?.title ||
-                    'featured theme'}"
+                <OptimizedImage
+                  src={homeData.featured_song.anime?.cover_url}
+                  sources={homeData.featured_song.anime?.cover_sources}
+                  alt={homeData.featured_song.anime?.title || "featured theme"}
                   class="h-full w-full object-cover"
                   loading="eager"
                   fetchpriority="high"
-                  src={homeData.featured_song.anime?.cover_url ??
-                    "/images/placeholders/default.svg"}
+                  sizes="(max-width: 768px) 192px, 256px"
                 />
                 <div
                   class="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/90 via-black/40 to-transparent p-4 pt-12"
@@ -202,12 +203,12 @@
                   <div
                     class="relative h-20 w-20 shrink-0 overflow-hidden rounded-md"
                   >
-                    <img
+                    <OptimizedImage
+                      src={item.anime?.cover_url}
+                      sources={item.anime?.cover_sources}
                       alt={getSongName(item)}
-                      title={getSongName(item)}
                       class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                      src={item.anime?.cover_url ??
-                        "/images/placeholders/default.svg"}
+                      sizes="80px"
                     />
                     <div
                       class="absolute top-1 left-1 rounded-sm bg-black/60 px-1.5 py-0.5 text-xs font-bold text-white shadow backdrop-blur-sm"
@@ -266,12 +267,12 @@
                   <div
                     class="relative h-20 w-20 shrink-0 overflow-hidden rounded-md"
                   >
-                    <img
+                    <OptimizedImage
+                      src={item.anime?.cover_url}
+                      sources={item.anime?.cover_sources}
                       alt={getSongName(item)}
-                      title={getSongName(item)}
                       class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                      src={item.anime?.cover_url ??
-                        "/images/placeholders/default.svg"}
+                      sizes="80px"
                     />
                     <div
                       class="absolute top-1 left-1 rounded-sm bg-black/60 px-1.5 py-0.5 text-xs font-bold text-white shadow backdrop-blur-sm"
@@ -389,12 +390,12 @@
                 <div
                   class="aspect-2/3 relative mb-3 overflow-hidden rounded-md bg-surface-low"
                 >
-                  <img
+                  <OptimizedImage
+                    src={song.anime?.cover_url}
+                    sources={song.anime?.cover_sources}
                     alt={getSongName(song)}
-                    title={getSongName(song)}
                     class="h-full w-full object-cover transition-opacity group-hover:opacity-80"
-                    src={song.anime?.cover_url ||
-                      "/images/placeholders/default.svg"}
+                    sizes="(max-width: 640px) 140px, (max-width: 768px) 160px, 180px"
                   />
                   <div
                     class="absolute top-2 right-2 rounded-sm border border-outline-variant/10 bg-black/60 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white"
@@ -432,12 +433,12 @@
                 <div
                   class="aspect-2/3 relative mb-3 overflow-hidden rounded-md bg-surface-low"
                 >
-                  <img
+                  <OptimizedImage
+                    src={song.anime?.cover_url}
+                    sources={song.anime?.cover_sources}
                     alt={getSongName(song)}
-                    title={getSongName(song)}
                     class="h-full w-full object-cover transition-opacity group-hover:opacity-80"
-                    src={song.anime?.cover_url ??
-                      "/images/placeholders/default.svg"}
+                    sizes="(max-width: 640px) 140px, (max-width: 768px) 160px, 180px"
                   />
                   <div
                     class="absolute top-2 right-2 rounded-sm border border-outline-variant/10 bg-black/60 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white"
@@ -476,12 +477,12 @@
                 <div
                   class="aspect-2/3 relative mb-3 overflow-hidden rounded-md bg-surface-low"
                 >
-                  <img
+                  <OptimizedImage
+                    src={song.anime?.cover_url}
+                    sources={song.anime?.cover_sources}
                     alt={getSongName(song)}
-                    title={getSongName(song)}
                     class="h-full w-full object-cover transition-opacity group-hover:opacity-80"
-                    src={song.anime?.cover_url ??
-                      "/images/placeholders/default.svg"}
+                    sizes="(max-width: 640px) 140px, (max-width: 768px) 160px, 180px"
                   />
                   <div
                     class="absolute top-2 right-2 rounded-sm border border-outline-variant/10 bg-black/60 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white"
@@ -535,12 +536,12 @@
                   <div
                     class="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-outline-variant/10 bg-surface-container transition-colors group-hover:border-primary/50"
                   >
-                    <img
+                    <OptimizedImage
+                      src={artist.avatar_url}
+                      sources={artist.avatar_sources}
                       alt={artist.name}
-                      title={artist.name}
                       class="h-full w-full object-cover transition-transform group-hover:scale-110"
-                      src={artist.avatar_url ||
-                        "/images/placeholders/default.svg"}
+                      sizes="44px"
                     />
                   </div>
                   <div class="flex min-w-0 flex-col">

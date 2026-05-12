@@ -13,6 +13,7 @@
   import Star from "lucide-svelte/icons/star";
   import Play from "lucide-svelte/icons/play";
   import { PUBLIC_API_URL } from "$lib/api";
+  import OptimizedImage from "$lib/components/OptimizedImage.svelte";
 
   let { data }: { data: PageData } = $props();
   let anime = $derived(data.data);
@@ -75,11 +76,12 @@
         <div
           class="relative rounded-md overflow-hidden shadow-2xl shadow-primary/10 border border-white/5 group"
         >
-          <img
-            alt="Cover art for {anime.title}"
-            title="Cover art for {anime.title}"
-            class="w-full h-auto aspect-2/3 object-cover transition-transform duration-700 group-hover:scale-105"
+          <OptimizedImage
             src={anime.cover_url}
+            sources={anime.cover_sources}
+            alt="Cover art for {anime.title}"
+            class="w-full h-auto aspect-2/3 object-cover transition-transform duration-700 group-hover:scale-105"
+            sizes="(max-width: 1024px) 100vw, 320px"
           />
           <div
             class="absolute top-0 left-0 w-full h-full bg-linear-to-t from-background-dark/80 via-transparent to-transparent opacity-60"

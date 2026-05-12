@@ -8,6 +8,7 @@
   import Edit2 from "lucide-svelte/icons/edit-2";
   import Trash2 from "lucide-svelte/icons/trash-2";
   import Music from "lucide-svelte/icons/music";
+  import OptimizedImage from "$lib/components/OptimizedImage.svelte";
 
   let { playlist, profile, openEditModal, handleDelete, onTogglePrivacy } =
     $props();
@@ -34,12 +35,12 @@
   class="group relative bg-surface-dark/30 rounded-md border border-white/5 p-5 hover:bg-surface-dark/50 transition-all flex flex-col gap-4 overflow-hidden aspect-video"
 >
   <!-- Background Image -->
-  <img
-    src={playlist.banner_url ||
-      "https://placehold.co/1280x720/2a2136/white?text=No+Songs"}
+  <OptimizedImage
+    src={playlist.banner_url}
+    sources={playlist.banner_sources}
     alt=""
     class="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105 brightness-50"
-    loading="lazy"
+    sizes="(max-width: 640px) 100vw, 400px"
   />
 
   <div

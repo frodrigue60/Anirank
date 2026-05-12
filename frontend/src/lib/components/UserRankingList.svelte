@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { RankingUser } from "$lib/types/user";
   import Users from "lucide-svelte/icons/users";
+  import OptimizedImage from "$lib/components/OptimizedImage.svelte";
 
   let { users = [] as RankingUser[], startIndex = 0, sort = "xp" } = $props();
 
@@ -49,11 +50,12 @@
                 <div
                   class="w-12 h-12 rounded-full overflow-hidden shrink-0 shadow-lg border border-white/10"
                 >
-                  <img
+                  <OptimizedImage
+                    src={user.avatar_url}
+                    sources={user.avatar_sources}
                     alt={user.name}
-                    title={user.name}
                     class="w-full h-full object-cover"
-                    src={user.avatar_url || "/images/placeholders/default.svg"}
+                    sizes="48px"
                   />
                 </div>
                 <div class="min-w-0 flex flex-col">

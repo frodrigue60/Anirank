@@ -19,6 +19,7 @@
   import Copy from "lucide-svelte/icons/copy";
   import KeyRound from "lucide-svelte/icons/key-round";
   import UserMinus from "lucide-svelte/icons/user-minus";
+  import OptimizedImage from "$lib/components/OptimizedImage.svelte";
 
   let { data } = $props();
   const user = $derived(data.user);
@@ -106,7 +107,13 @@
       <!-- Banner -->
       <div class="h-48 relative overflow-hidden">
         {#if user.banner_url}
-          <img src={user.banner_url} alt="Banner" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+          <OptimizedImage
+            src={user.banner_url}
+            sources={user.banner_sources}
+            alt="Banner"
+            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+            sizes="100vw"
+          />
         {:else}
           <div class="w-full h-full bg-linear-to-br from-anirank-card to-white/5"></div>
         {/if}
@@ -118,7 +125,13 @@
         <div class="relative shrink-0">
           <div class="w-32 h-32 rounded-3xl overflow-hidden border-4 border-anirank-bg shadow-2xl bg-surface-highest">
             {#if user.avatar_url}
-              <img src={user.avatar_url} alt={user.name} class="w-full h-full object-cover" />
+              <OptimizedImage
+                src={user.avatar_url}
+                sources={user.avatar_sources}
+                alt={user.name}
+                class="w-full h-full object-cover"
+                sizes="128px"
+              />
             {:else}
               <div class="w-full h-full flex items-center justify-center text-4xl font-bold text-on-surface-variant/40 uppercase">
                 {user.name.charAt(0)}
@@ -281,7 +294,14 @@
          {#each user.badges || [] as badge}
            <div class="aspect-square bg-surface-highest rounded-2xl flex items-center justify-center p-2 border border-outline-variant hover:border-outline-variant transition-all hover:-translate-y-1 relative group" title={badge.name}>
              {#if badge.icon_url}
-               <img src={badge.icon_url} alt={badge.name} class="w-full h-full object-contain" />
+                <OptimizedImage
+                  src={badge.icon_url}
+                  sources={badge.icon_sources}
+                  alt={badge.name}
+                  class="w-full h-full object-contain"
+                  sizes="40px"
+                />
+
              {:else}
                <ImageOff size={20} class="text-gray-600" />
              {/if}

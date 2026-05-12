@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getSrcset } from "$lib/utils/image";
+  import OptimizedImage from "./OptimizedImage.svelte";
   let { artist } = $props();
 </script>
 
@@ -9,14 +9,12 @@
     class="relative w-full aspect-square rounded-full overflow-hidden card-shadow ring-4 ring-transparent group-hover:ring-primary/50 transition-all duration-300"
     title="View artist profile: {artist.name}"
   >
-    <img
+    <OptimizedImage
+      src={artist.avatar_url}
+      sources={artist.avatar_sources}
       alt="Avatar for {artist.name}"
-      title="Avatar for {artist.name}"
       class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-      src={artist.avatar_url || "/images/placeholders/default.svg"}
-      srcset={getSrcset(artist.avatar_sources)}
       sizes="(max-width: 640px) 120px, 180px"
-      loading="lazy"
     />
     <div
       class="absolute inset-0 bg-linear-to-t from-primary/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"

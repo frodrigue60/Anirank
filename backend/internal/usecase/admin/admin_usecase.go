@@ -15,6 +15,7 @@ type AdminUsecase struct {
 	adminRepo    domain.AdminRepository
 	moderationR  domain.ModerationRepository
 	jobsRepo     domain.JobsRepository
+	badgeUsecase domain.BadgeUsecase
 }
 
 func NewAdminUsecase(
@@ -23,6 +24,7 @@ func NewAdminUsecase(
 	adminR domain.AdminRepository,
 	modR domain.ModerationRepository,
 	jr domain.JobsRepository,
+	bu domain.BadgeUsecase,
 ) *AdminUsecase {
 	return &AdminUsecase{
 		userAdmin:    ua,
@@ -30,6 +32,7 @@ func NewAdminUsecase(
 		adminRepo:    adminR,
 		moderationR:  modR,
 		jobsRepo:     jr,
+		badgeUsecase: bu,
 	}
 }
 
@@ -485,4 +488,17 @@ func (u *AdminUsecase) CheckAnilistStatus(ctx context.Context) (bool, string) {
 
 func (u *AdminUsecase) CheckAnimeThemesStatus(ctx context.Context) (bool, string) {
 	return u.contentAdmin.CheckAnimeThemesStatus(ctx)
+}
+
+func (u *AdminUsecase) ProcessEntityImages(ctx context.Context, entityType string, progress chan<- string) error {
+	switch entityType {
+	case "anime", "artist":
+		return u.contentAdmin.ProcessEntityImages(ctx, entityType, progress)
+	case "user":
+		return u.userAdmin.ProcessUserImages(ctx, progress)
+	case "badge":
+		return u.badgeUsecase.ProcessBadgeIcons(ctx, progress)
+	default:
+		return domain.NewAppError(400, "Invalid entity type for image processing", nil)
+	}
 }

@@ -1,3 +1,5 @@
+import type { ImageSource } from './media';
+
 export interface Song {
     is_reported: boolean | null | undefined;
     id: number;
@@ -17,7 +19,9 @@ export interface Song {
         id: number;
         title: string;
         cover_url: string;
+        cover_sources?: ImageSource[];
         banner_url: string;
+        banner_sources?: ImageSource[];
         slug: string;
     };
     year?: {
@@ -48,6 +52,9 @@ export interface Artist {
     status?: boolean;
     name_jp?: string;
     avatar_url?: string;
+    avatar_sources?: ImageSource[];
+    banner_url?: string;
+    banner_sources?: ImageSource[];
     image_url?: string;
     is_favorited?: boolean;
 }

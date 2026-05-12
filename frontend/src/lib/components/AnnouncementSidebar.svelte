@@ -7,6 +7,7 @@
   import AlertCircle from "lucide-svelte/icons/alert-circle";
   import CheckCircle from "lucide-svelte/icons/check-circle";
   import Calendar from "lucide-svelte/icons/calendar";
+  import OptimizedImage from "$lib/components/OptimizedImage.svelte";
 
   interface Announcement {
     id: number | string;
@@ -97,22 +98,13 @@
       >
         <!-- Background Image -->
         {#if item.image_url}
-          <picture
-            class="absolute inset-0 h-full w-full overflow-hidden transition-transform duration-700 group-hover:scale-110"
-          >
-            {#if item.image_sources}
-              <source
-                srcset={item.image_sources.map((s) => `${s.url} ${s.width}w`).join(", ")}
-                type="image/avif"
-              />
-            {/if}
-            <img
-              src={item.image_url}
-              alt={item.title}
-              loading="lazy"
-              class="h-full w-full object-cover"
-            />
-          </picture>
+          <OptimizedImage
+            src={item.image_url}
+            sources={item.image_sources}
+            alt={item.title}
+            class="absolute inset-0 h-full w-full object-cover overflow-hidden transition-transform duration-700 group-hover:scale-110"
+            sizes="320px"
+          />
           <div
             class="absolute inset-0 bg-linear-to-t from-black/90 via-black/40 to-transparent"
           ></div>

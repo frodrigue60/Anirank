@@ -11,6 +11,7 @@
   import Heart from "lucide-svelte/icons/heart";
   import Music2 from "lucide-svelte/icons/music-2";
   import User from "lucide-svelte/icons/user";
+  import OptimizedImage from "$lib/components/OptimizedImage.svelte";
 </script>
 
 <svelte:head>
@@ -65,10 +66,12 @@
         <div class="bg-surface-container border border-outline-variant rounded-3xl p-6 flex flex-col items-center shadow-md">
           <div class="w-40 h-40 rounded-full border-4 border-outline-variant overflow-hidden mb-6 bg-surface-highest shadow-xl relative">
             {#if artist.avatar_url}
-              <img
+              <OptimizedImage
                 src={artist.avatar_url}
+                sources={artist.avatar_sources}
                 alt={artist.name}
                 class="w-full h-full object-cover"
+                sizes="160px"
               />
             {:else}
               <div class="w-full h-full flex items-center justify-center text-on-surface-variant/40">

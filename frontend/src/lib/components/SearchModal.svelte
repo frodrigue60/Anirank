@@ -18,6 +18,7 @@
   import User from "lucide-svelte/icons/user";
   import Music from "lucide-svelte/icons/music";
   import Frown from "lucide-svelte/icons/frown";
+  import OptimizedImage from "$lib/components/OptimizedImage.svelte";
 
   let { show = $bindable(false) } = $props();
 
@@ -226,11 +227,11 @@
                         class="w-10 h-10 rounded-sm flex items-center justify-center bg-surface-lowest border border-outline-variant/10 overflow-hidden"
                       >
                         {#if item.image}
-                          <img
+                          <OptimizedImage
                             src={item.image}
                             alt=""
                             class="w-full h-full object-cover"
-                            loading="lazy"
+                            sizes="48px"
                           />
                         {:else}
                           <div class="text-on-surface-variant/40 flex items-center justify-center">
@@ -310,13 +311,12 @@
                         })}
                       class="flex items-center gap-4 p-2 rounded-sm hover:bg-surface-highest/50 transition-all group"
                     >
-                      <img
-                        src={anime.cover_url ||
-                          "https://placehold.co/100x150/1e1e24/7f13ec?text=Anime"}
+                      <OptimizedImage
+                        src={anime.cover_url}
+                        sources={anime.cover_sources}
                         alt={anime.title}
-                        title={anime.title}
                         class="w-12 h-16 object-cover rounded-sm bg-surface-lowest shadow-lg shadow-black/20"
-                        loading="lazy"
+                        sizes="48px"
                       />
                       <div class="flex flex-col">
                         <span
@@ -410,12 +410,12 @@
                           class="w-10 h-10 rounded-full border-2 border-outline-variant/10 bg-surface-highest overflow-hidden flex items-center justify-center text-primary/50 group-hover:border-primary transition-all shadow-sm"
                         >
                           {#if artist.avatar_url}
-                            <img
+                            <OptimizedImage
                               src={artist.avatar_url}
+                              sources={artist.avatar_sources}
                               alt={artist.name}
-                              title={artist.name}
                               class="w-full h-full object-cover"
-                              loading="lazy"
+                              sizes="40px"
                             />
                           {:else}
                             <User size={20} />
@@ -458,12 +458,12 @@
                           class="w-10 h-10 rounded-full border-2 border-outline-variant/10 bg-surface-highest overflow-hidden flex items-center justify-center text-primary/50 group-hover:border-primary transition-all shadow-sm"
                         >
                           {#if user.avatar_url}
-                            <img
+                            <OptimizedImage
                               src={user.avatar_url}
+                              sources={user.avatar_sources}
                               alt={user.name}
-                              title={user.name}
                               class="w-full h-full object-cover"
-                              loading="lazy"
+                              sizes="40px"
                             />
                           {:else}
                             <User size={20} />

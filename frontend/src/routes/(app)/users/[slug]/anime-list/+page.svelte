@@ -10,6 +10,7 @@
   import MessageSquarePlus from "lucide-svelte/icons/message-square-plus";
   import Link2Off from "lucide-svelte/icons/link-2-off";
   import { authState } from "$lib/state/auth.svelte";
+  import OptimizedImage from "$lib/components/OptimizedImage.svelte";
 
   let { data } = $props();
 
@@ -197,13 +198,13 @@
             class="aspect-2/3 rounded-md overflow-hidden bg-surface-container border border-on-surface-variant/10 transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl hover:shadow-primary/20 relative shadow-md"
           >
             <!-- Cover Image with Grayscale logic -->
-            <img
+            <OptimizedImage
               src={item.cover_image}
               alt={item.title}
               class="w-full h-full object-cover transition-all duration-700 {item.is_in_db
                 ? 'grayscale-0'
                 : 'grayscale brightness-75 group-hover:grayscale-0 group-hover:brightness-100'}"
-              loading="lazy"
+              sizes="200px"
             />
 
             <!-- Overlay for nonexistent -->

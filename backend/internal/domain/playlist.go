@@ -24,7 +24,8 @@ type Playlist struct {
 	SongCount    int     `db:"song_count" json:"song_count"`
 	ContainsSong bool    `db:"contains_song" json:"contains_song"`
 	LatestBanner *string `db:"latest_banner" json:"-"`
-	BannerUrl    *string `db:"-" json:"banner_url"`
+	BannerUrl     *string `db:"-" json:"banner_url"`
+	BannerSources []ImageSource `db:"-" json:"banner_sources,omitempty"`
 }
 
 type PlaylistFilters struct {

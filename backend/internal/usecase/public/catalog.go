@@ -124,7 +124,13 @@ func (u *CatalogUsecase) enrichSongsBulk(ctx context.Context, userID *uint64, so
 		}
 		if s.Anime != nil {
 			s.Anime.CoverUrl = u.mediaService.Resolve(s.Anime.Cover)
+			if s.Anime.Cover != nil {
+				s.Anime.CoverSources = u.mediaService.GetImageSources(*s.Anime.Cover)
+			}
 			s.Anime.BannerUrl = u.mediaService.Resolve(s.Anime.Banner)
+			if s.Anime.Banner != nil {
+				s.Anime.BannerSources = u.mediaService.GetImageSources(*s.Anime.Banner)
+			}
 		}
 
 		// Artists
@@ -132,6 +138,9 @@ func (u *CatalogUsecase) enrichSongsBulk(ctx context.Context, userID *uint64, so
 			if artists, ok := artistsMap[s.ID]; ok {
 				for j := range artists {
 					artists[j].AvatarUrl = u.mediaService.Resolve(artists[j].Avatar)
+					if artists[j].Avatar != nil {
+						artists[j].AvatarSources = u.mediaService.GetImageSources(*artists[j].Avatar)
+					}
 				}
 				s.Artists = artists
 			} else {
@@ -677,7 +686,13 @@ func (u *CatalogUsecase) GetUserAnilistList(ctx context.Context, slug string, st
 
 func (u *CatalogUsecase) enrichUserProfile(ctx context.Context, user *domain.User) {
 	user.AvatarUrl = u.mediaService.Resolve(user.Avatar)
+	if user.Avatar != nil {
+		user.AvatarSources = u.mediaService.GetImageSources(*user.Avatar)
+	}
 	user.BannerUrl = u.mediaService.Resolve(user.Banner)
+	if user.Banner != nil {
+		user.BannerSources = u.mediaService.GetImageSources(*user.Banner)
+	}
 
 	// Load Badges
 	badges, err := u.userRepo.GetBadgesByUserID(ctx, user.ID)
@@ -685,6 +700,9 @@ func (u *CatalogUsecase) enrichUserProfile(ctx context.Context, user *domain.Use
 		badges = domain.FilterHighestBadges(badges)
 		for i := range badges {
 			badges[i].IconUrl = u.mediaService.Resolve(badges[i].Icon)
+			if badges[i].Icon != nil {
+				badges[i].IconSources = u.mediaService.GetImageSources(*badges[i].Icon)
+			}
 		}
 		user.Badges = badges
 	}
@@ -692,7 +710,13 @@ func (u *CatalogUsecase) enrichUserProfile(ctx context.Context, user *domain.Use
 
 func (u *CatalogUsecase) enrichArtist(ctx context.Context, userID *uint64, artist *domain.Artist) {
 	artist.AvatarUrl = u.mediaService.Resolve(artist.Avatar)
+	if artist.Avatar != nil {
+		artist.AvatarSources = u.mediaService.GetImageSources(*artist.Avatar)
+	}
 	artist.LatestBannerUrl = u.mediaService.Resolve(artist.LatestBanner)
+	if artist.LatestBanner != nil {
+		artist.BannerSources = u.mediaService.GetImageSources(*artist.LatestBanner)
+	}
 
 	if userID != nil && u.interactionRepo != nil {
 		isFav, _ := u.interactionRepo.IsFavoritedByUser(ctx, *userID, artist.ID, "artist")
@@ -775,7 +799,7 @@ func (u *CatalogUsecase) GetHomeData(ctx context.Context, userID *uint64) (*Home
 	artists, err := u.artistRepo.GetFeatured(ctx, 5)
 	if err == nil {
 		for i := range artists {
-			artists[i].AvatarUrl = u.mediaService.Resolve(artists[i].Avatar)
+			u.enrichArtist(ctx, nil, &artists[i])
 		}
 		data.FeaturedArtists = artists
 	}
@@ -861,6 +885,9 @@ func (u *CatalogUsecase) enrichSong(ctx context.Context, userID *uint64, s *doma
 		artists, _ := u.songRepo.GetArtistsBySongID(ctx, s.ID, false)
 		for i := range artists {
 			artists[i].AvatarUrl = u.mediaService.Resolve(artists[i].Avatar)
+			if artists[i].Avatar != nil {
+				artists[i].AvatarSources = u.mediaService.GetImageSources(*artists[i].Avatar)
+			}
 		}
 		s.Artists = artists
 	}
@@ -906,7 +933,13 @@ func (u *CatalogUsecase) enrichSong(ctx context.Context, userID *uint64, s *doma
 
 	if s.Anime != nil {
 		s.Anime.CoverUrl = u.mediaService.Resolve(s.Anime.Cover)
+		if s.Anime.Cover != nil {
+			s.Anime.CoverSources = u.mediaService.GetImageSources(*s.Anime.Cover)
+		}
 		s.Anime.BannerUrl = u.mediaService.Resolve(s.Anime.Banner)
+		if s.Anime.Banner != nil {
+			s.Anime.BannerSources = u.mediaService.GetImageSources(*s.Anime.Banner)
+		}
 	}
 
 	// Fetch Average Rating
@@ -941,7 +974,13 @@ func (u *CatalogUsecase) enrichSong(ctx context.Context, userID *uint64, s *doma
 
 func (u *CatalogUsecase) enrichAnime(ctx context.Context, anime *domain.Anime) {
 	anime.CoverUrl = u.mediaService.Resolve(anime.Cover)
+	if anime.Cover != nil {
+		anime.CoverSources = u.mediaService.GetImageSources(*anime.Cover)
+	}
 	anime.BannerUrl = u.mediaService.Resolve(anime.Banner)
+	if anime.Banner != nil {
+		anime.BannerSources = u.mediaService.GetImageSources(*anime.Banner)
+	}
 
 	for i := range anime.Studios {
 		u.enrichStudio(&anime.Studios[i])
@@ -953,7 +992,13 @@ func (u *CatalogUsecase) enrichAnime(ctx context.Context, anime *domain.Anime) {
 
 func (u *CatalogUsecase) enrichStudio(s *domain.Studio) {
 	s.LogoUrl = u.mediaService.Resolve(s.Logo)
+	if s.Logo != nil {
+		s.LogoSources = u.mediaService.GetImageSources(*s.Logo)
+	}
 	s.BannerUrl = u.mediaService.Resolve(s.LatestBanner)
+	if s.LatestBanner != nil {
+		s.BannerSources = u.mediaService.GetImageSources(*s.LatestBanner)
+	}
 	// Fallback for logo if not present
 	if s.LogoUrl == nil {
 		s.LogoUrl = s.BannerUrl
@@ -962,7 +1007,13 @@ func (u *CatalogUsecase) enrichStudio(s *domain.Studio) {
 
 func (u *CatalogUsecase) enrichProducer(p *domain.Producer) {
 	p.LogoUrl = u.mediaService.Resolve(p.Logo)
+	if p.Logo != nil {
+		p.LogoSources = u.mediaService.GetImageSources(*p.Logo)
+	}
 	p.BannerUrl = u.mediaService.Resolve(p.LatestBanner)
+	if p.LatestBanner != nil {
+		p.BannerSources = u.mediaService.GetImageSources(*p.LatestBanner)
+	}
 	// Fallback for logo if not present
 	if p.LogoUrl == nil {
 		p.LogoUrl = p.BannerUrl
@@ -971,6 +1022,9 @@ func (u *CatalogUsecase) enrichProducer(p *domain.Producer) {
 
 func (u *CatalogUsecase) enrichPlaylist(p *domain.Playlist) {
 	p.BannerUrl = u.mediaService.Resolve(p.LatestBanner)
+	if p.LatestBanner != nil {
+		p.BannerSources = u.mediaService.GetImageSources(*p.LatestBanner)
+	}
 }
 
 func (u *CatalogUsecase) GetSitemapData(ctx context.Context) ([]domain.SitemapItem, error) {

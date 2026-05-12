@@ -13,6 +13,7 @@
   import SEO from "$lib/components/SEO.svelte";
   import { authState } from "$lib/state/auth.svelte";
   import { PUBLIC_API_URL } from "$lib/api";
+  import OptimizedImage from "$lib/components/OptimizedImage.svelte";
 
   let { data }: { data: any } = $props();
 
@@ -203,11 +204,12 @@
         <div
           class="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-4 border-surface shadow-2xl relative z-10 group-hover:border-primary/50 transition-colors"
         >
-          <img
-            src={artist.avatar_url || "/images/placeholders/default.svg"}
+          <OptimizedImage
+            src={artist.avatar_url}
+            sources={artist.avatar_sources}
             alt="Avatar for {artist.name}"
-            title="Avatar for {artist.name}"
             class="w-full h-full object-cover"
+            sizes="(max-width: 768px) 96px, 128px"
           />
         </div>
         <div

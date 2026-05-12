@@ -9,6 +9,7 @@
   import Minus from "lucide-svelte/icons/minus";
   import Play from "lucide-svelte/icons/play";
   import Music2 from "lucide-svelte/icons/music-2";
+  import OptimizedImage from "$lib/components/OptimizedImage.svelte";
 
   let {
     songs = [],
@@ -107,12 +108,12 @@
                 <div
                   class="w-16 h-auto aspect-12/18 rounded-lg overflow-hidden shrink-0 shadow-lg shadow-black/40 border border-primary/10 relative"
                 >
-                  <img
+                  <OptimizedImage
                     alt={getSongName(item)}
-                    title={getSongName(item)}
                     class="w-full h-full object-cover"
-                    src={item.anime?.cover_url ??
-                      "/images/placeholders/default.svg"}
+                    src={item.anime?.cover_url}
+                    sources={item.anime?.cover_sources}
+                    sizes="64px"
                     loading="lazy"
                   />
                 </div>

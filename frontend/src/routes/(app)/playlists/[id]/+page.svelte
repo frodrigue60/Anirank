@@ -28,6 +28,7 @@
 
   import SEO from "$lib/components/SEO.svelte";
   import { PUBLIC_API_URL } from "$lib/api";
+  import OptimizedImage from "$lib/components/OptimizedImage.svelte";
 
   let { data } = $props();
   // svelte-ignore state_referenced_locally
@@ -411,11 +412,12 @@
             </video>
           {/if}
         {:else if currentSong}
-          <img
+          <OptimizedImage
+            src={currentSong.anime?.banner_url}
+            sources={currentSong.anime?.banner_sources}
             alt={currentSong.title}
             class="w-full h-full object-cover"
-            src={currentSong.anime?.banner_url ||
-              "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=2070&auto=format&fit=crop"}
+            sizes="(max-width: 1024px) 100vw, 60vw"
           />
           <div
             class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
@@ -597,13 +599,14 @@
               <div
                 class="w-20 h-14 rounded-lg overflow-hidden shrink-0 border border-white/5"
               >
-                <img
+                <OptimizedImage
+                  src={song.anime?.cover_url}
+                  sources={song.anime?.cover_sources}
                   alt={getSongName(song)}
                   class="w-full h-full object-cover {currentSong?.id === song.id
                     ? ''
                     : 'opacity-80 group-hover:opacity-100'}"
-                  src={song.anime?.cover_url ||
-                    "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=2070&auto=format&fit=crop"}
+                  sizes="80px"
                 />
               </div>
 
@@ -736,11 +739,12 @@
             </video>
           {/if}
         {:else if currentSong}
-          <img
+          <OptimizedImage
+            src={currentSong.anime?.banner_url}
+            sources={currentSong.anime?.banner_sources}
             alt={currentSong.title}
             class="w-full h-full object-cover"
-            src={currentSong.anime?.banner_url ||
-              "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=2070&auto=format&fit=crop"}
+            sizes="(max-width: 1024px) 100vw, 60vw"
           />
         {:else}
           <div
@@ -872,11 +876,12 @@
               <div
                 class="w-12 h-12 rounded-lg overflow-hidden shrink-0 border border-white/5"
               >
-                <img
+                <OptimizedImage
+                  src={song.anime?.cover_url}
+                  sources={song.anime?.cover_sources}
                   alt={song.title}
                   class="w-full h-full object-cover"
-                  src={song.anime?.cover_url ||
-                    "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=2070&auto=format&fit=crop"}
+                  sizes="48px"
                 />
               </div>
 

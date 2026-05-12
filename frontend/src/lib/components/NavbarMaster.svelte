@@ -5,6 +5,7 @@
   import { goto } from "$app/navigation";
   import SearchModal from "$lib/components/SearchModal.svelte";
   import RequestModal from "$lib/components/RequestModal.svelte";
+  import OptimizedImage from "$lib/components/OptimizedImage.svelte";
   import ChevronDown from "lucide-svelte/icons/chevron-down";
   import Tv from "lucide-svelte/icons/tv";
   import Users from "lucide-svelte/icons/users";
@@ -244,24 +245,15 @@
               class="w-9 h-9 overflow-hidden rounded-full border-2 border-transparent group-hover:border-primary transition-all bg-surface-low flex items-center justify-center text-on-surface-variant group-hover:text-primary"
             >
               {#if authState.isAuthenticated && authState.user}
-                {#if authState.user.avatar_url}
-                  <img
-                    src={authState.user.avatar_url}
-                    alt="{authState.user.name}'s avatar"
-                    title="{authState.user.name}'s avatar"
-                    class="h-full w-full object-cover"
-                  />
-                {:else}
-                  <img
-                    src="/images/placeholders/default.svg"
-                    alt="{authState.user.name}'s default avatar"
-                    title="{authState.user.name}'s default avatar"
-                    class="h-full w-full object-cover"
-                  />
-                {/if}
+                <OptimizedImage
+                  src={authState.user.avatar_url}
+                  sources={authState.user.avatar_sources}
+                  alt={authState.user.name}
+                  class="h-full w-full object-cover"
+                  sizes="36px"
+                />
               {:else}
                 <User size={20} />
-
               {/if}
             </div>
             <ChevronDown size={20} class="text-on-surface-variant group-hover:text-on-surface hidden sm:block" />

@@ -7,6 +7,7 @@
   import { getApiErrorMessage } from "$lib/api-errors";
   import RefreshCw from "lucide-svelte/icons/refresh-cw";
   import ExternalLink from "lucide-svelte/icons/external-link";
+  import OptimizedImage from "$lib/components/OptimizedImage.svelte";
 
   let { data } = $props<{ data: PageData }>();
   let anime = $derived(data.anime);
@@ -38,10 +39,12 @@
 >
   <div class="absolute inset-0 overflow-hidden rounded-3xl bg-zinc-950">
     {#if anime.banner_url}
-      <img
+      <OptimizedImage
         src={anime.banner_url}
+        sources={anime.banner_sources}
         alt="{anime.title} banner"
         class="w-full h-full object-cover opacity-60"
+        sizes="100vw"
       />
       <div
         class="absolute inset-0 bg-linear-to-t from-zinc-950 via-zinc-900/40 to-transparent"
@@ -57,10 +60,12 @@
       class="w-40 h-60 rounded-2xl border-4 border-zinc-950 shadow-2xl bg-zinc-900 overflow-hidden shrink-0 relative"
     >
       {#if anime.cover_url}
-        <img
+        <OptimizedImage
           src={anime.cover_url}
+          sources={anime.cover_sources}
           alt="{anime.title} cover"
           class="w-full h-full object-cover"
+          sizes="160px"
         />
       {:else}
         <div

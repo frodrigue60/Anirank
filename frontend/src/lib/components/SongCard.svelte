@@ -1,9 +1,9 @@
 <script lang="ts">
   import { getSongName, getFormattedScore } from "$lib/song-utils";
   import { authState } from "$lib/state/auth.svelte";
-  import { getSrcset } from "$lib/utils/image";
   import Star from "lucide-svelte/icons/star";
   import Play from "lucide-svelte/icons/play";
+  import OptimizedImage from "$lib/components/OptimizedImage.svelte";
 
   let { song } = $props();
 </script>
@@ -12,15 +12,12 @@
   class="group relative overflow-hidden rounded-md h-48 transition-all duration-300 bg-surface-container shadow-sm hover:shadow-2xl hover:-translate-y-1"
 >
   <!-- Background Banner -->
-  <img
-    src={song.anime?.banner_url ||
-      song.anime?.cover_url ||
-      "/images/placeholders/default-banner.svg"}
-    srcset={getSrcset(song.anime?.banner_sources ?? song.anime?.cover_sources)}
-    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 600px"
+  <OptimizedImage
+    src={song.anime?.banner_url || song.anime?.cover_url}
+    sources={song.anime?.banner_sources ?? song.anime?.cover_sources}
     alt=""
     class="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105 brightness-50"
-    loading="lazy"
+    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 600px"
   />
   <!-- Gradient Overlay -->
   <div

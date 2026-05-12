@@ -7,6 +7,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 	const csp = [
 		"default-src 'self'",
 		"script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.google.com https://*.anilist.co https://static.cloudflareinsights.com https://cloudflareinsights.com",
+		"script-src-elem 'self' 'unsafe-inline' https://*.google.com https://*.anilist.co https://static.cloudflareinsights.com https://cloudflareinsights.com",
 		"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
 		"img-src 'self' data: blob: http://localhost:8080 http://localhost:9000 https://*.anirank.work https://*.googleusercontent.com https://*.anilist.co https://*.discordapp.com https://*.media-amazon.com https://*.r2.dev",
 		"font-src 'self' https://fonts.gstatic.com",

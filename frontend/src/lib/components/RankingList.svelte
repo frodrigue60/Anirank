@@ -34,15 +34,15 @@
 <div
   class="bg-surface-container shadow-sm border border-primary/10 rounded-md overflow-x-auto mb-8"
 >
-  <table class="w-full border-collapse min-w-[700px]">
+  <table class="w-full table-fixed border-collapse">
     <thead>
       <tr
         class="border-b border-primary/10 bg-surface-highest text-[10px] font-black uppercase tracking-widest text-on-surface-variant"
       >
-        <th class="w-20 py-4 pl-8 pr-2 text-center font-black">Rank</th>
+        <th class="w-16 sm:w-20 py-4 pl-4 sm:pl-8 pr-2 text-center font-black">Rank</th>
         <th class="py-4 px-2 text-left font-black">Theme Info</th>
-        <th class="w-[120px] py-4 px-2 text-center font-black">Score</th>
-        <th class="w-[140px] py-4 pl-2 pr-8 text-right font-black">Actions</th>
+        <th class="w-20 sm:w-[120px] py-4 px-2 text-center font-black">Score</th>
+        <th class="w-14 sm:w-[80px] py-4 pl-2 pr-4 sm:pr-8 text-right font-black">Actions</th>
       </tr>
     </thead>
 
@@ -101,7 +101,7 @@
               </div>
             </td>
 
-            <td class="py-5 px-2">
+            <td class="py-5 px-2 overflow-hidden">
               <div class="flex items-center gap-6 min-w-0">
                 <div
                   class="w-16 h-auto aspect-12/18 rounded-lg overflow-hidden shrink-0 shadow-lg shadow-black/40 border border-primary/10 relative"
@@ -115,7 +115,7 @@
                     loading="lazy"
                   />
                 </div>
-                <div class="min-w-0 flex flex-col">
+                <div class="min-w-0 flex flex-col flex-1">
                   {#if true}
                     {@const songName = getSongName(item)}
                     {@const artistNames =

@@ -83,11 +83,11 @@
     </div>
     <div class="flex flex-col gap-3">
       <div
-        class="flex items-center p-1 bg-surface-highest border border-white/5 rounded-md w-fit"
+        class="flex flex-row flex-wrap items-center gap-1.5 p-1 bg-surface-highest border border-white/5 rounded-md w-full sm:w-fit"
       >
         <button
           onclick={() => changeType("all")}
-          class="px-6 py-2.5 rounded-sm font-bold text-sm transition-all {activeType ===
+          class="px-3 sm:px-6 py-2 rounded-sm font-bold text-xs sm:text-sm transition-all {activeType ===
             'all' || !activeType
             ? 'bg-primary text-white shadow-lg'
             : 'text-on-surface/80 hover:text-on-surface'}"
@@ -97,7 +97,7 @@
         {#each configState.songTypes as type}
           <button
             onclick={() => changeType(type.slug)}
-            class="px-6 py-2.5 rounded-sm font-bold text-sm transition-all {activeType === type.slug
+            class="px-3 sm:px-6 py-2 rounded-sm font-bold text-xs sm:text-sm transition-all {activeType === type.slug
               ? 'bg-primary text-white shadow-lg'
               : 'text-on-surface/80 hover:text-on-surface'}"
           >

@@ -724,6 +724,15 @@
             >
               {currentSong.anime?.title}
             </a>
+            {#if (selectedVariant?.season && selectedVariant?.year) || (currentSong.season && currentSong.year)}
+              {@const displaySeason = selectedVariant?.season || currentSong.season}
+              {@const displayYear = selectedVariant?.year || currentSong.year}
+              <span
+                class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest bg-surface-highest border border-on-surface-variant/10 text-on-surface-variant/60"
+              >
+                {displayYear?.name} {displaySeason?.name}
+              </span>
+            {/if}
           </div>
         </div>
         <!-- Meta Info Bar -->

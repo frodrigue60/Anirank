@@ -139,6 +139,20 @@
                     >
                       {item.anime?.title}
                     </span>
+                    {#if item.season && item.year}
+                      <div class="flex items-center gap-1.5 mt-1">
+                        <span
+                          class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border transition-colors {rankingType ===
+                            'seasonal' &&
+                          (item.season?.id !== data.songsData?.season?.id ||
+                            item.year?.id !== data.songsData?.year?.id)
+                            ? 'bg-primary/20 border-primary text-primary shadow-sm shadow-primary/10'
+                            : 'bg-surface-highest border-on-surface-variant/10 text-on-surface-variant/60'}"
+                        >
+                          {item.year.name} {item.season.name}
+                        </span>
+                      </div>
+                    {/if}
                   {/if}
                 </div>
               </div>

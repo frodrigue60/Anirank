@@ -167,7 +167,7 @@
                 <td class="px-6 py-4 text-right">
                   <div class="flex items-center justify-end gap-2">
                     <a
-                      href="/admin/songs/{song.id}"
+                      href="/admin/songs/{song.id}/variants"
                       class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-on-surface transition-all border border-emerald-500/20 hover:border-emerald-500"
                       title="Variants"
                       >

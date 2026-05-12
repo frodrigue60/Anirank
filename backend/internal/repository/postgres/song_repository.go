@@ -515,7 +515,7 @@ func (r *songRepository) GetArtistsBySongIDs(ctx context.Context, songIDs []uint
 		SELECT a.*, asong.song_id as linked_song_id
 		FROM artists a
 		JOIN artist_song asong ON a.id = asong.artist_id
-		WHERE asong.song_id IN (?)
+		WHERE asong.song_id IN (?) AND a.status = true
 	`, songIDs)
 	if err != nil {
 		return nil, err

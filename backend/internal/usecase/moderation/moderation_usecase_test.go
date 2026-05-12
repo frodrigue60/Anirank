@@ -135,6 +135,14 @@ func (m *MockModerationRepository) GetPendingReportsCount(ctx context.Context, u
 	args := m.Called(ctx, userID)
 	return args.Int(0), args.Error(1)
 }
+func (m *MockModerationRepository) GetCommentReportsCountByTrustedUsers(ctx context.Context, commentID uint64, minScore int) (int, error) {
+	args := m.Called(ctx, commentID, minScore)
+	return args.Int(0), args.Error(1)
+}
+func (m *MockModerationRepository) GetUserReportsCountByTrustedUsers(ctx context.Context, reportedUserID uint64, minScore int) (int, error) {
+	args := m.Called(ctx, reportedUserID, minScore)
+	return args.Int(0), args.Error(1)
+}
 
 // MockNotificationUsecase implements domain.NotificationUsecase
 type MockNotificationUsecase struct {

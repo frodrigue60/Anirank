@@ -27,7 +27,7 @@ func main() {
 		dbHost := os.Getenv("DB_HOST")
 		dbPort := os.Getenv("DB_PORT")
 		dbName := os.Getenv("DB_NAME")
-		db, err = infrastructure.NewDatabaseConnection(dbUser, dbPass, dbHost, dbPort, dbName)
+		db, err = infrastructure.NewDatabaseConnection("postgres", dbUser, dbPass, dbHost, dbPort, dbName)
 	}
 
 	if err != nil {

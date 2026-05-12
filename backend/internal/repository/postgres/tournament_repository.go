@@ -274,13 +274,16 @@ func (r *tournamentRepository) fetchMatchups(ctx context.Context, whereClause st
 	query := `
 		SELECT 
 			tm.*,
-			s1.id as "song1.id", s1.uuid as "song1.uuid", s1.song_romaji as "song1.song_romaji", s1.slug as "song1.slug",
-			s2.id as "song2.id", s2.uuid as "song2.uuid", s2.song_romaji as "song2.song_romaji", s2.slug as "song2.slug",
-			w.id as "winner.id", w.uuid as "winner.uuid", w.song_romaji as "winner.song_romaji", w.slug as "winner.slug"
+			s1.id as "song1.id", s1.uuid as "song1.uuid", s1.song_romaji as "song1.song_romaji", (st1.slug || s1.theme_num) as "song1.slug",
+			s2.id as "song2.id", s2.uuid as "song2.uuid", s2.song_romaji as "song2.song_romaji", (st2.slug || s2.theme_num) as "song2.slug",
+			w.id as "winner.id", w.uuid as "winner.uuid", w.song_romaji as "winner.song_romaji", (stw.slug || w.theme_num) as "winner.slug"
 		FROM tournament_matchups tm
 		LEFT JOIN songs s1 ON tm.song1_id = s1.id
+		LEFT JOIN song_types st1 ON s1.type_id = st1.id
 		LEFT JOIN songs s2 ON tm.song2_id = s2.id
+		LEFT JOIN song_types st2 ON s2.type_id = st2.id
 		LEFT JOIN songs w ON tm.winner_song_id = w.id
+		LEFT JOIN song_types stw ON w.type_id = stw.id
 		` + whereClause + `
 		ORDER BY tm.position ASC
 	`

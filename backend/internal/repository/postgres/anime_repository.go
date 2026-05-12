@@ -419,15 +419,17 @@ func (r *animeRepository) LoadRelations(ctx context.Context, anime *domain.Anime
 	_ = r.db.SelectContext(ctx, &anime.ExternalLinks, externalLinksQuery, anime.ID)
 
 	// 4. Songs belong to this anime
-	songsQuery := `SELECT id, uuid, song_romaji, song_jp, song_en, theme_num, type, slug, anime_id, season_id, year_id, views, created_at, updated_at, status,
-		(SELECT COALESCE(AVG(rating), 0) FROM song_ratings WHERE song_id = songs.id) as average_score
-		FROM songs WHERE anime_id = $1`
+	songsQuery := `SELECT s.id, s.uuid, s.song_romaji, s.song_jp, s.song_en, s.theme_num, st.slug AS type, (st.slug || s.theme_num) AS slug, s.anime_id, s.season_id, s.year_id, s.views, s.created_at, s.updated_at, s.status,
+		(SELECT COALESCE(AVG(rating), 0) FROM song_ratings WHERE song_id = s.id) as average_score
+		FROM songs s
+		LEFT JOIN song_types st ON s.type_id = st.id
+		WHERE s.anime_id = $1`
 	
 	if !isAdmin {
-		songsQuery += " AND status = true"
+		songsQuery += " AND s.status = true"
 	}
 	
-	songsQuery += " ORDER BY type, theme_num"
+	songsQuery += " ORDER BY s.type_id ASC, LENGTH(s.theme_num) ASC, s.theme_num ASC"
 
 	if err := r.db.SelectContext(ctx, &anime.Songs, songsQuery, anime.ID); err != nil {
 		return err

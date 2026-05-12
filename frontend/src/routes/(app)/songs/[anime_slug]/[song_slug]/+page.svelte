@@ -1353,7 +1353,7 @@
               <div class="flex items-center gap-1.5 mb-1">
                 <span
                   class="bg-primary/20 text-primary text-[8px] font-black px-1.5 py-0.5 rounded uppercase"
-                  >{related.type}</span
+                  >{related.slug}</span
                 >
                 <span
                   class="text-[10px] text-yellow-400 font-bold flex items-center gap-0.5"

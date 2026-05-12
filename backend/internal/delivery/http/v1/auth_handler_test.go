@@ -28,7 +28,6 @@ func TestAuthHandler_Profile(t *testing.T) {
 		},
 	}
 
-	// Initialize Usecase with mocks
 	usecase := auth.NewAuthUsecase(
 		mockRepo,
 		jwtSvc,
@@ -36,7 +35,7 @@ func TestAuthHandler_Profile(t *testing.T) {
 		&testutil.MockMediaService{},
 		&testutil.MockXPUsecase{},
 		&testutil.MockBadgeUsecase{},
-		nil, nil, nil, "encryption_key",
+		nil, nil, nil, nil, nil, "encryption_key",
 	)
 	handler := NewAuthHandler(usecase)
 

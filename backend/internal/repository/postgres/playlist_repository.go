@@ -257,12 +257,13 @@ func (r *playlistRepository) GetSongs(ctx context.Context, playlistID uint64) ([
 			s.song_jp as "song.song_jp",
 			s.song_en as "song.song_en",
 			s.theme_num as "song.theme_num",
-			s.type as "song.type",
-			s.slug as "song.slug",
+			st.slug as "song.type",
+			(st.slug || s.theme_num) as "song.slug",
 			s.anime_id as "song.anime_id",
 			s.views as "song.views"
 		FROM playlist_song ps
 		JOIN songs s ON ps.song_id = s.id
+		LEFT JOIN song_types st ON s.type_id = st.id
 		WHERE ps.playlist_id = $1
 		ORDER BY ps.position ASC, s.created_at DESC
 	`

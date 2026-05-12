@@ -144,9 +144,34 @@ func ToSongMinimalDTO(s *domain.Song) SongMinimalDTO {
 		if s.Anime.Season != nil {
 			seasonID = s.Anime.Season.UUID
 		}
-	} else {
-		// Fallback for standalone IDs if relations aren't loaded
-		// (though in this architecture we prefer relations)
+	}
+
+	// ─── Heritage Fallback Logic (Song Level) ───
+	var seasonDTO *SeasonDTO
+	var yearDTO *YearDTO
+
+	// 1. Try Song's own season/year
+	if s.Season != nil {
+		sd := ToSeasonDTO(s.Season)
+		seasonDTO = &sd
+		seasonID = sd.ID
+	}
+	if s.Year != nil {
+		yd := ToYearDTO(s.Year)
+		yearDTO = &yd
+		yearID = yd.ID
+	}
+
+	// 2. Fallback to Anime's season/year if still nil
+	if seasonDTO == nil && s.Anime != nil && s.Anime.Season != nil {
+		sd := ToSeasonDTO(s.Anime.Season)
+		seasonDTO = &sd
+		seasonID = sd.ID
+	}
+	if yearDTO == nil && s.Anime != nil && s.Anime.Year != nil {
+		yd := ToYearDTO(s.Anime.Year)
+		yearDTO = &yd
+		yearID = yd.ID
 	}
 
 	var songType *SongTypeDTO
@@ -164,6 +189,8 @@ func ToSongMinimalDTO(s *domain.Song) SongMinimalDTO {
 		Slug:           s.Slug,
 		Type:           s.Type,
 		SongType:       songType,
+		Season:         seasonDTO,
+		Year:           yearDTO,
 		AverageRating:  s.AverageRating,
 		Artists:        artists,
 		Anime:          anime,
@@ -211,6 +238,29 @@ func ToSongSlimDTO(s *domain.Song) SongSlimDTO {
 		anime.BannerUrl = s.Anime.BannerUrl
 	}
 
+	var seasonDTO *SeasonDTO
+	var yearDTO *YearDTO
+
+	// 1. Try Song's own season/year
+	if s.Season != nil {
+		sd := ToSeasonDTO(s.Season)
+		seasonDTO = &sd
+	}
+	if s.Year != nil {
+		yd := ToYearDTO(s.Year)
+		yearDTO = &yd
+	}
+
+	// 2. Fallback to Anime's season/year if still nil
+	if seasonDTO == nil && s.Anime != nil && s.Anime.Season != nil {
+		sd := ToSeasonDTO(s.Anime.Season)
+		seasonDTO = &sd
+	}
+	if yearDTO == nil && s.Anime != nil && s.Anime.Year != nil {
+		yd := ToYearDTO(s.Anime.Year)
+		yearDTO = &yd
+	}
+
 	return SongSlimDTO{
 		ID:            s.UUID,
 		Name:          s.Name,
@@ -221,6 +271,8 @@ func ToSongSlimDTO(s *domain.Song) SongSlimDTO {
 		Anime:         anime,
 		Views:         s.Views,
 		UserRating:    s.UserRating,
+		Season:        seasonDTO,
+		Year:          yearDTO,
 	}
 }
 
@@ -255,6 +307,8 @@ func ToSongDTO(s *domain.Song) SongDTO {
 		return SongDTO{}
 	}
 
+	minimalDTO := ToSongMinimalDTO(s)
+
 	variants := make([]SongVariantDTO, 0)
 	for _, v := range s.Variants {
 		var videoUrl *string
@@ -265,7 +319,8 @@ func ToSongDTO(s *domain.Song) SongDTO {
 				videoUrl = v.Video.EmbedUrl
 			}
 		}
-		variants = append(variants, SongVariantDTO{
+
+		vDTO := SongVariantDTO{
 			ID:            v.UUID,
 			VersionNumber: v.VersionNumber,
 			Slug:          v.Slug,
@@ -273,11 +328,32 @@ func ToSongDTO(s *domain.Song) SongDTO {
 			Episodes:      v.Episodes,
 			Spoiler:       v.Spoiler,
 			NSFW:          v.NSFW,
-		})
+		}
+
+		// ─── Heritage Fallback Logic (Variant Level) ───
+		// 1. Try Variant's own season/year
+		if v.Season != nil {
+			sd := ToSeasonDTO(v.Season)
+			vDTO.Season = &sd
+		}
+		if v.Year != nil {
+			yd := ToYearDTO(v.Year)
+			vDTO.Year = &yd
+		}
+
+		// 2. Fallback to parent Song's resolved season/year if still nil
+		if vDTO.Season == nil {
+			vDTO.Season = minimalDTO.Season
+		}
+		if vDTO.Year == nil {
+			vDTO.Year = minimalDTO.Year
+		}
+
+		variants = append(variants, vDTO)
 	}
 
 	return SongDTO{
-		SongMinimalDTO: ToSongMinimalDTO(s),
+		SongMinimalDTO: minimalDTO,
 		LikesCount:     s.LikesCount,
 		DislikesCount:  s.DislikesCount,
 		IsFavorited:    s.IsFavorited,

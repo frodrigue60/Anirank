@@ -3,6 +3,7 @@ package infrastructure
 import (
 	"context"
 	"fmt"
+	"log"
 	"io"
 	"os"
 	"strings"
@@ -106,20 +107,20 @@ func InitStorageFromEnv(ctx context.Context) (StorageService, error) {
 	// Sanitize public URL to remove trailing slash
 	publicUrl = strings.TrimSuffix(publicUrl, "/")
 
-	fmt.Printf("[STORAGE-INIT] Type=%s, Bucket=%s, Endpoint=%s, PublicURL=%s\n", storageType, bucket, endpoint, publicUrl)
+	log.Printf("[STORAGE-INIT] Type=%s, Bucket=%s, Endpoint=%s, PublicURL=%s\n", storageType, bucket, endpoint, publicUrl)
 	if accessKey != "" {
 		maskKey := accessKey
 		if len(maskKey) > 4 {
 			maskKey = maskKey[:4] + "****"
 		}
-		fmt.Printf("[STORAGE-INIT] Credentials: AccessKeyID=%s\n", maskKey)
+		log.Printf("[STORAGE-INIT] Credentials: AccessKeyID=%s\n", maskKey)
 	}
 
 	return NewS3Storage(ctx, accessKey, secretKey, region, bucket, endpoint, publicUrl)
 }
 
 func (s *S3Storage) UploadFile(ctx context.Context, relativePath string, file io.Reader, size int64, contentType string) (string, error) {
-	fmt.Printf("[STORAGE-DEBUG] Uploading to R2/S3: Bucket=%s, Key=%s, ContentType=%s, Size=%d\n", s.bucket, relativePath, contentType, size)
+	log.Printf("[STORAGE-DEBUG] Uploading to R2/S3: Bucket=%s, Key=%s, ContentType=%s, Size=%d\n", s.bucket, relativePath, contentType, size)
 
 	putInput := &s3.PutObjectInput{
 		Bucket:      aws.String(s.bucket),
@@ -134,11 +135,11 @@ func (s *S3Storage) UploadFile(ctx context.Context, relativePath string, file io
 
 	_, err := s.client.PutObject(ctx, putInput)
 	if err != nil {
-		fmt.Printf("[STORAGE-ERROR] R2/S3 PutObject failed for Key=%s: %v\n", relativePath, err)
+		log.Printf("[STORAGE-ERROR] R2/S3 PutObject failed for Key=%s: %v\n", relativePath, err)
 		return "", fmt.Errorf("failed to upload file: %w", err)
 	}
 
-	fmt.Printf("[STORAGE-SUCCESS] Successfully uploaded Key=%s to bucket %s\n", relativePath, s.bucket)
+	log.Printf("[STORAGE-SUCCESS] Successfully uploaded Key=%s to bucket %s\n", relativePath, s.bucket)
 	return relativePath, nil
 }
 

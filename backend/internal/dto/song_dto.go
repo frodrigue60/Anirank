@@ -28,6 +28,8 @@ type SongMinimalDTO struct {
 	AnimeID          string             `json:"anime_id"`
 	YearID           string             `json:"year_id"`
 	SeasonID         string             `json:"season_id"`
+	Season           *SeasonDTO         `json:"season,omitempty"`
+	Year             *YearDTO           `json:"year,omitempty"`
 }
 
 type SongSlimDTO struct {
@@ -40,6 +42,8 @@ type SongSlimDTO struct {
 	Anime         AnimeSlimDTO       `json:"anime"`
 	Views         uint64             `json:"views"`
 	UserRating    *float64           `json:"user_rating,omitempty"`
+	Season        *SeasonDTO         `json:"season,omitempty"`
+	Year          *YearDTO           `json:"year,omitempty"`
 }
 
 type ArtistSlimDTO struct {
@@ -69,9 +73,11 @@ type SongVariantDTO struct {
 	VersionNumber uint64  `json:"version_number"`
 	Slug          string  `json:"slug"`
 	VideoUrl      *string `json:"video_url,omitempty"`
-	Episodes      *string `json:"episodes,omitempty"`
-	Spoiler       bool    `json:"spoiler"`
-	NSFW          bool    `json:"nsfw"`
+	Episodes      *string    `json:"episodes,omitempty"`
+	Spoiler       bool       `json:"spoiler"`
+	NSFW          bool       `json:"nsfw"`
+	Season        *SeasonDTO `json:"season,omitempty"`
+	Year          *YearDTO   `json:"year,omitempty"`
 }
 
 type HomeDTO struct {

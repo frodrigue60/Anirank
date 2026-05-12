@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"log"
 	"image"
 	"image/jpeg"
 	"image/png"
@@ -128,10 +129,10 @@ func (s *mediaService) UploadImageOptimized(ctx context.Context, prefix string, 
 
 	// 4. Upload
 	filename := s.GeneratePath(prefix, id, ext)
-	fmt.Printf("[MEDIA-DEBUG] Uploading processed image: %s (%d bytes, %s)\n", filename, len(processedData), finalContentType)
+	log.Printf("[MEDIA-DEBUG] Uploading processed image: %s (%d bytes, %s)\n", filename, len(processedData), finalContentType)
 	_, err = s.storage.UploadFile(ctx, filename, bytes.NewReader(processedData), int64(len(processedData)), finalContentType)
 	if err != nil {
-		fmt.Printf("[MEDIA-ERROR] Upload failed for %s: %v\n", filename, err)
+		log.Printf("[MEDIA-ERROR] Upload failed for %s: %v\n", filename, err)
 		return "", "", err
 	}
 
@@ -174,10 +175,10 @@ func (s *mediaService) UploadWithResolutions(ctx context.Context, prefix string,
 		return "", "", fmt.Errorf("failed to encode base image: %w", err)
 	}
 	originalPath := s.GeneratePath(prefix, id, "avif")
-	fmt.Printf("[MEDIA-DEBUG] Uploading base image: %s (%d bytes)\n", originalPath, len(avifData))
+	log.Printf("[MEDIA-DEBUG] Uploading base image: %s (%d bytes)\n", originalPath, len(avifData) )
 	_, err = s.storage.UploadFile(ctx, originalPath, bytes.NewReader(avifData), int64(len(avifData)), "image/avif")
 	if err != nil {
-		fmt.Printf("[MEDIA-ERROR] Base image upload failed for %s: %v\n", originalPath, err)
+		log.Printf("[MEDIA-ERROR] Base image upload failed for %s: %v\n", originalPath, err)
 		return "", "", fmt.Errorf("failed to upload base image: %w", err)
 	}
 
@@ -217,9 +218,9 @@ func (s *mediaService) UploadWithResolutions(ctx context.Context, prefix string,
 		}
 
 		resPath := pathWithoutExt + suffix + ".avif"
-		fmt.Printf("[MEDIA-DEBUG] Uploading variant: %s (%d bytes)\n", resPath, len(avifData))
+		log.Printf("[MEDIA-DEBUG] Uploading variant: %s (%d bytes)\n", resPath, len(avifData))
 		if _, err := s.storage.UploadFile(ctx, resPath, bytes.NewReader(avifData), int64(len(avifData)), "image/avif"); err != nil {
-			fmt.Printf("[MEDIA-ERROR] Variant upload failed for %s: %v\n", resPath, err)
+			log.Printf("[MEDIA-ERROR] Variant upload failed for %s: %v\n", resPath, err)
 		}
 	}
 
@@ -286,7 +287,7 @@ func (s *mediaService) DeleteMedia(ctx context.Context, path string) {
 		// Use a detached background context because the original request ctx will be cancelled
 		bgCtx := context.Background()
 
-		fmt.Printf("[MEDIA-DEBUG] Deleting orphan media: %s\n", path)
+		log.Printf("[MEDIA-DEBUG] Deleting orphan media: %s\n", path)
 		_ = s.storage.DeleteFile(bgCtx, path)
 
 		// Also try to delete standard resolution variants

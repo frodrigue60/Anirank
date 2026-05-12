@@ -128,13 +128,13 @@
                       {songName}
                     </h3>
                     <span
-                      class="text-on-surface/80 truncate"
+                      class="text-on-surface/80 truncate block"
                       title={artistNames}
                     >
                       {artistNames}
                     </span>
                     <span
-                      class="text-primary font-bold truncate"
+                      class="text-primary font-bold truncate block"
                       title={item.anime?.title}
                     >
                       {item.anime?.title}

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/state";
   import { onMount } from "svelte";
   import { getSongName, getFormattedScore } from "$lib/song-utils";
   import { authState } from "$lib/state/auth.svelte";
@@ -144,8 +145,8 @@
                         <span
                           class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border transition-colors {rankingType ===
                             'seasonal' &&
-                          (item.season?.id !== data.songsData?.season?.id ||
-                            item.year?.id !== data.songsData?.year?.id)
+                          (item.season?.id !== page.data.songsData?.current_season?.id ||
+                            item.year?.id !== page.data.songsData?.current_year?.id)
                             ? 'bg-primary/20 border-primary text-primary shadow-sm shadow-primary/10'
                             : 'bg-surface-highest border-on-surface-variant/10 text-on-surface-variant/60'}"
                         >

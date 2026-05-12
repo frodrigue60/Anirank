@@ -14,6 +14,7 @@
   import History from "lucide-svelte/icons/history";
   import ChevronDown from "lucide-svelte/icons/chevron-down";
   import ChevronUp from "lucide-svelte/icons/chevron-up";
+  import ShieldAlert from "lucide-svelte/icons/shield-alert";
 
   let { data } = $props();
   // svelte-ignore state_referenced_locally

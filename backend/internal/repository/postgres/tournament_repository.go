@@ -287,11 +287,11 @@ func (r *tournamentRepository) fetchMatchups(ctx context.Context, whereClause st
 		SELECT 
 			tm.*,
 			s1.id as "song1.id", s1.uuid as "song1.uuid", s1.song_romaji as "song1.song_romaji", s1.song_jp as "song1.song_jp", s1.song_en as "song1.song_en",
-			s1.anime_id as "song1.anime_id", s1.type as "song1.type", (st1.slug || s1.theme_num) as "song1.slug",
+			s1.anime_id as "song1.anime_id", st1.slug as "song1.type", (st1.slug || s1.theme_num) as "song1.slug",
 			s2.id as "song2.id", s2.uuid as "song2.uuid", s2.song_romaji as "song2.song_romaji", s2.song_jp as "song2.song_jp", s2.song_en as "song2.song_en",
-			s2.anime_id as "song2.anime_id", s2.type as "song2.type", (st2.slug || s2.theme_num) as "song2.slug",
+			s2.anime_id as "song2.anime_id", st2.slug as "song2.type", (st2.slug || s2.theme_num) as "song2.slug",
 			w.id as "winner.id", w.uuid as "winner.uuid", w.song_romaji as "winner.song_romaji", w.song_jp as "winner.song_jp", w.song_en as "winner.song_en",
-			w.anime_id as "winner.anime_id", w.type as "winner.type", (stw.slug || w.theme_num) as "winner.slug"
+			w.anime_id as "winner.anime_id", stw.slug as "winner.type", (stw.slug || w.theme_num) as "winner.slug"
 		FROM tournament_matchups tm
 		LEFT JOIN songs s1 ON tm.song1_id = s1.id
 		LEFT JOIN song_types st1 ON s1.type_id = st1.id

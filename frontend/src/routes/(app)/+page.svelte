@@ -521,12 +521,12 @@
     <!-- Right Column (Sidebar) -->
     <aside class="lg:col-span-3 flex flex-col gap-8">
       <!-- Featured Artists -->
-      <div class="rounded-md bg-surface-container p-4 space-y-2 shadow-sm">
-        <div class="flex items-center justify-between">
-          <h3 class="text-lg font-bold text-on-surface">Featured Artists</h3>
+      <div class="rounded-md bg-surface-container p-2 space-y-2 shadow-sm">
+        <div class="flex items-center justify-between border-b border-gray-500/10">
+          <h3 class="text-lg font-bold text-on-surface pb-1">Featured Artists</h3>
         </div>
         {#if homeData.featured_artists?.length > 0}
-          <div class="flex flex-col gap-1">
+          <div class="flex flex-col gap-1 px-2">
             {#each homeData.featured_artists as artist}
               <a
                 href="/artists/{artist.slug}"

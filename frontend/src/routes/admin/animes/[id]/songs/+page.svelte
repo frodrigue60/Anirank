@@ -12,6 +12,7 @@
   import Edit2 from "lucide-svelte/icons/edit-2";
   import Trash2 from "lucide-svelte/icons/trash-2";
   import Music from "lucide-svelte/icons/music";
+  import Eye from "lucide-svelte/icons/eye";
 
   let { data } = $props<{ data: PageData }>();
   let anime = $derived(data.anime);
@@ -184,8 +185,10 @@
                   title={getSongName(song)}
                 >
                   <div class="flex flex-col">
-                    <span class="text-on-surface"
-                      >{getSongName(song)}</span
+                    <a
+                      href={`/admin/songs/${song.id}`}
+                      class="text-on-surface hover:text-primary cursor-pointer"
+                      >{getSongName(song)}</a
                     >
                     <span class="text-[10px] text-on-surface-variant/40 font-mono"
                       >ID: #{song.id}</span
@@ -215,10 +218,17 @@
                 <td class="px-6 py-4 text-right">
                   <div class="flex items-center justify-end gap-2">
                     <a
+                      href="/admin/songs/{song.id}"
+                      class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-on-surface transition-all border border-blue-500/20 hover:border-blue-500"
+                      title="Show song page"
+                    >
+                      <Eye size={16} />
+                    </a>
+                    <a
                       href="/admin/songs/{song.id}/variants"
                       class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-on-surface transition-all border border-emerald-500/20 hover:border-emerald-500"
                       title="Variants"
-                      >
+                    >
                        <Video size={16} />
                       </a
                     >

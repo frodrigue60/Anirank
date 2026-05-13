@@ -11,6 +11,7 @@ import (
 	"anirank/api/internal/infrastructure/google"
 	"anirank/api/internal/infrastructure/mail"
 	"anirank/api/internal/infrastructure/og"
+	"anirank/api/internal/infrastructure/webhook"
 	"anirank/api/internal/jobs"
 	"anirank/api/internal/repository/postgres"
 	"anirank/api/internal/usecase"
@@ -134,6 +135,7 @@ func main() {
 	adminRepo := postgres.NewAdminRepository(db)
 	xpRepo := postgres.NewXPRepository(db)
 	searchRepo := postgres.NewSearchRepository(db)
+	webhookRepo := postgres.NewWebhookRepository(db)
 
 	// Seed base data (Score Formats, Song Types)
 	sfSeeder := postgres.NewScoreFormatSeeder(db)
@@ -257,6 +259,7 @@ func main() {
 	anilistClient := anilist.NewClient()
 	googleClient := google.NewClient()
 	discordClient := discord.NewClient()
+	webhookClient := webhook.NewWebhookClient()
 
 	discoveryUsecase := public.NewDiscoveryUsecase(taxonomyRepo, songRepo)
 	animeUsecase := public.NewAnimeUsecase(animeRepo, songRepo, mediaService)
@@ -295,6 +298,7 @@ func main() {
 	userAdminUsecase := admin.NewUserAdminUsecase(userRepo, mediaService, auditUsecase)
 	contentAdminUsecase := admin.NewContentAdminUsecase(animeRepo, songRepo, variantRepo, artistRepo, taxonomyRepo, userRepo, anilistClient, mediaService, auditUsecase, interactionRepo, notificationUsecase)
 	adminUsecase := admin.NewAdminUsecase(userAdminUsecase, contentAdminUsecase, adminRepo, moderationRepo, jobsRepo, badgeUsecase)
+	webhookUsecase := admin.NewWebhookUsecase(webhookRepo, animeRepo, songRepo, webhookClient, mediaService)
 
 	ogGenerator := og.NewGenerator(storageService.GetPublicURL(), storageService.GetEndpoint())
 	shareHandler := v1.NewShareHandler(animeUsecase, catalogUsecase, playlistUsecase)
@@ -355,7 +359,7 @@ func main() {
 	statsUsecase := public.NewStatsUsecase(statsRepo, appCache)
 
 	// 4. Register Routes
-	http.SetupPublicRoutes(app, db, discoveryUsecase, animeUsecase, searchUsecase, catalogUsecase, authUsecase, interactionUsecase, playlistUsecase, adminUsecase, moderationUsecase, tournamentUsecase, auditUsecase, jwtService, storageService, mediaService, xpUsecase, activityUsecase, statsUsecase, ogGenerator, shareHandler, seoHandler, limitStorage, appCache)
+	http.SetupPublicRoutes(app, db, discoveryUsecase, animeUsecase, searchUsecase, catalogUsecase, authUsecase, interactionUsecase, playlistUsecase, adminUsecase, moderationUsecase, tournamentUsecase, auditUsecase, webhookUsecase, jwtService, storageService, mediaService, xpUsecase, activityUsecase, statsUsecase, ogGenerator, shareHandler, seoHandler, limitStorage, appCache)
 
 	// Run Server
 	log.Printf("Starting server on port %s...", appPort)

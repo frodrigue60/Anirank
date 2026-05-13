@@ -22,6 +22,7 @@
   import Sun from "lucide-svelte/icons/sun";
   import Calendar from "lucide-svelte/icons/calendar";
   import LogOut from "lucide-svelte/icons/log-out";
+  import Webhook from "lucide-svelte/icons/webhook";
 
   let { children } = $props();
 
@@ -168,6 +169,19 @@
             <Trophy size={20} />
             {#if isSidebarOpen}<span class="ml-3 font-medium">Tournaments</span
               >{/if}
+          </a>
+        </li>
+
+        <li>
+          <!-- webhooks -->
+          <a
+            href="/admin/webhooks"
+            class="flex items-center p-3 rounded-xl hover:bg-primary-container hover:text-primary transition-colors {isSidebarOpen
+              ? ''
+              : 'justify-center'}"
+          >
+            <Webhook size={20} />
+            {#if isSidebarOpen}<span class="ml-3 font-medium">Webhooks</span>{/if}
           </a>
         </li>
 

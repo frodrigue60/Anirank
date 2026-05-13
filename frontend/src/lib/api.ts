@@ -63,3 +63,12 @@ api.interceptors.response.use(
 );
 
 export default api;
+
+// Admin: Webhooks
+export const getWebhooks = () => api.get("/admin/webhooks").then((res) => res.data.data);
+export const createWebhook = (data: any) => api.post("/admin/webhooks", data).then((res) => res.data.data);
+export const updateWebhook = (uuid: string, data: any) => api.put(`/admin/webhooks/${uuid}`, data).then((res) => res.data.data);
+export const deleteWebhook = (uuid: string) => api.delete(`/admin/webhooks/${uuid}`);
+export const testWebhook = (uuid: string) => api.post(`/admin/webhooks/${uuid}/test`);
+export const notifyAnime = (animeId: number) => api.post("/admin/webhooks/notify/anime", { anime_id: animeId });
+export const notifySong = (songId: number) => api.post("/admin/webhooks/notify/song", { song_id: songId });

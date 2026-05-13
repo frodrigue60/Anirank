@@ -1,6 +1,10 @@
 <script lang="ts">
   import type { PageData } from "./$types";
   import { getSongName } from "$lib/song-utils";
+  import { notifySong } from "$lib/api";
+  import Megaphone from "lucide-svelte/icons/megaphone";
+  import { toastState } from "$lib/state/toast.svelte";
+  import { getApiErrorMessage } from "$lib/api-errors";
 
   let { data } = $props<{ data: PageData }>();
   let song = $derived(data.song);
@@ -10,7 +14,42 @@
       ? song.song_variants[0].video_url
       : null
   );
+  let isNotifying = $state(false);
+
+  async function handleNotify() {
+    if (isNotifying) return;
+    if (!confirm("¿Deseas enviar este tema a los canales de Discord?")) return;
+    
+    isNotifying = true;
+    try {
+      await notifySong(song.id);
+      toastState.addToast("Anuncio enviado con éxito", "success");
+    } catch (err: any) {
+      toastState.addToast(getApiErrorMessage(err, "Error al enviar anuncio"), "error");
+    } finally {
+      isNotifying = false;
+    }
+  }
 </script>
+
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-bold text-on-surface">
+      {getSongName(song)}
+    </h1>
+    <p class="text-on-surface-variant text-sm">
+      ID: {song.uuid} • {song.theme_num}
+    </p>
+  </div>
+  <button
+    onclick={handleNotify}
+    disabled={isNotifying}
+    class="bg-primary/10 hover:bg-primary/20 border border-primary/30 text-primary px-4 py-2 rounded-xl font-bold uppercase tracking-wider text-xs flex items-center gap-2 transition-all disabled:opacity-50"
+  >
+    <Megaphone size={16} class={isNotifying ? 'animate-pulse' : ''} />
+    {isNotifying ? 'Sending...' : 'Announce on Discord'}
+  </button>
+</div>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
   <!-- Main Content -->

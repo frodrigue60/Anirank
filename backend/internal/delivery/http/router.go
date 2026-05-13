@@ -37,6 +37,7 @@ func SetupPublicRoutes(app *fiber.App,
 	moderationUsecase *moderation.ModerationUsecase,
 	tournamentUsecase *tournament.TournamentUsecase,
 	auditLogUsecase domain.AuditLogUsecase,
+	webhookUsecase domain.WebhookUsecase,
 	jwtService *auth.JWTService,
 	storageService infrastructure.StorageService,
 	mediaService infrastructure.MediaService,
@@ -82,7 +83,7 @@ func SetupPublicRoutes(app *fiber.App,
 	announcementHandler := v1.NewAnnouncementHandler(announcementUsecase)
 
 	badgeHandler := v1.NewBadgeHandler(badgeUsecase)
-
+	webhookHandler := v1.NewWebhookHandler(webhookUsecase)
 	activityHandler := v1.NewActivityHandler(activityUsecase)
 
 	notificationHandler := v1.NewNotificationHandler(notificationUsecase)
@@ -454,6 +455,18 @@ func SetupPublicRoutes(app *fiber.App,
 	adminOnly.Delete("/announcements/:id", middleware.HasPermissionMiddleware("announcement.manage", userRepo), announcementHandler.DeleteAnnouncement)
 	adminOnly.Patch("/announcements/:id/toggle", middleware.HasPermissionMiddleware("announcement.manage", userRepo), announcementHandler.ToggleActive)
 	adminOnly.Delete("/announcements/:id", middleware.HasPermissionMiddleware("announcement.manage", userRepo), announcementHandler.DeleteAnnouncement)
+
+	// Webhook Operations
+	adminOnly.Get("/webhooks", webhookHandler.GetAll)
+	adminOnly.Get("/webhooks/:uuid", webhookHandler.GetByUUID)
+	adminOnly.Post("/webhooks", middleware.HasPermissionMiddleware("webhooks.manage", userRepo), webhookHandler.Create)
+	adminOnly.Put("/webhooks/:uuid", middleware.HasPermissionMiddleware("webhooks.manage", userRepo), webhookHandler.Update)
+	adminOnly.Delete("/webhooks/:uuid", middleware.HasPermissionMiddleware("webhooks.manage", userRepo), webhookHandler.Delete)
+	adminOnly.Post("/webhooks/:uuid/test", middleware.HasPermissionMiddleware("webhooks.manage", userRepo), webhookHandler.Test)
+	adminOnly.Post("/webhooks/:uuid/trigger/anime", middleware.HasPermissionMiddleware("webhooks.manage", userRepo), webhookHandler.TriggerForAnime)
+	adminOnly.Post("/webhooks/:uuid/trigger/song", middleware.HasPermissionMiddleware("webhooks.manage", userRepo), webhookHandler.TriggerForSong)
+	adminOnly.Post("/webhooks/notify/anime", middleware.HasPermissionMiddleware("webhooks.manage", userRepo), webhookHandler.NotifyNewAnime)
+	adminOnly.Post("/webhooks/notify/song", middleware.HasPermissionMiddleware("webhooks.manage", userRepo), webhookHandler.NotifyNewSong)
 
 	// Permission Management (Owner/Admin only)
 	adminOnly.Get("/permissions", permissionHandler.GetAllPermissions)

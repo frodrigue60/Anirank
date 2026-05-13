@@ -8,6 +8,8 @@
   import RefreshCw from "lucide-svelte/icons/refresh-cw";
   import ExternalLink from "lucide-svelte/icons/external-link";
   import OptimizedImage from "$lib/components/OptimizedImage.svelte";
+  import { notifyAnime } from "$lib/api";
+  import Megaphone from "lucide-svelte/icons/megaphone";
 
   let { data } = $props<{ data: PageData }>();
   let anime = $derived(data.anime);
@@ -29,6 +31,23 @@
       );
     } finally {
       isSyncing = false;
+    }
+  }
+
+  let isNotifying = $state(false);
+
+  async function handleNotify() {
+    if (isNotifying) return;
+    if (!confirm("¿Deseas enviar este anime a los canales de Discord?")) return;
+    
+    isNotifying = true;
+    try {
+      await notifyAnime(anime.id);
+      toastState.addToast("Anuncio enviado con éxito", "success");
+    } catch (err: any) {
+      toastState.addToast(getApiErrorMessage(err, "Error al enviar anuncio"), "error");
+    } finally {
+      isNotifying = false;
     }
   }
 </script>
@@ -98,7 +117,15 @@
           title="Sync from AniList"
         >
           <RefreshCw size={14} class={isSyncing ? 'animate-spin' : ''} />
-
+        </button>
+        <button
+          onclick={handleNotify}
+          disabled={isNotifying}
+          class="p-2 bg-primary/10 hover:bg-primary/20 border border-primary/30 text-primary rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2 px-3"
+          title="Announce on Discord"
+        >
+          <Megaphone size={14} class={isNotifying ? 'animate-pulse' : ''} />
+          <span class="text-xs font-bold uppercase tracking-wider">Announce</span>
         </button>
       </div>
       <p class="text-on-surface-variant text-sm drop-shadow-md">

@@ -137,6 +137,7 @@ type MockStorageService struct{}
 func (m *MockStorageService) UploadFile(ctx context.Context, rP string, f io.Reader, s int64, cT string) (string, error) { return "", nil }
 func (m *MockStorageService) GetURL(rP string) string { return rP }
 func (m *MockStorageService) DeleteFile(ctx context.Context, rP string) error { return nil }
+func (m *MockStorageService) GetFile(ctx context.Context, rP string) (io.ReadCloser, error) { return nil, nil }
 func (m *MockStorageService) FileExists(ctx context.Context, rP string) (bool, error) { return false, nil }
 func (m *MockStorageService) ListFiles(ctx context.Context, p string) ([]string, error) { return nil, nil }
 func (m *MockStorageService) GetEndpoint() string { return "http://mock-storage" }
@@ -163,6 +164,7 @@ func (m *MockMediaService) UploadImage(ctx context.Context, p string, id uint64,
 func (m *MockMediaService) UploadImageOptimized(ctx context.Context, p string, id uint64, f io.Reader, o infrastructure.ImageOptions) (string, string, error) { return "", "", nil }
 func (m *MockMediaService) UploadWithResolutions(ctx context.Context, p string, id uint64, f io.Reader, pr infrastructure.ResolutionPreset) (string, string, error) { return "", "", nil }
 func (m *MockMediaService) GetImageSources(p string) []domain.ImageSource { return nil }
+func (m *MockMediaService) GetFile(ctx context.Context, p string) (io.ReadCloser, error) { return nil, nil }
 func (m *MockMediaService) DeleteMedia(ctx context.Context, p string) {}
 
 // Gamification Mocks
@@ -180,6 +182,7 @@ func (m *MockBadgeUsecase) HandleBadgeIcon(c *fiber.Ctx, b *domain.Badge) error 
 func (m *MockBadgeUsecase) ResolveBadgeURL(b *domain.Badge) {}
 func (m *MockBadgeUsecase) ResolveBadgesURLs(b []domain.Badge) {}
 func (m *MockBadgeUsecase) CheckAndAwardBadges(ctx context.Context, uID uint64, type_ string) error { return nil }
+func (m *MockBadgeUsecase) ProcessBadgeIcons(ctx context.Context, progress chan<- string) error { return nil }
 
 // CreateTestToken generates a valid JWT for testing
 func CreateTestToken(userUUID string, roles []string) (string, error) {

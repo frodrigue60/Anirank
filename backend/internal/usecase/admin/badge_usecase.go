@@ -2,11 +2,13 @@ package admin
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
 	"anirank/api/internal/domain"
 	"anirank/api/internal/infrastructure"
+	"anirank/api/internal/pkg/utils"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -20,6 +22,8 @@ type BadgeUsecase struct {
 	storage         infrastructure.StorageService
 	mediaService    infrastructure.MediaService
 	auditUsecase    domain.AuditLogUsecase
+	activityUsecase domain.ActivityUsecase
+	notificationUsecase domain.NotificationUsecase
 	evaluators      map[string]BadgeEvaluator // Strategy pattern: triggerType → evaluator
 }
 
@@ -31,16 +35,20 @@ func NewBadgeUsecase(
 	storage infrastructure.StorageService,
 	mediaService infrastructure.MediaService,
 	auditUsecase domain.AuditLogUsecase,
+	activityUsecase domain.ActivityUsecase,
+	notificationUsecase domain.NotificationUsecase,
 ) domain.BadgeUsecase {
 	return &BadgeUsecase{
-		repo:            repo,
-		userRepo:        userRepo,
-		interactionRepo: interactionRepo,
-		commentRepo:     commentRepo,
-		storage:         storage,
-		mediaService:    mediaService,
-		auditUsecase:    auditUsecase,
-		evaluators:      buildEvaluators(userRepo, interactionRepo, commentRepo),
+		repo:                repo,
+		userRepo:            userRepo,
+		interactionRepo:     interactionRepo,
+		commentRepo:         commentRepo,
+		storage:             storage,
+		mediaService:        mediaService,
+		auditUsecase:        auditUsecase,
+		activityUsecase:     activityUsecase,
+		notificationUsecase: notificationUsecase,
+		evaluators:          buildEvaluators(userRepo, interactionRepo, commentRepo),
 	}
 }
 
@@ -145,6 +153,28 @@ func (u *BadgeUsecase) ResolveBadgesURLs(badges []domain.Badge) {
 	}
 }
 
+func (u *BadgeUsecase) sendBadgeNotification(ctx context.Context, userID uint64, badge *domain.Badge) {
+	u.ResolveBadgeURL(badge)
+
+	data := map[string]interface{}{
+		"badge_name":         badge.Name,
+		"badge_icon":         badge.IconUrl,
+		"badge_icon_sources": badge.IconSources,
+	}
+	dataJSON, _ := json.Marshal(data)
+
+	notif := &domain.Notification{
+		UserID:      userID,
+		Type:        domain.NotifBadgeAwarded,
+		SubjectID:   &badge.ID,
+		SubjectUUID: &badge.UUID,
+		SubjectType: utils.Ptr("badge"),
+		Data:        dataJSON,
+	}
+
+	_ = u.notificationUsecase.Create(ctx, notif)
+}
+
 func (u *BadgeUsecase) CheckAndAwardBadges(ctx context.Context, userID uint64, triggerType string) error {
 	// 1. Find the evaluator for this trigger type — if none registered, skip silently
 	evaluator, ok := u.evaluators[triggerType]
@@ -196,6 +226,12 @@ func (u *BadgeUsecase) CheckAndAwardBadges(ctx context.Context, userID uint64, t
 		if shouldAward {
 			if err := u.repo.Award(ctx, userID, badge.ID); err != nil {
 				fmt.Printf("[BadgeUsecase] Error awarding badge %d to user %d: %v\n", badge.ID, userID, err)
+			} else {
+				// Log badge award activity
+				_ = u.activityUsecase.LogActivity(ctx, userID, "badge_award", badge.ID, "badge", nil)
+
+				// Send notification to user
+				u.sendBadgeNotification(ctx, userID, &badge)
 			}
 		}
 	}

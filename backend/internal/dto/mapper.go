@@ -102,6 +102,19 @@ func ToAuthResponseDTO(res *auth.AuthTokenResponse) AuthResponseDTO {
 	}
 }
 
+func ToBadgeDTO(b *domain.Badge) BadgeDTO {
+	if b == nil {
+		return BadgeDTO{}
+	}
+	return BadgeDTO{
+		ID:          b.UUID,
+		Name:        b.Name,
+		Description: b.Description,
+		IconUrl:     b.IconUrl,
+		IconSources: b.IconSources,
+	}
+}
+
 // ─── Song Mappers ───
 
 func ToSongMinimalDTO(s *domain.Song) SongMinimalDTO {
@@ -715,9 +728,26 @@ func ToActivityItemDTO(item domain.ActivityItem) ActivityItemDTO {
 	case domain.Artist:
 		targetID = t.UUID
 		target = ToArtistMinimalDTO(&t)
+	case *domain.Badge:
+		if t != nil {
+			targetID = t.UUID
+			target = ToBadgeDTO(t)
+		}
+	case domain.Badge:
+		targetID = t.UUID
+		target = ToBadgeDTO(&t)
 	default:
 		// Fallback to original target if not handled
 		target = item.Target
+	}
+
+	var badgeDto *BadgeDTO
+	if item.Badge != nil {
+		dto := ToBadgeDTO(item.Badge)
+		badgeDto = &dto
+		if targetID == "" {
+			targetID = item.Badge.UUID
+		}
 	}
 
 	return ActivityItemDTO{
@@ -726,6 +756,7 @@ func ToActivityItemDTO(item domain.ActivityItem) ActivityItemDTO {
 		TargetID:   targetID,
 		TargetType: item.TargetType,
 		Target:     target,
+		Badge:      badgeDto,
 		Value:      item.Value,
 		CreatedAt:  item.CreatedAt,
 	}
@@ -760,6 +791,9 @@ func ToActivityDTO(item domain.Activity) ActivityItemDTO {
 		case *domain.Artist:
 			targetID = t.UUID
 			target = ToArtistMinimalDTO(t)
+		case *domain.Badge:
+			targetID = t.UUID
+			target = ToBadgeDTO(t)
 		}
 	}
 
@@ -768,12 +802,24 @@ func ToActivityDTO(item domain.Activity) ActivityItemDTO {
 		userDto = ToUserMinimalDTO(item.User)
 	}
 
+	var badgeDto *BadgeDTO
+	if item.Badge != nil {
+		dto := ToBadgeDTO(item.Badge)
+		badgeDto = &dto
+		
+		// If target is empty, set it to the badge UUID for consistent TargetID
+		if targetID == "" {
+			targetID = item.Badge.UUID
+		}
+	}
+
 	return ActivityItemDTO{
 		Type:       item.ActionType,
 		User:       userDto,
 		TargetID:   targetID,
 		TargetType: item.TargetType,
 		Target:     target,
+		Badge:      badgeDto,
 		Value:      item.ActionValue,
 		CreatedAt:  item.CreatedAt.Format(time.RFC3339),
 	}

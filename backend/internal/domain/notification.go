@@ -8,6 +8,7 @@ import (
 
 const (
 	NotifArtistNewSong = "artist_new_song"
+	NotifBadgeAwarded  = "badge_award"
 )
 
 type Notification struct {

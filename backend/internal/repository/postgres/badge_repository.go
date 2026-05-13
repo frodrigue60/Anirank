@@ -26,6 +26,26 @@ func (r *badgeRepository) GetByID(ctx context.Context, id uint64) (*domain.Badge
 	return &badge, nil
 }
 
+func (r *badgeRepository) GetMany(ctx context.Context, ids []uint64) ([]domain.Badge, error) {
+	if len(ids) == 0 {
+		return []domain.Badge{}, nil
+	}
+	var badges []domain.Badge
+	query, args, err := sqlx.In("SELECT * FROM badges WHERE id IN (?)", ids)
+	if err != nil {
+		return nil, err
+	}
+	query = r.db.Rebind(query)
+	err = r.db.SelectContext(ctx, &badges, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	if badges == nil {
+		badges = []domain.Badge{}
+	}
+	return badges, nil
+}
+
 func (r *badgeRepository) GetAll(ctx context.Context) ([]domain.Badge, error) {
 	var badges []domain.Badge
 	query := "SELECT * FROM badges ORDER BY name ASC"

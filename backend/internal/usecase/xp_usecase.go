@@ -12,13 +12,15 @@ type xpUsecase struct {
 	xpRepo       domain.XPRepository
 	userRepo     domain.UserRepository
 	badgeUsecase domain.BadgeUsecase
+	activityUsecase domain.ActivityUsecase
 }
 
-func NewXPUsecase(xpRepo domain.XPRepository, userRepo domain.UserRepository, badgeUsecase domain.BadgeUsecase) domain.XPUsecase {
+func NewXPUsecase(xpRepo domain.XPRepository, userRepo domain.UserRepository, badgeUsecase domain.BadgeUsecase, activityUsecase domain.ActivityUsecase) domain.XPUsecase {
 	return &xpUsecase{
-		xpRepo:       xpRepo,
-		userRepo:     userRepo,
-		badgeUsecase: badgeUsecase,
+		xpRepo:          xpRepo,
+		userRepo:        userRepo,
+		badgeUsecase:    badgeUsecase,
+		activityUsecase: activityUsecase,
 	}
 }
 
@@ -100,6 +102,11 @@ func (u *xpUsecase) AwardXP(ctx context.Context, userID uint64, activityKey stri
 
 	// 5. Automatic Badge Check
 	_ = u.badgeUsecase.CheckAndAwardBadges(ctx, userID, "level")
+
+	// 6. Log Level Up Activity if changed
+	if newLevel > user.Level {
+		_ = u.activityUsecase.LogActivity(ctx, userID, "level_up", uint64(newLevel), "level", nil)
+	}
 
 	return nil
 }

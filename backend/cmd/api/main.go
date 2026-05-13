@@ -265,11 +265,11 @@ func main() {
 
 	badgeRepo := postgres.NewBadgeRepository(db)
 	auditUsecase := audit.NewAuditLogUsecase(auditRepo)
-	badgeUsecase := admin.NewBadgeUsecase(badgeRepo, userRepo, interactionRepo, commentRepo, storageService, mediaService, auditUsecase)
+	activityUsecase := usecase.NewActivityUsecase(postgres.NewActivityRepository(db), userRepo, songRepo, artistRepo, badgeRepo, mediaService)
 	notificationUsecase := notification.NewNotificationUsecase(notificationRepo, appCache)
+	badgeUsecase := admin.NewBadgeUsecase(badgeRepo, userRepo, interactionRepo, commentRepo, storageService, mediaService, auditUsecase, activityUsecase, notificationUsecase)
 
-	xpUsecase := usecase.NewXPUsecase(xpRepo, userRepo, badgeUsecase)
-	activityUsecase := usecase.NewActivityUsecase(postgres.NewActivityRepository(db), userRepo, songRepo, artistRepo, mediaService)
+	xpUsecase := usecase.NewXPUsecase(xpRepo, userRepo, badgeUsecase, activityUsecase)
 
 	// Auth specialized services
 	tokenRepo := postgres.NewAuthTokenRepository(db)

@@ -114,6 +114,8 @@
         {@const type = activity.type}
         {@const isSong = activity.target_type === "song"}
         {@const isArtist = activity.target_type === "artist"}
+        {@const isLevel = activity.target_type === "level"}
+        {@const isBadge = activity.target_type === "badge"}
         {@const isUser = type === "follow"}
 
         <div
@@ -137,6 +139,27 @@
                 class="h-20 w-14 rounded-sm object-cover border border-outline-variant/10 shadow-lg"
                 sizes="56px"
               />
+            {:else if isLevel}
+              <div
+                class="flex h-20 w-14 flex-col items-center justify-center rounded-sm border border-amber-500/30 bg-linear-to-br from-amber-400/90 to-orange-600 shadow-lg shadow-amber-500/20"
+              >
+                <Sparkles size={24} class="text-white/40 mb-1" />
+                <span class="text-2xl font-black text-white leading-none"
+                  >{activity.target_id}</span
+                >
+              </div>
+            {:else if isBadge && activity.badge}
+              <div
+                class="flex h-20 w-14 items-center justify-center rounded-sm border border-primary/20 bg-surface-highest/50 p-2 shadow-lg shadow-primary/10"
+              >
+                <OptimizedImage
+                  src={activity.badge.icon_url}
+                  sources={activity.badge.icon_sources}
+                  alt={activity.badge.name}
+                  class="h-full w-full object-contain"
+                  sizes="56px"
+                />
+              </div>
             {:else if isUser && target}
               <OptimizedImage
                 src={target.avatar_url}
@@ -187,6 +210,10 @@
                   replied on
                 {:else if type === "follow"}
                   started following
+                {:else if type === "level_up"}
+                  reached <span class="text-amber-500 font-black">New Level {activity.target_id}</span>
+                {:else if type === "badge_award"}
+                  earned a <span class="text-primary font-black">New Badge</span>
                 {:else}
                   interacted
                 {/if}
@@ -216,6 +243,25 @@
                 >
                   <span>{target.name}</span>
                 </a>
+              {:else if isLevel}
+                <div class="flex flex-col truncate">
+                  <span class="text-lg font-bold tracking-tight text-on-surface"
+                    >{activity.value ? 'Level ' + activity.value : 'Unknown Level'}</span
+                  >
+                  <span class="text-xs text-on-surface-variant/85 leading-none"
+                    >Keep going to reach the next milestone</span
+                  >
+                </div>
+              {:else if isBadge && activity.badge}
+                <div class="flex flex-col truncate">
+                  <span
+                    class="text-lg font-bold tracking-tight text-on-surface group-hover:text-primary transition-colors"
+                    >{activity.badge.name ?? 'Unknown Badge'}</span
+                  >
+                  <span class="text-xs text-on-surface-variant/85 leading-none"
+                    >New Achievement Unlocked</span
+                  >
+                </div>
               {:else}
                 <span class="text-on-surface-variant/20 italic"
                   >Item unavailable</span

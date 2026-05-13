@@ -9,6 +9,7 @@
   import Heart from "lucide-svelte/icons/heart";
   import Music from "lucide-svelte/icons/music";
   import Bell from "lucide-svelte/icons/bell";
+  import Sparkles from "lucide-svelte/icons/sparkles";
   import Settings from "lucide-svelte/icons/settings";
   import BellOff from "lucide-svelte/icons/bell-off";
   import OptimizedImage from "$lib/components/OptimizedImage.svelte";
@@ -78,6 +79,7 @@
     comment_reply: Reply,
     like: Heart,
     artist_new_song: Music,
+    badge_award: Sparkles,
   };
 
   function getNotificationIcon(type: string) {
@@ -95,6 +97,8 @@
         return "text-red-400 bg-red-400/10";
       case "artist_new_song":
         return "text-purple-400 bg-purple-400/10";
+      case "badge_award":
+        return "text-amber-400 bg-amber-400/10 shadow-lg shadow-amber-400/5";
       default:
         return "text-primary bg-primary/10";
     }
@@ -286,6 +290,8 @@
                           </div>
                         {:else if notification.type === "like"}
                           Someone liked your content
+                        {:else if notification.type === "badge_award"}
+                          You've earned the <span class="font-black text-amber-400">{notification.data.badge_name}</span> insignia!
                         {:else}
                           New notification
                         {/if}
@@ -317,6 +323,18 @@
                         sources={notification.data.anime_cover_sources}
                         alt=""
                         class="w-full h-full object-cover"
+                        sizes="64px"
+                      />
+                    </div>
+                  {:else if notification.type === "badge_award" && notification.data.badge_icon}
+                    <div
+                      class="shrink-0 w-16 h-20 rounded-sm overflow-hidden bg-surface-highest/50 border border-amber-500/10 ml-2 p-3"
+                    >
+                      <OptimizedImage
+                        src={notification.data.badge_icon}
+                        sources={notification.data.badge_icon_sources}
+                        alt=""
+                        class="w-full h-full object-contain"
                         sizes="64px"
                       />
                     </div>

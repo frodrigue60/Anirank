@@ -8,6 +8,7 @@ import (
 
 type BadgeRepository interface {
 	GetByID(ctx context.Context, id uint64) (*Badge, error)
+	GetMany(ctx context.Context, ids []uint64) ([]Badge, error)
 	GetAll(ctx context.Context) ([]Badge, error)
 	GetAutomatic(ctx context.Context) ([]Badge, error)
 	GetUserBadgeIDs(ctx context.Context, userID uint64) ([]uint64, error)

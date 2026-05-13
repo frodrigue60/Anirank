@@ -23,6 +23,7 @@ type ActivityItemDTO struct {
 	TargetID   string      `json:"target_id"`
 	TargetType string      `json:"target_type"`
 	Target     interface{} `json:"target"`
+	Badge      *BadgeDTO   `json:"badge,omitempty"`
 	Value      interface{} `json:"value,omitempty"`
 	CreatedAt  string      `json:"created_at"`
 }

@@ -11,6 +11,7 @@ type activityUsecase struct {
 	userRepo     domain.UserRepository
 	songRepo     domain.SongRepository
 	artistRepo   domain.ArtistRepository
+	badgeRepo    domain.BadgeRepository
 	mediaService infrastructure.MediaService
 }
 
@@ -19,6 +20,7 @@ func NewActivityUsecase(
 	u domain.UserRepository,
 	s domain.SongRepository,
 	ar domain.ArtistRepository,
+	b domain.BadgeRepository,
 	media infrastructure.MediaService,
 ) domain.ActivityUsecase {
 	return &activityUsecase{
@@ -26,6 +28,7 @@ func NewActivityUsecase(
 		userRepo:     u,
 		songRepo:     s,
 		artistRepo:   ar,
+		badgeRepo:    b,
 		mediaService: media,
 	}
 }
@@ -54,6 +57,7 @@ func (u *activityUsecase) enrichActivitiesBatch(ctx context.Context, activities 
 	songIDs := make(map[uint64]bool)
 	artistIDs := make(map[uint64]bool)
 	targetUserIDs := make(map[uint64]bool)
+	badgeIDs := make(map[uint64]bool)
 
 	for _, a := range activities {
 		userIDs[a.UserID] = true
@@ -64,6 +68,8 @@ func (u *activityUsecase) enrichActivitiesBatch(ctx context.Context, activities 
 			artistIDs[a.TargetID] = true
 		case "user":
 			targetUserIDs[a.TargetID] = true
+		case "badge":
+			badgeIDs[a.TargetID] = true
 		}
 	}
 
@@ -148,6 +154,23 @@ func (u *activityUsecase) enrichActivitiesBatch(ctx context.Context, activities 
 		}
 	}
 
+	badgesMap := make(map[uint64]*domain.Badge)
+	if len(badgeIDs) > 0 {
+		ids := make([]uint64, 0, len(badgeIDs))
+		for id := range badgeIDs {
+			ids = append(ids, id)
+		}
+		badges, _ := u.badgeRepo.GetMany(ctx, ids)
+		for i := range badges {
+			if badges[i].Icon != nil && *badges[i].Icon != "" {
+				url := u.mediaService.GetURL(*badges[i].Icon)
+				badges[i].IconUrl = &url
+				badges[i].IconSources = u.mediaService.GetImageSources(*badges[i].Icon)
+			}
+			badgesMap[badges[i].ID] = &badges[i]
+		}
+	}
+
 	// Final pass to assign relations
 	for i := range activities {
 		activities[i].Action = activities[i].ActionType
@@ -169,6 +192,14 @@ func (u *activityUsecase) enrichActivitiesBatch(ctx context.Context, activities 
 				activities[i].Target = targetUser
 				activities[i].UserTarget = targetUser
 			}
+		case "badge":
+			if badge, ok := badgesMap[activities[i].TargetID]; ok {
+				activities[i].Target = badge
+				activities[i].Badge = badge
+			}
+		case "level":
+			// For levels, the TargetID is the level number. No entity to fetch.
+			activities[i].Target = activities[i].TargetID
 		}
 	}
 }

@@ -26,6 +26,7 @@ type Activity struct {
 	Song       *Song   `db:"-" json:"song,omitempty"`
 	Artist     *Artist `db:"-" json:"artist,omitempty"`
 	UserTarget *User   `db:"-" json:"user_target,omitempty"`
+	Badge      *Badge  `db:"-" json:"badge,omitempty"`
 }
 
 type ActivityRepository interface {

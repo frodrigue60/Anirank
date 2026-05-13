@@ -78,6 +78,7 @@ type ActivityItem struct {
 	TargetID   uint64      `json:"target_id"`
 	TargetType string      `json:"target_type"`
 	Target     interface{} `json:"target"`          // The Anime, Song or Comment
+	Badge      *Badge      `json:"badge,omitempty"` // Populated for badge awards
 	Value      interface{} `json:"value,omitempty"` // Example: Rating score
 	CreatedAt  string      `json:"created_at"`      // Returning raw string from MySQL
 }

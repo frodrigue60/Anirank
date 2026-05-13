@@ -113,24 +113,47 @@ func (h *TournamentHandler) SubmitVote(c *fiber.Ctx) error {
 		return domain.NewAppError(401, "Unauthorized", nil)
 	}
 
-	matchupID, err := strconv.ParseUint(c.Params("id"), 10, 64)
+	matchupParam := c.Params("id")
+	var matchupID uint64
+	var err error
+
+	// Try parsing as uint64 first (for legacy/admin), then fallback to UUID resolution
+	matchupID, err = strconv.ParseUint(matchupParam, 10, 64)
 	if err != nil {
-		return domain.NewAppError(400, "Invalid matchup ID", nil)
+		// Resolve via UUID in usecase
+		m, err := h.usecase.GetMatchupByUUID(c.Context(), matchupParam)
+		if err != nil {
+			return domain.NewAppError(400, "Invalid matchup identifier", err)
+		}
+		matchupID = m.ID
 	}
 
 	var payload struct {
-		SongID uint64 `json:"song_id"`
+		SongID any `json:"song_id"`
 	}
 	if err := c.BodyParser(&payload); err != nil {
 		return domain.NewAppError(400, "Invalid JSON payload", err)
 	}
 
-	if payload.SongID == 0 {
-		return domain.NewAppError(400, "song_id is required", nil)
+	var finalSongID uint64
+	switch v := payload.SongID.(type) {
+	case string:
+		// Resolve song UUID via usecase/repo
+		song, err := h.usecase.GetSongByUUID(c.Context(), v)
+		if err != nil {
+			return domain.NewAppError(400, "Invalid song identifier", err)
+		}
+		finalSongID = song.ID
+	case float64:
+		finalSongID = uint64(v)
+	case int:
+		finalSongID = uint64(v)
+	default:
+		return domain.NewAppError(400, "song_id is required and must be a UUID or numeric ID", nil)
 	}
 
 	ip := c.IP()
-	if err := h.usecase.SubmitVote(c.Context(), userID, matchupID, payload.SongID, ip); err != nil {
+	if err := h.usecase.SubmitVote(c.Context(), userID, matchupID, finalSongID, ip); err != nil {
 		return err
 	}
 
@@ -160,7 +183,7 @@ func (h *TournamentHandler) CreateTournament(c *fiber.Ctx) error {
 
 	return c.Status(201).JSON(fiber.Map{
 		"message": "Tournament created successfully",
-		"data":    dto.ToTournamentDTO(&t),
+		"data":    dto.ToAdminTournamentDTO(&t),
 	})
 }
 
@@ -225,7 +248,7 @@ func (h *TournamentHandler) GetTournament(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	return c.JSON(fiber.Map{"data": dto.ToTournamentDTO(t)})
+	return c.JSON(fiber.Map{"data": dto.ToAdminTournamentDTO(t)})
 }
 
 // ListTournaments lists all tournaments for the admin panel.
@@ -243,7 +266,7 @@ func (h *TournamentHandler) ListTournaments(c *fiber.Ctx) error {
 
 	dtoTournaments := make([]dto.TournamentMinimalDTO, len(tt))
 	for i, t := range tt {
-		dtoTournaments[i] = dto.ToTournamentMinimalDTO(&t)
+		dtoTournaments[i] = dto.ToAdminTournamentMinimalDTO(&t)
 	}
 
 	return c.JSON(fiber.Map{"data": dtoTournaments})

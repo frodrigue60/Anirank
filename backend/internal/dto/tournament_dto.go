@@ -3,12 +3,13 @@ package dto
 import "time"
 
 type TournamentMinimalDTO struct {
-	ID           string    `json:"id"`
+	ID           any       `json:"id"`
 	Name         string    `json:"name"`
 	Slug         string    `json:"slug"`
 	Size         int       `json:"size"`
 	Status       string    `json:"status"`
 	CurrentRound *int      `json:"current_round,omitempty"`
+	MatchupDurationHours int `json:"matchup_duration_hours"`
 	CreatedAt    time.Time `json:"created_at"`
 }
 
@@ -30,5 +31,7 @@ type TournamentMatchupDTO struct {
 	Winner          *SongMinimalDTO `json:"winner,omitempty"`
 	EndsAt          *time.Time `json:"ends_at,omitempty"`
 	IsActive        bool       `json:"is_active"`
-	UserVotedSongID *string    `json:"user_voted_song_id,omitempty"`
+	Song1ID         *any       `json:"song1_id,omitempty"`
+	Song2ID         *any       `json:"song2_id,omitempty"`
+	UserVotedSongID *any       `json:"user_voted_song_id,omitempty"`
 }

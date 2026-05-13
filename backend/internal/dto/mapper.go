@@ -4,6 +4,7 @@ import (
 	"anirank/api/internal/domain"
 	"anirank/api/internal/usecase/auth"
 	"anirank/api/internal/usecase/public"
+	"fmt"
 	"time"
 )
 
@@ -837,8 +838,16 @@ func ToTournamentMinimalDTO(t *domain.Tournament) TournamentMinimalDTO {
 		Slug:      t.Slug,
 		Size:      t.Size,
 		Status:    t.Status,
+		CurrentRound: t.CurrentRound,
+		MatchupDurationHours: t.MatchupDurationHours,
 		CreatedAt: t.CreatedAt,
 	}
+}
+
+func ToAdminTournamentMinimalDTO(t *domain.Tournament) TournamentMinimalDTO {
+	dto := ToTournamentMinimalDTO(t)
+	dto.ID = t.ID
+	return dto
 }
 
 func ToTournamentDTO(t *domain.Tournament) TournamentDTO {
@@ -857,6 +866,12 @@ func ToTournamentDTO(t *domain.Tournament) TournamentDTO {
 		Winner:               nil, // Map if winner exists
 		Matchups:             matchups,
 	}
+}
+
+func ToAdminTournamentDTO(t *domain.Tournament) TournamentDTO {
+	dto := ToTournamentDTO(t)
+	dto.ID = t.ID
+	return dto
 }
 
 func ToTournamentMatchupDTO(m *domain.TournamentMatchup) TournamentMatchupDTO {
@@ -878,17 +893,44 @@ func ToTournamentMatchupDTO(m *domain.TournamentMatchup) TournamentMatchupDTO {
 		winner = &val
 	}
 
+	var s1Id, s2Id, vId *any
+	if m.Song1 != nil {
+		val := any(m.Song1.UUID)
+		s1Id = &val
+	}
+	if m.Song2 != nil {
+		val := any(m.Song2.UUID)
+		s2Id = &val
+	}
+	if m.UserVotedSongID != nil {
+		if m.Song1 != nil && *m.UserVotedSongID == m.Song1.ID {
+			val := any(m.Song1.UUID)
+			vId = &val
+		} else if m.Song2 != nil && *m.UserVotedSongID == m.Song2.ID {
+			val := any(m.Song2.UUID)
+			vId = &val
+		}
+	}
+
+	id := m.UUID
+	if id == "" {
+		id = fmt.Sprintf("%d", m.ID)
+	}
+
 	return TournamentMatchupDTO{
-		ID:         m.UUID,
-		Round:      m.Round,
-		Position:   m.Position,
-		Song1:      s1,
-		Song2:      s2,
-		Song1Votes: m.Song1Votes,
-		Song2Votes: m.Song2Votes,
-		Winner:     winner,
-		EndsAt:     m.EndsAt,
-		IsActive:   m.IsActive,
+		ID:              id,
+		Round:           m.Round,
+		Position:        m.Position,
+		Song1:           s1,
+		Song2:           s2,
+		Song1ID:         s1Id,
+		Song2ID:         s2Id,
+		Song1Votes:      m.Song1Votes,
+		Song2Votes:      m.Song2Votes,
+		Winner:          winner,
+		EndsAt:          m.EndsAt,
+		IsActive:        m.IsActive,
+		UserVotedSongID: vId,
 	}
 }
 

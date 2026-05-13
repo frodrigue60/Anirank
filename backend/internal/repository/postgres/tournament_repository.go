@@ -41,8 +41,8 @@ func (r *tournamentRepository) WithTransaction(ctx context.Context, fn func(repo
 
 func (r *tournamentRepository) Create(ctx context.Context, t *domain.Tournament) error {
 	query := `
-		INSERT INTO tournaments (uuid, name, slug, description, size, type_filter, status, current_round, winner_song_id, started_at, completed_at, created_at, updated_at)
-		VALUES (:uuid, :name, :slug, :description, :size, :type_filter, :status, :current_round, :winner_song_id, :started_at, :completed_at, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		INSERT INTO tournaments (uuid, name, slug, description, size, type_filter, status, current_round, winner_song_id, started_at, completed_at, matchup_duration_hours, created_at, updated_at)
+		VALUES (:uuid, :name, :slug, :description, :size, :type_filter, :status, :current_round, :winner_song_id, :started_at, :completed_at, :matchup_duration_hours, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 		RETURNING id
 	`
 	boundQuery, args, err := sqlx.BindNamed(sqlx.DOLLAR, query, t)
@@ -59,6 +59,7 @@ func (r *tournamentRepository) Update(ctx context.Context, t *domain.Tournament)
 			name = :name, slug = :slug, description = :description, size = :size,
 			type_filter = :type_filter, status = :status, current_round = :current_round,
 			winner_song_id = :winner_song_id, started_at = :started_at, completed_at = :completed_at,
+			matchup_duration_hours = :matchup_duration_hours,
 			updated_at = CURRENT_TIMESTAMP
 		WHERE id = :id
 	`
@@ -174,6 +175,17 @@ func (r *tournamentRepository) GetMatchupByID(ctx context.Context, id uint64) (*
 	return &mm[0], nil
 }
 
+func (r *tournamentRepository) GetMatchupByUUID(ctx context.Context, uuid string) (*domain.TournamentMatchup, error) {
+	mm, err := r.fetchMatchups(ctx, "WHERE tm.uuid = $1", uuid)
+	if err != nil {
+		return nil, err
+	}
+	if len(mm) == 0 {
+		return nil, domain.ErrNotFound
+	}
+	return &mm[0], nil
+}
+
 func (r *tournamentRepository) FindMatchup(ctx context.Context, tournamentID uint64, round int, position int) (*domain.TournamentMatchup, error) {
 	mm, err := r.fetchMatchups(ctx, "WHERE tm.tournament_id = $1 AND tm.round = $2 AND tm.position = $3", tournamentID, round, position)
 	if err != nil {
@@ -274,9 +286,12 @@ func (r *tournamentRepository) fetchMatchups(ctx context.Context, whereClause st
 	query := `
 		SELECT 
 			tm.*,
-			s1.id as "song1.id", s1.uuid as "song1.uuid", s1.song_romaji as "song1.song_romaji", (st1.slug || s1.theme_num) as "song1.slug",
-			s2.id as "song2.id", s2.uuid as "song2.uuid", s2.song_romaji as "song2.song_romaji", (st2.slug || s2.theme_num) as "song2.slug",
-			w.id as "winner.id", w.uuid as "winner.uuid", w.song_romaji as "winner.song_romaji", (stw.slug || w.theme_num) as "winner.slug"
+			s1.id as "song1.id", s1.uuid as "song1.uuid", s1.song_romaji as "song1.song_romaji", s1.song_jp as "song1.song_jp", s1.song_en as "song1.song_en",
+			s1.anime_id as "song1.anime_id", s1.type as "song1.type", (st1.slug || s1.theme_num) as "song1.slug",
+			s2.id as "song2.id", s2.uuid as "song2.uuid", s2.song_romaji as "song2.song_romaji", s2.song_jp as "song2.song_jp", s2.song_en as "song2.song_en",
+			s2.anime_id as "song2.anime_id", s2.type as "song2.type", (st2.slug || s2.theme_num) as "song2.slug",
+			w.id as "winner.id", w.uuid as "winner.uuid", w.song_romaji as "winner.song_romaji", w.song_jp as "winner.song_jp", w.song_en as "winner.song_en",
+			w.anime_id as "winner.anime_id", w.type as "winner.type", (stw.slug || w.theme_num) as "winner.slug"
 		FROM tournament_matchups tm
 		LEFT JOIN songs s1 ON tm.song1_id = s1.id
 		LEFT JOIN song_types st1 ON s1.type_id = st1.id
@@ -293,14 +308,28 @@ func (r *tournamentRepository) fetchMatchups(ctx context.Context, whereClause st
 		S1ID      *uint64 `db:"song1.id"`
 		S1UUID    *string `db:"song1.uuid"`
 		S1Romaji  *string `db:"song1.song_romaji"`
+		S1JP      *string `db:"song1.song_jp"`
+		S1EN      *string `db:"song1.song_en"`
+		S1AnimeID *uint64 `db:"song1.anime_id"`
+		S1Type    *string `db:"song1.type"`
 		S1Slug    *string `db:"song1.slug"`
+
 		S2ID      *uint64 `db:"song2.id"`
 		S2UUID    *string `db:"song2.uuid"`
 		S2Romaji  *string `db:"song2.song_romaji"`
+		S2JP      *string `db:"song2.song_jp"`
+		S2EN      *string `db:"song2.song_en"`
+		S2AnimeID *uint64 `db:"song2.anime_id"`
+		S2Type    *string `db:"song2.type"`
 		S2Slug    *string `db:"song2.slug"`
+
 		WID       *uint64 `db:"winner.id"`
 		WUUID     *string `db:"winner.uuid"`
 		WRomaji   *string `db:"winner.song_romaji"`
+		WJP       *string `db:"winner.song_jp"`
+		WEN       *string `db:"winner.song_en"`
+		WAnimeID  *uint64 `db:"winner.anime_id"`
+		WType     *string `db:"winner.type"`
 		WSlug     *string `db:"winner.slug"`
 	}
 
@@ -314,13 +343,25 @@ func (r *tournamentRepository) fetchMatchups(ctx context.Context, whereClause st
 	for i, row := range rows {
 		m := row.TournamentMatchup
 		if row.S1ID != nil {
-			m.Song1 = &domain.Song{ID: *row.S1ID, UUID: *row.S1UUID, SongRomaji: row.S1Romaji, Slug: *row.S1Slug}
+			m.Song1 = &domain.Song{
+				ID: *row.S1ID, UUID: *row.S1UUID, SongRomaji: row.S1Romaji,
+				SongJP: row.S1JP, SongEN: row.S1EN, AnimeID: *row.S1AnimeID,
+				Type: *row.S1Type, Slug: *row.S1Slug,
+			}
 		}
 		if row.S2ID != nil {
-			m.Song2 = &domain.Song{ID: *row.S2ID, UUID: *row.S2UUID, SongRomaji: row.S2Romaji, Slug: *row.S2Slug}
+			m.Song2 = &domain.Song{
+				ID: *row.S2ID, UUID: *row.S2UUID, SongRomaji: row.S2Romaji,
+				SongJP: row.S2JP, SongEN: row.S2EN, AnimeID: *row.S2AnimeID,
+				Type: *row.S2Type, Slug: *row.S2Slug,
+			}
 		}
 		if row.WID != nil {
-			m.Winner = &domain.Song{ID: *row.WID, UUID: *row.WUUID, SongRomaji: row.WRomaji, Slug: *row.WSlug}
+			m.Winner = &domain.Song{
+				ID: *row.WID, UUID: *row.WUUID, SongRomaji: row.WRomaji,
+				SongJP: row.WJP, SongEN: row.WEN, AnimeID: *row.WAnimeID,
+				Type: *row.WType, Slug: *row.WSlug,
+			}
 		}
 		matchups[i] = m
 	}

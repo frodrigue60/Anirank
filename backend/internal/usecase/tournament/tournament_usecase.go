@@ -3,6 +3,7 @@ package tournament
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math"
 	"math/rand"
 	"strings"
@@ -84,62 +85,53 @@ func (u *TournamentUsecase) GetTournamentBySlug(ctx context.Context, slug string
 func (u *TournamentUsecase) enrichMatchups(ctx context.Context, matchups []domain.TournamentMatchup, t *domain.Tournament) error {
 	songIDs := make([]uint64, 0)
 	idMap := make(map[uint64]bool)
+	uniqueSongs := make([]*domain.Song, 0)
 
-	if t != nil && t.WinnerSongID != nil {
-		songIDs = append(songIDs, *t.WinnerSongID)
-		idMap[*t.WinnerSongID] = true
+	// Helper to collect unique songs already partially hydrated by repo
+	collect := func(s *domain.Song) {
+		if s != nil && !idMap[s.ID] {
+			songIDs = append(songIDs, s.ID)
+			uniqueSongs = append(uniqueSongs, s)
+			idMap[s.ID] = true
+		}
 	}
 
 	for _, m := range matchups {
-		if m.Song1ID != nil && !idMap[*m.Song1ID] {
-			songIDs = append(songIDs, *m.Song1ID)
-			idMap[*m.Song1ID] = true
-		}
-		if m.Song2ID != nil && !idMap[*m.Song2ID] {
-			songIDs = append(songIDs, *m.Song2ID)
-			idMap[*m.Song2ID] = true
-		}
-		if m.WinnerSongID != nil && !idMap[*m.WinnerSongID] {
-			songIDs = append(songIDs, *m.WinnerSongID)
-			idMap[*m.WinnerSongID] = true
-		}
+		collect(m.Song1)
+		collect(m.Song2)
+		collect(m.Winner)
 	}
 
-	if len(songIDs) == 0 {
+	if len(uniqueSongs) == 0 {
 		return nil
 	}
 
-	songs, err := u.songRepo.GetMany(ctx, songIDs)
-	if err != nil {
-		return err
-	}
+	// Batch fetch all relations (Artists and Variants)
+	artistsMap, _ := u.songRepo.GetArtistsBySongIDs(ctx, songIDs)
+	variantsMap, _ := u.songRepo.GetVariantsBySongIDs(ctx, songIDs)
 
-	songMap := make(map[uint64]*domain.Song)
-	// Fetch and associate details
 	animeIDs := make([]uint64, 0)
 	animeIDMap := make(map[uint64]bool)
 
-	for i := range songs {
-		s := &songs[i]
+	for _, s := range uniqueSongs {
+		// Hydrate artists from batch map
+		if artists, ok := artistsMap[s.ID]; ok {
+			s.Artists = artists
+		} else {
+			s.Artists = []domain.Artist{}
+		}
+
+		// Hydrate variants from batch map
+		if variants, ok := variantsMap[s.ID]; ok {
+			s.Variants = variants
+		} else {
+			s.Variants = []domain.SongVariant{}
+		}
+
 		if _, exists := animeIDMap[s.AnimeID]; !exists {
 			animeIDs = append(animeIDs, s.AnimeID)
 			animeIDMap[s.AnimeID] = true
 		}
-
-		artists, _ := u.songRepo.GetArtistsBySongID(ctx, s.ID, false)
-		s.Artists = artists
-		variants, _ := u.songRepo.GetVariantsBySongID(ctx, s.ID)
-
-		// Validate video sources (S3 check)
-		for j := range variants {
-			if variants[j].Video != nil && variants[j].Video.LocalUrl != nil {
-				exists, _ := u.storage.FileExists(ctx, *variants[j].Video.LocalUrl)
-				if !exists {
-					variants[j].Video.LocalUrl = nil
-				}
-			}
-		}
-		s.Variants = variants
 	}
 
 	// Load all animes in batch
@@ -158,31 +150,14 @@ func (u *TournamentUsecase) enrichMatchups(ctx context.Context, matchups []domai
 		animesMap[a.ID] = a
 	}
 
-	for i := range songs {
-		s := &songs[i]
+	for _, s := range uniqueSongs {
 		if anime, ok := animesMap[s.AnimeID]; ok {
 			s.Anime = anime
 		}
-		songMap[s.ID] = s
 	}
 
-	for i := range matchups {
-		m := &matchups[i]
-		if m.Song1ID != nil {
-			m.Song1 = songMap[*m.Song1ID]
-		}
-		if m.Song2ID != nil {
-			m.Song2 = songMap[*m.Song2ID]
-		}
-		if m.WinnerSongID != nil {
-			m.Winner = songMap[*m.WinnerSongID]
-		}
-	}
-
-	if t != nil && t.WinnerSongID != nil {
-		t.Winner = songMap[*t.WinnerSongID]
-	}
-
+	// The matchups and tournament pointers already point to the uniqueSongs 
+	// because uniqueSongs was collected from them. No further mapping needed.
 	return nil
 }
 
@@ -289,13 +264,21 @@ func (u *TournamentUsecase) SeedTournament(ctx context.Context, id uint64, req d
 		}
 	default: // Legacy behavior
 		songs, err = u.songRepo.GetRanking(ctx, "global", songType, t.Size, 0)
+		if err != nil || len(songs) < t.Size {
+			// Fallback: Try to get any active songs randomly if ranking is insufficient
+			songs, err = u.songRepo.GetPaginated(ctx, t.Size, 0, domain.SongFilters{
+				Type:    songType,
+				Sort:    "random",
+				IsAdmin: true,
+			})
+		}
 		if err != nil {
 			return err
 		}
 	}
 
 	if len(songs) < t.Size {
-		return errors.New("not enough songs to seed the tournament with selected filters")
+		return fmt.Errorf("not enough songs to seed the tournament (found %d, need %d) with filters: type=%s", len(songs), t.Size, songType)
 	}
 
 	// Shuffle if requested or for auto
@@ -306,7 +289,11 @@ func (u *TournamentUsecase) SeedTournament(ctx context.Context, id uint64, req d
 
 	return u.repo.WithTransaction(ctx, func(repo domain.TournamentRepository) error {
 		// Create initial matchups (Round of N)
-		endsAt := time.Now().Add(48 * time.Hour)
+		duration := time.Duration(t.MatchupDurationHours) * time.Hour
+		if duration == 0 {
+			duration = 48 * time.Hour
+		}
+		endsAt := time.Now().Add(duration)
 		matchupCount := t.Size / 2
 
 		for i := 0; i < matchupCount; i++ {
@@ -504,12 +491,21 @@ func (u *TournamentUsecase) resolveMatchup(ctx context.Context, m domain.Tournam
 			// If both songs are present, ACTIVATE the matchup
 			if nextMatchup.Song1ID != nil && nextMatchup.Song2ID != nil {
 				nextMatchup.IsActive = true
-				nextEndsAt := time.Now().Add(48 * time.Hour)
+				
+				t, err := repo.GetByID(ctx, m.TournamentID)
+				if err != nil {
+					return err
+				}
+
+				duration := time.Duration(t.MatchupDurationHours) * time.Hour
+				if duration == 0 {
+					duration = 48 * time.Hour
+				}
+				nextEndsAt := time.Now().Add(duration)
 				nextMatchup.EndsAt = &nextEndsAt
 
 				// Update Tournament CurrentRound if needed
-				t, err := repo.GetByID(ctx, m.TournamentID)
-				if err == nil && (t.CurrentRound == nil || *t.CurrentRound > nextRound) {
+				if t.CurrentRound == nil || *t.CurrentRound > nextRound {
 					t.CurrentRound = &nextRound
 					repo.Update(ctx, t)
 				}
@@ -521,4 +517,12 @@ func (u *TournamentUsecase) resolveMatchup(ctx context.Context, m domain.Tournam
 
 		return nil
 	})
+}
+
+func (u *TournamentUsecase) GetMatchupByUUID(ctx context.Context, uuid string) (*domain.TournamentMatchup, error) {
+	return u.repo.GetMatchupByUUID(ctx, uuid)
+}
+
+func (u *TournamentUsecase) GetSongByUUID(ctx context.Context, uuid string) (*domain.Song, error) {
+	return u.songRepo.GetByUUID(ctx, uuid)
 }

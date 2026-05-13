@@ -161,7 +161,7 @@ func (r *songRepository) GetPaginated(ctx context.Context, limit, offset int, fi
 		whereClauses = append(whereClauses, fmt.Sprintf("s.type_id = $%d", i))
 		args = append(args, filters.TypeID)
 		i++
-	} else if filters.Type != "" && filters.Type != "any" {
+	} else if filters.Type != "" && filters.Type != "any" && filters.Type != "all" {
 		whereClauses = append(whereClauses, fmt.Sprintf("st.slug = $%d", i))
 		args = append(args, filters.Type)
 		i++
@@ -313,7 +313,7 @@ func (r *songRepository) Count(ctx context.Context, filters domain.SongFilters) 
 		whereClauses = append(whereClauses, fmt.Sprintf("s.type_id = $%d", i))
 		args = append(args, filters.TypeID)
 		i++
-	} else if filters.Type != "" && filters.Type != "any" {
+	} else if filters.Type != "" && filters.Type != "any" && filters.Type != "all" {
 		whereClauses = append(whereClauses, fmt.Sprintf("st.slug = $%d", i))
 		args = append(args, filters.Type)
 		i++

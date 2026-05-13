@@ -1,7 +1,9 @@
 import type { Handle } from '@sveltejs/kit';
 
 export const handle: Handle = async ({ event, resolve }) => {
-	const response = await resolve(event);
+	const response = await resolve(event, {
+		preloadStrategy: 'modulepreload'
+	});
 
 	// Security Headers
 	const csp = [

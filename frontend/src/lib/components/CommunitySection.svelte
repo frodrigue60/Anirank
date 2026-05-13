@@ -31,8 +31,8 @@
 
 {#if !loading && partners.length > 0}
   <section class="rounded-md bg-surface-container p-2 space-y-4 shadow-sm border border-gray-500/5">
-    <div class="flex items-center justify-center border-b border-gray-500/10">
-      <h3 class="text-md font-bold text-on-surface pb-1">
+    <div class="flex items-center justify-start border-b border-gray-500/10">
+      <h3 class="text-lg font-bold text-on-surface pb-1">
         Partners & Communities
       </h3>
     </div>

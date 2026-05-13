@@ -472,6 +472,8 @@ func SetupPublicRoutes(app *fiber.App,
 	adminOnly.Post("/webhooks/:uuid/trigger/song", middleware.HasPermissionMiddleware("webhooks.manage", userRepo), webhookHandler.TriggerForSong)
 	adminOnly.Post("/webhooks/notify/anime", middleware.HasPermissionMiddleware("webhooks.manage", userRepo), webhookHandler.NotifyNewAnime)
 	adminOnly.Post("/webhooks/notify/song", middleware.HasPermissionMiddleware("webhooks.manage", userRepo), webhookHandler.NotifyNewSong)
+	adminOnly.Post("/webhooks/:uuid/custom", middleware.HasPermissionMiddleware("webhooks.manage", userRepo), webhookHandler.SendCustomMessage)
+	adminOnly.Post("/webhooks/notify/custom", middleware.HasPermissionMiddleware("webhooks.manage", userRepo), webhookHandler.NotifyCustomMessage)
 
 	// Partner Operations
 	adminOnly.Get("/partners", partnerHandler.AdminGetAll)

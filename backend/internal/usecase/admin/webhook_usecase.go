@@ -275,3 +275,45 @@ func (u *webhookUsecase) NotifyNewSong(ctx context.Context, songID uint64) error
 	}
 	return nil
 }
+ 
+func (u *webhookUsecase) NotifyCustomMessage(ctx context.Context, title, message string) error {
+	webhooks, err := u.webhookRepo.GetAll(ctx)
+	if err != nil {
+		return err
+	}
+ 
+	for _, wh := range webhooks {
+		if !wh.IsActive {
+			continue
+		}
+		if err := u.sendCustomMessage(ctx, &wh, title, message); err != nil {
+			fmt.Printf("[Webhook] Error sending custom message to %s: %v\n", wh.Name, err)
+		}
+	}
+	return nil
+}
+ 
+func (u *webhookUsecase) SendCustomMessage(ctx context.Context, uuid string, title, message string) error {
+	w, err := u.webhookRepo.GetByUUID(ctx, uuid)
+	if err != nil {
+		return err
+	}
+	return u.sendCustomMessage(ctx, w, title, message)
+}
+ 
+func (u *webhookUsecase) sendCustomMessage(ctx context.Context, w *domain.Webhook, title, message string) error {
+	payload := map[string]interface{}{
+		"embeds": []map[string]interface{}{
+			{
+				"title":       "📢 " + title,
+				"description": message,
+				"color":       10181046, // Purple
+				"footer": map[string]interface{}{
+					"text": "AniRank Admin Notification",
+				},
+			},
+		},
+	}
+ 
+	return u.webhookClient.SendJSON(ctx, w.URL, payload)
+}

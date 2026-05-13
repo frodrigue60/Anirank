@@ -72,6 +72,8 @@ export const deleteWebhook = (uuid: string) => api.delete(`/admin/webhooks/${uui
 export const testWebhook = (uuid: string) => api.post(`/admin/webhooks/${uuid}/test`);
 export const notifyAnime = (animeId: number) => api.post("/admin/webhooks/notify/anime", { anime_id: animeId });
 export const notifySong = (songId: number) => api.post("/admin/webhooks/notify/song", { song_id: songId });
+export const sendCustomWebhookMessage = (uuid: string, title: string, message: string) => api.post(`/admin/webhooks/${uuid}/custom`, { title, message });
+export const notifyAllCustomWebhookMessage = (title: string, message: string) => api.post("/admin/webhooks/notify/custom", { title, message });
 
 // Partners
 export const getActivePartners = () => api.get("/partners").then((res) => res.data);

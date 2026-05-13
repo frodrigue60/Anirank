@@ -129,3 +129,35 @@ func (h *WebhookHandler) NotifyNewSong(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{"message": "Notifications sent successfully to all active webhooks"})
 }
+
+func (h *WebhookHandler) NotifyCustomMessage(c *fiber.Ctx) error {
+	var req struct {
+		Title   string `json:"title"`
+		Message string `json:"message"`
+	}
+	if err := c.BodyParser(&req); err != nil {
+		return domain.NewAppError(400, "Invalid payload", err)
+	}
+
+	if err := h.usecase.NotifyCustomMessage(c.Context(), req.Title, req.Message); err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{"message": "Custom notifications sent successfully"})
+}
+
+func (h *WebhookHandler) SendCustomMessage(c *fiber.Ctx) error {
+	var req struct {
+		Title   string `json:"title"`
+		Message string `json:"message"`
+	}
+	if err := c.BodyParser(&req); err != nil {
+		return domain.NewAppError(400, "Invalid payload", err)
+	}
+
+	if err := h.usecase.SendCustomMessage(c.Context(), c.Params("uuid"), req.Title, req.Message); err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{"message": "Custom notification sent successfully"})
+}

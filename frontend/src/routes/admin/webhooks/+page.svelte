@@ -6,6 +6,8 @@
     updateWebhook,
     deleteWebhook,
     testWebhook,
+    sendCustomWebhookMessage,
+    notifyAllCustomWebhookMessage,
   } from "$lib/api";
   import Plus from "lucide-svelte/icons/plus";
   import Trash2 from "lucide-svelte/icons/trash-2";
@@ -14,14 +16,26 @@
   import CheckCircle from "lucide-svelte/icons/check-circle";
   import XCircle from "lucide-svelte/icons/x-circle";
   import ExternalLink from "lucide-svelte/icons/external-link";
+  import MessageSquare from "lucide-svelte/icons/message-square";
+  import Megaphone from "lucide-svelte/icons/megaphone";
 
-  let webhooks = $state([]);
+  interface Webhook {
+    uuid: string;
+    name: string;
+    url: string;
+    provider: string;
+    is_active: boolean;
+    content_types: string[];
+    created_at?: string;
+  }
+
+  let webhooks = $state<Webhook[]>([]);
   let loading = $state(true);
-  let error = $state(null);
+  let error = $state<string | null>(null);
 
   // Modal State
   let showModal = $state(false);
-  let editingWebhook = $state(null);
+  let editingWebhook = $state<Webhook | null>(null);
   let form = $state({
     name: "",
     url: "",
@@ -31,6 +45,15 @@
   });
 
   let saving = $state(false);
+ 
+  // Custom Message State
+  let showCustomModal = $state(false);
+  let customTargetUuid = $state(null); // null for "all"
+  let customForm = $state({
+    title: "",
+    message: "",
+  });
+  let sendingCustom = $state(false);
 
   async function loadWebhooks() {
     loading = true;
@@ -58,7 +81,7 @@
     showModal = true;
   }
 
-  function openEdit(webhook) {
+  function openEdit(webhook: Webhook) {
     editingWebhook = webhook;
     form = {
       name: webhook.name,
@@ -87,7 +110,7 @@
     }
   }
 
-  async function remove(uuid) {
+  async function remove(uuid: string) {
     if (!confirm("¿Estás seguro de eliminar este webhook?")) return;
     try {
       await deleteWebhook(uuid);
@@ -97,7 +120,7 @@
     }
   }
 
-  async function test(uuid) {
+  async function test(uuid: string) {
     try {
       await testWebhook(uuid);
       alert("¡Mensaje de prueba enviado!");
@@ -105,8 +128,31 @@
       alert("Error al enviar prueba: " + (e.response?.data?.message || e.message));
     }
   }
+ 
+  function openCustomMessage(uuid = null) {
+    customTargetUuid = uuid;
+    customForm = { title: "", message: "" };
+    showCustomModal = true;
+  }
+ 
+  async function sendCustom() {
+    sendingCustom = true;
+    try {
+      if (customTargetUuid) {
+        await sendCustomWebhookMessage(customTargetUuid, customForm.title, customForm.message);
+      } else {
+        await notifyAllCustomWebhookMessage(customForm.title, customForm.message);
+      }
+      alert("¡Mensaje enviado!");
+      showCustomModal = false;
+    } catch (e) {
+      alert("Error al enviar mensaje");
+    } finally {
+      sendingCustom = false;
+    }
+  }
 
-  function toggleContentType(type) {
+  function toggleContentType(type: string) {
     if (form.content_types.includes(type)) {
       form.content_types = form.content_types.filter((t) => t !== type);
     } else {
@@ -121,13 +167,22 @@
       <h1 class="text-3xl font-bold text-on-surface">Webhooks Discord</h1>
       <p class="text-on-surface-variant/70">Gestiona las integraciones para anuncios automáticos.</p>
     </div>
-    <button
-      onclick={openCreate}
-      class="flex items-center gap-2 bg-primary text-on-primary px-4 py-2 rounded-xl font-medium hover:bg-primary/90 transition-colors"
-    >
-      <Plus size={20} />
-      Nuevo Webhook
-    </button>
+    <div class="flex items-center gap-3">
+      <button
+        onclick={() => openCustomMessage(null)}
+        class="flex items-center gap-2 bg-surface-highest text-on-surface px-4 py-2 rounded-xl font-medium hover:bg-primary/10 hover:text-primary transition-all border border-gray-500/20"
+      >
+        <Megaphone size={20} />
+        Anuncio Global
+      </button>
+      <button
+        onclick={openCreate}
+        class="flex items-center gap-2 bg-primary text-on-primary px-4 py-2 rounded-xl font-medium hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
+      >
+        <Plus size={20} />
+        Nuevo Webhook
+      </button>
+    </div>
   </div>
 
   {#if loading}
@@ -192,6 +247,13 @@
               title="Probar Webhook"
             >
               <Send size={18} />
+            </button>
+            <button
+              onclick={() => openCustomMessage(webhook.uuid)}
+              class="p-2 hover:bg-purple-500/10 text-purple-500 rounded-xl transition-colors tooltip"
+              title="Enviar Mensaje Personalizado"
+            >
+              <MessageSquare size={18} />
             </button>
             <button
               onclick={() => openEdit(webhook)}
@@ -308,6 +370,70 @@
     </div>
   </div>
 {/if}
+ 
+{#if showCustomModal}
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div class="bg-surface-container rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden border border-gray-500/20">
+      <div class="p-6 border-b border-gray-500/10 flex justify-between items-center">
+        <div>
+          <h2 class="text-xl font-bold text-on-surface">
+            Enviar Mensaje Personalizado
+          </h2>
+          <p class="text-xs text-on-surface-variant/70">
+            {customTargetUuid ? "Se enviará solo a este webhook" : "Se enviará a TODOS los webhooks activos"}
+          </p>
+        </div>
+        <button onclick={() => (showCustomModal = false)} class="text-on-surface-variant hover:text-on-surface">
+          <Plus class="rotate-45" size={24} />
+        </button>
+      </div>
+ 
+      <div class="p-6 space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-on-surface-variant mb-1">Título del Mensaje</label>
+          <input
+            bind:value={customForm.title}
+            type="text"
+            placeholder="Ej: Mantenimiento Programado"
+            class="w-full bg-surface-highest border border-gray-500/20 rounded-xl px-4 py-3 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50"
+          />
+        </div>
+ 
+        <div>
+          <label class="block text-sm font-medium text-on-surface-variant mb-1">Contenido</label>
+          <textarea
+            bind:value={customForm.message}
+            rows="5"
+            placeholder="Escribe aquí el contenido del mensaje (soporta Markdown básico)..."
+            class="w-full bg-surface-highest border border-gray-500/20 rounded-xl px-4 py-3 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
+          ></textarea>
+        </div>
+      </div>
+ 
+      <div class="p-6 bg-surface-highest/50 flex justify-end gap-3">
+        <button
+          onclick={() => (showCustomModal = false)}
+          class="px-6 py-2.5 rounded-xl font-medium text-on-surface-variant hover:bg-surface-highest transition-colors"
+        >
+          Cancelar
+        </button>
+        <button
+          onclick={sendCustom}
+          disabled={sendingCustom || !customForm.title || !customForm.message}
+          class="px-8 py-2.5 bg-primary text-on-primary rounded-xl font-bold hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-lg shadow-primary/20"
+        >
+          {#if sendingCustom}
+            <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+            Enviando...
+          {:else}
+            Enviar Mensaje
+          {/if}
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+ 
 
 <style>
   .tooltip {

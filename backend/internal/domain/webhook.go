@@ -43,4 +43,6 @@ type WebhookUsecase interface {
 	// Notify all relevant webhooks
 	NotifyNewAnime(ctx context.Context, animeID uint64) error
 	NotifyNewSong(ctx context.Context, songID uint64) error
+	NotifyCustomMessage(ctx context.Context, title, message string) error
+	SendCustomMessage(ctx context.Context, uuid string, title, message string) error
 }

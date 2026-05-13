@@ -3,6 +3,7 @@
   import ActivityFeed from "$lib/components/ActivityFeed.svelte";
   import SEO from "$lib/components/SEO.svelte";
   import AnnouncementSidebar from "$lib/components/AnnouncementSidebar.svelte";
+  import CommunitySection from "$lib/components/CommunitySection.svelte";
   import { authState } from "$lib/state/auth.svelte";
   import { getSongName, getFormattedScore } from "$lib/song-utils";
   import Star from "lucide-svelte/icons/star";
@@ -572,6 +573,8 @@
       </div>
       <!-- Announcements -->
       <AnnouncementSidebar />
+      <!-- Communities -->
+      <CommunitySection />
     </aside>
   {/if}
 </main>

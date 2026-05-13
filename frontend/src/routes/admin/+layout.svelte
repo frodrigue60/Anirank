@@ -23,6 +23,7 @@
   import Calendar from "lucide-svelte/icons/calendar";
   import LogOut from "lucide-svelte/icons/log-out";
   import Webhook from "lucide-svelte/icons/webhook";
+  import Globe from "lucide-svelte/icons/globe";
 
   let { children } = $props();
 
@@ -182,6 +183,19 @@
           >
             <Webhook size={20} />
             {#if isSidebarOpen}<span class="ml-3 font-medium">Webhooks</span>{/if}
+          </a>
+        </li>
+
+        <li>
+          <!-- partners -->
+          <a
+            href="/admin/partners"
+            class="flex items-center p-3 rounded-xl hover:bg-primary-container hover:text-primary transition-colors {isSidebarOpen
+              ? ''
+              : 'justify-center'}"
+          >
+            <Globe size={20} />
+            {#if isSidebarOpen}<span class="ml-3 font-medium">Partners</span>{/if}
           </a>
         </li>
 

@@ -136,6 +136,7 @@ func main() {
 	xpRepo := postgres.NewXPRepository(db)
 	searchRepo := postgres.NewSearchRepository(db)
 	webhookRepo := postgres.NewWebhookRepository(db)
+	partnerRepo := postgres.NewPartnerRepository(db)
 
 	// Seed base data (Score Formats, Song Types)
 	sfSeeder := postgres.NewScoreFormatSeeder(db)
@@ -299,6 +300,7 @@ func main() {
 	contentAdminUsecase := admin.NewContentAdminUsecase(animeRepo, songRepo, variantRepo, artistRepo, taxonomyRepo, userRepo, anilistClient, mediaService, auditUsecase, interactionRepo, notificationUsecase)
 	adminUsecase := admin.NewAdminUsecase(userAdminUsecase, contentAdminUsecase, adminRepo, moderationRepo, jobsRepo, badgeUsecase)
 	webhookUsecase := admin.NewWebhookUsecase(webhookRepo, animeRepo, songRepo, webhookClient, mediaService)
+	partnerUsecase := admin.NewPartnerUsecase(partnerRepo, mediaService)
 
 	ogGenerator := og.NewGenerator(storageService.GetPublicURL(), storageService.GetEndpoint())
 	shareHandler := v1.NewShareHandler(animeUsecase, catalogUsecase, playlistUsecase)
@@ -359,7 +361,7 @@ func main() {
 	statsUsecase := public.NewStatsUsecase(statsRepo, appCache)
 
 	// 4. Register Routes
-	http.SetupPublicRoutes(app, db, discoveryUsecase, animeUsecase, searchUsecase, catalogUsecase, authUsecase, interactionUsecase, playlistUsecase, adminUsecase, moderationUsecase, tournamentUsecase, auditUsecase, webhookUsecase, jwtService, storageService, mediaService, xpUsecase, activityUsecase, statsUsecase, ogGenerator, shareHandler, seoHandler, limitStorage, appCache)
+	http.SetupPublicRoutes(app, db, discoveryUsecase, animeUsecase, searchUsecase, catalogUsecase, authUsecase, interactionUsecase, playlistUsecase, adminUsecase, moderationUsecase, tournamentUsecase, auditUsecase, webhookUsecase, partnerUsecase, jwtService, storageService, mediaService, xpUsecase, activityUsecase, statsUsecase, ogGenerator, shareHandler, seoHandler, limitStorage, appCache)
 
 	// Run Server
 	log.Printf("Starting server on port %s...", appPort)

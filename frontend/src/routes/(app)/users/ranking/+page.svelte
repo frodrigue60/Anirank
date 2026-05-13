@@ -13,6 +13,12 @@
   let activeSort = $derived(data.sort);
   let loading = $state(false);
 
+  // Rate Limiting State
+  let clickCount = $state(0);
+  let lastClickTime = $state(0);
+  let isRateLimited = $state(false);
+  let rateLimitResetTime = $state(0);
+
   $effect(() => {
     // Reset on data change (sort change)
     if (
@@ -25,10 +31,36 @@
   });
 
   async function changeSort(sort: string) {
+    if (loading || activeSort === sort || isRateLimited) return;
+    
+    // Simple Rate Limiting Logic (Max 10 clicks per 5 seconds)
+    const now = Date.now();
+    if (now - lastClickTime < 5000) {
+      clickCount++;
+      if (clickCount >= 10) {
+        isRateLimited = true;
+        rateLimitResetTime = now + 30000; // 30 seconds penalty
+        setTimeout(() => {
+          isRateLimited = false;
+          clickCount = 0;
+        }, 30000);
+        return;
+      }
+    } else {
+      clickCount = 1;
+    }
+    lastClickTime = now;
+
+    loading = true;
     const url = new URL(page.url);
     url.searchParams.set("sort", sort);
     url.searchParams.set("page", "1");
-    await goto(url.toString());
+    
+    try {
+      await goto(url.toString(), { keepFocus: true });
+    } finally {
+      loading = false;
+    }
   }
 
   async function loadMore() {
@@ -95,7 +127,8 @@
       >
         <button
           onclick={() => changeSort("xp")}
-          class="px-6 py-2.5 rounded-sm font-bold text-sm transition-all {activeSort ===
+          disabled={loading || isRateLimited}
+          class="px-6 py-2.5 rounded-sm font-bold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed {activeSort ===
           'xp'
             ? 'bg-primary text-white shadow-lg'
             : 'text-on-surface-variant hover:text-on-surface'}"
@@ -104,7 +137,8 @@
         </button>
         <button
           onclick={() => changeSort("ratings")}
-          class="px-6 py-2.5 rounded-sm font-bold text-sm transition-all {activeSort ===
+          disabled={loading || isRateLimited}
+          class="px-6 py-2.5 rounded-sm font-bold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed {activeSort ===
           'ratings'
             ? 'bg-primary text-white shadow-lg'
             : 'text-on-surface-variant hover:text-on-surface'}"
@@ -113,7 +147,8 @@
         </button>
         <button
           onclick={() => changeSort("comments")}
-          class="px-6 py-2.5 rounded-sm font-bold text-sm transition-all {activeSort ===
+          disabled={loading || isRateLimited}
+          class="px-6 py-2.5 rounded-sm font-bold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed {activeSort ===
           'comments'
             ? 'bg-primary text-white shadow-lg'
             : 'text-on-surface-variant hover:text-on-surface'}"
@@ -121,6 +156,12 @@
           Top Social
         </button>
       </div>
+
+      {#if isRateLimited}
+        <p class="text-[10px] text-red-500 font-bold uppercase tracking-widest animate-pulse">
+          Cooling down: Too many requests. Please wait 30s.
+        </p>
+      {/if}
     </div>
   </div>
 

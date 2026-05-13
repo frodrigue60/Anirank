@@ -72,3 +72,16 @@ export const deleteWebhook = (uuid: string) => api.delete(`/admin/webhooks/${uui
 export const testWebhook = (uuid: string) => api.post(`/admin/webhooks/${uuid}/test`);
 export const notifyAnime = (animeId: number) => api.post("/admin/webhooks/notify/anime", { anime_id: animeId });
 export const notifySong = (songId: number) => api.post("/admin/webhooks/notify/song", { song_id: songId });
+
+// Partners
+export const getActivePartners = () => api.get("/partners").then((res) => res.data);
+export const getAdminPartners = () => api.get("/admin/partners").then((res) => res.data);
+export const createPartner = (data: any) => {
+  const config = data instanceof FormData ? { headers: { "Content-Type": "multipart/form-data" } } : {};
+  return api.post("/admin/partners", data, config).then((res) => res.data);
+};
+export const updatePartner = (uuid: string, data: any) => {
+  const config = data instanceof FormData ? { headers: { "Content-Type": "multipart/form-data" } } : {};
+  return api.put(`/admin/partners/${uuid}`, data, config).then((res) => res.data);
+};
+export const deletePartner = (uuid: string) => api.delete(`/admin/partners/${uuid}`);

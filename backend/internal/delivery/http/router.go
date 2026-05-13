@@ -38,6 +38,7 @@ func SetupPublicRoutes(app *fiber.App,
 	tournamentUsecase *tournament.TournamentUsecase,
 	auditLogUsecase domain.AuditLogUsecase,
 	webhookUsecase domain.WebhookUsecase,
+	partnerUsecase domain.PartnerUsecase,
 	jwtService *auth.JWTService,
 	storageService infrastructure.StorageService,
 	mediaService infrastructure.MediaService,
@@ -84,6 +85,7 @@ func SetupPublicRoutes(app *fiber.App,
 
 	badgeHandler := v1.NewBadgeHandler(badgeUsecase)
 	webhookHandler := v1.NewWebhookHandler(webhookUsecase)
+	partnerHandler := v1.NewPartnerHandler(partnerUsecase)
 	activityHandler := v1.NewActivityHandler(activityUsecase)
 
 	notificationHandler := v1.NewNotificationHandler(notificationUsecase)
@@ -181,6 +183,9 @@ func SetupPublicRoutes(app *fiber.App,
 
 	// Announcements Public
 	api.Get("/announcements", announcementHandler.GetPublicAnnouncements)
+
+	// Partners Public
+	api.Get("/partners", partnerHandler.GetActivePartners)
 
 	// Tournaments Public
 	api.Get("/tournaments", tournamentHandler.ListTournamentsPublic)
@@ -467,6 +472,13 @@ func SetupPublicRoutes(app *fiber.App,
 	adminOnly.Post("/webhooks/:uuid/trigger/song", middleware.HasPermissionMiddleware("webhooks.manage", userRepo), webhookHandler.TriggerForSong)
 	adminOnly.Post("/webhooks/notify/anime", middleware.HasPermissionMiddleware("webhooks.manage", userRepo), webhookHandler.NotifyNewAnime)
 	adminOnly.Post("/webhooks/notify/song", middleware.HasPermissionMiddleware("webhooks.manage", userRepo), webhookHandler.NotifyNewSong)
+
+	// Partner Operations
+	adminOnly.Get("/partners", partnerHandler.AdminGetAll)
+	adminOnly.Get("/partners/:uuid", partnerHandler.AdminGetByUUID)
+	adminOnly.Post("/partners", middleware.HasPermissionMiddleware("partners.manage", userRepo), partnerHandler.AdminCreate)
+	adminOnly.Put("/partners/:uuid", middleware.HasPermissionMiddleware("partners.manage", userRepo), partnerHandler.AdminUpdate)
+	adminOnly.Delete("/partners/:uuid", middleware.HasPermissionMiddleware("partners.manage", userRepo), partnerHandler.AdminDelete)
 
 	// Permission Management (Owner/Admin only)
 	adminOnly.Get("/permissions", permissionHandler.GetAllPermissions)

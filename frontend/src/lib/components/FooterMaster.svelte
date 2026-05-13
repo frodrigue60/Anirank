@@ -36,7 +36,7 @@
         </p>
 
         <!-- Site Stats Snippet -->
-        <div class="mt-6 flex flex-wrap gap-4 opacity-90">
+        <!-- <div class="mt-6 flex flex-wrap gap-4 opacity-90">
           <div class="flex flex-col">
             <span class="text-xs font-bold text-on-surface">45K+</span>
             <span class="text-[10px] uppercase tracking-wider">Themes</span>
@@ -49,7 +49,7 @@
             <span class="text-xs font-bold text-on-surface">12K+</span>
             <span class="text-[10px] uppercase tracking-wider">Users</span>
           </div>
-        </div>
+        </div> -->
       </div>
     </div>
 

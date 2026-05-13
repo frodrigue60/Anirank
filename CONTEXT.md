@@ -134,6 +134,7 @@ For local development involving media assets, the `img-src` directive MUST inclu
 | `Tournament` | `id`, `slug`, `matchups` | Community bracket voting system. |
 | `Announcement` | `id`, `uuid`, `title`, `is_active` | Displayed in sidebar. |
 | `Notification` | `id` (UUID used in responses), `user_id`, `type` | In-app notifications. |
+| `Partner` | `id`, `uuid`, `name`, `url`, `banner` | External community/source links. |
 
 ---
 

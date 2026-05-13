@@ -16,6 +16,11 @@
   let activeType = $derived(data.type);
   let loading = $state(false);
 
+  // Rate Limiting State
+  let clickCount = $state(0);
+  let lastClickTime = $state(0);
+  let isRateLimited = $state(false);
+
   // Reset when data changes (e.g., type filter changed via SvelteKit navigation)
   $effect(() => {
     // svelte-ignore state_referenced_locally
@@ -34,11 +39,35 @@
   });
 
   async function changeType(type: string) {
+    if (loading || activeType === type || (type === "all" && !activeType) || isRateLimited) return;
+    
+    // Rate Limiting (10 clicks / 5 seconds)
+    const now = Date.now();
+    if (now - lastClickTime < 5000) {
+      clickCount++;
+      if (clickCount >= 10) {
+        isRateLimited = true;
+        setTimeout(() => {
+          isRateLimited = false;
+          clickCount = 0;
+        }, 30000);
+        return;
+      }
+    } else {
+      clickCount = 1;
+    }
+    lastClickTime = now;
+
     const url = new URL(page.url);
     url.searchParams.set("type", type);
     url.searchParams.set("page", "1");
-    // Trigger SvelteKit navigation which will reload data
-    await goto(url.toString());
+    
+    loading = true;
+    try {
+      await goto(url.toString(), { keepFocus: true });
+    } finally {
+      loading = false;
+    }
   }
 
   async function loadMore() {
@@ -87,7 +116,8 @@
       >
         <button
           onclick={() => changeType("all")}
-          class="px-3 sm:px-6 py-2 rounded-sm font-bold text-xs sm:text-sm transition-all {activeType ===
+          disabled={loading || isRateLimited}
+          class="px-3 sm:px-6 py-2 rounded-sm font-bold text-xs sm:text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed {activeType ===
             'all' || !activeType
             ? 'bg-primary text-white shadow-lg'
             : 'text-on-surface/80 hover:text-on-surface'}"
@@ -97,7 +127,8 @@
         {#each configState.songTypes as type}
           <button
             onclick={() => changeType(type.slug)}
-            class="px-3 sm:px-6 py-2 rounded-sm font-bold text-xs sm:text-sm transition-all {activeType === type.slug
+            disabled={loading || isRateLimited}
+            class="px-3 sm:px-6 py-2 rounded-sm font-bold text-xs sm:text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed {activeType === type.slug
               ? 'bg-primary text-white shadow-lg'
               : 'text-on-surface/80 hover:text-on-surface'}"
           >
@@ -105,6 +136,12 @@
           </button>
         {/each}
       </div>
+
+      {#if isRateLimited}
+        <p class="text-[10px] text-red-500 font-bold uppercase tracking-widest animate-pulse mt-1">
+          Too many requests. Please wait 30s.
+        </p>
+      {/if}
     </div>
   </div>
 

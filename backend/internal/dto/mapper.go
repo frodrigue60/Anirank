@@ -737,6 +737,9 @@ func ToActivityItemDTO(item domain.ActivityItem) ActivityItemDTO {
 	case domain.Badge:
 		targetID = t.UUID
 		target = ToBadgeDTO(&t)
+	case uint64:
+		targetID = fmt.Sprintf("%d", t)
+		target = t
 	default:
 		// Fallback to original target if not handled
 		target = item.Target
@@ -795,6 +798,9 @@ func ToActivityDTO(item domain.Activity) ActivityItemDTO {
 		case *domain.Badge:
 			targetID = t.UUID
 			target = ToBadgeDTO(t)
+		case uint64:
+			targetID = fmt.Sprintf("%d", t)
+			target = t
 		}
 	}
 

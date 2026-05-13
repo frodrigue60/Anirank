@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"anirank/api/internal/domain"
@@ -105,7 +106,8 @@ func (u *xpUsecase) AwardXP(ctx context.Context, userID uint64, activityKey stri
 
 	// 6. Log Level Up Activity if changed
 	if newLevel > user.Level {
-		_ = u.activityUsecase.LogActivity(ctx, userID, "level_up", uint64(newLevel), "level", nil)
+		levelStr := fmt.Sprintf("%d", newLevel)
+		_ = u.activityUsecase.LogActivity(ctx, userID, "level_up", uint64(newLevel), "level", &levelStr)
 	}
 
 	return nil

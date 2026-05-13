@@ -5,11 +5,11 @@
 
   interface Props {
     tournament: Tournament;
-    userVotedMatchupIds?: number[];
+    userVotedMatchupIds?: (number | string)[];
     canVote?: boolean;
     onvoteRequest?: (
-      matchupId: number,
-      songId: number,
+      matchupId: number | string,
+      songId: number | string,
       song: Song | undefined,
     ) => void;
     onpreview?: (song: Song | undefined) => void;

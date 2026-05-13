@@ -19,19 +19,19 @@ export interface Tournament {
 }
 
 export interface TournamentMatchup {
-    id: number;
+    id: number | string;
     tournament_id: number;
     round: number;
     position: number;
-    song1_id: number | null;
-    song2_id: number | null;
+    song1_id: number | string | null;
+    song2_id: number | string | null;
     song1_votes: number;
     song2_votes: number;
-    winner_song_id: number | null;
+    winner_song_id: number | string | null;
     ends_at: string | null;
     is_active: boolean;
     song1?: Song;
     song2?: Song;
     winner?: Song;
-    user_voted_song_id?: number;
+    user_voted_song_id?: number | string;
 }

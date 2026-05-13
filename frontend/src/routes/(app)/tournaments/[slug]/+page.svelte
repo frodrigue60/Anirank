@@ -29,8 +29,8 @@ import VideoOff from "lucide-svelte/icons/video-off";;
 
   // Vote confirmation logic
   let confirmingVote = $state<{
-    matchupId: number;
-    songId: number;
+    matchupId: number | string;
+    songId: number | string;
     songName: string;
   } | null>(null);
 
@@ -52,8 +52,8 @@ import VideoOff from "lucide-svelte/icons/video-off";;
     selectedVariantIndex = 0;
   }
 
-  function handleVoteConfirm(event: any) {
-    const { matchupId, songId, song } = event.detail;
+  function handleVoteConfirm(data: { matchupId: number | string, songId: number | string, song: Song | undefined }) {
+    const { matchupId, songId, song } = data;
     confirmingVote = {
       matchupId,
       songId,
@@ -65,6 +65,7 @@ import VideoOff from "lucide-svelte/icons/video-off";;
     if (!confirmingVote) return;
     try {
       loading = true;
+      console.log("EXECUTING VOTE FOR MATCHUP:", confirmingVote.matchupId);
       await api.post(`/tournaments/matchups/${confirmingVote.matchupId}/vote`, {
         song_id: confirmingVote.songId,
       });
@@ -258,7 +259,7 @@ import VideoOff from "lucide-svelte/icons/video-off";;
             }
           }}
           onvoteRequest={(matchupId, songId, song) => {
-            handleVoteConfirm({ detail: { matchupId, songId, song } });
+            handleVoteConfirm({ matchupId, songId, song });
           }}
         />
       </div>

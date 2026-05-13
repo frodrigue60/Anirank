@@ -6,6 +6,7 @@
   let description = '';
   let size = 16;
   let type_filter = '';
+  let matchup_duration_hours = 48;
   let loading = false;
 
   async function handleSubmit() {
@@ -13,14 +14,12 @@
     
     loading = true;
     try {
-      // Note: We need a POST /admin/tournaments endpoint.
-      // Based on the handler, I might have forgotten the Create endpoint in delivery?
-      // Let me check the handler again.
       await api.post('/admin/tournaments', {
         name,
         description,
         size: Number(size),
-        type_filter: type_filter || null
+        type_filter: type_filter || null,
+        matchup_duration_hours: Number(matchup_duration_hours)
       });
       goto('/admin/tournaments');
     } catch (error) {
@@ -88,6 +87,20 @@
           <option value="ED">Endings Only</option>
         </select>
       </div>
+    </div>
+
+    <div class="space-y-2">
+      <label for="duration" class="block font-bold opacity-80">Matchup Duration (Hours)</label>
+      <input 
+        id="duration"
+        type="number" 
+        bind:value={matchup_duration_hours}
+        min="1"
+        max="168"
+        class="w-full bg-surface-highest border border-outline-variant rounded-lg p-3 outline-none focus:border-primary/30 focus:bg-surface-highest"
+        required
+      />
+      <p class="text-xs opacity-50">Time users have to vote in each round. 24h, 48h, or 72h are recommended.</p>
     </div>
 
     <div class="pt-4 flex gap-4">

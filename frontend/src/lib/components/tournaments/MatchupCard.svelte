@@ -12,8 +12,8 @@ import CheckCircle2 from "lucide-svelte/icons/check-circle-2";
     canVote?: boolean;
     loading?: boolean;
     onvoteRequest?: (
-      matchupId: number,
-      songId: number,
+      matchupId: number | string,
+      songId: number | string,
       song: Song | undefined,
     ) => void;
     onpreview?: (song: Song | undefined) => void;
@@ -27,7 +27,7 @@ import CheckCircle2 from "lucide-svelte/icons/check-circle-2";
     onpreview,
   }: Props = $props();
 
-  function handleVote(songId: number | null) {
+  function handleVote(songId: number | string | null) {
     if (!canVote || !songId || loading || matchup.user_voted_song_id) return;
     const song = songId === matchup.song1_id ? matchup.song1 : matchup.song2;
     onvoteRequest?.(matchup.id, songId, song);
@@ -82,7 +82,7 @@ import CheckCircle2 from "lucide-svelte/icons/check-circle-2";
             {matchup.song1?.type || "OP"}
             {matchup.song1?.theme_num || ""}
           </span>
-          {#if matchup.user_voted_song_id === matchup.song1_id}
+          {#if matchup.user_voted_song_id && matchup.user_voted_song_id === matchup.song1_id}
             <span
               class="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-green-500"
             >
@@ -136,7 +136,7 @@ import CheckCircle2 from "lucide-svelte/icons/check-circle-2";
     {#if canVote && matchup.is_active && matchup.song1_id && !matchup.user_voted_song_id}
       <button
         class="w-full py-2 bg-primary text-white text-xs font-black uppercase tracking-widest rounded-lg hover:shadow-lg hover:shadow-primary/20 transition-all mt-1"
-        onclick={() => handleVote(matchup.song1_id)}
+        onclick={() => handleVote(matchup.song1_id as any)}
         disabled={loading}
       >
         Vote
@@ -167,7 +167,7 @@ import CheckCircle2 from "lucide-svelte/icons/check-circle-2";
             {matchup.song2?.type || "ED"}
             {matchup.song2?.theme_num || ""}
           </span>
-          {#if matchup.user_voted_song_id === matchup.song2_id}
+          {#if matchup.user_voted_song_id && matchup.user_voted_song_id === matchup.song2_id}
             <span
               class="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-green-500"
             >

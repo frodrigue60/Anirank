@@ -18,6 +18,7 @@ type Tournament struct {
 	WinnerSongID *uint64    `db:"winner_song_id" json:"winner_song_id"`
 	StartedAt    *time.Time `db:"started_at" json:"started_at"`
 	CompletedAt  *time.Time `db:"completed_at" json:"completed_at"`
+	MatchupDurationHours int `db:"matchup_duration_hours" json:"matchup_duration_hours"`
 	CreatedAt    time.Time  `db:"created_at" json:"created_at"`
 	UpdatedAt    time.Time  `db:"updated_at" json:"updated_at"`
 
@@ -87,6 +88,7 @@ type TournamentRepository interface {
 	UpdateMatchup(ctx context.Context, m *TournamentMatchup) error
 	GetExpiredMatchups(ctx context.Context) ([]TournamentMatchup, error)
 	GetMatchupByID(ctx context.Context, id uint64) (*TournamentMatchup, error)
+	GetMatchupByUUID(ctx context.Context, uuid string) (*TournamentMatchup, error)
 	FindMatchup(ctx context.Context, tournamentID uint64, round int, position int) (*TournamentMatchup, error)
 
 	// Voting

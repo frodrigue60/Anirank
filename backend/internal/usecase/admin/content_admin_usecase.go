@@ -2510,8 +2510,17 @@ func (u *ContentAdminUsecase) HandleVariantVideo(c *fiber.Ctx, v *domain.SongVar
 			defer file.Close()
 			contentType := fileHeader.Header.Get("Content-Type")
 
-			// Standardized upload
-			if _, url, err := u.mediaService.UploadImage(c.Context(), "videos", v.ID, file, fileHeader.Size, contentType); err == nil {
+			// Validation: mp4, webm only
+			if contentType != "video/mp4" && contentType != "video/webm" {
+				log.Printf("[ADMIN-ERROR] Invalid video content type: %s\n", contentType)
+				return
+			}
+
+			// Determine storage folder based on year/season
+			prefix := u.resolveVideoStoragePath(c.Context(), v)
+
+			// Use specialized UploadVideo to avoid image optimization logic
+			if _, url, err := u.mediaService.UploadVideo(c.Context(), prefix, v.ID, file, fileHeader.Size, contentType, fileHeader.Filename); err == nil {
 				if v.Video == nil {
 					v.Video = &domain.SongVariantVideo{}
 				}
@@ -2519,6 +2528,8 @@ func (u *ContentAdminUsecase) HandleVariantVideo(c *fiber.Ctx, v *domain.SongVar
 				v.Video.Type = "file"
 				v.Video.EmbedUrl = nil
 				updated = true
+			} else {
+				log.Printf("[ADMIN-ERROR] Video upload failed for variant %d: %v\n", v.ID, err)
 			}
 		}
 	} else {
@@ -3170,4 +3181,65 @@ func (u *ContentAdminUsecase) processArtistImages(ctx context.Context, progress 
 
 	sendProgress("Completed artist image processing!")
 	return nil
+}
+
+func (u *ContentAdminUsecase) resolveVideoStoragePath(ctx context.Context, v *domain.SongVariant) string {
+	// Always get the anime ID from the song
+	var animeID uint64
+	if v.Song != nil {
+		animeID = v.Song.AnimeID
+	} else {
+		s, _ := u.songRepo.GetByID(ctx, v.SongID)
+		if s != nil {
+			animeID = s.AnimeID
+		}
+	}
+
+	if animeID == 0 {
+		return "videos/misc"
+	}
+
+	// Fetch anime metadata directly to get Year/Season
+	anime, err := u.animeRepo.GetByID(ctx, animeID)
+	if err != nil || anime == nil {
+		return "videos/misc"
+	}
+
+	yearID := anime.YearID
+	seasonID := anime.SeasonID
+
+	// Fallback to "misc" if year is missing
+	if yearID == 0 {
+		return "videos/misc"
+	}
+
+	yearObj, err := u.taxonomyRepo.GetYearByID(ctx, yearID)
+	if err != nil || yearObj == nil {
+		return "videos/misc"
+	}
+
+	// Logic for years/decades
+	var yearNum int
+	fmt.Sscanf(yearObj.Name, "%d", &yearNum)
+
+	if yearNum == 0 {
+		return "videos/misc"
+	}
+
+	if yearNum < 2000 {
+		// Decades: 90s, 80s, etc.
+		decade := (yearNum / 10) * 10
+		return fmt.Sprintf("videos/%02ds", decade%100)
+	}
+
+	// 2000 onwards: year/season
+	seasonName := "misc"
+	if seasonID > 0 {
+		seasonObj, err := u.taxonomyRepo.GetSeasonByID(ctx, seasonID)
+		if err == nil && seasonObj != nil {
+			seasonName = seasonObj.Name
+		}
+	}
+
+	return fmt.Sprintf("videos/%d/%s", yearNum, seasonName)
 }

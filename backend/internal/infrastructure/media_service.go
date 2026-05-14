@@ -22,11 +22,13 @@ type MediaService interface {
 	Resolve(path *string) *string
 	GeneratePath(prefix string, id uint64, ext string) string
 	UploadImage(ctx context.Context, prefix string, id uint64, file io.Reader, size int64, contentType string) (string, string, error)
+	UploadVideo(ctx context.Context, prefix string, id uint64, file io.Reader, size int64, contentType string, originalName string) (string, string, error)
 	UploadImageOptimized(ctx context.Context, prefix string, id uint64, file io.Reader, options ImageOptions) (string, string, error)
 	UploadWithResolutions(ctx context.Context, prefix string, id uint64, file io.Reader, preset ResolutionPreset) (string, string, error)
 	GetImageSources(path string) []domain.ImageSource
 	GetFile(ctx context.Context, path string) (io.ReadCloser, error)
 	DeleteMedia(ctx context.Context, path string)
+	FileExists(ctx context.Context, path string) (bool, error)
 }
 
 type ResolutionPreset string
@@ -89,6 +91,38 @@ func (s *mediaService) GeneratePath(prefix string, id uint64, ext string) string
 
 func (s *mediaService) UploadImage(ctx context.Context, prefix string, id uint64, file io.Reader, size int64, contentType string) (string, string, error) {
 	return s.UploadImageOptimized(ctx, prefix, id, file, ImageOptions{Format: "jpg", Quality: 80})
+}
+
+func (s *mediaService) UploadVideo(ctx context.Context, prefix string, id uint64, file io.Reader, size int64, contentType string, originalName string) (string, string, error) {
+	// Sanitize original name if provided, otherwise generate one
+	var filename string
+	if originalName != "" {
+		// Basic sanitization: replace spaces with hyphens, remove weird chars
+		cleanName := strings.ReplaceAll(originalName, " ", "-")
+		// Use the prefix (folder) and the clean original name directly
+		filename = fmt.Sprintf("%s/%s", prefix, cleanName)
+	} else {
+		ext := "mp4"
+		if contentType == "video/webm" {
+			ext = "webm"
+		}
+		filename = s.GeneratePath(prefix, id, ext)
+	}
+
+	// Check if file already exists to avoid redundant uploads
+	if exists, _ := s.FileExists(ctx, filename); exists {
+		log.Printf("[MEDIA-DEBUG] Video already exists at %s, skipping upload\n", filename)
+		return filename, s.storage.GetURL(filename), nil
+	}
+
+	log.Printf("[MEDIA-DEBUG] Uploading video: %s (%d bytes, %s)\n", filename, size, contentType)
+	_, err := s.storage.UploadFile(ctx, filename, file, size, contentType)
+	if err != nil {
+		log.Printf("[MEDIA-ERROR] Video upload failed for %s: %v\n", filename, err)
+		return "", "", err
+	}
+
+	return filename, s.storage.GetURL(filename), nil
 }
 
 func (s *mediaService) UploadImageOptimized(ctx context.Context, prefix string, id uint64, file io.Reader, opts ImageOptions) (string, string, error) {
@@ -331,4 +365,17 @@ func (s *mediaService) DeleteMedia(ctx context.Context, path string) {
 			_ = s.storage.DeleteFile(bgCtx, pathWithoutExt+v+".jpg")
 		}
 	}()
+}
+
+func (s *mediaService) FileExists(ctx context.Context, path string) (bool, error) {
+	if path == "" {
+		return false, nil
+	}
+	if strings.HasPrefix(path, "http") {
+		if !strings.HasPrefix(path, s.baseURL) {
+			return false, nil // External URL
+		}
+		path = strings.TrimPrefix(path, s.baseURL)
+	}
+	return s.storage.FileExists(ctx, path)
 }

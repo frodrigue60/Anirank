@@ -162,10 +162,12 @@ func (m *MockMediaService) Resolve(p *string) *string { return p }
 func (m *MockMediaService) GeneratePath(pr string, id uint64, e string) string { return "" }
 func (m *MockMediaService) UploadImage(ctx context.Context, p string, id uint64, f io.Reader, s int64, cT string) (string, string, error) { return "", "", nil }
 func (m *MockMediaService) UploadImageOptimized(ctx context.Context, p string, id uint64, f io.Reader, o infrastructure.ImageOptions) (string, string, error) { return "", "", nil }
+func (m *MockMediaService) UploadVideo(ctx context.Context, p string, id uint64, f io.Reader, s int64, cT string, oN string) (string, string, error) { return "", "", nil }
 func (m *MockMediaService) UploadWithResolutions(ctx context.Context, p string, id uint64, f io.Reader, pr infrastructure.ResolutionPreset) (string, string, error) { return "", "", nil }
 func (m *MockMediaService) GetImageSources(p string) []domain.ImageSource { return nil }
 func (m *MockMediaService) GetFile(ctx context.Context, p string) (io.ReadCloser, error) { return nil, nil }
 func (m *MockMediaService) DeleteMedia(ctx context.Context, p string) {}
+func (m *MockMediaService) FileExists(ctx context.Context, p string) (bool, error) { return false, nil }
 
 // Gamification Mocks
 type MockXPUsecase struct{}

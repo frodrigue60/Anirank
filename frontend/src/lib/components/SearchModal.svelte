@@ -175,13 +175,14 @@
         class="p-6 border-b border-outline-variant/10 flex items-center gap-4 bg-surface-container/50 backdrop-blur-md"
       >
         <Search class="text-primary" size={24} />
-
+        <label for="search-input-modal" class="sr-only">Search everything</label>
         <input
+          id="search-input-modal"
+          bind:this={searchInput}
           type="text"
           bind:value={query}
-          placeholder="Search animes, artists, users..."
+          placeholder="Search animes, artists, users, and songs..."
           class="flex-1 bg-transparent border-none text-on-surface text-lg focus:outline-none placeholder:text-on-surface-variant/30 font-bold"
-          aria-label="Search animes, artists, users, and songs"
         />
         {#if isLoading}
           <div

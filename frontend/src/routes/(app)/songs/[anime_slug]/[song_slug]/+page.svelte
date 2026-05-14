@@ -925,7 +925,9 @@
             </div>
           {:else}
             <div class="flex-1 flex flex-col gap-2">
+              <label for="main-comment-textarea" class="sr-only">Add a comment</label>
               <textarea
+                id="main-comment-textarea"
                 bind:value={newCommentText}
                 placeholder={authState.isAuthenticated
                   ? "Add a comment..."
@@ -933,7 +935,6 @@
                 class="w-full bg-surface-container border border-outline-variant/20 rounded-md p-3 text-sm text-on-surface focus:outline-none focus:border-primary transition-colors resize-none disabled:opacity-50 shadow-inner"
                 rows="2"
                 disabled={!authState.isAuthenticated}
-                aria-label="Add a new comment"
               ></textarea>
               <div class="flex justify-end">
                 <button
@@ -1123,23 +1124,26 @@
                 <!-- Inline Reply Input -->
                 {#if replyingToUuid === comment.uuid}
                   <div class="flex gap-3 mt-3">
-                    <div class="flex-1 flex gap-2 items-start">
-                      <textarea
-                        bind:value={replyText}
-                        placeholder="Write a reply..."
-                        class="w-full bg-surface-container border border-outline-variant/10 rounded-sm p-2 text-sm text-on-surface focus:outline-none focus:border-primary transition-colors resize-none"
-                        rows="1"
-                        aria-label="Write a reply"
-                      ></textarea>
-                      <button
-                        onclick={() => postReply(comment.uuid)}
-                        disabled={!replyText.trim()}
-                        class="bg-surface-highest hover:bg-primary hover:text-white text-on-surface font-bold text-xs px-3 py-2 rounded-sm transition-colors disabled:opacity-50 shrink-0"
-                        title="Send reply"
-                        aria-label="Send reply"
-                      >
-                        Send
-                      </button>
+                    <div class="flex-1 flex flex-col gap-2">
+                      <label for="reply-textarea-{comment.uuid}" class="sr-only">Write a reply</label>
+                      <div class="flex gap-2 items-start">
+                        <textarea
+                          id="reply-textarea-{comment.uuid}"
+                          bind:value={replyText}
+                          placeholder="Write a reply..."
+                          class="w-full bg-surface-container border border-outline-variant/10 rounded-sm p-2 text-sm text-on-surface focus:outline-none focus:border-primary transition-colors resize-none"
+                          rows="1"
+                        ></textarea>
+                        <button
+                          onclick={() => postReply(comment.uuid)}
+                          disabled={!replyText.trim()}
+                          class="bg-surface-highest hover:bg-primary hover:text-white text-on-surface font-bold text-xs px-3 py-2 rounded-sm transition-colors disabled:opacity-50 shrink-0"
+                          title="Send reply"
+                          aria-label="Send reply"
+                        >
+                          Send
+                        </button>
+                      </div>
                     </div>
                   </div>
                 {/if}

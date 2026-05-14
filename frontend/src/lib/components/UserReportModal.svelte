@@ -120,13 +120,13 @@ import AlertCircle from "lucide-svelte/icons/alert-circle";
           <!-- Reason Select -->
           <div>
             <label
-              for="report-reason"
+              for="report-reason-user"
               class="block text-[10px] font-black uppercase tracking-wider text-on-surface-variant mb-2 px-1"
               >Reason</label
             >
             <div class="relative group">
               <select
-                id="report-reason"
+                id="report-reason-user"
                 bind:value={reason}
                 class="w-full bg-surface-highest border border-outline-variant/10 rounded-sm px-4 py-3 text-sm text-on-surface focus:outline-none focus:border-primary/30 transition-all appearance-none cursor-pointer group-hover:bg-surface-highest/80"
               >
@@ -144,12 +144,13 @@ import AlertCircle from "lucide-svelte/icons/alert-circle";
           <!-- Content Textarea -->
           <div>
             <label
-              for="report-content"
+              for="report-content-user"
               class="block text-[10px] font-black uppercase tracking-wider text-on-surface-variant mb-2 px-1"
-              >Details (Optional)</label
+              >Details</label
             >
             <textarea
-              id="report-content"
+              required
+              id="report-content-user"
               bind:value={content}
               placeholder="Provide more details about the violation..."
               class="w-full bg-surface-highest border border-outline-variant/10 rounded-sm px-4 py-3 text-sm text-on-surface focus:outline-none focus:border-primary/30 transition-all min-h-[100px] resize-none hover:bg-surface-highest/80"

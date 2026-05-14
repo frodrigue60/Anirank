@@ -220,15 +220,19 @@ import AlertCircle from "lucide-svelte/icons/alert-circle";
           {:else}
             <!-- Slider + Grid -->
             <div class="space-y-8">
-              <div class="px-2">
+              <div class="relative pt-6 pb-2">
+                <label for="rating-slider" class="sr-only">Rating Score (0-100)</label>
                 <input
+                  id="rating-slider"
                   type="range"
                   min="0"
                   max="100"
                   bind:value
+                  aria-label="Rating slider"
                   class="rating-range w-full h-2 rounded-full appearance-none cursor-pointer focus:outline-none"
                 />
-                <div class="flex justify-between mt-6 px-1">
+              </div>
+              <div class="flex justify-between mt-6 px-1">
                   {#each [0, 25, 50, 75, 100] as mark}
                     <span
                       class="text-[10px] font-black tracking-tighter transition-colors {Math.abs(
@@ -239,8 +243,7 @@ import AlertCircle from "lucide-svelte/icons/alert-circle";
                     >
                   {/each}
                 </div>
-              </div>
-
+              
               {#if format === "POINT_10" || format === "POINT_10_DECIMAL"}
                 <div class="grid grid-cols-5 gap-2 w-full px-2">
                   {#each tenGrid as val}

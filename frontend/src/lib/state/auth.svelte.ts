@@ -50,6 +50,13 @@ class Auth {
             ['admin', 'owner', 'editor', 'creator', 'staff', 'moderator'].includes(s)
         );
     });
+
+    canPublish = $derived.by(() => {
+        if (!this.user?.roles) return false;
+        const roles = this.user.roles as (string | Role)[];
+        const slugs = roles.map(r => typeof r === 'string' ? r.toLowerCase() : r.slug.toLowerCase());
+        return slugs.some(s => ['admin', 'owner', 'editor'].includes(s));
+    });
 }
 
 export const authState = new Auth();

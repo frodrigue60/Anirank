@@ -66,6 +66,16 @@ export interface SongVariant {
     slug: string;
     video_url?: string;
     spoiler: boolean;
+    nsfw?: boolean;
+    episodes?: string;
+    season?: {
+        id: number;
+        name: string;
+    };
+    year?: {
+        id: number;
+        name: string;
+    };
 }
 
 export interface SongType {

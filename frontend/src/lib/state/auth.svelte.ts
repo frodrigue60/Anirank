@@ -1,3 +1,5 @@
+import type { ImageSource } from './types/media';
+
 export interface Role {
     id: number;
     name: string;
@@ -21,12 +23,17 @@ export interface User {
     last_login_at?: string;
     roles?: Role[];
     avatar_url?: string;
+    avatar_sources?: ImageSource[];
     banner_url?: string;
+    banner_sources?: ImageSource[];
     xp?: number;
     level?: number;
     social_identities?: UserSocialIdentity[];
     profile_color?: string;
     about?: string;
+    is_softbanned?: boolean;
+    is_shadowbanned?: boolean;
+    truth_score?: number;
 }
 
 class Auth {

@@ -330,6 +330,10 @@ func (u *InteractionUsecase) enrichComments(ctx context.Context, comments []doma
 // pre-fetched data maps to avoid any further DB or env calls.
 func (u *InteractionUsecase) hydrateComments(comments []domain.Comment, badgesByUser map[uint64][]domain.Badge) {
 	for i := range comments {
+		// Populate reaction state for frontend
+		comments[i].IsLiked = comments[i].UserReaction == 1
+		comments[i].IsDisliked = comments[i].UserReaction == -1
+
 		if comments[i].User != nil {
 			comments[i].User.AvatarUrl = u.mediaService.Resolve(comments[i].User.Avatar)
 			comments[i].User.BannerUrl = u.mediaService.Resolve(comments[i].User.Banner)

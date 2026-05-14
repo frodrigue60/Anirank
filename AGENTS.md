@@ -156,6 +156,8 @@ The internal `uint64` IDs in the database (e.g. `user.ID`, `song.ID`) are **stri
 - **Don't** call `GetBadgesByUserID` (singular) inside a loop over comments or any list. Use `GetBadgesByUserIDs` (plural) for batch fetching.
 - **Don't** bypass `moderationUsecase.ValidateInteraction` when creating new types of user-generated content. All public interactions must be filtered.
 - **Don't** manually update `user.is_softbanned` in a repository. Use the `checkAndApplyShadowban` (internal) or `UpdateSoftbanStatus` logic to ensure consistency with `TruthScore`.
+- **Don't** create database migrations that are not idempotent (always use `IF NOT EXISTS` or `DO $$` blocks).
+- **Don't** modify existing migration files that have already been committed; always create a new migration for changes or fixes.
 
 ---
 
@@ -184,3 +186,10 @@ The internal `uint64` IDs in the database (e.g. `user.ID`, `song.ID`) are **stri
 - Automatic badge logic lives in `internal/usecase/admin/badge_evaluator.go`.
 - To add a new badge trigger type, add a new `BadgeEvaluator` implementation and register it in `buildEvaluators()`. **Do not** add a new `case` to a switch in `badge_usecase.go`.
 - The `triggerType` string (e.g. `"ratings"`, `"level"`) must match the `requirement_type` column in the `badges` table.
+
+### Database Migrations
+- **ALWAYS** use idempotent SQL syntax.
+- **Columns:** `ALTER TABLE ... ADD COLUMN IF NOT EXISTS ...`
+- **Indices:** `CREATE INDEX IF NOT EXISTS ...`
+- **Complex logic:** Wrap in `DO $$ BEGIN ... END $$;` blocks to check `information_schema` before executing structural changes.
+- **Documentation:** Consult Section 18 of `CONTEXT.md` for specific patterns.

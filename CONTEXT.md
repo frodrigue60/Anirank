@@ -330,3 +330,28 @@ To ensure a tamper-proof audit trail for administrative review, the system captu
 - **Mechanism:** The `ModerationUsecase` fetches the current state of the reported entity (Song, Comment, or User) from the database, serializes it into a JSON string, and stores it in the `snapshot` column of the report.
 - **Integrity:** Once a report is created, its snapshot remains unchanged even if the original entity is edited or deleted.
 - **Workflow:** `Fetch -> Marshal -> Assign`. This allows staff to see the exact content that was reported, regardless of subsequent changes by the user.
+---
+
+## 18. Database Migrations & Idempotency
+
+AniRank uses a custom raw-SQL migration system. All migrations must be **idempotent**, meaning they can be executed multiple times without causing errors or data corruption.
+
+### Migration Best Practices
+
+1.  **File Naming:** Use the format `YYYYMMDDHHMM_description.sql` (e.g., `202405141100_add_shadowban_to_reactions.sql`).
+2.  **Idempotent Columns:** Use `ALTER TABLE ... ADD COLUMN IF NOT EXISTS ...`.
+3.  **Idempotent Indices:** Use `CREATE INDEX IF NOT EXISTS ...`.
+4.  **Complex Logic:** Wrap non-native idempotent operations in a `DO $$` block:
+    ```sql
+    DO $$ 
+    BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='my_table' AND column_name='my_col') THEN
+            ALTER TABLE my_table ADD COLUMN my_col BOOLEAN DEFAULT false;
+        END IF;
+    END $$;
+    ```
+5.  **No Down Migrations:** The system currently only supports forward migrations. To revert a change, create a new "fix" migration.
+6.  **Verification:** Always test migrations locally using `go run scripts/run_migrations.go` before committing.
+
+### Handling Schema Drift
+If a migration was manually recorded as "run" in the `migrations` table but failed to apply all changes (e.g., due to manual DB edits), create a **reconciliation migration** that uses the `IF NOT EXISTS` pattern to ensure all expected columns are present.

@@ -18,7 +18,10 @@
   let season_id = $state(variant.season_id || 0);
   let year_id = $state(variant.year_id || 0);
   let spoiler = $state(variant.spoiler || false);
+  let nsfw = $state(variant.nsfw || false);
+  let episodes = $state(variant.episodes || "");
   let status = $state(variant.status || false);
+
 
   // UI State
   let loading = $state(false);
@@ -37,8 +40,11 @@
         season_id: season_id && season_id > 0 ? season_id : 0,
         year_id: year_id && year_id > 0 ? year_id : 0,
         spoiler,
+        nsfw,
+        episodes,
         status,
       };
+
 
       const res = await api.put(`/admin/variants/${data.variant.id}`, payload);
 
@@ -126,7 +132,7 @@
           />
         </div> -->
 
-        <div class="pt-2 flex items-center">
+        <div class="pt-2 flex items-center gap-6">
           <label class="flex items-center gap-3 cursor-pointer">
             <div class="relative">
               <input
@@ -138,10 +144,24 @@
                 class="w-11 h-6 bg-surface-highest rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"
               ></div>
             </div>
-            <span class="text-sm font-medium text-on-surface">Contains Spoilers</span
-            >
+            <span class="text-sm font-medium text-on-surface">Spoiler</span>
+          </label>
+
+          <label class="flex items-center gap-3 cursor-pointer">
+            <div class="relative">
+              <input
+                type="checkbox"
+                bind:checked={nsfw}
+                class="sr-only peer"
+              />
+              <div
+                class="w-11 h-6 bg-surface-highest rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-500"
+              ></div>
+            </div>
+            <span class="text-sm font-medium text-on-surface">NSFW</span>
           </label>
         </div>
+
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -175,6 +195,23 @@
           />
         </div>
       </div>
+
+      <div>
+        <label
+          for="episodes"
+          class="block text-sm font-medium text-on-surface-variant mb-1"
+          >Episodes Note</label
+        >
+        <input
+          type="text"
+          id="episodes"
+          title="Episodes"
+          bind:value={episodes}
+          class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface placeholder-gray-500 focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all"
+          placeholder="e.g. 1-12, 24, SP"
+        />
+      </div>
+
     </div>
   </div>
 

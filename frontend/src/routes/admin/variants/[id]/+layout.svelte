@@ -85,6 +85,14 @@
     >
       v{variant.version_number}
     </span>
+    {#if !variant.status}
+      <span
+        class="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold bg-white/5 text-on-surface-variant/40 border border-outline-variant/30 ml-2 uppercase tracking-widest"
+      >
+        Draft
+      </span>
+    {/if}
+
   </div>
   
   <div class="flex flex-col gap-1 ml-10 text-xs text-on-surface-variant/40">
@@ -100,12 +108,32 @@
       <div class="flex items-center gap-2">
           <span class="uppercase font-bold tracking-tighter opacity-50">Anime:</span>
           <a href="/admin/animes/{anime.id}" class="text-on-surface-variant/70 hover:underline">
-              {anime.title}
+              {anime.title} ({anime.year?.name || ""} {anime.season?.name || ""})
           </a>
+
       </div>
     {/if}
+    
+    <div class="flex items-center gap-4 mt-1">
+      {#if variant.episodes}
+        <div class="flex items-center gap-1.5">
+          <span class="uppercase font-bold tracking-tighter opacity-50">Episodes:</span>
+          <span class="text-on-surface-variant/80">{variant.episodes}</span>
+        </div>
+      {/if}
+
+      <div class="flex items-center gap-2">
+        {#if variant.spoiler}
+          <span class="bg-amber-500/10 text-amber-400 text-[10px] px-1.5 py-0.5 rounded border border-amber-500/20 font-bold uppercase tracking-wider">Spoiler</span>
+        {/if}
+        {#if variant.nsfw}
+          <span class="bg-rose-500/10 text-rose-400 text-[10px] px-1.5 py-0.5 rounded border border-rose-500/20 font-bold uppercase tracking-wider">NSFW</span>
+        {/if}
+      </div>
+    </div>
   </div>
 </div>
+
 
 <!-- Tabs Navigation -->
 <div class="flex items-center gap-2 border-b border-outline-variant mb-8 overflow-x-auto pb-px">

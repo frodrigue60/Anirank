@@ -2407,8 +2407,19 @@ func (u *ContentAdminUsecase) GetVariant(ctx context.Context, id uint64) (*domai
 	// Load the song relation so the frontend can have anime_id and other song details
 	s, err := u.songRepo.GetByID(ctx, v.SongID)
 	if err == nil {
+		if s.Anime != nil {
+			if s.Anime.YearID != 0 {
+				year, _ := u.taxonomyRepo.GetYearByID(ctx, s.Anime.YearID)
+				s.Anime.Year = year
+			}
+			if s.Anime.SeasonID != 0 {
+				season, _ := u.taxonomyRepo.GetSeasonByID(ctx, s.Anime.SeasonID)
+				s.Anime.Season = season
+			}
+		}
 		v.Song = s
 	}
+
 
 	return v, nil
 }

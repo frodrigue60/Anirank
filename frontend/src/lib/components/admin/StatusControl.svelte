@@ -5,22 +5,10 @@
     status: boolean;
   }>();
 
-  // A user can edit the status if they are admin or editor.
-  // We'll check if the user has the 'admin' or 'editor' role.
-  const canEditStatus = $derived.by(() => {
-    if (!authState.user || !authState.user.roles) return false;
-    return (authState.user.roles as any[]).some(r => 
-      ['admin', 'editor'].includes(r.name?.toLowerCase()) || 
-      ['admin', 'editor'].includes(r.slug?.toLowerCase())
-    );
-  });
+  // A user can edit the status if they are admin, editor or owner.
+  const canEditStatus = $derived(authState.canPublish);
 
-  // If the user is a creator but NOT an editor/admin, force status to false
-  $effect(() => {
-    if (!canEditStatus) {
-      status = false;
-    }
-  });
+
 </script>
 
 <div class="pt-2">

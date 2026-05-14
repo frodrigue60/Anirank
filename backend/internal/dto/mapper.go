@@ -363,6 +363,8 @@ func ToSongDTO(s *domain.Song) SongDTO {
 		if v.Video != nil {
 			vDTO.EmbedCode = v.Video.EmbedCode
 			vDTO.VideoSrc = v.Video.VideoSrc
+			vDTO.EmbedUrl = v.Video.EmbedUrl
+			vDTO.LocalUrl = v.Video.LocalUrl
 		}
 
 		// ─── Heritage Fallback Logic (Variant Level) ───

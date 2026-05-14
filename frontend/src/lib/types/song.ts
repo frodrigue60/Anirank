@@ -67,8 +67,17 @@ export interface SongVariant {
     song_id: string;
     slug: string;
     video_url?: string;
+    embed_url?: string;
+    local_url?: string;
     embed_code?: string;
     video_src?: string;
+    video?: {
+        type: string;
+        embed_code?: string;
+        video_src?: string;
+        embed_url?: string;
+        local_url?: string;
+    };
     spoiler: boolean;
     nsfw?: boolean;
     episodes?: string;

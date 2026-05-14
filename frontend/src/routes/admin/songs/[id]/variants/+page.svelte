@@ -479,23 +479,23 @@
                   <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2 mb-1.5">
                       <span class="text-zinc-600">Embed Configuration</span>
-                      {#if variant.embed_code}
+                      {#if variant.embed_code || variant.video?.embed_code}
                         <span class="bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded text-[8px]">EMBED</span>
                       {/if}
                     </div>
                     <div class="bg-black/60 p-2.5 rounded-lg border border-zinc-800/50 font-mono text-[9px] text-zinc-500 break-all leading-relaxed line-clamp-1 hover:line-clamp-none transition-all cursor-text select-all">
-                      {variant.embed_code || "NOT CONFIGURED"}
+                      {variant.embed_code || variant.video?.embed_code || "NOT CONFIGURED"}
                     </div>
                   </div>
                   <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2 mb-1.5">
                       <span class="text-zinc-600">Storage Reference</span>
-                      {#if variant.video_src}
+                      {#if variant.video_src || variant.video?.video_src}
                         <span class="bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded text-[8px]">FILE</span>
                       {/if}
                     </div>
                     <div class="bg-black/60 p-2.5 rounded-lg border border-zinc-800/50 font-mono text-[9px] text-emerald-400/50 break-all truncate hover:text-emerald-400 transition-colors cursor-text select-all">
-                      {variant.video_src || "NOT CONFIGURED"}
+                      {variant.video_src || variant.video?.video_src || "NOT CONFIGURED"}
                     </div>
                   </div>
                 </div>

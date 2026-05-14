@@ -74,6 +74,8 @@ type SongVariantDTO struct {
 	VersionNumber uint64     `json:"version_number"`
 	Slug          string     `json:"slug"`
 	VideoUrl      *string    `json:"video_url,omitempty"`
+	EmbedUrl      *string    `json:"embed_url,omitempty"`
+	LocalUrl      *string    `json:"local_url,omitempty"`
 	EmbedCode     *string    `json:"embed_code,omitempty"`
 	VideoSrc      *string    `json:"video_src,omitempty"`
 	Episodes      *string    `json:"episodes,omitempty"`

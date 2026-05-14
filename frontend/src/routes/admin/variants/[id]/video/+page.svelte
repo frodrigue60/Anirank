@@ -19,7 +19,7 @@
 
   let videoFile: File | null = $state(null);
   // svelte-ignore state_referenced_locally
-  let embedCode = $state(variant?.video?.embed_url || "");
+  let embedCode = $state(variant?.video?.embed_code || variant?.video?.embed_url || "");
 
   async function handleSave() {
     loading = true;
@@ -154,7 +154,7 @@
               {variant.video.type.toUpperCase()}
             </div>
             <div class="text-zinc-400 truncate max-w-md italic text-xs">
-              {variant.video.embed_url || variant.video.local_url}
+              {variant.video.embed_code || variant.video.embed_url || variant.video.video_src || variant.video.local_url}
             </div>
           </div>
         </div>

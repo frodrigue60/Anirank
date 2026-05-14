@@ -630,6 +630,15 @@
               <track kind="captions" />
             </video>
           {/if}
+        {:else if selectedVariant?.embed_url}
+          <iframe
+            src={getAutoplayUrl(selectedVariant.embed_url)}
+            class="w-full h-full"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen
+            title="Song Video Fallback"
+          ></iframe>
         {:else}
           <div
             class="absolute inset-0 bg-cover bg-center opacity-50"

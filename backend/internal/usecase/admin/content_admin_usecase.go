@@ -2531,13 +2531,15 @@ func (u *ContentAdminUsecase) HandleVariantVideo(c *fiber.Ctx, v *domain.SongVar
 			prefix := u.resolveVideoStoragePath(c.Context(), v)
 
 			// Use specialized UploadVideo to avoid image optimization logic
-			if _, url, err := u.mediaService.UploadVideo(c.Context(), prefix, v.ID, file, fileHeader.Size, contentType, fileHeader.Filename); err == nil {
+			if path, url, err := u.mediaService.UploadVideo(c.Context(), prefix, v.ID, file, fileHeader.Size, contentType, fileHeader.Filename); err == nil {
 				if v.Video == nil {
 					v.Video = &domain.SongVariantVideo{}
 				}
+				v.Video.VideoSrc = &path
 				v.Video.LocalUrl = &url
 				v.Video.Type = "file"
 				v.Video.EmbedUrl = nil
+				v.Video.EmbedCode = nil
 				updated = true
 			} else {
 				log.Printf("[ADMIN-ERROR] Video upload failed for variant %d: %v\n", v.ID, err)
@@ -2549,10 +2551,12 @@ func (u *ContentAdminUsecase) HandleVariantVideo(c *fiber.Ctx, v *domain.SongVar
 			if v.Video == nil {
 				v.Video = &domain.SongVariantVideo{}
 			}
-			if v.Video.EmbedUrl == nil || *v.Video.EmbedUrl != embed {
-				v.Video.EmbedUrl = &embed
+			if v.Video.EmbedCode == nil || *v.Video.EmbedCode != embed {
+				v.Video.EmbedCode = &embed
+				v.Video.EmbedUrl = &embed // Will be cleaned up by Resolve in public catalog
 				v.Video.Type = "embed"
 				v.Video.LocalUrl = nil
+				v.Video.VideoSrc = nil
 				updated = true
 			}
 		}

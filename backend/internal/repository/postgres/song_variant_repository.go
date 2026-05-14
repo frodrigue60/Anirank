@@ -47,6 +47,9 @@ func (r *songVariantRepository) GetByID(ctx context.Context, id uint64) (*domain
 	v := row.SongVariant
 	if row.VideoSrc != nil || row.EmbedCode != nil {
 		v.Video = &domain.SongVariantVideo{
+			EmbedCode: row.EmbedCode,
+			VideoSrc:  row.VideoSrc,
+			// Initial assignment, UseCase will enrich EmbedUrl/LocalUrl
 			EmbedUrl: row.EmbedCode,
 			LocalUrl: row.VideoSrc,
 		}
@@ -181,7 +184,7 @@ func (r *songVariantRepository) Create(ctx context.Context, variant *domain.Song
 			INSERT INTO videos (song_variant_id, video_src, embed_code, status, created_at, updated_at)
 			VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 		`
-		_, err = tx.ExecContext(ctx, videoQuery, variant.ID, variant.Video.LocalUrl, variant.Video.EmbedUrl, variant.Status)
+		_, err = tx.ExecContext(ctx, videoQuery, variant.ID, variant.Video.VideoSrc, variant.Video.EmbedCode, variant.Status)
 		if err != nil {
 			return err
 		}
@@ -220,7 +223,7 @@ func (r *songVariantRepository) Update(ctx context.Context, variant *domain.Song
 			INSERT INTO videos (song_variant_id, video_src, embed_code, status, created_at, updated_at)
 			VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 		`
-		_, err = tx.ExecContext(ctx, videoQuery, variant.ID, variant.Video.LocalUrl, variant.Video.EmbedUrl, variant.Status)
+		_, err = tx.ExecContext(ctx, videoQuery, variant.ID, variant.Video.VideoSrc, variant.Video.EmbedCode, variant.Status)
 		if err != nil {
 			return err
 		}

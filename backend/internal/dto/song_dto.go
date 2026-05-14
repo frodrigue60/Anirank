@@ -70,10 +70,12 @@ type SongDTO struct {
 }
 
 type SongVariantDTO struct {
-	ID            string  `json:"id"`
-	VersionNumber uint64  `json:"version_number"`
-	Slug          string  `json:"slug"`
-	VideoUrl      *string `json:"video_url,omitempty"`
+	ID            string     `json:"id"`
+	VersionNumber uint64     `json:"version_number"`
+	Slug          string     `json:"slug"`
+	VideoUrl      *string    `json:"video_url,omitempty"`
+	EmbedCode     *string    `json:"embed_code,omitempty"`
+	VideoSrc      *string    `json:"video_src,omitempty"`
 	Episodes      *string    `json:"episodes,omitempty"`
 	Spoiler       bool       `json:"spoiler"`
 	NSFW          bool       `json:"nsfw"`

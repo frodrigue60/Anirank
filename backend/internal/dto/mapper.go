@@ -360,6 +360,11 @@ func ToSongDTO(s *domain.Song) SongDTO {
 			NSFW:          v.NSFW,
 		}
 
+		if v.Video != nil {
+			vDTO.EmbedCode = v.Video.EmbedCode
+			vDTO.VideoSrc = v.Video.VideoSrc
+		}
+
 		// ─── Heritage Fallback Logic (Variant Level) ───
 		// 1. Try Variant's own season/year
 		if v.Season != nil {

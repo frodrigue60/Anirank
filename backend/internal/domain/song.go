@@ -85,9 +85,11 @@ type SongVariant struct {
 }
 
 type SongVariantVideo struct {
-	Type     string  `json:"type"`
-	EmbedUrl *string `json:"embed_url,omitempty"`
-	LocalUrl *string `json:"local_url,omitempty"`
+	Type      string  `json:"type"`
+	EmbedUrl  *string `json:"embed_url,omitempty"`
+	LocalUrl  *string `json:"local_url,omitempty"`
+	EmbedCode *string `json:"embed_code,omitempty"`
+	VideoSrc  *string `json:"video_src,omitempty"`
 }
 
 type Artist struct {

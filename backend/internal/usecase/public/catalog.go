@@ -901,13 +901,18 @@ func (u *CatalogUsecase) enrichSong(ctx context.Context, userID *uint64, s *doma
 		for _, v := range variants {
 			if v.Status {
 				// Clean up iframe tags to get just the URL for each variant
-				if v.Video != nil && v.Video.EmbedUrl != nil {
-					matches := iframeSrcRegex.FindStringSubmatch(*v.Video.EmbedUrl)
-					if len(matches) > 1 {
-						v.Video.EmbedUrl = &matches[1]
+				if v.Video != nil {
+					if v.Video.EmbedUrl != nil {
+						matches := iframeSrcRegex.FindStringSubmatch(*v.Video.EmbedUrl)
+						if len(matches) > 1 {
+							v.Video.EmbedUrl = &matches[1]
+						}
+						// Resolve the URL to its full CDN path
+						v.Video.EmbedUrl = u.mediaService.Resolve(v.Video.EmbedUrl)
 					}
-					// Resolve the URL to its full CDN path
-					v.Video.EmbedUrl = u.mediaService.Resolve(v.Video.EmbedUrl)
+					if v.Video.LocalUrl != nil {
+						v.Video.LocalUrl = u.mediaService.Resolve(v.Video.LocalUrl)
+					}
 				}
 				activeVariants = append(activeVariants, v)
 			}

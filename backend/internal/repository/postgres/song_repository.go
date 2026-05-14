@@ -445,8 +445,10 @@ func (r *songRepository) GetVariantsBySongIDs(ctx context.Context, songIDs []uin
 		v := row.SongVariant
 		if row.VideoSrc != nil || row.EmbedCode != nil {
 			v.Video = &domain.SongVariantVideo{
-				EmbedUrl: extractSrcFromIframe(row.EmbedCode),
-				LocalUrl: row.VideoSrc,
+				EmbedCode: row.EmbedCode,
+				VideoSrc:  row.VideoSrc,
+				EmbedUrl:  extractSrcFromIframe(row.EmbedCode),
+				LocalUrl:  row.VideoSrc,
 			}
 
 			if row.VideoSrc != nil && *row.VideoSrc != "" {
@@ -489,8 +491,10 @@ func (r *songRepository) GetVariantsBySongID(ctx context.Context, songID uint64)
 		v := row.SongVariant
 		if row.VideoSrc != nil || row.EmbedCode != nil {
 			v.Video = &domain.SongVariantVideo{
-				EmbedUrl: extractSrcFromIframe(row.EmbedCode),
-				LocalUrl: row.VideoSrc,
+				EmbedCode: row.EmbedCode,
+				VideoSrc:  row.VideoSrc,
+				EmbedUrl:  extractSrcFromIframe(row.EmbedCode),
+				LocalUrl:  row.VideoSrc,
 			}
 
 			if row.VideoSrc != nil && *row.VideoSrc != "" {

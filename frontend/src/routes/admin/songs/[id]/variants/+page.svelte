@@ -471,6 +471,36 @@
                 </div>
               </td>
             </tr>
+
+            <!-- Video Configuration Details -->
+            <tr class="bg-zinc-900/30 border-t border-zinc-800/50">
+              <td colspan="8" class="px-4 md:px-6 py-3">
+                <div class="flex flex-col md:flex-row gap-4 md:gap-8 text-[10px] uppercase font-black tracking-widest">
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-1.5">
+                      <span class="text-zinc-600">Embed Configuration</span>
+                      {#if variant.embed_code}
+                        <span class="bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded text-[8px]">EMBED</span>
+                      {/if}
+                    </div>
+                    <div class="bg-black/60 p-2.5 rounded-lg border border-zinc-800/50 font-mono text-[9px] text-zinc-500 break-all leading-relaxed line-clamp-1 hover:line-clamp-none transition-all cursor-text select-all">
+                      {variant.embed_code || "NOT CONFIGURED"}
+                    </div>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-1.5">
+                      <span class="text-zinc-600">Storage Reference</span>
+                      {#if variant.video_src}
+                        <span class="bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded text-[8px]">FILE</span>
+                      {/if}
+                    </div>
+                    <div class="bg-black/60 p-2.5 rounded-lg border border-zinc-800/50 font-mono text-[9px] text-emerald-400/50 break-all truncate hover:text-emerald-400 transition-colors cursor-text select-all">
+                      {variant.video_src || "NOT CONFIGURED"}
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
           {:else}
             <tr>
               <td colspan="8" class="px-6 py-12 text-center">

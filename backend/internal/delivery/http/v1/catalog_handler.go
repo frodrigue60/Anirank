@@ -126,7 +126,17 @@ func (h *CatalogHandler) SongRanking(c *fiber.Ctx) error {
 		songDTOs[i] = dto.ToSongSlimDTO(&s)
 	}
 
-	return c.JSON(paginatedResponse(c, songDTOs, ranking.Total, page, limit))
+	res := paginatedResponse(c, songDTOs, ranking.Total, page, limit)
+	if ranking.CurrentSeason != nil {
+		s := dto.ToSeasonDTO(ranking.CurrentSeason)
+		res["current_season"] = s
+	}
+	if ranking.CurrentYear != nil {
+		y := dto.ToYearDTO(ranking.CurrentYear)
+		res["current_year"] = y
+	}
+
+	return c.JSON(res)
 }
 
 // ─── Artists ───

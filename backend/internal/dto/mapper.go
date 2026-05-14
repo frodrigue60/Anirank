@@ -612,9 +612,10 @@ func ToYearDTO(y *domain.Year) YearDTO {
 		return YearDTO{}
 	}
 	return YearDTO{
-		ID:   y.UUID,
-		Name: y.Name,
-		Slug: y.Slug,
+		ID:      y.UUID,
+		Name:    y.Name,
+		Slug:    y.Slug,
+		Current: y.Current,
 	}
 }
 
@@ -623,9 +624,10 @@ func ToSeasonDTO(s *domain.Season) SeasonDTO {
 		return SeasonDTO{}
 	}
 	return SeasonDTO{
-		ID:   s.UUID,
-		Name: s.Name,
-		Slug: s.Slug,
+		ID:      s.UUID,
+		Name:    s.Name,
+		Slug:    s.Slug,
+		Current: s.Current,
 	}
 }
 

@@ -25,12 +25,14 @@ export interface Song {
         slug: string;
     };
     year?: {
-        id: number;
+        id: string;
         name: string;
+        current?: boolean;
     };
     season?: {
-        id: number;
+        id: string;
         name: string;
+        current?: boolean;
     };
     variants?: SongVariant[];
     artists?: Artist[];
@@ -69,12 +71,14 @@ export interface SongVariant {
     nsfw?: boolean;
     episodes?: string;
     season?: {
-        id: number;
+        id: string;
         name: string;
+        current?: boolean;
     };
     year?: {
-        id: number;
+        id: string;
         name: string;
+        current?: boolean;
     };
 }
 

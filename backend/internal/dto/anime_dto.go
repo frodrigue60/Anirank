@@ -21,15 +21,17 @@ type AnimeMinimalDTO struct {
 }
 
 type SeasonDTO struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-	Slug string `json:"slug"`
+	ID      string `json:"id"`
+	Name    string `json:"name"`
+	Slug    string `json:"slug"`
+	Current bool   `json:"current"`
 }
 
 type YearDTO struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-	Slug string `json:"slug"`
+	ID      string `json:"id"`
+	Name    string `json:"name"`
+	Slug    string `json:"slug"`
+	Current bool   `json:"current"`
 }
 
 type FormatDTO struct {

@@ -19,6 +19,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 		"base-uri 'self'",
 		"form-action 'self'",
 		"frame-ancestors 'none'",
+		"media-src 'self' blob: https://*.anirank.work https://*.r2.dev",
 		"upgrade-insecure-requests",
 		"trusted-types svelte-trusted-html 'allow-duplicates'"
 	].join('; ');

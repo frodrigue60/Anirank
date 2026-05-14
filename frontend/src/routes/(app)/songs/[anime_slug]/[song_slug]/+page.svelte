@@ -29,7 +29,7 @@
   import CornerDownRight from "lucide-svelte/icons/corner-down-right";
   import MessageCircle from "lucide-svelte/icons/message-circle";
   import Play from "lucide-svelte/icons/play";
-  import User from "lucide-svelte/icons/user";
+  import UserIcon from "lucide-svelte/icons/user";
   import Flag from "lucide-svelte/icons/flag";
   import RotateCcw from "lucide-svelte/icons/rotate-ccw";
   import Library from "lucide-svelte/icons/library";
@@ -159,13 +159,14 @@
       });
       
       // Update local state
-      const updateLocal = (list: Comment[]) => {
+      const updateLocal = (list: Comment[] | undefined) => {
+        if (!list) return false;
         for (let i = 0; i < list.length; i++) {
           if (list[i].uuid === editingCommentUuid) {
             list[i].content = editText;
             return true;
           }
-          if (list[i].replies && updateLocal(list[i].replies)) return true;
+          if (updateLocal(list[i].replies)) return true;
         }
         return false;
       };
@@ -913,7 +914,7 @@
                 sizes="40px"
               />
             {:else}
-              <User size={24} class="text-white/40" />
+              <UserIcon size={24} class="text-white/40" />
             {/if}
           </div>
           {#if authState.user?.is_softbanned}
@@ -1114,7 +1115,7 @@
                           onclick={() => openUserReportModal(comment.user)}
                           class="w-full text-left px-4 py-2 text-xs font-bold text-on-surface-variant hover:bg-surface-low hover:text-red-400 transition-colors flex items-center gap-2"
                         >
-                          <User size={14} /> Report User
+                          <UserIcon size={14} /> Report User
                         </button>
                       </div>
                     {/if}
@@ -1238,7 +1239,7 @@
                                       onclick={() => openUserReportModal(reply.user)}
                                       class="w-full text-left px-4 py-2 text-[11px] font-bold text-on-surface-variant hover:bg-surface-low hover:text-red-400 transition-colors flex items-center gap-2"
                                     >
-                                      <User size={12} /> Report User
+                                      <UserIcon size={12} /> Report User
                                     </button>
                                   </div>
                                 {/if}

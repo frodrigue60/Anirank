@@ -86,6 +86,7 @@
   let selectedVariant = $derived(
     currentSong.variants?.[selectedVariantIndex],
   );
+  let videoError = $state(false);
 
   // svelte-ignore state_referenced_locally
   let comments: Comment[] = $state(data.comments?.map(mapComment) || []);
@@ -95,6 +96,7 @@
     relatedSongs = data.related;
     comments = data.comments?.map(mapComment) || [];
     selectedVariantIndex = 0;
+    videoError = false;
   });
 
   let newCommentText = $state("");
@@ -103,6 +105,7 @@
 
   function changeVariant(index: number) {
     selectedVariantIndex = index;
+    videoError = false;
   }
 
   let showRatingModal = $state(false);
@@ -603,7 +606,7 @@
       <div
         class="relative w-full aspect-video rounded-md overflow-hidden bg-black group border border-outline-variant/10 shadow-2xl"
       >
-        {#if selectedVariant?.video_url}
+        {#if selectedVariant?.video_url && !videoError}
           {#if selectedVariant.video_url.includes("youtube") || selectedVariant.video_url.includes("youtu.be")}
             <iframe
               src={getAutoplayUrl(selectedVariant.video_url)}
@@ -621,6 +624,7 @@
               controls
               autoplay
               onplay={fadeInVolume}
+              onerror={() => videoError = true}
             >
               <track kind="captions" />
             </video>
@@ -641,7 +645,9 @@
             />
             <span class="text-on-surface-variant/60 font-bold text-lg"
               >{(currentSong.variants?.length ?? 0) > 0
-                ? "No video available for this variant"
+                ? videoError 
+                  ? "Video file unreachable or not found" 
+                  : "No video available for this variant"
                 : "No video versions available for this theme song"}</span
             >
             {#if !currentSong.variants || currentSong.variants.length === 0}

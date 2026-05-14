@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"regexp"
 	"strings"
 	"time"
 
@@ -25,6 +26,8 @@ type TournamentUsecase struct {
 func NewTournamentUsecase(repo domain.TournamentRepository, songRepo domain.SongRepository, animeRepo domain.AnimeRepository, storage infrastructure.StorageService) *TournamentUsecase {
 	return &TournamentUsecase{repo: repo, songRepo: songRepo, animeRepo: animeRepo, storage: storage}
 }
+
+var iframeSrcRegex = regexp.MustCompile(`src="([^"]+)"`)
 
 // GetActiveTournament builds the tree of matchups for the current active tournament.
 func (u *TournamentUsecase) GetActiveTournament(ctx context.Context) (*domain.Tournament, error) {
@@ -121,9 +124,28 @@ func (u *TournamentUsecase) enrichMatchups(ctx context.Context, matchups []domai
 			s.Artists = []domain.Artist{}
 		}
 
-		// Hydrate variants from batch map
+		// Hydrate variants from batch map (filtering active ones)
 		if variants, ok := variantsMap[s.ID]; ok {
-			s.Variants = variants
+			var activeVariants []domain.SongVariant
+			for _, v := range variants {
+				if v.Status {
+					// Clean up iframe tags to get just the URL
+					if v.Video != nil && v.Video.EmbedUrl != nil {
+						matches := iframeSrcRegex.FindStringSubmatch(*v.Video.EmbedUrl)
+						if len(matches) > 1 {
+							v.Video.EmbedUrl = &matches[1]
+						}
+
+						// Resolve relative paths to full CDN URLs
+						if !strings.HasPrefix(*v.Video.EmbedUrl, "http") {
+							resolved := u.storage.GetURL(*v.Video.EmbedUrl)
+							v.Video.EmbedUrl = &resolved
+						}
+					}
+					activeVariants = append(activeVariants, v)
+				}
+			}
+			s.Variants = activeVariants
 		} else {
 			s.Variants = []domain.SongVariant{}
 		}

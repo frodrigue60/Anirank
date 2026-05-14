@@ -239,15 +239,23 @@ func (u *PlaylistUsecase) enrichPlaylistSong(ctx context.Context, s *domain.Song
 	// Load Variants with videos
 	if len(s.Variants) == 0 {
 		variants, _ := u.songRepo.GetVariantsBySongID(ctx, s.ID)
-		for vi := range variants {
-			if variants[vi].Video != nil && variants[vi].Video.EmbedUrl != nil {
-				matches := iframeSrcRegex.FindStringSubmatch(*variants[vi].Video.EmbedUrl)
-				if len(matches) > 1 {
-					variants[vi].Video.EmbedUrl = &matches[1]
+		
+		// Filter out disabled variants for public view
+		var activeVariants []domain.SongVariant
+		for _, v := range variants {
+			if v.Status {
+				if v.Video != nil && v.Video.EmbedUrl != nil {
+					matches := iframeSrcRegex.FindStringSubmatch(*v.Video.EmbedUrl)
+					if len(matches) > 1 {
+						v.Video.EmbedUrl = &matches[1]
+					}
+					// Resolve the URL to its full CDN path
+					v.Video.EmbedUrl = u.mediaService.Resolve(v.Video.EmbedUrl)
 				}
+				activeVariants = append(activeVariants, v)
 			}
 		}
-		s.Variants = variants
+		s.Variants = activeVariants
 	}
 
 	// Interaction Flags

@@ -895,16 +895,24 @@ func (u *CatalogUsecase) enrichSong(ctx context.Context, userID *uint64, s *doma
 	// Load variants to populate thumbnail_url in DTOs
 	if len(s.Variants) == 0 {
 		variants, _ := u.songRepo.GetVariantsBySongID(ctx, s.ID)
-		// Clean up iframe tags to get just the URL for each variant
-		for i := range variants {
-			if variants[i].Video != nil && variants[i].Video.EmbedUrl != nil {
-				matches := iframeSrcRegex.FindStringSubmatch(*variants[i].Video.EmbedUrl)
-				if len(matches) > 1 {
-					variants[i].Video.EmbedUrl = &matches[1]
+		
+		// Filter out disabled variants for public view
+		var activeVariants []domain.SongVariant
+		for _, v := range variants {
+			if v.Status {
+				// Clean up iframe tags to get just the URL for each variant
+				if v.Video != nil && v.Video.EmbedUrl != nil {
+					matches := iframeSrcRegex.FindStringSubmatch(*v.Video.EmbedUrl)
+					if len(matches) > 1 {
+						v.Video.EmbedUrl = &matches[1]
+					}
+					// Resolve the URL to its full CDN path
+					v.Video.EmbedUrl = u.mediaService.Resolve(v.Video.EmbedUrl)
 				}
+				activeVariants = append(activeVariants, v)
 			}
 		}
-		s.Variants = variants
+		s.Variants = activeVariants
 	}
 
 	// Set computed fields

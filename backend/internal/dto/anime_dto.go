@@ -46,7 +46,10 @@ type SongAnimeDTO struct {
 	BannerUrl *string `json:"banner_url"`
 	BannerSources []domain.ImageSource `json:"banner_sources,omitempty"`
 	AnilistID *int64  `json:"anilist_id"`
+	Season    *SeasonDTO `json:"season,omitempty"`
+	Year      *YearDTO   `json:"year,omitempty"`
 }
+
 
 type AnimeDTO struct {
 	AnimeMinimalDTO

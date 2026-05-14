@@ -129,6 +129,17 @@ func ToSongMinimalDTO(s *domain.Song) SongMinimalDTO {
 		if s.Anime.CoverUrl != nil {
 			coverUrl = *s.Anime.CoverUrl
 		}
+		var animeSeason *SeasonDTO
+		if s.Anime.Season != nil {
+			sd := ToSeasonDTO(s.Anime.Season)
+			animeSeason = &sd
+		}
+		var animeYear *YearDTO
+		if s.Anime.Year != nil {
+			yd := ToYearDTO(s.Anime.Year)
+			animeYear = &yd
+		}
+
 		anime = &SongAnimeDTO{
 			Title:         s.Anime.Title,
 			Slug:          s.Anime.Slug,
@@ -137,8 +148,11 @@ func ToSongMinimalDTO(s *domain.Song) SongMinimalDTO {
 			BannerUrl:     s.Anime.BannerUrl,
 			BannerSources: s.Anime.BannerSources,
 			AnilistID:     s.Anime.AnilistID,
+			Season:        animeSeason,
+			Year:          animeYear,
 		}
 	}
+
 
 	artists := make([]ArtistMinimalDTO, 0)
 	for _, a := range s.Artists {

@@ -26,8 +26,9 @@ func (r *songRepository) GetByID(ctx context.Context, id uint64) (*domain.Song, 
 	var s domain.Song
 	query := fmt.Sprintf(`
 		SELECT %s, 
-		       a.id AS "anime.id", a.uuid AS "anime.uuid", a.title AS "anime.title", a.slug AS "anime.slug", a.cover AS "anime.cover", a.banner AS "anime.banner",
+		       a.id AS "anime.id", a.uuid AS "anime.uuid", a.title AS "anime.title", a.slug AS "anime.slug", a.cover AS "anime.cover", a.banner AS "anime.banner", a.year_id AS "anime.year_id", a.season_id AS "anime.season_id",
 		       st.id AS "song_type.id", st.uuid AS "song_type.uuid", st.name AS "song_type.name", st.slug AS "song_type.slug", st.description AS "song_type.description"
+
 		FROM songs s 
 		LEFT JOIN animes a ON s.anime_id = a.id
 		LEFT JOIN song_types st ON s.type_id = st.id
@@ -47,8 +48,9 @@ func (r *songRepository) GetByUUID(ctx context.Context, uuid string) (*domain.So
 	var s domain.Song
 	query := fmt.Sprintf(`
 		SELECT %s, 
-		       a.id AS "anime.id", a.uuid AS "anime.uuid", a.title AS "anime.title", a.slug AS "anime.slug", a.cover AS "anime.cover", a.banner AS "anime.banner",
+		       a.id AS "anime.id", a.uuid AS "anime.uuid", a.title AS "anime.title", a.slug AS "anime.slug", a.cover AS "anime.cover", a.banner AS "anime.banner", a.year_id AS "anime.year_id", a.season_id AS "anime.season_id",
 		       st.id AS "song_type.id", st.uuid AS "song_type.uuid", st.name AS "song_type.name", st.slug AS "song_type.slug", st.description AS "song_type.description"
+
 		FROM songs s 
 		LEFT JOIN animes a ON s.anime_id = a.id
 		LEFT JOIN song_types st ON s.type_id = st.id

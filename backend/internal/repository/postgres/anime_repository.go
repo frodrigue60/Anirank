@@ -415,7 +415,7 @@ func (r *animeRepository) LoadRelations(ctx context.Context, anime *domain.Anime
 	_ = r.db.SelectContext(ctx, &anime.Producers, producersQuery, anime.ID)
 
 	// 3. External Links
-	externalLinksQuery := `SELECT el.id, el.icon, el.type, el.name, el.url FROM external_links el JOIN anime_external_link ael ON el.id = ael.external_link_id WHERE ael.anime_id = $1`
+	externalLinksQuery := `SELECT el.id, el.uuid, el.icon, el.type, el.name, el.url FROM external_links el JOIN anime_external_link ael ON el.id = ael.external_link_id WHERE ael.anime_id = $1`
 	_ = r.db.SelectContext(ctx, &anime.ExternalLinks, externalLinksQuery, anime.ID)
 
 	// 4. Songs belong to this anime
@@ -638,6 +638,28 @@ func (r *animeRepository) LoadManyRelations(ctx context.Context, animes []domain
 		animes[i].Genres = gMap[animes[i].ID]
 		animes[i].Studios = sMap[animes[i].ID]
 		animes[i].SongsCount = scMap[animes[i].ID]
+	}
+
+	// 6. External Links
+	linksQuery := `SELECT el.id, el.uuid, el.icon, el.type, el.name, el.url, ael.anime_id 
+		FROM external_links el 
+		JOIN anime_external_link ael ON el.id = ael.external_link_id 
+		WHERE ael.anime_id IN (?)`
+	var linkRows []struct {
+		domain.ExternalLink
+		AnimeID uint64 `db:"anime_id"`
+	}
+	lQ, lArgs, err := sqlx.In(linksQuery, ids)
+	if err == nil {
+		if err := r.db.SelectContext(ctx, &linkRows, r.db.Rebind(lQ), lArgs...); err == nil {
+			lMap := make(map[uint64][]domain.ExternalLink)
+			for _, row := range linkRows {
+				lMap[row.AnimeID] = append(lMap[row.AnimeID], row.ExternalLink)
+			}
+			for i := range animes {
+				animes[i].ExternalLinks = lMap[animes[i].ID]
+			}
+		}
 	}
 
 	return nil

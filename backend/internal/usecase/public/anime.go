@@ -75,5 +75,11 @@ func (u *AnimeUsecase) GetPaginatedAnimes(ctx context.Context, limit, offset int
 
 func (u *AnimeUsecase) enrichAnime(ctx context.Context, anime *domain.Anime) {
 	anime.CoverUrl = u.mediaService.Resolve(anime.Cover)
+	if anime.Cover != nil && *anime.Cover != "" {
+		anime.CoverSources = u.mediaService.GetImageSources(*anime.Cover)
+	}
 	anime.BannerUrl = u.mediaService.Resolve(anime.Banner)
+	if anime.Banner != nil && *anime.Banner != "" {
+		anime.BannerSources = u.mediaService.GetImageSources(*anime.Banner)
+	}
 }

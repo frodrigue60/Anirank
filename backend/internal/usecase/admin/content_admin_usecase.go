@@ -677,16 +677,35 @@ func (u *ContentAdminUsecase) SyncAnimeWithAnilist(ctx context.Context, anime *d
 	log.Printf("[INFO] Synced %d studios and %d producers for anime %d\n", len(studioIDs), len(producerIDs), anime.ID)
 
 	// 3. Sync External Links
+	// Pre-load current links if not present to avoid overwriting them
+	if len(anime.ExternalLinks) == 0 && anime.ID > 0 {
+		_ = u.animeRepo.LoadRelations(ctx, anime, true)
+	}
+
 	if len(alData.ExternalLinks) > 0 {
-		links := make([]domain.ExternalLink, 0, len(alData.ExternalLinks))
+		// Use a map to deduplicate by URL
+		linksMap := make(map[string]domain.ExternalLink)
+
+		// Add existing links first
+		for _, l := range anime.ExternalLinks {
+			linksMap[l.URL] = l
+		}
+
+		// Add AniList links (overwriting if same URL)
 		for _, l := range alData.ExternalLinks {
-			links = append(links, domain.ExternalLink{
+			linksMap[l.URL] = domain.ExternalLink{
 				Name: l.Site,
 				URL:  l.URL,
 				Type: strings.ToLower(l.Site),
-			})
+			}
 		}
-		if err := u.animeRepo.UpdateExternalLinks(ctx, anime.ID, links); err != nil {
+
+		finalLinks := make([]domain.ExternalLink, 0, len(linksMap))
+		for _, l := range linksMap {
+			finalLinks = append(finalLinks, l)
+		}
+
+		if err := u.animeRepo.UpdateExternalLinks(ctx, anime.ID, finalLinks); err != nil {
 			log.Printf("[ERROR] Failed to update external links for anime %d: %v\n", anime.ID, err)
 		}
 	}

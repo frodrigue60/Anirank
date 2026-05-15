@@ -234,12 +234,16 @@ func ToSongMinimalDTO(s *domain.Song) SongMinimalDTO {
 	}
 
 	if s.PrevMainRank != nil {
-		val := uint64(*s.PrevMainRank)
+		val := *s.PrevMainRank
 		res.PrevMainRank = &val
 	}
 	if s.PrevSeasonalRank != nil {
-		val := uint64(*s.PrevSeasonalRank)
+		val := *s.PrevSeasonalRank
 		res.PrevSeasonalRank = &val
+	}
+	if s.PrevRank != nil {
+		val := *s.PrevRank
+		res.PrevRank = &val
 	}
 
 	return res
@@ -291,7 +295,7 @@ func ToSongSlimDTO(s *domain.Song) SongSlimDTO {
 		yearDTO = &yd
 	}
 
-	return SongSlimDTO{
+	res := SongSlimDTO{
 		ID:            s.UUID,
 		Name:          s.Name,
 		Slug:          s.Slug,
@@ -304,6 +308,21 @@ func ToSongSlimDTO(s *domain.Song) SongSlimDTO {
 		Season:        seasonDTO,
 		Year:          yearDTO,
 	}
+
+	if s.PrevMainRank != nil {
+		val := *s.PrevMainRank
+		res.PrevMainRank = &val
+	}
+	if s.PrevSeasonalRank != nil {
+		val := *s.PrevSeasonalRank
+		res.PrevSeasonalRank = &val
+	}
+	if s.PrevRank != nil {
+		val := *s.PrevRank
+		res.PrevRank = &val
+	}
+
+	return res
 }
 
 func ToSongTypeDTO(st *domain.SongType) SongTypeDTO {

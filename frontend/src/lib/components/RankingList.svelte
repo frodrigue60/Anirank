@@ -53,9 +53,10 @@
         {#each songs as item, index}
           {@const rank = startIndex + index + 1}
           {@const previousRank =
-            rankingType === "seasonal"
+            item.prev_rank ??
+            (rankingType === "seasonal"
               ? item.prev_seasonal_rank
-              : item.prev_main_rank}
+              : item.prev_main_rank)}
           {@const movement = getMovement(rank, previousRank)}
           <tr class="transition-colors hover:bg-surface">
             <td class="py-5 pl-8 pr-2 text-center">

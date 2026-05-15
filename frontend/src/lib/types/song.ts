@@ -45,6 +45,8 @@ export interface Song {
     is_disliked?: boolean;
     is_favorited?: boolean;
     prev_rank?: number;
+    prev_main_rank?: number;
+    prev_seasonal_rank?: number;
 }
 
 export interface Artist {

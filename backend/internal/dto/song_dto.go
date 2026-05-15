@@ -24,8 +24,9 @@ type SongMinimalDTO struct {
 	FavoritesCount   uint64             `json:"favorites_count"`
 	Views            uint64             `json:"views"`
 	UserRating       *float64           `json:"user_rating,omitempty"`
-	PrevMainRank     *uint64            `json:"prev_main_rank,omitempty"`
-	PrevSeasonalRank *uint64            `json:"prev_seasonal_rank,omitempty"`
+	PrevMainRank     *int              `json:"prev_main_rank,omitempty"`
+	PrevSeasonalRank *int              `json:"prev_seasonal_rank,omitempty"`
+	PrevRank         *int              `json:"prev_rank,omitempty"`
 	AnimeID          string             `json:"anime_id"`
 	YearID           string             `json:"year_id"`
 	SeasonID         string             `json:"season_id"`
@@ -45,6 +46,9 @@ type SongSlimDTO struct {
 	UserRating    *float64           `json:"user_rating,omitempty"`
 	Season        *SeasonDTO         `json:"season,omitempty"`
 	Year          *YearDTO           `json:"year,omitempty"`
+	PrevMainRank     *int            `json:"prev_main_rank,omitempty"`
+	PrevSeasonalRank *int            `json:"prev_seasonal_rank,omitempty"`
+	PrevRank         *int            `json:"prev_rank,omitempty"`
 }
 
 type ArtistSlimDTO struct {

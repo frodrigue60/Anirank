@@ -4,6 +4,8 @@
   import RankingList from "$lib/components/RankingList.svelte";
   import axios from "$lib/api";
   import { configState } from "$lib/state/config.svelte";
+  import { PUBLIC_API_URL } from "$lib/api";
+  import SEO from "$lib/components/SEO.svelte";
 
   let { data } = $props();
 
@@ -96,12 +98,22 @@
   }
 </script>
 
-<svelte:head>
-  <title
-    >Seasonal Ranking - {currentSeason?.name}
-    {currentYear?.name} - Anirank</title
-  >
-</svelte:head>
+<SEO 
+  title={`${currentSeason?.name} ${currentYear?.name} Anime Song Ranking`}
+  description={`Explore and rate the best anime openings and endings from the ${currentSeason?.name} ${currentYear?.name} season. Stay up to date with the latest hits and community favorites.`}
+  image={`${PUBLIC_API_URL}/og/ranking/seasonal`}
+  keywords={`${currentSeason?.name} anime songs, ${currentYear?.name} anime openings, seasonal anime music ranking, best anime themes ${currentYear?.name}`}
+  jsonLd={{
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://anirank.work/" },
+      { "@type": "ListItem", "position": 2, "name": "Seasonal Ranking", "item": "https://anirank.work/songs/seasonal" }
+    ]
+  }}
+/>
+
+
 
 <main class="flex-1 w-full max-w-[1440px] mx-auto px-6 py-8">
   <div

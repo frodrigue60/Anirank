@@ -10,6 +10,8 @@
     url = null,
     type = "website",
     author = "AniRank",
+    keywords = "anime, music, ranking, openings, endings, ost, leaderboard",
+    jsonLd = null,
   } = $props();
 
   let canonicalUrl = $derived(
@@ -62,4 +64,12 @@
   <meta property="twitter:title" content={fullTitle} />
   <meta property="twitter:description" content={cleanDescription} />
   <meta property="twitter:image" content={absoluteImage} />
+
+  {#if keywords}
+    <meta name="keywords" content={keywords} />
+  {/if}
+
+  {#if jsonLd}
+    {@html `<script type="application/ld+json">${JSON.stringify(jsonLd)}</script>`}
+  {/if}
 </svelte:head>

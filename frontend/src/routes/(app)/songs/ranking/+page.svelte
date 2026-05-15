@@ -1,5 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state";
+  import { PUBLIC_API_URL } from "$lib/api";
+  import SEO from "$lib/components/SEO.svelte";
   import { goto } from "$app/navigation";
   import RankingList from "$lib/components/RankingList.svelte";
   import axios from "$lib/api";
@@ -95,9 +97,22 @@
   }
 </script>
 
-<svelte:head>
-  <title>Global Ranking - Anirank Leaderboard</title>
-</svelte:head>
+<SEO 
+  title="Global Anime Song Ranking - All-Time Leaderboard"
+  description="Discover and rate the best anime openings and endings of all time. Explore our community-driven global leaderboard for OP and ED themes."
+  image={`${PUBLIC_API_URL}/og/ranking/global`}
+  keywords="anime music ranking, best anime openings, all time anime songs, anisong leaderboard, anime ending themes"
+  jsonLd={{
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://anirank.work/" },
+      { "@type": "ListItem", "position": 2, "name": "Global Ranking", "item": "https://anirank.work/songs/ranking" }
+    ]
+  }}
+/>
+
+
 
 <main class="flex-1 w-full max-w-[1440px] mx-auto px-6 py-8">
   <div

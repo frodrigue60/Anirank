@@ -194,9 +194,9 @@ func (s *mediaService) UploadWithResolutions(ctx context.Context, prefix string,
 
 	switch preset {
 	case PresetSquare:
-		resolutions = []int{128, 400}
+		resolutions = []int{128, 400, 800} // Added 800 for _lg
 	case PresetPoster:
-		resolutions = []int{240, 600}
+		resolutions = []int{240, 600, 1200} // Added 1200 for _lg
 	case PresetLandscape:
 		resolutions = []int{640, 1280}
 	case PresetAnnouncement:
@@ -236,10 +236,17 @@ func (s *mediaService) UploadWithResolutions(ctx context.Context, prefix string,
 		}
 
 		if isSquare {
-			resized = imageutil.Fill(img, w, w)
+			if suffix == "_lg" {
+				resized = img
+			} else {
+				resized = imageutil.Fill(img, w, w)
+			}
 		} else {
 			// Base measurement: Width, preserving aspect ratio
-			if img.Bounds().Dx() > w {
+			if suffix == "_lg" {
+				// Use original resolution for _lg variant
+				resized = img
+			} else if img.Bounds().Dx() > w {
 				resized = imageutil.Resize(img, w, 0)
 			} else {
 				resized = img
@@ -283,9 +290,9 @@ func (s *mediaService) GetImageSources(path string) []domain.ImageSource {
 	// Define expected sizes based on path
 	var sizes map[string]int
 	if isSquare {
-		sizes = map[string]int{"_sm": 128, "_md": 400}
+		sizes = map[string]int{"_sm": 128, "_md": 400, "_lg": 800}
 	} else if isPoster {
-		sizes = map[string]int{"_sm": 240, "_md": 600}
+		sizes = map[string]int{"_sm": 240, "_md": 600, "_lg": 1200}
 	} else if strings.Contains(path, "announcements") {
 		sizes = map[string]int{"_md": 450}
 	} else {

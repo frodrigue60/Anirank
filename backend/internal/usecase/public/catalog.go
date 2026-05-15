@@ -3,6 +3,7 @@ package public
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"regexp"
 	"time"
@@ -104,7 +105,13 @@ func (u *CatalogUsecase) enrichSongsBulk(ctx context.Context, userID *uint64, so
 	var userInteractions map[uint64]domain.UserSongInteraction
 	var reportedMap map[uint64]bool
 	if userID != nil {
-		userInteractions, _ = u.interactionRepo.GetUserInteractionsBySongIDs(ctx, *userID, songIDs)
+		var err error
+		userInteractions, err = u.interactionRepo.GetUserInteractionsBySongIDs(ctx, *userID, songIDs)
+		if err != nil {
+			log.Printf("[Enrich] Error fetching interactions for user %d: %v", *userID, err)
+		} else {
+			log.Printf("[Enrich] Found %d interactions for user %d on %d songs", len(userInteractions), *userID, len(songIDs))
+		}
 		reportedMap, _ = u.moderationRepo.GetSongReportsByUserAndSongIDs(ctx, *userID, songIDs)
 	}
 
@@ -268,8 +275,15 @@ func (u *CatalogUsecase) GetSongRanking(ctx context.Context, userID *uint64, ran
 
 	var cachedResponse RankingResponse
 	if err := u.safeCacheGet(ctx, cacheKey, &cachedResponse); err == nil {
+		if userID != nil {
+			log.Printf("[Ranking] Cache HIT for %s, enriching for user %d", cacheKey, *userID)
+		}
 		u.enrichSongsBulk(ctx, userID, cachedResponse.Songs)
 		return &cachedResponse, nil
+	}
+
+	if userID != nil {
+		log.Printf("[Ranking] Cache MISS for %s, fetching from DB for user %d", cacheKey, *userID)
 	}
 
 	songs, err := u.songRepo.GetRanking(ctx, rankingType, songType, limit, offset)

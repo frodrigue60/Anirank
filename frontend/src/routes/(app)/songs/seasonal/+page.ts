@@ -1,5 +1,7 @@
 import api from '$lib/api';
 
+export const ssr = false;
+
 export const load = async ({ url }) => {
     const type = url.searchParams.get('type') || 'all';
     const page = url.searchParams.get('page') || 1;

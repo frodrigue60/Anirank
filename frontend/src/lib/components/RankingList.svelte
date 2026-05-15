@@ -41,10 +41,18 @@
       <tr
         class="border-b border-primary/10 bg-surface-highest text-[10px] font-black uppercase tracking-widest text-on-surface-variant"
       >
-        <th class="w-16 sm:w-20 py-4 pl-4 sm:pl-8 pr-2 text-center font-black">Rank</th>
+        <th class="w-16 sm:w-20 py-4 pl-4 sm:pl-8 pr-2 text-center font-black"
+          >Rank</th
+        >
         <th class="py-4 px-2 text-left font-black">Theme Info</th>
-        <th class="w-20 sm:w-[120px] py-4 px-2 text-center font-black">Score</th>
-        <th class="w-14 sm:w-[80px] py-4 pl-2 pr-4 sm:pr-8 text-right font-black">Actions</th>
+
+        <th
+          class="w-14 sm:w-[80px] py-4 pl-2 pr-4 sm:pr-8 text-center font-black"
+          >Movement</th
+        >
+        <th class="w-20 sm:w-[120px] py-4 px-2 text-center font-black"
+          >Avg Score</th
+        >
       </tr>
     </thead>
 
@@ -67,40 +75,6 @@
                     : 'text-on-surface/90'}"
                   >{rank.toString().padStart(2, "0")}</span
                 >
-
-                {#if movement === "up"}
-                  <div
-                    class="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-green-500/10 text-green-400"
-                    title={`Previous rank: ${previousRank}`}
-                  >
-                    <TrendingUp size={12} />
-
-                    <span class="text-[9px] font-black"
-                      >{previousRank! - rank}</span
-                    >
-                  </div>
-                {:else if movement === "down"}
-                  <div
-                    class="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-red-500/10 text-red-400"
-                    title={`Previous rank: ${previousRank}`}
-                  >
-                    <TrendingDown size={12} />
-
-                    <span class="text-[9px] font-black"
-                      >{rank - previousRank!}</span
-                    >
-                  </div>
-                {:else if movement === "stable"}
-                  <div class="text-on-surface-variant/20 flex items-center">
-                    <Minus size={14} />
-
-                  </div>
-                {:else if movement === "new"}
-                  <span
-                    class="text-[8px] font-black text-primary px-1.5 py-0.5 bg-primary/10 rounded uppercase tracking-tighter border border-primary/20"
-                    >New</span
-                  >
-                {/if}
               </div>
             </td>
 
@@ -118,17 +92,19 @@
                     loading="lazy"
                   />
                 </div>
-                <div class="min-w-0 flex flex-col flex-1">
+                <div class="min-w-0 flex flex-col flex-1 group">
                   {#if true}
                     {@const songName = getSongName(item)}
                     {@const artistNames =
                       item.artists?.map((a: any) => a.name).join(", ") ??
                       "Unknown"}
                     <h3
-                      class="text-lg font-bold text-on-surface truncate leading-tight"
+                      class="text-lg font-bold text-on-surface truncate leading-tight group-hover:underline group-hover:text-primary"
                       title={songName}
                     >
-                      {songName}
+                      <a href={`/songs/${item.anime.slug}/${item.slug}`}>
+                        {songName}
+                      </a>
                     </h3>
                     <span
                       class="text-on-surface/80 truncate block"
@@ -142,17 +118,25 @@
                     >
                       {item.anime?.title}
                     </span>
+                    <span
+                      class="text-xs font-medium text-primary truncate block tracking-wide"
+                    >
+                      {item.slug}
+                    </span>
                     {#if item.season && item.year}
                       <div class="flex items-center gap-1.5 mt-1">
                         <span
                           class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border transition-colors {rankingType ===
                             'seasonal' &&
-                          (item.season?.id !== page.data.songsData?.current_season?.id ||
-                            item.year?.id !== page.data.songsData?.current_year?.id)
+                          (item.season?.id !==
+                            page.data.songsData?.current_season?.id ||
+                            item.year?.id !==
+                              page.data.songsData?.current_year?.id)
                             ? 'bg-primary/20 border-primary text-primary shadow-sm shadow-primary/10'
                             : 'bg-surface-highest border-on-surface-variant/10 text-on-surface-variant/60'}"
                         >
-                          {item.year.name} {item.season.name}
+                          {item.year.name}
+                          {item.season.name}
                         </span>
                       </div>
                     {/if}
@@ -161,14 +145,54 @@
               </div>
             </td>
 
+            <td class="py-5 text-right">
+              <div class="flex items-center justify-center gap-2">
+                {#if movement === "up"}
+                  <div
+                    class="flex flex-col items-center gap-0.5 px-1.5 py-0.5 text-green-400"
+                    title={`Previous rank: ${previousRank}`}
+                  >
+                    <div class="flex items-center gap-2">
+                      <TrendingUp size={24} />
+                      <span class="text-[24px] font-black"
+                        >{previousRank! - rank}</span
+                      >
+                    </div>
+                    <span class="text-[12px] text-on-surface-variant uppercase">
+                      from {previousRank}
+                    </span>
+                  </div>
+                {:else if movement === "down"}
+                  <div
+                    class="flex flex-col items-center gap-0.5 px-1.5 py-0.5 text-red-400"
+                    title={`Previous rank: ${previousRank}`}
+                  >
+                    <div class="flex items-center gap-2">
+                      <TrendingDown size={24} />
+                      <span class="text-[24px] font-black"
+                        >{rank - previousRank!}</span
+                      >
+                    </div>
+                    <span class="text-[12px] text-on-surface-variant uppercase">
+                      from {previousRank}
+                    </span>
+                  </div>
+                {:else if movement === "stable"}
+                  <div class="text-on-surface-variant/20 flex items-center">
+                    <Minus size={24} />
+                  </div>
+                {:else if movement === "new"}
+                  <span
+                    class="text-[8px] font-black text-primary px-1.5 py-0.5 bg-primary/10 rounded uppercase tracking-tighter border border-primary/20"
+                    >New</span
+                  >
+                {/if}
+              </div>
+            </td>
+
             <td class="py-5 px-2 text-center">
               <div class="text-2xl font-black text-on-surface tracking-tight">
-                {formatScore(item.average_rating)}
-              </div>
-              <div
-                class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest"
-              >
-                Avg Rating
+                {formatScore(item.average_rating)} %
               </div>
               <div>
                 {#if item.user_rating}
@@ -177,24 +201,9 @@
                   </div>
                 {:else}
                   <div class="text-xs">
-                    <span class="text-on-surface-variant/80"
-                      >Not rated</span
-                    >
+                    <span class="text-on-surface-variant/80">Not rated</span>
                   </div>
                 {/if}
-              </div>
-            </td>
-
-            <td class="py-5 pl-2 pr-8 text-right">
-              <div class="flex items-center justify-end gap-2">
-                <a
-                  href={`/songs/${item.anime?.slug}/${item.slug}`}
-                  class="w-10 h-10 rounded-full flex items-center justify-center bg-primary/10 hover:bg-primary text-primary hover:text-white transition-all shadow-lg hover:shadow-primary/20"
-                  title="Play theme"
-                >
-                  <Play class="fill-current" size={20} />
-
-                </a>
               </div>
             </td>
           </tr>

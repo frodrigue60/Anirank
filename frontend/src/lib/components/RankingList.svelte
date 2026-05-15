@@ -21,7 +21,8 @@
   } = $props();
 
   function formatScore(score: string | number | undefined | null) {
-    return getFormattedScore(score as any, authState.user?.score_format);
+    const format = authState.user?.score_format || "POINT_100";
+    return getFormattedScore(score as any, format);
   }
 
   function getMovement(current: number, previous: number | undefined | null) {
@@ -192,7 +193,8 @@
 
             <td class="py-5 px-2 text-center">
               <div class="text-2xl font-black text-on-surface tracking-tight">
-                {formatScore(item.average_rating)} %
+                <span>{formatScore(item.average_rating)}</span>
+                <span class="text-xs font-bold text-primary">PTS</span>
               </div>
               <div>
                 {#if item.user_rating}

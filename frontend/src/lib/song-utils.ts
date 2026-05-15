@@ -24,9 +24,9 @@ export function getFormattedScore(
 
   switch (format) {
     case "POINT_100":
-      return Math.round(raw).toString();
+      return raw.toFixed(1);
     case "POINT_10":
-      return Math.round(raw / 10).toString();
+      return (raw / 10).toFixed(1);
     case "POINT_10_DECIMAL":
       return (raw / 10).toFixed(1);
     case "POINT_5":

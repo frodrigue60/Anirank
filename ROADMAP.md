@@ -214,7 +214,7 @@
 - 🔲 **Comment reactions** (emoji reactions on individual comments)
 - 🔲 **Shared playlists** (collaborative playlist editing)
 - 🔲 **User-to-user recommendations** ("You might like this, based on your ratings")
-- 💡 **Activity Notifications** — emails for mentions, replies, and new followers (opt-in)
+- [/] **Activity Notifications** — Infrastructure ready (SSE + Email templates), emails disabled via toggle for scaling.
 
 ### Content Expansion
 

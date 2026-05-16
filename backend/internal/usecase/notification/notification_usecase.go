@@ -9,12 +9,21 @@ import (
 )
 
 type notificationUsecase struct {
-	repo  domain.NotificationRepository
-	cache domain.Cache
+	repo         domain.NotificationRepository
+	userRepo     domain.UserRepository
+	mailService  domain.MailService
+	cache        domain.Cache
+	enableEmails bool
 }
 
-func NewNotificationUsecase(repo domain.NotificationRepository, cache domain.Cache) domain.NotificationUsecase {
-	return &notificationUsecase{repo: repo, cache: cache}
+func NewNotificationUsecase(repo domain.NotificationRepository, userRepo domain.UserRepository, mailService domain.MailService, cache domain.Cache, enableEmails bool) domain.NotificationUsecase {
+	return &notificationUsecase{
+		repo:         repo,
+		userRepo:     userRepo,
+		mailService:  mailService,
+		cache:        cache,
+		enableEmails: enableEmails,
+	}
 }
 
 func (u *notificationUsecase) Create(ctx context.Context, notification *domain.Notification) error {
@@ -41,6 +50,25 @@ func (u *notificationUsecase) Create(ctx context.Context, notification *domain.N
 		channel := fmt.Sprintf("notifications:%d", notification.UserID)
 		_ = u.cache.Publish(ctx, channel, notification)
 	}
+
+	// Email Notification (if enabled and user has it enabled in settings)
+	if u.enableEmails {
+		go func() {
+			// Get recipient user info
+			targetUser, err := u.userRepo.GetByID(ctx, notification.UserID)
+			if err != nil || targetUser == nil || targetUser.Email == "" {
+				return
+			}
+
+			var data map[string]interface{}
+			if err := json.Unmarshal(notification.Data, &data); err != nil {
+				return
+			}
+
+			_ = u.mailService.SendActivityNotificationEmail(ctx, targetUser.Email, targetUser.Name, notification.Type, data)
+		}()
+	}
+
 	return nil
 }
 

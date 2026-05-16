@@ -94,3 +94,61 @@ func (s *resendService) SendPasswordResetEmail(ctx context.Context, to string, n
 
 	return nil
 }
+
+func (s *resendService) SendActivityNotificationEmail(ctx context.Context, to string, userName string, notificationType string, data map[string]interface{}) error {
+	var subject string
+	var html string
+	var text string
+
+	switch notificationType {
+	case "comment_reply":
+		repliedBy := data["replied_by_name"].(string)
+		songName := ""
+		if val, ok := data["song_name"]; ok {
+			songName = val.(string)
+		}
+		
+		subject = fmt.Sprintf("%s replied to your comment on AniRank", repliedBy)
+		html = fmt.Sprintf(`
+			<div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+				<h2 style="color: #7f13ec;">Hi %s!</h2>
+				<p><strong>%s</strong> just replied to your comment on <strong>%s</strong>.</p>
+				<div style="text-align: center; margin: 30px 0;">
+					<a href="%s/songs" style="background-color: #7f13ec; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">View Reply</a>
+				</div>
+				<p style="color: #666; font-size: 0.8em; text-align: center;">You can disable these emails in your notification settings.</p>
+			</div>
+		`, userName, repliedBy, songName, s.appURL)
+		text = fmt.Sprintf("Hi %s!\n\n%s just replied to your comment on %s. View it at: %s/songs\n\n© AniRank", userName, repliedBy, songName, s.appURL)
+
+	case "follow":
+		followerName := data["follower_name"].(string)
+		subject = fmt.Sprintf("%s is now following you on AniRank", followerName)
+		html = fmt.Sprintf(`
+			<div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+				<h2 style="color: #7f13ec;">Great news, %s!</h2>
+				<p><strong>%s</strong> is now following you. Your community is growing!</p>
+				<div style="text-align: center; margin: 30px 0;">
+					<a href="%s/users/%s" style="background-color: #7f13ec; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">View Profile</a>
+				</div>
+				<p style="color: #666; font-size: 0.8em; text-align: center;">You can disable these emails in your notification settings.</p>
+			</div>
+		`, userName, followerName, s.appURL, data["follower_slug"])
+		text = fmt.Sprintf("Great news, %s!\n\n%s is now following you. View their profile at: %s/users/%s\n\n© AniRank", userName, followerName, s.appURL, data["follower_slug"])
+
+	default:
+		return nil // Unsupported activity type for email
+	}
+
+	params := &resend.SendEmailRequest{
+		From:    s.fromEmail,
+		To:      []string{to},
+		Subject: subject,
+		Html:    html,
+		Text:    text,
+	}
+
+	_, err := s.client.Emails.SendWithContext(ctx, params)
+	return err
+}
+

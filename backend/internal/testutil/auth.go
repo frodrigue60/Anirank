@@ -278,8 +278,9 @@ func (m *MockDiscordClient) GetUserInfo(ctx context.Context, accessToken string)
 }
 
 type MockMailService struct {
-	SendVerificationFunc  func(to, name, token string) error
-	SendPasswordResetFunc func(to, name, token string) error
+	SendVerificationFunc         func(to, name, token string) error
+	SendPasswordResetFunc        func(to, name, token string) error
+	SendActivityNotificationFunc func(to string, userName string, notificationType string, data map[string]interface{}) error
 }
 
 func (m *MockMailService) SendVerificationEmail(ctx context.Context, to string, name string, token string) error {
@@ -292,6 +293,13 @@ func (m *MockMailService) SendVerificationEmail(ctx context.Context, to string, 
 func (m *MockMailService) SendPasswordResetEmail(ctx context.Context, to string, name string, token string) error {
 	if m.SendPasswordResetFunc != nil {
 		return m.SendPasswordResetFunc(to, name, token)
+	}
+	return nil
+}
+
+func (m *MockMailService) SendActivityNotificationEmail(ctx context.Context, to string, userName string, notificationType string, data map[string]interface{}) error {
+	if m.SendActivityNotificationFunc != nil {
+		return m.SendActivityNotificationFunc(to, userName, notificationType, data)
 	}
 	return nil
 }

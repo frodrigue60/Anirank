@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"context"
+	"encoding/json"
 	"anirank/api/internal/domain"
 )
 
@@ -61,3 +62,63 @@ func (m *MockCommentRepository) GetCount(ctx context.Context, songID uint64) (in
 func (m *MockCommentRepository) Create(ctx context.Context, comment *domain.Comment) error { return nil }
 func (m *MockCommentRepository) Update(ctx context.Context, id uint64, content string) error { return nil }
 func (m *MockCommentRepository) Delete(ctx context.Context, id, userID uint64) error { return nil }
+
+type MockNotificationRepository struct {
+	CreateFunc         func(notification *domain.Notification) error
+	GetByUserIDFunc    func(userID uint64) ([]domain.Notification, int, error)
+	MarkAsReadFunc     func(id string, userID uint64) error
+	MarkAllAsReadFunc  func(userID uint64) error
+	DeleteFunc         func(id string, userID uint64) error
+	GetUnreadCountFunc func(userID uint64) (int, error)
+	GetSettingsFunc    func(userID uint64) (*domain.NotificationSettings, error)
+	UpdateSettingsFunc func(userID uint64, settings json.RawMessage) error
+}
+
+func (m *MockNotificationRepository) Create(ctx context.Context, n *domain.Notification) error {
+	if m.CreateFunc != nil {
+		return m.CreateFunc(n)
+	}
+	return nil
+}
+func (m *MockNotificationRepository) GetByUserID(ctx context.Context, uID uint64, nT string, l, o int) ([]domain.Notification, int, error) {
+	if m.GetByUserIDFunc != nil {
+		return m.GetByUserIDFunc(uID)
+	}
+	return nil, 0, nil
+}
+func (m *MockNotificationRepository) MarkAsRead(ctx context.Context, id string, uID uint64) error {
+	if m.MarkAsReadFunc != nil {
+		return m.MarkAsReadFunc(id, uID)
+	}
+	return nil
+}
+func (m *MockNotificationRepository) MarkAllAsRead(ctx context.Context, uID uint64) error {
+	if m.MarkAllAsReadFunc != nil {
+		return m.MarkAllAsReadFunc(uID)
+	}
+	return nil
+}
+func (m *MockNotificationRepository) Delete(ctx context.Context, id string, uID uint64) error {
+	if m.DeleteFunc != nil {
+		return m.DeleteFunc(id, uID)
+	}
+	return nil
+}
+func (m *MockNotificationRepository) GetUnreadCount(ctx context.Context, uID uint64) (int, error) {
+	if m.GetUnreadCountFunc != nil {
+		return m.GetUnreadCountFunc(uID)
+	}
+	return 0, nil
+}
+func (m *MockNotificationRepository) GetSettings(ctx context.Context, uID uint64) (*domain.NotificationSettings, error) {
+	if m.GetSettingsFunc != nil {
+		return m.GetSettingsFunc(uID)
+	}
+	return nil, nil
+}
+func (m *MockNotificationRepository) UpdateSettings(ctx context.Context, uID uint64, s json.RawMessage) error {
+	if m.UpdateSettingsFunc != nil {
+		return m.UpdateSettingsFunc(uID, s)
+	}
+	return nil
+}

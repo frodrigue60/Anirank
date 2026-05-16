@@ -270,13 +270,8 @@ func main() {
 	badgeRepo := postgres.NewBadgeRepository(db)
 	auditUsecase := audit.NewAuditLogUsecase(auditRepo)
 	activityUsecase := usecase.NewActivityUsecase(postgres.NewActivityRepository(db), userRepo, songRepo, artistRepo, badgeRepo, mediaService)
-	notificationUsecase := notification.NewNotificationUsecase(notificationRepo, appCache)
-	badgeUsecase := admin.NewBadgeUsecase(badgeRepo, userRepo, interactionRepo, commentRepo, storageService, mediaService, auditUsecase, activityUsecase, notificationUsecase)
 
-	xpUsecase := usecase.NewXPUsecase(xpRepo, userRepo, badgeUsecase, activityUsecase)
-
-	// Auth specialized services
-	tokenRepo := postgres.NewAuthTokenRepository(db)
+	// Setup Mail Service for notifications
 	resendAPIKey := os.Getenv("RESEND_API_KEY")
 	resendFrom := os.Getenv("RESEND_FROM_EMAIL")
 	if resendFrom == "" {
@@ -285,11 +280,17 @@ func main() {
 	appURL := os.Getenv("APP_URL")
 	if appURL == "" {
 		appURL = "http://localhost:5173" // Default frontend dev URL
-		log.Println("⚠️ APP_URL not set, defaulting to http://localhost:5173 for email links")
-	} else {
-		log.Printf("📧 Email service initialized with APP_URL: %s", appURL)
 	}
 	mailService := mail.NewResendService(resendAPIKey, resendFrom, appURL)
+
+	enableActivityEmails := os.Getenv("ENABLE_ACTIVITY_EMAILS") == "true"
+	notificationUsecase := notification.NewNotificationUsecase(notificationRepo, userRepo, mailService, appCache, enableActivityEmails)
+	badgeUsecase := admin.NewBadgeUsecase(badgeRepo, userRepo, interactionRepo, commentRepo, storageService, mediaService, auditUsecase, activityUsecase, notificationUsecase)
+
+	xpUsecase := usecase.NewXPUsecase(xpRepo, userRepo, badgeUsecase, activityUsecase)
+
+	// Auth specialized services
+	tokenRepo := postgres.NewAuthTokenRepository(db)
 
 	authUsecase := auth.NewAuthUsecase(userRepo, jwtService, storageService, mediaService, xpUsecase, badgeUsecase, anilistClient, googleClient, discordClient, mailService, tokenRepo, os.Getenv("ENCRYPTION_KEY"))
 	moderationUsecase := moderation.NewModerationUsecase(moderationRepo, userRepo, songRepo, commentRepo, notificationUsecase, mediaService)
@@ -361,7 +362,7 @@ func main() {
 	statsUsecase := public.NewStatsUsecase(statsRepo, appCache)
 
 	// 4. Register Routes
-	http.SetupPublicRoutes(app, db, discoveryUsecase, animeUsecase, searchUsecase, catalogUsecase, authUsecase, interactionUsecase, playlistUsecase, adminUsecase, moderationUsecase, tournamentUsecase, auditUsecase, webhookUsecase, partnerUsecase, jwtService, storageService, mediaService, xpUsecase, activityUsecase, statsUsecase, ogGenerator, shareHandler, seoHandler, limitStorage, appCache)
+	http.SetupPublicRoutes(app, db, discoveryUsecase, animeUsecase, searchUsecase, catalogUsecase, authUsecase, interactionUsecase, playlistUsecase, adminUsecase, moderationUsecase, tournamentUsecase, auditUsecase, webhookUsecase, partnerUsecase, jwtService, storageService, mediaService, mailService, xpUsecase, activityUsecase, statsUsecase, ogGenerator, shareHandler, seoHandler, limitStorage, appCache)
 
 	// Run Server
 	log.Printf("Starting server on port %s...", appPort)

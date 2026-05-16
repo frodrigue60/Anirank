@@ -17,6 +17,7 @@ import (
 	"anirank/api/internal/usecase/playlist"
 	"anirank/api/internal/usecase/public"
 	"anirank/api/internal/usecase/tournament"
+	"os"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -42,6 +43,7 @@ func SetupPublicRoutes(app *fiber.App,
 	jwtService *auth.JWTService,
 	storageService infrastructure.StorageService,
 	mediaService infrastructure.MediaService,
+	mailService domain.MailService,
 	xpUsecase domain.XPUsecase,
 	activityUsecase domain.ActivityUsecase,
 	statsUsecase domain.StatsUsecase,
@@ -60,7 +62,10 @@ func SetupPublicRoutes(app *fiber.App,
 	commentRepo := postgres.NewCommentRepository(db)
 	interactionRepo := postgres.NewInteractionRepository(db)
 	notificationRepo := postgres.NewNotificationRepository(db)
-	notificationUsecase := notification.NewNotificationUsecase(notificationRepo, appCache)
+	
+	// We use a local toggle for the router internal instantiation, but ideally we should use the one passed from main.go
+	enableActivityEmails := os.Getenv("ENABLE_ACTIVITY_EMAILS") == "true"
+	notificationUsecase := notification.NewNotificationUsecase(notificationRepo, userRepo, mailService, appCache, enableActivityEmails)
 
 	// HTTP Handlers
 	discoveryHandler := v1.NewDiscoveryHandler(discoveryUsecase)

@@ -148,12 +148,40 @@ type MockCache struct {
 	Data map[string]interface{}
 }
 
-func (m *MockCache) Get(ctx context.Context, key string, dest interface{}) error { return nil }
-func (m *MockCache) Set(ctx context.Context, key string, value interface{}, expiration time.Duration) error { return nil }
-func (m *MockCache) Delete(ctx context.Context, key string) error { return nil }
+func (m *MockCache) Get(ctx context.Context, key string, dest interface{}) error {
+	if m.Data == nil {
+		return domain.NewAppError(404, "not found", nil)
+	}
+	val, ok := m.Data[key]
+	if !ok {
+		return domain.NewAppError(404, "not found", nil)
+	}
+	if d, ok := dest.(*string); ok {
+		if s, ok := val.(string); ok {
+			*d = s
+			return nil
+		}
+	}
+	return nil
+}
+func (m *MockCache) Set(ctx context.Context, key string, value interface{}, expiration time.Duration) error {
+	if m.Data == nil {
+		m.Data = make(map[string]interface{})
+	}
+	m.Data[key] = value
+	return nil
+}
+func (m *MockCache) Delete(ctx context.Context, key string) error {
+	if m.Data != nil {
+		delete(m.Data, key)
+	}
+	return nil
+}
 func (m *MockCache) IsAvailable() bool { return true }
 func (m *MockCache) Publish(ctx context.Context, channel string, message interface{}) error { return nil }
-func (m *MockCache) Subscribe(ctx context.Context, channel string) (domain.Subscriber, error) { return nil, nil }
+func (m *MockCache) Subscribe(ctx context.Context, channel string) (domain.Subscriber, error) {
+	return nil, nil
+}
 
 // MockMediaService implements infrastructure.MediaService
 type MockMediaService struct{}

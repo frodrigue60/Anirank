@@ -2,6 +2,8 @@ package moderation
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -22,6 +24,7 @@ type ModerationUsecase struct {
 	commentRepo         domain.CommentRepository
 	notificationUsecase domain.NotificationUsecase
 	mediaService        infrastructure.MediaService
+	cache               domain.Cache
 }
 
 const (
@@ -37,6 +40,7 @@ func NewModerationUsecase(
 	commentRepo domain.CommentRepository,
 	nu domain.NotificationUsecase,
 	ms infrastructure.MediaService,
+	cache domain.Cache,
 ) *ModerationUsecase {
 	return &ModerationUsecase{
 		repo:                repo,
@@ -45,6 +49,7 @@ func NewModerationUsecase(
 		commentRepo:         commentRepo,
 		notificationUsecase: nu,
 		mediaService:        ms,
+		cache:               cache,
 	}
 }
 
@@ -424,9 +429,9 @@ func (u *ModerationUsecase) ValidateInteraction(ctx context.Context, userID uint
 	if err == nil && !lastTime.IsZero() {
 		limitSeconds := 0
 		if user.Level < 5 {
-			limitSeconds = 120 // 2 mins
+			limitSeconds = 90
 		} else if user.Level < 10 {
-			limitSeconds = 60 // 1 min
+			limitSeconds = 60
 		}
 
 		if limitSeconds > 0 && time.Since(lastTime).Seconds() < float64(limitSeconds) {
@@ -435,7 +440,23 @@ func (u *ModerationUsecase) ValidateInteraction(ctx context.Context, userID uint
 		}
 	}
 
-	// 3. Link Detection
+	// 3. Duplicate Content Check (Flood Protection)
+	if content != "" {
+		hash := sha256.Sum256([]byte(content))
+		hashStr := hex.EncodeToString(hash[:])
+		cacheKey := fmt.Sprintf("flood:%d:%s", userID, hashStr)
+
+		var existing string
+		err := u.cache.Get(ctx, cacheKey, &existing)
+		if err == nil && existing != "" {
+			return false, domain.NewAppError(429, "Duplicate content detected. Please wait a few minutes.", nil)
+		}
+
+		// Store for 5 minutes
+		_ = u.cache.Set(ctx, cacheKey, "1", 5*time.Minute)
+	}
+
+	// 4. Link Detection
 	hasLinks := strings.Contains(content, "http://") || strings.Contains(content, "https://") || strings.Contains(content, "www.")
 	if hasLinks {
 		if user.Level < 5 {

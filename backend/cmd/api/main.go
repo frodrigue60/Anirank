@@ -293,7 +293,7 @@ func main() {
 	tokenRepo := postgres.NewAuthTokenRepository(db)
 
 	authUsecase := auth.NewAuthUsecase(userRepo, jwtService, storageService, mediaService, xpUsecase, badgeUsecase, anilistClient, googleClient, discordClient, mailService, tokenRepo, os.Getenv("ENCRYPTION_KEY"))
-	moderationUsecase := moderation.NewModerationUsecase(moderationRepo, userRepo, songRepo, commentRepo, notificationUsecase, mediaService)
+	moderationUsecase := moderation.NewModerationUsecase(moderationRepo, userRepo, songRepo, commentRepo, notificationUsecase, mediaService, appCache)
 	interactionUsecase := interaction.NewInteractionUsecase(interactionRepo, commentRepo, userRepo, notificationUsecase, songRepo, animeRepo, artistRepo, mediaService, xpUsecase, activityUsecase, badgeUsecase, moderationUsecase)
 	playlistUsecase := playlist.NewPlaylistUsecase(playlistRepo, songRepo, animeRepo, interactionRepo, mediaService, xpUsecase, userRepo)
 

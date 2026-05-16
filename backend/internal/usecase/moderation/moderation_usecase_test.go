@@ -180,8 +180,9 @@ func TestModerationUsecase_ValidateInteraction(t *testing.T) {
 	mockCommentRepo := new(testutil.MockCommentRepository)
 	mockNotif := new(MockNotificationUsecase)
 	mockMedia := new(testutil.MockMediaService)
+	mockCache := new(testutil.MockCache)
 
-	uc := moderation.NewModerationUsecase(mockRepo, mockUserRepo, mockSongRepo, mockCommentRepo, mockNotif, mockMedia)
+	uc := moderation.NewModerationUsecase(mockRepo, mockUserRepo, mockSongRepo, mockCommentRepo, mockNotif, mockMedia, mockCache)
 
 	t.Run("Blocked by Softban", func(t *testing.T) {
 		userID := uint64(1)
@@ -209,6 +210,8 @@ func TestModerationUsecase_ValidateInteraction(t *testing.T) {
 		assert.Error(t, err)
 		assert.False(t, isShadow)
 		assert.Contains(t, err.Error(), "too fast")
+		// Verify remaining time calculation (90 - 30 = 60)
+		assert.Contains(t, err.Error(), "60 seconds")
 	})
 
 	t.Run("Rate Limit Pass - Level 1", func(t *testing.T) {
@@ -224,6 +227,27 @@ func TestModerationUsecase_ValidateInteraction(t *testing.T) {
 		isShadow, err := uc.ValidateInteraction(ctx, userID, "hello")
 		assert.NoError(t, err)
 		assert.False(t, isShadow)
+	})
+
+	t.Run("Duplicate Content Blocked", func(t *testing.T) {
+		userID := uint64(100)
+		content := "duplicate message"
+		mockUserRepo.GetByIDFunc = func(id uint64) (*domain.User, error) {
+			return &domain.User{ID: id, Level: 10}, nil
+		}
+		mockUserRepo.GetLastInteractionTimeFunc = func(uID uint64) (time.Time, error) {
+			return time.Time{}, nil
+		}
+
+		// First time - should pass and store in cache
+		isShadow, err := uc.ValidateInteraction(ctx, userID, content)
+		assert.NoError(t, err)
+		assert.False(t, isShadow)
+
+		// Second time - should be blocked
+		isShadow, err = uc.ValidateInteraction(ctx, userID, content)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "Duplicate content detected")
 	})
 
 	t.Run("Link Blocked - Level 1", func(t *testing.T) {
@@ -278,8 +302,9 @@ func TestModerationUsecase_ShadowbanTriggers(t *testing.T) {
 	mockCommentRepo := new(testutil.MockCommentRepository)
 	mockNotif := new(MockNotificationUsecase)
 	mockMedia := new(testutil.MockMediaService)
+	mockCache := new(testutil.MockCache)
 
-	uc := moderation.NewModerationUsecase(mockRepo, mockUserRepo, mockSongRepo, mockCommentRepo, mockNotif, mockMedia)
+	uc := moderation.NewModerationUsecase(mockRepo, mockUserRepo, mockSongRepo, mockCommentRepo, mockNotif, mockMedia, mockCache)
 
 	t.Run("Trigger Shadowban on TruthScore < 50", func(t *testing.T) {
 		reportID := uint64(10)

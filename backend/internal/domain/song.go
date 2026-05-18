@@ -85,11 +85,14 @@ type SongVariant struct {
 }
 
 type SongVariantVideo struct {
-	Type      string  `json:"type"`
-	EmbedUrl  *string `json:"embed_url,omitempty"`
-	LocalUrl  *string `json:"local_url,omitempty"`
-	EmbedCode *string `json:"embed_code,omitempty"`
-	VideoSrc  *string `json:"video_src,omitempty"`
+	Type       string  `json:"type"`
+	EmbedUrl   *string `json:"embed_url,omitempty"`
+	LocalUrl   *string `json:"local_url,omitempty"`
+	EmbedCode  *string `json:"embed_code,omitempty"`
+	VideoSrc   *string `json:"video_src,omitempty"`
+	IsNC       bool    `json:"is_nc"`
+	IsBD       bool    `json:"is_bd"`
+	Resolution int     `json:"resolution"`
 }
 
 type Artist struct {
@@ -184,7 +187,7 @@ type SongRepository interface {
 
 	// Import pipeline — idempotent bulk import methods
 	UpsertSongFromAnimeThemes(ctx context.Context, song *Song) (created bool, err error)
-	UpsertVariantFromAnimeThemes(ctx context.Context, v *SongVariant, videoSrc *string) (created bool, err error)
+	UpsertVariantFromAnimeThemes(ctx context.Context, v *SongVariant, videoSrc *string, isNC bool, isBD bool, resolution int) (created bool, err error)
 	LinkArtistToSong(ctx context.Context, songID, artistID uint64) error
 }
 

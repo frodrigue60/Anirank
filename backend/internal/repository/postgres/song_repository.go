@@ -419,7 +419,10 @@ func (r *songRepository) GetVariantsBySongIDs(ctx context.Context, songIDs []uin
 	query, args, err := sqlx.In(`
 		SELECT 
 			sv.id, sv.uuid, sv.version_number, sv.song_id, sv.slug, sv.views, sv.season_id, sv.year_id, sv.episodes, sv.spoiler, sv.nsfw, sv.status, sv.created_at, sv.updated_at,
-			v.video_src, v.embed_code
+			v.video_src, v.embed_code,
+			COALESCE(v.is_nc, false) AS is_nc,
+			COALESCE(v.is_bd, false) AS is_bd,
+			COALESCE(v.resolution, 0) AS resolution
 		FROM song_variants sv
 		LEFT JOIN videos v ON sv.id = v.song_variant_id
 		WHERE sv.song_id IN (?)
@@ -432,8 +435,11 @@ func (r *songRepository) GetVariantsBySongIDs(ctx context.Context, songIDs []uin
 
 	type VariantWithVideoStruct struct {
 		domain.SongVariant
-		VideoSrc  *string `db:"video_src"`
-		EmbedCode *string `db:"embed_code"`
+		VideoSrc   *string `db:"video_src"`
+		EmbedCode  *string `db:"embed_code"`
+		IsNC       bool    `db:"is_nc"`
+		IsBD       bool    `db:"is_bd"`
+		Resolution int     `db:"resolution"`
 	}
 
 	var rows []VariantWithVideoStruct
@@ -447,10 +453,13 @@ func (r *songRepository) GetVariantsBySongIDs(ctx context.Context, songIDs []uin
 		v := row.SongVariant
 		if row.VideoSrc != nil || row.EmbedCode != nil {
 			v.Video = &domain.SongVariantVideo{
-				EmbedCode: row.EmbedCode,
-				VideoSrc:  row.VideoSrc,
-				EmbedUrl:  extractSrcFromIframe(row.EmbedCode),
-				LocalUrl:  row.VideoSrc,
+				EmbedCode:  row.EmbedCode,
+				VideoSrc:   row.VideoSrc,
+				EmbedUrl:   extractSrcFromIframe(row.EmbedCode),
+				LocalUrl:   row.VideoSrc,
+				IsNC:       row.IsNC,
+				IsBD:       row.IsBD,
+				Resolution: row.Resolution,
 			}
 
 			if row.VideoSrc != nil && *row.VideoSrc != "" {
@@ -469,7 +478,10 @@ func (r *songRepository) GetVariantsBySongID(ctx context.Context, songID uint64)
 	query := `
 		SELECT 
 			sv.id, sv.uuid, sv.version_number, sv.song_id, sv.slug, sv.views, sv.season_id, sv.year_id, sv.episodes, sv.spoiler, sv.nsfw, sv.status, sv.created_at, sv.updated_at,
-			v.video_src, v.embed_code
+			v.video_src, v.embed_code,
+			COALESCE(v.is_nc, false) AS is_nc,
+			COALESCE(v.is_bd, false) AS is_bd,
+			COALESCE(v.resolution, 0) AS resolution
 		FROM song_variants sv
 		LEFT JOIN videos v ON sv.id = v.song_variant_id
 		WHERE sv.song_id = $1
@@ -478,8 +490,11 @@ func (r *songRepository) GetVariantsBySongID(ctx context.Context, songID uint64)
 
 	type VariantWithVideoStruct struct {
 		domain.SongVariant
-		VideoSrc  *string `db:"video_src"`
-		EmbedCode *string `db:"embed_code"`
+		VideoSrc   *string `db:"video_src"`
+		EmbedCode  *string `db:"embed_code"`
+		IsNC       bool    `db:"is_nc"`
+		IsBD       bool    `db:"is_bd"`
+		Resolution int     `db:"resolution"`
 	}
 
 	var rows []VariantWithVideoStruct
@@ -493,10 +508,13 @@ func (r *songRepository) GetVariantsBySongID(ctx context.Context, songID uint64)
 		v := row.SongVariant
 		if row.VideoSrc != nil || row.EmbedCode != nil {
 			v.Video = &domain.SongVariantVideo{
-				EmbedCode: row.EmbedCode,
-				VideoSrc:  row.VideoSrc,
-				EmbedUrl:  extractSrcFromIframe(row.EmbedCode),
-				LocalUrl:  row.VideoSrc,
+				EmbedCode:  row.EmbedCode,
+				VideoSrc:   row.VideoSrc,
+				EmbedUrl:   extractSrcFromIframe(row.EmbedCode),
+				LocalUrl:   row.VideoSrc,
+				IsNC:       row.IsNC,
+				IsBD:       row.IsBD,
+				Resolution: row.Resolution,
 			}
 
 			if row.VideoSrc != nil && *row.VideoSrc != "" {
@@ -1062,7 +1080,7 @@ func (r *songRepository) UpsertSongFromAnimeThemes(ctx context.Context, song *do
 
 // UpsertVariantFromAnimeThemes inserts a song_variant and its video row.
 // Returns (true, nil) if created, (false, nil) if already existed.
-func (r *songRepository) UpsertVariantFromAnimeThemes(ctx context.Context, v *domain.SongVariant, videoSrc *string) (bool, error) {
+func (r *songRepository) UpsertVariantFromAnimeThemes(ctx context.Context, v *domain.SongVariant, videoSrc *string, isNC bool, isBD bool, resolution int) (bool, error) {
 	v.UUID = uuid.New().String()
 	now := time.Now().UTC()
 
@@ -1093,10 +1111,10 @@ func (r *songRepository) UpsertVariantFromAnimeThemes(ctx context.Context, v *do
 	// Insert the video row if a path is provided
 	if videoSrc != nil && *videoSrc != "" {
 		_, _ = r.db.ExecContext(ctx, `
-			INSERT INTO videos (song_variant_id, video_src, status, created_at, updated_at)
-			VALUES ($1, $2, false, $3, $3)
+			INSERT INTO videos (song_variant_id, video_src, is_nc, is_bd, resolution, status, created_at, updated_at)
+			VALUES ($1, $2, $3, $4, $5, false, $6, $6)
 			ON CONFLICT DO NOTHING
-		`, v.ID, videoSrc, now)
+		`, v.ID, videoSrc, isNC, isBD, resolution, now)
 	}
 
 	return true, nil

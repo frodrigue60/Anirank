@@ -43,7 +43,7 @@ func (m *MockSongRepository) GetPublicSlugs(ctx context.Context) ([]domain.Sitem
 func (m *MockSongRepository) GetSongTypes(ctx context.Context) ([]domain.SongType, error) { return nil, nil }
 func (m *MockSongRepository) LinkArtistToSong(ctx context.Context, songID, artistID uint64) error { return nil }
 func (m *MockSongRepository) UpsertSongFromAnimeThemes(ctx context.Context, song *domain.Song) (bool, error) { return false, nil }
-func (m *MockSongRepository) UpsertVariantFromAnimeThemes(ctx context.Context, variant *domain.SongVariant, videoCode *string) (bool, error) { return false, nil }
+func (m *MockSongRepository) UpsertVariantFromAnimeThemes(ctx context.Context, variant *domain.SongVariant, videoCode *string, isNC bool, isBD bool, resolution int) (bool, error) { return false, nil }
 
 type MockCommentRepository struct {
 	GetByIDFunc func(id uint64) (*domain.Comment, error)

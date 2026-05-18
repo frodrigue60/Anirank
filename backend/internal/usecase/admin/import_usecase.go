@@ -385,16 +385,20 @@ func (u *ImportUsecase) processSong(
 			AnimeThemesID: (*uint64)(&entry.ID),
 		}
 
-		// Pick first video's path as video_src
+		// Pick first video's path as video_src and parse tags
 		var videoSrc *string
+		var isNC, isBD bool
+		var resolution int
 		if len(entry.Videos) > 0 {
-			path := entry.Videos[0].Path // e.g. "2022/fall/ChainsawMan-OP1.webm"
+			firstVideo := entry.Videos[0]
+			path := firstVideo.Path // e.g. "2022/fall/ChainsawMan-OP1.webm"
 			if path != "" {
 				videoSrc = &path
 			}
+			isNC, isBD, resolution = parseVideoTags(firstVideo.Tags)
 		}
 
-		variantCreated, err := u.songRepo.UpsertVariantFromAnimeThemes(ctx, variant, videoSrc)
+		variantCreated, err := u.songRepo.UpsertVariantFromAnimeThemes(ctx, variant, videoSrc, isNC, isBD, resolution)
 		if err != nil {
 			job.Errors = append(job.Errors, fmt.Sprintf("variant %d (entry %d): %v", entry.ID, entryIdx, err))
 			continue
@@ -609,4 +613,27 @@ func MarshalJob(job *domain.ImportJob) string {
 		"errors":       job.Errors,
 	})
 	return string(b)
+}
+
+func parseVideoTags(tags string) (isNC bool, isBD bool, resolution int) {
+	normalized := strings.ToUpper(tags)
+	isNC = strings.Contains(normalized, "NC")
+	isBD = strings.Contains(normalized, "BD")
+
+	if strings.Contains(normalized, "2160") {
+		resolution = 2160
+	} else if strings.Contains(normalized, "1440") {
+		resolution = 1440
+	} else if strings.Contains(normalized, "1080") {
+		resolution = 1080
+	} else if strings.Contains(normalized, "720") {
+		resolution = 720
+	} else if strings.Contains(normalized, "576") {
+		resolution = 576
+	} else if strings.Contains(normalized, "480") {
+		resolution = 480
+	} else if strings.Contains(normalized, "360") {
+		resolution = 360
+	}
+	return
 }

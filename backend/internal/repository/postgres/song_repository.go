@@ -6,9 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"time"
 
 	"anirank/api/internal/domain"
 
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -1005,4 +1007,107 @@ func (r *songRepository) GetSongTypes(ctx context.Context) ([]domain.SongType, e
 		types = []domain.SongType{}
 	}
 	return types, err
+}
+
+// UpsertSongFromAnimeThemes inserts a song by its anime_themes_id.
+// Returns (true, nil) if created, (false, nil) if already existed.
+func (r *songRepository) UpsertSongFromAnimeThemes(ctx context.Context, song *domain.Song) (bool, error) {
+	song.UUID = uuid.New().String()
+	now := time.Now().UTC()
+
+	// Resolve type_id from slug (OP/ED/IN/INS/OTH)
+	var typeID uint64
+	if err := r.db.GetContext(ctx, &typeID, `SELECT id FROM song_types WHERE slug = $1 LIMIT 1`, song.Type); err != nil {
+		// Create the type if it doesn't exist
+		newTypeUUID := uuid.New().String()
+		errInsert := r.db.QueryRowContext(ctx, `
+			INSERT INTO song_types (uuid, name, slug) 
+			VALUES ($1, $2, $3) 
+			ON CONFLICT (slug) DO UPDATE SET slug = EXCLUDED.slug
+			RETURNING id
+		`, newTypeUUID, song.Type, song.Type).Scan(&typeID)
+		
+		if errInsert != nil {
+			// Fallback to first type if completely failed
+			_ = r.db.GetContext(ctx, &typeID, `SELECT id FROM song_types ORDER BY id LIMIT 1`)
+		}
+	}
+	song.TypeID = &typeID
+
+	var returnedID uint64
+	err := r.db.QueryRowContext(ctx, `
+		INSERT INTO songs (uuid, song_romaji, song_jp, theme_num, type_id, anime_id, season_id, year_id, views, status, anime_themes_id, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 0, false, $9, $10, $10)
+		ON CONFLICT (anime_themes_id) DO NOTHING
+		RETURNING id
+	`,
+		song.UUID, song.SongRomaji, song.SongJP,
+		song.ThemeNum, typeID, song.AnimeID,
+		song.SeasonID, song.YearID,
+		song.AnimeThemesID, now,
+	).Scan(&returnedID)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			err2 := r.db.QueryRowContext(ctx,
+				`SELECT id FROM songs WHERE anime_themes_id = $1`, song.AnimeThemesID,
+			).Scan(&song.ID)
+			return false, err2
+		}
+		return false, err
+	}
+	song.ID = returnedID
+	return true, nil
+}
+
+// UpsertVariantFromAnimeThemes inserts a song_variant and its video row.
+// Returns (true, nil) if created, (false, nil) if already existed.
+func (r *songRepository) UpsertVariantFromAnimeThemes(ctx context.Context, v *domain.SongVariant, videoSrc *string) (bool, error) {
+	v.UUID = uuid.New().String()
+	now := time.Now().UTC()
+
+	var returnedID uint64
+	err := r.db.QueryRowContext(ctx, `
+		INSERT INTO song_variants (uuid, version_number, song_id, slug, views, season_id, year_id, spoiler, nsfw, status, anime_themes_id, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, 0, $5, $6, $7, $8, false, $9, $10, $10)
+		ON CONFLICT (anime_themes_id) DO NOTHING
+		RETURNING id
+	`,
+		v.UUID, v.VersionNumber, v.SongID, v.Slug,
+		v.SeasonID, v.YearID,
+		v.Spoiler, v.NSFW,
+		v.AnimeThemesID, now,
+	).Scan(&returnedID)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			err2 := r.db.QueryRowContext(ctx,
+				`SELECT id FROM song_variants WHERE anime_themes_id = $1`, v.AnimeThemesID,
+			).Scan(&v.ID)
+			return false, err2
+		}
+		return false, err
+	}
+	v.ID = returnedID
+
+	// Insert the video row if a path is provided
+	if videoSrc != nil && *videoSrc != "" {
+		_, _ = r.db.ExecContext(ctx, `
+			INSERT INTO videos (song_variant_id, video_src, status, created_at, updated_at)
+			VALUES ($1, $2, false, $3, $3)
+			ON CONFLICT DO NOTHING
+		`, v.ID, videoSrc, now)
+	}
+
+	return true, nil
+}
+
+// LinkArtistToSong creates an artist_song pivot row idempotently.
+func (r *songRepository) LinkArtistToSong(ctx context.Context, songID, artistID uint64) error {
+	_, err := r.db.ExecContext(ctx, `
+		INSERT INTO artist_song (artist_id, song_id, created_at, updated_at)
+		VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		ON CONFLICT DO NOTHING
+	`, artistID, songID)
+	return err
 }

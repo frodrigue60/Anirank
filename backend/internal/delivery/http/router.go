@@ -6,6 +6,8 @@ import (
 	v1 "anirank/api/internal/delivery/http/v1"
 	"anirank/api/internal/domain"
 	"anirank/api/internal/infrastructure"
+	"anirank/api/internal/infrastructure/anilist"
+	"anirank/api/internal/infrastructure/animethemes"
 	"anirank/api/internal/infrastructure/og"
 	"anirank/api/internal/repository/postgres"
 	"anirank/api/internal/usecase/admin"
@@ -17,6 +19,8 @@ import (
 	"anirank/api/internal/usecase/playlist"
 	"anirank/api/internal/usecase/public"
 	"anirank/api/internal/usecase/tournament"
+	"context"
+	"log"
 	"os"
 	"time"
 
@@ -62,7 +66,12 @@ func SetupPublicRoutes(app *fiber.App,
 	commentRepo := postgres.NewCommentRepository(db)
 	interactionRepo := postgres.NewInteractionRepository(db)
 	notificationRepo := postgres.NewNotificationRepository(db)
-	
+	taxonomyRepo := postgres.NewTaxonomyRepository(db)
+
+	// External API clients (used by the import pipeline)
+	atClient := animethemes.NewClient()
+	anilistClient := anilist.NewClient()
+
 	// We use a local toggle for the router internal instantiation, but ideally we should use the one passed from main.go
 	enableActivityEmails := os.Getenv("ENABLE_ACTIVITY_EMAILS") == "true"
 	notificationUsecase := notification.NewNotificationUsecase(notificationRepo, userRepo, mailService, appCache, enableActivityEmails)
@@ -80,7 +89,15 @@ func SetupPublicRoutes(app *fiber.App,
 	interactionUsecase = interaction.NewInteractionUsecase(interactionRepo, commentRepo, userRepo, notificationUsecase, songRepo, animeRepo, artistRepo, mediaService, xpUsecase, activityUsecase, badgeUsecase, moderationUsecase)
 	interactionHandler := v1.NewInteractionHandler(interactionUsecase, activityUsecase, songRepo, userRepo, animeRepo, artistRepo, commentRepo)
 	playlistHandler := v1.NewPlaylistHandler(playlistUsecase, playlistRepo, songRepo, userRepo)
-	adminHandler := v1.NewAdminHandler(adminUsecase, songRepo, userRepo, animeRepo, artistRepo, playlistRepo)
+
+	importJobRepo := postgres.NewImportJobRepository(db)
+	// Clean up any stale running/pending import jobs from a previous server session that was killed/restarted
+	if err := importJobRepo.CleanStaleJobs(context.Background()); err != nil {
+		log.Printf("Warning: failed to clean stale import jobs on startup: %v", err)
+	}
+	importUsecase := admin.NewImportUsecase(importJobRepo, animeRepo, songRepo, artistRepo, taxonomyRepo, atClient, anilistClient, mediaService)
+
+	adminHandler := v1.NewAdminHandler(adminUsecase, importUsecase, songRepo, userRepo, animeRepo, artistRepo, playlistRepo)
 	moderationHandler := v1.NewModerationHandler(moderationUsecase, songRepo, commentRepo, userRepo)
 	tournamentHandler := v1.NewTournamentHandler(tournamentUsecase)
 
@@ -363,6 +380,13 @@ func SetupPublicRoutes(app *fiber.App,
 	adminOnly.Post("/animes/hydrate", middleware.HasPermissionMiddleware("anime.create", userRepo), adminHandler.HydrateAnimeSeason)
 	adminOnly.Get("/animes/animethemes/search", adminHandler.SearchAnimeThemes)
 	adminOnly.Post("/animes/animethemes/hydrate", middleware.HasPermissionMiddleware("anime.create", userRepo), adminHandler.HydrateAnimeThemes)
+
+	// Bulk Import Pipeline
+	adminOnly.Get("/import/animethemes/status", adminHandler.GetLatestAnimeThemesImportStatus)
+	adminOnly.Post("/import/animethemes/start", middleware.HasPermissionMiddleware("anime.create", userRepo), adminHandler.StartAnimeThemesImport)
+	adminOnly.Get("/import/:jobID/status", adminHandler.GetImportJobStatus)
+	adminOnly.Get("/import/:jobID/stream", adminHandler.StreamImportProgress)
+	adminOnly.Post("/import/:jobID/cancel", adminHandler.CancelImportJob)
 	adminOnly.Put("/animes/:id", middleware.HasPermissionMiddleware("anime.edit", userRepo), adminHandler.UpdateAnime)
 	adminOnly.Patch("/animes/:id/status", middleware.HasPermissionMiddleware("anime.edit", userRepo), adminHandler.ToggleAnimeStatus)
 	adminOnly.Post("/animes/:id/sync", middleware.HasPermissionMiddleware("anime.edit", userRepo), adminHandler.SyncAnime)

@@ -20,6 +20,8 @@
   import TrendingUp from "lucide-svelte/icons/trending-up";
   import Loader2 from "lucide-svelte/icons/loader-2";
   import Image from "lucide-svelte/icons/image";
+  import DownloadCloud from "lucide-svelte/icons/download-cloud";
+  import StopCircle from "lucide-svelte/icons/stop-circle";
 
   let { data } = $props();
 
@@ -184,6 +186,116 @@
       jobLogs = [...jobLogs, "❌ Connection lost or error occurred."];
       eventSource.close();
       activeJob = null;
+    };
+  }
+
+  // --- Bulk Import Job ---
+  let importJobStatus = $state<any>(null);
+  let importLogs = $state<string[]>([]);
+  let showImportLogs = $state(false);
+  let isImporting = $derived(importJobStatus?.status === 'running' || importJobStatus?.status === 'pending');
+  let importEventSource = $state<EventSource | null>(null);
+
+  // Fetch initial status on mount
+  $effect(() => {
+    fetchImportStatus();
+    
+    return () => {
+      if (importEventSource) {
+        importEventSource.close();
+        importEventSource = null;
+      }
+    };
+  });
+
+  // Automatically manage SSE stream based on importJobStatus
+  $effect(() => {
+    if (importJobStatus) {
+      const isRunning = importJobStatus.status === 'running' || importJobStatus.status === 'pending';
+      if (isRunning && !importEventSource) {
+        connectImportStream(importJobStatus.id);
+      }
+    }
+  });
+
+  async function fetchImportStatus() {
+    try {
+      const res = await api.get("/admin/import/animethemes/status");
+      importJobStatus = res.data;
+    } catch(err: any) {
+      if (err.response?.status !== 404) {
+        console.error("Failed to fetch import status", err);
+      }
+    }
+  }
+
+  async function startImportJob() {
+    if (isImporting) return;
+    try {
+      showImportLogs = true;
+      importLogs = ["Starting AnimeThemes bulk import pipeline..."];
+      const res = await api.post("/admin/import/animethemes/start");
+      importJobStatus = { id: res.data.job_id, status: 'pending' };
+      toastState.addToast("Import job started successfully", "success");
+    } catch (err: any) {
+      toastState.addToast(getApiErrorMessage(err, "Failed to start import job"), "error");
+    }
+  }
+
+  async function cancelImportJob() {
+    if (!importJobStatus?.id) return;
+    try {
+      await api.post(`/admin/import/${importJobStatus.id}/cancel`);
+      toastState.addToast("Import job cancellation requested", "success");
+      importLogs = [...importLogs, "Cancellation requested. Waiting for worker to stop..."];
+    } catch (err: any) {
+      toastState.addToast(getApiErrorMessage(err, "Failed to cancel import job"), "error");
+    }
+  }
+
+  function connectImportStream(jobId: string) {
+    if (importEventSource) {
+      importEventSource.close();
+    }
+    
+    const token = getAuthToken();
+    const url = `${api.defaults.baseURL}/admin/import/${jobId}/stream?token=${token}`;
+    
+    // Show logs panel and set initial status logs on reconnect
+    showImportLogs = true;
+    if (importLogs.length === 0) {
+      importLogs = ["Reconnecting to active import job..."];
+    }
+    importEventSource = new EventSource(url, { withCredentials: true });
+
+    importEventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        importJobStatus = data;
+        
+        let msg = `[Phase 1] Page ${data.current_page}/${data.total_pages} - Processed: ${data.processed}, Created: ${data.created}`;
+        if (data.status === 'done') {
+           msg = `✅ Job finished. Processed: ${data.processed}, Created: ${data.created}`;
+           importEventSource?.close();
+           importEventSource = null;
+        } else if (data.status === 'canceled' || data.status === 'failed') {
+           msg = `❌ Job ${data.status}.`;
+           importEventSource?.close();
+           importEventSource = null;
+        }
+
+        // Avoid flooding by checking if the last log is the exact same
+        if (importLogs.length === 0 || importLogs[importLogs.length - 1] !== msg) {
+          importLogs = [...importLogs.slice(-49), msg];
+        }
+      } catch(e) {}
+    };
+
+    importEventSource.onerror = (err) => {
+      console.error("Import SSE Error:", err);
+      importLogs = [...importLogs, "❌ Connection lost."];
+      importEventSource?.close();
+      importEventSource = null;
     };
   }
 
@@ -580,6 +692,102 @@
           </div>
         </div>
       {/if}
+
+      <!-- Bulk Import Widget -->
+      <div class="mt-8 pt-6 border-t border-outline-variant">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h4 class="text-lg font-bold text-on-surface flex items-center gap-2">
+              <DownloadCloud size={20} class="text-emerald-400" />
+              AnimeThemes Bulk Sync
+            </h4>
+            <p class="text-xs text-on-surface-variant/70 mt-1">Hydrates local database with missing animes, songs, variants and links.</p>
+          </div>
+          <div class="flex items-center gap-3">
+            {#if isImporting}
+              <button 
+                onclick={cancelImportJob}
+                class="flex items-center gap-2 px-3 py-1.5 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 transition-colors border border-rose-500/20 rounded-lg text-xs font-bold"
+              >
+                <StopCircle size={14} />
+                Cancel Import
+              </button>
+            {:else}
+              <button 
+                onclick={startImportJob}
+                class="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-colors border border-emerald-500/20 rounded-lg text-xs font-bold"
+              >
+                <DownloadCloud size={14} />
+                Start Full Sync
+              </button>
+            {/if}
+          </div>
+        </div>
+
+        {#if importJobStatus}
+          <div class="bg-surface-highest rounded-xl p-4 border border-outline-variant/50">
+            <div class="flex justify-between items-center mb-2">
+              <div class="flex items-center gap-3">
+                <span class="text-xs font-bold uppercase tracking-wider {importJobStatus.status === 'running' ? 'text-emerald-400' : 'text-on-surface-variant/70'}">
+                  Status: {importJobStatus.status}
+                </span>
+                {#if isImporting}
+                  <Loader2 size={12} class="animate-spin text-emerald-400" />
+                {/if}
+              </div>
+              <span class="text-xs font-mono text-on-surface-variant/70">
+                {importJobStatus.current_page} / {importJobStatus.total_pages || '?'} pages
+              </span>
+            </div>
+            
+            <div class="w-full bg-black/40 rounded-full h-2 overflow-hidden mb-4 border border-white/5">
+              <div 
+                class="bg-emerald-500 h-full transition-all duration-500" 
+                style="width: {(importJobStatus.current_page / Math.max(importJobStatus.total_pages || 1, 1)) * 100}%"
+              ></div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2">
+              <div class="bg-black/20 rounded-lg p-2 text-center">
+                <p class="text-[10px] uppercase font-bold text-on-surface-variant/50">Processed</p>
+                <p class="text-sm font-black text-on-surface">{importJobStatus.processed}</p>
+              </div>
+              <div class="bg-black/20 rounded-lg p-2 text-center">
+                <p class="text-[10px] uppercase font-bold text-on-surface-variant/50">Created</p>
+                <p class="text-sm font-black text-emerald-400">{importJobStatus.created}</p>
+              </div>
+              <div class="bg-black/20 rounded-lg p-2 text-center">
+                <p class="text-[10px] uppercase font-bold text-on-surface-variant/50">Skipped</p>
+                <p class="text-sm font-black text-on-surface-variant/70">{importJobStatus.skipped}</p>
+              </div>
+            </div>
+
+            {#if showImportLogs || isImporting}
+              <div class="mt-4 pt-4 border-t border-outline-variant/30">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Sync Log</span>
+                </div>
+                <div class="bg-black/40 rounded-lg p-3 font-mono text-[10px] h-32 overflow-y-auto space-y-1 custom-scrollbar">
+                  {#each importLogs as log}
+                    <div class="text-on-surface-variant/80">
+                      <span class="text-emerald-400/50 mr-2">></span>
+                      {log}
+                    </div>
+                  {/each}
+                  {#if importJobStatus?.errors?.length > 0}
+                    <div class="mt-2 pt-2 border-t border-rose-500/20">
+                      <span class="text-rose-400 font-bold mb-1 block">Errors ({importJobStatus.errors.length}):</span>
+                      {#each importJobStatus.errors.slice(-5) as err}
+                        <div class="text-rose-400/80 break-words">- {err}</div>
+                      {/each}
+                    </div>
+                  {/if}
+                </div>
+              </div>
+            {/if}
+          </div>
+        {/if}
+      </div>
     </div>
 
     <div class="bg-surface-container border border-outline-variant rounded-2xl p-6">

@@ -181,6 +181,11 @@ type SongRepository interface {
 
 	// Taxonomy
 	GetSongTypes(ctx context.Context) ([]SongType, error)
+
+	// Import pipeline — idempotent bulk import methods
+	UpsertSongFromAnimeThemes(ctx context.Context, song *Song) (created bool, err error)
+	UpsertVariantFromAnimeThemes(ctx context.Context, v *SongVariant, videoSrc *string) (created bool, err error)
+	LinkArtistToSong(ctx context.Context, songID, artistID uint64) error
 }
 
 type SongVariantRepository interface {
@@ -226,4 +231,7 @@ type ArtistRepository interface {
 
 	// Sitemap
 	GetPublicSlugs(ctx context.Context) ([]SitemapItem, error)
+
+	// Import pipeline — idempotent bulk import methods
+	UpsertFromAnimeThemes(ctx context.Context, artist *Artist) (created bool, err error)
 }

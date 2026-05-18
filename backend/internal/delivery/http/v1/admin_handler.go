@@ -15,16 +15,18 @@ import (
 )
 
 type AdminHandler struct {
-	usecase      *admin.AdminUsecase
-	songRepo     domain.SongRepository
-	userRepo     domain.UserRepository
-	animeRepo    domain.AnimeRepository
-	artistRepo   domain.ArtistRepository
-	playlistRepo domain.PlaylistRepository
+	usecase       *admin.AdminUsecase
+	importUsecase *admin.ImportUsecase
+	songRepo      domain.SongRepository
+	userRepo      domain.UserRepository
+	animeRepo     domain.AnimeRepository
+	artistRepo    domain.ArtistRepository
+	playlistRepo  domain.PlaylistRepository
 }
 
 func NewAdminHandler(
 	usecase *admin.AdminUsecase,
+	importUsecase *admin.ImportUsecase,
 	songRepo domain.SongRepository,
 	userRepo domain.UserRepository,
 	animeRepo domain.AnimeRepository,
@@ -32,12 +34,13 @@ func NewAdminHandler(
 	playlistRepo domain.PlaylistRepository,
 ) *AdminHandler {
 	return &AdminHandler{
-		usecase:      usecase,
-		songRepo:     songRepo,
-		userRepo:     userRepo,
-		animeRepo:    animeRepo,
-		artistRepo:   artistRepo,
-		playlistRepo: playlistRepo,
+		usecase:       usecase,
+		importUsecase: importUsecase,
+		songRepo:      songRepo,
+		userRepo:      userRepo,
+		animeRepo:     animeRepo,
+		artistRepo:    artistRepo,
+		playlistRepo:  playlistRepo,
 	}
 }
 

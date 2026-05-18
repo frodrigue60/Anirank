@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
+	"time"
 
 	"anirank/api/internal/domain"
 
@@ -827,4 +829,75 @@ func (r *animeRepository) GetPublicSlugs(ctx context.Context) ([]domain.SitemapI
 	query := `SELECT slug as loc, updated_at as lastmod FROM animes WHERE status = true`
 	err := r.db.SelectContext(ctx, &items, query)
 	return items, err
+}
+
+// UpsertFromAnimeThemes inserts an anime by its anime_themes_id.
+// If a record with the same anime_themes_id already exists, it is a no-op (idempotent).
+// Returns (true, nil) if the record was created, (false, nil) if it already existed.
+func (r *animeRepository) UpsertFromAnimeThemes(ctx context.Context, anime *domain.Anime) (bool, error) {
+	anime.UUID = uuid.New().String()
+	now := time.Now().UTC()
+
+	var returnedID uint64
+	err := r.db.QueryRowContext(ctx, `
+		INSERT INTO animes (uuid, title, slug, description, anilist_id, anime_themes_id, status, year_id, season_id, format_id, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, false, $7, $8, $9, $10, $10)
+		ON CONFLICT (anime_themes_id) DO NOTHING
+		RETURNING id
+	`,
+		anime.UUID, anime.Title, anime.Slug, anime.Description,
+		anime.AnilistID, anime.AnimeThemesID,
+		anime.YearID, anime.SeasonID, anime.FormatID,
+		now,
+	).Scan(&returnedID)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			// ON CONFLICT DO NOTHING — row already existed, fetch its ID
+			err2 := r.db.QueryRowContext(ctx,
+				`SELECT id FROM animes WHERE anime_themes_id = $1`, anime.AnimeThemesID,
+			).Scan(&anime.ID)
+			return false, err2
+		}
+		return false, err
+	}
+	anime.ID = returnedID
+	return true, nil
+}
+
+// EnrichFromAniList updates cover, banner and description from AniList data
+// only when those fields are currently empty — never overwrites existing content.
+func (r *animeRepository) EnrichFromAniList(ctx context.Context, anilistID int64, cover, banner, description *string) error {
+	_, err := r.db.ExecContext(ctx, `
+		UPDATE animes SET
+			cover       = COALESCE(cover, $2),
+			banner      = COALESCE(banner, $3),
+			description = COALESCE(description, $4),
+			updated_at  = CURRENT_TIMESTAMP
+		WHERE anilist_id = $1
+	`, anilistID, cover, banner, description)
+	return err
+}
+
+// buildUniqueAnimeSlug generates a slug and, on collision, appends the anime_themes_id.
+func buildUniqueAnimeSlug(base string, animeThemesID uint64) string {
+	s := strings.ToLower(base)
+	// Replace non-alphanumeric characters with hyphens
+	var b strings.Builder
+	for _, r := range s {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
+			b.WriteRune(r)
+		} else {
+			b.WriteRune('-')
+		}
+	}
+	clean := strings.Trim(b.String(), "-")
+	// Collapse consecutive hyphens
+	for strings.Contains(clean, "--") {
+		clean = strings.ReplaceAll(clean, "--", "-")
+	}
+	if len(clean) == 0 {
+		clean = fmt.Sprintf("anime-%d", animeThemesID)
+	}
+	return clean
 }

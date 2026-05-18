@@ -686,7 +686,7 @@
 
           <button
             type="submit"
-            disabled={isHydrating || apiStatus.animethemes.status !== "online"}
+            disabled={isHydrating || apiStatus.animethemes.status !== "online" || apiStatus.anilist.status !== "online"}
             class="w-full bg-purple-600 hover:bg-purple-600/80 disabled:bg-gray-700 py-3 rounded-xl text-on-surface font-bold transition-all flex items-center justify-center gap-2"
           >
             {#if isHydrating}
@@ -772,7 +772,8 @@
           <button
             type="submit"
             disabled={isSearchingAnimeThemes ||
-              apiStatus.animethemes.status !== "online"}
+              apiStatus.animethemes.status !== "online" ||
+              apiStatus.anilist.status !== "online"}
             class="px-6 bg-purple-600 hover:bg-purple-600/80 disabled:bg-gray-700 rounded-xl text-on-surface font-bold transition-all flex items-center gap-2"
           >
             {#if isSearchingAnimeThemes}
@@ -937,7 +938,7 @@
           </button>
           <button
             onclick={handleImportSelected}
-            disabled={selectedAnimeThemesIDs.size === 0}
+            disabled={selectedAnimeThemesIDs.size === 0 || apiStatus.anilist.status !== "online"}
             class="px-8 py-2.5 bg-primary hover:bg-primary-container disabled:bg-gray-700 text-on-surface font-bold rounded-xl transition-all shadow-lg shadow-anirank-primary/20"
           >
             Import Selected

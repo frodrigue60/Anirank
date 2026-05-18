@@ -8,6 +8,7 @@ import (
 
 	"anirank/api/internal/domain"
 
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -519,6 +520,7 @@ func (r *artistRepository) MergeDuplicateArtists(ctx context.Context, progress c
 	return nil
 }
 
+
 func (r *artistRepository) RecountArtistStats(ctx context.Context, ids []uint64) error {
 	// 1. Recount enabled songs
 	enabledQuery := `
@@ -575,3 +577,31 @@ func (r *artistRepository) RecountArtistStats(ctx context.Context, ids []uint64)
 
 	return nil
 }
+
+// UpsertFromAnimeThemes inserts an artist by anime_themes_id.
+// Returns (artistID, created, error). If the artist already exists, returns its existing ID.
+func (r *artistRepository) UpsertFromAnimeThemes(ctx context.Context, artist *domain.Artist) (bool, error) {
+	newUUID := uuid.New().String()
+
+	var returnedID uint64
+	err := r.db.QueryRowContext(ctx, `
+		INSERT INTO artists (uuid, name, slug, anime_themes_id, status, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		ON CONFLICT (anime_themes_id) DO NOTHING
+		RETURNING id
+	`, newUUID, artist.Name, artist.Slug, artist.AnimeThemesID).Scan(&returnedID)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			err2 := r.db.QueryRowContext(ctx,
+				`SELECT id FROM artists WHERE anime_themes_id = $1`, artist.AnimeThemesID,
+			).Scan(&artist.ID)
+			return false, err2
+		}
+		return false, err
+	}
+	artist.ID = returnedID
+	artist.UUID = newUUID
+	return true, nil
+}
+

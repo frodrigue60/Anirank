@@ -188,6 +188,10 @@ type AnimeRepository interface {
 
 	// Sitemap
 	GetPublicSlugs(ctx context.Context) ([]SitemapItem, error)
+
+	// Import pipeline — idempotent bulk import methods
+	UpsertFromAnimeThemes(ctx context.Context, anime *Anime) (created bool, err error)
+	EnrichFromAniList(ctx context.Context, anilistID int64, cover, banner, description *string) error
 }
 
 type TaxonomyRepository interface {

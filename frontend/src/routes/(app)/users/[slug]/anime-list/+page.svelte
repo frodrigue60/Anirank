@@ -61,26 +61,104 @@
     isFetching = true;
     isLoading = true;
     try {
-      const response = await api.get(
-        `/users/${data.profile.slug}/anilist-list`,
-        {
-          params: {
-            status: status === "ALL" ? "" : status,
-            page: page,
-            limit: 50,
-          },
-        },
-      );
+      const query = `
+        query ($userId: Int!, $status: MediaListStatus, $page: Int, $perPage: Int) {
+          Page (page: $page, perPage: $perPage) {
+            pageInfo {
+              total
+              hasNextPage
+            }
+            mediaList (userId: $userId, type: ANIME, status: $status, sort: [UPDATED_TIME_DESC]) {
+              id
+              status
+              media {
+                id
+                title {
+                  userPreferred
+                  romaji
+                  english
+                }
+                coverImage {
+                  extraLarge
+                  large
+                }
+                format
+                seasonYear
+              }
+            }
+          }
+        }
+      `;
 
-      const newItems = response.data.data;
-      items = reset ? newItems : [...items, ...newItems];
-      total = response.data.pagination.total;
-      hasMore = response.data.pagination.has_more;
+      const variables: any = {
+        userId: data.profile.anilist_id,
+        page: page,
+        perPage: 50
+      };
+
+      if (status !== "ALL") {
+        variables.status = status;
+      }
+
+      const response = await fetch("https://graphql.anilist.co", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify({
+          query,
+          variables
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`AniList API responded with status ${response.status}`);
+      }
+
+      const result = await response.json();
+      if (result.errors) {
+        throw new Error(result.errors[0]?.message || "AniList GraphQL error");
+      }
+
+      const pageData = result.data.Page;
+      const listItems = pageData.mediaList || [];
+
+      const mappedItems = listItems.map((item: any) => ({
+        anilist_id: item.media.id,
+        title: item.media.title.userPreferred || item.media.title.romaji || item.media.title.english || "Unknown",
+        cover_image: item.media.coverImage.extraLarge || item.media.coverImage.large || "",
+        format: item.media.format || "Unknown",
+        season_year: item.media.seasonYear || null,
+        status: item.status,
+        is_in_db: false,
+        anime_slug: ""
+      }));
+
+      if (mappedItems.length > 0) {
+        try {
+          const idsToCheck = mappedItems.map((item: any) => item.anilist_id);
+          const checkResponse = await api.post("/animes/bulk-check", {
+            anilist_ids: idsToCheck
+          });
+          const dbMap = checkResponse.data || {};
+          mappedItems.forEach((item: any) => {
+            const slug = dbMap[item.anilist_id];
+            if (slug) {
+              item.is_in_db = true;
+              item.anime_slug = slug;
+            }
+          });
+        } catch (dbError) {
+          console.error("Error bulk-checking animes:", dbError);
+        }
+      }
+
+      items = reset ? mappedItems : [...items, ...mappedItems];
+      total = pageData.pageInfo.total;
+      hasMore = pageData.pageInfo.hasNextPage;
       page++;
     } catch (error: any) {
-      if (error.response?.status === 400) {
-        isNotLinked = true;
-      }
       console.error("Error fetching AniList list:", error);
       hasMore = false;
     } finally {

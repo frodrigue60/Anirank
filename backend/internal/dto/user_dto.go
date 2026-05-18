@@ -47,6 +47,8 @@ type UserDTO struct {
 	Roles            []string                `json:"roles,omitempty"`
 	Badges           []BadgeDTO              `json:"badges,omitempty"`
 	SocialIdentities []UserSocialIdentityDTO `json:"social_identities,omitempty"`
+	AnilistID        *int64                  `json:"anilist_id,omitempty"`
+	AnilistUsername  *string                 `json:"anilist_username,omitempty"`
 }
 
 type AuthUserDTO struct {

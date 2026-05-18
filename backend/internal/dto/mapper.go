@@ -53,6 +53,8 @@ func ToUserDTO(u *domain.User) UserDTO {
 	}
 
 	identities := make([]UserSocialIdentityDTO, 0)
+	var anilistID *int64
+	var anilistUsername *string
 	for _, si := range u.SocialIdentities {
 		username := ""
 		if si.ProviderUsername != nil {
@@ -62,6 +64,14 @@ func ToUserDTO(u *domain.User) UserDTO {
 			Provider:         si.Provider,
 			ProviderUsername: username,
 		})
+
+		if si.Provider == "anilist" {
+			var idVal int64
+			if _, err := fmt.Sscanf(si.ProviderID, "%d", &idVal); err == nil {
+				anilistID = &idVal
+			}
+			anilistUsername = si.ProviderUsername
+		}
 	}
 
 	return UserDTO{
@@ -77,6 +87,8 @@ func ToUserDTO(u *domain.User) UserDTO {
 		Roles:            roles,
 		Badges:           badges,
 		SocialIdentities: identities,
+		AnilistID:        anilistID,
+		AnilistUsername:  anilistUsername,
 	}
 }
 

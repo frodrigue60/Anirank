@@ -247,7 +247,7 @@ func SetupPublicRoutes(app *fiber.App,
 	api.Get("/users/:slug/playlists", middleware.OptionalAuthMiddleware(jwtService, userRepo, appCache), catalogHandler.UserPlaylists)
 	api.Get("/users/:slug/followers", catalogHandler.UserFollowers)
 	api.Get("/users/:slug/following", catalogHandler.UserFollowing)
-	api.Get("/users/:slug/anilist-list", catalogHandler.UserAnilistList)
+	catalogApi.Post("/animes/bulk-check", catalogHandler.BulkCheckAnilistIDs)
 	api.Post("/users/favorites/themes", catalogHandler.UserFavorites)
 	api.Post("/users/favorites/artists", catalogHandler.UserArtistFavorites)
 

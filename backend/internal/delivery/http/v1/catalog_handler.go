@@ -476,21 +476,19 @@ func (h *CatalogHandler) UserFollowing(c *fiber.Ctx) error {
 	return c.JSON(paginatedResponse(c, userDTOs, total, page, limit))
 }
 
-// UserAnilistList handles GET /api/users/:slug/anilist-list
-func (h *CatalogHandler) UserAnilistList(c *fiber.Ctx) error {
-	status := c.Query("status", "ALL") // AniList status: CURRENT, PLANNING, COMPLETED, DROPPED, PAUSED
-	limit, _ := strconv.Atoi(c.Query("limit", "50"))
-	page, _ := strconv.Atoi(c.Query("page", "1"))
-	if page < 1 {
-		page = 1
+// BulkCheckAnilistIDs handles POST /api/animes/bulk-check
+func (h *CatalogHandler) BulkCheckAnilistIDs(c *fiber.Ctx) error {
+	var req struct {
+		AnilistIDs []int `json:"anilist_ids"`
 	}
-
-	items, total, err := h.usecase.GetUserAnilistList(c.Context(), c.Params("slug"), status, page, limit)
+	if err := c.BodyParser(&req); err != nil {
+		return domain.NewAppError(400, "Invalid request body", err)
+	}
+	res, err := h.usecase.BulkCheckAnilistIDs(c.Context(), req.AnilistIDs)
 	if err != nil {
 		return err
 	}
-
-	return c.JSON(paginatedResponse(c, items, total, page, limit))
+	return c.JSON(fiber.Map{"data": res})
 }
 
 // ─── Home ───

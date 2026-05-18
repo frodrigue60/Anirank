@@ -606,96 +606,21 @@ func (u *CatalogUsecase) GetUserRanking(ctx context.Context, sortBy string, limi
 	return users, total, nil
 }
 
-type AnilistHybridItem struct {
-	AnilistID  int    `json:"anilist_id"`
-	Status     string `json:"status"`
-	Title      string `json:"title"`
-	CoverImage string `json:"cover_image"`
-	IsInDB     bool   `json:"is_in_db"`
-	AnimeSlug  string `json:"anime_slug,omitempty"`
-	Season     string `json:"season,omitempty"`
-	SeasonYear int    `json:"season_year,omitempty"`
-	Format     string `json:"format,omitempty"`
-}
-
-type AnilistListCacheResponse struct {
-	Items []AnilistHybridItem `json:"items"`
-	Total int                 `json:"total"`
-}
-
-func (u *CatalogUsecase) GetUserAnilistList(ctx context.Context, slug string, status string, page, limit int) ([]AnilistHybridItem, int, error) {
-	// First check cache
-	cacheKey := fmt.Sprintf("anilist:list:%s:%s:%d:%d", slug, status, page, limit)
-	var cached AnilistListCacheResponse
-	if err := u.safeCacheGet(ctx, cacheKey, &cached); err == nil {
-		return cached.Items, cached.Total, nil
+func (u *CatalogUsecase) BulkCheckAnilistIDs(ctx context.Context, ids []int) (map[int]string, error) {
+	if len(ids) == 0 {
+		return make(map[int]string), nil
 	}
-
-	user, err := u.userRepo.GetBySlug(ctx, slug)
+	animes, err := u.animeRepo.GetByAnilistIDs(ctx, ids)
 	if err != nil {
-		return nil, 0, domain.NewAppError(404, "User not found", err)
+		return nil, err
 	}
-
-	anilistID := user.GetSocialID("anilist")
-	if anilistID == nil {
-		return nil, 0, domain.NewAppError(400, "User has not linked AniList", nil)
-	}
-
-	// Fetch from AniList
-	var alID int64
-	fmt.Sscanf(*anilistID, "%d", &alID)
-	anilistResp, err := u.anilistClient.GetUserMediaList(ctx, alID, status, page, limit)
-	if err != nil {
-		return nil, 0, domain.NewAppError(500, "Failed to fetch AniList data", err)
-	}
-
-	total := anilistResp.Data.Page.PageInfo.Total
-	items := make([]AnilistHybridItem, 0, len(anilistResp.Data.Page.MediaList))
-
-	// Collect candidate AniList IDs to check in local DB
-	anilistIDs := make([]int, 0, len(anilistResp.Data.Page.MediaList))
-	for _, entry := range anilistResp.Data.Page.MediaList {
-		anilistIDs = append(anilistIDs, entry.Media.ID)
-	}
-
-	// Bulk check local DB
-	localAnimes, _ := u.animeRepo.GetByAnilistIDs(ctx, anilistIDs)
-	localMap := make(map[int]domain.Anime)
-	for _, a := range localAnimes {
+	res := make(map[int]string)
+	for _, a := range animes {
 		if a.AnilistID != nil {
-			localMap[int(*a.AnilistID)] = a
+			res[int(*a.AnilistID)] = a.Slug
 		}
 	}
-
-	for _, entry := range anilistResp.Data.Page.MediaList {
-		item := AnilistHybridItem{
-			AnilistID:  entry.Media.ID,
-			Status:     entry.Status,
-			Title:      entry.Media.Title.Romaji,
-			CoverImage: entry.Media.CoverImage.ExtraLarge,
-			Season:     entry.Media.Season,
-			SeasonYear: entry.Media.SeasonYear,
-			Format:     entry.Media.Format,
-		}
-		if item.Title == "" {
-			item.Title = entry.Media.Title.English
-		}
-
-		if local, ok := localMap[entry.Media.ID]; ok {
-			item.IsInDB = true
-			item.AnimeSlug = local.Slug
-		}
-
-		items = append(items, item)
-	}
-
-	// Store in cache for 5 minutes
-	u.safeCacheSet(ctx, cacheKey, AnilistListCacheResponse{
-		Items: items,
-		Total: total,
-	}, 5*time.Minute)
-
-	return items, total, nil
+	return res, nil
 }
 
 func (u *CatalogUsecase) enrichUserProfile(ctx context.Context, user *domain.User) {

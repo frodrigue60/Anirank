@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -42,7 +43,10 @@ type AnilistClient interface {
 }
 
 type Client struct {
-	httpClient *http.Client
+	httpClient  *http.Client
+	mu          sync.Mutex
+	lastRequest time.Time
+	minInterval time.Duration
 }
 
 type AnilistUser struct {
@@ -61,7 +65,27 @@ func NewClient() *Client {
 		httpClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
+		minInterval: 1200 * time.Millisecond,
 	}
+}
+
+// acquire blocks until minInterval has elapsed since the last request.
+func (c *Client) acquire(ctx context.Context) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	now := time.Now()
+	elapsed := now.Sub(c.lastRequest)
+	if elapsed < c.minInterval {
+		wait := c.minInterval - elapsed
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(wait):
+		}
+	}
+	c.lastRequest = time.Now()
+	return nil
 }
 
 // GraphQLQuery is the structure for the request body
@@ -301,6 +325,10 @@ func (c *Client) SearchAnimes(ctx context.Context, search string, format string,
 	req.Header.Set("Content-Type", "application/json")
 	c.setAdvancedHeaders(req)
 
+	if err := c.acquire(ctx); err != nil {
+		return nil, err
+	}
+
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
@@ -385,6 +413,10 @@ func (c *Client) GetMediaByIDs(ctx context.Context, ids []int) ([]Media, error) 
 
 	req.Header.Set("Content-Type", "application/json")
 	c.setAdvancedHeaders(req)
+
+	if err := c.acquire(ctx); err != nil {
+		return nil, err
+	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -485,6 +517,10 @@ func (c *Client) FetchAnimes(ctx context.Context, page int, season string, seaso
 	req.Header.Set("Content-Type", "application/json")
 	c.setAdvancedHeaders(req)
 
+	if err := c.acquire(ctx); err != nil {
+		return nil, err
+	}
+
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
@@ -536,6 +572,10 @@ func (c *Client) GetUserMediaList(ctx context.Context, anilistID int64, status s
 
 	req.Header.Set("Content-Type", "application/json")
 	c.setAdvancedHeaders(req)
+
+	if err := c.acquire(ctx); err != nil {
+		return nil, err
+	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -626,6 +666,10 @@ func (c *Client) GetViewer(ctx context.Context, accessToken string) (*AnilistUse
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	c.setAdvancedHeaders(req)
 
+	if err := c.acquire(ctx); err != nil {
+		return nil, err
+	}
+
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -669,6 +713,10 @@ func (c *Client) SearchStaff(ctx context.Context, search string) ([]Staff, error
 	req.Header.Set("Content-Type", "application/json")
 	c.setAdvancedHeaders(req)
 
+	if err := c.acquire(ctx); err != nil {
+		return nil, err
+	}
+
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
@@ -707,6 +755,10 @@ func (c *Client) Ping(ctx context.Context) error {
 	}
 	c.setAdvancedHeaders(req)
 	req.Header.Set("Content-Type", "application/json")
+
+	if err := c.acquire(ctx); err != nil {
+		return err
+	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -795,6 +847,10 @@ func (c *Client) SearchStaffBatch(ctx context.Context, reqs []StaffSearchReq) (m
 
 	req.Header.Set("Content-Type", "application/json")
 	c.setAdvancedHeaders(req)
+
+	if err := c.acquire(ctx); err != nil {
+		return nil, err
+	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {

@@ -1173,16 +1173,22 @@ func (r *songRepository) UpsertVariantFromAnimeThemes(ctx context.Context, v *do
 		v.AnimeThemesID, now,
 	).Scan(&returnedID)
 
+	var isCreated bool = true
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
+			isCreated = false
 			err2 := r.db.QueryRowContext(ctx,
 				`SELECT id FROM song_variants WHERE anime_themes_id = $1`, v.AnimeThemesID,
 			).Scan(&v.ID)
-			return false, err2
+			if err2 != nil {
+				return false, err2
+			}
+		} else {
+			return false, err
 		}
-		return false, err
+	} else {
+		v.ID = returnedID
 	}
-	v.ID = returnedID
 
 	// Insert all video rows
 	for _, video := range videos {
@@ -1190,12 +1196,21 @@ func (r *songRepository) UpsertVariantFromAnimeThemes(ctx context.Context, v *do
 			_, _ = r.db.ExecContext(ctx, `
 				INSERT INTO videos (song_variant_id, video_src, is_nc, is_bd, resolution, is_uncensored, is_subbed, is_lyrics, source, overlap, status, created_at, updated_at)
 				VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, false, $11, $11)
-				ON CONFLICT (song_variant_id, video_src) DO NOTHING
+				ON CONFLICT (song_variant_id, video_src) DO UPDATE SET
+					is_nc = EXCLUDED.is_nc,
+					is_bd = EXCLUDED.is_bd,
+					resolution = EXCLUDED.resolution,
+					is_uncensored = EXCLUDED.is_uncensored,
+					is_subbed = EXCLUDED.is_subbed,
+					is_lyrics = EXCLUDED.is_lyrics,
+					source = EXCLUDED.source,
+					overlap = EXCLUDED.overlap,
+					updated_at = EXCLUDED.updated_at
 			`, v.ID, video.VideoSrc, video.IsNC, video.IsBD, video.Resolution, video.IsUncensored, video.IsSubbed, video.IsLyrics, video.Source, video.Overlap, now)
 		}
 	}
 
-	return true, nil
+	return isCreated, nil
 }
 
 // LinkArtistToSong creates an artist_song pivot row idempotently.

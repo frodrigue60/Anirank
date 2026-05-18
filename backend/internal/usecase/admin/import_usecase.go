@@ -385,20 +385,28 @@ func (u *ImportUsecase) processSong(
 			AnimeThemesID: (*uint64)(&entry.ID),
 		}
 
-		// Pick first video's path as video_src and parse tags
-		var videoSrc *string
-		var isNC, isBD bool
-		var resolution int
-		if len(entry.Videos) > 0 {
-			firstVideo := entry.Videos[0]
-			path := firstVideo.Path // e.g. "2022/fall/ChainsawMan-OP1.webm"
+		// Process all videos for this variant entry
+		var videos []domain.SongVariantVideo
+		for _, entryVideo := range entry.Videos {
+			path := entryVideo.Path
 			if path != "" {
-				videoSrc = &path
+				isNC, isBD, resolution, isUncensored, isSubbed, isLyrics, source, overlap := parseVideoTags(entryVideo.Tags)
+				vSrc := path
+				videos = append(videos, domain.SongVariantVideo{
+					VideoSrc:     &vSrc,
+					IsNC:         isNC,
+					IsBD:         isBD,
+					Resolution:   resolution,
+					IsUncensored: isUncensored,
+					IsSubbed:     isSubbed,
+					IsLyrics:     isLyrics,
+					Source:       source,
+					Overlap:      overlap,
+				})
 			}
-			isNC, isBD, resolution = parseVideoTags(firstVideo.Tags)
 		}
 
-		variantCreated, err := u.songRepo.UpsertVariantFromAnimeThemes(ctx, variant, videoSrc, isNC, isBD, resolution)
+		variantCreated, err := u.songRepo.UpsertVariantFromAnimeThemes(ctx, variant, videos)
 		if err != nil {
 			job.Errors = append(job.Errors, fmt.Sprintf("variant %d (entry %d): %v", entry.ID, entryIdx, err))
 			continue
@@ -615,10 +623,35 @@ func MarshalJob(job *domain.ImportJob) string {
 	return string(b)
 }
 
-func parseVideoTags(tags string) (isNC bool, isBD bool, resolution int) {
+func parseVideoTags(tags string) (isNC bool, isBD bool, resolution int, isUncensored bool, isSubbed bool, isLyrics bool, source string, overlap string) {
 	normalized := strings.ToUpper(tags)
 	isNC = strings.Contains(normalized, "NC")
 	isBD = strings.Contains(normalized, "BD")
+	isUncensored = strings.Contains(normalized, "UNCENSORED")
+	isSubbed = strings.Contains(normalized, "SUBBED")
+	isLyrics = strings.Contains(normalized, "LYRICS")
+
+	// Determine Source (BD, TV, WEB, DVD, LD)
+	if strings.Contains(normalized, "BD") || strings.Contains(normalized, "BLU-RAY") {
+		source = "BD"
+	} else if strings.Contains(normalized, "WEB") {
+		source = "WEB"
+	} else if strings.Contains(normalized, "DVD") {
+		source = "DVD"
+	} else if strings.Contains(normalized, "LD") {
+		source = "LD"
+	} else {
+		source = "TV" // Default to TV
+	}
+
+	// Determine Overlap
+	if strings.Contains(normalized, "OVERLAP") {
+		overlap = "Overlap"
+	} else if strings.Contains(normalized, "TRANSITION") {
+		overlap = "Transition"
+	} else {
+		overlap = "None"
+	}
 
 	if strings.Contains(normalized, "2160") {
 		resolution = 2160

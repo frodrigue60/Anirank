@@ -422,11 +422,16 @@ func (r *songRepository) GetVariantsBySongIDs(ctx context.Context, songIDs []uin
 			v.video_src, v.embed_code,
 			COALESCE(v.is_nc, false) AS is_nc,
 			COALESCE(v.is_bd, false) AS is_bd,
-			COALESCE(v.resolution, 0) AS resolution
+			COALESCE(v.resolution, 0) AS resolution,
+			COALESCE(v.is_uncensored, false) AS is_uncensored,
+			COALESCE(v.is_subbed, false) AS is_subbed,
+			COALESCE(v.is_lyrics, false) AS is_lyrics,
+			COALESCE(v.source, 'TV') AS source,
+			COALESCE(v.overlap, 'None') AS overlap
 		FROM song_variants sv
 		LEFT JOIN videos v ON sv.id = v.song_variant_id
 		WHERE sv.song_id IN (?)
-		ORDER BY sv.song_id, sv.version_number ASC
+		ORDER BY sv.song_id, sv.version_number ASC, v.resolution DESC, v.is_nc DESC
 	`, songIDs)
 	if err != nil {
 		return nil, err
@@ -435,11 +440,16 @@ func (r *songRepository) GetVariantsBySongIDs(ctx context.Context, songIDs []uin
 
 	type VariantWithVideoStruct struct {
 		domain.SongVariant
-		VideoSrc   *string `db:"video_src"`
-		EmbedCode  *string `db:"embed_code"`
-		IsNC       bool    `db:"is_nc"`
-		IsBD       bool    `db:"is_bd"`
-		Resolution int     `db:"resolution"`
+		VideoSrc     *string `db:"video_src"`
+		EmbedCode    *string `db:"embed_code"`
+		IsNC         bool    `db:"is_nc"`
+		IsBD         bool    `db:"is_bd"`
+		Resolution   int     `db:"resolution"`
+		IsUncensored bool    `db:"is_uncensored"`
+		IsSubbed     bool    `db:"is_subbed"`
+		IsLyrics     bool    `db:"is_lyrics"`
+		Source       string  `db:"source"`
+		Overlap      string  `db:"overlap"`
 	}
 
 	var rows []VariantWithVideoStruct
@@ -448,27 +458,59 @@ func (r *songRepository) GetVariantsBySongIDs(ctx context.Context, songIDs []uin
 		return nil, err
 	}
 
-	result := make(map[uint64][]domain.SongVariant)
+	// Group rows by variant ID to avoid duplicates
+	variantMap := make(map[uint64]*domain.SongVariant)
+	// Track order of variants per song to maintain sorting
+	songVariantsOrder := make(map[uint64][]uint64)
+
 	for _, row := range rows {
-		v := row.SongVariant
+		svID := row.SongVariant.ID
+		songID := row.SongVariant.SongID
+
+		if _, exists := variantMap[svID]; !exists {
+			v := row.SongVariant
+			v.Videos = []domain.SongVariantVideo{}
+			variantMap[svID] = &v
+			songVariantsOrder[songID] = append(songVariantsOrder[songID], svID)
+		}
+
 		if row.VideoSrc != nil || row.EmbedCode != nil {
-			v.Video = &domain.SongVariantVideo{
-				EmbedCode:  row.EmbedCode,
-				VideoSrc:   row.VideoSrc,
-				EmbedUrl:   extractSrcFromIframe(row.EmbedCode),
-				LocalUrl:   row.VideoSrc,
-				IsNC:       row.IsNC,
-				IsBD:       row.IsBD,
-				Resolution: row.Resolution,
+			vid := domain.SongVariantVideo{
+				EmbedCode:    row.EmbedCode,
+				VideoSrc:     row.VideoSrc,
+				EmbedUrl:     extractSrcFromIframe(row.EmbedCode),
+				LocalUrl:     row.VideoSrc,
+				IsNC:         row.IsNC,
+				IsBD:         row.IsBD,
+				Resolution:   row.Resolution,
+				IsUncensored: row.IsUncensored,
+				IsSubbed:     row.IsSubbed,
+				IsLyrics:     row.IsLyrics,
+				Source:       row.Source,
+				Overlap:      row.Overlap,
 			}
 
 			if row.VideoSrc != nil && *row.VideoSrc != "" {
-				v.Video.Type = "file"
+				vid.Type = "file"
 			} else if row.EmbedCode != nil && *row.EmbedCode != "" {
-				v.Video.Type = "embed"
+				vid.Type = "embed"
 			}
+
+			variantMap[svID].Videos = append(variantMap[svID].Videos, vid)
 		}
-		result[v.SongID] = append(result[v.SongID], v)
+	}
+
+	// Populate single Video fallback and build final result
+	result := make(map[uint64][]domain.SongVariant)
+	for songID, svIDs := range songVariantsOrder {
+		result[songID] = make([]domain.SongVariant, 0, len(svIDs))
+		for _, svID := range svIDs {
+			v := variantMap[svID]
+			if len(v.Videos) > 0 {
+				v.Video = &v.Videos[0]
+			}
+			result[songID] = append(result[songID], *v)
+		}
 	}
 
 	return result, nil
@@ -481,20 +523,30 @@ func (r *songRepository) GetVariantsBySongID(ctx context.Context, songID uint64)
 			v.video_src, v.embed_code,
 			COALESCE(v.is_nc, false) AS is_nc,
 			COALESCE(v.is_bd, false) AS is_bd,
-			COALESCE(v.resolution, 0) AS resolution
+			COALESCE(v.resolution, 0) AS resolution,
+			COALESCE(v.is_uncensored, false) AS is_uncensored,
+			COALESCE(v.is_subbed, false) AS is_subbed,
+			COALESCE(v.is_lyrics, false) AS is_lyrics,
+			COALESCE(v.source, 'TV') AS source,
+			COALESCE(v.overlap, 'None') AS overlap
 		FROM song_variants sv
 		LEFT JOIN videos v ON sv.id = v.song_variant_id
 		WHERE sv.song_id = $1
-		ORDER BY sv.version_number ASC
+		ORDER BY sv.version_number ASC, v.resolution DESC, v.is_nc DESC
 	`
 
 	type VariantWithVideoStruct struct {
 		domain.SongVariant
-		VideoSrc   *string `db:"video_src"`
-		EmbedCode  *string `db:"embed_code"`
-		IsNC       bool    `db:"is_nc"`
-		IsBD       bool    `db:"is_bd"`
-		Resolution int     `db:"resolution"`
+		VideoSrc     *string `db:"video_src"`
+		EmbedCode    *string `db:"embed_code"`
+		IsNC         bool    `db:"is_nc"`
+		IsBD         bool    `db:"is_bd"`
+		Resolution   int     `db:"resolution"`
+		IsUncensored bool    `db:"is_uncensored"`
+		IsSubbed     bool    `db:"is_subbed"`
+		IsLyrics     bool    `db:"is_lyrics"`
+		Source       string  `db:"source"`
+		Overlap      string  `db:"overlap"`
 	}
 
 	var rows []VariantWithVideoStruct
@@ -503,30 +555,54 @@ func (r *songRepository) GetVariantsBySongID(ctx context.Context, songID uint64)
 		return nil, err
 	}
 
-	var variants []domain.SongVariant
+	variantMap := make(map[uint64]*domain.SongVariant)
+	var orderedIDs []uint64
+
 	for _, row := range rows {
-		v := row.SongVariant
+		svID := row.SongVariant.ID
+		if _, exists := variantMap[svID]; !exists {
+			v := row.SongVariant
+			v.Videos = []domain.SongVariantVideo{}
+			variantMap[svID] = &v
+			orderedIDs = append(orderedIDs, svID)
+		}
+
 		if row.VideoSrc != nil || row.EmbedCode != nil {
-			v.Video = &domain.SongVariantVideo{
-				EmbedCode:  row.EmbedCode,
-				VideoSrc:   row.VideoSrc,
-				EmbedUrl:   extractSrcFromIframe(row.EmbedCode),
-				LocalUrl:   row.VideoSrc,
-				IsNC:       row.IsNC,
-				IsBD:       row.IsBD,
-				Resolution: row.Resolution,
+			vid := domain.SongVariantVideo{
+				EmbedCode:    row.EmbedCode,
+				VideoSrc:     row.VideoSrc,
+				EmbedUrl:     extractSrcFromIframe(row.EmbedCode),
+				LocalUrl:     row.VideoSrc,
+				IsNC:         row.IsNC,
+				IsBD:         row.IsBD,
+				Resolution:   row.Resolution,
+				IsUncensored: row.IsUncensored,
+				IsSubbed:     row.IsSubbed,
+				IsLyrics:     row.IsLyrics,
+				Source:       row.Source,
+				Overlap:      row.Overlap,
 			}
 
 			if row.VideoSrc != nil && *row.VideoSrc != "" {
-				v.Video.Type = "file"
+				vid.Type = "file"
 			} else if row.EmbedCode != nil && *row.EmbedCode != "" {
-				v.Video.Type = "embed"
+				vid.Type = "embed"
 			}
+
+			variantMap[svID].Videos = append(variantMap[svID].Videos, vid)
 		}
-		variants = append(variants, v)
 	}
 
-	if variants == nil {
+	variants := make([]domain.SongVariant, 0, len(orderedIDs))
+	for _, svID := range orderedIDs {
+		v := variantMap[svID]
+		if len(v.Videos) > 0 {
+			v.Video = &v.Videos[0]
+		}
+		variants = append(variants, *v)
+	}
+
+	if len(variants) == 0 {
 		variants = []domain.SongVariant{}
 	}
 	return variants, nil
@@ -1080,7 +1156,7 @@ func (r *songRepository) UpsertSongFromAnimeThemes(ctx context.Context, song *do
 
 // UpsertVariantFromAnimeThemes inserts a song_variant and its video row.
 // Returns (true, nil) if created, (false, nil) if already existed.
-func (r *songRepository) UpsertVariantFromAnimeThemes(ctx context.Context, v *domain.SongVariant, videoSrc *string, isNC bool, isBD bool, resolution int) (bool, error) {
+func (r *songRepository) UpsertVariantFromAnimeThemes(ctx context.Context, v *domain.SongVariant, videos []domain.SongVariantVideo) (bool, error) {
 	v.UUID = uuid.New().String()
 	now := time.Now().UTC()
 
@@ -1108,13 +1184,15 @@ func (r *songRepository) UpsertVariantFromAnimeThemes(ctx context.Context, v *do
 	}
 	v.ID = returnedID
 
-	// Insert the video row if a path is provided
-	if videoSrc != nil && *videoSrc != "" {
-		_, _ = r.db.ExecContext(ctx, `
-			INSERT INTO videos (song_variant_id, video_src, is_nc, is_bd, resolution, status, created_at, updated_at)
-			VALUES ($1, $2, $3, $4, $5, false, $6, $6)
-			ON CONFLICT DO NOTHING
-		`, v.ID, videoSrc, isNC, isBD, resolution, now)
+	// Insert all video rows
+	for _, video := range videos {
+		if video.VideoSrc != nil && *video.VideoSrc != "" {
+			_, _ = r.db.ExecContext(ctx, `
+				INSERT INTO videos (song_variant_id, video_src, is_nc, is_bd, resolution, is_uncensored, is_subbed, is_lyrics, source, overlap, status, created_at, updated_at)
+				VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, false, $11, $11)
+				ON CONFLICT (song_variant_id, video_src) DO NOTHING
+			`, v.ID, video.VideoSrc, video.IsNC, video.IsBD, video.Resolution, video.IsUncensored, video.IsSubbed, video.IsLyrics, video.Source, video.Overlap, now)
+		}
 	}
 
 	return true, nil

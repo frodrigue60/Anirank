@@ -389,6 +389,7 @@ func ToSongDTO(s *domain.Song) SongDTO {
 			Episodes:      v.Episodes,
 			Spoiler:       v.Spoiler,
 			NSFW:          v.NSFW,
+			Videos:        []SongVariantVideoDTO{},
 		}
 
 		if v.Video != nil {
@@ -396,6 +397,39 @@ func ToSongDTO(s *domain.Song) SongDTO {
 			vDTO.VideoSrc = v.Video.VideoSrc
 			vDTO.EmbedUrl = v.Video.EmbedUrl
 			vDTO.LocalUrl = v.Video.LocalUrl
+			vDTO.IsNC = v.Video.IsNC
+			vDTO.IsBD = v.Video.IsBD
+			vDTO.Resolution = v.Video.Resolution
+			vDTO.IsUncensored = v.Video.IsUncensored
+			vDTO.IsSubbed = v.Video.IsSubbed
+			vDTO.IsLyrics = v.Video.IsLyrics
+			vDTO.Source = v.Video.Source
+			vDTO.Overlap = v.Video.Overlap
+		}
+
+		for _, vid := range v.Videos {
+			var vidUrl *string
+			if vid.LocalUrl != nil {
+				vidUrl = vid.LocalUrl
+			} else if vid.EmbedUrl != nil {
+				vidUrl = vid.EmbedUrl
+			}
+
+			vDTO.Videos = append(vDTO.Videos, SongVariantVideoDTO{
+				VideoUrl:     vidUrl,
+				EmbedUrl:     vid.EmbedUrl,
+				LocalUrl:     vid.LocalUrl,
+				EmbedCode:    vid.EmbedCode,
+				VideoSrc:     vid.VideoSrc,
+				IsNC:         vid.IsNC,
+				IsBD:         vid.IsBD,
+				Resolution:   vid.Resolution,
+				IsUncensored: vid.IsUncensored,
+				IsSubbed:     vid.IsSubbed,
+				IsLyrics:     vid.IsLyrics,
+				Source:       vid.Source,
+				Overlap:      vid.Overlap,
+			})
 		}
 
 		// ─── Heritage Fallback Logic (Variant Level) ───

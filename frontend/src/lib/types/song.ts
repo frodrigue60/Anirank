@@ -63,6 +63,23 @@ export interface Artist {
     is_favorited?: boolean;
 }
 
+export interface SongVariantVideo {
+    type?: string;
+    video_url?: string;
+    embed_url?: string;
+    local_url?: string;
+    embed_code?: string;
+    video_src?: string;
+    is_nc: boolean;
+    is_bd: boolean;
+    resolution: number;
+    is_uncensored: boolean;
+    is_subbed: boolean;
+    is_lyrics: boolean;
+    source: string;
+    overlap: string;
+}
+
 export interface SongVariant {
     id: string;
     version_number: number;
@@ -73,13 +90,30 @@ export interface SongVariant {
     local_url?: string;
     embed_code?: string;
     video_src?: string;
+    is_nc?: boolean;
+    is_bd?: boolean;
+    resolution?: number;
+    is_uncensored?: boolean;
+    is_subbed?: boolean;
+    is_lyrics?: boolean;
+    source?: string;
+    overlap?: string;
     video?: {
         type: string;
         embed_code?: string;
         video_src?: string;
         embed_url?: string;
         local_url?: string;
+        is_nc?: boolean;
+        is_bd?: boolean;
+        resolution?: number;
+        is_uncensored?: boolean;
+        is_subbed?: boolean;
+        is_lyrics?: boolean;
+        source?: string;
+        overlap?: string;
     };
+    videos?: SongVariantVideo[];
     spoiler: boolean;
     nsfw?: boolean;
     episodes?: string;

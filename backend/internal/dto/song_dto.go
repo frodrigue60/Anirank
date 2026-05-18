@@ -73,20 +73,45 @@ type SongDTO struct {
 	Variants      []SongVariantDTO `json:"variants,omitempty"`
 }
 
+type SongVariantVideoDTO struct {
+	VideoUrl     *string `json:"video_url,omitempty"`
+	EmbedUrl     *string `json:"embed_url,omitempty"`
+	LocalUrl     *string `json:"local_url,omitempty"`
+	EmbedCode    *string `json:"embed_code,omitempty"`
+	VideoSrc     *string `json:"video_src,omitempty"`
+	IsNC         bool    `json:"is_nc"`
+	IsBD         bool    `json:"is_bd"`
+	Resolution   int     `json:"resolution"`
+	IsUncensored bool    `json:"is_uncensored"`
+	IsSubbed     bool    `json:"is_subbed"`
+	IsLyrics     bool    `json:"is_lyrics"`
+	Source       string  `json:"source"`
+	Overlap      string  `json:"overlap"`
+}
+
 type SongVariantDTO struct {
-	ID            string     `json:"id"`
-	VersionNumber uint64     `json:"version_number"`
-	Slug          string     `json:"slug"`
-	VideoUrl      *string    `json:"video_url,omitempty"`
-	EmbedUrl      *string    `json:"embed_url,omitempty"`
-	LocalUrl      *string    `json:"local_url,omitempty"`
-	EmbedCode     *string    `json:"embed_code,omitempty"`
-	VideoSrc      *string    `json:"video_src,omitempty"`
-	Episodes      *string    `json:"episodes,omitempty"`
-	Spoiler       bool       `json:"spoiler"`
-	NSFW          bool       `json:"nsfw"`
-	Season        *SeasonDTO `json:"season,omitempty"`
-	Year          *YearDTO   `json:"year,omitempty"`
+	ID            string                `json:"id"`
+	VersionNumber uint64                `json:"version_number"`
+	Slug          string                `json:"slug"`
+	VideoUrl      *string               `json:"video_url,omitempty"`
+	EmbedUrl      *string               `json:"embed_url,omitempty"`
+	LocalUrl      *string               `json:"local_url,omitempty"`
+	EmbedCode     *string               `json:"embed_code,omitempty"`
+	VideoSrc      *string               `json:"video_src,omitempty"`
+	IsNC          bool                  `json:"is_nc"`
+	IsBD          bool                  `json:"is_bd"`
+	Resolution    int                   `json:"resolution"`
+	IsUncensored  bool                  `json:"is_uncensored"`
+	IsSubbed      bool                  `json:"is_subbed"`
+	IsLyrics      bool                  `json:"is_lyrics"`
+	Source        string                `json:"source"`
+	Overlap       string                `json:"overlap"`
+	Videos        []SongVariantVideoDTO `json:"videos,omitempty"`
+	Episodes      *string               `json:"episodes,omitempty"`
+	Spoiler       bool                  `json:"spoiler"`
+	NSFW          bool                  `json:"nsfw"`
+	Season        *SeasonDTO            `json:"season,omitempty"`
+	Year          *YearDTO              `json:"year,omitempty"`
 }
 
 type HomeDTO struct {

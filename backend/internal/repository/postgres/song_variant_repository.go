@@ -2,7 +2,6 @@ package postgres
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"strconv"
 
@@ -22,53 +21,79 @@ func NewSongVariantRepository(db *sqlx.DB) domain.SongVariantRepository {
 func (r *songVariantRepository) GetByID(ctx context.Context, id uint64) (*domain.SongVariant, error) {
 	query := `
 		SELECT 
-			sv.id, sv.version_number, sv.song_id, sv.slug, sv.views, sv.season_id, sv.year_id, sv.episodes, sv.spoiler, sv.nsfw, sv.status, sv.created_at, sv.updated_at,
+			sv.id, sv.uuid, sv.version_number, sv.song_id, sv.slug, sv.views, sv.season_id, sv.year_id, sv.episodes, sv.spoiler, sv.nsfw, sv.status, sv.created_at, sv.updated_at, sv.anime_themes_id,
 			v.video_src, v.embed_code,
 			COALESCE(v.is_nc, false) AS is_nc,
 			COALESCE(v.is_bd, false) AS is_bd,
-			COALESCE(v.resolution, 0) AS resolution
+			COALESCE(v.resolution, 0) AS resolution,
+			COALESCE(v.is_uncensored, false) AS is_uncensored,
+			COALESCE(v.is_subbed, false) AS is_subbed,
+			COALESCE(v.is_lyrics, false) AS is_lyrics,
+			COALESCE(v.source, 'TV') AS source,
+			COALESCE(v.overlap, 'None') AS overlap
 		FROM song_variants sv
 		LEFT JOIN videos v ON sv.id = v.song_variant_id
 		WHERE sv.id = $1
+		ORDER BY v.resolution DESC, v.is_nc DESC
 	`
 
 	type VariantWithVideoStruct struct {
 		domain.SongVariant
-		VideoSrc   *string `db:"video_src"`
-		EmbedCode  *string `db:"embed_code"`
-		IsNC       bool    `db:"is_nc"`
-		IsBD       bool    `db:"is_bd"`
-		Resolution int     `db:"resolution"`
+		VideoSrc     *string `db:"video_src"`
+		EmbedCode    *string `db:"embed_code"`
+		IsNC         bool    `db:"is_nc"`
+		IsBD         bool    `db:"is_bd"`
+		Resolution   int     `db:"resolution"`
+		IsUncensored bool    `db:"is_uncensored"`
+		IsSubbed     bool    `db:"is_subbed"`
+		IsLyrics     bool    `db:"is_lyrics"`
+		Source       string  `db:"source"`
+		Overlap      string  `db:"overlap"`
 	}
 
-	var row VariantWithVideoStruct
-	err := r.db.GetContext(ctx, &row, query, id)
+	var rows []VariantWithVideoStruct
+	err := r.db.SelectContext(ctx, &rows, query, id)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, domain.ErrNotFound
-		}
 		return nil, err
 	}
 
-	v := row.SongVariant
-	if row.VideoSrc != nil || row.EmbedCode != nil {
-		v.Video = &domain.SongVariantVideo{
-			EmbedCode:  row.EmbedCode,
-			VideoSrc:   row.VideoSrc,
-			// Initial assignment, UseCase will enrich EmbedUrl/LocalUrl
-			EmbedUrl:   row.EmbedCode,
-			LocalUrl:   row.VideoSrc,
-			IsNC:       row.IsNC,
-			IsBD:       row.IsBD,
-			Resolution: row.Resolution,
-		}
+	if len(rows) == 0 {
+		return nil, domain.ErrNotFound
+	}
 
-		// Infer type
-		if row.VideoSrc != nil && *row.VideoSrc != "" {
-			v.Video.Type = "file"
-		} else if row.EmbedCode != nil && *row.EmbedCode != "" {
-			v.Video.Type = "embed"
+	// Group rows
+	v := rows[0].SongVariant
+	v.Videos = []domain.SongVariantVideo{}
+
+	for _, row := range rows {
+		if row.VideoSrc != nil || row.EmbedCode != nil {
+			vid := domain.SongVariantVideo{
+				EmbedCode:    row.EmbedCode,
+				VideoSrc:     row.VideoSrc,
+				EmbedUrl:     row.EmbedCode, // Initial assignment
+				LocalUrl:     row.VideoSrc,
+				IsNC:         row.IsNC,
+				IsBD:         row.IsBD,
+				Resolution:   row.Resolution,
+				IsUncensored: row.IsUncensored,
+				IsSubbed:     row.IsSubbed,
+				IsLyrics:     row.IsLyrics,
+				Source:       row.Source,
+				Overlap:      row.Overlap,
+			}
+
+			if row.VideoSrc != nil && *row.VideoSrc != "" {
+				vid.Type = "file"
+			} else if row.EmbedCode != nil && *row.EmbedCode != "" {
+				vid.Type = "embed"
+			}
+
+			v.Videos = append(v.Videos, vid)
 		}
+	}
+
+	if len(v.Videos) > 0 {
+		v.Video = &v.Videos[0]
 	}
 
 	return &v, nil

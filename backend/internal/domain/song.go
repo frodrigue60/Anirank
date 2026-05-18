@@ -76,7 +76,8 @@ type SongVariant struct {
 	AnimeThemesID *uint64   `db:"anime_themes_id" json:"animethemes_id,omitempty"`
 
 	// Computed for frontend
-	Video *SongVariantVideo `db:"-" json:"video,omitempty"`
+	Video  *SongVariantVideo   `db:"-" json:"video,omitempty"`
+	Videos []SongVariantVideo  `db:"-" json:"videos,omitempty"`
 
 	// Relations
 	Song   *Song   `db:"-" json:"song,omitempty"`
@@ -85,14 +86,19 @@ type SongVariant struct {
 }
 
 type SongVariantVideo struct {
-	Type       string  `json:"type"`
-	EmbedUrl   *string `json:"embed_url,omitempty"`
-	LocalUrl   *string `json:"local_url,omitempty"`
-	EmbedCode  *string `json:"embed_code,omitempty"`
-	VideoSrc   *string `json:"video_src,omitempty"`
-	IsNC       bool    `json:"is_nc"`
-	IsBD       bool    `json:"is_bd"`
-	Resolution int     `json:"resolution"`
+	Type         string  `json:"type"`
+	EmbedUrl     *string `json:"embed_url,omitempty"`
+	LocalUrl     *string `json:"local_url,omitempty"`
+	EmbedCode    *string `json:"embed_code,omitempty"`
+	VideoSrc     *string `json:"video_src,omitempty"`
+	IsNC         bool    `json:"is_nc"`
+	IsBD         bool    `json:"is_bd"`
+	Resolution   int     `json:"resolution"`
+	IsUncensored bool    `json:"is_uncensored"`
+	IsSubbed     bool    `json:"is_subbed"`
+	IsLyrics     bool    `json:"is_lyrics"`
+	Source       string  `json:"source"`
+	Overlap      string  `json:"overlap"`
 }
 
 type Artist struct {
@@ -187,7 +193,7 @@ type SongRepository interface {
 
 	// Import pipeline — idempotent bulk import methods
 	UpsertSongFromAnimeThemes(ctx context.Context, song *Song) (created bool, err error)
-	UpsertVariantFromAnimeThemes(ctx context.Context, v *SongVariant, videoSrc *string, isNC bool, isBD bool, resolution int) (created bool, err error)
+	UpsertVariantFromAnimeThemes(ctx context.Context, v *SongVariant, videos []SongVariantVideo) (created bool, err error)
 	LinkArtistToSong(ctx context.Context, songID, artistID uint64) error
 }
 

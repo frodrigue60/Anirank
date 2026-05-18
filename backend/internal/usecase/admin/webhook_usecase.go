@@ -11,6 +11,31 @@ import (
 	"anirank/api/internal/infrastructure/webhook"
 )
 
+// Curated list of premium, vibrant colors for Discord embeds
+var premiumColors = []int{
+	3447003,  // Vibrant Blue (#3498DB)
+	10181046, // Premium Purple (#9B59B6)
+	15418782, // Sweet Orange/Peach (#EB984E)
+	15277667, // Soft Pink (#E91E63)
+	1752220,  // Beautiful Teal (#1ABC9C)
+	3066993,  // Emerald Green (#2ECC71)
+	15844367, // Warm Yellow/Gold (#F1C40F)
+	15548997, // Coral Red (#ED4C67)
+	1970096,  // Pastel Cyan (#1E3799)
+	16202876, // Hot Magenta (#F78FB3)
+	3575230,  // Electric Blue (#3685FF)
+	10038562, // Warm Brown/Terracotta (#992D22)
+	12702843, // Olive/Green-Gold (#C1DC7B)
+	16524957, // Sunset Pink/Gold (#FC219D)
+}
+
+func getDeterministicColor(id uint64) int {
+	if len(premiumColors) == 0 {
+		return 3447003
+	}
+	return premiumColors[id%uint64(len(premiumColors))]
+}
+
 type webhookUsecase struct {
 	webhookRepo   domain.WebhookRepository
 	animeRepo     domain.AnimeRepository
@@ -119,7 +144,7 @@ func (u *webhookUsecase) triggerForAnime(ctx context.Context, w *domain.Webhook,
 				"title":       fmt.Sprintf("📺 %s - Themes are now live!", anime.Title),
 				"description": description,
 				"url":         animeURL,
-				"color":       15418782, // Orange/Peach
+				"color":       getDeterministicColor(animeID),
 				"image": map[string]interface{}{
 					"url": coverURL,
 				},
@@ -154,13 +179,19 @@ func (u *webhookUsecase) triggerForSong(ctx context.Context, w *domain.Webhook, 
 
 	// Load artists for the song
 	artists, _ := u.songRepo.GetArtistsBySongID(ctx, song.ID, false)
-	artistNames := "Unknown Artist"
+	var artistPart string
 	if len(artists) > 0 {
 		names := make([]string, len(artists))
 		for i, a := range artists {
 			names[i] = a.Name
 		}
-		artistNames = strings.Join(names, ", ")
+		if len(names) == 1 {
+			artistPart = " by " + names[0]
+		} else if len(names) == 2 {
+			artistPart = " by " + names[0] + " & " + names[1]
+		} else {
+			artistPart = " by " + strings.Join(names[:len(names)-1], ", ") + " & " + names[len(names)-1]
+		}
 	}
 
 	// Resolve best song name
@@ -194,22 +225,18 @@ func (u *webhookUsecase) triggerForSong(ctx context.Context, w *domain.Webhook, 
 		coverURL = u.mediaService.GetURL(*anime.Cover)
 	}
 
+	// Format description matching: "[ED1](songURL) has been added.\n\n**Song**: [SongName] by [Artists]"
+	description := fmt.Sprintf("[%s%s](%s) has been added.\n\n**Song**: %s%s", typeName, song.ThemeNum, songURL, songName, artistPart)
+
 	payload := map[string]interface{}{
 		"embeds": []map[string]interface{}{
 			{
-				"title":       fmt.Sprintf("🎵 New %s: %s", typeName, songName),
-				"description": fmt.Sprintf("Performed by **%s**\n\nNow available for **%s**!", artistNames, anime.Title),
+				"title":       fmt.Sprintf("%s: %s", anime.Title, songName),
+				"description": description,
 				"url":         songURL,
-				"color":       3447003, // Blue
+				"color":       getDeterministicColor(songID),
 				"thumbnail": map[string]interface{}{
 					"url": coverURL,
-				},
-				"fields": []map[string]interface{}{
-					{
-						"name":   "Theme",
-						"value":  fmt.Sprintf("%s %s", typeName, song.ThemeNum),
-						"inline": true,
-					},
 				},
 				"footer": map[string]interface{}{
 					"text": "AniRank Notifications",

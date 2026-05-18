@@ -100,20 +100,39 @@
         variables.status = status;
       }
 
-      const response = await fetch("https://graphql.anilist.co", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
-        body: JSON.stringify({
-          query,
-          variables
-        })
-      });
+      let response;
+      try {
+        response = await fetch("https://graphql.anilist.co", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify({
+            query,
+            variables
+          })
+        });
 
-      if (!response.ok) {
-        throw new Error(`AniList API responded with status ${response.status}`);
+        if (!response.ok) {
+          throw new Error(`AniList API responded with status ${response.status}`);
+        }
+      } catch (directFetchError) {
+        console.warn("Direct fetch to AniList failed. Falling back to proxy:", directFetchError);
+        response = await fetch("/api/anilist-proxy", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            query,
+            variables
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`AniList proxy responded with status ${response.status}`);
+        }
       }
 
       const result = await response.json();

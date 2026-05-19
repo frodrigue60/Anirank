@@ -1221,7 +1221,7 @@ func (r *songRepository) LinkArtistToSong(ctx context.Context, songID, artistID 
 	_, err := r.db.ExecContext(ctx, `
 		INSERT INTO artist_song (artist_id, song_id, created_at, updated_at)
 		VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-		ON CONFLICT DO NOTHING
+		ON CONFLICT (artist_id, song_id) DO NOTHING
 	`, artistID, songID)
 	return err
 }

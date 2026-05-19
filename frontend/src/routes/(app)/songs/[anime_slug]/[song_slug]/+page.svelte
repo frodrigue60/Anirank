@@ -86,6 +86,22 @@
   let selectedVariant = $derived(
     currentSong.variants?.[selectedVariantIndex],
   );
+  let selectedVideoIndex = $state(0);
+  let selectedVideo = $derived(
+    selectedVariant?.videos?.[selectedVideoIndex] || {
+      video_url: selectedVariant?.video_url,
+      local_url: selectedVariant?.local_url,
+      video_src: selectedVariant?.video_src,
+      is_nc: selectedVariant?.is_nc,
+      is_bd: selectedVariant?.is_bd,
+      resolution: selectedVariant?.resolution,
+      is_uncensored: selectedVariant?.is_uncensored,
+      is_subbed: selectedVariant?.is_subbed,
+      is_lyrics: selectedVariant?.is_lyrics,
+      source: selectedVariant?.source,
+      overlap: selectedVariant?.overlap,
+    }
+  );
   let videoError = $state(false);
 
   // svelte-ignore state_referenced_locally
@@ -96,6 +112,7 @@
     relatedSongs = data.related;
     comments = data.comments?.map(mapComment) || [];
     selectedVariantIndex = 0;
+    selectedVideoIndex = 0;
     videoError = false;
   });
 
@@ -105,6 +122,7 @@
 
   function changeVariant(index: number) {
     selectedVariantIndex = index;
+    selectedVideoIndex = 0;
     videoError = false;
   }
 
@@ -579,6 +597,7 @@
     currentSong = data.song;
     relatedSongs = data.related;
     selectedVariantIndex = 0;
+    selectedVideoIndex = 0;
 
     if (data.song?.id) {
       fetchComments(data.song.id);
@@ -607,10 +626,10 @@
       <div
         class="relative w-full aspect-video rounded-md overflow-hidden bg-black group border border-outline-variant/10 shadow-2xl"
       >
-        {#if selectedVariant?.video_url && !videoError}
-          {#if selectedVariant.video_url.includes("youtube") || selectedVariant.video_url.includes("youtu.be")}
+        {#if selectedVideo?.video_url && !videoError}
+          {#if selectedVideo.video_url.includes("youtube") || selectedVideo.video_url.includes("youtu.be")}
             <iframe
-              src={getAutoplayUrl(selectedVariant.video_url)}
+              src={getAutoplayUrl(selectedVideo.video_url)}
               class="w-full h-full"
               frameborder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -620,7 +639,7 @@
           {:else}
             <video
               bind:this={videoElement}
-              src={selectedVariant.video_url}
+              src={selectedVideo.video_url}
               class="w-full h-full"
               controls
               autoplay
@@ -700,6 +719,49 @@
                     aria-label="Select version {variant.version_number}"
                   >
                     V{variant.version_number}
+                  </button>
+                {/each}
+              </div>
+            {/if}
+
+            <!-- Video Quality/Tags Selector -->
+            {#if selectedVariant?.videos && selectedVariant.videos.length > 1}
+              <div
+                class="flex bg-surface-highest rounded-sm p-1 border border-on-surface-variant/10 shadow-sm gap-1"
+              >
+                {#each selectedVariant.videos as video, i}
+                  {@const tagsList = []}
+                  {#if video.resolution}
+                    {tagsList.push(`${video.resolution}p`)}
+                  {/if}
+                  {#if video.is_nc}
+                    {tagsList.push("NC")}
+                  {/if}
+                  {#if video.is_bd}
+                    {tagsList.push("BD")}
+                  {/if}
+                  {#if video.is_uncensored}
+                    {tagsList.push("UNCEN")}
+                  {/if}
+                  {#if video.is_subbed}
+                    {tagsList.push("SUB")}
+                  {/if}
+                  {#if video.is_lyrics}
+                    {tagsList.push("LYRICS")}
+                  {/if}
+                  {@const tagText = tagsList.length > 0 ? tagsList.join(" ") : `Video ${i + 1}`}
+                  <button
+                    class="px-3 py-1.5 rounded-sm text-[10px] font-bold transition-all {selectedVideoIndex === i
+                      ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                      : 'hover:bg-on-surface-variant/10 text-on-surface-variant/60'}"
+                    onclick={() => {
+                      selectedVideoIndex = i;
+                      videoError = false;
+                    }}
+                    title="Select video {tagText}"
+                    aria-label="Select video {tagText}"
+                  >
+                    {tagText}
                   </button>
                 {/each}
               </div>

@@ -129,17 +129,45 @@ func (u *TournamentUsecase) enrichMatchups(ctx context.Context, matchups []domai
 			var activeVariants []domain.SongVariant
 			for _, v := range variants {
 				if v.Status {
-					// Clean up iframe tags to get just the URL
-					if v.Video != nil && v.Video.EmbedUrl != nil {
-						matches := iframeSrcRegex.FindStringSubmatch(*v.Video.EmbedUrl)
-						if len(matches) > 1 {
-							v.Video.EmbedUrl = &matches[1]
+					// Clean up and resolve all videos in the variant
+					for j := range v.Videos {
+						if v.Videos[j].EmbedUrl != nil {
+							matches := iframeSrcRegex.FindStringSubmatch(*v.Videos[j].EmbedUrl)
+							if len(matches) > 1 {
+								v.Videos[j].EmbedUrl = &matches[1]
+							}
+							if !strings.HasPrefix(*v.Videos[j].EmbedUrl, "http") {
+								resolved := u.storage.GetURL(*v.Videos[j].EmbedUrl)
+								v.Videos[j].EmbedUrl = &resolved
+							}
 						}
-
-						// Resolve relative paths to full CDN URLs
-						if !strings.HasPrefix(*v.Video.EmbedUrl, "http") {
-							resolved := u.storage.GetURL(*v.Video.EmbedUrl)
-							v.Video.EmbedUrl = &resolved
+						if v.Videos[j].LocalUrl != nil {
+							if !strings.HasPrefix(*v.Videos[j].LocalUrl, "http") {
+								resolved := u.storage.GetURL(*v.Videos[j].LocalUrl)
+								v.Videos[j].LocalUrl = &resolved
+							}
+						}
+					}
+					// Set the primary Video pointer to the resolved first video
+					if len(v.Videos) > 0 {
+						v.Video = &v.Videos[0]
+					} else if v.Video != nil {
+						// Fallback for direct Video resolution if Videos slice is empty
+						if v.Video.EmbedUrl != nil {
+							matches := iframeSrcRegex.FindStringSubmatch(*v.Video.EmbedUrl)
+							if len(matches) > 1 {
+								v.Video.EmbedUrl = &matches[1]
+							}
+							if !strings.HasPrefix(*v.Video.EmbedUrl, "http") {
+								resolved := u.storage.GetURL(*v.Video.EmbedUrl)
+								v.Video.EmbedUrl = &resolved
+							}
+						}
+						if v.Video.LocalUrl != nil {
+							if !strings.HasPrefix(*v.Video.LocalUrl, "http") {
+								resolved := u.storage.GetURL(*v.Video.LocalUrl)
+								v.Video.LocalUrl = &resolved
+							}
 						}
 					}
 					activeVariants = append(activeVariants, v)

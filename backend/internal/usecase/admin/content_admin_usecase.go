@@ -1692,6 +1692,9 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 						if path != "" {
 							isNC, isBD, resolution, isUncensored, isSubbed, isLyrics, source, overlap := parseVideoTags(entryVideo.Tags)
 							vSrc := path
+							if !strings.HasPrefix(strings.ToLower(vSrc), "videos/") {
+								vSrc = "videos/" + vSrc
+							}
 							videos = append(videos, domain.SongVariantVideo{
 								VideoSrc:     &vSrc,
 								IsNC:         isNC,

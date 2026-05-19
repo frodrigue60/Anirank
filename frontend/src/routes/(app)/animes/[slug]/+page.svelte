@@ -347,7 +347,7 @@
                     <div
                       class="font-bold text-on-surface text-base hover:text-primary transition-colors"
                     >
-                      <a href="/songs/{anime.slug}/{song.slug}"
+                      <a href="/animes/{anime.slug}/{song.slug}"
                         >{getSongName(song)}</a
                       >
                     </div>
@@ -366,7 +366,7 @@
                   </td>
                   <td class="p-5 text-right">
                     <a
-                      href="/songs/{anime.slug}/{song.slug}"
+                      href="/animes/{anime.slug}/{song.slug}"
                       class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface bg-primary/20 hover:bg-primary hover:text-white/50 transition-colors"
                       title="Play theme: {getSongName(song)}"
                     >

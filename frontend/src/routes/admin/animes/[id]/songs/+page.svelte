@@ -17,7 +17,7 @@
   let { data } = $props<{ data: PageData }>();
   let anime = $derived(data.anime);
 
-  let rawSongs = $state(data.anime.songs || []);
+  let rawSongs = $state<any[]>([]);
   let filterType = $state("all");
 
   $effect(() => {

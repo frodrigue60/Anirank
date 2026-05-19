@@ -1420,7 +1420,7 @@
       <div class="space-y-3">
         {#each relatedSongs as related}
           <a
-            href="/songs/{currentSong.anime?.slug}/{related.slug}"
+            href="/animes/{currentSong.anime?.slug}/{related.slug}"
             class="flex gap-3 group bg-transparent hover:bg-surface-highest p-2 rounded-md transition-all"
             title="View theme: {getSongName(related)}"
           >

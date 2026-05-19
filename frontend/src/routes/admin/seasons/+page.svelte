@@ -5,8 +5,12 @@
   let { data } = $props();
 
   // Local State
-  let items = $state<any[]>(data.seasons || []);
+  let items = $state<any[]>([]);
   let errorMsg = $state("");
+
+  $effect(() => {
+    items = data.seasons || [];
+  });
 
   // Modal State
   let showModal = $state(false);

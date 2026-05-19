@@ -192,7 +192,7 @@ import VideoOff from "lucide-svelte/icons/video-off";;
             </div>
 
             <a
-              href={`/songs/${tournament.winner?.anime?.slug}/${tournament.winner?.slug}`}
+              href={`/animes/${tournament.winner?.anime?.slug}/${tournament.winner?.slug}`}
               class="group relative w-full max-w-[700px] aspect-21/9 rounded-md overflow-hidden bg-surface-container border border-yellow-500/20 shadow-[0_0_50px_rgba(234,179,8,0.1)] hover:scale-[1.02] transition-all duration-500"
             >
               <div

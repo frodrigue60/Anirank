@@ -31,7 +31,7 @@ func NewSEOUsecase(ar domain.AnimeRepository, sr domain.SongRepository, artistR 
 }
 
 var (
-	songRegex     = regexp.MustCompile(`^/songs/([^/]+)/([^/]+)$`)
+	songRegex     = regexp.MustCompile(`^/animes/([^/]+)/([^/]+)$`)
 	artistRegex   = regexp.MustCompile(`^/artists/([^/]+)$`)
 	animeRegex    = regexp.MustCompile(`^/animes/([^/]+)$`)
 	userRegex     = regexp.MustCompile(`^/users/([^/]+)$`)

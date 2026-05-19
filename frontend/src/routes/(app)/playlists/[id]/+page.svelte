@@ -57,7 +57,7 @@
 
   function shareSong() {
     if (!currentSong?.anime) return;
-    const url = `${window.location.origin}/songs/${currentSong.anime.slug}/${currentSong.slug}`;
+    const url = `${window.location.origin}/animes/${currentSong.anime.slug}/${currentSong.slug}`;
     navigator.clipboard
       .writeText(url)
       .then(() => {

@@ -150,7 +150,7 @@
                 class="mt-4 flex items-center justify-center gap-4 md:justify-start"
               >
                 <a
-                  href="/songs/{homeData.featured_song.anime?.slug}/{homeData
+                  href="/animes/{homeData.featured_song.anime?.slug}/{homeData
                     .featured_song.slug}"
                   class="flex h-12 items-center justify-center gap-2 rounded-sm border border-outline-variant/20 bg-surface-container text-on-surface px-8 text-lg font-bold transition-all hover:scale-105 hover:shadow-lg hover:shadow-primary/20 active:scale-95 sm:h-14 sm:px-10"
                   title="Play featured theme: {getSongName(
@@ -197,7 +197,7 @@
             {#if homeData.weakly_ranking?.op?.length > 0}
               {#each homeData.weakly_ranking.op.slice(0, 3) as item, index}
                 <a
-                  href="/songs/{item.anime?.slug}/{item.slug}"
+                  href="/animes/{item.anime?.slug}/{item.slug}"
                   class="group relative flex items-center gap-4 rounded-sm bg-surface-container p-4 transition-all hover:bg-primary/10 shadow-sm shadow-on-surface/5"
                   title="View details for {getSongName(item)}"
                 >
@@ -261,7 +261,7 @@
             {#if homeData.weakly_ranking?.ed?.length > 0}
               {#each homeData.weakly_ranking.ed.slice(0, 3) as item, index}
                 <a
-                  href="/songs/{item.anime?.slug}/{item.slug}"
+                  href="/animes/{item.anime?.slug}/{item.slug}"
                   class="group relative flex items-center gap-4 rounded-sm bg-surface-container p-4 transition-all hover:bg-primary/10 shadow-sm shadow-on-surface/5"
                   title="View details for {getSongName(item)}"
                 >
@@ -384,7 +384,7 @@
           {#if activeTab === "recently" && homeData.recently_added}
             {#each homeData.recently_added.slice(0, 10) as song}
               <a
-                href="/songs/{song.anime?.slug}/{song.slug}"
+                href="/animes/{song.anime?.slug}/{song.slug}"
                 class="group cursor-pointer shrink-0 w-[140px] sm:w-[160px] md:w-[180px] snap-start"
                 title="View theme: {getSongName(song)}"
               >
@@ -427,7 +427,7 @@
           {#if activeTab === "popular" && homeData.most_popular}
             {#each homeData.most_popular.slice(0, 10) as song}
               <a
-                href="/songs/{song.anime?.slug}/{song.slug}"
+                href="/animes/{song.anime?.slug}/{song.slug}"
                 class="group cursor-pointer shrink-0 w-[140px] sm:w-[160px] md:w-[180px] snap-start"
                 title="View theme: {getSongName(song)}"
               >
@@ -471,7 +471,7 @@
           {#if activeTab === "viewed" && homeData.most_viewed}
             {#each homeData.most_viewed.slice(0, 10) as song}
               <a
-                href="/songs/{song.anime?.slug}/{song.slug}"
+                href="/animes/{song.anime?.slug}/{song.slug}"
                 class="group cursor-pointer shrink-0 w-[140px] sm:w-[160px] md:w-[180px] snap-start"
                 title="View theme: {getSongName(song)}"
               >

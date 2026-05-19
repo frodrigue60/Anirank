@@ -255,7 +255,7 @@
                           replied to your comment
                           {#if notification.data.anime_name}
                             on <a
-                              href="/songs/{notification.data
+                              href="/animes/{notification.data
                                 .anime_slug}/{notification.data
                                 .song_slug}#comment-{notification.data
                                 ?.comment_uuid || notification.data.comment_id}"
@@ -275,7 +275,7 @@
                           </div>
                           <div>
                             <a
-                              href="/songs/{notification.data
+                              href="/animes/{notification.data
                                 .anime_slug}/{notification.data.song_slug}"
                               class="font-bold text-on-surface-variant hover:text-primary transition-colors"
                               >{notification.data.song_name} ({notification.data

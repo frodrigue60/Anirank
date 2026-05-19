@@ -46,7 +46,7 @@
         class="text-2xl font-bold text-on-surface group-hover:text-primary transition-colors line-clamp-1 drop-shadow-md"
       >
         <a
-          href="/songs/{song.anime?.slug}/{song.slug}"
+          href="/animes/{song.anime?.slug}/{song.slug}"
           class="hover:underline"
           title="View song details: {getSongName(song)}">{getSongName(song)}</a
         >
@@ -87,7 +87,7 @@
       <!-- Play Button -->
       <!-- <div class="flex items-center gap-2 mt-4">
         <a
-          href="/songs/{song.anime?.slug}/{song.slug}"
+          href="/animes/{song.anime?.slug}/{song.slug}"
           class="flex items-center justify-center h-12 w-12 rounded-full bg-secondary-container hover:bg-primary/80 transition-all text-on-surface border border-white/10 group-hover:border-primary/50 group-hover:scale-110 shadow-lg"
           title="Play theme: {getSongName(song)}"
         >

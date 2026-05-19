@@ -208,7 +208,7 @@
                     class="text-xs text-blue-400 font-bold uppercase tracking-wider mb-1"
                   >
                     <a
-                      href="/songs/{report.song?.anime?.slug}/{report.song?.slug}"
+                      href="/animes/{report.song?.anime?.slug}/{report.song?.slug}"
                       target="_blank"
                       class="text-lg font-bold text-on-surface hover:text-blue-400 transition-colors"
                     >
@@ -221,7 +221,7 @@
                   </div>
                 </div>
                 <a
-                  href="/songs/{report.song?.anime?.slug}/{report.song?.slug}"
+                  href="/animes/{report.song?.anime?.slug}/{report.song?.slug}"
                   target="_blank"
                   class="ml-auto p-2 hover:bg-surface-highest rounded-lg text-on-surface-variant/70"
                 >

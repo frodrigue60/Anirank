@@ -3,10 +3,10 @@ import api from "$lib/api";
 import { error } from "@sveltejs/kit";
 
 export const load: PageLoad = async ({ params }) => {
-    const { anime_slug, song_slug } = params;
+    const { slug, song_slug } = params;
     
     try {
-        const response = await api.get(`/animes/${anime_slug}/songs/${song_slug}`);
+        const response = await api.get(`/animes/${slug}/songs/${song_slug}`);
         const result = response.data;
 
         return {

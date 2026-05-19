@@ -126,7 +126,7 @@
           url = `/users/${item.slug}`;
           break;
         case "song":
-          url = `/songs/${item.animeSlug}/${item.slug}`;
+          url = `/animes/${item.animeSlug}/${item.slug}`;
           break;
       }
       if (url) {
@@ -348,7 +348,7 @@
                 <div class="flex flex-col gap-2">
                   {#each results.songs.slice(0, 5) as song}
                     <a
-                      href="/songs/{song.anime?.slug}/{song.slug}"
+                      href="/animes/{song.anime?.slug}/{song.slug}"
                       onclick={() =>
                         handleResultClick({
                           id: `song:${song.slug}`,

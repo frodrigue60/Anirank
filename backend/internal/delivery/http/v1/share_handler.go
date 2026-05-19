@@ -131,12 +131,12 @@ func (h *ShareHandler) SongShare(c *fiber.Ctx) error {
 	animeSlug := c.Params("anime_slug")
 	songSlug := c.Params("song_slug")
 	if !h.isBot(c.Get("User-Agent")) {
-		return c.Redirect(h.getFrontendURL() + "/songs/" + animeSlug + "/" + songSlug)
+		return c.Redirect(h.getFrontendURL() + "/animes/" + animeSlug + "/" + songSlug)
 	}
 
 	song, _, err := h.catalogUsecase.GetSongByAnimeSongSlug(c.Context(), nil, animeSlug, songSlug)
 	if err != nil {
-		return c.Redirect(h.getFrontendURL() + "/songs/" + animeSlug + "/" + songSlug)
+		return c.Redirect(h.getFrontendURL() + "/animes/" + animeSlug + "/" + songSlug)
 	}
 
 	title := fmt.Sprintf("%s - %s - AniRank", song.Name, song.Anime.Title)
@@ -150,7 +150,7 @@ func (h *ShareHandler) SongShare(c *fiber.Ctx) error {
 	description := fmt.Sprintf("Listen to %s by %s from %s.", song.Name, artists, song.Anime.Title)
 	image := fmt.Sprintf("%s/og/song/%s/%s", h.getAPIURL(), animeSlug, songSlug)
 
-	return h.renderMeta(c, title, description, image, "songs/"+animeSlug, songSlug)
+	return h.renderMeta(c, title, description, image, "animes/"+animeSlug, songSlug)
 }
 
 func (h *ShareHandler) ArtistShare(c *fiber.Ctx) error {

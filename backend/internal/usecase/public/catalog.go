@@ -1003,7 +1003,7 @@ func (u *CatalogUsecase) GetSitemapData(ctx context.Context) ([]domain.SitemapIt
 	songs, err := u.songRepo.GetPublicSlugs(ctx)
 	if err == nil {
 		for i := range songs {
-			songs[i].Loc = "/songs/" + songs[i].Loc
+			songs[i].Loc = "/animes/" + songs[i].Loc
 			songs[i].Priority = 0.7
 			songs[i].ChangeFreq = "monthly"
 		}

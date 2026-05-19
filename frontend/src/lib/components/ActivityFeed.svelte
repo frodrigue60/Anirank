@@ -221,7 +221,7 @@
 
               {#if isSong && target}
                 <a
-                  href="/songs/{target.anime?.slug}/{target.slug}"
+                  href="/animes/{target.anime?.slug}/{target.slug}"
                   class="flex flex-col truncate text-lg font-bold tracking-tight text-on-surface group-hover:text-primary transition-colors"
                 >
                   <span class="truncate">{target.anime?.title}</span>

@@ -103,7 +103,7 @@
                       class="text-lg font-bold text-on-surface truncate leading-tight group-hover:underline group-hover:text-primary"
                       title={songName}
                     >
-                      <a href={`/songs/${item.anime.slug}/${item.slug}`}>
+                      <a href={`/animes/${item.anime.slug}/${item.slug}`}>
                         {songName}
                       </a>
                     </h3>

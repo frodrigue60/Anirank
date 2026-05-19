@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/svelte';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import SongPage from '../../routes/(app)/songs/[anime_slug]/[song_slug]/+page.svelte';
+import SongPage from '../../routes/(app)/animes/[slug]/[song_slug]/+page.svelte';
 import RatingModal from '$lib/components/RatingModal.svelte';
 import { authState, setUser } from '$lib/state/auth.svelte';
 import { http, HttpResponse, delay } from 'msw';

@@ -3,6 +3,8 @@ package infrastructure
 import (
 	"fmt"
 	"log"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -64,11 +66,26 @@ func connect(driver, dsn string) (*sqlx.DB, error) {
 		return nil, err
 	}
 
+	maxOpen := 20
+	if val := os.Getenv("DB_MAX_OPEN_CONNS"); val != "" {
+		if parsed, err := strconv.Atoi(val); err == nil && parsed > 0 {
+			maxOpen = parsed
+		}
+	}
+
+	maxIdle := 5
+	if val := os.Getenv("DB_MAX_IDLE_CONNS"); val != "" {
+		if parsed, err := strconv.Atoi(val); err == nil && parsed > 0 {
+			maxIdle = parsed
+		}
+	}
+
 	// Connection pool settings
-	db.SetMaxOpenConns(50)
-	db.SetMaxIdleConns(10)
+	db.SetMaxOpenConns(maxOpen)
+	db.SetMaxIdleConns(maxIdle)
 	db.SetConnMaxLifetime(time.Hour)
 
-	log.Printf("Connected to %s database", driver)
+	log.Printf("Connected to %s database (max_open: %d, max_idle: %d)", driver, maxOpen, maxIdle)
 	return db, nil
 }
+

@@ -183,6 +183,17 @@ UPDATE tournaments t SET winner_song_id = m.new_song_id FROM temp_song_mapping m
 UPDATE tournament_votes tv SET song_id = m.new_song_id FROM temp_song_mapping m WHERE tv.song_id = m.old_song_id;
 
 -- artist_song
+DELETE FROM artist_song asong
+WHERE EXISTS (
+    SELECT 1 FROM temp_song_mapping m
+    WHERE asong.song_id = m.old_song_id
+    AND EXISTS (
+        SELECT 1 FROM artist_song asong2
+        WHERE asong2.artist_id = asong.artist_id
+        AND asong2.song_id = m.new_song_id
+    )
+);
+
 UPDATE artist_song asong
 SET song_id = m.new_song_id
 FROM temp_song_mapping m

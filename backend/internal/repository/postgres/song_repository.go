@@ -1193,7 +1193,7 @@ func (r *songRepository) UpsertVariantFromAnimeThemes(ctx context.Context, v *do
 	// Insert all video rows
 	for _, video := range videos {
 		if video.VideoSrc != nil && *video.VideoSrc != "" {
-			_, _ = r.db.ExecContext(ctx, `
+			_, errVideo := r.db.ExecContext(ctx, `
 				INSERT INTO videos (song_variant_id, video_src, is_nc, is_bd, resolution, is_uncensored, is_subbed, is_lyrics, source, overlap, status, created_at, updated_at)
 				VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, false, $11, $11)
 				ON CONFLICT (song_variant_id, video_src) DO UPDATE SET
@@ -1207,6 +1207,9 @@ func (r *songRepository) UpsertVariantFromAnimeThemes(ctx context.Context, v *do
 					overlap = EXCLUDED.overlap,
 					updated_at = EXCLUDED.updated_at
 			`, v.ID, video.VideoSrc, video.IsNC, video.IsBD, video.Resolution, video.IsUncensored, video.IsSubbed, video.IsLyrics, video.Source, video.Overlap, now)
+			if errVideo != nil {
+				fmt.Printf("[UpsertVariantFromAnimeThemes] Error inserting video %s for variant %d: %v\n", *video.VideoSrc, v.ID, errVideo)
+			}
 		}
 	}
 

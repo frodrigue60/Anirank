@@ -943,6 +943,14 @@ type ATAnimeData struct {
 			Episodes string `json:"episodes"`
 			Spoiler  bool   `json:"spoiler"`
 			NSFW     bool   `json:"nsfw"`
+			Videos   []struct {
+				ID       uint64 `json:"id"`
+				Basename string `json:"basename"`
+				Filename string `json:"filename"`
+				Path     string `json:"path"`
+				Size     int64  `json:"size"`
+				Tags     string `json:"tags"`
+			} `json:"videos"`
 		} `json:"animethemeentries"`
 	} `json:"animethemes"`
 }
@@ -980,7 +988,7 @@ func (u *ContentAdminUsecase) HydrateSeason(ctx context.Context, year int, seaso
 	}
 
 	sendProgress(fmt.Sprintf("Fetching %s %d from AnimeThemes...", seasonName, year))
-	url := fmt.Sprintf("https://api.animethemes.moe/anime?include=animethemes.song.artists,animethemes.group,images,animethemes.animethemeentries,studios,resources&filter[year]=%d&filter[season]=%s&page[size]=100", year, strings.ToLower(seasonName))
+	url := fmt.Sprintf("https://api.animethemes.moe/anime?include=animethemes.song.artists,animethemes.group,images,animethemes.animethemeentries.videos,studios,resources&filter[year]=%d&filter[season]=%s&page[size]=100", year, strings.ToLower(seasonName))
 
 	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Get(url)
@@ -1084,7 +1092,7 @@ func (u *ContentAdminUsecase) HydrateAnimeThemes(ctx context.Context, ids []uint
 	var fullAnimeList []ATAnimeData
 	for i, a := range atResp.Anime {
 		sendProgress(fmt.Sprintf("[%d/%d] Fetching full record for: %s", i+1, len(atResp.Anime), a.Name))
-		detailUrl := fmt.Sprintf("https://api.animethemes.moe/anime/%s?include=animethemes.song.artists,animethemes.group,images,animethemes.animethemeentries,studios,resources", a.Slug)
+		detailUrl := fmt.Sprintf("https://api.animethemes.moe/anime/%s?include=animethemes.song.artists,animethemes.group,images,animethemes.animethemeentries.videos,studios,resources", a.Slug)
 
 		dResp, err := client.Get(detailUrl)
 		if err != nil {
@@ -1659,7 +1667,7 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 						Status:        true,
 						YearID:        yearObj.ID,
 						SeasonID:      seasonObj.ID,
-						AnimeThemesID: &atID,
+						AnimeThemesID: &atvID,
 						Episodes:      &episodes,
 						Spoiler:       entry.Spoiler,
 						NSFW:          entry.NSFW,
@@ -1673,6 +1681,37 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 						fmt.Printf("[ERROR] Failed to create variant %s for song %s: %v\n", variant.Slug, *song.SongRomaji, err)
 					} else {
 						processedVariants[variant.ID] = true
+					}
+				}
+
+				// Process and sync Videos for this variant
+				if variant.ID > 0 {
+					var videos []domain.SongVariantVideo
+					for _, entryVideo := range entry.Videos {
+						path := entryVideo.Path
+						if path != "" {
+							isNC, isBD, resolution, isUncensored, isSubbed, isLyrics, source, overlap := parseVideoTags(entryVideo.Tags)
+							vSrc := path
+							videos = append(videos, domain.SongVariantVideo{
+								VideoSrc:     &vSrc,
+								IsNC:         isNC,
+								IsBD:         isBD,
+								Resolution:   resolution,
+								IsUncensored: isUncensored,
+								IsSubbed:     isSubbed,
+								IsLyrics:     isLyrics,
+								Source:       source,
+								Overlap:      overlap,
+							})
+						}
+					}
+
+					if len(videos) > 0 {
+						if _, err := u.songRepo.UpsertVariantFromAnimeThemes(ctx, variant, videos); err != nil {
+							fmt.Printf("[ERROR] Failed to sync videos for variant %d (%s): %v\n", variant.ID, variant.Slug, err)
+						} else {
+							fmt.Printf("[INFO] Synced %d videos for variant %d (%s)\n", len(videos), variant.ID, variant.Slug)
+						}
 					}
 				}
 			}

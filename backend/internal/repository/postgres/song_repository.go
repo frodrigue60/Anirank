@@ -1128,6 +1128,36 @@ func (r *songRepository) UpsertSongFromAnimeThemes(ctx context.Context, song *do
 	}
 	song.TypeID = &typeID
 
+	if song.AnimeThemesID != nil {
+		// 1. Check if song already exists by anime_themes_id
+		var existingID uint64
+		errExist := r.db.GetContext(ctx, &existingID, `SELECT id FROM songs WHERE anime_themes_id = $1 LIMIT 1`, song.AnimeThemesID)
+		if errExist == nil {
+			song.ID = existingID
+			return false, nil
+		}
+
+		// 2. Check if song already exists by natural key (anime_id, type_id, theme_num) where anime_themes_id is NULL
+		errExistNatural := r.db.GetContext(ctx, &existingID, `
+			SELECT id FROM songs 
+			WHERE anime_id = $1 AND type_id = $2 AND theme_num = $3 LIMIT 1
+		`, song.AnimeID, typeID, song.ThemeNum)
+
+		if errExistNatural == nil {
+			// Update existing manual song with the imported anime_themes_id
+			_, errUpdate := r.db.ExecContext(ctx, `
+				UPDATE songs 
+				SET anime_themes_id = $1, updated_at = $2 
+				WHERE id = $3
+			`, song.AnimeThemesID, now, existingID)
+			if errUpdate != nil {
+				return false, errUpdate
+			}
+			song.ID = existingID
+			return false, nil
+		}
+	}
+
 	var returnedID uint64
 	err := r.db.QueryRowContext(ctx, `
 		INSERT INTO songs (uuid, song_romaji, song_jp, theme_num, type_id, anime_id, season_id, year_id, views, status, anime_themes_id, created_at, updated_at)
@@ -1142,7 +1172,7 @@ func (r *songRepository) UpsertSongFromAnimeThemes(ctx context.Context, song *do
 	).Scan(&returnedID)
 
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) && song.AnimeThemesID != nil {
 			err2 := r.db.QueryRowContext(ctx,
 				`SELECT id FROM songs WHERE anime_themes_id = $1`, song.AnimeThemesID,
 			).Scan(&song.ID)
@@ -1160,34 +1190,67 @@ func (r *songRepository) UpsertVariantFromAnimeThemes(ctx context.Context, v *do
 	v.UUID = uuid.New().String()
 	now := time.Now().UTC()
 
-	var returnedID uint64
-	err := r.db.QueryRowContext(ctx, `
-		INSERT INTO song_variants (uuid, version_number, song_id, slug, views, season_id, year_id, spoiler, nsfw, status, anime_themes_id, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, 0, $5, $6, $7, $8, false, $9, $10, $10)
-		ON CONFLICT (anime_themes_id) DO NOTHING
-		RETURNING id
-	`,
-		v.UUID, v.VersionNumber, v.SongID, v.Slug,
-		v.SeasonID, v.YearID,
-		v.Spoiler, v.NSFW,
-		v.AnimeThemesID, now,
-	).Scan(&returnedID)
-
 	var isCreated bool = true
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+	var returnedID uint64
+
+	if v.AnimeThemesID != nil {
+		// 1. Check if variant already exists by anime_themes_id
+		var existingID uint64
+		errExist := r.db.GetContext(ctx, &existingID, `SELECT id FROM song_variants WHERE anime_themes_id = $1 LIMIT 1`, v.AnimeThemesID)
+		if errExist == nil {
+			v.ID = existingID
 			isCreated = false
-			err2 := r.db.QueryRowContext(ctx,
-				`SELECT id FROM song_variants WHERE anime_themes_id = $1`, v.AnimeThemesID,
-			).Scan(&v.ID)
-			if err2 != nil {
-				return false, err2
+		} else {
+			// 2. Check if variant already exists by natural key (song_id, slug/version_number)
+			errExistNatural := r.db.GetContext(ctx, &existingID, `
+				SELECT id FROM song_variants 
+				WHERE song_id = $1 AND (slug = $2 OR version_number = $3) LIMIT 1
+			`, v.SongID, v.Slug, v.VersionNumber)
+
+			if errExistNatural == nil {
+				// Update existing manual variant with the imported anime_themes_id
+				_, errUpdate := r.db.ExecContext(ctx, `
+					UPDATE song_variants 
+					SET anime_themes_id = $1, updated_at = $2 
+					WHERE id = $3
+				`, v.AnimeThemesID, now, existingID)
+				if errUpdate != nil {
+					return false, errUpdate
+				}
+				v.ID = existingID
+				isCreated = false
+			}
+		}
+	}
+
+	if isCreated {
+		err := r.db.QueryRowContext(ctx, `
+			INSERT INTO song_variants (uuid, version_number, song_id, slug, views, season_id, year_id, spoiler, nsfw, status, anime_themes_id, created_at, updated_at)
+			VALUES ($1, $2, $3, $4, 0, $5, $6, $7, $8, false, $9, $10, $10)
+			ON CONFLICT (anime_themes_id) DO NOTHING
+			RETURNING id
+		`,
+			v.UUID, v.VersionNumber, v.SongID, v.Slug,
+			v.SeasonID, v.YearID,
+			v.Spoiler, v.NSFW,
+			v.AnimeThemesID, now,
+		).Scan(&returnedID)
+
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) && v.AnimeThemesID != nil {
+				isCreated = false
+				err2 := r.db.QueryRowContext(ctx,
+					`SELECT id FROM song_variants WHERE anime_themes_id = $1`, v.AnimeThemesID,
+				).Scan(&v.ID)
+				if err2 != nil {
+					return false, err2
+				}
+			} else {
+				return false, err
 			}
 		} else {
-			return false, err
+			v.ID = returnedID
 		}
-	} else {
-		v.ID = returnedID
 	}
 
 	// Insert all video rows

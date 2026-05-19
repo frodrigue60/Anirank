@@ -6,9 +6,9 @@ CREATE TEMP TABLE temp_song_mapping AS
 WITH song_duplicates AS (
     SELECT 
         id,
-        COALESCE(anime_themes_id::text, anime_id || '_' || type_id || '_' || theme_num) AS dup_group,
+        anime_id || '_' || type_id || '_' || theme_num AS dup_group,
         ROW_NUMBER() OVER (
-            PARTITION BY COALESCE(anime_themes_id::text, anime_id || '_' || type_id || '_' || theme_num)
+            PARTITION BY anime_id || '_' || type_id || '_' || theme_num
             ORDER BY 
                 (anime_themes_id IS NOT NULL) DESC,
                 views DESC, 
@@ -202,9 +202,9 @@ WITH variant_duplicates AS (
         id,
         song_id,
         slug,
-        COALESCE(anime_themes_id::text, song_id || '_' || slug) AS dup_group,
+        song_id || '_' || slug AS dup_group,
         ROW_NUMBER() OVER (
-            PARTITION BY COALESCE(anime_themes_id::text, song_id || '_' || slug)
+            PARTITION BY song_id || '_' || slug
             ORDER BY 
                 (anime_themes_id IS NOT NULL) DESC,
                 id ASC

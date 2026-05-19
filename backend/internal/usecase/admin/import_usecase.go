@@ -441,13 +441,15 @@ func (u *ImportUsecase) phaseAniList(ctx context.Context, job *domain.ImportJob)
 		return fmt.Errorf("anilist enrichment: fetch animes: %w", err)
 	}
 
-	// Collect anilist IDs
+	// Collect anilist IDs and build maps for quick lookups
 	var anilistIDs []int
 	idMap := make(map[int]int64) // anilist_id int → internal anilist_id int64
-	for _, a := range allAnimes {
-		if a.AnilistID != nil {
-			anilistIDs = append(anilistIDs, int(*a.AnilistID))
-			idMap[int(*a.AnilistID)] = *a.AnilistID
+	animeMap := make(map[int64]*domain.Anime)
+	for i := range allAnimes {
+		if allAnimes[i].AnilistID != nil {
+			anilistIDs = append(anilistIDs, int(*allAnimes[i].AnilistID))
+			idMap[int(*allAnimes[i].AnilistID)] = *allAnimes[i].AnilistID
+			animeMap[*allAnimes[i].AnilistID] = &allAnimes[i]
 		}
 	}
 
@@ -504,8 +506,87 @@ func (u *ImportUsecase) phaseAniList(ctx context.Context, job *domain.ImportJob)
 			}
 
 			anilistID := int64(media.ID)
+			anime, exists := animeMap[anilistID]
+			if !exists {
+				continue
+			}
+
 			if err := u.animeRepo.EnrichFromAniList(ctx, anilistID, coverPtr, bannerPtr, descPtr); err != nil {
 				job.Errors = append(job.Errors, fmt.Sprintf("enrich anilist %d: %v", media.ID, err))
+			}
+
+			// 1. Sync Genres
+			var genreIDs []uint64
+			for _, g := range media.Genres {
+				if obj, err := u.taxonomyRepo.GetOrCreateGenre(ctx, g); err == nil && obj != nil {
+					genreIDs = append(genreIDs, obj.ID)
+				} else if err != nil {
+					job.Errors = append(job.Errors, fmt.Sprintf("genre %s for anime %d: %v", g, anime.ID, err))
+				}
+			}
+			if err := u.animeRepo.UpdateGenres(ctx, anime.ID, genreIDs); err != nil {
+				job.Errors = append(job.Errors, fmt.Sprintf("update genres for anime %d: %v", anime.ID, err))
+			}
+
+			// 2. Sync Studios & Producers
+			var studioIDs []uint64
+			var producerIDs []uint64
+			for _, edge := range media.Studios.Edges {
+				if edge.Node.Name == "" {
+					continue
+				}
+				if edge.IsMain {
+					if obj, err := u.taxonomyRepo.GetOrCreateStudio(ctx, edge.Node.Name); err == nil && obj != nil {
+						studioIDs = append(studioIDs, obj.ID)
+					} else if err != nil {
+						job.Errors = append(job.Errors, fmt.Sprintf("studio %s for anime %d: %v", edge.Node.Name, anime.ID, err))
+					}
+				} else {
+					if obj, err := u.taxonomyRepo.GetOrCreateProducer(ctx, edge.Node.Name); err == nil && obj != nil {
+						producerIDs = append(producerIDs, obj.ID)
+					} else if err != nil {
+						job.Errors = append(job.Errors, fmt.Sprintf("producer %s for anime %d: %v", edge.Node.Name, anime.ID, err))
+					}
+				}
+			}
+			if err := u.animeRepo.UpdateStudios(ctx, anime.ID, studioIDs); err != nil {
+				job.Errors = append(job.Errors, fmt.Sprintf("update studios for anime %d: %v", anime.ID, err))
+			}
+			if err := u.animeRepo.UpdateProducers(ctx, anime.ID, producerIDs); err != nil {
+				job.Errors = append(job.Errors, fmt.Sprintf("update producers for anime %d: %v", anime.ID, err))
+			}
+
+			// 3. Sync External Links
+			if len(media.ExternalLinks) > 0 {
+				// Pre-load current links to avoid overwriting them
+				if err := u.animeRepo.LoadRelations(ctx, anime, true); err != nil {
+					job.Errors = append(job.Errors, fmt.Sprintf("load relations for anime %d: %v", anime.ID, err))
+				}
+
+				linksMap := make(map[string]domain.ExternalLink)
+				for _, l := range anime.ExternalLinks {
+					linksMap[l.URL] = l
+				}
+
+				for _, l := range media.ExternalLinks {
+					if l.URL == "" {
+						continue
+					}
+					linksMap[l.URL] = domain.ExternalLink{
+						Name: l.Site,
+						URL:  l.URL,
+						Type: strings.ToLower(l.Site),
+					}
+				}
+
+				finalLinks := make([]domain.ExternalLink, 0, len(linksMap))
+				for _, l := range linksMap {
+					finalLinks = append(finalLinks, l)
+				}
+
+				if err := u.animeRepo.UpdateExternalLinks(ctx, anime.ID, finalLinks); err != nil {
+					job.Errors = append(job.Errors, fmt.Sprintf("update external links for anime %d: %v", anime.ID, err))
+				}
 			}
 		}
 

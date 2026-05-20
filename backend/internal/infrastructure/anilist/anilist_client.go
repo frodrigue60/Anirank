@@ -355,7 +355,7 @@ func (c *Client) SearchAnimes(ctx context.Context, search string, format string,
 const multiMediaByIDQuery = `
 query ($ids: [Int]) {
 	Page(page: 1, perPage: 50) {
-		media(id_in: $ids, type: ANIME, isAdult: false) {
+		media(id_in: $ids, type: ANIME) {
 			id
 			title {
 				romaji

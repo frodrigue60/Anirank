@@ -656,7 +656,7 @@
                         </div>
                       {/each}
                     </div>
-                  {#else}
+                  {:else}
                     <div class="flex items-center justify-center p-4 bg-black/20 border border-zinc-800/50 rounded-2xl text-zinc-600 text-xs">
                       No videos attached to this variant. Use the 'Manage Video' button above to configure one.
                     </div>

@@ -287,7 +287,7 @@ func main() {
 	notificationUsecase := notification.NewNotificationUsecase(notificationRepo, userRepo, mailService, appCache, enableActivityEmails)
 	badgeUsecase := admin.NewBadgeUsecase(badgeRepo, userRepo, interactionRepo, commentRepo, storageService, mediaService, auditUsecase, activityUsecase, notificationUsecase)
 
-	xpUsecase := usecase.NewXPUsecase(xpRepo, userRepo, badgeUsecase, activityUsecase)
+	xpUsecase := usecase.NewXPUsecase(xpRepo, userRepo, badgeUsecase, activityUsecase, notificationUsecase)
 
 	// Auth specialized services
 	tokenRepo := postgres.NewAuthTokenRepository(db)

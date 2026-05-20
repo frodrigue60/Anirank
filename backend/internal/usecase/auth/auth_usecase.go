@@ -320,6 +320,41 @@ func (u *AuthUsecase) UpdateProfile(ctx context.Context, userID uint64, about, p
 	return u.userRepo.Update(ctx, user)
 }
 
+func (u *AuthUsecase) UpdateUsername(ctx context.Context, userID uint64, newName string) (*domain.User, error) {
+	newName = strings.TrimSpace(newName)
+	if newName == "" {
+		return nil, domain.NewAppError(422, "El nombre de usuario es obligatorio", nil)
+	}
+
+	if len(newName) < 3 || len(newName) > 25 {
+		return nil, domain.NewAppError(422, "El nombre de usuario debe tener entre 3 y 25 caracteres", nil)
+	}
+
+	// Fetch current user
+	user, err := u.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return nil, domain.NewAppError(404, "Usuario no encontrado", err)
+	}
+
+	if user.Name == newName {
+		u.enrichUserImages(user)
+		return user, nil
+	}
+
+	// Generate unique slug
+	slug := u.generateUniqueUserSlug(ctx, newName)
+
+	user.Name = newName
+	user.Slug = &slug
+
+	if err := u.userRepo.Update(ctx, user); err != nil {
+		return nil, domain.NewAppError(500, "Error al actualizar el nombre de usuario", err)
+	}
+
+	u.enrichUserImages(user)
+	return user, nil
+}
+
 func (u *AuthUsecase) UpdateEmail(ctx context.Context, userID uint64, newEmail string) error {
 	newEmail = strings.ToLower(strings.TrimSpace(newEmail))
 	if newEmail == "" {

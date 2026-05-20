@@ -10,6 +10,7 @@
   import Mail from "lucide-svelte/icons/mail";
   import BadgeCheck from "lucide-svelte/icons/badge-check";
   import ShieldAlert from "lucide-svelte/icons/shield-alert";
+  import User from "lucide-svelte/icons/user";
 
   onMount(async () => {
     const oauthError = page.url.searchParams.get("error");
@@ -173,6 +174,43 @@
     }
   }
 
+  let username = $state(authState.user?.name || "");
+  let isUpdatingUsername = $state(false);
+
+  $effect(() => {
+    if (authState.user?.name && !username) {
+      username = authState.user.name;
+    }
+  });
+
+  async function handleUpdateUsername() {
+    const trimmed = username.trim();
+    if (!trimmed) {
+      toastState.addToast("El nombre de usuario es obligatorio.", "error");
+      return;
+    }
+    if (trimmed.length < 3 || trimmed.length > 25) {
+      toastState.addToast("El nombre de usuario debe tener entre 3 y 25 caracteres.", "error");
+      return;
+    }
+
+    isUpdatingUsername = true;
+    try {
+      const response = await api.put("/users/username", { username: trimmed });
+      toastState.addToast("Username updated successfully!", "success");
+
+      if (response.data.data) {
+        setUser(response.data.data);
+      } else if (authState.user) {
+        authState.user.name = trimmed;
+      }
+    } catch (err: any) {
+      toastState.addToast(getApiErrorMessage(err, "Failed to update username."), "error");
+    } finally {
+      isUpdatingUsername = false;
+    }
+  }
+
   let email = $state(authState.user?.email || "");
   let isUpdatingEmail = $state(false);
 
@@ -270,6 +308,53 @@
       </div>
     </section>
   {/if}
+
+  <!-- Username -->
+  <section
+    class="bg-surface-container border border-white/5 rounded-md overflow-hidden shadow-sm transition-all duration-500 animate-in fade-in slide-in-from-bottom-4"
+  >
+    <div class="px-8 py-6 border-b border-white/5 bg-surface-highest">
+      <h2 class="text-lg font-bold text-on-surface tracking-tight">
+        Username
+      </h2>
+    </div>
+    <div class="p-8">
+      <div class="grid gap-4">
+        <label for="username" class="text-xs font-bold text-on-surface-variant uppercase tracking-widest">Display Username</label>
+        <div class="flex gap-4">
+          <div class="relative flex-1">
+            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <User class="w-4 h-4 text-on-surface-variant/40" />
+            </div>
+            <input
+              id="username"
+              type="text"
+              bind:value={username}
+              placeholder="Username"
+              disabled={!authState.user?.email_verified_at}
+              class="w-full bg-surface-lowest border border-on-surface-variant/10 rounded-sm py-3 pl-11 pr-4 text-sm text-on-surface placeholder:text-on-surface-variant/20 focus:outline-none focus:border-primary/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            />
+          </div>
+          <button
+            onclick={handleUpdateUsername}
+            disabled={isUpdatingUsername || username.trim() === authState.user?.name || !authState.user?.email_verified_at}
+            class="px-8 py-3 bg-primary text-on-primary font-bold text-xs uppercase tracking-widest rounded-sm hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:scale-100 disabled:shadow-none disabled:cursor-not-allowed"
+          >
+            {isUpdatingUsername ? "Updating..." : "Update"}
+          </button>
+        </div>
+        {#if !authState.user?.email_verified_at}
+          <p class="text-[10px] text-amber-500 font-bold leading-relaxed flex items-center gap-1.5 animate-pulse">
+            <ShieldAlert size={12} class="shrink-0" /> Requires email verification to change your username.
+          </p>
+        {:else}
+          <p class="text-[10px] text-on-surface-variant/60 leading-relaxed">
+            Must be between 3 and 25 characters. Changing your username will automatically regenerate your profile URL slug.
+          </p>
+        {/if}
+      </div>
+    </div>
+  </section>
 
   <!-- Email Address -->
   <section

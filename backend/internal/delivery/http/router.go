@@ -261,6 +261,7 @@ func SetupPublicRoutes(app *fiber.App,
 	protected.Post("/users/banner", vRequired, authHandler.UpdateBanner)
 	protected.Post("/users/score-format", authHandler.UpdateScoreFormat)
 	protected.Put("/users/email", authHandler.UpdateEmail)
+	protected.Put("/users/username", vRequired, authHandler.UpdateUsername)
 	protected.Post("/users/resend-verification", authHandler.ResendVerification)
 	protected.Patch("/users/profile", vRequired, authHandler.UpdateProfile)
 

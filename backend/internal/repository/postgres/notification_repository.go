@@ -122,7 +122,7 @@ func (r *notificationRepository) GetSettings(ctx context.Context, userID uint64)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			// Return default settings if not found
-			defaultSettings := json.RawMessage(`{"social_follow":true,"comment_reply":true,"user_request_feedback":true}`)
+			defaultSettings := json.RawMessage(`{"social_follow":true,"comment_reply":true,"user_request_feedback":true,"artist_new_song":true,"level_up":true,"badge_award":true}`)
 			return &domain.NotificationSettings{
 				UserID:   userID,
 				Settings: defaultSettings,

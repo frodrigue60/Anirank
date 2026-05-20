@@ -34,7 +34,11 @@ func (u *notificationUsecase) Create(ctx context.Context, notification *domain.N
 		if err := json.Unmarshal(settings.Settings, &prefs); err == nil {
 			// Check if the specific notification type is disabled
 			// If not found in map, we assume it's enabled (default)
-			if enabled, exists := prefs[notification.Type]; exists && !enabled {
+			prefKey := notification.Type
+			if prefKey == "follow" {
+				prefKey = "social_follow"
+			}
+			if enabled, exists := prefs[prefKey]; exists && !enabled {
 				return nil // Silently skip
 			}
 		}

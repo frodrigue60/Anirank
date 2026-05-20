@@ -6,7 +6,8 @@ import Users from "lucide-svelte/icons/users";
 import MessageSquare from "lucide-svelte/icons/message-square";
 import Info from "lucide-svelte/icons/info";
 import ShieldCheck from "lucide-svelte/icons/shield-check";
-import Loader2 from "lucide-svelte/icons/loader-2";;
+import Loader2 from "lucide-svelte/icons/loader-2";
+import Award from "lucide-svelte/icons/award";
 
   let loading = $state(true);
   let saving = $state(false);
@@ -15,6 +16,8 @@ import Loader2 from "lucide-svelte/icons/loader-2";;
     comment_reply: true,
     user_request_feedback: true,
     artist_new_song: true,
+    level_up: true,
+    badge_award: true,
   });
 
   async function fetchSettings() {
@@ -98,6 +101,25 @@ import Loader2 from "lucide-svelte/icons/loader-2";;
           description:
             "Get updates on your media submissions (Approve/Reject/Feedback).",
           checked: settings.user_request_feedback,
+        },
+      ],
+    },
+    {
+      id: "progression",
+      title: "Progression",
+      icon: Award,
+      items: [
+        {
+          id: "level_up",
+          label: "Level Up Notifications",
+          description: "Get notified when you advance to a new level.",
+          checked: settings.level_up,
+        },
+        {
+          id: "badge_award",
+          label: "Badge Unlocks",
+          description: "Get notified when you are awarded a new badge.",
+          checked: settings.badge_award,
         },
       ],
     },

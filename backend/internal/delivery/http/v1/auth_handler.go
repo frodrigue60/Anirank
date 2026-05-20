@@ -351,6 +351,40 @@ func (h *AuthHandler) UpdateEmail(c *fiber.Ctx) error {
 	})
 }
 
+// UpdateUsername
+// @Summary Update Username
+// @Description Updates the user's display name and slug.
+// @Tags Auth
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body object{username=string} true "Username Data"
+// @Success 200 {object} object{success=bool,data=dto.AuthUserDTO}
+// @Router /users/username [put]
+func (h *AuthHandler) UpdateUsername(c *fiber.Ctx) error {
+	userID, ok := c.Locals("user_id").(uint64)
+	if !ok {
+		return domain.NewAppError(401, "Corrupted token payload context", nil)
+	}
+
+	var req struct {
+		Username string `json:"username"`
+	}
+	if err := c.BodyParser(&req); err != nil {
+		return domain.NewAppError(400, "Invalid JSON body payload", err)
+	}
+
+	updatedUser, err := h.usecase.UpdateUsername(c.Context(), userID, req.Username)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{
+		"success": true,
+		"data":    dto.ToAuthUserDTO(updatedUser),
+	})
+}
+
 // AnilistLink redirects to the Anilist authorization page
 // @Summary Redirect to Anilist Auth
 // @Description Generates the Anilist OAuth2 authorization URL and redirects the user.

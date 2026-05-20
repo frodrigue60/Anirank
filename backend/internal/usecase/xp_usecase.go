@@ -10,18 +10,20 @@ import (
 )
 
 type xpUsecase struct {
-	xpRepo       domain.XPRepository
-	userRepo     domain.UserRepository
-	badgeUsecase domain.BadgeUsecase
-	activityUsecase domain.ActivityUsecase
+	xpRepo              domain.XPRepository
+	userRepo            domain.UserRepository
+	badgeUsecase        domain.BadgeUsecase
+	activityUsecase     domain.ActivityUsecase
+	notificationUsecase domain.NotificationUsecase
 }
 
-func NewXPUsecase(xpRepo domain.XPRepository, userRepo domain.UserRepository, badgeUsecase domain.BadgeUsecase, activityUsecase domain.ActivityUsecase) domain.XPUsecase {
+func NewXPUsecase(xpRepo domain.XPRepository, userRepo domain.UserRepository, badgeUsecase domain.BadgeUsecase, activityUsecase domain.ActivityUsecase, notificationUsecase domain.NotificationUsecase) domain.XPUsecase {
 	return &xpUsecase{
-		xpRepo:          xpRepo,
-		userRepo:        userRepo,
-		badgeUsecase:    badgeUsecase,
-		activityUsecase: activityUsecase,
+		xpRepo:              xpRepo,
+		userRepo:            userRepo,
+		badgeUsecase:        badgeUsecase,
+		activityUsecase:     activityUsecase,
+		notificationUsecase: notificationUsecase,
 	}
 }
 
@@ -108,6 +110,16 @@ func (u *xpUsecase) AwardXP(ctx context.Context, userID uint64, activityKey stri
 	if newLevel > user.Level {
 		levelStr := fmt.Sprintf("%d", newLevel)
 		_ = u.activityUsecase.LogActivity(ctx, userID, "level_up", uint64(newLevel), "level", &levelStr)
+
+		// Create level_up notification
+		notifData, _ := json.Marshal(map[string]interface{}{
+			"level": newLevel,
+		})
+		_ = u.notificationUsecase.Create(ctx, &domain.Notification{
+			UserID: userID,
+			Type:   "level_up",
+			Data:   notifData,
+		})
 	}
 
 	return nil

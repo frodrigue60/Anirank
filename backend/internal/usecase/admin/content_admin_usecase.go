@@ -2511,7 +2511,7 @@ func (u *ContentAdminUsecase) CreateVariant(ctx context.Context, v *domain.SongV
 			}
 		}
 		v.VersionNumber = maxVersion + 1
-		v.Slug = fmt.Sprintf("v%d", v.VersionNumber)
+		v.Slug = fmt.Sprintf("V%d", v.VersionNumber)
 	}
 
 	v.UUID = uuid.New().String()

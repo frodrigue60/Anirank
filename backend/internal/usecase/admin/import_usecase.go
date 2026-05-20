@@ -368,11 +368,8 @@ func (u *ImportUsecase) processSong(
 			version = 1
 		}
 
-		// Build slug: "OP1v2" style
-		variantSlug := fmt.Sprintf("%s%s", strings.ToUpper(songType), themeNum)
-		if version > 1 {
-			variantSlug = fmt.Sprintf("%sv%d", variantSlug, version)
-		}
+		// Build slug: "V1", "V2" version style to align with local architecture
+		variantSlug := fmt.Sprintf("V%d", version)
 
 		variant := &domain.SongVariant{
 			VersionNumber: uint64(version),

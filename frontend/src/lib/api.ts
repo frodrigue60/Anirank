@@ -3,10 +3,11 @@ import { getAuthToken, removeAuthToken, setUser } from "$lib/state/auth.svelte";
 
 // Usamos el cliente HTTP para nuestra SPA
 // PUBLIC_API_URL from repo .env (e.g. https://api.anirank.work/api); VITE_API_URL legacy fallback; localhost for local API only
-export const PUBLIC_API_URL =
-  import.meta.env.PUBLIC_API_URL ||
-  import.meta.env.VITE_API_URL ||
-  "http://localhost:8080/api";
+const isBrowser = typeof window !== 'undefined';
+
+export const PUBLIC_API_URL = isBrowser
+  ? (import.meta.env.PUBLIC_API_URL || import.meta.env.VITE_API_URL || "http://localhost:8080/api")
+  : (globalThis.process?.env?.PUBLIC_API_URL || globalThis.process?.env?.API_URL || "http://backend.railway.internal:8080/api");
 
 const apiBase = PUBLIC_API_URL;
 

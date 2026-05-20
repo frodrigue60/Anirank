@@ -2637,6 +2637,26 @@ func (u *ContentAdminUsecase) DeleteVariant(ctx context.Context, id uint64, meta
 	return nil
 }
 
+func (u *ContentAdminUsecase) DeleteVariantVideo(ctx context.Context, id uint64, videoSrc *string, embedCode *string, purge bool, meta domain.AuditMetadata) error {
+	existing, err := u.variantRepo.GetByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	if purge && videoSrc != nil && *videoSrc != "" {
+		u.mediaService.DeleteMedia(ctx, *videoSrc)
+	}
+
+	if err := u.variantRepo.DeleteVideo(ctx, id, videoSrc, embedCode); err != nil {
+		return err
+	}
+
+	updated, _ := u.variantRepo.GetByID(ctx, id)
+	_ = u.auditUsecase.LogActions(ctx, meta.ActorID, "updated", id, "variant_video", existing, updated, &meta.URL, &meta.IPAddress, &meta.UserAgent)
+	return nil
+}
+
+
 func (u *ContentAdminUsecase) SearchStudios(ctx context.Context, term string, limit int) ([]domain.Studio, error) {
 	return u.taxonomyRepo.SearchStudios(ctx, term, limit)
 }

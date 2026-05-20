@@ -101,6 +101,98 @@
       loading = false;
     }
   }
+
+  async function detachVideo(variant: any, video: any) {
+    if (
+      !confirm(
+        "Are you sure you want to detach this video? The video relation will be removed from the database, but the physical file in cloud storage will not be deleted.",
+      )
+    )
+      return;
+
+    loading = true;
+    errorMsg = "";
+    try {
+      const src = video.video_src || "";
+      const embed = video.embed_code || "";
+      await api.delete(`/admin/variants/${variant.id}/video`, {
+        params: {
+          video_src: src,
+          embed_code: embed,
+          purge: false,
+        },
+      });
+
+      // Update local state to reflect deletion
+      if (variant.videos) {
+        variant.videos = variant.videos.filter(
+          (v: any) => v.video_src !== src || v.embed_code !== embed,
+        );
+      }
+      if (
+        variant.video &&
+        variant.video.video_src === src &&
+        variant.video.embed_code === embed
+      ) {
+        variant.video =
+          variant.videos && variant.videos.length > 0
+            ? variant.videos[0]
+            : null;
+      }
+      variants = [...variants];
+    } catch (err: any) {
+      console.error(err);
+      errorMsg = err.response?.data?.message || "Failed to detach video";
+    } finally {
+      loading = false;
+    }
+  }
+
+  async function deleteVideo(variant: any, video: any) {
+    if (
+      !confirm(
+        "Are you sure you want to delete this video? This will remove the database relation AND permanently delete the file from the cloud storage. This action cannot be undone.",
+      )
+    )
+      return;
+
+    loading = true;
+    errorMsg = "";
+    try {
+      const src = video.video_src || "";
+      const embed = video.embed_code || "";
+      await api.delete(`/admin/variants/${variant.id}/video`, {
+        params: {
+          video_src: src,
+          embed_code: embed,
+          purge: true,
+        },
+      });
+
+      // Update local state to reflect deletion
+      if (variant.videos) {
+        variant.videos = variant.videos.filter(
+          (v: any) => v.video_src !== src || v.embed_code !== embed,
+        );
+      }
+      if (
+        variant.video &&
+        variant.video.video_src === src &&
+        variant.video.embed_code === embed
+      ) {
+        variant.video =
+          variant.videos && variant.videos.length > 0
+            ? variant.videos[0]
+            : null;
+      }
+      variants = [...variants];
+    } catch (err: any) {
+      console.error(err);
+      errorMsg = err.response?.data?.message || "Failed to delete video file";
+    } finally {
+      loading = false;
+    }
+  }
 </script>
 
 <div class="space-y-6">
@@ -498,6 +590,77 @@
                       {variant.video_src || variant.video?.video_src || "NOT CONFIGURED"}
                     </div>
                   </div>
+                </div>
+
+                <!-- Video Manager -->
+                <div class="mt-4 pt-4 border-t border-zinc-800/50">
+                  <div class="text-[10px] uppercase font-black tracking-widest text-zinc-500 mb-3 flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-sm">settings</span>
+                    Video Manager
+                  </div>
+                  {#if variant.videos && variant.videos.length > 0}
+                    <div class="grid grid-cols-1 gap-2">
+                      {#each variant.videos as vid}
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-black/40 border border-zinc-800/80 rounded-2xl transition-all hover:border-zinc-700/50">
+                          <div class="flex items-center gap-3 min-w-0">
+                            {#if vid.type === 'file'}
+                              <div class="flex items-center justify-center w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
+                                <span class="material-symbols-outlined text-base">movie</span>
+                              </div>
+                              <div class="min-w-0 flex-1">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                  <span class="text-[11px] font-bold text-zinc-200 uppercase tracking-normal">Cloud Storage File</span>
+                                  <span class="bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider">{vid.source || 'TV'}</span>
+                                  {#if vid.resolution > 0}
+                                    <span class="bg-zinc-800 text-zinc-400 px-1 py-0.5 rounded text-[8px] font-mono">{vid.resolution}p</span>
+                                  {/if}
+                                  {#if vid.is_nc}
+                                    <span class="bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded text-[8px] font-black">NC</span>
+                                  {/if}
+                                </div>
+                                <p class="text-[9px] font-mono text-zinc-500 truncate mt-1 select-all">{vid.video_src}</p>
+                              </div>
+                            {:else}
+                              <div class="flex items-center justify-center w-8 h-8 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 shrink-0">
+                                <span class="material-symbols-outlined text-base">code</span>
+                              </div>
+                              <div class="min-w-0 flex-1">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                  <span class="text-[11px] font-bold text-zinc-200 uppercase tracking-normal">Embed / Iframe Code</span>
+                                  <span class="bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider">Embed</span>
+                                </div>
+                                <p class="text-[9px] font-mono text-zinc-500 truncate mt-1 select-all">{vid.embed_code}</p>
+                              </div>
+                            {/if}
+                          </div>
+                          <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                            <button
+                              onclick={() => detachVideo(variant, vid)}
+                              disabled={loading}
+                              class="px-2.5 py-1.5 bg-amber-500/10 hover:bg-amber-500 text-amber-400 hover:text-zinc-950 text-[9px] font-black uppercase tracking-widest rounded-xl border border-amber-500/20 hover:border-amber-500 transition-all flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Remove video relationship but keep file in cloud storage"
+                            >
+                              <span class="material-symbols-outlined text-xs">link_off</span>
+                              Detach
+                            </button>
+                            <button
+                              onclick={() => deleteVideo(variant, vid)}
+                              disabled={loading}
+                              class="px-2.5 py-1.5 bg-red-500/10 hover:bg-red-600 text-red-400 hover:text-on-surface text-[9px] font-black uppercase tracking-widest rounded-xl border border-red-500/20 hover:border-red-500 transition-all flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Delete video relationship and purge file from cloud storage"
+                            >
+                              <span class="material-symbols-outlined text-xs">delete_forever</span>
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      {/each}
+                    </div>
+                  {#else}
+                    <div class="flex items-center justify-center p-4 bg-black/20 border border-zinc-800/50 rounded-2xl text-zinc-600 text-xs">
+                      No videos attached to this variant. Use the 'Manage Video' button above to configure one.
+                    </div>
+                  {/if}
                 </div>
               </td>
             </tr>

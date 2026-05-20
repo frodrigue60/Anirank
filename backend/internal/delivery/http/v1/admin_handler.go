@@ -957,6 +957,32 @@ func (h *AdminHandler) DeleteVariant(c *fiber.Ctx) error {
 	return c.SendStatus(204)
 }
 
+func (h *AdminHandler) DeleteVariantVideo(c *fiber.Ctx) error {
+	id, _ := strconv.ParseUint(c.Params("id"), 10, 64)
+
+	videoSrcStr := c.Query("video_src")
+	var videoSrc *string
+	if videoSrcStr != "" {
+		videoSrc = &videoSrcStr
+	}
+
+	embedCodeStr := c.Query("embed_code")
+	var embedCode *string
+	if embedCodeStr != "" {
+		embedCode = &embedCodeStr
+	}
+
+	purgeStr := c.Query("purge")
+	purge := purgeStr == "true" || purgeStr == "1"
+
+	if err := h.usecase.DeleteVariantVideo(c.Context(), id, videoSrc, embedCode, purge, h.getAuditMetadata(c)); err != nil {
+		return err
+	}
+
+	return c.SendStatus(204)
+}
+
+
 func (h *AdminHandler) ToggleVariantStatus(c *fiber.Ctx) error {
 	id, _ := strconv.ParseUint(c.Params("id"), 10, 64)
 	if err := h.usecase.ToggleVariantStatus(c.Context(), id, h.getAuditMetadata(c)); err != nil {

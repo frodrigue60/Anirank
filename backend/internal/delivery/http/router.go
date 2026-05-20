@@ -409,6 +409,7 @@ func SetupPublicRoutes(app *fiber.App,
 	adminOnly.Post("/variants", middleware.HasPermissionMiddleware("song.edit", userRepo), adminHandler.CreateVariant)
 	adminOnly.Put("/variants/:id<int>", middleware.HasPermissionMiddleware("song.edit", userRepo), adminHandler.UpdateVariant)
 	adminOnly.Put("/variants/:id<int>/video", middleware.HasPermissionMiddleware("song.edit", userRepo), adminHandler.UpdateVariantVideo)
+	adminOnly.Delete("/variants/:id<int>/video", middleware.HasPermissionMiddleware("song.edit", userRepo), adminHandler.DeleteVariantVideo)
 	adminOnly.Patch("/variants/:id<int>/status", middleware.HasPermissionMiddleware("song.edit", userRepo), adminHandler.ToggleVariantStatus)
 	adminOnly.Patch("/variants/:id<int>/spoiler", middleware.HasPermissionMiddleware("song.edit", userRepo), adminHandler.ToggleVariantSpoiler)
 	adminOnly.Patch("/variants/:id<int>/nsfw", middleware.HasPermissionMiddleware("song.edit", userRepo), adminHandler.ToggleVariantNSFW)

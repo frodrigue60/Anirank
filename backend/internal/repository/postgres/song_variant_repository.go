@@ -298,3 +298,22 @@ func (r *songVariantRepository) ToggleNSFW(ctx context.Context, id uint64) error
 	_, err := r.db.ExecContext(ctx, query, id)
 	return err
 }
+
+func (r *songVariantRepository) DeleteVideo(ctx context.Context, variantID uint64, videoSrc *string, embedCode *string) error {
+	var query string
+	var args []interface{}
+
+	if videoSrc != nil && *videoSrc != "" {
+		query = "DELETE FROM videos WHERE song_variant_id = $1 AND video_src = $2"
+		args = []interface{}{variantID, *videoSrc}
+	} else if embedCode != nil && *embedCode != "" {
+		query = "DELETE FROM videos WHERE song_variant_id = $1 AND embed_code = $2"
+		args = []interface{}{variantID, *embedCode}
+	} else {
+		query = "DELETE FROM videos WHERE song_variant_id = $1"
+		args = []interface{}{variantID}
+	}
+
+	_, err := r.db.ExecContext(ctx, query, args...)
+	return err
+}

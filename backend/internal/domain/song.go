@@ -210,6 +210,7 @@ type SongVariantRepository interface {
 	ToggleStatus(ctx context.Context, id uint64) error
 	ToggleSpoiler(ctx context.Context, id uint64) error
 	ToggleNSFW(ctx context.Context, id uint64) error
+	DeleteVideo(ctx context.Context, variantID uint64, videoSrc *string, embedCode *string) error
 }
 
 type ArtistRepository interface {

@@ -1419,9 +1419,10 @@
       </div>
       <div class="space-y-3">
         {#each relatedSongs as related}
+          {@const isSelected = related.id === currentSong.id}
           <a
             href="/animes/{currentSong.anime?.slug}/{related.slug}"
-            class="flex gap-3 group bg-transparent hover:bg-surface-highest p-2 rounded-md transition-all"
+            class="flex gap-3 group p-2 pl-1 rounded-r-md transition-all border-l-4 {isSelected ? 'bg-surface-low border-primary shadow-sm' : 'bg-transparent hover:bg-surface-highest border-transparent'}"
             title="View theme: {getSongName(related)}"
           >
             <div
@@ -1452,7 +1453,7 @@
                 </span>
               </div>
               <h4
-                class="text-sm font-bold text-on-surface group-hover:text-primary transition-colors line-clamp-1"
+                class="text-sm font-bold transition-colors line-clamp-1 {isSelected ? 'text-primary' : 'text-on-surface group-hover:text-primary'}"
               >
                 {getSongName(related)}
               </h4>

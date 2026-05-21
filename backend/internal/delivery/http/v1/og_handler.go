@@ -372,3 +372,55 @@ func (h *OGHandler) FlushOGCache(c *fiber.Ctx) error {
 		"message": "OG cache flushed successfully",
 	})
 }
+
+func (h *OGHandler) RankingOG(c *fiber.Ctx) error {
+	rankingType := c.Params("type") // "seasonal" or "global"
+	if rankingType != "seasonal" && rankingType != "global" {
+		return c.Status(http.StatusBadRequest).SendString("Invalid ranking type")
+	}
+
+	cacheKey := fmt.Sprintf("ranking_%s_v%d", rankingType, h.generator.GetVersion())
+	nocache := c.Query("nocache") == "true"
+
+	// Check cache
+	if !nocache {
+		if data, ok := h.generator.GetCache(cacheKey); ok {
+			c.Set("Content-Type", "image/png")
+			c.Set("Cache-Control", "public, max-age=3600")
+			return c.Send(data)
+		}
+	}
+
+	// Fetch top 3 songs for the ranking to display them on the OG image
+	ranking, err := h.catalogUsecase.GetSongRanking(c.Context(), nil, rankingType, "all", 3, 0)
+	if err != nil {
+		fmt.Printf("[OG Handler] Error getting ranking for OG: %v\n", err)
+	}
+
+	var songs []domain.Song
+	if ranking != nil {
+		songs = ranking.Songs
+	}
+
+	img, err := h.generator.GenerateRankingOG(rankingType, songs)
+	if err != nil {
+		fmt.Printf("[OG Handler] Error generating Ranking OG for %s: %v\n", rankingType, err)
+		return c.Status(http.StatusInternalServerError).SendString(err.Error())
+	}
+
+	buffer := new(bytes.Buffer)
+	if err := png.Encode(buffer, img); err != nil {
+		return c.Status(http.StatusInternalServerError).SendString(err.Error())
+	}
+
+	// Save to cache
+	if !nocache {
+		h.generator.SaveCache(cacheKey, buffer.Bytes())
+		c.Set("Cache-Control", "public, max-age=3600")
+	} else {
+		c.Set("Cache-Control", "no-cache, no-store, must-revalidate")
+	}
+
+	c.Set("Content-Type", "image/png")
+	return c.Send(buffer.Bytes())
+}

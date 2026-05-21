@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"anirank/api/internal/domain"
 	"anirank/api/internal/pkg/imageutil"
 
 	"github.com/disintegration/gift"
@@ -687,4 +688,176 @@ func (g *Generator) truncate(s string, maxLen int) string {
 		return s
 	}
 	return string(runes[:maxLen-3]) + "..."
+}
+
+func (g *Generator) GenerateRankingOG(rankingType string, songs []domain.Song) (image.Image, error) {
+	const (
+		W = 1200
+		H = 630
+	)
+
+	dc := gg.NewContext(W, H)
+	
+	// 1. Blurred background of the #1 song if available, otherwise fallback to gradient
+	var bgUrl string
+	if len(songs) > 0 && songs[0].Anime != nil {
+		if songs[0].Anime.BannerUrl != nil {
+			bgUrl = *songs[0].Anime.BannerUrl
+		} else if songs[0].Anime.CoverUrl != nil {
+			bgUrl = *songs[0].Anime.CoverUrl
+		}
+	}
+
+	if bgUrl != "" {
+		if err := g.drawBlurredBackground(dc, bgUrl, W, H); err != nil {
+			drawGradientBackground(dc, W, H)
+		}
+	} else {
+		drawGradientBackground(dc, W, H)
+	}
+
+	// 2. Artistic accents
+	dc.SetRGBA(127.0/255.0, 19.0/255.0, 236.0/255.0, 0.15)
+	dc.DrawCircle(0, 0, 500)
+	dc.Fill()
+	dc.DrawCircle(W, H, 400)
+	dc.Fill()
+
+	// 3. Branding
+	if face, err := g.loadFont(g.fontBlack, 42); err == nil {
+		dc.SetFontFace(face)
+		dc.SetRGBA(1, 1, 1, 0.9)
+		dc.DrawStringAnchored("ANIRANK", 80, 80, 0, 0.5)
+	}
+
+	// 4. Ranking Title & Subtitle
+	badgeText := "GLOBAL RANKING"
+	titleText := "Top Rated Songs"
+	if rankingType == "seasonal" {
+		badgeText = "SEASONAL RANKING"
+		titleText = "Top Seasonal Hits"
+	}
+
+	// Badge
+	if face, err := g.loadFont(g.fontBlack, 28); err == nil {
+		dc.SetFontFace(face)
+		dc.SetHexColor("#ff4e50")
+		dc.DrawStringAnchored(badgeText, 80, 160, 0, 0.5)
+	}
+
+	// Title
+	if face, err := g.loadFont(g.fontBlack, 68); err == nil {
+		dc.SetFontFace(face)
+		dc.SetRGB(1, 1, 1)
+		dc.DrawStringWrapped(titleText, 80, 220, 0, 0, 450, 1.1, gg.AlignLeft)
+	}
+
+	// Subtitle/Description
+	description := "The community's ultimate ranking of anime opening and ending themes."
+	if face, err := g.loadFont(g.fontBold, 22); err == nil {
+		dc.SetFontFace(face)
+		dc.SetRGBA(1, 1, 1, 0.5)
+		dc.DrawStringWrapped(description, 80, 380, 0, 0, 420, 1.3, gg.AlignLeft)
+	}
+
+	// Branding URL at the bottom left
+	if face, err := g.loadFont(g.fontBold, 22); err == nil {
+		dc.SetFontFace(face)
+		dc.SetRGBA(1, 1, 1, 0.4)
+		dc.DrawStringAnchored("ANIRANK.WORK", 80, H-80, 0, 0.5)
+	}
+
+	// 5. Draw Top 3 Songs on the right side
+	listX := 560.0
+	itemW := 560.0
+	startY := 80.0
+	spacingY := 160.0
+
+	for i, song := range songs {
+		if i >= 3 {
+			break
+		}
+		y := startY + float64(i)*spacingY
+
+		// Draw card background
+		dc.SetRGBA(15.0/255.0, 23.0/255.0, 42.0/255.0, 0.6) // Semi-transparent card
+		dc.DrawRoundedRectangle(listX, y, itemW, 140, 12)
+		dc.Fill()
+
+		// Draw card border
+		dc.SetRGBA(255.0/255.0, 255.0/255.0, 255.0/255.0, 0.1)
+		dc.SetLineWidth(1.5)
+		dc.DrawRoundedRectangle(listX, y, itemW, 140, 12)
+		dc.Stroke()
+
+		// 5a. Rank Number
+		rankColor := "#FFD700" // Gold
+		if i == 1 {
+			rankColor = "#C0C0C0" // Silver
+		} else if i == 2 {
+			rankColor = "#CD7F32" // Bronze
+		}
+		if face, err := g.loadFont(g.fontBlack, 48); err == nil {
+			dc.SetFontFace(face)
+			dc.SetHexColor(rankColor)
+			dc.DrawStringAnchored(fmt.Sprintf("#%d", i+1), listX+40, y+70, 0.5, 0.5)
+		}
+
+		// 5b. Song Name
+		songName := song.Name
+		if songName == "" {
+			songName = "N/A"
+		}
+		songName = g.truncate(songName, 32)
+		
+		if face, err := g.loadFont(g.fontBlack, 28); err == nil {
+			dc.SetFontFace(face)
+			dc.SetRGB(1, 1, 1)
+			dc.DrawStringAnchored(songName, listX+100, y+45, 0, 0.5)
+		}
+
+		// 5c. Artists & Anime
+		metaParts := []string{}
+		if len(song.Artists) > 0 {
+			metaParts = append(metaParts, g.truncate(song.Artists[0].Name, 20))
+		}
+		if song.Anime != nil {
+			metaParts = append(metaParts, g.truncate(song.Anime.Title, 22))
+		}
+		metaText := strings.Join(metaParts, " • ")
+		if face, err := g.loadFont(g.fontBold, 18); err == nil {
+			dc.SetFontFace(face)
+			dc.SetRGBA(1, 1, 1, 0.6)
+			dc.DrawStringAnchored(metaText, listX+100, y+85, 0, 0.5)
+		}
+
+		// 5d. Score Badge (e.g. 9.4)
+		if song.AverageRating > 0 {
+			if face, err := g.loadFont(g.fontBlack, 26); err == nil {
+				dc.SetFontFace(face)
+				dc.SetHexColor("#FFD700")
+				dc.DrawStringAnchored(fmt.Sprintf("%.1f", song.AverageRating), listX+itemW-45, y+55, 0.5, 0.5)
+			}
+			if face, err := g.loadFont(g.fontBold, 14); err == nil {
+				dc.SetFontFace(face)
+				dc.SetRGBA(1, 1, 1, 0.4)
+				dc.DrawStringAnchored("SCORE", listX+itemW-45, y+95, 0.5, 0.5)
+			}
+		}
+	}
+
+	// If fewer than 3 songs (e.g., empty DB), draw a placeholder message on the right
+	if len(songs) == 0 {
+		dc.SetRGBA(15.0/255.0, 23.0/255.0, 42.0/255.0, 0.4)
+		dc.DrawRoundedRectangle(listX, startY, itemW, H-startY-80, 16)
+		dc.Fill()
+
+		if face, err := g.loadFont(g.fontBold, 26); err == nil {
+			dc.SetFontFace(face)
+			dc.SetRGBA(1, 1, 1, 0.6)
+			dc.DrawStringAnchored("No rankings calculated yet.", listX+itemW/2, startY+(H-startY-80)/2, 0.5, 0.5)
+		}
+	}
+
+	return dc.Image(), nil
 }

@@ -231,6 +231,7 @@ func SetupPublicRoutes(app *fiber.App,
 	api.Get("/og/playlist/:pid", ogHandler.PlaylistOG)
 	api.Get("/og/user/:slug", ogHandler.UserOG)
 	api.Get("/og/home", ogHandler.HomeOG)
+	api.Get("/og/ranking/:type", ogHandler.RankingOG)
 
 	// SEO Bot Proxy route
 	app.Get("/seo-bot/*", seoHandler.GetMetadata)

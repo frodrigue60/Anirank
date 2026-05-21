@@ -28,10 +28,8 @@
   import Edit2 from "lucide-svelte/icons/edit-2";
   import CornerDownRight from "lucide-svelte/icons/corner-down-right";
   import MessageCircle from "lucide-svelte/icons/message-circle";
-  import Play from "lucide-svelte/icons/play";
   import UserIcon from "lucide-svelte/icons/user";
   import Flag from "lucide-svelte/icons/flag";
-  import RotateCcw from "lucide-svelte/icons/rotate-ccw";
   import Library from "lucide-svelte/icons/library";
   import Sparkles from "lucide-svelte/icons/sparkles";
   import OptimizedImage from "$lib/components/OptimizedImage.svelte";
@@ -722,6 +720,7 @@
         {/if}
       </div>
 
+      <!-- Details -->
       <div class="space-y-4">
         <div class="space-y-2">
           <div class="flex items-center gap-3">
@@ -808,14 +807,17 @@
             {getSongName(currentSong)}
           </h1>
           <!-- Artists -->
-          <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <div class="flex flex-wrap items-center gap-y-1">
             {#if currentSong.artists?.length}
-              {#each currentSong.artists as artist}
+              {#each currentSong.artists as artist, i}
+                {#if i > 0}
+                  <span class="text-on-surface-variant/40 text-sm font-bold mr-2">,</span>
+                {/if}
                 {#if artist?.status === false}
                   <span
                     class="text-on-surface-variant/40 text-sm font-bold uppercase tracking-widest"
                     >N/A</span
-                  >
+                  > 
                 {:else}
                   <a
                     href="/artists/{artist.slug}"
@@ -1080,17 +1082,30 @@
           <Star size={20} class="text-primary" />
           Recommendations
         </h2>
-        <div class="bg-surface-low border border-outline-variant/10 rounded-md p-6 flex flex-col items-center justify-center text-center space-y-3 transition-all hover:border-primary/20 group/wip">
-          <div class="p-3 bg-primary/10 rounded-sm text-primary animate-pulse group-hover/wip:scale-110 transition-transform duration-300">
+        <div
+          class="bg-surface-low border border-outline-variant/10 rounded-md p-6 flex flex-col items-center justify-center text-center space-y-3 transition-all hover:border-primary/20 group/wip"
+        >
+          <div
+            class="p-3 bg-primary/10 rounded-sm text-primary animate-pulse group-hover/wip:scale-110 transition-transform duration-300"
+          >
             <Sparkles size={20} />
           </div>
           <div class="space-y-1">
-            <h4 class="text-xs font-bold text-on-surface uppercase tracking-wider">Smart Recommendations</h4>
-            <p class="text-[11px] text-on-surface-variant/60 max-w-[200px] mx-auto leading-relaxed">
-              We are building a smart system to recommend more themes based on your music taste.
+            <h4
+              class="text-xs font-bold text-on-surface uppercase tracking-wider"
+            >
+              Smart Recommendations
+            </h4>
+            <p
+              class="text-[11px] text-on-surface-variant/60 max-w-[200px] mx-auto leading-relaxed"
+            >
+              We are building a smart system to recommend more themes based on
+              your music taste.
             </p>
           </div>
-          <div class="px-2 py-0.5 rounded-sm text-[8px] font-black uppercase tracking-widest bg-primary/20 text-primary">
+          <div
+            class="px-2 py-0.5 rounded-sm text-[8px] font-black uppercase tracking-widest bg-primary/20 text-primary"
+          >
             Coming Soon
           </div>
         </div>

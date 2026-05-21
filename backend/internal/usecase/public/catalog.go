@@ -252,21 +252,17 @@ func (u *CatalogUsecase) GetSongByAnimeSongSlug(ctx context.Context, userID *uin
 	// enrichment now handles variants and iframe cleanup
 
 	related, _ := u.songRepo.GetByAnimeID(ctx, anime.ID, false)
-	var filtered []domain.Song
-	for _, s := range related {
-		if s.ID != song.ID {
-			s.Anime = anime
-			filtered = append(filtered, s)
-		}
+	for i := range related {
+		related[i].Anime = anime
 	}
 
-	if len(filtered) > 0 {
-		u.enrichSongsBulk(ctx, userID, filtered)
+	if len(related) > 0 {
+		u.enrichSongsBulk(ctx, userID, related)
 	} else {
-		filtered = []domain.Song{}
+		related = []domain.Song{}
 	}
 
-	return song, filtered, nil
+	return song, related, nil
 }
 
 func (u *CatalogUsecase) GetSongRanking(ctx context.Context, userID *uint64, rankingType, songType string, limit, offset int) (*RankingResponse, error) {

@@ -33,6 +33,7 @@
   import Flag from "lucide-svelte/icons/flag";
   import RotateCcw from "lucide-svelte/icons/rotate-ccw";
   import Library from "lucide-svelte/icons/library";
+  import Sparkles from "lucide-svelte/icons/sparkles";
   import OptimizedImage from "$lib/components/OptimizedImage.svelte";
   import type { ImageSource } from "$lib/types/media";
   import api from "$lib/api";
@@ -83,9 +84,7 @@
   let relatedSongs: Song[] = $state(data.related);
 
   let selectedVariantIndex = $state(0);
-  let selectedVariant = $derived(
-    currentSong.variants?.[selectedVariantIndex],
-  );
+  let selectedVariant = $derived(currentSong.variants?.[selectedVariantIndex]);
   let selectedVideoIndex = $state(0);
   let selectedVideo = $derived(
     selectedVariant?.videos?.[selectedVideoIndex] || {
@@ -100,7 +99,7 @@
       is_lyrics: selectedVariant?.is_lyrics,
       source: selectedVariant?.source,
       overlap: selectedVariant?.overlap,
-    }
+    },
   );
   let videoError = $state(false);
 
@@ -114,6 +113,37 @@
     selectedVariantIndex = 0;
     selectedVideoIndex = 0;
     videoError = false;
+  });
+
+  let activeElement = $state<HTMLElement | null>(null);
+
+  function bindActive(node: HTMLElement, isSelected: boolean) {
+    if (isSelected) {
+      activeElement = node;
+    }
+    return {
+      update(newIsSelected: boolean) {
+        if (newIsSelected) {
+          activeElement = node;
+        } else if (activeElement === node) {
+          activeElement = null;
+        }
+      },
+      destroy() {
+        if (activeElement === node) {
+          activeElement = null;
+        }
+      },
+    };
+  }
+
+  $effect(() => {
+    if (activeElement) {
+      activeElement.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+    }
   });
 
   let newCommentText = $state("");
@@ -175,7 +205,7 @@
       await api.put(`/comments/${editingCommentUuid}`, {
         content: editText,
       });
-      
+
       // Update local state
       const updateLocal = (list: Comment[] | undefined) => {
         if (!list) return false;
@@ -188,7 +218,7 @@
         }
         return false;
       };
-      
+
       updateLocal(comments);
       comments = [...comments]; // Trigger reactivity
       editingCommentUuid = null;
@@ -306,7 +336,7 @@
         // Sync with server response
         currentSong.is_favorited =
           response.data.data?.favorited ?? response.data.data?.favorite;
-        
+
         if (currentSong.is_favorited) {
           toastState.addToast("Added to favorites!", "success");
         } else {
@@ -387,7 +417,10 @@
       newCommentText = "";
     } catch (e: any) {
       console.error(e);
-      toastState.addToast(e.response?.data?.message || "Failed to post comment", "error");
+      toastState.addToast(
+        e.response?.data?.message || "Failed to post comment",
+        "error",
+      );
     }
   }
 
@@ -425,7 +458,10 @@
       replyText = "";
     } catch (e: any) {
       console.error(e);
-      toastState.addToast(e.response?.data?.message || "Failed to post reply", "error");
+      toastState.addToast(
+        e.response?.data?.message || "Failed to post reply",
+        "error",
+      );
     }
   }
 
@@ -607,9 +643,9 @@
 
 <SEO
   title="{getSongName(currentSong)} - {currentSong.anime?.title} - AniRank"
-  description="Listen to and rate '{getSongName(
-    currentSong,
-  )}' ({currentSong.song_type?.name || currentSong.type}{currentSong.theme_num || ''}) by {getSongArtistNames(
+  description="Listen to and rate '{getSongName(currentSong)}' ({currentSong
+    .song_type?.name || currentSong.type}{currentSong.theme_num ||
+    ''}) by {getSongArtistNames(
     currentSong.artists,
   )} from the anime {currentSong.anime?.title}."
   image={`${PUBLIC_API_URL}/og/song/${currentSong.anime?.slug}/${currentSong.slug}`}
@@ -619,7 +655,7 @@
 <main
   class="flex-1 w-full max-w-[1440px] mx-auto px-6 py-8 space-y-8 animate-in fade-in duration-700"
 >
-  <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-12">
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
     <!-- Main Content (Left) -->
     <div class="lg:col-span-8 space-y-4">
       <!-- Video Player -->
@@ -644,7 +680,7 @@
               controls
               autoplay
               onplay={fadeInVolume}
-              onerror={() => videoError = true}
+              onerror={() => (videoError = true)}
             >
               <track kind="captions" />
             </video>
@@ -668,14 +704,11 @@
           <div
             class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center"
           >
-            <VideoOff
-              size={64}
-              class="text-on-surface-variant/20 mb-4"
-            />
+            <VideoOff size={64} class="text-on-surface-variant/20 mb-4" />
             <span class="text-on-surface-variant/60 font-bold text-lg"
               >{(currentSong.variants?.length ?? 0) > 0
-                ? videoError 
-                  ? "Video file unreachable or not found" 
+                ? videoError
+                  ? "Video file unreachable or not found"
                   : "No video available for this variant"
                 : "No video versions available for this theme song"}</span
             >
@@ -749,9 +782,11 @@
                   {#if video.is_lyrics}
                     {tagsList.push("LYRICS")}
                   {/if}
-                  {@const tagText = tagsList.length > 0 ? tagsList.join(" ") : `Video ${i + 1}`}
+                  {@const tagText =
+                    tagsList.length > 0 ? tagsList.join(" ") : `Video ${i + 1}`}
                   <button
-                    class="px-3 py-1.5 rounded-sm text-[10px] font-bold transition-all {selectedVideoIndex === i
+                    class="px-3 py-1.5 rounded-sm text-[10px] font-bold transition-all {selectedVideoIndex ===
+                    i
                       ? 'bg-primary text-white shadow-lg shadow-primary/20'
                       : 'hover:bg-on-surface-variant/10 text-on-surface-variant/60'}"
                     onclick={() => {
@@ -805,12 +840,14 @@
               {currentSong.anime?.title}
             </a>
             {#if (selectedVariant?.season && selectedVariant?.year) || (currentSong.season && currentSong.year)}
-              {@const displaySeason = selectedVariant?.season || currentSong.season}
+              {@const displaySeason =
+                selectedVariant?.season || currentSong.season}
               {@const displayYear = selectedVariant?.year || currentSong.year}
               <span
                 class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest bg-surface-highest border border-on-surface-variant/10 text-on-surface-variant/60"
               >
-                {displayYear?.name} {displaySeason?.name}
+                {displayYear?.name}
+                {displaySeason?.name}
               </span>
             {/if}
           </div>
@@ -963,448 +1000,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Comments Section -->
-      <div class="space-y-6 pt-4">
-        <h2 class="text-2xl font-bold flex items-center gap-3">
-          <MessageCircle size={24} class="text-primary" />
-          Comments
-        </h2>
-
-        <!-- New Comment Input -->
-        <div class="flex gap-4">
-          <div
-            class="w-10 h-10 rounded-full bg-white/10 overflow-hidden shrink-0"
-          >
-            {#if authState.isAuthenticated && authState.user}
-              <OptimizedImage
-                src={authState.user.avatar_url}
-                sources={authState.user.avatar_sources}
-                alt="{authState.user.name}'s avatar"
-                class="w-full h-full object-cover"
-                sizes="40px"
-              />
-            {:else}
-              <UserIcon size={24} class="text-white/40" />
-            {/if}
-          </div>
-          {#if authState.user?.is_softbanned}
-            <div class="flex-1 bg-red-500/5 border border-red-500/20 rounded-md p-4 flex items-center gap-3">
-              <AlertTriangle class="text-red-500" size={20} />
-              <p class="text-[11px] text-red-500 font-black uppercase tracking-widest leading-relaxed">
-                Your account is currently restricted due to low reputation or pending reports. You cannot post comments or ratings at this time.
-              </p>
-            </div>
-          {:else}
-            <div class="flex-1 flex flex-col gap-2">
-              <label for="main-comment-textarea" class="sr-only">Add a comment</label>
-              <textarea
-                id="main-comment-textarea"
-                bind:value={newCommentText}
-                placeholder={authState.isAuthenticated
-                  ? "Add a comment..."
-                  : "Sign in to comment..."}
-                class="w-full bg-surface-container border border-outline-variant/20 rounded-md p-3 text-sm text-on-surface focus:outline-none focus:border-primary transition-colors resize-none disabled:opacity-50 shadow-inner"
-                rows="2"
-                disabled={!authState.isAuthenticated}
-              ></textarea>
-              <div class="flex justify-end">
-                <button
-                  onclick={postComment}
-                  disabled={!newCommentText.trim() || !authState.isAuthenticated}
-                  class="bg-primary hover:bg-primary/80 text-white font-bold text-xs px-4 py-2 rounded-sm transition-colors disabled:opacity-50"
-                  title="Post comment"
-                  aria-label="Post comment"
-                >
-                  Comment
-                </button>
-              </div>
-            </div>
-          {/if}
-        </div>
-
-        <!-- Comments List -->
-        <div class="space-y-4 pb-12">
-          {#each comments as comment (comment.uuid)}
-            <div class="flex gap-4" id="comment-{comment.uuid}">
-              <div
-                class="w-10 h-10 rounded-full bg-surface-highest overflow-hidden shrink-0 border border-outline-variant/10"
-              >
-                <OptimizedImage
-                  src={comment.user?.avatar_url}
-                  sources={comment.user?.avatar_sources}
-                  alt={comment.user?.name}
-                  class="w-full h-full object-cover"
-                  sizes="40px"
-                />
-              </div>
-              <div class="flex-1 space-y-2">
-                <div
-                  class="bg-surface-low border border-outline-variant/10 rounded-md rounded-tl-sm p-4"
-                >
-                  <div class="flex justify-between items-start mb-1">
-                    <div class="flex items-center gap-2">
-                      <span class="font-bold text-sm text-on-surface"
-                        >{comment.user?.name || "Unknown User"}</span
-                      >
-                      {#if comment.user?.badges}
-                        {#each comment.user.badges as badge}
-                          <OptimizedImage
-                            src={badge.icon_url || badge.image_url}
-                            sources={badge.icon_sources}
-                            alt={badge.name}
-                            class="w-4 h-4"
-                            sizes="16px"
-                          />
-                        {/each}
-                      {/if}
-                      <span class="text-xs text-on-surface-variant/40"
-                        >{comment.created_at
-                          ? new Date(comment.created_at).toLocaleDateString()
-                          : "Just now"}</span
-                      >
-                    </div>
-                  </div>
-                  {#if editingCommentUuid === comment.uuid}
-                    <div class="space-y-2">
-                      <textarea
-                        bind:value={editText}
-                        class="w-full bg-surface-container border border-primary/30 rounded-sm p-3 text-sm text-on-surface focus:outline-none focus:border-primary transition-colors resize-none"
-                        rows="3"
-                      ></textarea>
-                      <div class="flex justify-end gap-2">
-                        <button
-                          onclick={cancelEditing}
-                          class="text-xs font-bold text-on-surface-variant hover:text-on-surface px-3 py-1.5 transition-colors"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onclick={saveEdit}
-                          class="bg-primary text-white text-xs font-bold px-3 py-1.5 rounded-sm hover:bg-primary/80 transition-colors"
-                        >
-                          Save
-                        </button>
-                      </div>
-                    </div>
-                  {:else}
-                    <p class="text-sm text-on-surface-variant whitespace-pre-wrap">
-                      {comment.content}
-                    </p>
-                  {/if}
-                </div>
-                <div class="flex justify-between text-md">
-                  <div class="flex gap-2 items-center">
-                    <button
-                      onclick={() => toggleCommentLike(comment.uuid)}
-                      class="flex items-center gap-1 transition-colors {comment.is_liked
-                        ? 'text-primary'
-                        : 'text-on-surface-variant/40 hover:text-on-surface'}"
-                      title={comment.is_liked
-                        ? "Unlike comment"
-                        : "Like comment"}
-                      aria-label={comment.is_liked
-                        ? "Unlike comment"
-                        : "Like comment"}
-                    >
-                      <ThumbsUp
-                        size={16}
-                        class={comment.is_liked ? "fill-primary" : ""}
-                      />
-                      {comment.likes_count || 0}
-                    </button>
-                    <button
-                      onclick={() => toggleCommentDislike(comment.uuid)}
-                      class="flex items-center gap-1 transition-colors {comment.is_disliked
-                        ? 'text-red-500'
-                        : 'text-on-surface-variant/40 hover:text-on-surface'}"
-                      title={comment.is_disliked
-                        ? "Undislike comment"
-                        : "Dislike comment"}
-                      aria-label={comment.is_disliked
-                        ? "Undislike comment"
-                        : "Dislike comment"}
-                    >
-                      <ThumbsDown
-                        size={16}
-                        class={comment.is_disliked ? "fill-red-500" : ""}
-                      />
-                      {comment.dislikes_count || 0}
-                    </button>
-                    <button
-                      onclick={() => {
-                        replyingToUuid =
-                          replyingToUuid === comment.uuid ? null : comment.uuid;
-                        replyText = "";
-                      }}
-                      class="text-on-surface-variant/60 hover:text-primary tracking-wider transition-colors flex items-center gap-1"
-                      title="Reply to comment"
-                      aria-label="Reply to comment"
-                      >Reply
-                      <CornerDownRight size={16} />
-                    </button>
-                  </div>
-
-                  <div class="relative">
-                    <button
-                      onclick={(e) => {
-                        e.stopPropagation();
-                        openDropdownUuid = openDropdownUuid === comment.uuid ? null : comment.uuid;
-                      }}
-                      class="p-1 hover:bg-surface-highest text-on-surface-variant/40 hover:text-on-surface transition-colors rounded-sm"
-                      title="More options"
-                      aria-label="More options"
-                    >
-                      <MoreVertical size={16} />
-                    </button>
-
-                    {#if openDropdownUuid === comment.uuid}
-                      <div class="absolute right-0 top-full mt-1 w-48 bg-surface-container border border-outline-variant/10 rounded-md shadow-xl z-20 py-1 overflow-hidden">
-                        {#if authState.user && authState.user.uuid === comment.user?.uuid}
-                          <button
-                            onclick={() => startEditing(comment)}
-                            class="w-full text-left px-4 py-2 text-xs font-bold text-on-surface-variant hover:bg-surface-low hover:text-primary transition-colors flex items-center gap-2"
-                          >
-                             <Edit2 size={14} /> Edit Comment
-                          </button>
-                        {/if}
-                        {#if authState.user && (authState.user.uuid === comment.user?.uuid || authState.isAdmin)}
-                          <button
-                            onclick={() => deleteComment(comment.uuid)}
-                            class="w-full text-left px-4 py-2 text-xs font-bold text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-2"
-                          >
-                             <Trash2 size={14} /> Delete Comment
-                          </button>
-                        {/if}
-                        <button
-                          onclick={() => openCommentReportModal(comment.uuid)}
-                          class="w-full text-left px-4 py-2 text-xs font-bold text-on-surface-variant hover:bg-surface-low hover:text-red-400 transition-colors flex items-center gap-2"
-                        >
-                          <Flag size={14} /> Report Comment
-                        </button>
-                        <button
-                          onclick={() => openUserReportModal(comment.user)}
-                          class="w-full text-left px-4 py-2 text-xs font-bold text-on-surface-variant hover:bg-surface-low hover:text-red-400 transition-colors flex items-center gap-2"
-                        >
-                          <UserIcon size={14} /> Report User
-                        </button>
-                      </div>
-                    {/if}
-                  </div>
-                </div>
-
-                <!-- Inline Reply Input -->
-                {#if replyingToUuid === comment.uuid}
-                  <div class="flex gap-3 mt-3">
-                    <div class="flex-1 flex flex-col gap-2">
-                      <label for="reply-textarea-{comment.uuid}" class="sr-only">Write a reply</label>
-                      <div class="flex gap-2 items-start">
-                        <textarea
-                          id="reply-textarea-{comment.uuid}"
-                          bind:value={replyText}
-                          placeholder="Write a reply..."
-                          class="w-full bg-surface-container border border-outline-variant/10 rounded-sm p-2 text-sm text-on-surface focus:outline-none focus:border-primary transition-colors resize-none"
-                          rows="1"
-                        ></textarea>
-                        <button
-                          onclick={() => postReply(comment.uuid)}
-                          disabled={!replyText.trim()}
-                          class="bg-surface-highest hover:bg-primary hover:text-white text-on-surface font-bold text-xs px-3 py-2 rounded-sm transition-colors disabled:opacity-50 shrink-0"
-                          title="Send reply"
-                          aria-label="Send reply"
-                        >
-                          Send
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                {/if}
-
-                <!-- Replies List -->
-                {#if comment.replies && comment.replies.length > 0}
-                  <div
-                    class="space-y-3 mt-3 border-l-2 border-outline-variant/10 pl-4"
-                  >
-                    {#each comment.replies as reply (reply.uuid)}
-                      <div class="flex gap-3" id="comment-{reply.uuid}">
-                        <div
-                          class="w-8 h-8 rounded-full bg-surface-highest overflow-hidden shrink-0 border border-outline-variant/10"
-                        >
-                          <OptimizedImage
-                            src={reply.user?.avatar_url}
-                            sources={reply.user?.avatar_sources}
-                            alt={reply.user?.name}
-                            class="w-full h-full object-cover"
-                            sizes="32px"
-                          />
-                        </div>
-                        <div class="flex-1 space-y-1">
-                          <div
-                            class="bg-surface-container/50 border border-outline-variant/10 rounded-md rounded-tl-sm p-3"
-                          >
-                            <div class="flex justify-between items-start mb-1">
-                              <div class="flex items-center gap-2">
-                                <span class="font-bold text-xs text-on-surface"
-                                  >{reply.user?.name || "Unknown User"}</span
-                                >
-                                {#if reply.user?.badges}
-                                  <div class="flex gap-1 ml-1">
-                                    {#each reply.user.badges as badge}
-                                      <OptimizedImage
-                                        src={badge.icon_url || badge.image_url}
-                                        sources={badge.icon_sources}
-                                        alt={badge.name}
-                                        class="w-3.5 h-3.5"
-                                        sizes="14px"
-                                      />
-                                    {/each}
-                                  </div>
-                                {/if}
-                                <span
-                                  class="text-[10px] text-on-surface-variant/40"
-                                  >{reply.created_at
-                                    ? new Date(
-                                        reply.created_at,
-                                      ).toLocaleDateString()
-                                    : "Just now"}</span
-                                >
-                              </div>
-                              <div class="relative">
-                                <button
-                                  onclick={(e) => {
-                                    e.stopPropagation();
-                                    openDropdownUuid = openDropdownUuid === reply.uuid ? null : reply.uuid;
-                                  }}
-                                  class="p-1 hover:bg-surface-highest text-on-surface-variant/40 hover:text-on-surface transition-colors rounded-sm"
-                                  title="More options"
-                                  aria-label="More options"
-                                >
-                                  <MoreVertical size={14} />
-                                </button>
-
-                                {#if openDropdownUuid === reply.uuid}
-                                  <div class="absolute right-0 top-full mt-1 w-48 bg-surface-container border border-outline-variant/10 rounded-md shadow-xl z-20 py-1 overflow-hidden">
-                                    {#if authState.user && authState.user.uuid === reply.user?.uuid}
-                                      <button
-                                        onclick={() => startEditing(reply)}
-                                        class="w-full text-left px-4 py-2 text-[11px] font-bold text-on-surface-variant hover:bg-surface-low hover:text-primary transition-colors flex items-center gap-2"
-                                      >
-                                         <Edit2 size={12} /> Edit Reply
-                                      </button>
-                                    {/if}
-                                    {#if authState.user && (authState.user.uuid === reply.user?.uuid || authState.isAdmin)}
-                                      <button
-                                        onclick={() => deleteComment(reply.uuid, comment.uuid)}
-                                        class="w-full text-left px-4 py-2 text-[11px] font-bold text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-2"
-                                      >
-                                         <Trash2 size={12} /> Delete Reply
-                                      </button>
-                                    {/if}
-                                    <button
-                                      onclick={() => openCommentReportModal(reply.uuid)}
-                                      class="w-full text-left px-4 py-2 text-[11px] font-bold text-on-surface-variant hover:bg-surface-low hover:text-red-400 transition-colors flex items-center gap-2"
-                                    >
-                                      <Flag size={12} /> Report Reply
-                                    </button>
-                                    <button
-                                      onclick={() => openUserReportModal(reply.user)}
-                                      class="w-full text-left px-4 py-2 text-[11px] font-bold text-on-surface-variant hover:bg-surface-low hover:text-red-400 transition-colors flex items-center gap-2"
-                                    >
-                                      <UserIcon size={12} /> Report User
-                                    </button>
-                                  </div>
-                                {/if}
-                              </div>
-                            </div>
-                            {#if editingCommentUuid === reply.uuid}
-                              <div class="space-y-2 mt-2">
-                                <textarea
-                                  bind:value={editText}
-                                  class="w-full bg-surface-container border border-primary/30 rounded-sm p-3 text-sm text-on-surface focus:outline-none focus:border-primary transition-colors resize-none"
-                                  rows="2"
-                                ></textarea>
-                                <div class="flex justify-end gap-2">
-                                  <button
-                                    onclick={cancelEditing}
-                                    class="text-xs font-bold text-on-surface-variant hover:text-on-surface px-3 py-1.5 transition-colors"
-                                  >
-                                    Cancel
-                                  </button>
-                                  <button
-                                    onclick={saveEdit}
-                                    class="bg-primary text-white text-xs font-bold px-3 py-1.5 rounded-sm hover:bg-primary/80 transition-colors"
-                                  >
-                                    Save
-                                  </button>
-                                </div>
-                              </div>
-                            {:else}
-                              <p class="text-[13px] text-on-surface-variant whitespace-pre-wrap mt-1">
-                                {reply.content}
-                              </p>
-                            {/if}
-                            <div class="flex gap-4 items-center mt-2">
-                              <button
-                                onclick={() =>
-                                  toggleCommentLike(reply.uuid, comment.uuid)}
-                                class="flex items-center gap-1 transition-colors {reply.is_liked
-                                  ? 'text-primary'
-                                  : 'text-on-surface-variant/20 hover:text-on-surface'}"
-                                title={reply.is_liked
-                                  ? "Unlike reply"
-                                  : "Like reply"}
-                                aria-label={reply.is_liked
-                                  ? "Unlike reply"
-                                  : "Like reply"}
-                              >
-                                <ThumbsUp
-                                  size={14}
-                                  class={reply.is_liked ? "fill-primary" : ""}
-                                />
-                                <span class="text-xs"
-                                  >{reply.likes_count || 0}</span
-                                >
-                              </button>
-                              <button
-                                onclick={() =>
-                                  toggleCommentDislike(
-                                    reply.uuid,
-                                    comment.uuid,
-                                  )}
-                                class="flex items-center gap-1 transition-colors {reply.is_disliked
-                                  ? 'text-red-500'
-                                  : 'text-on-surface-variant/20 hover:text-on-surface'}"
-                              >
-                                <ThumbsDown
-                                  size={14}
-                                  class={reply.is_disliked ? "fill-red-500" : ""}
-                                />
-                                <span class="text-xs"
-                                  >{reply.dislikes_count || 0}</span
-                                >
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    {/each}
-                  </div>
-                {/if}
-              </div>
-            </div>
-          {:else}
-            <div class="text-center py-8">
-                <MessageSquare size={48} class="text-on-surface-variant/10 mb-2" />
-              <p class="text-on-surface-variant/40 font-bold text-sm">
-                No comments yet
-              </p>
-              <p class="text-on-surface-variant/20 text-xs mt-1">
-                Be the first to share your thoughts on this song!
-              </p>
-            </div>
-          {/each}
-        </div>
-      </div>
     </div>
 
     <!-- Sidebar (Right - YouTube Style) -->
@@ -1417,12 +1012,17 @@
           More from this series
         </h2>
       </div>
-      <div class="space-y-3">
+      <div
+        class="space-y-3 max-h-[480px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-outline-variant/30 scrollbar-track-transparent scroll-smooth"
+      >
         {#each relatedSongs as related}
           {@const isSelected = related.id === currentSong.id}
           <a
+            use:bindActive={isSelected}
             href="/animes/{currentSong.anime?.slug}/{related.slug}"
-            class="flex gap-3 group p-2 pl-1 rounded-r-md transition-all border-l-4 {isSelected ? 'bg-surface-low border-primary shadow-sm' : 'bg-transparent hover:bg-surface-highest border-transparent'}"
+            class="flex gap-3 group p-2 pl-1 rounded-r-md transition-all border-l-4 {isSelected
+              ? 'bg-surface-low border-primary shadow-sm'
+              : 'bg-transparent hover:bg-surface-highest border-transparent'}"
             title="View theme: {getSongName(related)}"
           >
             <div
@@ -1453,7 +1053,9 @@
                 </span>
               </div>
               <h4
-                class="text-sm font-bold transition-colors line-clamp-1 {isSelected ? 'text-primary' : 'text-on-surface group-hover:text-primary'}"
+                class="text-sm font-bold transition-colors line-clamp-1 {isSelected
+                  ? 'text-primary'
+                  : 'text-on-surface group-hover:text-primary'}"
               >
                 {getSongName(related)}
               </h4>
@@ -1470,6 +1072,483 @@
           </div>
         {/each}
       </div>
+      <!-- Recommendation Section -->
+      <div class="mt-10 space-y-4">
+        <h2
+          class="text-lg font-bold flex items-center gap-2 mb-4 text-on-surface"
+        >
+          <Star size={20} class="text-primary" />
+          Recommendations
+        </h2>
+        <div class="bg-surface-low border border-outline-variant/10 rounded-md p-6 flex flex-col items-center justify-center text-center space-y-3 transition-all hover:border-primary/20 group/wip">
+          <div class="p-3 bg-primary/10 rounded-sm text-primary animate-pulse group-hover/wip:scale-110 transition-transform duration-300">
+            <Sparkles size={20} />
+          </div>
+          <div class="space-y-1">
+            <h4 class="text-xs font-bold text-on-surface uppercase tracking-wider">Smart Recommendations</h4>
+            <p class="text-[11px] text-on-surface-variant/60 max-w-[200px] mx-auto leading-relaxed">
+              We are building a smart system to recommend more themes based on your music taste.
+            </p>
+          </div>
+          <div class="px-2 py-0.5 rounded-sm text-[8px] font-black uppercase tracking-widest bg-primary/20 text-primary">
+            Coming Soon
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Comments Section -->
+  <div class="space-y-6">
+    <h2 class="text-2xl font-bold flex items-center gap-3">
+      <MessageCircle size={24} class="text-primary" />
+      Comments
+    </h2>
+
+    <!-- New Comment Input -->
+    <div class="flex gap-4">
+      <div class="w-10 h-10 rounded-full bg-white/10 overflow-hidden shrink-0">
+        {#if authState.isAuthenticated && authState.user}
+          <OptimizedImage
+            src={authState.user.avatar_url}
+            sources={authState.user.avatar_sources}
+            alt="{authState.user.name}'s avatar"
+            class="w-full h-full object-cover"
+            sizes="40px"
+          />
+        {:else}
+          <UserIcon size={24} class="text-white/40" />
+        {/if}
+      </div>
+      {#if authState.user?.is_softbanned}
+        <div
+          class="flex-1 bg-red-500/5 border border-red-500/20 rounded-md p-4 flex items-center gap-3"
+        >
+          <AlertTriangle class="text-red-500" size={20} />
+          <p
+            class="text-[11px] text-red-500 font-black uppercase tracking-widest leading-relaxed"
+          >
+            Your account is currently restricted due to low reputation or
+            pending reports. You cannot post comments or ratings at this time.
+          </p>
+        </div>
+      {:else}
+        <div class="flex-1 flex flex-col gap-2">
+          <label for="main-comment-textarea" class="sr-only"
+            >Add a comment</label
+          >
+          <textarea
+            id="main-comment-textarea"
+            bind:value={newCommentText}
+            placeholder={authState.isAuthenticated
+              ? "Add a comment..."
+              : "Sign in to comment..."}
+            class="w-full bg-surface-container border border-outline-variant/20 rounded-md p-3 text-sm text-on-surface focus:outline-none focus:border-primary transition-colors resize-none disabled:opacity-50 shadow-inner"
+            rows="2"
+            disabled={!authState.isAuthenticated}
+          ></textarea>
+          <div class="flex justify-end">
+            <button
+              onclick={postComment}
+              disabled={!newCommentText.trim() || !authState.isAuthenticated}
+              class="bg-primary hover:bg-primary/80 text-white font-bold text-xs px-4 py-2 rounded-sm transition-colors disabled:opacity-50"
+              title="Post comment"
+              aria-label="Post comment"
+            >
+              Comment
+            </button>
+          </div>
+        </div>
+      {/if}
+    </div>
+
+    <!-- Comments List -->
+    <div class="space-y-4 pb-12">
+      {#each comments as comment (comment.uuid)}
+        <div class="flex gap-4" id="comment-{comment.uuid}">
+          <div
+            class="w-10 h-10 rounded-full bg-surface-highest overflow-hidden shrink-0 border border-outline-variant/10"
+          >
+            <OptimizedImage
+              src={comment.user?.avatar_url}
+              sources={comment.user?.avatar_sources}
+              alt={comment.user?.name}
+              class="w-full h-full object-cover"
+              sizes="40px"
+            />
+          </div>
+          <div class="flex-1 space-y-2">
+            <div
+              class="bg-surface-low border border-outline-variant/10 rounded-md rounded-tl-sm p-4"
+            >
+              <div class="flex justify-between items-start mb-1">
+                <div class="flex items-center gap-2">
+                  <span class="font-bold text-sm text-on-surface"
+                    >{comment.user?.name || "Unknown User"}</span
+                  >
+                  {#if comment.user?.badges}
+                    {#each comment.user.badges as badge}
+                      <OptimizedImage
+                        src={badge.icon_url || badge.image_url}
+                        sources={badge.icon_sources}
+                        alt={badge.name}
+                        class="w-4 h-4"
+                        sizes="16px"
+                      />
+                    {/each}
+                  {/if}
+                  <span class="text-xs text-on-surface-variant/40"
+                    >{comment.created_at
+                      ? new Date(comment.created_at).toLocaleDateString()
+                      : "Just now"}</span
+                  >
+                </div>
+              </div>
+              {#if editingCommentUuid === comment.uuid}
+                <div class="space-y-2">
+                  <textarea
+                    bind:value={editText}
+                    class="w-full bg-surface-container border border-primary/30 rounded-sm p-3 text-sm text-on-surface focus:outline-none focus:border-primary transition-colors resize-none"
+                    rows="3"
+                  ></textarea>
+                  <div class="flex justify-end gap-2">
+                    <button
+                      onclick={cancelEditing}
+                      class="text-xs font-bold text-on-surface-variant hover:text-on-surface px-3 py-1.5 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onclick={saveEdit}
+                      class="bg-primary text-white text-xs font-bold px-3 py-1.5 rounded-sm hover:bg-primary/80 transition-colors"
+                    >
+                      Save
+                    </button>
+                  </div>
+                </div>
+              {:else}
+                <p class="text-sm text-on-surface-variant whitespace-pre-wrap">
+                  {comment.content}
+                </p>
+              {/if}
+            </div>
+            <div class="flex justify-between text-md">
+              <div class="flex gap-2 items-center">
+                <button
+                  onclick={() => toggleCommentLike(comment.uuid)}
+                  class="flex items-center gap-1 transition-colors {comment.is_liked
+                    ? 'text-primary'
+                    : 'text-on-surface-variant/40 hover:text-on-surface'}"
+                  title={comment.is_liked ? "Unlike comment" : "Like comment"}
+                  aria-label={comment.is_liked
+                    ? "Unlike comment"
+                    : "Like comment"}
+                >
+                  <ThumbsUp
+                    size={16}
+                    class={comment.is_liked ? "fill-primary" : ""}
+                  />
+                  {comment.likes_count || 0}
+                </button>
+                <button
+                  onclick={() => toggleCommentDislike(comment.uuid)}
+                  class="flex items-center gap-1 transition-colors {comment.is_disliked
+                    ? 'text-red-500'
+                    : 'text-on-surface-variant/40 hover:text-on-surface'}"
+                  title={comment.is_disliked
+                    ? "Undislike comment"
+                    : "Dislike comment"}
+                  aria-label={comment.is_disliked
+                    ? "Undislike comment"
+                    : "Dislike comment"}
+                >
+                  <ThumbsDown
+                    size={16}
+                    class={comment.is_disliked ? "fill-red-500" : ""}
+                  />
+                  {comment.dislikes_count || 0}
+                </button>
+                <button
+                  onclick={() => {
+                    replyingToUuid =
+                      replyingToUuid === comment.uuid ? null : comment.uuid;
+                    replyText = "";
+                  }}
+                  class="text-on-surface-variant/60 hover:text-primary tracking-wider transition-colors flex items-center gap-1"
+                  title="Reply to comment"
+                  aria-label="Reply to comment"
+                  >Reply
+                  <CornerDownRight size={16} />
+                </button>
+              </div>
+
+              <div class="relative">
+                <button
+                  onclick={(e) => {
+                    e.stopPropagation();
+                    openDropdownUuid =
+                      openDropdownUuid === comment.uuid ? null : comment.uuid;
+                  }}
+                  class="p-1 hover:bg-surface-highest text-on-surface-variant/40 hover:text-on-surface transition-colors rounded-sm"
+                  title="More options"
+                  aria-label="More options"
+                >
+                  <MoreVertical size={16} />
+                </button>
+
+                {#if openDropdownUuid === comment.uuid}
+                  <div
+                    class="absolute right-0 top-full mt-1 w-48 bg-surface-container border border-outline-variant/10 rounded-md shadow-xl z-20 py-1 overflow-hidden"
+                  >
+                    {#if authState.user && authState.user.uuid === comment.user?.uuid}
+                      <button
+                        onclick={() => startEditing(comment)}
+                        class="w-full text-left px-4 py-2 text-xs font-bold text-on-surface-variant hover:bg-surface-low hover:text-primary transition-colors flex items-center gap-2"
+                      >
+                        <Edit2 size={14} /> Edit Comment
+                      </button>
+                    {/if}
+                    {#if authState.user && (authState.user.uuid === comment.user?.uuid || authState.isAdmin)}
+                      <button
+                        onclick={() => deleteComment(comment.uuid)}
+                        class="w-full text-left px-4 py-2 text-xs font-bold text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-2"
+                      >
+                        <Trash2 size={14} /> Delete Comment
+                      </button>
+                    {/if}
+                    <button
+                      onclick={() => openCommentReportModal(comment.uuid)}
+                      class="w-full text-left px-4 py-2 text-xs font-bold text-on-surface-variant hover:bg-surface-low hover:text-red-400 transition-colors flex items-center gap-2"
+                    >
+                      <Flag size={14} /> Report Comment
+                    </button>
+                    <button
+                      onclick={() => openUserReportModal(comment.user)}
+                      class="w-full text-left px-4 py-2 text-xs font-bold text-on-surface-variant hover:bg-surface-low hover:text-red-400 transition-colors flex items-center gap-2"
+                    >
+                      <UserIcon size={14} /> Report User
+                    </button>
+                  </div>
+                {/if}
+              </div>
+            </div>
+
+            <!-- Inline Reply Input -->
+            {#if replyingToUuid === comment.uuid}
+              <div class="flex gap-3 mt-3">
+                <div class="flex-1 flex flex-col gap-2">
+                  <label for="reply-textarea-{comment.uuid}" class="sr-only"
+                    >Write a reply</label
+                  >
+                  <div class="flex gap-2 items-start">
+                    <textarea
+                      id="reply-textarea-{comment.uuid}"
+                      bind:value={replyText}
+                      placeholder="Write a reply..."
+                      class="w-full bg-surface-container border border-outline-variant/10 rounded-sm p-2 text-sm text-on-surface focus:outline-none focus:border-primary transition-colors resize-none"
+                      rows="1"
+                    ></textarea>
+                    <button
+                      onclick={() => postReply(comment.uuid)}
+                      disabled={!replyText.trim()}
+                      class="bg-surface-highest hover:bg-primary hover:text-white text-on-surface font-bold text-xs px-3 py-2 rounded-sm transition-colors disabled:opacity-50 shrink-0"
+                      title="Send reply"
+                      aria-label="Send reply"
+                    >
+                      Send
+                    </button>
+                  </div>
+                </div>
+              </div>
+            {/if}
+
+            <!-- Replies List -->
+            {#if comment.replies && comment.replies.length > 0}
+              <div
+                class="space-y-3 mt-3 border-l-2 border-outline-variant/10 pl-4"
+              >
+                {#each comment.replies as reply (reply.uuid)}
+                  <div class="flex gap-3" id="comment-{reply.uuid}">
+                    <div
+                      class="w-8 h-8 rounded-full bg-surface-highest overflow-hidden shrink-0 border border-outline-variant/10"
+                    >
+                      <OptimizedImage
+                        src={reply.user?.avatar_url}
+                        sources={reply.user?.avatar_sources}
+                        alt={reply.user?.name}
+                        class="w-full h-full object-cover"
+                        sizes="32px"
+                      />
+                    </div>
+                    <div class="flex-1 space-y-1">
+                      <div
+                        class="bg-surface-container/50 border border-outline-variant/10 rounded-md rounded-tl-sm p-3"
+                      >
+                        <div class="flex justify-between items-start mb-1">
+                          <div class="flex items-center gap-2">
+                            <span class="font-bold text-xs text-on-surface"
+                              >{reply.user?.name || "Unknown User"}</span
+                            >
+                            {#if reply.user?.badges}
+                              <div class="flex gap-1 ml-1">
+                                {#each reply.user.badges as badge}
+                                  <OptimizedImage
+                                    src={badge.icon_url || badge.image_url}
+                                    sources={badge.icon_sources}
+                                    alt={badge.name}
+                                    class="w-3.5 h-3.5"
+                                    sizes="14px"
+                                  />
+                                {/each}
+                              </div>
+                            {/if}
+                            <span class="text-[10px] text-on-surface-variant/40"
+                              >{reply.created_at
+                                ? new Date(
+                                    reply.created_at,
+                                  ).toLocaleDateString()
+                                : "Just now"}</span
+                            >
+                          </div>
+                          <div class="relative">
+                            <button
+                              onclick={(e) => {
+                                e.stopPropagation();
+                                openDropdownUuid =
+                                  openDropdownUuid === reply.uuid
+                                    ? null
+                                    : reply.uuid;
+                              }}
+                              class="p-1 hover:bg-surface-highest text-on-surface-variant/40 hover:text-on-surface transition-colors rounded-sm"
+                              title="More options"
+                              aria-label="More options"
+                            >
+                              <MoreVertical size={14} />
+                            </button>
+
+                            {#if openDropdownUuid === reply.uuid}
+                              <div
+                                class="absolute right-0 top-full mt-1 w-48 bg-surface-container border border-outline-variant/10 rounded-md shadow-xl z-20 py-1 overflow-hidden"
+                              >
+                                {#if authState.user && authState.user.uuid === reply.user?.uuid}
+                                  <button
+                                    onclick={() => startEditing(reply)}
+                                    class="w-full text-left px-4 py-2 text-[11px] font-bold text-on-surface-variant hover:bg-surface-low hover:text-primary transition-colors flex items-center gap-2"
+                                  >
+                                    <Edit2 size={12} /> Edit Reply
+                                  </button>
+                                {/if}
+                                {#if authState.user && (authState.user.uuid === reply.user?.uuid || authState.isAdmin)}
+                                  <button
+                                    onclick={() =>
+                                      deleteComment(reply.uuid, comment.uuid)}
+                                    class="w-full text-left px-4 py-2 text-[11px] font-bold text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-2"
+                                  >
+                                    <Trash2 size={12} /> Delete Reply
+                                  </button>
+                                {/if}
+                                <button
+                                  onclick={() =>
+                                    openCommentReportModal(reply.uuid)}
+                                  class="w-full text-left px-4 py-2 text-[11px] font-bold text-on-surface-variant hover:bg-surface-low hover:text-red-400 transition-colors flex items-center gap-2"
+                                >
+                                  <Flag size={12} /> Report Reply
+                                </button>
+                                <button
+                                  onclick={() =>
+                                    openUserReportModal(reply.user)}
+                                  class="w-full text-left px-4 py-2 text-[11px] font-bold text-on-surface-variant hover:bg-surface-low hover:text-red-400 transition-colors flex items-center gap-2"
+                                >
+                                  <UserIcon size={12} /> Report User
+                                </button>
+                              </div>
+                            {/if}
+                          </div>
+                        </div>
+                        {#if editingCommentUuid === reply.uuid}
+                          <div class="space-y-2 mt-2">
+                            <textarea
+                              bind:value={editText}
+                              class="w-full bg-surface-container border border-primary/30 rounded-sm p-3 text-sm text-on-surface focus:outline-none focus:border-primary transition-colors resize-none"
+                              rows="2"
+                            ></textarea>
+                            <div class="flex justify-end gap-2">
+                              <button
+                                onclick={cancelEditing}
+                                class="text-xs font-bold text-on-surface-variant hover:text-on-surface px-3 py-1.5 transition-colors"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                onclick={saveEdit}
+                                class="bg-primary text-white text-xs font-bold px-3 py-1.5 rounded-sm hover:bg-primary/80 transition-colors"
+                              >
+                                Save
+                              </button>
+                            </div>
+                          </div>
+                        {:else}
+                          <p
+                            class="text-[13px] text-on-surface-variant whitespace-pre-wrap mt-1"
+                          >
+                            {reply.content}
+                          </p>
+                        {/if}
+                        <div class="flex gap-4 items-center mt-2">
+                          <button
+                            onclick={() =>
+                              toggleCommentLike(reply.uuid, comment.uuid)}
+                            class="flex items-center gap-1 transition-colors {reply.is_liked
+                              ? 'text-primary'
+                              : 'text-on-surface-variant/20 hover:text-on-surface'}"
+                            title={reply.is_liked
+                              ? "Unlike reply"
+                              : "Like reply"}
+                            aria-label={reply.is_liked
+                              ? "Unlike reply"
+                              : "Like reply"}
+                          >
+                            <ThumbsUp
+                              size={14}
+                              class={reply.is_liked ? "fill-primary" : ""}
+                            />
+                            <span class="text-xs">{reply.likes_count || 0}</span
+                            >
+                          </button>
+                          <button
+                            onclick={() =>
+                              toggleCommentDislike(reply.uuid, comment.uuid)}
+                            class="flex items-center gap-1 transition-colors {reply.is_disliked
+                              ? 'text-red-500'
+                              : 'text-on-surface-variant/20 hover:text-on-surface'}"
+                          >
+                            <ThumbsDown
+                              size={14}
+                              class={reply.is_disliked ? "fill-red-500" : ""}
+                            />
+                            <span class="text-xs"
+                              >{reply.dislikes_count || 0}</span
+                            >
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                {/each}
+              </div>
+            {/if}
+          </div>
+        </div>
+      {:else}
+        <div class="text-center py-8">
+          <MessageSquare size={48} class="text-on-surface-variant/10 mb-2" />
+          <p class="text-on-surface-variant/40 font-bold text-sm">
+            No comments yet
+          </p>
+          <p class="text-on-surface-variant/20 text-xs mt-1">
+            Be the first to share your thoughts on this song!
+          </p>
+        </div>
+      {/each}
     </div>
   </div>
 </main>

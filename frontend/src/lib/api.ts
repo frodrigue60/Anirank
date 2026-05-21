@@ -7,7 +7,7 @@ const isBrowser = typeof window !== 'undefined';
 
 export const PUBLIC_API_URL = isBrowser
   ? (import.meta.env.PUBLIC_API_URL || import.meta.env.VITE_API_URL || "http://localhost:8080/api")
-  : (globalThis.process?.env?.PUBLIC_API_URL || globalThis.process?.env?.API_URL || "http://backend.railway.internal:8080/api");
+  : (globalThis.process?.env?.PUBLIC_API_URL || globalThis.process?.env?.API_URL || (import.meta.env.DEV ? "http://localhost:8080/api" : "http://backend.railway.internal:8080/api"));
 
 const apiBase = PUBLIC_API_URL;
 

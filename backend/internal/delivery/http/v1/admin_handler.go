@@ -693,9 +693,15 @@ func (h *AdminHandler) CreateSong(c *fiber.Ctx) error {
 
 	// Sync Artists
 	if req.ArtistsStr != "" {
-		_ = h.usecase.SyncArtistsFromString(c.Context(), req.Song.ID, req.ArtistsStr, h.getAuditMetadata(c))
+		if err := h.usecase.SyncArtistsFromString(c.Context(), req.Song.ID, req.ArtistsStr, h.getAuditMetadata(c)); err != nil {
+			fmt.Printf("[ERROR] CreateSong SyncArtistsFromString failed: %v\n", err)
+			return err
+		}
 	} else {
-		_ = h.usecase.SyncSongArtists(c.Context(), req.Song.ID, req.ArtistIDs)
+		if err := h.usecase.SyncSongArtists(c.Context(), req.Song.ID, req.ArtistIDs); err != nil {
+			fmt.Printf("[ERROR] CreateSong SyncSongArtists failed: %v\n", err)
+			return err
+		}
 	}
 
 	return c.Status(201).JSON(fiber.Map{
@@ -746,9 +752,15 @@ func (h *AdminHandler) UpdateSong(c *fiber.Ctx) error {
 
 	// Sync Artists
 	if req.ArtistsStr != "" {
-		_ = h.usecase.SyncArtistsFromString(c.Context(), req.Song.ID, req.ArtistsStr, h.getAuditMetadata(c))
+		if err := h.usecase.SyncArtistsFromString(c.Context(), req.Song.ID, req.ArtistsStr, h.getAuditMetadata(c)); err != nil {
+			fmt.Printf("[ERROR] UpdateSong SyncArtistsFromString failed: %v\n", err)
+			return err
+		}
 	} else {
-		_ = h.usecase.SyncSongArtists(c.Context(), req.Song.ID, req.ArtistIDs)
+		if err := h.usecase.SyncSongArtists(c.Context(), req.Song.ID, req.ArtistIDs); err != nil {
+			fmt.Printf("[ERROR] UpdateSong SyncSongArtists failed: %v\n", err)
+			return err
+		}
 	}
 
 	return c.JSON(fiber.Map{

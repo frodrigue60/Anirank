@@ -127,11 +127,11 @@
     Math.ceil(recommendedSongs.length / 5)
   );
 
-  async function loadRecommendations(uuid: string) {
+  async function loadRecommendations(id: string | number) {
     recommendedLoading = true;
     try {
       // Fetch up to 15 items so we have up to 3 pages of 5 items
-      const resp = await api.get(`/songs/${uuid}/related?limit=15`);
+      const resp = await api.get(`/songs/${id}/related?limit=15`);
       recommendedSongs = resp.data?.data || [];
       recommendedPage = 0;
     } catch (err) {
@@ -142,8 +142,8 @@
   }
 
   $effect(() => {
-    if (currentSong?.uuid) {
-      loadRecommendations(currentSong.uuid);
+    if (currentSong?.id) {
+      loadRecommendations(currentSong.id);
     }
   });
 

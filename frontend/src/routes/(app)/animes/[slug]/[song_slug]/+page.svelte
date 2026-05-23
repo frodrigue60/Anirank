@@ -32,6 +32,8 @@
   import Flag from "lucide-svelte/icons/flag";
   import Library from "lucide-svelte/icons/library";
   import Sparkles from "lucide-svelte/icons/sparkles";
+  import ChevronLeft from "lucide-svelte/icons/chevron-left";
+  import ChevronRight from "lucide-svelte/icons/chevron-right";
   import OptimizedImage from "$lib/components/OptimizedImage.svelte";
   import type { ImageSource } from "$lib/types/media";
   import api from "$lib/api";
@@ -111,6 +113,38 @@
     selectedVariantIndex = 0;
     selectedVideoIndex = 0;
     videoError = false;
+  });
+
+  // Smart Recommendations State
+  let recommendedSongs: Song[] = $state([]);
+  let recommendedLoading = $state(false);
+  let recommendedPage = $state(0);
+
+  let paginatedRecommendations = $derived(
+    recommendedSongs.slice(recommendedPage * 5, (recommendedPage + 1) * 5)
+  );
+  let totalRecommendedPages = $derived(
+    Math.ceil(recommendedSongs.length / 5)
+  );
+
+  async function loadRecommendations(uuid: string) {
+    recommendedLoading = true;
+    try {
+      // Fetch up to 15 items so we have up to 3 pages of 5 items
+      const resp = await api.get(`/songs/${uuid}/related?limit=15`);
+      recommendedSongs = resp.data?.data || [];
+      recommendedPage = 0;
+    } catch (err) {
+      console.error("Failed to load recommendations", err);
+    } finally {
+      recommendedLoading = false;
+    }
+  }
+
+  $effect(() => {
+    if (currentSong?.uuid) {
+      loadRecommendations(currentSong.uuid);
+    }
   });
 
   let activeElement = $state<HTMLElement | null>(null);
@@ -1076,39 +1110,96 @@
       </div>
       <!-- Recommendation Section -->
       <div class="mt-10 space-y-4">
-        <h2
-          class="text-lg font-bold flex items-center gap-2 mb-4 text-on-surface"
-        >
-          <Star size={20} class="text-primary" />
-          Recommendations
-        </h2>
-        <div
-          class="bg-surface-low border border-outline-variant/10 rounded-md p-6 flex flex-col items-center justify-center text-center space-y-3 transition-all hover:border-primary/20 group/wip"
-        >
-          <div
-            class="p-3 bg-primary/10 rounded-sm text-primary animate-pulse group-hover/wip:scale-110 transition-transform duration-300"
-          >
-            <Sparkles size={20} />
-          </div>
-          <div class="space-y-1">
-            <h4
-              class="text-xs font-bold text-on-surface uppercase tracking-wider"
-            >
-              Smart Recommendations
-            </h4>
-            <p
-              class="text-[11px] text-on-surface-variant/60 max-w-[200px] mx-auto leading-relaxed"
-            >
-              We are building a smart system to recommend more themes based on
-              your music taste.
-            </p>
-          </div>
-          <div
-            class="px-2 py-0.5 rounded-sm text-[8px] font-black uppercase tracking-widest bg-primary/20 text-primary"
-          >
-            Coming Soon
-          </div>
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-bold flex items-center gap-2 text-on-surface">
+            <Sparkles size={20} class="text-primary animate-pulse" />
+            Recommendations
+          </h2>
+          {#if totalRecommendedPages > 1}
+            <div class="flex items-center gap-2 bg-surface-low border border-outline-variant/10 px-2 py-1 rounded-sm">
+              <button
+                class="p-1 rounded-sm text-on-surface-variant/60 hover:text-primary hover:bg-surface-highest transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                disabled={recommendedPage === 0}
+                onclick={() => recommendedPage--}
+                title="Previous page"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <span class="text-[10px] font-bold text-on-surface-variant/60 tracking-wider uppercase select-none">
+                {recommendedPage + 1} / {totalRecommendedPages}
+              </span>
+              <button
+                class="p-1 rounded-sm text-on-surface-variant/60 hover:text-primary hover:bg-surface-highest transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                disabled={recommendedPage >= totalRecommendedPages - 1}
+                onclick={() => recommendedPage++}
+                title="Next page"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          {/if}
         </div>
+
+        {#if recommendedLoading}
+          <div class="space-y-3">
+            {#each Array(3) as _}
+              <div class="flex gap-3 p-2 rounded-r-md border-l-4 border-transparent bg-surface-low/30 animate-pulse">
+                <div class="w-32 aspect-video bg-surface-highest rounded-md shrink-0"></div>
+                <div class="flex-1 space-y-2 py-1">
+                  <div class="h-3 bg-surface-highest rounded w-1/3"></div>
+                  <div class="h-4 bg-surface-highest rounded w-3/4"></div>
+                  <div class="h-2 bg-surface-highest rounded w-1/2"></div>
+                </div>
+              </div>
+            {/each}
+          </div>
+        {:else}
+          <div class="space-y-3">
+            {#each paginatedRecommendations as recommended}
+              <a
+                href="/animes/{recommended.anime?.slug}/{recommended.slug}"
+                class="flex gap-3 group p-2 pl-1 rounded-r-md transition-all border-l-4 border-transparent bg-transparent hover:bg-surface-highest"
+                title="View theme: {getSongName(recommended)}"
+              >
+                <div class="w-32 aspect-video rounded-md overflow-hidden shrink-0 border border-outline-variant/10">
+                  <OptimizedImage
+                    src={recommended.anime?.cover_url}
+                    sources={recommended.anime?.cover_sources}
+                    alt={getSongName(recommended)}
+                    class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    sizes="(max-width: 1024px) 128px, 160px"
+                  />
+                </div>
+                <div class="flex-1 min-w-0 flex flex-col justify-center">
+                  <div class="flex items-center gap-1.5 mb-1 flex-wrap">
+                    <span class="bg-primary/20 text-primary text-[8px] font-black px-1.5 py-0.5 rounded uppercase">
+                      {recommended.slug}
+                    </span>
+                    <span class="text-[10px] text-yellow-400 font-bold flex items-center gap-0.5">
+                      <Star size={10} class="fill-yellow-400" />
+                      {getFormattedScore(recommended.average_rating, authState.user?.score_format)}
+                    </span>
+                    {#if recommended.anime}
+                      <span class="text-[9px] text-on-surface-variant/40 line-clamp-1 truncate max-w-[120px]">
+                        • {recommended.anime.title}
+                      </span>
+                    {/if}
+                  </div>
+                  <h4 class="text-sm font-bold transition-colors line-clamp-1 text-on-surface group-hover:text-primary">
+                    {getSongName(recommended)}
+                  </h4>
+                  <p class="text-[10px] text-on-surface-variant/40 line-clamp-1">
+                    by {getSongArtistNames(recommended.artists)}
+                  </p>
+                </div>
+              </a>
+            {:else}
+              <div class="text-center py-8 text-on-surface-variant/20 text-xs italic border border-dashed border-outline-variant/10 rounded-md">
+                No recommendations found for this theme.
+              </div>
+            {/each}
+          </div>
+        {/if}
       </div>
     </div>
   </div>

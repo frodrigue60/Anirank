@@ -118,6 +118,11 @@ func SetupPublicRoutes(app *fiber.App,
 	permissionUsecase := admin.NewPermissionUsecase(userRepo)
 	permissionHandler := v1.NewPermissionHandler(permissionUsecase)
 
+	moderationRepo := postgres.NewModerationRepository(db)
+	recommendationRepo := postgres.NewRecommendationRepository(db)
+	recommendationUsecase := public.NewRecommendationUsecase(recommendationRepo, songRepo, animeRepo, interactionRepo, moderationRepo, mediaService, appCache)
+	recommendationHandler := v1.NewRecommendationHandler(recommendationUsecase)
+
 	// API V1 Group
 	api := app.Group("/api")
 
@@ -172,6 +177,7 @@ func SetupPublicRoutes(app *fiber.App,
 	catalogApi.Get("/songs/:uuid/comments", middleware.OptionalAuthMiddleware(jwtService, userRepo, appCache), middleware.NewResponseCache(storage, 5*time.Minute), interactionHandler.GetSongComments)
 	catalogApi.Get("/songs/:anime_slug/:song_slug", middleware.OptionalAuthMiddleware(jwtService, userRepo, appCache), middleware.NewResponseCache(storage, 5*time.Minute), catalogHandler.SongShow)
 	catalogApi.Get("/animes/:anime_slug/songs/:song_slug", middleware.OptionalAuthMiddleware(jwtService, userRepo, appCache), middleware.NewResponseCache(storage, 5*time.Minute), catalogHandler.SongShow)
+	catalogApi.Get("/songs/:uuid/related", middleware.OptionalAuthMiddleware(jwtService, userRepo, appCache), recommendationHandler.GetSimilarSongs)
 
 	// Catalog: Artists
 	catalogApi.Get("/artists", middleware.NewResponseCache(storage, 5*time.Minute), catalogHandler.ArtistIndex)
@@ -255,6 +261,9 @@ func SetupPublicRoutes(app *fiber.App,
 	// --- PROTECTED ROUTES ---
 	protected := api.Group("/", middleware.AuthMiddleware(jwtService, userRepo, appCache))
 	vRequired := middleware.VerifiedMiddleware()
+
+	// Recommendations
+	protected.Get("/recommendations", recommendationHandler.GetPersonalizedRecommendations)
 
 	// User Profile
 	protected.Get("/profile", authHandler.Profile)

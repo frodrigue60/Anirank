@@ -318,7 +318,7 @@ func main() {
 	tournamentUsecase := tournament.NewTournamentUsecase(tournamentRepo, songRepo, animeRepo, storageService)
 
 	// --- 1.5 Start Background Cron Scheduler ---
-	cronInstance := jobs.StartCronScheduler(jobsRepo, tournamentUsecase)
+	cronInstance := jobs.StartCronScheduler(db, jobsRepo, tournamentUsecase)
 	defer cronInstance.Stop()
 
 	// 3. Setup Fiber Framework

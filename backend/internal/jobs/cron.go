@@ -6,18 +6,51 @@ import (
 	"time"
 
 	"anirank/api/internal/domain"
+	"anirank/api/internal/repository/postgres"
 	"anirank/api/internal/usecase/tournament"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/robfig/cron/v3"
 )
 
 // StartCronScheduler initializes and runs all background jobs using robfig/cron.
-func StartCronScheduler(repo domain.JobsRepository, tournamentUsecase *tournament.TournamentUsecase) *cron.Cron {
+func StartCronScheduler(db *sqlx.DB, repo domain.JobsRepository, tournamentUsecase *tournament.TournamentUsecase) *cron.Cron {
 	// Setup with standard timezone parsing and seconds precision if needed, but standard is fine.
 	c := cron.New(cron.WithLocation(time.UTC))
 
+	// Setup repositories for recommendation indexing
+	recommendationRepo := postgres.NewRecommendationRepository(db)
+	songRepo := postgres.NewSongRepository(db)
+	animeRepo := postgres.NewAnimeRepository(db)
+	taxonomyRepo := postgres.NewTaxonomyRepository(db)
+
+	// Run initial embedding calculation asynchronously on startup
+	go func() {
+		log.Println("[CRON] Running initial ProcessPendingEmbeddings on startup...")
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+		defer cancel()
+		if err := ProcessPendingEmbeddings(ctx, recommendationRepo, songRepo, animeRepo, taxonomyRepo); err != nil {
+			log.Printf("[CRON-ERR] Initial ProcessPendingEmbeddings failed: %v", err)
+		}
+	}()
+
+	// Register ProcessPendingEmbeddings every 30 minutes
+	_, err := c.AddFunc("*/30 * * * *", func() {
+		log.Println("[CRON] Running ProcessPendingEmbeddings...")
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+		defer cancel()
+
+		if err := ProcessPendingEmbeddings(ctx, recommendationRepo, songRepo, animeRepo, taxonomyRepo); err != nil {
+			log.Printf("[CRON-ERR] ProcessPendingEmbeddings failed: %v", err)
+		}
+	})
+
+	if err != nil {
+		log.Fatalf("Error registering recommendation indexer cron job: %v", err)
+	}
+
 	// Register TrackDailyRanking
-	_, err := c.AddFunc("0 0 * * *", func() {
+	_, err = c.AddFunc("0 0 * * *", func() {
 		log.Println("[CRON] Starting TrackDailyRanking job at midnight UTC...")
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 		defer cancel()

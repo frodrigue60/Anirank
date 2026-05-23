@@ -39,6 +39,7 @@ type Song struct {
 	PrevMainRank     *int    `db:"prev_main_rank" json:"-"`
 	PrevSeasonalRank *int    `db:"prev_seasonal_rank" json:"-"`
 	PartialArtistInactive bool `db:"partial_artist_inactive" json:"partial_artist_inactive"`
+	Embedding             Vector  `db:"embedding" json:"-"`
 
 	// Relations
 	Anime    *Anime        `db:"anime" json:"anime,omitempty"`

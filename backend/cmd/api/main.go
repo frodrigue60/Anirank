@@ -149,6 +149,12 @@ func main() {
 		log.Printf("Warning: Failed to seed song types: %v", err)
 	}
 
+	// Seed RBAC permissions (Dynamic Matrix — auto-generates from Go registry)
+	permSeeder := postgres.NewPermissionSeeder(db)
+	if err := permSeeder.Seed(context.Background()); err != nil {
+		log.Printf("Warning: Failed to seed RBAC permissions: %v", err)
+	}
+
 	storageService, err := infrastructure.InitStorageFromEnv(context.Background())
 	if err != nil {
 		log.Printf("Warning: Could not initialize Storage Service: %v", err)

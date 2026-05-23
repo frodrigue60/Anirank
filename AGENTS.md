@@ -95,6 +95,21 @@ The internal `uint64` IDs in the database (e.g. `user.ID`, `song.ID`) are **stri
 ### Token Guard: Missing UUID = 401, not 500
 - If `claims.UserUUID == ""` (stale pre-refactor token), return `401`, never pass an empty string to the DB.
 
+### 🛡️ Mandatory Administrative RBAC
+- **Rule:** Any new administrative endpoint (specifically under `/api/admin` or grouped in `adminOnly` in `router.go`) **MUST** be protected using the appropriate permission middleware: `middleware.HasPermissionMiddleware("permission.slug", userRepo)`.
+- **Reason:** Ensures fine-grained RBAC controls are evaluated before execution, preventing privilege escalation.
+
+### 🔑 Encryption of Sensitive Data
+- **Rule:** Any sensitive user secrets (such as AniList OAuth tokens or external access credentials) **MUST** be encrypted symmetrically in the database before storage using `crypto.Encrypt` and the secure environment configuration key (`ENCRYPTION_KEY`). Never store sensitive integration secrets in plain text.
+
+### 📝 Immutable Action Auditing
+- **Rule:** All administrative modifications (Create, Update, Delete) on domain entities **MUST** log their actions in the usecase layer using `auditUsecase.LogActions(...)`.
+- **Reason:** Provides a complete, tamper-proof administrative trail of modifications to detect catalog abuses.
+
+### 📦 Strict DTO Mapping Enforcement
+- **Rule:** Every Go API handler returning domain objects to the client **MUST** map them using the respective DTO mapping layer (`To{Entity}DTO` / `To{Entity}MinimalDTO`).
+- **Reason:** Enforces a clean separation between the database schemas and the public API, ensuring no numeric IDs are leaked.
+
 ---
 
 ## 4. Frontend Coding Style

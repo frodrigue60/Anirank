@@ -160,7 +160,7 @@
           const checkResponse = await api.post("/animes/bulk-check", {
             anilist_ids: idsToCheck
           });
-          const dbMap = checkResponse.data || {};
+          const dbMap = checkResponse.data?.data || {};
           mappedItems.forEach((item: any) => {
             const slug = dbMap[item.anilist_id];
             if (slug) {

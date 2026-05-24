@@ -48,6 +48,8 @@ type ContentAdminUsecase struct {
 	anilistCache     ApiStatusCache
 	animeThemesCache ApiStatusCache
 	statusMu         sync.Mutex
+	imageJobs        map[string]*ImageProcessingJob
+	imageJobsMu      sync.Mutex
 }
 
 func NewContentAdminUsecase(
@@ -75,6 +77,7 @@ func NewContentAdminUsecase(
 		auditUsecase:  audit,
 		interactionRepo:    ir,
 		notificationUsecase: nu,
+		imageJobs:     make(map[string]*ImageProcessingJob),
 	}
 }
 
@@ -3411,4 +3414,65 @@ func (u *ContentAdminUsecase) processAnilistImages(ctx context.Context, progress
 
 	sendProgress("Completed AniList images migration job!")
 	return nil
+}
+
+type ImageProcessingJob struct {
+	Type      string
+	Logs      []string
+	Listeners []chan string
+	Mu        sync.Mutex
+	Running   bool
+}
+
+func (job *ImageProcessingJob) Broadcast(msg string) {
+	job.Mu.Lock()
+	defer job.Mu.Unlock()
+
+	job.Logs = append(job.Logs, msg)
+
+	for _, listener := range job.Listeners {
+		select {
+		case listener <- msg:
+		default:
+		}
+	}
+}
+
+func (job *ImageProcessingJob) AddListener() chan string {
+	job.Mu.Lock()
+	defer job.Mu.Unlock()
+
+	ch := make(chan string, 200)
+	job.Listeners = append(job.Listeners, ch)
+	return ch
+}
+
+func (job *ImageProcessingJob) RemoveListener(ch chan string) {
+	job.Mu.Lock()
+	defer job.Mu.Unlock()
+
+	for i, l := range job.Listeners {
+		if l == ch {
+			job.Listeners = append(job.Listeners[:i], job.Listeners[i+1:]...)
+			close(ch)
+			break
+		}
+	}
+}
+
+func (u *ContentAdminUsecase) GetOrCreateImageJob(entityType string) (*ImageProcessingJob, bool) {
+	u.imageJobsMu.Lock()
+	defer u.imageJobsMu.Unlock()
+
+	job, exists := u.imageJobs[entityType]
+	if !exists {
+		job = &ImageProcessingJob{
+			Type:      entityType,
+			Logs:      make([]string, 0),
+			Listeners: make([]chan string, 0),
+		}
+		u.imageJobs[entityType] = job
+	}
+
+	return job, exists
 }

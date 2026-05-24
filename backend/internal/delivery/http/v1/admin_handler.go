@@ -196,30 +196,82 @@ func (h *AdminHandler) StartImageProcessingJob(c *fiber.Ctx) error {
 	c.Set("Connection", "keep-alive")
 	c.Set("Transfer-Encoding", "chunked")
 
-	progress := make(chan string, 10)
+	job, exists := h.usecase.GetOrCreateImageJob(entityType)
+	_ = exists // keep compiler happy
+	listenerCh := job.AddListener()
 
-	// Start processing in a goroutine so we can stream the channel
-	errChan := make(chan error, 1)
-	go func() {
-		errChan <- h.usecase.ProcessEntityImages(context.Background(), entityType, progress)
-		close(progress)
-	}()
+	job.Mu.Lock()
+	if !job.Running {
+		job.Running = true
+		job.Logs = make([]string, 0)
+		job.Mu.Unlock()
+
+		go func() {
+			progressChan := make(chan string, 50)
+			errChan := make(chan error, 1)
+
+			go func() {
+				errChan <- h.usecase.ProcessEntityImages(context.Background(), entityType, progressChan)
+				close(progressChan)
+			}()
+
+			for msg := range progressChan {
+				job.Broadcast(msg)
+			}
+
+			job.Mu.Lock()
+			job.Running = false
+			listeners := job.Listeners
+			job.Listeners = make([]chan string, 0)
+			job.Mu.Unlock()
+
+			if err := <-errChan; err != nil {
+				for _, l := range listeners {
+					select {
+					case l <- "ERROR: " + err.Error():
+					default:
+					}
+				}
+			} else {
+				for _, l := range listeners {
+					select {
+					case l <- "DONE":
+					default:
+					}
+				}
+			}
+
+			for _, l := range listeners {
+				close(l)
+			}
+		}()
+	} else {
+		job.Mu.Unlock()
+	}
 
 	c.Context().SetBodyStreamWriter(func(w *bufio.Writer) {
-		for msg := range progress {
-			fmt.Fprintf(w, "data: %s\n\n", msg)
+		defer job.RemoveListener(listenerCh)
+
+		// 1. Replay cached logs to newly connected / reconnected client
+		job.Mu.Lock()
+		cachedLogs := make([]string, len(job.Logs))
+		copy(cachedLogs, job.Logs)
+		job.Mu.Unlock()
+
+		for _, logLine := range cachedLogs {
+			fmt.Fprintf(w, "data: %s\n\n", logLine)
 			if err := w.Flush(); err != nil {
 				return
 			}
 		}
 
-		// Check for final error
-		if err := <-errChan; err != nil {
-			fmt.Fprintf(w, "data: ERROR: %v\n\n", err)
-		} else {
-			fmt.Fprintf(w, "data: DONE\n\n")
+		// 2. Stream new logs in real-time
+		for msg := range listenerCh {
+			fmt.Fprintf(w, "data: %s\n\n", msg)
+			if err := w.Flush(); err != nil {
+				return
+			}
 		}
-		_ = w.Flush()
 	})
 
 	return nil

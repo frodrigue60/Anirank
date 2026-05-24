@@ -151,11 +151,15 @@
   let jobLogs = $state<string[]>([]);
   let showLogs = $state(false);
 
-  function handleJob(type: string) {
-    if (activeJob) return;
+  function handleJob(type: string, isReconnect = false) {
+    if (activeJob && !isReconnect) return;
 
     activeJob = type;
-    jobLogs = [`Starting image processing job for ${type}...`];
+    if (!isReconnect) {
+      jobLogs = [`Starting image processing job for ${type}...`];
+    } else {
+      jobLogs = [...jobLogs, "🔄 Connection lost. Reconnecting..."];
+    }
     showLogs = true;
 
     // Use absolute URL for EventSource to avoid issues with baseURL
@@ -164,16 +168,26 @@
     const url = `${api.defaults.baseURL}/admin/jobs/image-processing?type=${type}&token=${token}`;
     const eventSource = new EventSource(url, { withCredentials: true });
 
+    let isFinished = false;
+
+    eventSource.onopen = () => {
+      if (isReconnect) {
+        jobLogs = ["🔄 Reconnected successfully. Replaying log history..."];
+      }
+    };
+
     eventSource.onmessage = (event) => {
       if (event.data === "DONE") {
         jobLogs = [...jobLogs, "✅ Job completed successfully."];
         eventSource.close();
         activeJob = null;
+        isFinished = true;
         toastState.addToast(`Image processing for ${type} finished`, "success");
       } else if (event.data.startsWith("ERROR:")) {
         jobLogs = [...jobLogs, `❌ ${event.data}`];
         eventSource.close();
         activeJob = null;
+        isFinished = true;
         toastState.addToast(`Image processing for ${type} failed`, "error");
       } else {
         // Keep only last 100 logs to avoid UI lag
@@ -183,9 +197,16 @@
 
     eventSource.onerror = (err) => {
       console.error("SSE Error:", err);
-      jobLogs = [...jobLogs, "❌ Connection lost or error occurred."];
       eventSource.close();
-      activeJob = null;
+
+      if (!isFinished && activeJob === type) {
+        jobLogs = [...jobLogs, "⚠️ Connection lost. Retrying in 3 seconds..."];
+        setTimeout(() => {
+          if (activeJob === type) {
+            handleJob(type, true);
+          }
+        }, 3000);
+      }
     };
   }
 

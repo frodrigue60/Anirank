@@ -507,3 +507,7 @@ func (u *AdminUsecase) ProcessEntityImages(ctx context.Context, entityType strin
 		return domain.NewAppError(400, "Invalid entity type for image processing", nil)
 	}
 }
+
+func (u *AdminUsecase) GetOrCreateImageJob(entityType string) (*ImageProcessingJob, bool) {
+	return u.contentAdmin.GetOrCreateImageJob(entityType)
+}

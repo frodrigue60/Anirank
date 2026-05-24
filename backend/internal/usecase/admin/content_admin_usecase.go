@@ -3139,6 +3139,8 @@ func (u *ContentAdminUsecase) ProcessEntityImages(ctx context.Context, entityTyp
 		return u.processAnimeImages(ctx, "banner", progress)
 	case "artist_avatars":
 		return u.processArtistImages(ctx, progress)
+	case "anilist_images":
+		return u.processAnilistImages(ctx, progress)
 	default:
 		return fmt.Errorf("unsupported entity type: %s", entityType)
 	}
@@ -3338,4 +3340,75 @@ func (u *ContentAdminUsecase) resolveVideoStoragePath(ctx context.Context, v *do
 	}
 
 	return fmt.Sprintf("videos/%d/%s", yearNum, seasonName)
+}
+
+func (u *ContentAdminUsecase) processAnilistImages(ctx context.Context, progress chan<- string) error {
+	sendProgress := func(msg string) {
+		if progress != nil {
+			select {
+			case progress <- msg:
+			default:
+			}
+		}
+	}
+
+	// 1. Get all animes
+	animes, err := u.animeRepo.GetPaginated(ctx, 100000, 0, domain.AnimeFilters{IsAdmin: true})
+	if err != nil {
+		return err
+	}
+
+	var targets []domain.Anime
+	for _, a := range animes {
+		hasAnilistCover := a.Cover != nil && strings.Contains(*a.Cover, "anilist.co")
+		hasAnilistBanner := a.Banner != nil && strings.Contains(*a.Banner, "anilist.co")
+		if hasAnilistCover || hasAnilistBanner {
+			targets = append(targets, a)
+		}
+	}
+
+	sendProgress(fmt.Sprintf("Found %d series containing AniList image URLs.", len(targets)))
+
+	for i, a := range targets {
+		updated := false
+
+		sendProgress(fmt.Sprintf("[%d/%d] Processing series: %s", i+1, len(targets), a.Title))
+
+		// Cover
+		if a.Cover != nil && strings.Contains(*a.Cover, "anilist.co") {
+			sendProgress(fmt.Sprintf("  - Downloading cover for: %s", a.Title))
+			if imgUrl, err := u.downloadAndStore(ctx, *a.Cover, "animes/covers", a.ID, infrastructure.PresetPoster); err == nil {
+				a.Cover = &imgUrl
+				updated = true
+				sendProgress(fmt.Sprintf("  ✓ Cover uploaded: %s", imgUrl))
+			} else {
+				sendProgress(fmt.Sprintf("  ✗ Cover failed: %v", err))
+			}
+			time.Sleep(200 * time.Millisecond) // Safety window
+		}
+
+		// Banner
+		if a.Banner != nil && strings.Contains(*a.Banner, "anilist.co") {
+			sendProgress(fmt.Sprintf("  - Downloading banner for: %s", a.Title))
+			if imgUrl, err := u.downloadAndStore(ctx, *a.Banner, "animes/banners", a.ID, infrastructure.PresetLandscape); err == nil {
+				a.Banner = &imgUrl
+				updated = true
+				sendProgress(fmt.Sprintf("  ✓ Banner uploaded: %s", imgUrl))
+			} else {
+				sendProgress(fmt.Sprintf("  ✗ Banner failed: %v", err))
+			}
+			time.Sleep(200 * time.Millisecond) // Safety window
+		}
+
+		if updated {
+			if err := u.animeRepo.Update(ctx, &a); err != nil {
+				sendProgress(fmt.Sprintf("  ✗ Failed to update DB for %s: %v", a.Title, err))
+			} else {
+				sendProgress(fmt.Sprintf("  ✓ Updated DB success for: %s", a.Title))
+			}
+		}
+	}
+
+	sendProgress("Completed AniList images migration job!")
+	return nil
 }

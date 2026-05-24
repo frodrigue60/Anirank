@@ -856,6 +856,26 @@
           >
         </button>
 
+        <button
+          onclick={() => handleJob('anilist_images')}
+          disabled={!!activeJob}
+          class="w-full flex items-center gap-3 p-4 rounded-xl bg-surface-highest hover:bg-surface-highest transition-colors border border-transparent hover:border-outline-variant text-left disabled:opacity-50 disabled:cursor-wait"
+        >
+          <div
+            class="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0"
+          >
+            {#if activeJob === 'anilist_images'}
+              <Loader2 size={16} class="animate-spin" />
+            {:else}
+              <DownloadCloud size={16} />
+            {/if}
+          </div>
+          <div class="flex flex-col">
+            <span class="font-medium text-sm text-on-surface">Download AniList Images</span>
+            <span class="text-[10px] text-on-surface-variant/70">Downloads external AniList covers/banners to local S3 bucket</span>
+          </div>
+        </button>
+
         <div class="pt-4 mt-2 border-t border-outline-variant">
           <p class="text-[10px] font-bold text-on-surface-variant/60 uppercase tracking-widest mb-3">Optimize Assets</p>
           <div class="grid grid-cols-2 gap-2">

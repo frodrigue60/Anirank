@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -508,7 +510,36 @@ func (u *ImportUsecase) phaseAniList(ctx context.Context, job *domain.ImportJob)
 				continue
 			}
 
-			if err := u.animeRepo.EnrichFromAniList(ctx, anilistID, coverPtr, bannerPtr, descPtr); err != nil {
+			// Sequential download of cover & banner to prevent rate limit blocks
+			var finalCover, finalBanner *string
+			if cover != "" {
+				if path, err := u.downloadAndStore(ctx, cover, "animes/covers", anime.ID, infrastructure.PresetPoster); err == nil {
+					finalCover = &path
+					time.Sleep(200 * time.Millisecond) // Safety window
+				} else {
+					job.Errors = append(job.Errors, fmt.Sprintf("failed to download cover for anime %d: %v", anime.ID, err))
+				}
+			}
+			if banner != "" {
+				if path, err := u.downloadAndStore(ctx, banner, "animes/banners", anime.ID, infrastructure.PresetLandscape); err == nil {
+					finalBanner = &path
+					time.Sleep(200 * time.Millisecond) // Safety window
+				} else {
+					job.Errors = append(job.Errors, fmt.Sprintf("failed to download banner for anime %d: %v", anime.ID, err))
+				}
+			}
+
+			// Enrich with localized / local bucket URLs if successful, otherwise fallback to the AniList URLs
+			coverToSave := coverPtr
+			if finalCover != nil {
+				coverToSave = finalCover
+			}
+			bannerToSave := bannerPtr
+			if finalBanner != nil {
+				bannerToSave = finalBanner
+			}
+
+			if err := u.animeRepo.EnrichFromAniList(ctx, anilistID, coverToSave, bannerToSave, descPtr); err != nil {
 				job.Errors = append(job.Errors, fmt.Sprintf("enrich anilist %d: %v", media.ID, err))
 			}
 
@@ -750,4 +781,35 @@ func parseVideoTags(tags string) (isNC bool, isBD bool, resolution int, isUncens
 		resolution = 360
 	}
 	return
+}
+
+func (u *ImportUsecase) downloadAndStore(ctx context.Context, url string, prefix string, id uint64, preset infrastructure.ResolutionPreset) (string, error) {
+	if u.mediaService == nil {
+		return "", fmt.Errorf("no media service configured")
+	}
+
+	client := &http.Client{Timeout: 15 * time.Second}
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("User-Agent", "Anirank/1.0 (https://anirank.work)")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("failed to fetch image: %s (URL: %s)", resp.Status, url)
+	}
+
+	buf, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	path, _, err := u.mediaService.UploadWithResolutions(ctx, prefix, id, bytes.NewReader(buf), preset)
+	return path, err
 }

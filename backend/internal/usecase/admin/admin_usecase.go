@@ -497,7 +497,7 @@ func (u *AdminUsecase) CheckAnimeThemesStatus(ctx context.Context) (bool, string
 
 func (u *AdminUsecase) ProcessEntityImages(ctx context.Context, entityType string, progress chan<- string) error {
 	switch entityType {
-	case "anime", "artist":
+	case "anime", "artist", "anilist_images":
 		return u.contentAdmin.ProcessEntityImages(ctx, entityType, progress)
 	case "user":
 		return u.userAdmin.ProcessUserImages(ctx, progress)

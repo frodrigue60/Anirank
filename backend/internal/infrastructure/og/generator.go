@@ -255,7 +255,7 @@ func (g *Generator) GenerateSongOG(title, artists, animeTitle, songType string, 
 		}
 	}
 
-	// 7. Info Bar (Bottom) â€” Score first so we know reserved width
+	// 7. Info Bar (Bottom) — Score first so we know reserved width
 	scoreReservedW := 0.0
 	if score > 0 {
 		if face, err := g.getFace(fontBoldVariant, 20); err == nil {
@@ -266,7 +266,7 @@ func (g *Generator) GenerateSongOG(title, artists, animeTitle, songType string, 
 		if face, err := g.getFace(fontBlackVariant, 64); err == nil {
 			dc.SetFontFace(face)
 			dc.SetHexColor("#FFD700")
-			scoreText := fmt.Sprintf("â˜… %.1f%%", score)
+			scoreText := fmt.Sprintf("★ %.1f%%", score)
 			dc.DrawStringAnchored(scoreText, W-80, 555, 1, 0.5)
 			sw, _ := dc.MeasureString(scoreText)
 			scoreReservedW = sw + 120 // score width + generous gap
@@ -362,7 +362,7 @@ func (g *Generator) GenerateArtistOG(name string, songCount int, favoriteCount i
 	if face, err := g.getFace(fontBoldVariant, 34); err == nil {
 		dc.SetFontFace(face)
 		dc.SetRGBA(1, 1, 1, 0.4)
-		statsText := fmt.Sprintf("%d SONGS â€¢ %d FAVORITES", songCount, favoriteCount)
+		statsText := fmt.Sprintf("%d SONGS • %d FAVORITES", songCount, favoriteCount)
 		dc.DrawStringAnchored(statsText, W/2, H-120, 0.5, 0.5)
 	}
 
@@ -599,12 +599,12 @@ func (g *Generator) GenerateAnimeOG(title, studios string, songCount int, score 
 		if face, err := g.getFace(fontBlackVariant, 64); err == nil {
 			dc.SetFontFace(face)
 			dc.SetHexColor("#FFD700")
-			dc.DrawStringAnchored(fmt.Sprintf("â˜… %.1f", score), 80, 510, 0, 0.5)
+			dc.DrawStringAnchored(fmt.Sprintf("★ %.1f", score), 80, 510, 0, 0.5)
 		}
 	}
 
 	// Bottom Text (Song Count)
-	bottomText := "Discover â€¢ Rate â€¢ Rank"
+	bottomText := "Discover • Rate • Rank"
 	if songCount > 0 {
 		bottomText = fmt.Sprintf("%d Songs Available", songCount)
 	}
@@ -678,7 +678,7 @@ func (g *Generator) GenerateHomeOG(totalSongs, totalUsers, totalAnimes, totalArt
 	if face, err := g.getFace(fontBoldVariant, 24); err == nil {
 		dc.SetFontFace(face)
 		dc.SetRGBA(1, 1, 1, 0.4)
-		dc.DrawStringAnchored("Discover â€¢ Rate â€¢ Share", W/2, H-120, 0.5, 0.5)
+		dc.DrawStringAnchored("Discover • Rate • Share", W/2, H-120, 0.5, 0.5)
 	}
 
 	// Subtle accent line
@@ -921,7 +921,7 @@ func (g *Generator) GenerateRankingOG(rankingType string, songs []domain.Song) (
 		if song.Anime != nil {
 			metaParts = append(metaParts, g.truncate(song.Anime.Title, 22))
 		}
-		metaText := strings.Join(metaParts, " â€¢ ")
+		metaText := strings.Join(metaParts, " • ")
 		if face, err := g.getFace(fontBoldVariant, 18); err == nil {
 			dc.SetFontFace(face)
 			dc.SetRGBA(1, 1, 1, 0.6)

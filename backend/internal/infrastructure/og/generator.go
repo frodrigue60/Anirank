@@ -181,22 +181,8 @@ func (g *Generator) GenerateSongOG(title, artists, animeTitle, songType string, 
 		}
 	}
 
-	// 7. Info Bar (Bottom)
-	if animeTitle != "" {
-		animeTitle = g.truncate(animeTitle, 60)
-		if face, err := g.loadFont(g.fontBold, 20); err == nil {
-			dc.SetFontFace(face)
-			dc.SetRGBA(1, 1, 1, 0.5)
-			dc.DrawStringAnchored("FEATURED IN", 80, 500, 0, 0.5)
-		}
-		if face, err := g.loadFont(g.fontBlack, 42); err == nil {
-			dc.SetFontFace(face)
-			dc.SetRGB(1, 1, 1)
-			dc.DrawStringAnchored(animeTitle, 80, 550, 0, 0.5)
-		}
-	}
-
-	// Score
+	// 7. Info Bar (Bottom) — Score first so we know reserved width
+	scoreReservedW := 0.0
 	if score > 0 {
 		if face, err := g.loadFont(g.fontBold, 20); err == nil {
 			dc.SetFontFace(face)
@@ -206,7 +192,26 @@ func (g *Generator) GenerateSongOG(title, artists, animeTitle, songType string, 
 		if face, err := g.loadFont(g.fontBlack, 64); err == nil {
 			dc.SetFontFace(face)
 			dc.SetHexColor("#FFD700")
-			dc.DrawStringAnchored(fmt.Sprintf("★ %.1f%%", score), W-80, 550, 1, 0.5)
+			scoreText := fmt.Sprintf("★ %.1f%%", score)
+			dc.DrawStringAnchored(scoreText, W-80, 555, 1, 0.5)
+			sw, _ := dc.MeasureString(scoreText)
+			scoreReservedW = sw + 120 // score width + generous gap
+		}
+	}
+
+	// Anime title — pixel-aware truncation to never overlap with score
+	if animeTitle != "" {
+		if face, err := g.loadFont(g.fontBold, 20); err == nil {
+			dc.SetFontFace(face)
+			dc.SetRGBA(1, 1, 1, 0.5)
+			dc.DrawStringAnchored("FEATURED IN", 80, 500, 0, 0.5)
+		}
+		if face, err := g.loadFont(g.fontBlack, 36); err == nil {
+			dc.SetFontFace(face)
+			dc.SetRGB(1, 1, 1)
+			maxW := float64(W) - 80 - scoreReservedW // left margin minus score area
+			animeTitle = g.truncateByWidth(dc, animeTitle, maxW)
+			dc.DrawStringAnchored(animeTitle, 80, 555, 0, 0.5)
 		}
 	}
 
@@ -688,6 +693,24 @@ func (g *Generator) truncate(s string, maxLen int) string {
 		return s
 	}
 	return string(runes[:maxLen-3]) + "..."
+}
+
+// truncateByWidth trims a string so its rendered pixel width does not exceed maxW.
+// The font face must already be set on dc before calling this.
+func (g *Generator) truncateByWidth(dc *gg.Context, s string, maxW float64) string {
+	w, _ := dc.MeasureString(s)
+	if w <= maxW {
+		return s
+	}
+	runes := []rune(s)
+	for i := len(runes); i > 0; i-- {
+		candidate := string(runes[:i]) + "..."
+		cw, _ := dc.MeasureString(candidate)
+		if cw <= maxW {
+			return candidate
+		}
+	}
+	return "..."
 }
 
 func (g *Generator) GenerateRankingOG(rankingType string, songs []domain.Song) (image.Image, error) {

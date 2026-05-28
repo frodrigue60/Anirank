@@ -426,202 +426,192 @@ func (u *ImportUsecase) processSong(
 // ─── Phase 2: AniList Enrichment ─────────────────────────────────────────────
 
 func (u *ImportUsecase) phaseAniList(ctx context.Context, job *domain.ImportJob) error {
-	// Fetch all animes that have an anilist_id but are missing cover or banner
-	type animeRow struct {
-		ID        uint64 `db:"id"`
-		AnilistID *int64 `db:"anilist_id"`
-	}
+	offset := 0
+	const dbBatchSize = 200
+	totalProcessed := 0
 
-	// We use a raw query via GetByAnilistIDs approach, but simpler: just load all
-	// animes with anilist_id set. The EnrichFromAniList query uses COALESCE so it
-	// won't overwrite existing data.
-	allAnimes, err := u.animeRepo.GetPaginated(ctx, 5000, 0, domain.AnimeFilters{IsAdmin: true})
-	if err != nil {
-		return fmt.Errorf("anilist enrichment: fetch animes: %w", err)
-	}
-
-	// Collect anilist IDs and build maps for quick lookups
-	var anilistIDs []int
-	idMap := make(map[int]int64) // anilist_id int → internal anilist_id int64
-	animeMap := make(map[int64]*domain.Anime)
-	for i := range allAnimes {
-		if allAnimes[i].AnilistID != nil {
-			anilistIDs = append(anilistIDs, int(*allAnimes[i].AnilistID))
-			idMap[int(*allAnimes[i].AnilistID)] = *allAnimes[i].AnilistID
-			animeMap[*allAnimes[i].AnilistID] = &allAnimes[i]
-		}
-	}
-
-	if len(anilistIDs) == 0 {
-		return nil
-	}
-
-	// Process in chunks of alChunkSize
-	for i := 0; i < len(anilistIDs); i += alChunkSize {
+	for {
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-		end := i + alChunkSize
-		if end > len(anilistIDs) {
-			end = len(anilistIDs)
+		animesBatch, err := u.animeRepo.GetPaginated(ctx, dbBatchSize, offset, domain.AnimeFilters{IsAdmin: true})
+		if err != nil {
+			return fmt.Errorf("anilist enrichment: fetch animes: %w", err)
 		}
-		chunk := anilistIDs[i:end]
-
-		var medias []anilist.Media
-		var lastErr error
-		for attempt := 0; attempt < alMaxRetries; attempt++ {
-			medias, lastErr = u.alClient.GetMediaByIDs(ctx, chunk)
-			if lastErr == nil {
-				break
-			}
-			// On rate limit, wait 65 seconds before retrying
-			if strings.Contains(lastErr.Error(), "429") || strings.Contains(lastErr.Error(), "rate") {
-				time.Sleep(65 * time.Second)
-			} else {
-				break
-			}
-		}
-		if lastErr != nil {
-			errStr := fmt.Sprintf("anilist chunk %d-%d failed after %d retries: %v", i, end, alMaxRetries, lastErr)
-			job.Errors = append(job.Errors, errStr)
-			_ = u.jobRepo.UpdateProgress(ctx, job)
-			return fmt.Errorf("%s", errStr)
+		if len(animesBatch) == 0 {
+			break
 		}
 
-		for _, media := range medias {
-			cover := media.CoverImage.ExtraLarge
-			banner := media.BannerImage
-			desc := media.Description
+		var chunkAnilistIDs []int
+		chunkAnimeMap := make(map[int64]*domain.Anime)
+		for i := range animesBatch {
+			if animesBatch[i].AnilistID != nil {
+				chunkAnilistIDs = append(chunkAnilistIDs, int(*animesBatch[i].AnilistID))
+				chunkAnimeMap[*animesBatch[i].AnilistID] = &animesBatch[i]
+			}
+		}
 
-			var coverPtr, bannerPtr, descPtr *string
-			if cover != "" {
-				coverPtr = &cover
-			}
-			if banner != "" {
-				bannerPtr = &banner
-			}
-			if desc != "" {
-				descPtr = &desc
-			}
-
-			anilistID := int64(media.ID)
-			anime, exists := animeMap[anilistID]
-			if !exists {
-				continue
-			}
-
-			// Sequential download of cover & banner to prevent rate limit blocks
-			var finalCover, finalBanner *string
-			if cover != "" {
-				if path, err := u.downloadAndStore(ctx, cover, "animes/covers", anime.ID, infrastructure.PresetPoster); err == nil {
-					finalCover = &path
-					time.Sleep(200 * time.Millisecond) // Safety window
-				} else {
-					job.Errors = append(job.Errors, fmt.Sprintf("failed to download cover for anime %d: %v", anime.ID, err))
+		if len(chunkAnilistIDs) > 0 {
+			for idx := 0; idx < len(chunkAnilistIDs); idx += alChunkSize {
+				subEnd := idx + alChunkSize
+				if subEnd > len(chunkAnilistIDs) {
+					subEnd = len(chunkAnilistIDs)
 				}
-			}
-			if banner != "" {
-				if path, err := u.downloadAndStore(ctx, banner, "animes/banners", anime.ID, infrastructure.PresetLandscape); err == nil {
-					finalBanner = &path
-					time.Sleep(200 * time.Millisecond) // Safety window
-				} else {
-					job.Errors = append(job.Errors, fmt.Sprintf("failed to download banner for anime %d: %v", anime.ID, err))
-				}
-			}
+				subChunk := chunkAnilistIDs[idx:subEnd]
 
-			// Enrich with localized / local bucket URLs if successful, otherwise fallback to the AniList URLs
-			coverToSave := coverPtr
-			if finalCover != nil {
-				coverToSave = finalCover
-			}
-			bannerToSave := bannerPtr
-			if finalBanner != nil {
-				bannerToSave = finalBanner
-			}
-
-			if err := u.animeRepo.EnrichFromAniList(ctx, anilistID, coverToSave, bannerToSave, descPtr); err != nil {
-				job.Errors = append(job.Errors, fmt.Sprintf("enrich anilist %d: %v", media.ID, err))
-			}
-
-			// 1. Sync Genres
-			var genreIDs []uint64
-			for _, g := range media.Genres {
-				if obj, err := u.taxonomyRepo.GetOrCreateGenre(ctx, g); err == nil && obj != nil {
-					genreIDs = append(genreIDs, obj.ID)
-				} else if err != nil {
-					job.Errors = append(job.Errors, fmt.Sprintf("genre %s for anime %d: %v", g, anime.ID, err))
-				}
-			}
-			if err := u.animeRepo.UpdateGenres(ctx, anime.ID, genreIDs); err != nil {
-				job.Errors = append(job.Errors, fmt.Sprintf("update genres for anime %d: %v", anime.ID, err))
-			}
-
-			// 2. Sync Studios & Producers
-			var studioIDs []uint64
-			var producerIDs []uint64
-			for _, edge := range media.Studios.Edges {
-				if edge.Node.Name == "" {
-					continue
-				}
-				if edge.IsMain {
-					if obj, err := u.taxonomyRepo.GetOrCreateStudio(ctx, edge.Node.Name); err == nil && obj != nil {
-						studioIDs = append(studioIDs, obj.ID)
-					} else if err != nil {
-						job.Errors = append(job.Errors, fmt.Sprintf("studio %s for anime %d: %v", edge.Node.Name, anime.ID, err))
+				var medias []anilist.Media
+				var lastErr error
+				for attempt := 0; attempt < alMaxRetries; attempt++ {
+					medias, lastErr = u.alClient.GetMediaByIDs(ctx, subChunk)
+					if lastErr == nil {
+						break
 					}
-				} else {
-					if obj, err := u.taxonomyRepo.GetOrCreateProducer(ctx, edge.Node.Name); err == nil && obj != nil {
-						producerIDs = append(producerIDs, obj.ID)
-					} else if err != nil {
-						job.Errors = append(job.Errors, fmt.Sprintf("producer %s for anime %d: %v", edge.Node.Name, anime.ID, err))
+					if strings.Contains(lastErr.Error(), "429") || strings.Contains(lastErr.Error(), "rate") {
+						time.Sleep(65 * time.Second)
+					} else {
+						break
 					}
 				}
-			}
-			if err := u.animeRepo.UpdateStudios(ctx, anime.ID, studioIDs); err != nil {
-				job.Errors = append(job.Errors, fmt.Sprintf("update studios for anime %d: %v", anime.ID, err))
-			}
-			if err := u.animeRepo.UpdateProducers(ctx, anime.ID, producerIDs); err != nil {
-				job.Errors = append(job.Errors, fmt.Sprintf("update producers for anime %d: %v", anime.ID, err))
-			}
-
-			// 3. Sync External Links
-			if len(media.ExternalLinks) > 0 {
-				// Pre-load current links to avoid overwriting them
-				if err := u.animeRepo.LoadRelations(ctx, anime, true); err != nil {
-					job.Errors = append(job.Errors, fmt.Sprintf("load relations for anime %d: %v", anime.ID, err))
+				if lastErr != nil {
+					errStr := fmt.Sprintf("anilist chunk %d-%d failed after %d retries: %v", totalProcessed+idx, totalProcessed+subEnd, alMaxRetries, lastErr)
+					job.Errors = append(job.Errors, errStr)
+					_ = u.jobRepo.UpdateProgress(ctx, job)
+					return fmt.Errorf("%s", errStr)
 				}
 
-				linksMap := make(map[string]domain.ExternalLink)
-				for _, l := range anime.ExternalLinks {
-					linksMap[l.URL] = l
-				}
+				for _, media := range medias {
+					cover := media.CoverImage.ExtraLarge
+					banner := media.BannerImage
+					desc := media.Description
 
-				for _, l := range media.ExternalLinks {
-					if l.URL == "" {
+					var coverPtr, bannerPtr, descPtr *string
+					if cover != "" {
+						coverPtr = &cover
+					}
+					if banner != "" {
+						bannerPtr = &banner
+					}
+					if desc != "" {
+						descPtr = &desc
+					}
+
+					anilistID := int64(media.ID)
+					anime, exists := chunkAnimeMap[anilistID]
+					if !exists {
 						continue
 					}
-					linksMap[l.URL] = domain.ExternalLink{
-						Name: l.Site,
-						URL:  l.URL,
-						Type: strings.ToLower(l.Site),
+
+					var finalCover, finalBanner *string
+					if cover != "" {
+						if path, err := u.downloadAndStore(ctx, cover, "animes/covers", anime.ID, infrastructure.PresetPoster); err == nil {
+							finalCover = &path
+							time.Sleep(200 * time.Millisecond)
+						} else {
+							job.Errors = append(job.Errors, fmt.Sprintf("failed to download cover for anime %d: %v", anime.ID, err))
+						}
+					}
+					if banner != "" {
+						if path, err := u.downloadAndStore(ctx, banner, "animes/banners", anime.ID, infrastructure.PresetLandscape); err == nil {
+							finalBanner = &path
+							time.Sleep(200 * time.Millisecond)
+						} else {
+							job.Errors = append(job.Errors, fmt.Sprintf("failed to download banner for anime %d: %v", anime.ID, err))
+						}
+					}
+
+					coverToSave := coverPtr
+					if finalCover != nil {
+						coverToSave = finalCover
+					}
+					bannerToSave := bannerPtr
+					if finalBanner != nil {
+						bannerToSave = finalBanner
+					}
+
+					if err := u.animeRepo.EnrichFromAniList(ctx, anilistID, coverToSave, bannerToSave, descPtr); err != nil {
+						job.Errors = append(job.Errors, fmt.Sprintf("enrich anilist %d: %v", media.ID, err))
+					}
+
+					var genreIDs []uint64
+					for _, g := range media.Genres {
+						if obj, err := u.taxonomyRepo.GetOrCreateGenre(ctx, g); err == nil && obj != nil {
+							genreIDs = append(genreIDs, obj.ID)
+						} else if err != nil {
+							job.Errors = append(job.Errors, fmt.Sprintf("genre %s for anime %d: %v", g, anime.ID, err))
+						}
+					}
+					if err := u.animeRepo.UpdateGenres(ctx, anime.ID, genreIDs); err != nil {
+						job.Errors = append(job.Errors, fmt.Sprintf("update genres for anime %d: %v", anime.ID, err))
+					}
+
+					var studioIDs []uint64
+					var producerIDs []uint64
+					for _, edge := range media.Studios.Edges {
+						if edge.Node.Name == "" {
+							continue
+						}
+						if edge.IsMain {
+							if obj, err := u.taxonomyRepo.GetOrCreateStudio(ctx, edge.Node.Name); err == nil && obj != nil {
+								studioIDs = append(studioIDs, obj.ID)
+							} else if err != nil {
+								job.Errors = append(job.Errors, fmt.Sprintf("studio %s for anime %d: %v", edge.Node.Name, anime.ID, err))
+							}
+						} else {
+							if obj, err := u.taxonomyRepo.GetOrCreateProducer(ctx, edge.Node.Name); err == nil && obj != nil {
+								producerIDs = append(producerIDs, obj.ID)
+							} else if err != nil {
+								job.Errors = append(job.Errors, fmt.Sprintf("producer %s for anime %d: %v", edge.Node.Name, anime.ID, err))
+							}
+						}
+					}
+					if err := u.animeRepo.UpdateStudios(ctx, anime.ID, studioIDs); err != nil {
+						job.Errors = append(job.Errors, fmt.Sprintf("update studios for anime %d: %v", anime.ID, err))
+					}
+					if err := u.animeRepo.UpdateProducers(ctx, anime.ID, producerIDs); err != nil {
+						job.Errors = append(job.Errors, fmt.Sprintf("update producers for anime %d: %v", anime.ID, err))
+					}
+
+					if len(media.ExternalLinks) > 0 {
+						if err := u.animeRepo.LoadRelations(ctx, anime, true); err != nil {
+							job.Errors = append(job.Errors, fmt.Sprintf("load relations for anime %d: %v", anime.ID, err))
+						}
+
+						linksMap := make(map[string]domain.ExternalLink)
+						for _, l := range anime.ExternalLinks {
+							linksMap[l.URL] = l
+						}
+
+						for _, l := range media.ExternalLinks {
+							if l.URL == "" {
+								continue
+							}
+							linksMap[l.URL] = domain.ExternalLink{
+								Name: l.Site,
+								URL:  l.URL,
+								Type: strings.ToLower(l.Site),
+							}
+						}
+
+						finalLinks := make([]domain.ExternalLink, 0, len(linksMap))
+						for _, l := range linksMap {
+							finalLinks = append(finalLinks, l)
+						}
+
+						if err := u.animeRepo.UpdateExternalLinks(ctx, anime.ID, finalLinks); err != nil {
+							job.Errors = append(job.Errors, fmt.Sprintf("update external links for anime %d: %v", anime.ID, err))
+						}
 					}
 				}
 
-				finalLinks := make([]domain.ExternalLink, 0, len(linksMap))
-				for _, l := range linksMap {
-					finalLinks = append(finalLinks, l)
-				}
+				totalProcessed += len(subChunk)
+				job.CurrentPage = totalProcessed/alChunkSize + 1
+				_ = u.jobRepo.UpdateProgress(ctx, job)
 
-				if err := u.animeRepo.UpdateExternalLinks(ctx, anime.ID, finalLinks); err != nil {
-					job.Errors = append(job.Errors, fmt.Sprintf("update external links for anime %d: %v", anime.ID, err))
-				}
+				time.Sleep(time.Duration(alInterChunkSec) * time.Second)
 			}
 		}
 
-		job.CurrentPage = i/alChunkSize + 1
-		_ = u.jobRepo.UpdateProgress(ctx, job)
-
-		time.Sleep(time.Duration(alInterChunkSec) * time.Second)
+		offset += len(animesBatch)
 	}
 
 	return nil

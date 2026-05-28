@@ -50,6 +50,7 @@ type ContentAdminUsecase struct {
 	statusMu         sync.Mutex
 	imageJobs        map[string]*ImageProcessingJob
 	imageJobsMu      sync.Mutex
+	imageSem         chan struct{}
 }
 
 func NewContentAdminUsecase(
@@ -78,6 +79,7 @@ func NewContentAdminUsecase(
 		interactionRepo:    ir,
 		notificationUsecase: nu,
 		imageJobs:     make(map[string]*ImageProcessingJob),
+		imageSem:      make(chan struct{}, 3),
 	}
 }
 
@@ -876,6 +878,9 @@ func (u *ContentAdminUsecase) downloadAndStore(ctx context.Context, url string, 
 	if u.mediaService == nil {
 		return "", fmt.Errorf("no media service configured")
 	}
+
+	u.imageSem <- struct{}{}
+	defer func() { <-u.imageSem }()
 
 	client := &http.Client{Timeout: 15 * time.Second}
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
@@ -3159,71 +3164,81 @@ func (u *ContentAdminUsecase) processAnimeImages(ctx context.Context, facet stri
 		}
 	}
 
-	// 1. Get all animes
-	animes, err := u.animeRepo.GetPaginated(ctx, 10000, 0, domain.AnimeFilters{IsAdmin: true})
-	if err != nil {
-		return err
-	}
+	const batchSize = 200
+	offset := 0
+	totalProcessed := 0
 
-	sendProgress(fmt.Sprintf("Processing %d animes for %s...", len(animes), facet))
+	sendProgress(fmt.Sprintf("Processing animes for %s in batches of %d...", facet, batchSize))
 
-	for i, a := range animes {
-		var imgPath *string
-		if facet == "cover" {
-			imgPath = a.Cover
-		} else {
-			imgPath = a.Banner
+	for {
+		if ctx.Err() != nil {
+			return ctx.Err()
 		}
-
-		if imgPath == nil || *imgPath == "" {
-			continue
-		}
-
-		// Check if it already has variants (simple check: if it's already an AVIF and not an external URL, 
-		// we assume it's one of ours, but we might want to re-process anyway to be sure variants exist)
-		// For now, let's just re-process everything that isn't a variant itself.
-
-		sendProgress(fmt.Sprintf("[%d/%d] Processing %s for: %s", i+1, len(animes), facet, a.Title))
-
-		file, err := u.mediaService.GetFile(ctx, *imgPath)
+		animes, err := u.animeRepo.GetPaginated(ctx, batchSize, offset, domain.AnimeFilters{IsAdmin: true})
 		if err != nil {
-			sendProgress(fmt.Sprintf("✗ Failed to get file for %s: %v", a.Title, err))
-			continue
+			return err
+		}
+		if len(animes) == 0 {
+			break
 		}
 
-		preset := infrastructure.PresetPoster
-		prefix := "animes/covers"
-		if facet == "banner" {
-			preset = infrastructure.PresetLandscape
-			prefix = "animes/banners"
+		for _, a := range animes {
+			var imgPath *string
+			if facet == "cover" {
+				imgPath = a.Cover
+			} else {
+				imgPath = a.Banner
+			}
+
+			if imgPath == nil || *imgPath == "" {
+				continue
+			}
+
+			totalProcessed++
+			sendProgress(fmt.Sprintf("[%d] Processing %s for: %s", totalProcessed, facet, a.Title))
+
+			file, err := u.mediaService.GetFile(ctx, *imgPath)
+			if err != nil {
+				sendProgress(fmt.Sprintf("✗ Failed to get file for %s: %v", a.Title, err))
+				continue
+			}
+
+			preset := infrastructure.PresetPoster
+			prefix := "animes/covers"
+			if facet == "banner" {
+				preset = infrastructure.PresetLandscape
+				prefix = "animes/banners"
+			}
+
+			newPath, _, err := u.mediaService.UploadWithResolutions(ctx, prefix, a.ID, file, preset)
+			file.Close()
+			if err != nil {
+				sendProgress(fmt.Sprintf("✗ Failed to process %s: %v", a.Title, err))
+				continue
+			}
+
+			// Update DB
+			oldPath := *imgPath
+			if facet == "cover" {
+				a.Cover = &newPath
+			} else {
+				a.Banner = &newPath
+			}
+
+			if err := u.animeRepo.Update(ctx, &a); err != nil {
+				sendProgress(fmt.Sprintf("✗ Failed to update DB for %s: %v", a.Title, err))
+				continue
+			}
+
+			// Delete old if it was one of ours and path changed
+			if oldPath != newPath && !strings.HasPrefix(oldPath, "http") {
+				u.mediaService.DeleteMedia(ctx, oldPath)
+			}
+
+			sendProgress(fmt.Sprintf("✓ Success: %s", a.Title))
 		}
 
-		newPath, _, err := u.mediaService.UploadWithResolutions(ctx, prefix, a.ID, file, preset)
-		file.Close()
-		if err != nil {
-			sendProgress(fmt.Sprintf("✗ Failed to process %s: %v", a.Title, err))
-			continue
-		}
-
-		// Update DB
-		oldPath := *imgPath
-		if facet == "cover" {
-			a.Cover = &newPath
-		} else {
-			a.Banner = &newPath
-		}
-
-		if err := u.animeRepo.Update(ctx, &a); err != nil {
-			sendProgress(fmt.Sprintf("✗ Failed to update DB for %s: %v", a.Title, err))
-			continue
-		}
-
-		// Delete old if it was one of ours and path changed
-		if oldPath != newPath && !strings.HasPrefix(oldPath, "http") {
-			u.mediaService.DeleteMedia(ctx, oldPath)
-		}
-
-		sendProgress(fmt.Sprintf("✓ Success: %s", a.Title))
+		offset += len(animes)
 	}
 
 	sendProgress("Completed anime image processing!")
@@ -3240,44 +3255,59 @@ func (u *ContentAdminUsecase) processArtistImages(ctx context.Context, progress 
 		}
 	}
 
-	artists, err := u.artistRepo.GetPaginated(ctx, 10000, 0, domain.ArtistFilters{IsAdmin: true})
-	if err != nil {
-		return err
-	}
+	const batchSize = 200
+	offset := 0
+	totalProcessed := 0
 
-	sendProgress(fmt.Sprintf("Processing %d artists for avatars...", len(artists)))
+	sendProgress(fmt.Sprintf("Processing artists for avatars in batches of %d...", batchSize))
 
-	for i, a := range artists {
-		if a.Avatar == nil || *a.Avatar == "" {
-			continue
+	for {
+		if ctx.Err() != nil {
+			return ctx.Err()
 		}
-
-		sendProgress(fmt.Sprintf("[%d/%d] Processing avatar for: %s", i+1, len(artists), a.Name))
-
-		file, err := u.mediaService.GetFile(ctx, *a.Avatar)
+		artists, err := u.artistRepo.GetPaginated(ctx, batchSize, offset, domain.ArtistFilters{IsAdmin: true})
 		if err != nil {
-			sendProgress(fmt.Sprintf("✗ Failed to get file for %s: %v", a.Name, err))
-			continue
+			return err
+		}
+		if len(artists) == 0 {
+			break
 		}
 
-		newPath, _, err := u.mediaService.UploadWithResolutions(ctx, "artists/avatars", a.ID, file, infrastructure.PresetSquare)
-		file.Close()
-		if err != nil {
-			sendProgress(fmt.Sprintf("✗ Failed to process %s: %v", a.Name, err))
-			continue
+		for _, a := range artists {
+			if a.Avatar == nil || *a.Avatar == "" {
+				continue
+			}
+
+			totalProcessed++
+			sendProgress(fmt.Sprintf("[%d] Processing avatar for: %s", totalProcessed, a.Name))
+
+			file, err := u.mediaService.GetFile(ctx, *a.Avatar)
+			if err != nil {
+				sendProgress(fmt.Sprintf("✗ Failed to get file for %s: %v", a.Name, err))
+				continue
+			}
+
+			newPath, _, err := u.mediaService.UploadWithResolutions(ctx, "artists/avatars", a.ID, file, infrastructure.PresetSquare)
+			file.Close()
+			if err != nil {
+				sendProgress(fmt.Sprintf("✗ Failed to process %s: %v", a.Name, err))
+				continue
+			}
+
+			oldPath := *a.Avatar
+			if err := u.artistRepo.UpdateAvatar(ctx, a.ID, newPath); err != nil {
+				sendProgress(fmt.Sprintf("✗ Failed to update DB for %s: %v", a.Name, err))
+				continue
+			}
+
+			if oldPath != newPath && !strings.HasPrefix(oldPath, "http") {
+				u.mediaService.DeleteMedia(ctx, oldPath)
+			}
+
+			sendProgress(fmt.Sprintf("✓ Success: %s", a.Name))
 		}
 
-		oldPath := *a.Avatar
-		if err := u.artistRepo.UpdateAvatar(ctx, a.ID, newPath); err != nil {
-			sendProgress(fmt.Sprintf("✗ Failed to update DB for %s: %v", a.Name, err))
-			continue
-		}
-
-		if oldPath != newPath && !strings.HasPrefix(oldPath, "http") {
-			u.mediaService.DeleteMedia(ctx, oldPath)
-		}
-
-		sendProgress(fmt.Sprintf("✓ Success: %s", a.Name))
+		offset += len(artists)
 	}
 
 	sendProgress("Completed artist image processing!")
@@ -3355,61 +3385,71 @@ func (u *ContentAdminUsecase) processAnilistImages(ctx context.Context, progress
 		}
 	}
 
-	// 1. Get all animes
-	animes, err := u.animeRepo.GetPaginated(ctx, 100000, 0, domain.AnimeFilters{IsAdmin: true})
-	if err != nil {
-		return err
-	}
+	const batchSize = 200
+	offset := 0
+	totalProcessed := 0
 
-	var targets []domain.Anime
-	for _, a := range animes {
-		hasAnilistCover := a.Cover != nil && strings.Contains(*a.Cover, "anilist.co")
-		hasAnilistBanner := a.Banner != nil && strings.Contains(*a.Banner, "anilist.co")
-		if hasAnilistCover || hasAnilistBanner {
-			targets = append(targets, a)
+	sendProgress(fmt.Sprintf("Scanning all series for AniList image URLs in batches of %d...", batchSize))
+
+	for {
+		if ctx.Err() != nil {
+			return ctx.Err()
 		}
-	}
+		animes, err := u.animeRepo.GetPaginated(ctx, batchSize, offset, domain.AnimeFilters{IsAdmin: true})
+		if err != nil {
+			return err
+		}
+		if len(animes) == 0 {
+			break
+		}
 
-	sendProgress(fmt.Sprintf("Found %d series containing AniList image URLs.", len(targets)))
-
-	for i, a := range targets {
-		updated := false
-
-		sendProgress(fmt.Sprintf("[%d/%d] Processing series: %s", i+1, len(targets), a.Title))
-
-		// Cover
-		if a.Cover != nil && strings.Contains(*a.Cover, "anilist.co") {
-			sendProgress(fmt.Sprintf("  - Downloading cover for: %s", a.Title))
-			if imgUrl, err := u.downloadAndStore(ctx, *a.Cover, "animes/covers", a.ID, infrastructure.PresetPoster); err == nil {
-				a.Cover = &imgUrl
-				updated = true
-				sendProgress(fmt.Sprintf("  ✓ Cover uploaded: %s", imgUrl))
-			} else {
-				sendProgress(fmt.Sprintf("  ✗ Cover failed: %v", err))
+		for _, a := range animes {
+			hasAnilistCover := a.Cover != nil && strings.Contains(*a.Cover, "anilist.co")
+			hasAnilistBanner := a.Banner != nil && strings.Contains(*a.Banner, "anilist.co")
+			if !hasAnilistCover && !hasAnilistBanner {
+				continue
 			}
-			time.Sleep(200 * time.Millisecond) // Safety window
+
+			updated := false
+			totalProcessed++
+			sendProgress(fmt.Sprintf("[%d] Processing series: %s", totalProcessed, a.Title))
+
+			// Cover
+			if hasAnilistCover {
+				sendProgress(fmt.Sprintf("  - Downloading cover for: %s", a.Title))
+				if imgUrl, err := u.downloadAndStore(ctx, *a.Cover, "animes/covers", a.ID, infrastructure.PresetPoster); err == nil {
+					a.Cover = &imgUrl
+					updated = true
+					sendProgress(fmt.Sprintf("  ✓ Cover uploaded: %s", imgUrl))
+				} else {
+					sendProgress(fmt.Sprintf("  ✗ Cover failed: %v", err))
+				}
+				time.Sleep(200 * time.Millisecond) // Safety window
+			}
+
+			// Banner
+			if hasAnilistBanner {
+				sendProgress(fmt.Sprintf("  - Downloading banner for: %s", a.Title))
+				if imgUrl, err := u.downloadAndStore(ctx, *a.Banner, "animes/banners", a.ID, infrastructure.PresetLandscape); err == nil {
+					a.Banner = &imgUrl
+					updated = true
+					sendProgress(fmt.Sprintf("  ✓ Banner uploaded: %s", imgUrl))
+				} else {
+					sendProgress(fmt.Sprintf("  ✗ Banner failed: %v", err))
+				}
+				time.Sleep(200 * time.Millisecond) // Safety window
+			}
+
+			if updated {
+				if err := u.animeRepo.Update(ctx, &a); err != nil {
+					sendProgress(fmt.Sprintf("  ✗ Failed to update DB for %s: %v", a.Title, err))
+				} else {
+					sendProgress(fmt.Sprintf("  ✓ Updated DB success for: %s", a.Title))
+				}
+			}
 		}
 
-		// Banner
-		if a.Banner != nil && strings.Contains(*a.Banner, "anilist.co") {
-			sendProgress(fmt.Sprintf("  - Downloading banner for: %s", a.Title))
-			if imgUrl, err := u.downloadAndStore(ctx, *a.Banner, "animes/banners", a.ID, infrastructure.PresetLandscape); err == nil {
-				a.Banner = &imgUrl
-				updated = true
-				sendProgress(fmt.Sprintf("  ✓ Banner uploaded: %s", imgUrl))
-			} else {
-				sendProgress(fmt.Sprintf("  ✗ Banner failed: %v", err))
-			}
-			time.Sleep(200 * time.Millisecond) // Safety window
-		}
-
-		if updated {
-			if err := u.animeRepo.Update(ctx, &a); err != nil {
-				sendProgress(fmt.Sprintf("  ✗ Failed to update DB for %s: %v", a.Title, err))
-			} else {
-				sendProgress(fmt.Sprintf("  ✓ Updated DB success for: %s", a.Title))
-			}
-		}
+		offset += len(animes)
 	}
 
 	sendProgress("Completed AniList images migration job!")
@@ -3428,6 +3468,10 @@ func (job *ImageProcessingJob) Broadcast(msg string) {
 	job.Mu.Lock()
 	defer job.Mu.Unlock()
 
+	const maxLogs = 500
+	if len(job.Logs) >= maxLogs {
+		job.Logs = job.Logs[len(job.Logs)-maxLogs/2:]
+	}
 	job.Logs = append(job.Logs, msg)
 
 	for _, listener := range job.Listeners {
@@ -3460,7 +3504,22 @@ func (job *ImageProcessingJob) RemoveListener(ch chan string) {
 	}
 }
 
+func (u *ContentAdminUsecase) CleanupFinishedJobs() {
+	u.imageJobsMu.Lock()
+	defer u.imageJobsMu.Unlock()
+
+	for k, job := range u.imageJobs {
+		job.Mu.Lock()
+		if !job.Running {
+			delete(u.imageJobs, k)
+		}
+		job.Mu.Unlock()
+	}
+}
+
 func (u *ContentAdminUsecase) GetOrCreateImageJob(entityType string) (*ImageProcessingJob, bool) {
+	u.CleanupFinishedJobs()
+
 	u.imageJobsMu.Lock()
 	defer u.imageJobsMu.Unlock()
 

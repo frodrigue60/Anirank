@@ -126,6 +126,9 @@ func SetupPublicRoutes(app *fiber.App,
 	// API V1 Group
 	api := app.Group("/api")
 
+	// Apply 10MB body limit to all API routes (uploads will bypass this via multipart check)
+	api.Use(middleware.BodyLimit(10 * 1024 * 1024))
+
 	// --- SWAGGER DOCS ---
 	api.Get("/swagger/*", swagger.HandlerDefault)
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image/png"
 	"net/http"
+	"os"
 
 	"anirank/api/internal/domain"
 	"anirank/api/internal/infrastructure/og"
@@ -40,10 +41,11 @@ func (h *OGHandler) SongOG(c *fiber.Ctx) error {
 
 	// Check cache
 	if !nocache {
-		if data, ok := h.generator.GetCache(cacheKey); ok {
+		path := h.generator.GetCachePath(cacheKey)
+		if _, err := os.Stat(path); err == nil {
 			c.Set("Content-Type", "image/png")
 			c.Set("Cache-Control", "public, max-age=86400")
-			return c.Send(data)
+			return c.SendFile(path)
 		}
 	}
 
@@ -102,10 +104,11 @@ func (h *OGHandler) AnimeOG(c *fiber.Ctx) error {
 
 	// Check cache
 	if !nocache {
-		if data, ok := h.generator.GetCache(cacheKey); ok {
+		path := h.generator.GetCachePath(cacheKey)
+		if _, err := os.Stat(path); err == nil {
 			c.Set("Content-Type", "image/png")
 			c.Set("Cache-Control", "public, max-age=86400")
-			return c.Send(data)
+			return c.SendFile(path)
 		}
 	}
 
@@ -159,10 +162,11 @@ func (h *OGHandler) ArtistOG(c *fiber.Ctx) error {
 
 	// Check cache
 	if !nocache {
-		if data, ok := h.generator.GetCache(cacheKey); ok {
+		path := h.generator.GetCachePath(cacheKey)
+		if _, err := os.Stat(path); err == nil {
 			c.Set("Content-Type", "image/png")
 			c.Set("Cache-Control", "public, max-age=86400")
-			return c.Send(data)
+			return c.SendFile(path)
 		}
 	}
 
@@ -211,10 +215,11 @@ func (h *OGHandler) UserOG(c *fiber.Ctx) error {
 
 	// Check cache
 	if !nocache {
-		if data, ok := h.generator.GetCache(cacheKey); ok {
+		path := h.generator.GetCachePath(cacheKey)
+		if _, err := os.Stat(path); err == nil {
 			c.Set("Content-Type", "image/png")
 			c.Set("Cache-Control", "public, max-age=86400")
-			return c.Send(data)
+			return c.SendFile(path)
 		}
 	}
 
@@ -264,10 +269,11 @@ func (h *OGHandler) HomeOG(c *fiber.Ctx) error {
 
 	// Check cache
 	if !nocache {
-		if data, ok := h.generator.GetCache(cacheKey); ok {
+		path := h.generator.GetCachePath(cacheKey)
+		if _, err := os.Stat(path); err == nil {
 			c.Set("Content-Type", "image/png")
 			c.Set("Cache-Control", "public, max-age=3600") // 1h for home stats
-			return c.Send(data)
+			return c.SendFile(path)
 		}
 	}
 
@@ -315,10 +321,11 @@ func (h *OGHandler) PlaylistOG(c *fiber.Ctx) error {
 
 	// Check cache
 	if !nocache {
-		if data, ok := h.generator.GetCache(cacheKey); ok {
+		path := h.generator.GetCachePath(cacheKey)
+		if _, err := os.Stat(path); err == nil {
 			c.Set("Content-Type", "image/png")
 			c.Set("Cache-Control", "public, max-age=86400")
-			return c.Send(data)
+			return c.SendFile(path)
 		}
 	}
 
@@ -384,10 +391,11 @@ func (h *OGHandler) RankingOG(c *fiber.Ctx) error {
 
 	// Check cache
 	if !nocache {
-		if data, ok := h.generator.GetCache(cacheKey); ok {
+		path := h.generator.GetCachePath(cacheKey)
+		if _, err := os.Stat(path); err == nil {
 			c.Set("Content-Type", "image/png")
 			c.Set("Cache-Control", "public, max-age=3600")
-			return c.Send(data)
+			return c.SendFile(path)
 		}
 	}
 

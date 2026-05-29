@@ -1,5 +1,6 @@
 import type { PageLoad } from './$types';
 import api from '$lib/api';
+import { logLoadError } from '$lib/logger';
 
 export const load: PageLoad = async ({ params }) => {
 	try {
@@ -14,7 +15,7 @@ export const load: PageLoad = async ({ params }) => {
                 const songsRes = await api.get(`/artists/${artist.slug}/songs?limit=10&sort=recent`);
                 songs = songsRes.data.data || [];
             } catch (err) {
-                console.error("Failed to load artist songs:", err);
+                logLoadError('admin/artists/[id] — songs', err);
             }
         }
 
@@ -23,7 +24,7 @@ export const load: PageLoad = async ({ params }) => {
             songs
 		};
 	} catch (error) {
-		console.error("Error loading artist details:", error);
+		logLoadError('admin/artists/[id]', error);
 		return {
 			artist: null,
             songs: []

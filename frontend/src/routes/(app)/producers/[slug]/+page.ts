@@ -1,6 +1,7 @@
 import type { PageLoad } from './$types';
 import api from '$lib/api';
 import { error } from '@sveltejs/kit';
+import { logLoadError } from '$lib/logger';
 
 export const load: PageLoad = async ({ params, url }) => {
     try {
@@ -22,7 +23,7 @@ export const load: PageLoad = async ({ params, url }) => {
             params: queryParams
         };
     } catch (err: any) {
-        console.error('Error loading producer:', err);
+        logLoadError('(app)/producers/[slug]', err);
         throw error(404, 'Producer not found');
     }
 };

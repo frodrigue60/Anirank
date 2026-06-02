@@ -401,6 +401,10 @@ func SetupPublicRoutes(app *fiber.App,
 	adminOnly.Get("/import/:jobID/status", adminHandler.GetImportJobStatus)
 	adminOnly.Get("/import/:jobID/stream", adminHandler.StreamImportProgress)
 	adminOnly.Post("/import/:jobID/cancel", adminHandler.CancelImportJob)
+
+	// Title Backfill Pipeline (populate title_english / title_native / synonyms for existing records)
+	adminOnly.Get("/import/backfill-titles/status", adminHandler.GetLatestTitleBackfillStatus)
+	adminOnly.Post("/import/backfill-titles/start", middleware.HasPermissionMiddleware("anime.edit", userRepo), adminHandler.StartTitleBackfill)
 	adminOnly.Put("/animes/:id", middleware.HasPermissionMiddleware("anime.edit", userRepo), adminHandler.UpdateAnime)
 	adminOnly.Patch("/animes/:id/status", middleware.HasPermissionMiddleware("anime.edit", userRepo), adminHandler.ToggleAnimeStatus)
 	adminOnly.Post("/animes/:id/sync", middleware.HasPermissionMiddleware("anime.edit", userRepo), adminHandler.SyncAnime)

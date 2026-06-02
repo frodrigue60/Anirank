@@ -1,7 +1,7 @@
 services:
   # --- DATABASE ---
   db:
-    image: postgres:15-alpine
+    image: pgvector/pgvector:pg15
     container_name: anirank_db
     restart: always
     env_file:

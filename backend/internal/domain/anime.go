@@ -2,6 +2,9 @@ package domain
 
 import (
 	"context"
+	"database/sql/driver"
+	"fmt"
+	"strings"
 	"time"
 )
 
@@ -9,8 +12,11 @@ import (
 type Anime struct {
 	ID          uint64  `db:"id" json:"id"`
 	UUID        string  `db:"uuid" json:"uuid"`
-	Title       string  `db:"title" json:"title" form:"title"`
-	Slug        string  `db:"slug" json:"slug" form:"slug"`
+	Title         string   `db:"title" json:"title" form:"title"`
+	TitleEnglish  *string  `db:"title_english" json:"title_english,omitempty" form:"title_english"`
+	TitleNative   *string  `db:"title_native" json:"title_native,omitempty" form:"title_native"`
+	Synonyms      StringArray `db:"synonyms" json:"synonyms,omitempty"`
+	Slug          string   `db:"slug" json:"slug" form:"slug"`
 	Description *string `db:"description" json:"description" form:"description"`
 	AnilistID   *int64  `db:"anilist_id" json:"anilist_id" form:"anilist_id"`
 	Status      bool    `db:"status" json:"status" form:"status"`
@@ -191,7 +197,11 @@ type AnimeRepository interface {
 
 	// Import pipeline — idempotent bulk import methods
 	UpsertFromAnimeThemes(ctx context.Context, anime *Anime) (created bool, err error)
-	EnrichFromAniList(ctx context.Context, anilistID int64, cover, banner, description *string) error
+	EnrichFromAniList(ctx context.Context, anilistID int64, cover, banner, description, titleEnglish, titleNative *string, synonyms []string) error
+
+	// Backfill pipeline — returns animes that have an anilist_id but are missing title variants
+	GetAnimesWithMissingTitleVariants(ctx context.Context, limit, offset int) ([]Anime, error)
+	CountAnimesWithMissingTitleVariants(ctx context.Context) (int, error)
 }
 
 type TaxonomyRepository interface {
@@ -263,3 +273,95 @@ type TaxonomyRepository interface {
 	UpdateGenre(ctx context.Context, genre *Genre) error
 	DeleteGenre(ctx context.Context, id uint64) error
 }
+
+// StringArray represents a list of strings stored in Postgres array format.
+type StringArray []string
+
+// Scan implements the sql.Scanner interface.
+func (a *StringArray) Scan(src interface{}) error {
+	if src == nil {
+		*a = nil
+		return nil
+	}
+
+	var str string
+	switch v := src.(type) {
+	case string:
+		str = v
+	case []byte:
+		str = string(v)
+	default:
+		return fmt.Errorf("unsupported Scan, storing driver.Value type %T into StringArray", src)
+	}
+
+	// Simple PostgreSQL array parsing: "{val1,val2}"
+	if len(str) < 2 || str[0] != '{' || str[len(str)-1] != '}' {
+		return fmt.Errorf("invalid Postgres array format: %q", str)
+	}
+
+	content := str[1 : len(str)-1]
+	if content == "" {
+		*a = []string{}
+		return nil
+	}
+
+	// Parsing with quote support
+	var elements []string
+	var current strings.Builder
+	inQuotes := false
+	escaped := false
+
+	for i := 0; i < len(content); i++ {
+		r := content[i]
+		if escaped {
+			current.WriteByte(r)
+			escaped = false
+			continue
+		}
+		if r == '\\' {
+			escaped = true
+			continue
+		}
+		if r == '"' {
+			inQuotes = !inQuotes
+			continue
+		}
+		if r == ',' && !inQuotes {
+			elements = append(elements, current.String())
+			current.Reset()
+			continue
+		}
+		current.WriteByte(r)
+	}
+	elements = append(elements, current.String())
+
+	*a = elements
+	return nil
+}
+
+// Value implements the driver.Valuer interface.
+func (a StringArray) Value() (driver.Value, error) {
+	if a == nil {
+		return nil, nil
+	}
+	if len(a) == 0 {
+		return "{}", nil
+	}
+
+	var b strings.Builder
+	b.WriteByte('{')
+	for i, s := range a {
+		if i > 0 {
+			b.WriteByte(',')
+		}
+		// Escape quotes and backslashes
+		escaped := strings.ReplaceAll(s, "\\", "\\\\")
+		escaped = strings.ReplaceAll(escaped, "\"", "\\\"")
+		b.WriteByte('"')
+		b.WriteString(escaped)
+		b.WriteByte('"')
+	}
+	b.WriteByte('}')
+	return b.String(), nil
+}
+

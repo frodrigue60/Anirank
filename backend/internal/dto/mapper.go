@@ -154,6 +154,8 @@ func ToSongMinimalDTO(s *domain.Song) SongMinimalDTO {
 
 		anime = &SongAnimeDTO{
 			Title:         s.Anime.Title,
+			TitleEnglish:  s.Anime.TitleEnglish,
+			TitleNative:   s.Anime.TitleNative,
 			Slug:          s.Anime.Slug,
 			CoverUrl:      coverUrl,
 			CoverSources:  s.Anime.CoverSources,
@@ -573,20 +575,23 @@ func ToAnimeMinimalDTO(a *domain.Anime) AnimeMinimalDTO {
 	}
 
 	return AnimeMinimalDTO{
-		AnilistID:     a.AnilistID,
-		Title:         a.Title,
-		Slug:          a.Slug,
-		CoverUrl:      a.CoverUrl,
-		CoverSources:  a.CoverSources,
-		BannerUrl:     a.BannerUrl,
-		BannerSources: a.BannerSources,
-		SongsCount:    a.EnabledSongs, // Abstract as only enabled songs for public
-		EnabledSongs:  a.EnabledSongs,
-		DisabledSongs: a.DisabledSongs,
-		Season:        season,
-		Year:          year,
-		Format:        format,
-	}
+			AnilistID:     a.AnilistID,
+			Title:         a.Title,
+			TitleEnglish:  a.TitleEnglish,
+			TitleNative:   a.TitleNative,
+			Synonyms:      []string(a.Synonyms),
+			Slug:          a.Slug,
+			CoverUrl:      a.CoverUrl,
+			CoverSources:  a.CoverSources,
+			BannerUrl:     a.BannerUrl,
+			BannerSources: a.BannerSources,
+			SongsCount:    a.EnabledSongs, // Abstract as only enabled songs for public
+			EnabledSongs:  a.EnabledSongs,
+			DisabledSongs: a.DisabledSongs,
+			Season:        season,
+			Year:          year,
+			Format:        format,
+		}
 }
 
 func ToAnimeDTO(a *domain.Anime) AnimeDTO {

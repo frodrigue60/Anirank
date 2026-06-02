@@ -164,3 +164,48 @@ func (h *AdminHandler) StreamImportProgress(c *fiber.Ctx) error {
 
 	return nil
 }
+
+// StartTitleBackfill godoc
+// @Summary     Start title-variants backfill job
+// @Description Launches an async background job that iterates over all animes with an anilist_id but missing title_english/title_native and hydrates only those title fields from AniList. Returns immediately with the job ID.
+// @Tags        admin,import
+// @Produce     json
+// @Success     202 {object} fiber.Map{"job_id": "string"}
+// @Failure     409 {object} domain.AppError
+// @Router      /admin/import/backfill-titles/start [post]
+func (h *AdminHandler) StartTitleBackfill(c *fiber.Ctx) error {
+	if h.importUsecase == nil {
+		return domain.NewAppError(503, "Import service not available", nil)
+	}
+
+	jobID, err := h.importUsecase.StartTitleBackfill(c.Context())
+	if err != nil {
+		return domain.NewAppError(409, err.Error(), err)
+	}
+
+	return c.Status(fiber.StatusAccepted).JSON(fiber.Map{
+		"job_id":  jobID,
+		"message": "Title backfill job started. Use /import/:jobID/stream or /import/:jobID/status to monitor progress.",
+	})
+}
+
+// GetLatestTitleBackfillStatus godoc
+// @Summary     Get latest title backfill job status
+// @Description Returns the most recent title-backfill import job.
+// @Tags        admin,import
+// @Produce     json
+// @Success     200 {object} domain.ImportJob
+// @Failure     404 {object} domain.AppError
+// @Router      /admin/import/backfill-titles/status [get]
+func (h *AdminHandler) GetLatestTitleBackfillStatus(c *fiber.Ctx) error {
+	if h.importUsecase == nil {
+		return domain.NewAppError(503, "Import service not available", nil)
+	}
+
+	job, err := h.importUsecase.GetLatestJobStatus(c.Context(), "backfill_titles")
+	if err != nil {
+		return domain.NewAppError(404, "No backfill job found", err)
+	}
+
+	return c.JSON(job)
+}

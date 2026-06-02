@@ -123,6 +123,7 @@ type Media struct {
 		Large      string `json:"large"`
 	} `json:"coverImage"`
 	BannerImage string   `json:"bannerImage"`
+	Synonyms    []string `json:"synonyms"`
 	Season      string   `json:"season"`
 	SeasonYear  int      `json:"seasonYear"`
 	Format      string   `json:"format"`
@@ -219,6 +220,7 @@ query ($page: Int, $perPage: Int, $search: String, $format: MediaFormat) {
 				large
 			}
 			bannerImage
+			synonyms
 			season
 			seasonYear
 			format
@@ -369,6 +371,7 @@ query ($ids: [Int]) {
 				large
 			}
 			bannerImage
+			synonyms
 			season
 			seasonYear
 			format
@@ -465,6 +468,7 @@ query ($page: Int, $perPage: Int, $season: MediaSeason, $seasonYear: Int, $forma
 				large
 			}
 			bannerImage
+			synonyms
 			season
 			seasonYear
 			format

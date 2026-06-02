@@ -92,9 +92,11 @@ func TestToSongMappers(t *testing.T) {
 		Slug:       "gurenge-test",
 		AnimeID:    animeID,
 		Anime: &domain.Anime{
-			ID:    animeID,
-			UUID:  animeUUID,
-			Title: "Demon Slayer",
+			ID:           animeID,
+			UUID:         animeUUID,
+			Title:        "Demon Slayer",
+			TitleEnglish: pointer("Demon Slayer English"),
+			TitleNative:  pointer("鬼滅の刃"),
 			Year: &domain.Year{
 				ID:   55555,
 				UUID: "year-uuid-1",
@@ -131,6 +133,12 @@ func TestToSongMappers(t *testing.T) {
 		}
 		if dto.TypeID != "type-uuid-1" {
 			t.Errorf("Expected TypeID type-uuid-1, got %s", dto.TypeID)
+		}
+		if dto.Anime == nil || dto.Anime.TitleEnglish == nil || *dto.Anime.TitleEnglish != "Demon Slayer English" {
+			t.Errorf("Anime.TitleEnglish not mapped correctly")
+		}
+		if dto.Anime == nil || dto.Anime.TitleNative == nil || *dto.Anime.TitleNative != "鬼滅の刃" {
+			t.Errorf("Anime.TitleNative not mapped correctly")
 		}
 		testutil.AssertNoInternalIDs(t, dto, forbiddenID)
 		testutil.AssertNoInternalIDs(t, dto, animeID)
@@ -183,11 +191,14 @@ func TestToAnimeMappers(t *testing.T) {
 	studioUUID := "studio-uuid-1"
 
 	anime := &domain.Anime{
-		ID:        forbiddenID,
-		UUID:      animeUUID,
-		Title:     "Attack on Titan",
-		Slug:      "aot",
-		AnilistID: pointer(int64(16498)),
+		ID:           forbiddenID,
+		UUID:         animeUUID,
+		Title:        "Attack on Titan",
+		TitleEnglish: pointer("Attack on Titan English"),
+		TitleNative:  pointer("進撃の巨人"),
+		Synonyms:     domain.StringArray{"AoT", "Shingeki"},
+		Slug:         "aot",
+		AnilistID:    pointer(int64(16498)),
 		Year: &domain.Year{
 			ID:   111,
 			UUID: "year-uuid-anime",
@@ -216,6 +227,15 @@ func TestToAnimeMappers(t *testing.T) {
 		}
 		if dto.Season == nil || dto.Season.ID != "season-uuid-anime" {
 			t.Errorf("Season ID not mapped correctly, got %v", dto.Season.ID)
+		}
+		if dto.TitleEnglish == nil || *dto.TitleEnglish != "Attack on Titan English" {
+			t.Errorf("TitleEnglish not mapped correctly")
+		}
+		if dto.TitleNative == nil || *dto.TitleNative != "進撃の巨人" {
+			t.Errorf("TitleNative not mapped correctly")
+		}
+		if len(dto.Synonyms) != 2 || dto.Synonyms[0] != "AoT" {
+			t.Errorf("Synonyms not mapped correctly")
 		}
 		testutil.AssertNoInternalIDs(t, dto, forbiddenID)
 	})

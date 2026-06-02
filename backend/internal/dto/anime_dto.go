@@ -5,9 +5,12 @@ import (
 )
 
 type AnimeMinimalDTO struct {
-	AnilistID  *int64     `json:"anilist_id"`
-	Title      string     `json:"title"`
-	Slug       string     `json:"slug"`
+	AnilistID     *int64     `json:"anilist_id"`
+	Title         string     `json:"title"`
+	TitleEnglish  *string    `json:"title_english,omitempty"`
+	TitleNative   *string    `json:"title_native,omitempty"`
+	Synonyms      []string   `json:"synonyms,omitempty"`
+	Slug          string     `json:"slug"`
 	CoverUrl   *string    `json:"cover_url"`
 	CoverSources []domain.ImageSource `json:"cover_sources,omitempty"`
 	BannerUrl  *string    `json:"banner_url"`
@@ -41,8 +44,10 @@ type FormatDTO struct {
 }
 
 type SongAnimeDTO struct {
-	Title     string  `json:"title"`
-	Slug      string  `json:"slug"`
+	Title        string  `json:"title"`
+	TitleEnglish *string `json:"title_english,omitempty"`
+	TitleNative  *string `json:"title_native,omitempty"`
+	Slug         string  `json:"slug"`
 	CoverUrl  string  `json:"cover_url"`
 	CoverSources []domain.ImageSource `json:"cover_sources,omitempty"`
 	BannerUrl *string `json:"banner_url"`

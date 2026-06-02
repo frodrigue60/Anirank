@@ -28,6 +28,7 @@ const (
 	alInterChunkSec  = 1            // seconds between AniList chunks
 	alMaxRetries     = 3            // retries on AniList 429
 	importSource     = "animethemes"
+	backfillSource   = "backfill_titles"
 )
 
 // ImportUsecase handles the full AnimeThemes + AniList data hydration pipeline.
@@ -127,6 +128,40 @@ func (u *ImportUsecase) CancelJob(ctx context.Context, jobID string) error {
 	return u.jobRepo.Cancel(ctx, jobID)
 }
 
+// StartTitleBackfill creates a new backfill job and launches it in the background.
+// The job iterates over all animes that have an anilist_id but are missing title_english
+// or title_native, and hydrates only those title fields (no cover/banner downloads).
+// Returns the job ID immediately so the caller can stream progress via /import/:jobID/stream.
+func (u *ImportUsecase) StartTitleBackfill(ctx context.Context) (string, error) {
+	latest, err := u.jobRepo.GetLatest(ctx, backfillSource)
+	if err == nil && latest != nil && latest.Status == domain.ImportJobRunning {
+		return "", fmt.Errorf("a backfill job is already running (id=%s)", latest.ID)
+	}
+
+	now := time.Now().UTC()
+	job := &domain.ImportJob{
+		ID:         uuid.New().String(),
+		Source:     backfillSource,
+		Status:     domain.ImportJobRunning,
+		StartedAt:  &now,
+		UpdatedAt:  now,
+		ErrorsJSON: "[]",
+	}
+
+	if err := u.jobRepo.Create(ctx, job); err != nil {
+		return "", fmt.Errorf("failed to create backfill job: %w", err)
+	}
+
+	bgCtx, cancel := context.WithCancel(context.Background())
+	u.mu.Lock()
+	u.cancelMap[job.ID] = cancel
+	u.mu.Unlock()
+
+	go u.runBackfill(bgCtx, job)
+
+	return job.ID, nil
+}
+
 // ─── Worker ───────────────────────────────────────────────────────────────────
 
 func (u *ImportUsecase) runImport(ctx context.Context, job *domain.ImportJob) {
@@ -184,7 +219,171 @@ func (u *ImportUsecase) runImport(ctx context.Context, job *domain.ImportJob) {
 	_ = u.jobRepo.UpdateProgress(context.Background(), job)
 }
 
+// ─── Backfill Worker ──────────────────────────────────────────────────────────
+
+func (u *ImportUsecase) runBackfill(ctx context.Context, job *domain.ImportJob) {
+	defer func() {
+		u.mu.Lock()
+		delete(u.cancelMap, job.ID)
+		u.mu.Unlock()
+	}()
+
+	defer func() {
+		if r := recover(); r != nil {
+			job.Status = domain.ImportJobFailed
+			job.Errors = append(job.Errors, fmt.Sprintf("panic: %v", r))
+			_ = u.jobRepo.UpdateProgress(context.Background(), job)
+		}
+	}()
+
+	if err := u.alClient.Ping(ctx); err != nil {
+		job.Status = domain.ImportJobFailed
+		job.Errors = append(job.Errors, fmt.Sprintf("AniList API is offline/unresponsive: %v", err))
+		_ = u.jobRepo.UpdateProgress(context.Background(), job)
+		return
+	}
+
+	if err := u.phaseBackfillTitles(ctx, job); err != nil {
+		if errors.Is(ctx.Err(), context.Canceled) {
+			job.Status = domain.ImportJobCanceled
+			_ = u.jobRepo.UpdateProgress(context.Background(), job)
+			return
+		}
+		job.Status = domain.ImportJobFailed
+		job.Errors = append(job.Errors, err.Error())
+		_ = u.jobRepo.UpdateProgress(context.Background(), job)
+		return
+	}
+
+	now := time.Now().UTC()
+	job.Status = domain.ImportJobDone
+	job.FinishedAt = &now
+	_ = u.jobRepo.UpdateProgress(context.Background(), job)
+}
+
+// phaseBackfillTitles iterates animes with missing title_english/title_native and
+// enriches only the title fields and synonyms from AniList. Cover/banner downloads
+// are intentionally skipped to keep the job fast.
+func (u *ImportUsecase) phaseBackfillTitles(ctx context.Context, job *domain.ImportJob) error {
+	const dbBatchSize = 200
+
+	// Determine total so the dashboard can show progress
+	total, err := u.animeRepo.CountAnimesWithMissingTitleVariants(ctx)
+	if err != nil {
+		return fmt.Errorf("backfill: count animes: %w", err)
+	}
+	if total == 0 {
+		return nil // nothing to do
+	}
+
+	// Use TotalPages to carry the total record count (repurposed for this job type)
+	job.TotalPages = (total + alChunkSize - 1) / alChunkSize
+	_ = u.jobRepo.UpdateProgress(ctx, job)
+
+	offset := 0
+	totalProcessed := 0
+
+	for {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
+		batch, err := u.animeRepo.GetAnimesWithMissingTitleVariants(ctx, dbBatchSize, offset)
+		if err != nil {
+			return fmt.Errorf("backfill: fetch batch at offset %d: %w", offset, err)
+		}
+		if len(batch) == 0 {
+			break
+		}
+
+		// Build slice of AniList IDs and lookup map
+		var anilistIDs []int
+		animeMap := make(map[int64]*domain.Anime)
+		for i := range batch {
+			if batch[i].AnilistID != nil {
+				anilistIDs = append(anilistIDs, int(*batch[i].AnilistID))
+				animeMap[*batch[i].AnilistID] = &batch[i]
+			}
+		}
+
+		// Process in sub-chunks of 50 (AniList limit)
+		for idx := 0; idx < len(anilistIDs); idx += alChunkSize {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+
+			subEnd := idx + alChunkSize
+			if subEnd > len(anilistIDs) {
+				subEnd = len(anilistIDs)
+			}
+			subChunk := anilistIDs[idx:subEnd]
+
+			var medias []anilist.Media
+			var lastErr error
+			for attempt := 0; attempt < alMaxRetries; attempt++ {
+				medias, lastErr = u.alClient.GetMediaByIDs(ctx, subChunk)
+				if lastErr == nil {
+					break
+				}
+				if strings.Contains(lastErr.Error(), "429") || strings.Contains(lastErr.Error(), "rate") {
+					time.Sleep(65 * time.Second)
+				} else {
+					break
+				}
+			}
+			if lastErr != nil {
+				errStr := fmt.Sprintf("backfill chunk %d-%d failed after %d retries: %v", totalProcessed+idx, totalProcessed+subEnd, alMaxRetries, lastErr)
+				job.Errors = append(job.Errors, errStr)
+				_ = u.jobRepo.UpdateProgress(ctx, job)
+				return fmt.Errorf("%s", errStr)
+			}
+
+			for _, media := range medias {
+				anilistID := int64(media.ID)
+				if _, exists := animeMap[anilistID]; !exists {
+					continue
+				}
+
+				var titleEnglishPtr *string
+				if media.Title.English != "" {
+					e := media.Title.English
+					titleEnglishPtr = &e
+				}
+				var titleNativePtr *string
+				if media.Title.Native != "" {
+					n := media.Title.Native
+					titleNativePtr = &n
+				}
+				synonyms := make([]string, 0, len(media.Synonyms))
+				for _, s := range media.Synonyms {
+					if s != "" {
+						synonyms = append(synonyms, s)
+					}
+				}
+
+				// EnrichFromAniList with nil cover/banner/description to leave them untouched
+				if err := u.animeRepo.EnrichFromAniList(ctx, anilistID, nil, nil, nil, titleEnglishPtr, titleNativePtr, synonyms); err != nil {
+					job.Errors = append(job.Errors, fmt.Sprintf("backfill enrich anilist %d: %v", media.ID, err))
+				}
+
+				job.Processed++
+			}
+
+			totalProcessed += len(subChunk)
+			job.CurrentPage = totalProcessed/alChunkSize + 1
+			_ = u.jobRepo.UpdateProgress(ctx, job)
+
+			time.Sleep(time.Duration(alInterChunkSec) * time.Second)
+		}
+
+		offset += len(batch)
+	}
+
+	return nil
+}
+
 // ─── Phase 1: AnimeThemes ─────────────────────────────────────────────────────
+
 
 func (u *ImportUsecase) phaseAnimeThemes(ctx context.Context, job *domain.ImportJob) error {
 	page := 1
@@ -528,7 +727,24 @@ func (u *ImportUsecase) phaseAniList(ctx context.Context, job *domain.ImportJob)
 						bannerToSave = finalBanner
 					}
 
-					if err := u.animeRepo.EnrichFromAniList(ctx, anilistID, coverToSave, bannerToSave, descPtr); err != nil {
+					var titleEnglishPtr *string
+					if media.Title.English != "" {
+						e := media.Title.English
+						titleEnglishPtr = &e
+					}
+					var titleNativePtr *string
+					if media.Title.Native != "" {
+						n := media.Title.Native
+						titleNativePtr = &n
+					}
+					synonyms := make([]string, 0)
+					for _, s := range media.Synonyms {
+						if s != "" {
+							synonyms = append(synonyms, s)
+						}
+					}
+
+					if err := u.animeRepo.EnrichFromAniList(ctx, anilistID, coverToSave, bannerToSave, descPtr, titleEnglishPtr, titleNativePtr, synonyms); err != nil {
 						job.Errors = append(job.Errors, fmt.Sprintf("enrich anilist %d: %v", media.ID, err))
 					}
 

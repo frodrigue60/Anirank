@@ -320,6 +320,114 @@
     };
   }
 
+  // --- Title Backfill Job ---
+  let backfillJobStatus = $state<any>(null);
+  let backfillLogs = $state<string[]>([]);
+  let showBackfillLogs = $state(false);
+  let isBackfilling = $derived(backfillJobStatus?.status === 'running' || backfillJobStatus?.status === 'pending');
+  let backfillEventSource = $state<EventSource | null>(null);
+
+  // Fetch initial backfill status on mount
+  $effect(() => {
+    fetchBackfillStatus();
+    
+    return () => {
+      if (backfillEventSource) {
+        backfillEventSource.close();
+        backfillEventSource = null;
+      }
+    };
+  });
+
+  // Automatically manage SSE stream based on backfillJobStatus
+  $effect(() => {
+    if (backfillJobStatus) {
+      const isRunning = backfillJobStatus.status === 'running' || backfillJobStatus.status === 'pending';
+      if (isRunning && !backfillEventSource) {
+        connectBackfillStream(backfillJobStatus.id);
+      }
+    }
+  });
+
+  async function fetchBackfillStatus() {
+    try {
+      const res = await api.get("/admin/import/backfill-titles/status");
+      backfillJobStatus = res.data;
+    } catch(err: any) {
+      if (err.response?.status !== 404) {
+        console.error("Failed to fetch backfill status", err);
+      }
+    }
+  }
+
+  async function startBackfillJob() {
+    if (isBackfilling) return;
+    try {
+      showBackfillLogs = true;
+      backfillLogs = ["Starting AniList title variants backfill job..."];
+      const res = await api.post("/admin/import/backfill-titles/start");
+      backfillJobStatus = { id: res.data.job_id, status: 'pending' };
+      toastState.addToast("Title backfill job started successfully", "success");
+    } catch (err: any) {
+      toastState.addToast(getApiErrorMessage(err, "Failed to start title backfill job"), "error");
+    }
+  }
+
+  async function cancelBackfillJob() {
+    if (!backfillJobStatus?.id) return;
+    try {
+      await api.post(`/admin/import/${backfillJobStatus.id}/cancel`);
+      toastState.addToast("Title backfill job cancellation requested", "success");
+      backfillLogs = [...backfillLogs, "Cancellation requested. Waiting for worker to stop..."];
+    } catch (err: any) {
+      toastState.addToast(getApiErrorMessage(err, "Failed to cancel title backfill job"), "error");
+    }
+  }
+
+  function connectBackfillStream(jobId: string) {
+    if (backfillEventSource) {
+      backfillEventSource.close();
+    }
+    
+    const token = getAuthToken();
+    const url = `${api.defaults.baseURL}/admin/import/${jobId}/stream?token=${token}`;
+    
+    showBackfillLogs = true;
+    if (backfillLogs.length === 0) {
+      backfillLogs = ["Reconnecting to active backfill job..."];
+    }
+    backfillEventSource = new EventSource(url, { withCredentials: true });
+
+    backfillEventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        backfillJobStatus = data;
+        
+        let msg = `[Backfill] Chunk ${data.current_page}/${data.total_pages} - Processed: ${data.processed}`;
+        if (data.status === 'done') {
+           msg = `✅ Backfill finished. Processed: ${data.processed} animes.`;
+           backfillEventSource?.close();
+           backfillEventSource = null;
+        } else if (data.status === 'canceled' || data.status === 'failed') {
+           msg = `❌ Backfill job ${data.status}.`;
+           backfillEventSource?.close();
+           backfillEventSource = null;
+        }
+
+        if (backfillLogs.length === 0 || backfillLogs[backfillLogs.length - 1] !== msg) {
+          backfillLogs = [...backfillLogs.slice(-49), msg];
+        }
+      } catch(e) {}
+    };
+
+    backfillEventSource.onerror = (err) => {
+      console.error("Backfill SSE Error:", err);
+      backfillLogs = [...backfillLogs, "❌ Connection lost."];
+      backfillEventSource?.close();
+      backfillEventSource = null;
+    };
+  }
+
   // --- Chart Logic ---
   let chartData = $derived(data.metrics || []);
   let maxViews = $derived(
@@ -809,6 +917,98 @@
           </div>
         {/if}
       </div>
+
+      <!-- Title Backfill Widget -->
+      <div class="mt-8 pt-6 border-t border-outline-variant">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h4 class="text-lg font-bold text-on-surface flex items-center gap-2">
+              <RefreshCw size={20} class="text-amber-400" />
+              Title Variants Backfill
+            </h4>
+            <p class="text-xs text-on-surface-variant/70 mt-1">Fetches missing English titles, Native titles, and synonyms from AniList for existing records.</p>
+          </div>
+          <div class="flex items-center gap-3">
+            {#if isBackfilling}
+              <button 
+                onclick={cancelBackfillJob}
+                class="flex items-center gap-2 px-3 py-1.5 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 transition-colors border border-rose-500/20 rounded-lg text-xs font-bold"
+              >
+                <StopCircle size={14} />
+                Cancel Backfill
+              </button>
+            {:else}
+              <button 
+                onclick={startBackfillJob}
+                class="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-colors border border-amber-500/20 rounded-lg text-xs font-bold"
+              >
+                <RefreshCw size={14} />
+                Start Backfill
+              </button>
+            {/if}
+          </div>
+        </div>
+
+        {#if backfillJobStatus}
+          <div class="bg-surface-highest rounded-xl p-4 border border-outline-variant/50">
+            <div class="flex justify-between items-center mb-2">
+              <div class="flex items-center gap-3">
+                <span class="text-xs font-bold uppercase tracking-wider {backfillJobStatus.status === 'running' ? 'text-amber-400' : 'text-on-surface-variant/70'}">
+                  Status: {backfillJobStatus.status}
+                </span>
+                {#if isBackfilling}
+                  <Loader2 size={12} class="animate-spin text-amber-400" />
+                {/if}
+              </div>
+              <span class="text-xs font-mono text-on-surface-variant/70">
+                {backfillJobStatus.current_page} / {backfillJobStatus.total_pages || '?'} chunks
+              </span>
+            </div>
+            
+            <div class="w-full bg-black/40 rounded-full h-2 overflow-hidden mb-4 border border-white/5">
+              <div 
+                class="bg-amber-500 h-full transition-all duration-500" 
+                style="width: {(backfillJobStatus.current_page / Math.max(backfillJobStatus.total_pages || 1, 1)) * 100}%"
+              ></div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div class="bg-black/20 rounded-lg p-2 text-center">
+                <p class="text-[10px] uppercase font-bold text-on-surface-variant/50">Processed</p>
+                <p class="text-sm font-black text-on-surface">{backfillJobStatus.processed}</p>
+              </div>
+              <div class="bg-black/20 rounded-lg p-2 text-center">
+                <p class="text-[10px] uppercase font-bold text-on-surface-variant/50">Failed/Errors</p>
+                <p class="text-sm font-black text-rose-400">{backfillJobStatus.errors?.length || 0}</p>
+              </div>
+            </div>
+
+            {#if showBackfillLogs || isBackfilling}
+              <div class="mt-4 pt-4 border-t border-outline-variant/30">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Backfill Log</span>
+                </div>
+                <div class="bg-black/40 rounded-lg p-3 font-mono text-[10px] h-32 overflow-y-auto space-y-1 custom-scrollbar">
+                  {#each backfillLogs as log}
+                    <div class="text-on-surface-variant/80">
+                      <span class="text-amber-400/50 mr-2">></span>
+                      {log}
+                    </div>
+                  {/each}
+                  {#if backfillJobStatus?.errors?.length > 0}
+                    <div class="mt-2 pt-2 border-t border-rose-500/20">
+                      <span class="text-rose-400 font-bold mb-1 block">Errors ({backfillJobStatus.errors.length}):</span>
+                      {#each backfillJobStatus.errors.slice(-5) as err}
+                        <div class="text-rose-400/80 break-words">- {err}</div>
+                      {/each}
+                    </div>
+                  {/if}
+                </div>
+              </div>
+            {/if}
+          </div>
+        {/if}
+      </div>
     </div>
 
     <div class="bg-surface-container border border-outline-variant rounded-2xl p-6">
@@ -826,16 +1026,23 @@
           <span class="font-medium text-sm text-on-surface">Add New Song</span>
         </a>
         <button
-          class="w-full flex items-center gap-3 p-4 rounded-xl bg-surface-highest hover:bg-surface-highest transition-colors border border-transparent hover:border-outline-variant text-left"
+          onclick={startBackfillJob}
+          disabled={isBackfilling}
+          class="w-full flex items-center gap-3 p-4 rounded-xl bg-surface-highest hover:bg-surface-highest transition-colors border border-transparent hover:border-outline-variant text-left disabled:opacity-50 disabled:cursor-wait"
         >
           <div
-            class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center"
+            class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0"
           >
-            <RefreshCw size={16} />
+            {#if isBackfilling}
+              <Loader2 size={16} class="animate-spin" />
+            {:else}
+              <RefreshCw size={16} />
+            {/if}
           </div>
-          <span class="font-medium text-sm text-on-surface"
-            >Sync with Anilist</span
-          >
+          <div class="flex flex-col">
+            <span class="font-medium text-sm text-on-surface">Backfill Anime Titles</span>
+            <span class="text-[10px] text-on-surface-variant/70">Fetch missing titles & synonyms from AniList</span>
+          </div>
         </button>
 
         <button

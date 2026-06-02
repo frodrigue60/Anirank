@@ -12,6 +12,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 )
 
 type animeRepository struct {
@@ -173,9 +174,9 @@ func (r *animeRepository) GetPaginated(ctx context.Context, limit, offset int, f
 		i++
 	}
 	if filters.Search != "" {
-		query += fmt.Sprintf(" AND animes.title ILIKE $%d", i)
-		args = append(args, "%"+filters.Search+"%")
-		i++
+		query += fmt.Sprintf(" AND (animes.title ILIKE $%d OR animes.title_english ILIKE $%d OR animes.title_native ILIKE $%d OR $%d = ANY(animes.synonyms))", i, i, i, i+1)
+		args = append(args, "%"+filters.Search+"%", filters.Search)
+		i += 2
 	}
 
 	// Sorting
@@ -275,9 +276,9 @@ func (r *animeRepository) Count(ctx context.Context, filters domain.AnimeFilters
 		i++
 	}
 	if filters.Search != "" {
-		query += fmt.Sprintf(" AND animes.title ILIKE $%d", i)
-		args = append(args, "%"+filters.Search+"%")
-		i++
+		query += fmt.Sprintf(" AND (animes.title ILIKE $%d OR animes.title_english ILIKE $%d OR animes.title_native ILIKE $%d OR $%d = ANY(animes.synonyms))", i, i, i, i+1)
+		args = append(args, "%"+filters.Search+"%", filters.Search)
+		i += 2
 	}
 
 	err := r.db.GetContext(ctx, &count, query, args...)
@@ -287,8 +288,8 @@ func (r *animeRepository) Count(ctx context.Context, filters domain.AnimeFilters
 // Write Operations
 func (r *animeRepository) Create(ctx context.Context, anime *domain.Anime) error {
 	query := `
-		INSERT INTO animes (uuid, title, slug, description, anilist_id, anime_themes_id, status, year_id, season_id, format_id, cover, banner, created_at, updated_at) 
-		VALUES (:uuid, :title, :slug, :description, :anilist_id, :anime_themes_id, :status, :year_id, :season_id, :format_id, :cover, :banner, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		INSERT INTO animes (uuid, title, slug, description, anilist_id, anime_themes_id, status, year_id, season_id, format_id, cover, banner, title_english, title_native, synonyms, created_at, updated_at) 
+		VALUES (:uuid, :title, :slug, :description, :anilist_id, :anime_themes_id, :status, :year_id, :season_id, :format_id, :cover, :banner, :title_english, :title_native, :synonyms, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 		RETURNING id
 	`
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
@@ -305,7 +306,8 @@ func (r *animeRepository) Update(ctx context.Context, anime *domain.Anime) error
 		SET title = :title, slug = :slug, description = :description, anilist_id = :anilist_id, 
 		    anime_themes_id = :anime_themes_id, status = :status, year_id = :year_id, 
 		    season_id = :season_id, format_id = :format_id, 
-		    cover = :cover, banner = :banner, updated_at = CURRENT_TIMESTAMP
+		    cover = :cover, banner = :banner, title_english = :title_english,
+		    title_native = :title_native, synonyms = :synonyms, updated_at = CURRENT_TIMESTAMP
 		WHERE id = :id
 	`
 	res, err := r.db.NamedExecContext(ctx, query, anime)
@@ -672,11 +674,16 @@ func (r *animeRepository) Search(ctx context.Context, term string, limit int) ([
 	query := `
 		SELECT id, uuid, title, slug, cover, banner, year_id, season_id, format_id 
 		FROM animes 
-		WHERE status = true AND title ILIKE $1
+		WHERE status = true AND (
+			title ILIKE $1 OR 
+			title_english ILIKE $1 OR 
+			title_native ILIKE $1 OR 
+			$2 = ANY(synonyms)
+		)
 		ORDER BY year_id DESC, season_id DESC 
-		LIMIT $2
+		LIMIT $3
 	`
-	err := r.db.SelectContext(ctx, &animes, query, term, limit)
+	err := r.db.SelectContext(ctx, &animes, query, "%"+term+"%", term, limit)
 	return animes, err
 }
 
@@ -867,15 +874,18 @@ func (r *animeRepository) UpsertFromAnimeThemes(ctx context.Context, anime *doma
 
 // EnrichFromAniList updates cover, banner and description from AniList data
 // only when those fields are currently empty — never overwrites existing content.
-func (r *animeRepository) EnrichFromAniList(ctx context.Context, anilistID int64, cover, banner, description *string) error {
+func (r *animeRepository) EnrichFromAniList(ctx context.Context, anilistID int64, cover, banner, description, titleEnglish, titleNative *string, synonyms []string) error {
 	_, err := r.db.ExecContext(ctx, `
 		UPDATE animes SET
-			cover       = COALESCE(cover, $2),
-			banner      = COALESCE(banner, $3),
-			description = COALESCE(description, $4),
-			updated_at  = CURRENT_TIMESTAMP
+			cover         = COALESCE(cover, $2),
+			banner        = COALESCE(banner, $3),
+			description   = COALESCE(description, $4),
+			title_english = COALESCE(title_english, $5),
+			title_native  = COALESCE(title_native, $6),
+			synonyms      = CASE WHEN synonyms = '{}' OR synonyms IS NULL THEN $7 ELSE synonyms END,
+			updated_at    = CURRENT_TIMESTAMP
 		WHERE anilist_id = $1
-	`, anilistID, cover, banner, description)
+	`, anilistID, cover, banner, description, titleEnglish, titleNative, pq.Array(synonyms))
 	return err
 }
 
@@ -901,3 +911,32 @@ func buildUniqueAnimeSlug(base string, animeThemesID uint64) string {
 	}
 	return clean
 }
+
+// GetAnimesWithMissingTitleVariants returns animes that have an anilist_id but are still
+// missing title_english or title_native. Used exclusively by the backfill pipeline.
+func (r *animeRepository) GetAnimesWithMissingTitleVariants(ctx context.Context, limit, offset int) ([]domain.Anime, error) {
+	var animes []domain.Anime
+	query := `
+		SELECT * FROM animes
+		WHERE anilist_id IS NOT NULL
+		  AND (title_english IS NULL OR title_native IS NULL)
+		ORDER BY id ASC
+		LIMIT $1 OFFSET $2`
+	err := r.db.SelectContext(ctx, &animes, query, limit, offset)
+	if animes == nil {
+		animes = []domain.Anime{}
+	}
+	return animes, err
+}
+
+// CountAnimesWithMissingTitleVariants returns the total count for GetAnimesWithMissingTitleVariants.
+func (r *animeRepository) CountAnimesWithMissingTitleVariants(ctx context.Context) (int, error) {
+	var count int
+	query := `
+		SELECT COUNT(*) FROM animes
+		WHERE anilist_id IS NOT NULL
+		  AND (title_english IS NULL OR title_native IS NULL)`
+	err := r.db.GetContext(ctx, &count, query)
+	return count, err
+}
+

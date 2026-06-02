@@ -40,8 +40,10 @@
   // Audio/Video player variables
   let videoElement = $state<HTMLVideoElement | null>(null);
   let volume = $state(0.5);
+  let activeVolume = $state(0.5);
   let isMuted = $state(false);
   let isPlaying = $state(false);
+  let onlyAudio = $state(false);
 
   let timerInterval: any;
   $effect(() => {
@@ -70,11 +72,41 @@
   onMount(() => {
     deviceId = localStorage.getItem("amq_device_id") || "";
     guestNickname = localStorage.getItem("amq_nickname") || "Guest";
+    onlyAudio = localStorage.getItem("amq_only_audio") === "true";
     connectWebSocket();
   });
 
   onDestroy(() => {
     closeWebSocket();
+  });
+
+  function toggleOnlyAudio() {
+    onlyAudio = !onlyAudio;
+    localStorage.setItem("amq_only_audio", onlyAudio.toString());
+  }
+
+  let fadeInterval: any;
+  function fadeInVolume() {
+    clearInterval(fadeInterval);
+    activeVolume = 0;
+    const targetVolume = volume;
+    const steps = 20; // 1s duration, 50ms intervals
+    const increment = targetVolume / steps;
+
+    fadeInterval = setInterval(() => {
+      if (activeVolume < targetVolume) {
+        activeVolume = Math.min(targetVolume, activeVolume + increment);
+      } else {
+        clearInterval(fadeInterval);
+      }
+    }, 50);
+  }
+
+  // Volume control manual overrides
+  $effect(() => {
+    const currentVol = volume;
+    activeVolume = currentVol;
+    clearInterval(fadeInterval);
   });
 
   function connectWebSocket() {
@@ -117,6 +149,7 @@
           setTimeout(() => {
             if (videoElement) {
               videoElement.currentTime = 0;
+              fadeInVolume();
               videoElement.play().catch(e => console.warn("Autoplay blocked:", e));
             }
           }, 100);
@@ -126,6 +159,7 @@
           isPlaying = false;
           // Stop theme if playing
           if (videoElement) {
+            fadeInVolume();
             videoElement.play().catch(e => console.warn("Failed to play in reveal:", e));
           }
           break;
@@ -160,7 +194,7 @@
   // Volume control reactivity
   $effect(() => {
     if (videoElement) {
-      videoElement.volume = isMuted ? 0 : volume;
+      videoElement.volume = isMuted ? 0 : activeVolume;
     }
   });
 
@@ -362,11 +396,28 @@
               <video
                 bind:this={videoElement}
                 src={activeRound.audio_url}
-                class="w-full h-full object-cover {status === 'playing' ? 'opacity-0 absolute pointer-events-none w-0 h-0' : 'opacity-100 block'}"
-                controls={status === "reveal"}
+                class="w-full h-full object-cover {(status === 'playing' || onlyAudio) ? 'opacity-0 absolute pointer-events-none w-0 h-0' : 'opacity-100 block'}"
               >
                 <track kind="captions" />
               </video>
+
+              <!-- Only Audio Reveal Phase Placeholder -->
+              {#if status === "reveal" && onlyAudio && roundResult}
+                <div class="absolute inset-0 bg-[#09070e] flex flex-col items-center justify-center space-y-4 z-0">
+                  {#if roundResult.song.anime?.cover_url}
+                    <img
+                      src={roundResult.song.anime.cover_url}
+                      alt={roundResult.song.anime.title || "Cover"}
+                      class="w-28 rounded-sm object-cover aspect-[3/4] shadow-2xl border border-white/10"
+                    />
+                  {/if}
+                  <div class="text-center space-y-1 px-4">
+                    <h4 class="font-black text-white text-base tracking-tight leading-tight">{roundResult.song.song_romaji}</h4>
+                    <p class="text-xs text-primary font-bold">{roundResult.song.artists?.map(a => a.name).join(", ")}</p>
+                    <p class="text-[10px] text-white/50">{roundResult.song.anime?.title}</p>
+                  </div>
+                </div>
+              {/if}
 
               <!-- Guessing phase overlay -->
               {#if status === "playing"}
@@ -399,6 +450,13 @@
                 bind:value={volume}
                 class="w-20 accent-primary cursor-pointer h-1 rounded-full bg-outline-variant"
               />
+              <span class="w-px h-4 bg-white/20"></span>
+              <button
+                onclick={toggleOnlyAudio}
+                class="text-[9px] uppercase font-black px-2 py-1 rounded-sm border {onlyAudio ? 'bg-primary border-primary text-white' : 'border-white/25 text-white/60 hover:text-white'} transition-colors cursor-pointer"
+              >
+                {onlyAudio ? "Audio Only" : "Video On"}
+              </button>
             </div>
 
             <!-- Host skip summary button in reveal phase -->

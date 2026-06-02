@@ -350,6 +350,13 @@
         {:else if status === "playing" || status === "reveal"}
           <!-- Audio/Video Player Layer -->
           <div class="bg-surface-low rounded-md overflow-hidden border border-outline-variant flex flex-col items-center justify-center relative aspect-video">
+            <!-- Round Badge -->
+            {#if activeRound}
+              <div class="absolute top-4 left-4 bg-[#09070e]/80 px-3 py-1.5 rounded-sm text-xs font-black text-white tracking-widest uppercase border border-white/10 z-10">
+                Round {activeRound.current_round}/{activeRound.max_rounds}
+              </div>
+            {/if}
+
             {#if activeRound}
               <!-- Hidden Video during guessing, revealed on summary -->
               <video

@@ -44,6 +44,7 @@ func (m *MockSongRepository) GetSongTypes(ctx context.Context) ([]domain.SongTyp
 func (m *MockSongRepository) LinkArtistToSong(ctx context.Context, songID, artistID uint64) error { return nil }
 func (m *MockSongRepository) UpsertSongFromAnimeThemes(ctx context.Context, song *domain.Song) (bool, error) { return false, nil }
 func (m *MockSongRepository) UpsertVariantFromAnimeThemes(ctx context.Context, variant *domain.SongVariant, videos []domain.SongVariantVideo) (bool, error) { return false, nil }
+func (m *MockSongRepository) GetRandomSongsForAMQ(ctx context.Context, animeIDs []uint64, themeTypes []string, limit int, excludeIDs []uint64) ([]domain.Song, error) { return nil, nil }
 
 type MockCommentRepository struct {
 	GetByIDFunc func(id uint64) (*domain.Comment, error)

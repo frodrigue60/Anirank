@@ -17,6 +17,7 @@ import (
 	"anirank/api/internal/usecase/moderation"
 	"anirank/api/internal/usecase/notification"
 	"anirank/api/internal/usecase/playlist"
+	"anirank/api/internal/usecase/amq"
 	"anirank/api/internal/usecase/public"
 	"anirank/api/internal/usecase/tournament"
 	"context"
@@ -26,6 +27,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/swagger"
+	"github.com/gofiber/websocket/v2"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -122,6 +124,9 @@ func SetupPublicRoutes(app *fiber.App,
 	recommendationRepo := postgres.NewRecommendationRepository(db)
 	recommendationUsecase := public.NewRecommendationUsecase(recommendationRepo, songRepo, animeRepo, interactionRepo, moderationRepo, mediaService, appCache)
 	recommendationHandler := v1.NewRecommendationHandler(recommendationUsecase)
+ 
+	amqLobbyManager := amq.NewLobbyManager(animeRepo, songRepo, userRepo, xpUsecase, mediaService, anilistClient)
+	amqHandler := v1.NewAMQHandler(amqLobbyManager, jwtService, userRepo)
 
 	// API V1 Group
 	api := app.Group("/api")
@@ -260,7 +265,12 @@ func SetupPublicRoutes(app *fiber.App,
 	catalogApi.Post("/animes/bulk-check", catalogHandler.BulkCheckAnilistIDs)
 	api.Post("/users/favorites/themes", catalogHandler.UserFavorites)
 	api.Post("/users/favorites/artists", catalogHandler.UserArtistFavorites)
-
+ 
+	// Anime Music Quiz (AMQ) Endpoints
+	api.Post("/amq/rooms", middleware.OptionalAuthMiddleware(jwtService, userRepo, appCache), amqHandler.CreateRoom)
+	api.Get("/amq/rooms", amqHandler.ListRooms)
+	api.Get("/amq/ws/:roomID", amqHandler.WSUpgrade, websocket.New(amqHandler.WSHandler))
+ 
 	// --- PROTECTED ROUTES ---
 	protected := api.Group("/", middleware.AuthMiddleware(jwtService, userRepo, appCache))
 	vRequired := middleware.VerifiedMiddleware()

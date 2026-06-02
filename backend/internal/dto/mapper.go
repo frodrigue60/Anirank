@@ -575,6 +575,7 @@ func ToAnimeMinimalDTO(a *domain.Anime) AnimeMinimalDTO {
 	}
 
 	return AnimeMinimalDTO{
+			ID:            a.UUID,
 			AnilistID:     a.AnilistID,
 			Title:         a.Title,
 			TitleEnglish:  a.TitleEnglish,

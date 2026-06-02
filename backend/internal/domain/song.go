@@ -172,6 +172,7 @@ type SongRepository interface {
 	CountRanking(ctx context.Context, rankingType, songType string) (int, error)
 	IncrementViews(ctx context.Context, id uint64) error
 	GetMany(ctx context.Context, ids []uint64) ([]Song, error)
+	GetRandomSongsForAMQ(ctx context.Context, animeIDs []uint64, themeTypes []string, limit int, excludeIDs []uint64) ([]Song, error)
 
 	// Admin CRUD
 	Create(ctx context.Context, song *Song) error

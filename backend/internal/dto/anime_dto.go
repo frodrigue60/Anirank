@@ -5,6 +5,7 @@ import (
 )
 
 type AnimeMinimalDTO struct {
+	ID            string     `json:"id"`
 	AnilistID     *int64     `json:"anilist_id"`
 	Title         string     `json:"title"`
 	TitleEnglish  *string    `json:"title_english,omitempty"`

@@ -165,6 +165,7 @@ type AnimeRepository interface {
 	GetByID(ctx context.Context, id uint64) (*Anime, error)
 	GetByUUID(ctx context.Context, uuid string) (*Anime, error)
 	GetMany(ctx context.Context, ids []uint64) ([]Anime, error)
+	GetRandomAnimes(ctx context.Context, limit int, excludeIDs []uint64) ([]Anime, error)
 	GetBySlug(ctx context.Context, slug string) (*Anime, error)
 	GetByAnilistID(ctx context.Context, anilistID int64) (*Anime, error)
 	GetByAnilistIDs(ctx context.Context, anilistIDs []int) ([]Anime, error)

@@ -1288,3 +1288,102 @@ func (r *songRepository) LinkArtistToSong(ctx context.Context, songID, artistID 
 	`, artistID, songID)
 	return err
 }
+
+func (r *songRepository) GetRandomSongsForAMQ(ctx context.Context, animeIDs []uint64, themeTypes []string, limit int, excludeIDs []uint64) ([]domain.Song, error) {
+	var conditions []string
+	var args []interface{}
+
+	conditions = append(conditions, "s.status = true")
+	conditions = append(conditions, "a.status = true")
+	conditions = append(conditions, "sv.status = true")
+	conditions = append(conditions, "(v.video_src IS NOT NULL OR v.embed_code IS NOT NULL)")
+
+	if len(animeIDs) > 0 {
+		conditions = append(conditions, "s.anime_id IN (?)")
+		args = append(args, animeIDs)
+	}
+
+	if len(themeTypes) > 0 {
+		conditions = append(conditions, "st.slug IN (?)")
+		args = append(args, themeTypes)
+	}
+
+	if len(excludeIDs) > 0 {
+		conditions = append(conditions, "s.id NOT IN (?)")
+		args = append(args, excludeIDs)
+	}
+
+	whereClause := ""
+	if len(conditions) > 0 {
+		whereClause = "WHERE "
+		for idx, cond := range conditions {
+			if idx > 0 {
+				whereClause += " AND "
+			}
+			whereClause += cond
+		}
+	}
+
+	baseQuery := fmt.Sprintf(`
+		SELECT id FROM (
+			SELECT DISTINCT s.id
+			FROM songs s
+			JOIN animes a ON s.anime_id = a.id
+			JOIN song_types st ON s.type_id = st.id
+			JOIN song_variants sv ON s.id = sv.song_id
+			JOIN videos v ON sv.id = v.song_variant_id
+			%s
+		) q
+		ORDER BY RANDOM()
+		LIMIT ?
+	`, whereClause)
+
+	args = append(args, limit)
+
+	query, bindArgs, err := sqlx.In(baseQuery, args...)
+	if err != nil {
+		return nil, err
+	}
+	query = r.db.Rebind(query)
+
+	var songIDs []uint64
+	err = r.db.SelectContext(ctx, &songIDs, query, bindArgs...)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(songIDs) == 0 {
+		return []domain.Song{}, nil
+	}
+
+	songs, err := r.GetMany(ctx, songIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	variantsMap, err := r.GetVariantsBySongIDs(ctx, songIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	artistsMap, err := r.GetArtistsBySongIDs(ctx, songIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range songs {
+		s := &songs[i]
+		if vars, ok := variantsMap[s.ID]; ok {
+			s.Variants = vars
+		} else {
+			s.Variants = []domain.SongVariant{}
+		}
+		if arts, ok := artistsMap[s.ID]; ok {
+			s.Artists = arts
+		} else {
+			s.Artists = []domain.Artist{}
+		}
+	}
+
+	return songs, nil
+}

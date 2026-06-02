@@ -941,3 +941,35 @@ func (r *animeRepository) CountAnimesWithMissingTitleVariants(ctx context.Contex
 	return count, err
 }
 
+func (r *animeRepository) GetRandomAnimes(ctx context.Context, limit int, excludeIDs []uint64) ([]domain.Anime, error) {
+	var animes []domain.Anime
+	var err error
+
+	if len(excludeIDs) > 0 {
+		query, args, err := sqlx.In(`
+			SELECT * FROM animes
+			WHERE status = true AND id NOT IN (?)
+			ORDER BY RANDOM()
+			LIMIT ?
+		`, excludeIDs, limit)
+		if err != nil {
+			return nil, err
+		}
+		query = r.db.Rebind(query)
+		err = r.db.SelectContext(ctx, &animes, query, args...)
+	} else {
+		query := `
+			SELECT * FROM animes
+			WHERE status = true
+			ORDER BY RANDOM()
+			LIMIT $1
+		`
+		err = r.db.SelectContext(ctx, &animes, query, limit)
+	}
+
+	if animes == nil {
+		animes = []domain.Anime{}
+	}
+	return animes, err
+}
+

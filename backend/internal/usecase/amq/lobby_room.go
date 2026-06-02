@@ -1,0 +1,835 @@
+package amq
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"math/rand"
+	"sync"
+	"time"
+
+	"anirank/api/internal/domain"
+	"anirank/api/internal/dto"
+	"anirank/api/internal/infrastructure"
+	"anirank/api/internal/infrastructure/anilist"
+)
+
+type WSConn interface {
+	WriteJSON(v interface{}) error
+	Close() error
+}
+
+type RoomEventType int
+
+const (
+	EvJoin RoomEventType = iota
+	EvLeave
+	EvReady
+	EvConfigUpdate
+	EvStartGame
+	EvSubmitGuess
+	EvTimerExpired
+	EvSkipSummary
+	EvResetToLobby
+	EvPoolLoaded
+)
+
+type RoomEvent struct {
+	Type RoomEventType
+	Data interface{}
+}
+
+type JoinEvent struct {
+	SessionID string
+	Conn      WSConn
+	User      *domain.User
+	Nickname  string
+	DeviceID  string
+}
+
+type GuessEvent struct {
+	SessionID string
+	AnimeSlug string
+}
+
+type LobbyRoom struct {
+	RoomID        string
+	Config        domain.AMQConfig
+	Status        string // "lobby", "playing", "reveal", "finished"
+	CurrentRound  int
+	Players       map[string]*domain.AMQPlayer // SessionID -> Player
+	Conns         map[string]WSConn            // SessionID -> WS connection
+	CurrentSong   *domain.Song
+	CurrentFakes  []domain.Anime
+	CurrentOptions []dto.AnimeMinimalDTO
+	SongPool      []domain.Song
+	EventChan     chan RoomEvent
+	Timer         *time.Timer
+	TimerType     string // "guess", "reveal"
+	TimerStart    time.Time
+	TimerDuration time.Duration
+
+	// Dependencies
+	AnimeRepo    domain.AnimeRepository
+	SongRepo     domain.SongRepository
+	UserRepo     domain.UserRepository
+	XPUsecase    domain.XPUsecase
+	MediaService infrastructure.MediaService
+	Anilist      anilist.AnilistClient
+
+	mu sync.Mutex
+}
+
+func NewLobbyRoom(
+	roomID string,
+	config domain.AMQConfig,
+	animeRepo domain.AnimeRepository,
+	songRepo domain.SongRepository,
+	userRepo domain.UserRepository,
+	xpUsecase domain.XPUsecase,
+	mediaService infrastructure.MediaService,
+	anilistClient anilist.AnilistClient,
+) *LobbyRoom {
+	return &LobbyRoom{
+		RoomID:       roomID,
+		Config:       config,
+		Status:       "lobby",
+		CurrentRound: 0,
+		Players:      make(map[string]*domain.AMQPlayer),
+		Conns:        make(map[string]WSConn),
+		EventChan:    make(chan RoomEvent, 100),
+		AnimeRepo:    animeRepo,
+		SongRepo:     songRepo,
+		UserRepo:     userRepo,
+		XPUsecase:    xpUsecase,
+		MediaService: mediaService,
+		Anilist:      anilistClient,
+	}
+}
+
+func (r *LobbyRoom) Start() {
+	go r.run()
+}
+
+func (r *LobbyRoom) run() {
+	// Periodic ticker to clean up stale offline players (e.g., offline for > 60s)
+	cleanupTicker := time.NewTicker(10 * time.Second)
+	defer cleanupTicker.Stop()
+
+	for {
+		select {
+		case ev, ok := <-r.EventChan:
+			if !ok {
+				return
+			}
+			r.handleEvent(ev)
+		case <-cleanupTicker.C:
+			r.cleanupOfflinePlayers()
+		}
+	}
+}
+
+func (r *LobbyRoom) handleEvent(ev RoomEvent) {
+	switch ev.Type {
+	case EvJoin:
+		r.handleJoin(ev.Data.(*JoinEvent))
+	case EvLeave:
+		r.handleLeave(ev.Data.(string))
+	case EvReady:
+		r.handleReady(ev.Data.(string))
+	case EvConfigUpdate:
+		r.handleConfigUpdate(ev.Data.(*domain.AMQConfig))
+	case EvStartGame:
+		r.handleStartGame(ev.Data.(string))
+	case EvPoolLoaded:
+		r.startRound()
+	case EvSubmitGuess:
+		r.handleSubmitGuess(ev.Data.(*GuessEvent))
+	case EvTimerExpired:
+		r.handleTimerExpired(ev.Data.(string))
+	case EvSkipSummary:
+		r.handleSkipSummary(ev.Data.(string))
+	case EvResetToLobby:
+		r.handleResetToLobby(ev.Data.(string))
+	}
+}
+
+// WS messages structures
+type outMessage struct {
+	Type    string      `json:"type"`
+	Payload interface{} `json:"payload,omitempty"`
+}
+
+func (r *LobbyRoom) broadcast(msgType string, payload interface{}) {
+	msg := outMessage{Type: msgType, Payload: payload}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	for sid, conn := range r.Conns {
+		if conn == nil {
+			continue
+		}
+		if err := conn.WriteJSON(msg); err != nil {
+			log.Printf("[AMQ] Error writing to session %s: %v", sid, err)
+		}
+	}
+}
+
+func (r *LobbyRoom) sendTo(sessionID string, msgType string, payload interface{}) {
+	msg := outMessage{Type: msgType, Payload: payload}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if conn, ok := r.Conns[sessionID]; ok && conn != nil {
+		_ = conn.WriteJSON(msg)
+	}
+}
+
+func (r *LobbyRoom) handleJoin(ev *JoinEvent) {
+	// Check if this guest already exists in the room by DeviceID
+	var existingPlayer *domain.AMQPlayer
+	var oldSessionID string
+
+	if ev.User == nil && ev.DeviceID != "" {
+		for sid, p := range r.Players {
+			if p.UserUUID == "" && p.DeviceID == ev.DeviceID {
+				existingPlayer = p
+				oldSessionID = sid
+				break
+			}
+		}
+	} else if ev.User != nil {
+		// Authenticated user: check if they are already in the room
+		for sid, p := range r.Players {
+			if p.UserUUID == ev.User.UUID {
+				existingPlayer = p
+				oldSessionID = sid
+				break
+			}
+		}
+	}
+
+	r.mu.Lock()
+	if existingPlayer != nil {
+		// Reconnection: transfer state to new SessionID
+		log.Printf("[AMQ] Reassociating player %s (old session %s, new session %s)", existingPlayer.Nickname, oldSessionID, ev.SessionID)
+		
+		// Close the old connection if still open
+		if oldConn, ok := r.Conns[oldSessionID]; ok && oldConn != nil {
+			_ = oldConn.Close()
+		}
+		delete(r.Conns, oldSessionID)
+		delete(r.Players, oldSessionID)
+
+		// Set new session info
+		existingPlayer.SessionID = ev.SessionID
+		existingPlayer.Offline = false
+		existingPlayer.OfflineSince = nil
+
+		r.Players[ev.SessionID] = existingPlayer
+		r.Conns[ev.SessionID] = ev.Conn
+	} else {
+		// New player
+		isHost := len(r.Players) == 0
+		avatar := ""
+		if ev.User != nil && ev.User.AvatarUrl != nil {
+			avatar = *ev.User.AvatarUrl
+		}
+		color := "#683bc9" // Default purple brand color
+		if ev.User != nil && ev.User.ProfileColor != nil {
+			color = *ev.User.ProfileColor
+		}
+
+		userUUID := ""
+		if ev.User != nil {
+			userUUID = ev.User.UUID
+		}
+
+		player := &domain.AMQPlayer{
+			SessionID:    ev.SessionID,
+			UserUUID:     userUUID,
+			Nickname:     ev.Nickname,
+			AvatarURL:    &avatar,
+			ProfileColor: &color,
+			DeviceID:     ev.DeviceID,
+			IsHost:       isHost,
+			IsReady:      isHost, // Host is ready by default
+		}
+
+		r.Players[ev.SessionID] = player
+		r.Conns[ev.SessionID] = ev.Conn
+	}
+	r.mu.Unlock()
+
+	// Send current state to the joined user
+	r.sendTo(ev.SessionID, "lobby_state_update", r.getRoomStatePayload())
+
+	// Broadcast updated lobby state to all players
+	r.broadcast("lobby_state_update", r.getRoomStatePayload())
+}
+
+func (r *LobbyRoom) handleLeave(sessionID string) {
+	r.mu.Lock()
+	player, exists := r.Players[sessionID]
+	if !exists {
+		r.mu.Unlock()
+		return
+	}
+
+	// For guest persistence or authenticated user transient disconnects,
+	// mark them offline rather than immediately deleting them
+	player.Offline = true
+	now := time.Now()
+	player.OfflineSince = &now
+	r.Conns[sessionID] = nil
+	r.mu.Unlock()
+
+	log.Printf("[AMQ] Player %s went offline", player.Nickname)
+
+	// If this was the host, reassign host status to the first available online player
+	if player.IsHost {
+		var newHost *domain.AMQPlayer
+		for _, p := range r.Players {
+			if !p.Offline {
+				newHost = p
+				break
+			}
+		}
+		if newHost != nil {
+			player.IsHost = false
+			newHost.IsHost = true
+			newHost.IsReady = true
+			log.Printf("[AMQ] Host migrated from %s to %s", player.Nickname, newHost.Nickname)
+		}
+	}
+
+	// Check if all online players have locked answers (in case this was the last person keeping the timer going)
+	if r.Status == "playing" {
+		r.checkAllLockedAndProceed()
+	}
+
+	r.broadcast("lobby_state_update", r.getRoomStatePayload())
+}
+
+func (r *LobbyRoom) handleReady(sessionID string) {
+	player, exists := r.Players[sessionID]
+	if !exists || r.Status != "lobby" {
+		return
+	}
+	// Toggle ready state
+	player.IsReady = !player.IsReady
+	r.broadcast("lobby_state_update", r.getRoomStatePayload())
+}
+
+func (r *LobbyRoom) handleConfigUpdate(cfg *domain.AMQConfig) {
+	// Only host can modify config
+	r.broadcast("lobby_state_update", r.getRoomStatePayload())
+}
+
+func (r *LobbyRoom) UpdateConfig(sessionID string, cfg domain.AMQConfig) {
+	player, exists := r.Players[sessionID]
+	if !exists || !player.IsHost || r.Status != "lobby" {
+		return
+	}
+	
+	// Sanitize config
+	if cfg.MaxRounds <= 0 {
+		cfg.MaxRounds = 10
+	}
+	if cfg.GuessTime < 10 || cfg.GuessTime > 60 {
+		cfg.GuessTime = 20
+	}
+	if cfg.RevealTime < 5 || cfg.RevealTime > 30 {
+		cfg.RevealTime = 10
+	}
+
+	r.Config = cfg
+	r.broadcast("lobby_state_update", r.getRoomStatePayload())
+}
+
+func (r *LobbyRoom) handleStartGame(sessionID string) {
+	player, exists := r.Players[sessionID]
+	if !exists || !player.IsHost || r.Status != "lobby" {
+		return
+	}
+
+	// Verify all active players are ready
+	for _, p := range r.Players {
+		if !p.Offline && !p.IsReady {
+			r.sendTo(sessionID, "error", "Cannot start. All active players must toggle Ready.")
+			return
+		}
+	}
+
+	// 1. Prepare Song Pool
+	r.Status = "playing"
+	r.CurrentRound = 0
+	r.broadcast("lobby_state_update", r.getRoomStatePayload())
+
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer func() {
+			cancel()
+			if err := recover(); err != nil {
+				log.Printf("[AMQ] StartGame crashed: %v", err)
+				r.EventChan <- RoomEvent{Type: EvResetToLobby, Data: "Game could not start. Please try again."}
+			}
+		}()
+
+		// Gather linked AniList IDs
+		var watchedAnimeIDs []uint64
+		if r.Config.PersonalizedPool {
+			// Find AniList IDs from authenticated players
+			var linkedUserIDs []uint64
+			for _, p := range r.Players {
+				if p.UserUUID != "" {
+					user, err := r.UserRepo.GetByUUID(ctx, p.UserUUID)
+					if err == nil {
+						linkedUserIDs = append(linkedUserIDs, user.ID)
+					}
+				}
+			}
+
+			if len(linkedUserIDs) > 0 {
+				// Query public AniList identities from DB
+				var anilistUserIDs []int64
+				for _, uid := range linkedUserIDs {
+					sids, err := r.UserRepo.GetSocialIdentitiesByUserID(ctx, uid)
+					if err == nil {
+						for _, si := range sids {
+							if si.Provider == "anilist" {
+								var aid int64
+								if _, errScan := fmt.Sscanf(si.ProviderID, "%d", &aid); errScan == nil {
+									anilistUserIDs = append(anilistUserIDs, aid)
+								}
+							}
+						}
+					}
+				}
+
+				// If we have AniList IDs, query their completed list items from GraphQL AniList API
+				var intersectedAnimes = make(map[int]bool)
+				firstUser := true
+
+				for _, aid := range anilistUserIDs {
+					userAnilistMedia := make(map[int]bool)
+					page := 1
+					for {
+						resp, err := r.Anilist.GetUserMediaList(ctx, aid, "COMPLETED", page, 50)
+						if err != nil || resp == nil || len(resp.Data.Page.MediaList) == 0 {
+							break
+						}
+						for _, item := range resp.Data.Page.MediaList {
+							userAnilistMedia[item.Media.ID] = true
+						}
+						if !resp.Data.Page.PageInfo.HasNextPage {
+							break
+						}
+						page++
+					}
+
+					// Perform intersection
+					if firstUser {
+						for mid := range userAnilistMedia {
+							intersectedAnimes[mid] = true
+						}
+						firstUser = false
+					} else {
+						for mid := range intersectedAnimes {
+							if !userAnilistMedia[mid] {
+								delete(intersectedAnimes, mid)
+							}
+						}
+					}
+				}
+
+				// Convert intersected AniList IDs to DB Anime IDs
+				if len(intersectedAnimes) > 0 {
+					var rawIDs []int
+					for mid := range intersectedAnimes {
+						rawIDs = append(rawIDs, mid)
+					}
+					// Slice batch
+					if len(rawIDs) > 100 {
+						rawIDs = rawIDs[:100]
+					}
+					animes, err := r.AnimeRepo.GetByAnilistIDs(ctx, rawIDs)
+					if err == nil {
+						for _, a := range animes {
+							watchedAnimeIDs = append(watchedAnimeIDs, a.ID)
+						}
+					}
+				}
+			}
+		}
+
+		themeTypes := []string{"OP", "ED"}
+		if r.Config.ThemeType == "OP" {
+			themeTypes = []string{"OP"}
+		} else if r.Config.ThemeType == "ED" {
+			themeTypes = []string{"ED"}
+		}
+
+		// Query primary pool songs
+		songs, err := r.SongRepo.GetRandomSongsForAMQ(ctx, watchedAnimeIDs, themeTypes, r.Config.MaxRounds, nil)
+		if err != nil {
+			log.Printf("[AMQ] Failed to fetch primary songs: %v", err)
+		}
+
+		// Backfill from general pool if needed
+		if len(songs) < r.Config.MaxRounds {
+			needed := r.Config.MaxRounds - len(songs)
+			var excludeIDs []uint64
+			for _, s := range songs {
+				excludeIDs = append(excludeIDs, s.ID)
+			}
+			backfill, errBF := r.SongRepo.GetRandomSongsForAMQ(ctx, nil, themeTypes, needed, excludeIDs)
+			if errBF == nil {
+				songs = append(songs, backfill...)
+			}
+		}
+
+		r.mu.Lock()
+		r.SongPool = songs
+		r.mu.Unlock()
+
+		r.EventChan <- RoomEvent{Type: EvPoolLoaded, Data: nil}
+	}()
+}
+
+func (r *LobbyRoom) StartGame(sessionID string) {
+	r.EventChan <- RoomEvent{Type: EvStartGame, Data: sessionID}
+}
+
+func (r *LobbyRoom) startRound() {
+	if r.CurrentRound >= len(r.SongPool) || r.CurrentRound >= r.Config.MaxRounds {
+		r.endGame()
+		return
+	}
+
+	r.Status = "playing"
+	r.CurrentSong = &r.SongPool[r.CurrentRound]
+	r.CurrentFakes = nil
+
+	// Clear player guesses and locks
+	for _, p := range r.Players {
+		p.LastGuess = ""
+		p.Locked = false
+		p.LastGuessCorrect = false
+	}
+
+	// If multiple choice, fetch 3 fake options from DB
+	if r.Config.GameType == "multiple-choice" {
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		fakes, err := r.AnimeRepo.GetRandomAnimes(ctx, 3, []uint64{r.CurrentSong.AnimeID})
+		cancel()
+		if err == nil {
+			r.CurrentFakes = fakes
+		}
+	}
+
+	// Select playable source URL (video or file)
+	var audioURL string
+	if len(r.CurrentSong.Variants) > 0 {
+		v := r.CurrentSong.Variants[0]
+		if v.Video != nil {
+			if v.Video.LocalUrl != nil {
+				audioURL = r.MediaService.GetURL(*v.Video.LocalUrl)
+			} else if v.Video.EmbedUrl != nil {
+				audioURL = *v.Video.EmbedUrl
+			} else if v.Video.VideoSrc != nil {
+				audioURL = r.MediaService.GetURL(*v.Video.VideoSrc)
+			}
+		}
+	}
+
+	// Prepare multiple choice options payload
+	r.CurrentOptions = nil
+	if r.Config.GameType == "multiple-choice" && r.CurrentSong.Anime != nil {
+		correctDTO := dto.ToAnimeMinimalDTO(r.CurrentSong.Anime)
+		r.CurrentOptions = append(r.CurrentOptions, correctDTO)
+		for _, fake := range r.CurrentFakes {
+			r.CurrentOptions = append(r.CurrentOptions, dto.ToAnimeMinimalDTO(&fake))
+		}
+		// Shuffle options
+		rand.Seed(time.Now().UnixNano())
+		rand.Shuffle(len(r.CurrentOptions), func(i, j int) {
+			r.CurrentOptions[i], r.CurrentOptions[j] = r.CurrentOptions[j], r.CurrentOptions[i]
+		})
+	}
+
+	r.TimerType = "guess"
+	r.TimerStart = time.Now()
+	r.TimerDuration = time.Duration(r.Config.GuessTime) * time.Second
+
+	r.Timer = time.AfterFunc(r.TimerDuration, func() {
+		r.EventChan <- RoomEvent{Type: EvTimerExpired, Data: "guess"}
+	})
+
+	// Broadcast round start to clients
+	r.broadcast("round_start", map[string]interface{}{
+		"current_round": r.CurrentRound + 1,
+		"max_rounds":    r.Config.MaxRounds,
+		"guess_time":    r.Config.GuessTime,
+		"audio_url":     audioURL,
+		"game_type":     r.Config.GameType,
+		"options":       r.CurrentOptions,
+	})
+	r.broadcast("lobby_state_update", r.getRoomStatePayload())
+}
+
+func (r *LobbyRoom) handleSubmitGuess(ev *GuessEvent) {
+	if r.Status != "playing" {
+		return
+	}
+
+	player, exists := r.Players[ev.SessionID]
+	if !exists || player.Locked || player.Offline {
+		return
+	}
+
+	player.LastGuess = ev.AnimeSlug
+	player.Locked = true
+
+	// Check if all online players have locked their answers
+	r.checkAllLockedAndProceed()
+	r.broadcast("lobby_state_update", r.getRoomStatePayload())
+}
+
+func (r *LobbyRoom) checkAllLockedAndProceed() {
+	allLocked := true
+	activePlayers := 0
+	for _, p := range r.Players {
+		if !p.Offline {
+			activePlayers++
+			if !p.Locked {
+				allLocked = false
+			}
+		}
+	}
+
+	if allLocked && activePlayers > 0 {
+		// Cancel timer and transition directly to reveal
+		if r.Timer != nil {
+			r.Timer.Stop()
+		}
+		go func() {
+			r.EventChan <- RoomEvent{Type: EvTimerExpired, Data: "guess"}
+		}()
+	}
+}
+
+func (r *LobbyRoom) handleTimerExpired(timerType string) {
+	if r.TimerType != timerType {
+		return
+	}
+
+	if timerType == "guess" {
+		r.revealAnswers()
+	} else if timerType == "reveal" {
+		r.CurrentRound++
+		r.startRound()
+	}
+}
+
+func (r *LobbyRoom) revealAnswers() {
+	r.Status = "reveal"
+
+	// Resolve correct anime
+	var correctSlug string
+	var correctUUID string
+	var correctAnilistID int64
+
+	if r.CurrentSong.Anime != nil {
+		correctSlug = r.CurrentSong.Anime.Slug
+		correctUUID = r.CurrentSong.Anime.UUID
+		if r.CurrentSong.Anime.AnilistID != nil {
+			correctAnilistID = *r.CurrentSong.Anime.AnilistID
+		}
+	}
+
+	// Validate guesses and calculate points
+	results := make(map[string]map[string]interface{})
+	for sid, p := range r.Players {
+		correct := false
+		if p.LastGuess != "" {
+			guessClean := p.LastGuess
+			// Match slug OR UUID OR AniList ID
+			if guessClean == correctSlug || guessClean == correctUUID {
+				correct = true
+			} else if correctAnilistID > 0 && guessClean == fmt.Sprintf("%d", correctAnilistID) {
+				correct = true
+			}
+		}
+
+		if correct {
+			p.Score++
+			p.LastGuessCorrect = true
+		} else {
+			p.LastGuessCorrect = false
+		}
+
+		results[sid] = map[string]interface{}{
+			"correct": correct,
+			"guess":   p.LastGuess,
+		}
+	}
+
+	// Resolve cover & banner URL using mediaService
+	songDTO := dto.ToSongMinimalDTO(r.CurrentSong)
+	if songDTO.Anime != nil {
+		if r.CurrentSong.Anime.CoverUrl != nil {
+			songDTO.Anime.CoverUrl = *r.CurrentSong.Anime.CoverUrl
+		}
+		if r.CurrentSong.Anime.BannerUrl != nil {
+			songDTO.Anime.BannerUrl = r.CurrentSong.Anime.BannerUrl
+		}
+	}
+
+	r.TimerType = "reveal"
+	r.TimerStart = time.Now()
+	r.TimerDuration = time.Duration(r.Config.RevealTime) * time.Second
+
+	r.Timer = time.AfterFunc(r.TimerDuration, func() {
+		r.EventChan <- RoomEvent{Type: EvTimerExpired, Data: "reveal"}
+	})
+
+	r.broadcast("round_ended", map[string]interface{}{
+		"song":    songDTO,
+		"results": results,
+	})
+	r.broadcast("lobby_state_update", r.getRoomStatePayload())
+}
+
+func (r *LobbyRoom) handleSkipSummary(sessionID string) {
+	player, exists := r.Players[sessionID]
+	if !exists || !player.IsHost || r.Status != "reveal" {
+		return
+	}
+
+	// Force timer expiration immediately
+	if r.Timer != nil {
+		r.Timer.Stop()
+	}
+	r.CurrentRound++
+	r.startRound()
+}
+
+func (r *LobbyRoom) handleResetToLobby(sessionID string) {
+	player, exists := r.Players[sessionID]
+	if !exists || !player.IsHost || r.Status != "finished" {
+		return
+	}
+
+	r.Status = "lobby"
+	r.CurrentRound = 0
+	r.CurrentSong = nil
+	r.SongPool = nil
+
+	for _, p := range r.Players {
+		p.Score = 0
+		p.Locked = false
+		p.IsReady = p.IsHost // Host ready, others not
+		p.LastGuess = ""
+		p.LastGuessCorrect = false
+	}
+
+	r.broadcast("lobby_state_update", r.getRoomStatePayload())
+}
+
+func (r *LobbyRoom) endGame() {
+	r.Status = "finished"
+
+	// Award XP and Log activities for authenticated players
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	for _, p := range r.Players {
+		if p.UserUUID != "" && p.Score > 0 {
+			user, err := r.UserRepo.GetByUUID(ctx, p.UserUUID)
+			if err == nil {
+				// Award XP
+				_ = r.XPUsecase.AwardXP(ctx, user.ID, "amq_completion", map[string]interface{}{
+					"lobby_room": r.RoomID,
+					"score":      p.Score,
+					"rounds":     r.Config.MaxRounds,
+				})
+			}
+		}
+	}
+
+	r.broadcast("lobby_state_update", r.getRoomStatePayload())
+}
+
+func (r *LobbyRoom) cleanupOfflinePlayers() {
+	r.mu.Lock()
+	now := time.Now()
+	changed := false
+
+	for sid, p := range r.Players {
+		if p.Offline && p.OfflineSince != nil {
+			if now.Sub(*p.OfflineSince) > 60*time.Second {
+				log.Printf("[AMQ] Purging offline player %s", p.Nickname)
+				delete(r.Players, sid)
+				delete(r.Conns, sid)
+				changed = true
+			}
+		}
+	}
+	r.mu.Unlock()
+
+	if changed {
+		r.broadcast("lobby_state_update", r.getRoomStatePayload())
+	}
+}
+
+func (r *LobbyRoom) getRoomStatePayload() map[string]interface{} {
+	playersList := make([]domain.AMQPlayer, 0, len(r.Players))
+	for _, p := range r.Players {
+		playersList = append(playersList, *p)
+	}
+
+	// Calculate remaining timer ticks
+	var timerLeft int = 0
+	if r.Status == "playing" || r.Status == "reveal" {
+		elapsed := time.Since(r.TimerStart)
+		rem := r.TimerDuration - elapsed
+		if rem > 0 {
+			timerLeft = int(rem.Seconds())
+		}
+	}
+
+	var roundData map[string]interface{}
+	if (r.Status == "playing" || r.Status == "reveal") && r.CurrentSong != nil {
+		var audioURL string
+		if len(r.CurrentSong.Variants) > 0 {
+			v := r.CurrentSong.Variants[0]
+			if v.Video != nil {
+				if v.Video.LocalUrl != nil {
+					audioURL = r.MediaService.GetURL(*v.Video.LocalUrl)
+				} else if v.Video.EmbedUrl != nil {
+					audioURL = *v.Video.EmbedUrl
+				} else if v.Video.VideoSrc != nil {
+					audioURL = r.MediaService.GetURL(*v.Video.VideoSrc)
+				}
+			}
+		}
+
+		roundData = map[string]interface{}{
+			"current_round": r.CurrentRound + 1,
+			"max_rounds":    r.Config.MaxRounds,
+			"guess_time":    r.Config.GuessTime,
+			"audio_url":     audioURL,
+			"game_type":     r.Config.GameType,
+			"options":       r.CurrentOptions,
+		}
+	}
+
+	return map[string]interface{}{
+		"room_id":       r.RoomID,
+		"status":        r.Status,
+		"config":        r.Config,
+		"current_round": r.CurrentRound + 1,
+		"players":       playersList,
+		"timer_left":    timerLeft,
+		"round_data":    roundData,
+	}
+}

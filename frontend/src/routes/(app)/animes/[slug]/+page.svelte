@@ -167,6 +167,48 @@
               {/if}
             </span>
           </div>
+
+          <div
+            class="border-l-2 border-transparent hover:border-primary pl-3 transition-all duration-200"
+          >
+            <span class="block text-xs text-on-surface mb-0.5">Romaji</span>
+            <span class="font-medium text-on-surface-variant"
+              >{anime.title}</span
+            >
+          </div>
+
+          {#if anime.title_english}
+            <div
+              class="border-l-2 border-transparent hover:border-primary pl-3 transition-all duration-200"
+            >
+              <span class="block text-xs text-on-surface mb-0.5">English</span>
+              <span class="font-medium text-on-surface-variant"
+                >{anime.title_english}</span
+              >
+            </div>
+          {/if}
+
+          {#if anime.title_native}
+            <div
+              class="border-l-2 border-transparent hover:border-primary pl-3 transition-all duration-200"
+            >
+              <span class="block text-xs text-on-surface mb-0.5">Native</span>
+              <span class="font-medium text-on-surface-variant"
+                >{anime.title_native}</span
+              >
+            </div>
+          {/if}
+
+          {#if anime.synonyms && anime.synonyms.length > 0}
+            <div
+              class="border-l-2 border-transparent hover:border-primary pl-3 transition-all duration-200"
+            >
+              <span class="block text-xs text-on-surface mb-0.5">Synonyms</span>
+              <span class="font-medium text-on-surface-variant"
+                >{anime.synonyms.join(", ")}</span
+              >
+            </div>
+          {/if}
         </div>
       </div>
 

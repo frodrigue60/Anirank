@@ -25,7 +25,7 @@
   let roomState = $state<any>(null);
   let status = $derived(roomState?.status || "lobby");
   let players = $derived(roomState?.players || []);
-  let timerLeft = $derived(roomState?.timer_left ?? 0);
+  let localTimer = $state(0);
   let config = $derived(roomState?.config || {});
 
   let currentRoundData = $state<any>(null);
@@ -42,6 +42,24 @@
   let volume = $state(0.5);
   let isMuted = $state(false);
   let isPlaying = $state(false);
+
+  let timerInterval: any;
+  $effect(() => {
+    if (status === "playing" || status === "reveal") {
+      clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        if (localTimer > 0) {
+          localTimer--;
+        }
+      }, 1000);
+    } else {
+      clearInterval(timerInterval);
+    }
+
+    return () => {
+      clearInterval(timerInterval);
+    };
+  });
 
   // Guest details from localStorage
   let deviceId = $state("");
@@ -83,9 +101,11 @@
       switch (msg.type) {
         case "lobby_state_update":
           roomState = msg.payload;
+          localTimer = msg.payload.timer_left ?? 0;
           break;
         case "round_start":
           currentRoundData = msg.payload;
+          localTimer = msg.payload.guess_time;
           roundResult = null;
           guessInput = "";
           searchResults = [];
@@ -350,7 +370,7 @@
                   <h3 class="font-black text-white text-xl tracking-tight uppercase">Playing Theme...</h3>
                   
                   <!-- Guessing Timer Countdown -->
-                  <div class="text-5xl font-black text-primary">{timerLeft}</div>
+                  <div class="text-5xl font-black text-primary">{localTimer}</div>
                 </div>
               {/if}
             {/if}
@@ -492,7 +512,7 @@
               <!-- Reveal Countdown Timer -->
               <div class="flex justify-between items-center text-sm">
                 <span class="text-on-surface-variant">Next round starting in:</span>
-                <span class="font-black text-primary text-xl">{timerLeft}s</span>
+                <span class="font-black text-primary text-xl">{localTimer}s</span>
               </div>
             </div>
           {/if}

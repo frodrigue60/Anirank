@@ -200,7 +200,7 @@ type AnimeRepository interface {
 	EnrichFromAniList(ctx context.Context, anilistID int64, cover, banner, description, titleEnglish, titleNative *string, synonyms []string) error
 
 	// Backfill pipeline — returns animes that have an anilist_id but are missing title variants
-	GetAnimesWithMissingTitleVariants(ctx context.Context, limit, offset int) ([]Anime, error)
+	GetAnimesWithMissingTitleVariants(ctx context.Context, limit int, lastID uint64) ([]Anime, error)
 	CountAnimesWithMissingTitleVariants(ctx context.Context) (int, error)
 }
 

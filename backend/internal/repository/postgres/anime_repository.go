@@ -914,15 +914,16 @@ func buildUniqueAnimeSlug(base string, animeThemesID uint64) string {
 
 // GetAnimesWithMissingTitleVariants returns animes that have an anilist_id but are still
 // missing title_english or title_native. Used exclusively by the backfill pipeline.
-func (r *animeRepository) GetAnimesWithMissingTitleVariants(ctx context.Context, limit, offset int) ([]domain.Anime, error) {
+func (r *animeRepository) GetAnimesWithMissingTitleVariants(ctx context.Context, limit int, lastID uint64) ([]domain.Anime, error) {
 	var animes []domain.Anime
 	query := `
 		SELECT * FROM animes
 		WHERE anilist_id IS NOT NULL
 		  AND (title_english IS NULL OR title_native IS NULL)
+		  AND id > $1
 		ORDER BY id ASC
-		LIMIT $1 OFFSET $2`
-	err := r.db.SelectContext(ctx, &animes, query, limit, offset)
+		LIMIT $2`
+	err := r.db.SelectContext(ctx, &animes, query, lastID, limit)
 	if animes == nil {
 		animes = []domain.Anime{}
 	}

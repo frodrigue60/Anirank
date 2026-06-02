@@ -280,7 +280,7 @@ func (u *ImportUsecase) phaseBackfillTitles(ctx context.Context, job *domain.Imp
 	job.TotalPages = (total + alChunkSize - 1) / alChunkSize
 	_ = u.jobRepo.UpdateProgress(ctx, job)
 
-	offset := 0
+	var lastID uint64 = 0
 	totalProcessed := 0
 
 	for {
@@ -288,9 +288,9 @@ func (u *ImportUsecase) phaseBackfillTitles(ctx context.Context, job *domain.Imp
 			return ctx.Err()
 		}
 
-		batch, err := u.animeRepo.GetAnimesWithMissingTitleVariants(ctx, dbBatchSize, offset)
+		batch, err := u.animeRepo.GetAnimesWithMissingTitleVariants(ctx, dbBatchSize, lastID)
 		if err != nil {
-			return fmt.Errorf("backfill: fetch batch at offset %d: %w", offset, err)
+			return fmt.Errorf("backfill: fetch batch after ID %d: %w", lastID, err)
 		}
 		if len(batch) == 0 {
 			break
@@ -376,7 +376,7 @@ func (u *ImportUsecase) phaseBackfillTitles(ctx context.Context, job *domain.Imp
 			time.Sleep(time.Duration(alInterChunkSec) * time.Second)
 		}
 
-		offset += len(batch)
+		lastID = batch[len(batch)-1].ID
 	}
 
 	return nil

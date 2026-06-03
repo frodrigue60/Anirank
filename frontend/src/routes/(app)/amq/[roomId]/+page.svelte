@@ -22,6 +22,7 @@
   import MessageSquare from "lucide-svelte/icons/message-square";
   import ChevronLeft from "lucide-svelte/icons/chevron-left";
   import ChevronRight from "lucide-svelte/icons/chevron-right";
+  import Settings from "lucide-svelte/icons/settings";
 
   const roomId = page.params.roomId;
 
@@ -97,6 +98,44 @@
   let reconnectTimer: any = null;
   let connectionGeneration = 0;
 
+  // Lobby config editing
+  let showEditConfigModal = $state(false);
+  let editRoomName = $state("");
+  let editMaxRounds = $state(10);
+  let editGuessTime = $state(20);
+  let editRevealTime = $state(10);
+  let editThemeType = $state("both");
+  let editGameType = $state("type-in");
+  let editPersonalizedPool = $state(false);
+  let editIsPrivate = $state(false);
+
+  function openEditConfigModal() {
+    if (!config) return;
+    editRoomName = config.name || "";
+    editMaxRounds = config.max_rounds || 10;
+    editGuessTime = config.guess_time || 20;
+    editRevealTime = config.reveal_time || 10;
+    editThemeType = config.theme_type || "both";
+    editGameType = config.game_type || "type-in";
+    editPersonalizedPool = config.personalized_pool || false;
+    editIsPrivate = config.private || false;
+    showEditConfigModal = true;
+  }
+
+  function saveLobbyConfig() {
+    const updated = {
+      name: editRoomName.trim() || `${selfPlayer?.nickname || "Host"}'s Lobby`,
+      max_rounds: Number(editMaxRounds),
+      guess_time: Number(editGuessTime),
+      reveal_time: Number(editRevealTime),
+      theme_type: editThemeType,
+      game_type: editGameType,
+      personalized_pool: editPersonalizedPool,
+      private: editIsPrivate,
+    };
+    sendWSMessage("update_lobby_config", updated);
+    showEditConfigModal = false;
+  }
 
   let showNicknamePrompt = $state(false);
   let nicknameError = $state("");
@@ -643,6 +682,14 @@
 
                   {#if selfPlayer.is_host}
                     <button
+                      onclick={openEditConfigModal}
+                      class="h-12 bg-surface-highest hover:bg-surface-container text-on-surface border border-outline-variant px-5 rounded-sm font-bold text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                      title="Configure Room Settings"
+                    >
+                      <Settings size={16} />
+                      Configure
+                    </button>
+                    <button
                       onclick={startGame}
                       class="flex-1 h-12 bg-primary hover:bg-primary-container text-white rounded-sm font-bold text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
                     >
@@ -984,6 +1031,141 @@
             class="flex-1 h-11 bg-primary hover:bg-primary-container text-white rounded-sm font-bold text-xs transition-colors cursor-pointer"
           >
             Play Game
+          </button>
+        </div>
+      </div>
+    </div>
+  {/if}
+
+  <!-- Edit Config Modal (Host only, only when in lobby status) -->
+  {#if showEditConfigModal && selfPlayer?.is_host && status === "lobby"}
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-[#09070e] p-4">
+      <div class="bg-surface-highest max-w-lg w-full rounded-md shadow-2xl relative z-10 p-8 space-y-6 max-h-[90vh] overflow-y-auto border border-outline-variant">
+        <h3 class="text-2xl font-black text-on-surface tracking-tight flex items-center gap-2">
+          <Settings size={22} class="text-primary" />
+          Configure Room Settings
+        </h3>
+
+        <div class="space-y-4">
+          <!-- Room Name -->
+          <div class="flex flex-col gap-2">
+            <label for="edit-room-name" class="text-[10px] uppercase font-black text-on-surface-variant tracking-widest ml-1">Lobby Name</label>
+            <input
+              id="edit-room-name"
+              type="text"
+              bind:value={editRoomName}
+              placeholder="Enter room name..."
+              class="h-12 bg-surface border border-outline-variant rounded-sm px-4 text-sm text-on-surface focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all"
+            />
+          </div>
+
+          <!-- Rounds and Timers -->
+          <div class="grid grid-cols-3 gap-4">
+            <div class="flex flex-col gap-2">
+              <label for="edit-rounds" class="text-[10px] uppercase font-black text-on-surface-variant tracking-widest ml-1">Rounds</label>
+              <input
+                id="edit-rounds"
+                type="number"
+                min="5"
+                max="50"
+                bind:value={editMaxRounds}
+                class="h-12 bg-surface border border-outline-variant rounded-sm px-4 text-sm text-on-surface focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all"
+              />
+            </div>
+            <div class="flex flex-col gap-2">
+              <label for="edit-guess-time" class="text-[10px] uppercase font-black text-on-surface-variant tracking-widest ml-1">Guess (s)</label>
+              <input
+                id="edit-guess-time"
+                type="number"
+                min="10"
+                max="60"
+                bind:value={editGuessTime}
+                class="h-12 bg-surface border border-outline-variant rounded-sm px-4 text-sm text-on-surface focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all"
+              />
+            </div>
+            <div class="flex flex-col gap-2">
+              <label for="edit-reveal-time" class="text-[10px] uppercase font-black text-on-surface-variant tracking-widest ml-1">Reveal (s)</label>
+              <input
+                id="edit-reveal-time"
+                type="number"
+                min="5"
+                max="30"
+                bind:value={editRevealTime}
+                class="h-12 bg-surface border border-outline-variant rounded-sm px-4 text-sm text-on-surface focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all"
+              />
+            </div>
+          </div>
+
+          <!-- Theme Pool and Game Type -->
+          <div class="grid grid-cols-2 gap-4">
+            <div class="flex flex-col gap-2">
+              <label for="edit-theme-type" class="text-[10px] uppercase font-black text-on-surface-variant tracking-widest ml-1 font-black">Themes</label>
+              <select
+                id="edit-theme-type"
+                bind:value={editThemeType}
+                class="h-12 bg-surface border border-outline-variant rounded-sm px-4 text-sm text-on-surface focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
+              >
+                <option value="both">Openings & Endings</option>
+                <option value="OP">Openings Only</option>
+                <option value="ED">Endings Only</option>
+              </select>
+            </div>
+            <div class="flex flex-col gap-2">
+              <label for="edit-game-type" class="text-[10px] uppercase font-black text-on-surface-variant tracking-widest ml-1">Game Mode</label>
+              <select
+                id="edit-game-type"
+                bind:value={editGameType}
+                class="h-12 bg-surface border border-outline-variant rounded-sm px-4 text-sm text-on-surface focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
+              >
+                <option value="type-in">Type-In (Autocomplete)</option>
+                <option value="multiple-choice">Multiple Choice</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Personalized Pools Checkbox (visible to host if authenticated) -->
+          {#if authState.isAuthenticated}
+            <div class="flex items-center gap-3 p-3 bg-surface rounded-sm border border-outline-variant">
+              <input
+                id="edit-personalized"
+                type="checkbox"
+                bind:checked={editPersonalizedPool}
+                class="w-5 h-5 accent-primary cursor-pointer"
+              />
+              <div class="flex flex-col">
+                <label for="edit-personalized" class="text-sm font-bold text-on-surface cursor-pointer">AniList Intersect Pool</label>
+                <span class="text-[11px] text-on-surface-variant">Only draw songs from watched lists of synced users.</span>
+              </div>
+            </div>
+          {/if}
+
+          <!-- Private Lobby -->
+          <div class="flex items-center gap-3 p-3 bg-surface rounded-sm border border-outline-variant">
+            <input
+              id="edit-private"
+              type="checkbox"
+              bind:checked={editIsPrivate}
+              class="w-5 h-5 accent-primary cursor-pointer"
+            />
+            <div class="flex flex-col">
+              <label for="edit-private" class="text-sm font-bold text-on-surface cursor-pointer">Private Lobby</label>
+              <span class="text-[11px] text-on-surface-variant">Lobby will not appear in the public browser. Joined by room code only.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex gap-4 pt-4">
+          <button
+            onclick={() => showEditConfigModal = false}
+            class="flex-1 h-12 bg-surface hover:bg-surface-low border border-outline-variant text-on-surface rounded-sm font-bold text-sm transition-colors cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            onclick={saveLobbyConfig}
+            class="flex-1 h-12 bg-primary hover:bg-primary-container text-white rounded-sm font-bold text-sm transition-colors cursor-pointer"
+          >
+            Save Preferences
           </button>
         </div>
       </div>

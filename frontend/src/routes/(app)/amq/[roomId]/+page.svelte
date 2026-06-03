@@ -44,6 +44,7 @@
   });
   let players = $derived(roomState?.players || []);
   let spectators = $derived(roomState?.spectators || []);
+  let sortedPlayers = $derived([...players].sort((a: any, b: any) => b.score - a.score));
   let isSpectator = $state(false);
   let localTimer = $state(0);
   let config = $derived(roomState?.config || {});
@@ -467,7 +468,7 @@
             {#if players.length === 0}
               <div class="p-4 text-xs text-on-surface-variant text-center">No players</div>
             {:else}
-              {#each players.sort((a: any, b: any) => b.score - a.score) as player}
+              {#each sortedPlayers as player}
                 <div class="px-4 py-3 flex items-center justify-between text-sm {player.offline ? 'opacity-50' : ''}">
                   <div class="flex items-center gap-2 truncate">
                     <!-- Status Indicator Dot -->

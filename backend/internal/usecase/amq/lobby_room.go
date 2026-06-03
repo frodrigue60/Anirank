@@ -34,11 +34,17 @@ const (
 	EvResetToLobby
 	EvPoolLoaded
 	EvChat
+	EvTransferHost
 )
 
 type RoomEvent struct {
 	Type RoomEventType
 	Data interface{}
+}
+
+type TransferHostEvent struct {
+	SessionID       string
+	TargetSessionID string
 }
 
 type JoinEvent struct {
@@ -194,6 +200,8 @@ func (r *LobbyRoom) handleEvent(ev RoomEvent) {
 		}
 	case EvChat:
 		r.handleChat(ev.Data.(*ChatEvent))
+	case EvTransferHost:
+		r.handleTransferHost(ev.Data.(*TransferHostEvent))
 	}
 }
 
@@ -248,6 +256,28 @@ func (r *LobbyRoom) handleJoin(ev *JoinEvent) {
 				oldSessionID = sid
 				break
 			}
+		}
+	}
+
+	if existingPlayer == nil && ev.User == nil {
+		// Fallback for guests: match by Nickname (prefer offline, but fallback to online to prevent duplication)
+		var match *domain.AMQPlayer
+		var matchSid string
+		for sid, p := range r.Players {
+			if p.UserUUID == "" && p.Nickname == ev.Nickname {
+				if p.Offline {
+					match = p
+					matchSid = sid
+					break
+				} else {
+					match = p
+					matchSid = sid
+				}
+			}
+		}
+		if match != nil {
+			existingPlayer = match
+			oldSessionID = matchSid
 		}
 	}
 
@@ -316,6 +346,7 @@ func (r *LobbyRoom) handleJoin(ev *JoinEvent) {
 		r.Players[ev.SessionID] = player
 		r.Conns[ev.SessionID] = ev.Conn
 	}
+	r.ensureHostActive()
 	r.mu.Unlock()
 
 	// Send current state to the joined user
@@ -353,22 +384,7 @@ func (r *LobbyRoom) handleLeave(sessionID string) {
 
 	log.Printf("[AMQ] Player %s went offline", player.Nickname)
 
-	// If this was the host, reassign host status to the first available online player
-	if player.IsHost {
-		var newHost *domain.AMQPlayer
-		for _, p := range r.Players {
-			if !p.Offline && !p.IsSpectator {
-				newHost = p
-				break
-			}
-		}
-		if newHost != nil {
-			player.IsHost = false
-			newHost.IsHost = true
-			newHost.IsReady = true
-			log.Printf("[AMQ] Host migrated from %s to %s", player.Nickname, newHost.Nickname)
-		}
-	}
+	r.ensureHostActive()
 	r.mu.Unlock()
 
 	// Check if all online players have locked answers (in case this was the last person keeping the timer going)
@@ -1148,6 +1164,66 @@ func (r *LobbyRoom) handleChat(ev *ChatEvent) {
 		"sender":    nickname,
 		"text":      ev.Text,
 		"type":      "user",
+		"timestamp": time.Now(),
+	})
+}
+
+// ensureHostActive assumes the room lock (r.mu) is already held.
+func (r *LobbyRoom) ensureHostActive() {
+	var onlineHost *domain.AMQPlayer
+	var firstOnlinePlayer *domain.AMQPlayer
+
+	for _, p := range r.Players {
+		if !p.Offline && !p.IsSpectator {
+			if firstOnlinePlayer == nil {
+				firstOnlinePlayer = p
+			}
+			if p.IsHost {
+				onlineHost = p
+			}
+		}
+	}
+
+	if onlineHost == nil && firstOnlinePlayer != nil {
+		for _, p := range r.Players {
+			p.IsHost = false
+		}
+		firstOnlinePlayer.IsHost = true
+		firstOnlinePlayer.IsReady = true
+		log.Printf("[AMQ] Host assigned/migrated to online player %s", firstOnlinePlayer.Nickname)
+	}
+}
+
+// handleTransferHost handles transferring the host status manually.
+func (r *LobbyRoom) handleTransferHost(ev *TransferHostEvent) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	// Verify requester is the host
+	requester, exists := r.Players[ev.SessionID]
+	if !exists || !requester.IsHost {
+		return
+	}
+
+	// Verify target player exists and is online/not spectator
+	target, exists := r.Players[ev.TargetSessionID]
+	if !exists || target.Offline || target.IsSpectator {
+		return
+	}
+
+	// Perform transfer
+	requester.IsHost = false
+	target.IsHost = true
+	target.IsReady = true // Host is always ready
+	log.Printf("[AMQ] Host transferred manually from %s to %s", requester.Nickname, target.Nickname)
+
+	// Broadcast updated state
+	r.broadcast("lobby_state_update", r.getRoomStatePayload())
+
+	r.broadcast("chat_message", map[string]interface{}{
+		"sender":    "System",
+		"text":      fmt.Sprintf("%s transferred host to %s", requester.Nickname, target.Nickname),
+		"type":      "system",
 		"timestamp": time.Now(),
 	})
 }

@@ -48,12 +48,21 @@
   let joinCode = $state("");
   let errorMsg = $state("");
 
+  function generateUUID(): string {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
+    }
+    return Math.random().toString(36).substring(2, 15) + 
+           Math.random().toString(36).substring(2, 15) + 
+           Date.now().toString(36);
+  }
+
   onMount(() => {
     // Guest device ID initialization
     if (typeof window !== "undefined") {
       let storedDeviceId = localStorage.getItem("amq_device_id");
       if (!storedDeviceId) {
-        storedDeviceId = crypto.randomUUID();
+        storedDeviceId = generateUUID();
         localStorage.setItem("amq_device_id", storedDeviceId);
       }
       deviceId = storedDeviceId;

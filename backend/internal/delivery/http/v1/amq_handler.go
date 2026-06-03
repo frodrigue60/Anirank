@@ -114,7 +114,12 @@ func (h *AMQHandler) WSHandler(c *websocket.Conn) {
 	deviceIDVal := c.Locals("deviceID")
 	spectatorVal := c.Locals("spectator")
 
-	if roomIDVal == nil || deviceIDVal == nil {
+	deviceID := ""
+	if deviceIDVal != nil {
+		deviceID = deviceIDVal.(string)
+	}
+
+	if roomIDVal == nil || deviceIDVal == nil || deviceID == "" {
 		_ = c.WriteJSON(fiber.Map{"type": "error", "payload": "Missing room_id or device_id"})
 		_ = c.Close()
 		return
@@ -129,7 +134,6 @@ func (h *AMQHandler) WSHandler(c *websocket.Conn) {
 	if nicknameVal != nil {
 		nickname = nicknameVal.(string)
 	}
-	deviceID := deviceIDVal.(string)
 	asSpectator := false
 	if spectatorVal != nil {
 		asSpectator = spectatorVal.(bool)
@@ -204,6 +208,16 @@ func (h *AMQHandler) WSHandler(c *websocket.Conn) {
 			room.SendEvent(amq.RoomEvent{Type: amq.EvSkipSummary, Data: sessionID})
 		case "reset_to_lobby":
 			room.SendEvent(amq.RoomEvent{Type: amq.EvResetToLobby, Data: sessionID})
+		case "transfer_host":
+			var payload struct {
+				TargetSessionID string `json:"target_session_id"`
+			}
+			if err := json.Unmarshal(msg.Payload, &payload); err == nil && payload.TargetSessionID != "" {
+				room.SendEvent(amq.RoomEvent{Type: amq.EvTransferHost, Data: &amq.TransferHostEvent{
+					SessionID:       sessionID,
+					TargetSessionID: payload.TargetSessionID,
+				}})
+			}
 		case "send_chat_message":
 			var chatPayload struct {
 				Text string `json:"text"`

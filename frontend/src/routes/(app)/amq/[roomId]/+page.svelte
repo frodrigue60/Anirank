@@ -139,27 +139,41 @@
 
   let showNicknamePrompt = $state(false);
   let nicknameError = $state("");
+  let connectionInitiated = false;
 
-  onMount(() => {
-    deviceId = localStorage.getItem("amq_device_id") || "";
-    if (!deviceId) {
-      deviceId = crypto.randomUUID();
-      localStorage.setItem("amq_device_id", deviceId);
+  function generateUUID(): string {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
     }
-    onlyAudio = localStorage.getItem("amq_only_audio") === "true";
-    const urlParams = new URLSearchParams(window.location.search);
-    isSpectator = urlParams.get("spectator") === "true";
+    return Math.random().toString(36).substring(2, 15) + 
+           Math.random().toString(36).substring(2, 15) + 
+           Date.now().toString(36);
+  }
 
-    if (!authState.isAuthenticated) {
-      const savedNickname = localStorage.getItem("amq_nickname") || "";
-      if (!savedNickname) {
-        showNicknamePrompt = true;
-      } else {
-        guestNickname = savedNickname;
-        connectWebSocket();
+  $effect(() => {
+    if (!authState.loading && !connectionInitiated) {
+      connectionInitiated = true;
+
+      deviceId = localStorage.getItem("amq_device_id") || "";
+      if (!deviceId) {
+        deviceId = generateUUID();
+        localStorage.setItem("amq_device_id", deviceId);
       }
-    } else {
-      connectWebSocket();
+      onlyAudio = localStorage.getItem("amq_only_audio") === "true";
+      const urlParams = new URLSearchParams(window.location.search);
+      isSpectator = urlParams.get("spectator") === "true";
+
+      if (authState.isAuthenticated) {
+        connectWebSocket();
+      } else {
+        const savedNickname = localStorage.getItem("amq_nickname") || "";
+        if (!savedNickname) {
+          showNicknamePrompt = true;
+        } else {
+          guestNickname = savedNickname;
+          connectWebSocket();
+        }
+      }
     }
   });
 
@@ -574,7 +588,7 @@
             {#if players.length === 0}
               <div class="p-4 text-xs text-on-surface-variant text-center">No players</div>
             {:else}
-              {#each sortedPlayers as player}
+              {#each sortedPlayers as player (player.session_id)}
                 <div class="px-4 py-3 flex items-center justify-between text-sm {player.offline ? 'opacity-50' : ''}">
                   <div class="flex items-center gap-2 truncate">
                     <!-- Status Indicator Dot -->
@@ -592,8 +606,20 @@
                       <span class="text-[9px] bg-primary text-white px-1 py-0.2 rounded-xs font-black shrink-0">H</span>
                     {/if}
                   </div>
-                  <div class="font-black text-xs text-primary shrink-0">
-                    {player.score} Pts
+                  <div class="flex items-center gap-3 shrink-0">
+                    <!-- Transfer Host Button -->
+                    {#if selfPlayer?.is_host && !player.is_host && !player.offline}
+                      <button
+                        onclick={() => sendWSMessage("transfer_host", { target_session_id: player.session_id })}
+                        class="text-[10px] bg-surface-highest hover:bg-primary hover:text-white border border-outline-variant px-2 py-0.5 rounded-xs font-bold transition-all cursor-pointer"
+                        title="Make Host"
+                      >
+                        Make Host
+                      </button>
+                    {/if}
+                    <div class="font-black text-xs text-primary">
+                      {player.score} Pts
+                    </div>
                   </div>
                 </div>
               {/each}
@@ -609,7 +635,7 @@
               Watching ({spectators.length})
             </h3>
             <div class="bg-surface-low border border-outline-variant rounded-sm divide-y divide-outline-variant max-h-48 overflow-y-auto">
-              {#each spectators as spec}
+              {#each spectators as spec (spec.session_id)}
                 <div class="px-4 py-2.5 flex items-center justify-between text-xs {spec.offline ? 'opacity-50' : ''}">
                   <div class="flex items-center gap-2 truncate">
                     <span class="w-1.5 h-1.5 rounded-full shrink-0 {spec.offline ? 'bg-gray-500' : 'bg-primary'}"></span>

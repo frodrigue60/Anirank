@@ -9,13 +9,14 @@
   import Users from "lucide-svelte/icons/users";
   import Play from "lucide-svelte/icons/play";
   import RefreshCw from "lucide-svelte/icons/refresh-cw";
-  import Check from "lucide-svelte/icons/check";
+  import Eye from "lucide-svelte/icons/eye";
 
   interface RoomInfo {
     room_id: string;
     name: string;
     host_nickname: string;
     player_count: number;
+    spectator_count: number;
     max_rounds: number;
     status: string;
     private: boolean;
@@ -125,7 +126,7 @@
     }
   }
 
-  function handleJoinRoom(roomId: string) {
+  function handleJoinRoom(roomId: string, spectator: boolean = false) {
     errorMsg = "";
     const nickname = authState.isAuthenticated ? authState.user?.name : guestNickname.trim();
     if (!nickname) {
@@ -137,7 +138,7 @@
       saveNickname();
     }
 
-    goto(`/amq/${roomId}`);
+    goto(`/amq/${roomId}${spectator ? "?spectator=true" : ""}`);
   }
 
   function handleJoinByCode() {
@@ -151,7 +152,7 @@
   description="Join real-time anime music quiz lobbies. Test your knowledge on openings and endings with friends or guests."
 />
 
-<main class="max-w-[1200px] mx-auto px-6 py-10 space-y-8">
+<main class="max-w-[1440px] mx-auto px-6 py-10 space-y-8">
   <!-- Editorial Header -->
   <header class="space-y-4">
     <div class="flex items-center gap-3">
@@ -263,20 +264,29 @@
               <div class="grid grid-cols-2 gap-y-2 text-xs text-on-surface-variant">
                 <div>Host: <span class="font-semibold text-on-surface">{room.host_nickname}</span></div>
                 <div>Players: <span class="font-semibold text-on-surface">{room.player_count}</span></div>
+                <div>Watching: <span class="font-semibold text-on-surface">{room.spectator_count || 0}</span></div>
                 <div>Rounds: <span class="font-semibold text-on-surface">{room.max_rounds}</span></div>
                 <div>Type: <span class="font-semibold text-on-surface capitalize">{room.game_type}</span></div>
                 <div>Themes: <span class="font-semibold text-on-surface uppercase">{room.theme_type}</span></div>
-                <div>Status: <span class="font-semibold text-primary capitalize">{room.status}</span></div>
+                <div class="col-span-2">Status: <span class="font-semibold text-primary capitalize">{room.status}</span></div>
               </div>
             </div>
 
-            <div class="mt-6">
+            <div class="mt-6 flex gap-2">
               <button
-                onclick={() => handleJoinRoom(room.room_id)}
-                class="w-full h-10 bg-primary hover:bg-primary-container text-white rounded-sm font-bold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                onclick={() => handleJoinRoom(room.room_id, false)}
+                class="flex-1 h-10 bg-primary hover:bg-primary-container text-white rounded-sm font-bold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
               >
                 <Play size={12} />
-                Enter Room
+                Play
+              </button>
+              <button
+                onclick={() => handleJoinRoom(room.room_id, true)}
+                class="h-10 bg-surface-highest border border-outline-variant hover:bg-surface-container text-on-surface rounded-sm font-bold text-xs flex items-center justify-center px-4 gap-2 transition-colors cursor-pointer"
+                title="Watch as spectator"
+              >
+                <Eye size={14} />
+                Watch
               </button>
             </div>
           </div>

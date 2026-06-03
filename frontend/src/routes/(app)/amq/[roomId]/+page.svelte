@@ -18,13 +18,33 @@
   import CheckCircle from "lucide-svelte/icons/check-circle";
   import XCircle from "lucide-svelte/icons/x-circle";
   import Music from "lucide-svelte/icons/music";
+  import Eye from "lucide-svelte/icons/eye";
+  import MessageSquare from "lucide-svelte/icons/message-square";
+  import ChevronLeft from "lucide-svelte/icons/chevron-left";
+  import ChevronRight from "lucide-svelte/icons/chevron-right";
 
   const roomId = page.params.roomId;
 
   let ws = $state<WebSocket | null>(null);
   let roomState = $state<any>(null);
   let status = $derived(roomState?.status || "lobby");
+
+  // Sidebar visibility states
+  let showLeftSidebar = $state(true);
+  let showRightSidebar = $state(true);
+
+  let centerColSpanClass = $derived.by(() => {
+    let span = 12;
+    if (showLeftSidebar) span -= 3;
+    if (showRightSidebar) span -= 3;
+    
+    if (span === 6) return "lg:col-span-6";
+    if (span === 9) return "lg:col-span-9";
+    return "lg:col-span-12";
+  });
   let players = $derived(roomState?.players || []);
+  let spectators = $derived(roomState?.spectators || []);
+  let isSpectator = $state(false);
   let localTimer = $state(0);
   let config = $derived(roomState?.config || {});
 
@@ -36,6 +56,10 @@
   let searchResults = $state<any[]>([]);
   let isLocked = $state(false);
   let selectedGuess = $state<any>(null);
+
+  // Chat variables
+  let chatInput = $state("");
+  let chatMessages = $state<Array<{ sender: string; text: string; type: "system" | "user"; timestamp: string }>>([]);
 
   // Audio/Video player variables
   let videoElement = $state<HTMLVideoElement | null>(null);
@@ -68,11 +92,15 @@
   let guestNickname = $state("");
   let wsError = $state("");
   let isReconnecting = $state(false);
+  let isRedirecting = false;
+
 
   onMount(() => {
     deviceId = localStorage.getItem("amq_device_id") || "";
     guestNickname = localStorage.getItem("amq_nickname") || "Guest";
     onlyAudio = localStorage.getItem("amq_only_audio") === "true";
+    const urlParams = new URLSearchParams(window.location.search);
+    isSpectator = urlParams.get("spectator") === "true";
     connectWebSocket();
   });
 
@@ -112,7 +140,6 @@
     } else {
       videoElement.currentTime = 0;
     }
-    console.log(`[AMQ] Seeking media to ${targetTime}s (StartPercent: ${startPercent}, Duration: ${duration}s)`);
   }
 
   let fadeInterval: any;
@@ -146,19 +173,16 @@
     const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     // Remove /api suffix from PUBLIC_API_URL to get backend root
     const apiBaseUrl = PUBLIC_API_URL.replace(/\/api$/, "").replace(/^https?:/, "");
-    const wsUrl = `${wsProtocol}${apiBaseUrl}/api/amq/ws/${roomId}?token=${encodeURIComponent(getAuthToken() || "")}&device_id=${encodeURIComponent(deviceId)}&nickname=${encodeURIComponent(guestNickname)}`;
+    const wsUrl = `${wsProtocol}${apiBaseUrl}/api/amq/ws/${roomId}?token=${encodeURIComponent(getAuthToken() || "")}&device_id=${encodeURIComponent(deviceId)}&nickname=${encodeURIComponent(guestNickname)}&spectator=${isSpectator}`;
 
-    console.log("[AMQ] Connecting to WebSocket:", wsUrl);
     ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
-      console.log("[AMQ] WebSocket connection established.");
       wsError = "";
     };
 
     ws.onmessage = (event) => {
       const msg = JSON.parse(event.data);
-      console.log("[AMQ] Message received:", msg.type, msg.payload);
 
       switch (msg.type) {
         case "lobby_state_update":
@@ -195,15 +219,31 @@
             videoElement.play().catch(e => console.warn("Failed to play in reveal:", e));
           }
           break;
+        case "chat_message":
+          chatMessages = [...chatMessages, msg.payload].slice(-100);
+          break;
         case "error":
           wsError = msg.payload;
+          if (msg.payload === "room not found" || !roomState) {
+            isRedirecting = true;
+            closeWebSocket();
+            alert(msg.payload || "An error occurred.");
+            goto("/amq");
+          }
           break;
       }
     };
 
     ws.onclose = (event) => {
       console.warn("[AMQ] WebSocket closed:", event);
+      if (isRedirecting) return;
       if (status !== "finished" && !event.wasClean) {
+        if (!roomState) {
+          isRedirecting = true;
+          alert("Could not connect to the room. It may no longer exist.");
+          goto("/amq");
+          return;
+        }
         wsError = "Connection lost. Reconnecting...";
         isReconnecting = true;
         setTimeout(connectWebSocket, 3000); // Retry after 3s
@@ -212,7 +252,14 @@
 
     ws.onerror = (err) => {
       console.error("[AMQ] WebSocket error:", err);
-      wsError = "Failed to connect to the game server.";
+      if (isRedirecting) return;
+      if (!roomState) {
+        isRedirecting = true;
+        alert("Failed to connect to the game server. Room may not exist.");
+        goto("/amq");
+      } else {
+        wsError = "Failed to connect to the game server.";
+      }
     };
   }
 
@@ -280,6 +327,12 @@
     }
   }
 
+  function sendChatMessage() {
+    if (!chatInput.trim()) return;
+    sendWSMessage("send_chat_message", { text: chatInput.trim() });
+    chatInput = "";
+  }
+
   function toggleReady() {
     sendWSMessage("player_ready_toggle", null);
   }
@@ -298,18 +351,31 @@
   }
 
   function getSelfPlayer() {
-    return players.find((p: any) => p.session_id === roomState?.players?.find((sp: any) => sp.session_id === p.session_id)?.session_id); // Session ID matching
+    const all = [...(roomState?.players || []), ...(roomState?.spectators || [])];
+    return all.find((p: any) => p.session_id === all.find((sp: any) => sp.session_id === p.session_id)?.session_id); // Session ID matching
   }
 
   let selfPlayer = $derived.by(() => {
-    if (!roomState || !players) return null;
-    // Look up via local guest deviceID or Auth UUID
-    return players.find((p: any) => {
+    if (!roomState) return null;
+    const all = [...(roomState.players || []), ...(roomState.spectators || [])];
+    return all.find((p: any) => {
       if (authState.isAuthenticated) {
         return p.user_uuid === authState.user?.uuid;
       }
       return p.device_id === deviceId;
     });
+  });
+
+  // Auto-scroll chat to bottom when messages update
+  $effect(() => {
+    if (chatMessages.length) {
+      setTimeout(() => {
+        const container = document.getElementById("chat-messages-container");
+        if (container) {
+          container.scrollTop = container.scrollHeight;
+        }
+      }, 50);
+    }
   });
 </script>
 
@@ -318,16 +384,44 @@
   description="Play Anime Music Quiz. Guess anime songs and see results."
 />
 
-<main class="max-w-[1200px] mx-auto px-6 py-10 space-y-8">
+<main class="max-w-[1440px] mx-auto px-6 py-10 space-y-8">
   <!-- Top Navigation & Code -->
-  <nav class="flex items-center justify-between">
-    <button
-      onclick={() => goto("/amq")}
-      class="h-10 text-primary hover:text-primary-container font-bold text-sm flex items-center gap-2 transition-colors cursor-pointer"
-    >
-      <ArrowLeft size={16} />
-      Back to Lobbies
-    </button>
+  <nav class="flex items-center justify-between flex-wrap gap-4">
+    <div class="flex items-center gap-4">
+      <button
+        onclick={() => goto("/amq")}
+        class="h-10 text-primary hover:text-primary-container font-bold text-sm flex items-center gap-2 transition-colors cursor-pointer"
+      >
+        <ArrowLeft size={16} />
+        Back to Lobbies
+      </button>
+
+      {#if !showLeftSidebar || !showRightSidebar}
+        <div class="h-4 w-px bg-outline-variant hidden md:block"></div>
+        <div class="flex items-center gap-2">
+          {#if !showLeftSidebar}
+            <button
+              onclick={() => showLeftSidebar = true}
+              class="h-8 bg-surface-low border border-outline-variant px-3 rounded-sm text-xs font-bold text-on-surface-variant hover:text-primary hover:border-primary/50 transition-all cursor-pointer flex items-center gap-1.5"
+              title="Show Players"
+            >
+              <Users size={12} />
+              Show Players
+            </button>
+          {/if}
+          {#if !showRightSidebar}
+            <button
+              onclick={() => showRightSidebar = true}
+              class="h-8 bg-surface-low border border-outline-variant px-3 rounded-sm text-xs font-bold text-on-surface-variant hover:text-primary hover:border-primary/50 transition-all cursor-pointer flex items-center gap-1.5"
+              title="Show Chat"
+            >
+              <MessageSquare size={12} />
+              Show Chat
+            </button>
+          {/if}
+        </div>
+      {/if}
+    </div>
 
     <div class="flex items-center gap-4 bg-surface-low px-4 py-2 rounded-sm border border-outline-variant">
       <span class="text-[10px] uppercase font-black text-on-surface-variant tracking-widest">Room Code</span>
@@ -350,9 +444,83 @@
       Connecting to room session...
     </div>
   {:else}
-    <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
-      <!-- Main Game Board (Left 3 columns) -->
-      <section class="lg:col-span-3 space-y-6">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <!-- 1. Left Sidebar: Room Members (1 column) -->
+      {#if showLeftSidebar}
+        <section class="space-y-6 lg:col-span-3">
+          <!-- Players List -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xs font-black text-on-surface-variant uppercase tracking-widest flex items-center gap-2">
+                <Users size={14} />
+                Players ({players.length})
+              </h3>
+              <button
+                onclick={() => showLeftSidebar = false}
+                class="text-on-surface-variant hover:text-primary transition-colors cursor-pointer p-0.5 rounded-sm"
+                title="Hide Players"
+              >
+                <ChevronLeft size={16} />
+              </button>
+            </div>
+          <div class="bg-surface-low border border-outline-variant rounded-sm divide-y divide-outline-variant">
+            {#if players.length === 0}
+              <div class="p-4 text-xs text-on-surface-variant text-center">No players</div>
+            {:else}
+              {#each players.sort((a: any, b: any) => b.score - a.score) as player}
+                <div class="px-4 py-3 flex items-center justify-between text-sm {player.offline ? 'opacity-50' : ''}">
+                  <div class="flex items-center gap-2 truncate">
+                    <!-- Status Indicator Dot -->
+                    <span
+                      class="w-2 h-2 rounded-full shrink-0
+                        {player.offline ? 'bg-gray-500' :
+                         status === 'lobby' ? (player.is_ready ? 'bg-green-500' : 'bg-yellow-500') :
+                         status === 'playing' ? (player.locked ? 'bg-green-500 animate-pulse' : 'bg-yellow-500') :
+                         status === 'reveal' ? (player.last_guess_correct ? 'bg-green-500' : 'bg-red-500') : 'bg-primary'}"
+                    ></span>
+                    <span class="font-bold text-on-surface truncate" title={player.nickname}>
+                      {player.nickname}
+                    </span>
+                    {#if player.is_host}
+                      <span class="text-[9px] bg-primary text-white px-1 py-0.2 rounded-xs font-black shrink-0">H</span>
+                    {/if}
+                  </div>
+                  <div class="font-black text-xs text-primary shrink-0">
+                    {player.score} Pts
+                  </div>
+                </div>
+              {/each}
+            {/if}
+          </div>
+        </div>
+
+        <!-- Viewers/Spectators List -->
+        {#if spectators.length > 0}
+          <div class="space-y-3">
+            <h3 class="text-xs font-black text-on-surface-variant uppercase tracking-widest flex items-center gap-2">
+              <Eye size={14} />
+              Watching ({spectators.length})
+            </h3>
+            <div class="bg-surface-low border border-outline-variant rounded-sm divide-y divide-outline-variant max-h-48 overflow-y-auto">
+              {#each spectators as spec}
+                <div class="px-4 py-2.5 flex items-center justify-between text-xs {spec.offline ? 'opacity-50' : ''}">
+                  <div class="flex items-center gap-2 truncate">
+                    <span class="w-1.5 h-1.5 rounded-full shrink-0 {spec.offline ? 'bg-gray-500' : 'bg-primary'}"></span>
+                    <span class="font-bold text-on-surface truncate" title={spec.nickname}>{spec.nickname}</span>
+                  </div>
+                  {#if spec.offline}
+                    <span class="text-[9px] text-on-surface-variant shrink-0">(offline)</span>
+                  {/if}
+                </div>
+              {/each}
+            </div>
+          </div>
+        {/if}
+      </section>
+    {/if}
+
+    <!-- 2. Main Game Board (Center 3 columns) -->
+    <section class="{centerColSpanClass} space-y-6">
         <!-- 1. LOBBY STATE (Waiting Room) -->
         {#if status === "lobby"}
           <div class="bg-surface-container p-8 rounded-md space-y-6 border border-white/5">
@@ -392,21 +560,28 @@
             <!-- Host / Player ready triggers -->
             <div class="flex gap-4 pt-6 border-t border-outline-variant">
               {#if selfPlayer}
-                <button
-                  onclick={toggleReady}
-                  class="flex-1 h-12 {selfPlayer.is_ready ? 'bg-green-600 hover:bg-green-700' : 'bg-primary hover:bg-primary-container'} text-white rounded-sm font-bold text-sm transition-colors cursor-pointer"
-                >
-                  {selfPlayer.is_ready ? "You are Ready" : "Toggle Ready"}
-                </button>
-
-                {#if selfPlayer.is_host}
+                {#if selfPlayer.is_spectator}
+                  <div class="flex-1 p-3 bg-surface-low border border-outline-variant text-on-surface-variant rounded-sm text-center text-xs font-bold flex items-center justify-center gap-2">
+                    <Eye size={16} class="text-primary" />
+                    Watching as a spectator
+                  </div>
+                {:else}
                   <button
-                    onclick={startGame}
-                    class="flex-1 h-12 bg-primary hover:bg-primary-container text-white rounded-sm font-bold text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                    onclick={toggleReady}
+                    class="flex-1 h-12 {selfPlayer.is_ready ? 'bg-green-600 hover:bg-green-700' : 'bg-primary hover:bg-primary-container'} text-white rounded-sm font-bold text-sm transition-colors cursor-pointer"
                   >
-                    <Play size={16} />
-                    Start Game
+                    {selfPlayer.is_ready ? "You are Ready" : "Toggle Ready"}
                   </button>
+
+                  {#if selfPlayer.is_host}
+                    <button
+                      onclick={startGame}
+                      class="flex-1 h-12 bg-primary hover:bg-primary-container text-white rounded-sm font-bold text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                    >
+                      <Play size={16} />
+                      Start Game
+                    </button>
+                  {/if}
                 {/if}
               {/if}
             </div>
@@ -415,7 +590,7 @@
         <!-- 2. GAME IN PROGRESS (Playing or Reveal) -->
         {:else if status === "playing" || status === "reveal"}
           <!-- Audio/Video Player Layer -->
-          <div class="bg-surface-low rounded-md overflow-hidden border border-outline-variant flex flex-col items-center justify-center relative aspect-video">
+          <div class="bg-surface-low rounded-md overflow-hidden border border-outline-variant flex flex-col items-center justify-center relative aspect-video w-full max-h-[360px] lg:max-h-[380px]">
             <!-- Round Badge -->
             {#if activeRound}
               <div class="absolute top-4 left-4 bg-[#09070e]/80 px-3 py-1.5 rounded-sm text-xs font-black text-white tracking-widest uppercase border border-white/10 z-10">
@@ -429,7 +604,7 @@
                 bind:this={videoElement}
                 src={activeRound.audio_url}
                 onloadedmetadata={handleLoadedMetadata}
-                class="w-full h-full object-cover {(status === 'playing' || onlyAudio) ? 'opacity-0 absolute pointer-events-none w-0 h-0' : 'opacity-100 block'}"
+                class="w-full h-full object-contain bg-[#09070e] {(status === 'playing' || onlyAudio) ? 'opacity-0 absolute pointer-events-none w-0 h-0' : 'opacity-100 block'}"
               >
                 <track kind="captions" />
               </video>
@@ -507,7 +682,12 @@
           <!-- Guessing Phase Inputs -->
           {#if status === "playing" && selfPlayer}
             <div class="bg-surface-container p-6 rounded-md border border-white/5 space-y-4">
-              {#if isLocked}
+              {#if selfPlayer.is_spectator}
+                <div class="p-4 bg-surface-low border border-outline-variant text-on-surface-variant text-sm font-bold rounded-sm text-center flex items-center justify-center gap-2">
+                  <Eye size={18} class="text-primary animate-pulse" />
+                  Watching as a spectator. No guesses can be made.
+                </div>
+              {:else if isLocked}
                 <div class="p-4 bg-green-50 text-green-800 text-sm font-bold rounded-sm border border-green-200 flex items-center gap-2">
                   <CheckCircle size={18} />
                   Your answer is locked: "{guessInput}"
@@ -559,7 +739,7 @@
                 <!-- Multiple choice input mode -->
                 {:else if activeRound.game_type === "multiple-choice"}
                   <div class="space-y-3">
-                    <label class="block text-[10px] uppercase font-black text-on-surface-variant tracking-widest ml-1">Select the correct Anime</label>
+                    <label class="block class text-[10px] uppercase font-black text-on-surface-variant tracking-widest ml-1">Select the correct Anime</label>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {#each activeRound.options as option}
                         <button
@@ -639,62 +819,65 @@
         {/if}
       </section>
 
-      <!-- Sidebar Room Members & Scores (Right 1 column) -->
-      <section class="space-y-4">
-        <h3 class="text-sm font-black text-on-surface-variant uppercase tracking-widest flex items-center gap-2">
-          <Users size={16} />
-          Lobby Players ({players.length})
-        </h3>
+      <!-- 3. Right Sidebar: Chat & Room Log (1 column) -->
+      {#if showRightSidebar}
+        <section class="lg:col-span-3 flex flex-col bg-surface-container rounded-md border border-white/5 overflow-hidden h-[550px] lg:h-[600px]">
+          <header class="bg-surface-low border-b border-outline-variant p-4 flex items-center justify-between shrink-0">
+            <h3 class="text-xs font-black text-on-surface-variant uppercase tracking-widest">
+              Chat & Logs
+            </h3>
+            <button
+              onclick={() => showRightSidebar = false}
+              class="text-on-surface-variant hover:text-primary transition-colors cursor-pointer p-0.5 rounded-sm"
+              title="Hide Chat"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </header>
 
-        <div class="bg-surface-low border border-outline-variant rounded-md divide-y divide-outline-variant">
-          {#each players.sort((a: any, b: any) => b.score - a.score) as player}
-            <div class="p-4 flex items-center justify-between text-sm {player.offline ? 'opacity-50' : ''}">
-              <div class="flex items-center gap-3">
-                <div
-                  class="w-8 h-8 rounded-sm flex items-center justify-center font-bold text-white text-xs"
-                  style="background-color: {player.profile_color || '#683bc9'}"
-                >
-                  {player.nickname.slice(0, 2).toUpperCase()}
-                </div>
-                <div class="space-y-0.5">
-                  <div class="font-bold text-on-surface flex items-center gap-1.5 leading-none">
-                    {player.nickname}
-                    {#if player.is_host}
-                      <span class="text-[9px] bg-primary text-white px-1 py-0.5 rounded-sm scale-90">Host</span>
-                    {/if}
-                  </div>
-                  <div class="text-[10px] text-on-surface-variant font-semibold">
-                    {#if status === "lobby"}
-                      {player.is_ready ? "Ready" : "Not Ready"}
-                    {:else if status === "playing"}
-                      {player.locked ? "Locked" : "Selecting..."}
-                    {:else if status === "reveal"}
-                      {#if player.last_guess_correct}
-                        <span class="text-green-600 font-bold">CORRECT</span>
-                      {:else}
-                        <span class="text-red-600">INCORRECT</span>
-                      {/if}
-                    {/if}
-                  </div>
-                </div>
+        <!-- Message List -->
+        <div class="flex-1 overflow-y-auto p-4 space-y-1 flex flex-col justify-end" id="chat-messages-container">
+          <div class="space-y-1 overflow-y-auto max-h-full">
+            {#if chatMessages.length === 0}
+              <div class="text-center text-xs text-on-surface-variant py-10 font-mono">
+                No logs or messages yet.
               </div>
-
-              <!-- Score Badge -->
-              <div class="flex items-center gap-2">
-                {#if status === "reveal" && player.last_guess_correct}
-                  <span class="text-green-600"><CheckCircle size={16} /></span>
-                {:else if status === "reveal" && !player.last_guess_correct}
-                  <span class="text-red-600"><XCircle size={16} /></span>
-                {/if}
-                <div class="bg-surface-container px-2.5 py-1 rounded-sm font-black text-xs text-on-surface">
-                  {player.score} pts
+            {:else}
+              {#each chatMessages as msg}
+                <div class="font-mono text-[11px] leading-normal break-words py-0.5">
+                  {#if msg.type === "system"}
+                    <span class="text-amber-600/90 font-bold">{msg.text}</span>
+                  {:else}
+                    <span class="font-bold text-primary">{msg.sender}:</span>
+                    <span class="text-on-surface">{msg.text}</span>
+                  {/if}
                 </div>
-              </div>
-            </div>
-          {/each}
+              {/each}
+            {/if}
+          </div>
         </div>
+
+        <!-- Chat Input Form -->
+        <form
+          onsubmit={(e) => { e.preventDefault(); sendChatMessage(); }}
+          class="p-3 bg-surface-low border-t border-outline-variant flex gap-2 shrink-0"
+        >
+          <input
+            type="text"
+            bind:value={chatInput}
+            placeholder="Type a message..."
+            class="flex-1 h-9 bg-surface-highest border border-outline-variant rounded-sm px-3 text-xs text-on-surface focus:outline-hidden focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all"
+          />
+          <button
+            type="submit"
+            class="h-9 bg-primary hover:bg-primary-container text-white px-4 rounded-sm font-bold text-xs transition-colors cursor-pointer shrink-0"
+          >
+            Send
+          </button>
+        </form>
       </section>
-    </div>
+    {/if}
+  </div>
   {/if}
 </main>
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"strings"
 	"sync"
 	"time"
 
@@ -32,6 +33,7 @@ const (
 	EvSkipSummary
 	EvResetToLobby
 	EvPoolLoaded
+	EvChat
 )
 
 type RoomEvent struct {
@@ -40,11 +42,12 @@ type RoomEvent struct {
 }
 
 type JoinEvent struct {
-	SessionID string
-	Conn      WSConn
-	User      *domain.User
-	Nickname  string
-	DeviceID  string
+	SessionID   string
+	Conn        WSConn
+	User        *domain.User
+	Nickname    string
+	DeviceID    string
+	AsSpectator bool
 }
 
 type GuessEvent struct {
@@ -55,6 +58,11 @@ type GuessEvent struct {
 type ConfigUpdateEvent struct {
 	SessionID string
 	Config    domain.AMQConfig
+}
+
+type ChatEvent struct {
+	SessionID string
+	Text      string
 }
 
 type LobbyRoom struct {
@@ -175,6 +183,8 @@ func (r *LobbyRoom) handleEvent(ev RoomEvent) {
 		r.handleSkipSummary(ev.Data.(string))
 	case EvResetToLobby:
 		r.handleResetToLobby(ev.Data.(string))
+	case EvChat:
+		r.handleChat(ev.Data.(*ChatEvent))
 	}
 }
 
@@ -252,7 +262,13 @@ func (r *LobbyRoom) handleJoin(ev *JoinEvent) {
 		r.Conns[ev.SessionID] = ev.Conn
 	} else {
 		// New player
-		isHost := len(r.Players) == 0
+		nonSpectators := 0
+		for _, p := range r.Players {
+			if !p.IsSpectator {
+				nonSpectators++
+			}
+		}
+		isHost := !ev.AsSpectator && nonSpectators == 0
 		avatar := ""
 		if ev.User != nil && ev.User.AvatarUrl != nil {
 			avatar = *ev.User.AvatarUrl
@@ -276,6 +292,7 @@ func (r *LobbyRoom) handleJoin(ev *JoinEvent) {
 			DeviceID:     ev.DeviceID,
 			IsHost:       isHost,
 			IsReady:      isHost, // Host is ready by default
+			IsSpectator:  ev.AsSpectator,
 		}
 
 		r.Players[ev.SessionID] = player
@@ -288,6 +305,17 @@ func (r *LobbyRoom) handleJoin(ev *JoinEvent) {
 
 	// Broadcast updated lobby state to all players
 	r.broadcast("lobby_state_update", r.getRoomStatePayload())
+
+	role := "player"
+	if ev.AsSpectator {
+		role = "spectator"
+	}
+	r.broadcast("chat_message", map[string]interface{}{
+		"sender":    "System",
+		"text":      fmt.Sprintf("%s joined the room as %s", ev.Nickname, role),
+		"type":      "system",
+		"timestamp": time.Now(),
+	})
 }
 
 func (r *LobbyRoom) handleLeave(sessionID string) {
@@ -311,7 +339,7 @@ func (r *LobbyRoom) handleLeave(sessionID string) {
 	if player.IsHost {
 		var newHost *domain.AMQPlayer
 		for _, p := range r.Players {
-			if !p.Offline {
+			if !p.Offline && !p.IsSpectator {
 				newHost = p
 				break
 			}
@@ -331,12 +359,19 @@ func (r *LobbyRoom) handleLeave(sessionID string) {
 	}
 
 	r.broadcast("lobby_state_update", r.getRoomStatePayload())
+
+	r.broadcast("chat_message", map[string]interface{}{
+		"sender":    "System",
+		"text":      fmt.Sprintf("%s went offline", player.Nickname),
+		"type":      "system",
+		"timestamp": time.Now(),
+	})
 }
 
 func (r *LobbyRoom) handleReady(sessionID string) {
 	r.mu.Lock()
 	player, exists := r.Players[sessionID]
-	if !exists || r.Status != "lobby" {
+	if !exists || player.IsSpectator || r.Status != "lobby" {
 		r.mu.Unlock()
 		return
 	}
@@ -382,7 +417,7 @@ func (r *LobbyRoom) handleStartGame(sessionID string) {
 
 	// Verify all active players are ready
 	for _, p := range r.Players {
-		if !p.Offline && !p.IsReady {
+		if !p.Offline && !p.IsSpectator && !p.IsReady {
 			r.mu.Unlock()
 			r.sendTo(sessionID, "error", "Cannot start. All active players must toggle Ready.")
 			return
@@ -399,7 +434,7 @@ func (r *LobbyRoom) handleStartGame(sessionID string) {
 	themeTypeConfig := r.Config.ThemeType
 	var playerUserUUIDs []string
 	for _, p := range r.Players {
-		if p.UserUUID != "" && !p.Offline {
+		if p.UserUUID != "" && !p.Offline && !p.IsSpectator {
 			playerUserUUIDs = append(playerUserUUIDs, p.UserUUID)
 		}
 	}
@@ -637,7 +672,7 @@ func (r *LobbyRoom) handleSubmitGuess(ev *GuessEvent) {
 	}
 
 	player, exists := r.Players[ev.SessionID]
-	if !exists || player.Locked || player.Offline {
+	if !exists || player.IsSpectator || player.Locked || player.Offline {
 		r.mu.Unlock()
 		return
 	}
@@ -656,7 +691,7 @@ func (r *LobbyRoom) checkAllLockedAndProceed() {
 	allLocked := true
 	activePlayers := 0
 	for _, p := range r.Players {
-		if !p.Offline {
+		if !p.Offline && !p.IsSpectator {
 			activePlayers++
 			if !p.Locked {
 				allLocked = false
@@ -714,8 +749,12 @@ func (r *LobbyRoom) revealAnswers() {
 	}
 
 	// Validate guesses and calculate points
+	var correctPlayers []string
 	results := make(map[string]map[string]interface{})
 	for sid, p := range r.Players {
+		if p.IsSpectator {
+			continue
+		}
 		correct := false
 		if p.LastGuess != "" {
 			guessClean := p.LastGuess
@@ -730,6 +769,7 @@ func (r *LobbyRoom) revealAnswers() {
 		if correct {
 			p.Score++
 			p.LastGuessCorrect = true
+			correctPlayers = append(correctPlayers, p.Nickname)
 		} else {
 			p.LastGuessCorrect = false
 		}
@@ -771,6 +811,19 @@ func (r *LobbyRoom) revealAnswers() {
 		"results": results,
 	})
 	r.broadcast("lobby_state_update", r.getRoomStatePayload())
+
+	var logText string
+	if len(correctPlayers) > 0 {
+		logText = fmt.Sprintf("Round ended. Correct answers from: %s", strings.Join(correctPlayers, ", "))
+	} else {
+		logText = "Round ended. No correct answers!"
+	}
+	r.broadcast("chat_message", map[string]interface{}{
+		"sender":    "System",
+		"text":      logText,
+		"type":      "system",
+		"timestamp": time.Now(),
+	})
 }
 
 func (r *LobbyRoom) handleSkipSummary(sessionID string) {
@@ -825,7 +878,7 @@ func (r *LobbyRoom) endGame() {
 	}
 	var playersToAward []playerXPInfo
 	for _, p := range r.Players {
-		if p.UserUUID != "" && p.Score > 0 {
+		if p.UserUUID != "" && p.Score > 0 && !p.IsSpectator {
 			playersToAward = append(playersToAward, playerXPInfo{
 				UserUUID: p.UserUUID,
 				Score:    p.Score,
@@ -881,8 +934,13 @@ func (r *LobbyRoom) getRoomStatePayload() map[string]interface{} {
 	defer r.mu.RUnlock()
 
 	playersList := make([]domain.AMQPlayer, 0, len(r.Players))
+	spectatorsList := make([]domain.AMQPlayer, 0)
 	for _, p := range r.Players {
-		playersList = append(playersList, *p)
+		if p.IsSpectator {
+			spectatorsList = append(spectatorsList, *p)
+		} else {
+			playersList = append(playersList, *p)
+		}
 	}
 
 	// Calculate remaining timer ticks
@@ -916,6 +974,7 @@ func (r *LobbyRoom) getRoomStatePayload() map[string]interface{} {
 		"config":        r.Config,
 		"current_round": r.CurrentRound + 1,
 		"players":       playersList,
+		"spectators":    spectatorsList,
 		"timer_left":    timerLeft,
 		"round_data":    roundData,
 	}
@@ -943,23 +1002,30 @@ func (r *LobbyRoom) GetRoomInfo() domain.AMQRoomInfo {
 	defer r.mu.RUnlock()
 
 	hostNick := "Unknown"
+	playerCount := 0
+	spectatorCount := 0
 	for _, p := range r.Players {
 		if p.IsHost {
 			hostNick = p.Nickname
-			break
+		}
+		if p.IsSpectator {
+			spectatorCount++
+		} else {
+			playerCount++
 		}
 	}
 
 	return domain.AMQRoomInfo{
-		RoomID:       r.RoomID,
-		Name:         r.Config.Name,
-		HostNickname: hostNick,
-		PlayerCount:  len(r.Players),
-		MaxRounds:    r.Config.MaxRounds,
-		Status:       r.Status,
-		Private:      r.Config.Private,
-		ThemeType:    r.Config.ThemeType,
-		GameType:     r.Config.GameType,
+		RoomID:         r.RoomID,
+		Name:           r.Config.Name,
+		HostNickname:   hostNick,
+		PlayerCount:    playerCount,
+		SpectatorCount: spectatorCount,
+		MaxRounds:      r.Config.MaxRounds,
+		Status:         r.Status,
+		Private:        r.Config.Private,
+		ThemeType:      r.Config.ThemeType,
+		GameType:       r.Config.GameType,
 	}
 }
 
@@ -1013,4 +1079,22 @@ func (r *LobbyRoom) Close() {
 		recover()
 	}()
 	close(r.EventChan)
+}
+
+func (r *LobbyRoom) handleChat(ev *ChatEvent) {
+	r.mu.Lock()
+	player, exists := r.Players[ev.SessionID]
+	if !exists {
+		r.mu.Unlock()
+		return
+	}
+	nickname := player.Nickname
+	r.mu.Unlock()
+
+	r.broadcast("chat_message", map[string]interface{}{
+		"sender":    nickname,
+		"text":      ev.Text,
+		"type":      "user",
+		"timestamp": time.Now(),
+	})
 }

@@ -121,7 +121,7 @@ func (m *LobbyManager) GetRoom(roomID string) *LobbyRoom {
 }
 
 // JoinRoom upgrades a connection and assigns it to a lobby room
-func (m *LobbyManager) JoinRoom(roomID, sessionID string, conn WSConn, user *domain.User, nickname, deviceID string) error {
+func (m *LobbyManager) JoinRoom(roomID, sessionID string, conn WSConn, user *domain.User, nickname, deviceID string, asSpectator bool) error {
 	room := m.GetRoom(roomID)
 	if room == nil {
 		return errors.New("room not found")
@@ -131,11 +131,12 @@ func (m *LobbyManager) JoinRoom(roomID, sessionID string, conn WSConn, user *dom
 	room.SendEvent(RoomEvent{
 		Type: EvJoin,
 		Data: &JoinEvent{
-			SessionID: sessionID,
-			Conn:      conn,
-			User:      user,
-			Nickname:  nickname,
-			DeviceID:  deviceID,
+			SessionID:   sessionID,
+			Conn:        conn,
+			User:        user,
+			Nickname:    nickname,
+			DeviceID:    deviceID,
+			AsSpectator: asSpectator,
 		},
 	})
 

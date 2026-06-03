@@ -28,21 +28,23 @@ type AMQPlayer struct {
 	IsReady          bool       `json:"is_ready"`
 	LastGuess        string     `json:"last_guess,omitempty"`
 	LastGuessCorrect bool       `json:"last_guess_correct"`
+	IsSpectator      bool       `json:"is_spectator"`
 	Locked           bool       `json:"locked"`
 	Offline          bool       `json:"offline"`
 	OfflineSince     *time.Time `json:"offline_since,omitempty"`
 }
 
 type AMQRoomInfo struct {
-	RoomID       string `json:"room_id"`
-	Name         string `json:"name"`
-	HostNickname string `json:"host_nickname"`
-	PlayerCount  int    `json:"player_count"`
-	MaxRounds    int    `json:"max_rounds"`
-	Status       string `json:"status"` // "lobby", "playing", "reveal", "finished"
-	Private      bool   `json:"private"`
-	ThemeType    string `json:"theme_type"`
-	GameType     string `json:"game_type"`
+	RoomID         string `json:"room_id"`
+	Name           string `json:"name"`
+	HostNickname   string `json:"host_nickname"`
+	PlayerCount    int    `json:"player_count"`
+	SpectatorCount int    `json:"spectator_count"`
+	MaxRounds      int    `json:"max_rounds"`
+	Status         string `json:"status"` // "lobby", "playing", "reveal", "finished"
+	Private        bool   `json:"private"`
+	ThemeType      string `json:"theme_type"`
+	GameType       string `json:"game_type"`
 }
 
 type AMQUsecase interface {

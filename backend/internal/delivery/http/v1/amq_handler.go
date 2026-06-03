@@ -93,11 +93,13 @@ func (h *AMQHandler) WSUpgrade(c *fiber.Ctx) error {
 		token := c.Query("token")
 		nickname := c.Query("nickname", "Guest")
 		deviceID := c.Query("device_id")
+		spectator := c.Query("spectator")
 
 		c.Locals("roomID", roomID)
 		c.Locals("token", token)
 		c.Locals("nickname", nickname)
 		c.Locals("deviceID", deviceID)
+		c.Locals("spectator", spectator == "true")
 
 		return c.Next()
 	}
@@ -110,6 +112,7 @@ func (h *AMQHandler) WSHandler(c *websocket.Conn) {
 	tokenVal := c.Locals("token")
 	nicknameVal := c.Locals("nickname")
 	deviceIDVal := c.Locals("deviceID")
+	spectatorVal := c.Locals("spectator")
 
 	if roomIDVal == nil || deviceIDVal == nil {
 		_ = c.WriteJSON(fiber.Map{"type": "error", "payload": "Missing room_id or device_id"})
@@ -127,6 +130,10 @@ func (h *AMQHandler) WSHandler(c *websocket.Conn) {
 		nickname = nicknameVal.(string)
 	}
 	deviceID := deviceIDVal.(string)
+	asSpectator := false
+	if spectatorVal != nil {
+		asSpectator = spectatorVal.(bool)
+	}
 
 	var user *domain.User
 	if token != "" {
@@ -144,7 +151,7 @@ func (h *AMQHandler) WSHandler(c *websocket.Conn) {
 	wrapper := &wsConnWrapper{conn: c}
 
 	// Join the room
-	err := h.lobbyManager.JoinRoom(roomID, sessionID, wrapper, user, nickname, deviceID)
+	err := h.lobbyManager.JoinRoom(roomID, sessionID, wrapper, user, nickname, deviceID, asSpectator)
 	if err != nil {
 		_ = c.WriteJSON(fiber.Map{"type": "error", "payload": err.Error()})
 		_ = c.Close()
@@ -197,6 +204,16 @@ func (h *AMQHandler) WSHandler(c *websocket.Conn) {
 			room.SendEvent(amq.RoomEvent{Type: amq.EvSkipSummary, Data: sessionID})
 		case "reset_to_lobby":
 			room.SendEvent(amq.RoomEvent{Type: amq.EvResetToLobby, Data: sessionID})
+		case "send_chat_message":
+			var chatPayload struct {
+				Text string `json:"text"`
+			}
+			if err := json.Unmarshal(msg.Payload, &chatPayload); err == nil && chatPayload.Text != "" {
+				room.SendEvent(amq.RoomEvent{Type: amq.EvChat, Data: &amq.ChatEvent{
+					SessionID: sessionID,
+					Text:      chatPayload.Text,
+				}})
+			}
 		}
 	}
 }

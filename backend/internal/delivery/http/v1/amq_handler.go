@@ -172,28 +172,31 @@ func (h *AMQHandler) WSHandler(c *websocket.Conn) {
 
 		switch msg.Type {
 		case "player_ready_toggle":
-			room.EventChan <- amq.RoomEvent{Type: amq.EvReady, Data: sessionID}
+			room.SendEvent(amq.RoomEvent{Type: amq.EvReady, Data: sessionID})
 		case "submit_guess":
 			var guessPayload struct {
 				AnimeSlug string `json:"anime_slug"`
 			}
 			if err := json.Unmarshal(msg.Payload, &guessPayload); err == nil {
-				room.EventChan <- amq.RoomEvent{Type: amq.EvSubmitGuess, Data: &amq.GuessEvent{
+				room.SendEvent(amq.RoomEvent{Type: amq.EvSubmitGuess, Data: &amq.GuessEvent{
 					SessionID: sessionID,
 					AnimeSlug: guessPayload.AnimeSlug,
-				}}
+				}})
 			}
 		case "update_lobby_config":
 			var configPayload domain.AMQConfig
 			if err := json.Unmarshal(msg.Payload, &configPayload); err == nil {
-				room.UpdateConfig(sessionID, configPayload)
+				room.SendEvent(amq.RoomEvent{Type: amq.EvConfigUpdate, Data: &amq.ConfigUpdateEvent{
+					SessionID: sessionID,
+					Config:    configPayload,
+				}})
 			}
 		case "start_game":
 			room.StartGame(sessionID)
 		case "skip_summary":
-			room.EventChan <- amq.RoomEvent{Type: amq.EvSkipSummary, Data: sessionID}
+			room.SendEvent(amq.RoomEvent{Type: amq.EvSkipSummary, Data: sessionID})
 		case "reset_to_lobby":
-			room.EventChan <- amq.RoomEvent{Type: amq.EvResetToLobby, Data: sessionID}
+			room.SendEvent(amq.RoomEvent{Type: amq.EvResetToLobby, Data: sessionID})
 		}
 	}
 }

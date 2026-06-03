@@ -6,6 +6,7 @@ import (
 	"log"
 	"strings"
 	"sync"
+	"time"
 
 	"anirank/api/internal/domain"
 	"anirank/api/internal/infrastructure"
@@ -35,7 +36,7 @@ func NewLobbyManager(
 	mediaService infrastructure.MediaService,
 	anilistClient anilist.AnilistClient,
 ) *LobbyManager {
-	return &LobbyManager{
+	lm := &LobbyManager{
 		rooms:        make(map[string]*LobbyRoom),
 		animeRepo:    animeRepo,
 		songRepo:     songRepo,
@@ -44,12 +45,25 @@ func NewLobbyManager(
 		mediaService: mediaService,
 		anilist:      anilistClient,
 	}
+	lm.StartCleanupLoop()
+	return lm
 }
 
 // CreateRoom implements domain.AMQUsecase.
 func (m *LobbyManager) CreateRoom(ctx context.Context, config domain.AMQConfig, hostUser *domain.User, guestNickname, guestDeviceID string) (string, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+
+	// Sanitize and validate config (Issue #11)
+	if config.MaxRounds < 5 || config.MaxRounds > 50 {
+		config.MaxRounds = 10
+	}
+	if config.GuessTime < 10 || config.GuessTime > 60 {
+		config.GuessTime = 20
+	}
+	if config.RevealTime < 5 || config.RevealTime > 30 {
+		config.RevealTime = 10
+	}
 
 	// Generate a unique 8-character uppercase RoomID
 	var roomID string
@@ -85,30 +99,11 @@ func (m *LobbyManager) ListPublicRooms(ctx context.Context) ([]domain.AMQRoomInf
 
 	var list []domain.AMQRoomInfo
 	for _, room := range m.rooms {
-		if room.Config.Private {
+		info := room.GetRoomInfo()
+		if info.Private {
 			continue
 		}
-
-		// Find host nickname
-		hostNick := "Unknown"
-		for _, p := range room.Players {
-			if p.IsHost {
-				hostNick = p.Nickname
-				break
-			}
-		}
-
-		list = append(list, domain.AMQRoomInfo{
-			RoomID:       room.RoomID,
-			Name:         room.Config.Name,
-			HostNickname: hostNick,
-			PlayerCount:  len(room.Players),
-			MaxRounds:    room.Config.MaxRounds,
-			Status:       room.Status,
-			Private:      room.Config.Private,
-			ThemeType:    room.Config.ThemeType,
-			GameType:     room.Config.GameType,
-		})
+		list = append(list, info)
 	}
 
 	if list == nil {
@@ -132,8 +127,8 @@ func (m *LobbyManager) JoinRoom(roomID, sessionID string, conn WSConn, user *dom
 		return errors.New("room not found")
 	}
 
-	// Dispatch Player Join event to the room goroutine
-	room.EventChan <- RoomEvent{
+	// Dispatch Player Join event using SendEvent helper
+	room.SendEvent(RoomEvent{
 		Type: EvJoin,
 		Data: &JoinEvent{
 			SessionID: sessionID,
@@ -142,7 +137,7 @@ func (m *LobbyManager) JoinRoom(roomID, sessionID string, conn WSConn, user *dom
 			Nickname:  nickname,
 			DeviceID:  deviceID,
 		},
-	}
+	})
 
 	return nil
 }
@@ -154,31 +149,31 @@ func (m *LobbyManager) LeaveRoom(roomID, sessionID string) {
 		return
 	}
 
-	room.EventChan <- RoomEvent{
+	// Dispatch Player Leave event using SendEvent helper
+	room.SendEvent(RoomEvent{
 		Type: EvLeave,
 		Data: sessionID,
-	}
+	})
+}
 
-	// Clean up empty rooms
+func (m *LobbyManager) StartCleanupLoop() {
+	ticker := time.NewTicker(30 * time.Second)
+	go func() {
+		for range ticker.C {
+			m.cleanupRooms()
+		}
+	}()
+}
+
+func (m *LobbyManager) cleanupRooms() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	
-	// If all players are offline/purged, we can remove the room
-	allOffline := true
-	if len(room.Players) == 0 {
-		allOffline = true
-	} else {
-		for _, p := range room.Players {
-			if !p.Offline {
-				allOffline = false
-				break
-			}
-		}
-	}
 
-	if allOffline {
-		log.Printf("[AMQ] Tearing down empty room %s", roomID)
-		close(room.EventChan) // Stop event loop
-		delete(m.rooms, roomID)
+	for roomID, room := range m.rooms {
+		if room.ShouldDestroy() {
+			log.Printf("[AMQ] Cleaning up inactive/empty room %s", roomID)
+			room.Close()
+			delete(m.rooms, roomID)
+		}
 	}
 }

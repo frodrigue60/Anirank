@@ -73,6 +73,7 @@
   let isMuted = $state(false);
   let isPlaying = $state(false);
   let onlyAudio = $state(false);
+  let nextAudioUrl = $state("");
 
   let timerInterval: any;
   $effect(() => {
@@ -313,6 +314,7 @@
           isLocked = false;
           selectedGuess = null;
           isPlaying = true;
+          nextAudioUrl = ""; // Clear prefetch url on round start
           
           // Autoplay video/audio
           setTimeout(() => {
@@ -328,6 +330,7 @@
         case "round_ended":
           roundResult = msg.payload;
           isPlaying = false;
+          nextAudioUrl = msg.payload.next_audio_url || ""; // Set prefetch url for next round
           // Stop theme if playing
           if (videoElement) {
             fadeInVolume();
@@ -772,11 +775,17 @@
               <video
                 bind:this={videoElement}
                 src={activeRound.audio_url}
+                preload="auto"
                 onloadedmetadata={handleLoadedMetadata}
                 class="w-full h-full object-contain bg-[#09070e] {(status === 'playing' || onlyAudio) ? 'opacity-0 absolute pointer-events-none w-0 h-0' : 'opacity-100 block'}"
               >
                 <track kind="captions" />
               </video>
+
+              <!-- Prefetch next round video/audio in background -->
+              {#if nextAudioUrl}
+                <video src={nextAudioUrl} preload="auto" class="hidden" muted playsinline></video>
+              {/if}
 
               <!-- Only Audio Reveal Phase Placeholder -->
               {#if status === "reveal" && onlyAudio && roundResult}

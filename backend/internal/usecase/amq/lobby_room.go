@@ -868,6 +868,12 @@ func (r *LobbyRoom) revealAnswers() {
 		}
 	}
 
+	var nextAudioURL string
+	if r.CurrentRound+1 < len(r.SongPool) && r.CurrentRound+1 < r.Config.MaxRounds {
+		nextSong := &r.SongPool[r.CurrentRound+1]
+		nextAudioURL = r.resolveAudioURL(nextSong)
+	}
+
 	r.TimerType = "reveal"
 	r.TimerStart = time.Now()
 	r.TimerDuration = time.Duration(r.Config.RevealTime) * time.Second
@@ -882,8 +888,9 @@ func (r *LobbyRoom) revealAnswers() {
 	r.mu.Unlock()
 
 	r.broadcast("round_ended", map[string]interface{}{
-		"song":    songDTO,
-		"results": results,
+		"song":           songDTO,
+		"results":        results,
+		"next_audio_url": nextAudioURL,
 	})
 	r.broadcast("lobby_state_update", r.getRoomStatePayload())
 

@@ -94,6 +94,8 @@
   let wsError = $state("");
   let isReconnecting = $state(false);
   let isRedirecting = false;
+  let reconnectTimer: any = null;
+  let connectionGeneration = 0;
 
 
   let showNicknamePrompt = $state(false);
@@ -203,8 +205,26 @@
   });
 
   function connectWebSocket() {
+    // Clear any pending reconnection timer
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
+
+    // Close previous connection cleanly before creating a new one
+    if (ws) {
+      ws.onclose = null;
+      ws.onerror = null;
+      ws.onmessage = null;
+      ws.close();
+      ws = null;
+    }
+
     wsError = "";
     isReconnecting = false;
+
+    // Increment generation so stale handlers are ignored
+    const thisGeneration = ++connectionGeneration;
     
     const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     // Remove /api suffix from PUBLIC_API_URL to get backend root
@@ -214,10 +234,12 @@
     ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
+      if (thisGeneration !== connectionGeneration) return;
       wsError = "";
     };
 
     ws.onmessage = (event) => {
+      if (thisGeneration !== connectionGeneration) return;
       const msg = JSON.parse(event.data);
 
       switch (msg.type) {
@@ -271,6 +293,7 @@
     };
 
     ws.onclose = (event) => {
+      if (thisGeneration !== connectionGeneration) return;
       console.warn("[AMQ] WebSocket closed:", event);
       if (isRedirecting) return;
       if (status !== "finished" && !event.wasClean) {
@@ -282,11 +305,12 @@
         }
         wsError = "Connection lost. Reconnecting...";
         isReconnecting = true;
-        setTimeout(connectWebSocket, 3000); // Retry after 3s
+        reconnectTimer = setTimeout(connectWebSocket, 3000);
       }
     };
 
     ws.onerror = (err) => {
+      if (thisGeneration !== connectionGeneration) return;
       console.error("[AMQ] WebSocket error:", err);
       if (isRedirecting) return;
       if (!roomState) {
@@ -300,7 +324,15 @@
   }
 
   function closeWebSocket() {
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
+    connectionGeneration++;
     if (ws) {
+      ws.onclose = null;
+      ws.onerror = null;
+      ws.onmessage = null;
       ws.close();
       ws = null;
     }

@@ -27,6 +27,7 @@
   let rooms = $state<RoomInfo[]>([]);
   let loading = $state(false);
   let showCreateModal = $state(false);
+  let showNicknameModal = $state(false);
 
   // Guest details (for unauthenticated users)
   let guestNickname = $state("");
@@ -55,6 +56,9 @@
       }
       deviceId = storedDeviceId;
       guestNickname = localStorage.getItem("amq_nickname") || "";
+      if (!authState.isAuthenticated && !guestNickname) {
+        showNicknameModal = true;
+      }
     }
     fetchRooms();
   });
@@ -76,8 +80,13 @@
   }
 
   function saveNickname() {
-    if (!guestNickname.trim()) return false;
+    if (!guestNickname.trim()) {
+      errorMsg = "Nickname cannot be empty.";
+      return false;
+    }
     localStorage.setItem("amq_nickname", guestNickname.trim());
+    showNicknameModal = false;
+    errorMsg = "";
     return true;
   }
 
@@ -88,6 +97,7 @@
     const nickname = authState.isAuthenticated ? authState.user?.name : guestNickname.trim();
     if (!nickname) {
       errorMsg = "Please enter a nickname first.";
+      showNicknameModal = true;
       return;
     }
 
@@ -131,6 +141,7 @@
     const nickname = authState.isAuthenticated ? authState.user?.name : guestNickname.trim();
     if (!nickname) {
       errorMsg = "Please enter a nickname first.";
+      showNicknameModal = true;
       return;
     }
 
@@ -163,6 +174,17 @@
       Challenge your anime music knowledge in real-time. Guess openings (OPs) and endings (EDs) 
       from your AniList synced list or the general catalog. Join a public lobby below or create your own.
     </p>
+    {#if !authState.isAuthenticated && guestNickname}
+      <div class="flex items-center gap-2 text-xs text-on-surface-variant">
+        <span>Playing as guest: <strong class="text-on-surface">{guestNickname}</strong></span>
+        <button 
+          onclick={() => showNicknameModal = true} 
+          class="text-primary hover:underline font-bold cursor-pointer"
+        >
+          (Change Nickname)
+        </button>
+      </div>
+    {/if}
   </header>
 
   <!-- Error Alert -->
@@ -170,33 +192,6 @@
     <div class="p-4 bg-red-50 text-red-700 text-sm rounded-sm border border-red-200">
       {errorMsg}
     </div>
-  {/if}
-
-  <!-- Guest Access Banner -->
-  {#if !authState.isAuthenticated}
-    <section class="bg-surface-low p-6 rounded-md space-y-4 border border-outline-variant">
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div class="space-y-1">
-          <h2 class="text-lg font-bold text-on-surface">Anonymous Guest Mode</h2>
-          <p class="text-sm text-on-surface-variant">Set a nickname to list yourself in the lobby room. Authenticate to save stats and gain XP.</p>
-        </div>
-        <div class="flex gap-2 max-w-sm w-full">
-          <input
-            id="guest-nick"
-            type="text"
-            bind:value={guestNickname}
-            placeholder="Type guest nickname..."
-            class="flex-1 h-12 bg-surface-highest border border-outline-variant rounded-sm px-4 text-sm text-on-surface focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all"
-          />
-          <button
-            onclick={saveNickname}
-            class="h-12 bg-primary hover:bg-primary-container text-white px-5 rounded-sm font-bold text-sm transition-colors cursor-pointer"
-          >
-            Save
-          </button>
-        </div>
-      </div>
-    </section>
   {/if}
 
   <!-- Actions and Join Code Section -->
@@ -427,6 +422,42 @@
             class="flex-1 h-12 bg-primary hover:bg-primary-container text-white rounded-sm font-bold text-sm transition-colors cursor-pointer"
           >
             Create Room
+          </button>
+        </div>
+      </div>
+    </div>
+  {/if}
+
+  <!-- Guest Nickname Modal -->
+  {#if showNicknameModal}
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-[#09070e] p-4">
+      <div class="bg-surface-highest max-w-sm w-full rounded-md shadow-2xl relative z-10 p-8 space-y-6 border border-outline-variant text-center">
+        <div class="space-y-2">
+          <h3 class="text-2xl font-black text-on-surface tracking-tight">Enter Guest Nickname</h3>
+          <p class="text-xs text-on-surface-variant leading-relaxed">
+            Set a temporary nickname to join or create lobbies. To save stats, earn badges, and gain XP, please log in.
+          </p>
+        </div>
+        
+        <div class="space-y-4">
+          <input
+            id="guest-nick-modal"
+            type="text"
+            bind:value={guestNickname}
+            placeholder="Type guest nickname..."
+            onkeydown={(e) => e.key === "Enter" && saveNickname()}
+            class="w-full h-12 bg-surface border border-outline-variant rounded-sm px-4 text-sm text-on-surface focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all text-center font-bold"
+          />
+          
+          {#if errorMsg && !guestNickname.trim()}
+            <p class="text-red-500 text-xs font-semibold">{errorMsg}</p>
+          {/if}
+
+          <button
+            onclick={saveNickname}
+            class="w-full h-12 bg-primary hover:bg-primary-container text-white rounded-sm font-bold text-sm transition-colors cursor-pointer"
+          >
+            Enter Lobby
           </button>
         </div>
       </div>

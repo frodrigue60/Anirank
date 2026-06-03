@@ -1128,6 +1128,29 @@ func (r *LobbyRoom) getRoomStatePayload() map[string]interface{} {
 		}
 	}
 
+	var playedSongs []interface{}
+	if r.Status == "finished" || r.Status == "reveal" {
+		limit := r.CurrentRound + 1
+		if r.Status == "finished" {
+			limit = len(r.SongPool)
+		}
+		for i := 0; i < limit && i < len(r.SongPool); i++ {
+			s := r.SongPool[i]
+			sDTO := dto.ToSongMinimalDTO(&s)
+			if s.Anime != nil {
+				if s.Anime.Cover != nil {
+					resolved := r.MediaService.GetURL(*s.Anime.Cover)
+					sDTO.Anime.CoverUrl = resolved
+				}
+				if s.Anime.Banner != nil {
+					resolved := r.MediaService.Resolve(s.Anime.Banner)
+					sDTO.Anime.BannerUrl = resolved
+				}
+			}
+			playedSongs = append(playedSongs, sDTO)
+		}
+	}
+
 	return map[string]interface{}{
 		"room_id":       r.RoomID,
 		"status":        r.Status,
@@ -1138,6 +1161,7 @@ func (r *LobbyRoom) getRoomStatePayload() map[string]interface{} {
 		"timer_left":    timerLeft,
 		"round_data":    roundData,
 		"reveal_data":   revealData,
+		"played_songs":  playedSongs,
 	}
 }
 

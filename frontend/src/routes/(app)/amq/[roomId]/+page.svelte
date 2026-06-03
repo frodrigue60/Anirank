@@ -985,6 +985,29 @@
               <p class="text-sm text-on-surface-variant">Check out the final rankings below.</p>
             </header>
 
+            <!-- Played Songs Summary -->
+            {#if roomState?.played_songs && roomState.played_songs.length > 0}
+              <div class="bg-surface-low border border-outline-variant rounded-sm p-4 text-left space-y-3 max-w-2xl mx-auto">
+                <h3 class="text-xs font-black text-on-surface-variant uppercase tracking-widest border-b border-outline-variant pb-2">
+                  Song List ({roomState.played_songs.length})
+                </h3>
+                <div class="max-h-60 overflow-y-auto divide-y divide-outline-variant/50 text-xs">
+                  {#each roomState.played_songs as song, idx}
+                    <div class="py-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-4">
+                      <div class="truncate text-on-surface">
+                        <span class="font-bold text-on-surface-variant mr-1">#{idx + 1}</span>
+                        <span class="font-bold">{song.song_romaji}</span>
+                        <span class="text-on-surface-variant text-[11px]"> by {song.artists?.map(a => a.name).join(", ") || "Unknown Artist"}</span>
+                      </div>
+                      <div class="text-[10px] text-primary font-bold shrink-0 uppercase tracking-wider truncate max-w-xs" title={song.anime?.title}>
+                        {song.anime?.title}
+                      </div>
+                    </div>
+                  {/each}
+                </div>
+              </div>
+            {/if}
+
             <!-- Play again host reset -->
             {#if selfPlayer?.is_host}
               <div class="pt-6 border-t border-outline-variant max-w-sm mx-auto">

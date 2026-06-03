@@ -233,6 +233,8 @@ func (h *AMQHandler) WSHandler(c *websocket.Conn) {
 					Text:      chatPayload.Text,
 				}})
 			}
+		case "close_room":
+			room.SendEvent(amq.RoomEvent{Type: amq.EvCloseRoom, Data: sessionID})
 		}
 	}
 }

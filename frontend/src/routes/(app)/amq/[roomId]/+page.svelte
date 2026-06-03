@@ -337,6 +337,12 @@
         case "chat_message":
           chatMessages = [...chatMessages, msg.payload].slice(-100);
           break;
+        case "room_closed":
+          isRedirecting = true;
+          closeWebSocket();
+          alert("The room has been closed by the host.");
+          goto("/amq");
+          break;
         case "error":
           wsError = msg.payload;
           if (msg.payload === "room not found" || !roomState) {
@@ -475,6 +481,12 @@
     sendWSMessage("reset_to_lobby", null);
   }
 
+  function closeRoom() {
+    if (confirm("Are you sure you want to close this room? This will disconnect all players and viewers.")) {
+      sendWSMessage("close_room", null);
+    }
+  }
+
   function getSelfPlayer() {
     const all = [...(roomState?.players || []), ...(roomState?.spectators || [])];
     return all.find((p: any) => p.session_id === all.find((sp: any) => sp.session_id === p.session_id)?.session_id); // Session ID matching
@@ -545,6 +557,18 @@
             </button>
           {/if}
         </div>
+      {/if}
+
+      {#if selfPlayer?.is_host}
+        <div class="h-4 w-px bg-outline-variant hidden md:block"></div>
+        <button
+          onclick={closeRoom}
+          class="h-8 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 px-3 rounded-sm text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+          title="Close Room (Disconnect all)"
+        >
+          <XCircle size={12} />
+          Close Room
+        </button>
       {/if}
     </div>
 

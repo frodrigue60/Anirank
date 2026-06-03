@@ -35,6 +35,7 @@ const (
 	EvPoolLoaded
 	EvChat
 	EvTransferHost
+	EvCloseRoom
 )
 
 type RoomEvent struct {
@@ -90,6 +91,7 @@ type LobbyRoom struct {
 	StartPercent  float64
 	CreatedAt     time.Time
 	LastActive    time.Time
+	Closed        bool
 
 	// Dependencies
 	AnimeRepo    domain.AnimeRepository
@@ -214,6 +216,8 @@ func (r *LobbyRoom) handleEvent(ev RoomEvent) {
 		r.handleChat(ev.Data.(*ChatEvent))
 	case EvTransferHost:
 		r.handleTransferHost(ev.Data.(*TransferHostEvent))
+	case EvCloseRoom:
+		r.handleCloseRoom(ev.Data.(string))
 	}
 }
 
@@ -1130,6 +1134,10 @@ func (r *LobbyRoom) ShouldDestroy() bool {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
+	if r.Closed {
+		return true
+	}
+
 	// If there are online players, do not destroy
 	for _, p := range r.Players {
 		if !p.Offline {
@@ -1282,4 +1290,21 @@ func (r *LobbyRoom) handleTransferHost(ev *TransferHostEvent) {
 		"timestamp": time.Now(),
 	})
 	log.Printf("[AMQ] chat_message broadcast complete for host transfer")
+}
+
+func (r *LobbyRoom) handleCloseRoom(sessionID string) {
+	r.mu.Lock()
+	player, exists := r.Players[sessionID]
+	if !exists || !player.IsHost {
+		r.mu.Unlock()
+		return
+	}
+	r.Closed = true
+	r.mu.Unlock()
+
+	// Broadcast room_closed to everyone
+	r.broadcast("room_closed", nil)
+
+	// Close all connections and exit event loop
+	r.Close()
 }

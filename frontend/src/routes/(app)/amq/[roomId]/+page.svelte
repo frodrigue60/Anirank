@@ -46,6 +46,9 @@
   let players = $derived(roomState?.players || []);
   let spectators = $derived(roomState?.spectators || []);
   let sortedPlayers = $derived([...players].sort((a: any, b: any) => b.score - a.score));
+  // Increments on every lobby_state_update to force Svelte to re-diff keyed #each items
+  // when only inner fields change (e.g., is_host, is_ready) without a session_id change.
+  let playersVersion = $state(0);
   let isSpectator = $state(false);
   let localTimer = $state(0);
   let config = $derived(roomState?.config || {});
@@ -299,6 +302,7 @@
         case "lobby_state_update":
           roomState = msg.payload;
           localTimer = msg.payload.timer_left ?? 0;
+          playersVersion++; // Force re-key all player items
           break;
         case "round_start":
           currentRoundData = msg.payload;
@@ -588,7 +592,7 @@
             {#if players.length === 0}
               <div class="p-4 text-xs text-on-surface-variant text-center">No players</div>
             {:else}
-              {#each sortedPlayers as player (player.session_id)}
+              {#each sortedPlayers as player (player.session_id + '-' + playersVersion)}
                 <div class="px-4 py-3 flex items-center justify-between text-sm {player.offline ? 'opacity-50' : ''}">
                   <div class="flex items-center gap-2 truncate">
                     <!-- Status Indicator Dot -->

@@ -152,17 +152,29 @@ func (r *LobbyRoom) run() {
 	defer cleanupTicker.Stop()
 
 	for {
-		select {
-		case ev, ok := <-r.EventChan:
-			if !ok {
-				return
+		stopped := false
+		func() {
+			defer func() {
+				if rec := recover(); rec != nil {
+					log.Printf("[AMQ] PANIC recovered in room %s event loop: %v", r.RoomID, rec)
+				}
+			}()
+			select {
+			case ev, ok := <-r.EventChan:
+				if !ok {
+					stopped = true
+					return
+				}
+				r.handleEvent(ev)
+				r.mu.Lock()
+				r.LastActive = time.Now()
+				r.mu.Unlock()
+			case <-cleanupTicker.C:
+				r.cleanupOfflinePlayers()
 			}
-			r.handleEvent(ev)
-			r.mu.Lock()
-			r.LastActive = time.Now()
-			r.mu.Unlock()
-		case <-cleanupTicker.C:
-			r.cleanupOfflinePlayers()
+		}()
+		if stopped {
+			return
 		}
 	}
 }
@@ -213,9 +225,18 @@ type outMessage struct {
 
 func (r *LobbyRoom) broadcast(msgType string, payload interface{}) {
 	msg := outMessage{Type: msgType, Payload: payload}
-	r.mu.Lock()
-	defer r.mu.Unlock()
+	// Use RLock: broadcast only reads r.Conns, never modifies room state.
+	// Using a write lock here caused contention with external goroutines holding RLocks
+	// (e.g., LobbyManager.cleanupRooms → ShouldDestroy → RLock), which could deadlock
+	// the event loop goroutine when a write lock was pending.
+	r.mu.RLock()
+	conns := make(map[string]WSConn, len(r.Conns))
 	for sid, conn := range r.Conns {
+		conns[sid] = conn
+	}
+	r.mu.RUnlock()
+
+	for sid, conn := range conns {
 		if conn == nil {
 			continue
 		}
@@ -227,10 +248,15 @@ func (r *LobbyRoom) broadcast(msgType string, payload interface{}) {
 
 func (r *LobbyRoom) sendTo(sessionID string, msgType string, payload interface{}) {
 	msg := outMessage{Type: msgType, Payload: payload}
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	if conn, ok := r.Conns[sessionID]; ok && conn != nil {
-		_ = conn.WriteJSON(msg)
+	// Use RLock: sendTo only reads r.Conns.
+	r.mu.RLock()
+	conn, ok := r.Conns[sessionID]
+	r.mu.RUnlock()
+
+	if ok && conn != nil {
+		if err := conn.WriteJSON(msg); err != nil {
+			log.Printf("[AMQ] Error in sendTo session %s: %v", sessionID, err)
+		}
 	}
 }
 
@@ -284,11 +310,13 @@ func (r *LobbyRoom) handleJoin(ev *JoinEvent) {
 	if existingPlayer != nil {
 		// Reconnection: transfer state to new SessionID
 		log.Printf("[AMQ] Reassociating player %s (old session %s, new session %s)", existingPlayer.Nickname, oldSessionID, ev.SessionID)
-		
-		// Close the old connection if still open
-		if oldConn, ok := r.Conns[oldSessionID]; ok && oldConn != nil {
-			_ = oldConn.Close()
-		}
+
+		// Do NOT call oldConn.Close() here. A forced close from the server side
+		// causes the client's WebSocket onclose event to fire with wasClean=false,
+		// which incorrectly triggers the "Connection lost. Reconnecting..." UI message.
+		// Instead, we just remove the old entry from the maps. The old goroutine's
+		// ReadJSON call will fail on its next iteration (the connection is now orphaned)
+		// and its deferred LeaveRoom call will be a no-op since the session ID is gone.
 		delete(r.Conns, oldSessionID)
 		delete(r.Players, oldSessionID)
 
@@ -1243,7 +1271,9 @@ func (r *LobbyRoom) handleTransferHost(ev *TransferHostEvent) {
 	r.mu.Unlock()
 
 	// Broadcast updated state
+	log.Printf("[AMQ] Broadcasting lobby_state_update after host transfer to %s", targetName)
 	r.broadcast("lobby_state_update", r.getRoomStatePayload())
+	log.Printf("[AMQ] lobby_state_update broadcast complete")
 
 	r.broadcast("chat_message", map[string]interface{}{
 		"sender":    "System",
@@ -1251,4 +1281,5 @@ func (r *LobbyRoom) handleTransferHost(ev *TransferHostEvent) {
 		"type":      "system",
 		"timestamp": time.Now(),
 	})
+	log.Printf("[AMQ] chat_message broadcast complete for host transfer")
 }

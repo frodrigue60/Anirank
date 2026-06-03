@@ -355,3 +355,241 @@ AniRank uses a custom raw-SQL migration system. All migrations must be **idempot
 
 ### Handling Schema Drift
 If a migration was manually recorded as "run" in the `migrations` table but failed to apply all changes (e.g., due to manual DB edits), create a **reconciliation migration** that uses the `IF NOT EXISTS` pattern to ensure all expected columns are present.
+
+---
+
+## 19. AMQ & WebSocket Architecture
+
+The **Anime Music Quiz (AMQ)** feature is a real-time multiplayer game built on a pure in-memory actor model over WebSockets. There is **no database persistence** for active rooms or sessions — all state lives in RAM and is lost on server restart.
+
+### Key Files
+
+| File | Responsibility |
+|------|---------------|
+| `backend/internal/usecase/amq/lobby_manager.go` | Global registry of all active rooms. Creates, finds, and destroys rooms. Runs the room cleanup loop. |
+| `backend/internal/usecase/amq/lobby_room.go` | The room actor: holds all game state, runs the single-goroutine event loop, and handles all game transitions. |
+| `backend/internal/delivery/http/v1/amq_handler.go` | HTTP → WS upgrade handler. Reads raw WS messages, translates them to `RoomEvent`s, and dispatches via `SendEvent`. |
+| `frontend/src/routes/(app)/amq/+page.svelte` | Lobby browser: lists public rooms, room creation form. |
+| `frontend/src/routes/(app)/amq/[roomId]/+page.svelte` | Game room page: manages WS connection lifecycle, renders game state. |
+
+---
+
+### Backend: Actor Model
+
+Each `LobbyRoom` is an isolated actor. It owns:
+- `Players map[string]*domain.AMQPlayer` — session-keyed player state (includes host, ready, score, offline flags).
+- `Conns map[string]WSConn` — session-keyed WebSocket connections.
+- `EventChan chan RoomEvent` — buffered channel (capacity 100) for serialized event processing.
+- `mu sync.RWMutex` — protects all room state.
+
+**The cardinal rule: all mutations happen through the event loop.**
+
+```
+HTTP Handler → room.SendEvent(ev) → EventChan → run() goroutine → handleEvent(ev) → mutate state → broadcast()
+```
+
+#### Event Loop (`run()`)
+
+```go
+func (r *LobbyRoom) run() {
+    cleanupTicker := time.NewTicker(10 * time.Second)
+    for {
+        stopped := false
+        func() {
+            defer recover() // Panics are logged, not fatal
+            select {
+            case ev, ok := <-r.EventChan:
+                if !ok { stopped = true; return }
+                r.handleEvent(ev)
+                r.mu.Lock(); r.LastActive = time.Now(); r.mu.Unlock()
+            case <-cleanupTicker.C:
+                r.cleanupOfflinePlayers()
+            }
+        }()
+        if stopped { return }
+    }
+}
+```
+
+- **Single goroutine**: events are processed sequentially — no race conditions within event handlers.
+- **Panic-safe**: `recover()` prevents any single event from crashing the loop.
+- **Cleanup ticker**: every 10s, purges players offline for >60s. If all players are purged, `ShouldDestroy()` returns true and `LobbyManager` destroys the room every 30s.
+
+#### Event Types
+
+| Constant | Trigger | Handler |
+|----------|---------|---------|
+| `EvJoin` | WS connection established | `handleJoin` — reassociates or creates player |
+| `EvLeave` | WS connection closed | `handleLeave` — marks player offline |
+| `EvReady` | `player_ready_toggle` | `handleReady` — toggles ready state |
+| `EvConfigUpdate` | `update_lobby_config` (host only) | `handleConfigUpdate` |
+| `EvStartGame` | `start_game` (host only) | `handleStartGame` → goroutine builds song pool → `EvPoolLoaded` |
+| `EvPoolLoaded` | Internal (pool ready) | `startRound` |
+| `EvSubmitGuess` | `submit_guess` | `handleSubmitGuess` |
+| `EvTimerExpired` | Internal timer | `handleTimerExpired` |
+| `EvSkipSummary` | `skip_summary` | `handleSkipSummary` |
+| `EvResetToLobby` | `reset_to_lobby` | `handleResetToLobby` / `forceResetToLobby` |
+| `EvChat` | `send_chat_message` | `handleChat` |
+| `EvTransferHost` | `transfer_host` (host only) | `handleTransferHost` |
+
+---
+
+### Locking Rules (Critical)
+
+The `LobbyRoom` has two separate mutexes:
+- `r.mu sync.RWMutex` — protects room state (`Players`, `Conns`, `Config`, `Status`, etc.).
+- `LobbyManager.mu sync.RWMutex` — protects the rooms map.
+
+**The invariant that must never be broken:**
+
+```
+Any function that holds r.mu.Lock() MUST release it before calling broadcast() or sendTo().
+```
+
+**Why:** `broadcast()` and `sendTo()` intentionally use `r.mu.RLock()` (not `Lock()`), but a goroutine cannot acquire an `RLock` on an `RWMutex` it already holds as a `Lock`. This would deadlock. Additionally, using `Lock()` in `broadcast()` would conflict with `LobbyManager.cleanupRooms()`, which holds `LobbyManager.mu.Lock()` while calling `room.ShouldDestroy()` → `r.mu.RLock()`. If `broadcast()` tried `r.mu.Lock()` simultaneously, it would form a partial lock ordering that risks deadlock under load.
+
+**Correct pattern (used in every handler):**
+```go
+func (r *LobbyRoom) handleSomething(sessionID string) {
+    r.mu.Lock()
+    // ... mutate state ...
+    r.mu.Unlock()           // ← ALWAYS unlock before broadcast
+    r.broadcast("lobby_state_update", r.getRoomStatePayload())
+}
+```
+
+---
+
+### WebSocket Connection Lifecycle
+
+```
+1. Client calls POST /api/amq/rooms              → creates room, gets room_id
+2. Client calls GET  /api/amq/ws/{roomId}?...    → HTTP → WS upgrade (WSUpgrade middleware)
+3. WSHandler runs:
+   a. Validates JWT token (optional auth) → resolves *domain.User or nil
+   b. Generates sessionID = uuid.New()
+   c. Wraps *websocket.Conn in wsConnWrapper (implements WSConn interface)
+   d. Calls LobbyManager.JoinRoom() → dispatches EvJoin
+   e. defer LobbyManager.LeaveRoom() → dispatches EvLeave on disconnect
+   f. Reader loop: reads JSON messages → dispatches corresponding events
+```
+
+**Session Identity:**
+- Each WS connection gets a new `sessionID` (UUID) even if it's the same user reconnecting.
+- `handleJoin` resolves the actual player by:
+  - **Authenticated users**: matched by `UserUUID` across all sessions.
+  - **Guests**: matched by `DeviceID` (stored in `localStorage` as `amq_device_id`).
+- On match: old session is deleted, player struct is moved to new sessionID → reconnection is seamless.
+- On no match: new player is created and added to the room.
+
+**Host Persistence:**
+- `ensureHostActive()` is called after every `EvJoin` and `EvLeave`.
+- If the current host goes offline, the first online non-spectator player is promoted automatically.
+- `handleTransferHost` allows the current host to manually promote another online player.
+
+---
+
+### WebSocket Message Protocol
+
+All messages use the envelope format:
+```json
+{ "type": "<event_type>", "payload": { ... } }
+```
+
+#### Server → Client messages
+
+| Type | Trigger | Payload |
+|------|---------|---------|
+| `lobby_state_update` | Any state change (join, leave, ready, config, transfer) | Full room snapshot (see below) |
+| `round_start` | New round begins | `{ audio_url, current_round, max_rounds, guess_time, start_percent, options[] }` |
+| `round_ended` | Timer expires or all locked | `{ song: SongDTO, player_results[], correct_slug }` |
+| `chat_message` | Chat or system event | `{ sender, text, type: "user"|"system", timestamp }` |
+| `error` | Fatal room error | `string` error message |
+
+#### `lobby_state_update` payload shape
+```json
+{
+  "room_id":    "FA2705CC",
+  "status":     "lobby | playing | reveal | finished",
+  "config":     { "name", "max_rounds", "guess_time", "reveal_time", "theme_type", "game_type", "personalized_pool", "private" },
+  "players":    [ { "session_id", "nickname", "user_uuid", "device_id", "is_host", "is_ready", "is_spectator", "offline", "score", "locked" } ],
+  "spectators": [ ... same shape as players ... ],
+  "timer_left": 15,
+  "round_data": null
+}
+```
+
+#### Client → Server messages
+
+| Type | Payload | Permission |
+|------|---------|-----------|
+| `player_ready_toggle` | (none) | Any player |
+| `submit_guess` | `{ "anime_slug": string }` | Any player |
+| `update_lobby_config` | `domain.AMQConfig` | Host only |
+| `start_game` | (none) | Host only |
+| `skip_summary` | (none) | Any player (vote to skip) |
+| `reset_to_lobby` | (none) | Host (full reset) or any player (self-ready reset) |
+| `transfer_host` | `{ "target_session_id": string }` | Host only |
+| `send_chat_message` | `{ "text": string }` | Any player |
+
+---
+
+### Game State Machine
+
+```
+lobby ──[start_game + all ready]──► playing ──[timer expires / all locked]──► reveal
+  ▲                                                                              │
+  │                              ◄──────[skip_summary / reveal timer]───────────┘
+  │
+  └──[max_rounds reached]──► finished ──[reset_to_lobby]──► lobby
+```
+
+- **`lobby`**: players join, set ready, host configures. Start requires all online non-spectator players to be ready.
+- **`playing`**: song is playing, players submit guesses. Timer counts down. Ends when all players lock OR timer hits 0.
+- **`reveal`**: correct answer shown, scores updated, XP awarded. Ends when reveal timer expires or majority skips.
+- **`finished`**: game over screen. Host (or any player via force) can reset to lobby.
+
+---
+
+### Frontend Integration (`[roomId]/+page.svelte`)
+
+The room page manages a single WebSocket connection with automatic reconnection.
+
+**Connection lifecycle:**
+- Initiated in a `$effect` that waits for `authState.loading === false`.
+- Authenticated users connect immediately; guests must set a nickname first (persisted in `localStorage`).
+- On unclean close (`!event.wasClean`): auto-reconnects after 3s if `roomState` is not null; redirects to `/amq` if no state yet.
+- A `connectionGeneration` counter prevents stale handlers from triggering after reconnect.
+
+**Key reactive state:**
+```typescript
+let roomState = $state<any>(null);            // Full server snapshot
+let players   = $derived(roomState?.players || []);
+let selfPlayer = $derived.by(() => {          // Current user's player object
+  return players.find(p =>
+    authState.isAuthenticated
+      ? p.user_uuid === authState.user?.uuid
+      : p.device_id === deviceId
+  );
+});
+let playersVersion = $state(0);              // Incremented on each lobby_state_update
+```
+
+**Svelte 5 `#each` key pattern:**
+```svelte
+{#each sortedPlayers as player (player.session_id + '-' + playersVersion)}
+```
+The compound key forces Svelte to re-diff all player items when `playersVersion` increments, ensuring fields like `is_host` and `is_ready` visually update even when `session_id` is unchanged.
+
+---
+
+### Known Pitfalls & Decisions
+
+| Pitfall | Decision |
+|---------|---------|
+| `broadcast()` originally used `r.mu.Lock()` | Changed to `r.mu.RLock()` (copy Conns map, then write outside lock) to eliminate deadlock with cleanup goroutine |
+| `run()` goroutine dying on panic | Wrapped each iteration in an anonymous func with `defer recover()`. The `stopped` bool propagates a clean channel-close signal out of the closure |
+| Svelte `#each` not re-rendering on `is_host` change | Added `playersVersion` state that increments on every `lobby_state_update`, used as part of the compound `#each` key |
+| Guest player duplication on reconnect | `handleJoin` first checks for an existing offline player matching `DeviceID`. If found, transfers state to new sessionID instead of creating a new entry |
+| Stale host after all-leave / all-rejoin | `ensureHostActive()` runs after every `EvJoin` and `EvLeave`. It promotes the first online non-spectator player if no online host exists |
+| Room surviving after everyone leaves | `cleanupOfflinePlayers()` (every 10s in event loop) purges players offline >60s. `LobbyManager.cleanupRooms()` (every 30s, external goroutine) destroys rooms where `ShouldDestroy()` returns true (0 online players AND inactive >2min) |

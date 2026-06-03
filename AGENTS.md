@@ -23,6 +23,14 @@ Handles cross-cutting concerns (auth flows, API contract changes, Docker, env fi
 - Must consult both `DESIGN.md` and `CONTEXT.md` before making changes.
 - Any API contract change (new/removed JSON field) must be reflected in both the backend DTO and the frontend `api.ts` consumer simultaneously.
 
+### `amq-agent`
+Handles all Anime Music Quiz (AMQ) feature work that spans both layers.
+- Must consult **Section 19** of `CONTEXT.md` (AMQ Architecture) before any change to the AMQ system.
+- AMQ state is entirely **in-memory**. There is no DB persistence for active rooms or sessions.
+- All room mutations MUST be dispatched as events through `room.SendEvent(RoomEvent{...})`. Never call handler methods directly from outside the event loop.
+- The `broadcast()` and `sendTo()` helpers use `r.mu.RLock()` (read lock). They must NEVER be changed to write locks — doing so risks deadlock with the `LobbyManager` cleanup goroutine.
+- The `run()` event loop has a panic recovery wrapper. If adding new event handlers, ensure all code paths that acquire `r.mu.Lock()` also release it before calling `broadcast()` or `sendTo()`.
+
 ---
 
 ## 2. Mandatory Behaviours (All Agents)
@@ -173,6 +181,11 @@ The internal `uint64` IDs in the database (e.g. `user.ID`, `song.ID`) are **stri
 - **Don't** manually update `user.is_softbanned` in a repository. Use the `checkAndApplyShadowban` (internal) or `UpdateSoftbanStatus` logic to ensure consistency with `TruthScore`.
 - **Don't** create database migrations that are not idempotent (always use `IF NOT EXISTS` or `DO $$` blocks).
 - **Don't** modify existing migration files that have already been committed; always create a new migration for changes or fixes.
+- **Don't** change `broadcast()` or `sendTo()` in `lobby_room.go` to use `r.mu.Lock()` (write lock). They intentionally use `RLock` to avoid deadlocking with `LobbyManager.cleanupRooms()`, which holds `LobbyManager.mu.Lock()` while calling `ShouldDestroy()` (which takes `r.mu.RLock()`).
+- **Don't** call `r.mu.Lock()` inside a function and then call `broadcast()` or `sendTo()` without releasing it first — these helpers acquire their own lock. Holding a write lock and then trying to acquire a read lock from the same goroutine is undefined behaviour with `sync.RWMutex`.
+- **Don't** add a new `case` to `handleEvent()` switch without also implementing the corresponding event struct and dispatching it via `room.SendEvent()` from the WS handler in `amq_handler.go`.
+- **Don't** implement new AMQ game state mutations outside the event loop goroutine (i.e., from an HTTP handler or a goroutine not dispatched via `EventChan`). The `LobbyRoom` is not safe for concurrent direct mutation.
+- **Don't** use a fixed `(player.session_id)` key in a Svelte `#each` loop if the players' inner fields (like `is_host`, `is_ready`) can change without the `session_id` changing. Use a compound key like `(player.session_id + '-' + playersVersion)` and increment the version on each state update.
 
 ---
 

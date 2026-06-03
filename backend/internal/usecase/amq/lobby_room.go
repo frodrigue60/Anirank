@@ -182,7 +182,16 @@ func (r *LobbyRoom) handleEvent(ev RoomEvent) {
 	case EvSkipSummary:
 		r.handleSkipSummary(ev.Data.(string))
 	case EvResetToLobby:
-		r.handleResetToLobby(ev.Data.(string))
+		dataStr := ev.Data.(string)
+		r.mu.Lock()
+		player, exists := r.Players[dataStr]
+		isHost := exists && player.IsHost
+		r.mu.Unlock()
+		if isHost {
+			r.handleResetToLobby(dataStr)
+		} else {
+			r.forceResetToLobby(dataStr)
+		}
 	case EvChat:
 		r.handleChat(ev.Data.(*ChatEvent))
 	}
@@ -443,12 +452,14 @@ func (r *LobbyRoom) handleStartGame(sessionID string) {
 	r.broadcast("lobby_state_update", r.getRoomStatePayload())
 
 	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		anilistCtx, anilistCancel := context.WithTimeout(context.Background(), 8*time.Second)
+		dbCtx, dbCancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer func() {
-			cancel()
+			anilistCancel()
+			dbCancel()
 			if err := recover(); err != nil {
 				log.Printf("[AMQ] StartGame crashed: %v", err)
-				r.SendEvent(RoomEvent{Type: EvResetToLobby, Data: "Game could not start. Please try again."})
+				r.SendEvent(RoomEvent{Type: EvResetToLobby, Data: "Game could not start due to an internal error."})
 			}
 		}()
 
@@ -458,7 +469,7 @@ func (r *LobbyRoom) handleStartGame(sessionID string) {
 			// Find AniList IDs from authenticated players
 			var linkedUserIDs []uint64
 			for _, uuidVal := range playerUserUUIDs {
-				user, err := r.UserRepo.GetByUUID(ctx, uuidVal)
+				user, err := r.UserRepo.GetByUUID(dbCtx, uuidVal)
 				if err == nil {
 					linkedUserIDs = append(linkedUserIDs, user.ID)
 				}
@@ -468,7 +479,7 @@ func (r *LobbyRoom) handleStartGame(sessionID string) {
 				// Query public AniList identities from DB
 				var anilistUserIDs []int64
 				for _, uid := range linkedUserIDs {
-					sids, err := r.UserRepo.GetSocialIdentitiesByUserID(ctx, uid)
+					sids, err := r.UserRepo.GetSocialIdentitiesByUserID(dbCtx, uid)
 					if err == nil {
 						for _, si := range sids {
 							if si.Provider == "anilist" {
@@ -489,7 +500,7 @@ func (r *LobbyRoom) handleStartGame(sessionID string) {
 					userAnilistMedia := make(map[int]bool)
 					page := 1
 					for {
-						resp, err := r.Anilist.GetUserMediaList(ctx, aid, "COMPLETED", page, 50)
+						resp, err := r.Anilist.GetUserMediaList(anilistCtx, aid, "COMPLETED", page, 500)
 						if err != nil || resp == nil || len(resp.Data.Page.MediaList) == 0 {
 							break
 						}
@@ -527,7 +538,7 @@ func (r *LobbyRoom) handleStartGame(sessionID string) {
 					if len(rawIDs) > 100 {
 						rawIDs = rawIDs[:100]
 					}
-					animes, err := r.AnimeRepo.GetByAnilistIDs(ctx, rawIDs)
+					animes, err := r.AnimeRepo.GetByAnilistIDs(dbCtx, rawIDs)
 					if err == nil {
 						for _, a := range animes {
 							watchedAnimeIDs = append(watchedAnimeIDs, a.ID)
@@ -545,7 +556,7 @@ func (r *LobbyRoom) handleStartGame(sessionID string) {
 		}
 
 		// Query primary pool songs
-		songs, err := r.SongRepo.GetRandomSongsForAMQ(ctx, watchedAnimeIDs, themeTypes, maxRounds, nil)
+		songs, err := r.SongRepo.GetRandomSongsForAMQ(dbCtx, watchedAnimeIDs, themeTypes, maxRounds, nil)
 		if err != nil {
 			log.Printf("[AMQ] Failed to fetch primary songs: %v", err)
 		}
@@ -557,10 +568,16 @@ func (r *LobbyRoom) handleStartGame(sessionID string) {
 			for _, s := range songs {
 				excludeIDs = append(excludeIDs, s.ID)
 			}
-			backfill, errBF := r.SongRepo.GetRandomSongsForAMQ(ctx, nil, themeTypes, needed, excludeIDs)
+			backfill, errBF := r.SongRepo.GetRandomSongsForAMQ(dbCtx, nil, themeTypes, needed, excludeIDs)
 			if errBF == nil {
 				songs = append(songs, backfill...)
 			}
+		}
+
+		if len(songs) == 0 {
+			log.Printf("[AMQ] Failed to initialize song pool: zero songs fetched")
+			r.SendEvent(RoomEvent{Type: EvResetToLobby, Data: "Failed to initialize song pool. Please try again."})
+			return
 		}
 
 		r.mu.Lock()
@@ -866,6 +883,33 @@ func (r *LobbyRoom) handleResetToLobby(sessionID string) {
 	r.mu.Unlock()
 
 	r.broadcast("lobby_state_update", r.getRoomStatePayload())
+}
+
+func (r *LobbyRoom) forceResetToLobby(errMsg string) {
+	r.mu.Lock()
+	r.Status = "lobby"
+	r.CurrentRound = 0
+	r.CurrentSong = nil
+	r.SongPool = nil
+
+	for _, p := range r.Players {
+		p.Score = 0
+		p.Locked = false
+		p.IsReady = p.IsHost // Host ready, others not
+		p.LastGuess = ""
+		p.LastGuessCorrect = false
+	}
+	r.mu.Unlock()
+
+	r.broadcast("lobby_state_update", r.getRoomStatePayload())
+	if errMsg != "" {
+		r.broadcast("chat_message", map[string]interface{}{
+			"sender":    "System",
+			"text":      errMsg,
+			"type":      "system",
+			"timestamp": time.Now(),
+		})
+	}
 }
 
 func (r *LobbyRoom) endGame() {

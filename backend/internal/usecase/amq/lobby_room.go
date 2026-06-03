@@ -1077,6 +1077,57 @@ func (r *LobbyRoom) getRoomStatePayload() map[string]interface{} {
 		}
 	}
 
+	var revealData map[string]interface{}
+	if r.Status == "reveal" && r.CurrentSong != nil {
+		songDTO := dto.ToSongMinimalDTO(r.CurrentSong)
+		if songDTO.Anime != nil {
+			if r.CurrentSong.Anime.Cover != nil {
+				resolved := r.MediaService.GetURL(*r.CurrentSong.Anime.Cover)
+				songDTO.Anime.CoverUrl = resolved
+			}
+			if r.CurrentSong.Anime.Banner != nil {
+				resolved := r.MediaService.Resolve(r.CurrentSong.Anime.Banner)
+				songDTO.Anime.BannerUrl = resolved
+			}
+		}
+
+		results := make(map[string]map[string]interface{})
+		var correctSlug string
+		var correctUUID string
+		var correctAnilistID int64
+		if r.CurrentSong.Anime != nil {
+			correctSlug = r.CurrentSong.Anime.Slug
+			correctUUID = r.CurrentSong.Anime.UUID
+			if r.CurrentSong.Anime.AnilistID != nil {
+				correctAnilistID = *r.CurrentSong.Anime.AnilistID
+			}
+		}
+
+		for sid, p := range r.Players {
+			if p.IsSpectator {
+				continue
+			}
+			correct := false
+			if p.LastGuess != "" {
+				guessClean := p.LastGuess
+				if guessClean == correctSlug || guessClean == correctUUID {
+					correct = true
+				} else if correctAnilistID > 0 && guessClean == fmt.Sprintf("%d", correctAnilistID) {
+					correct = true
+				}
+			}
+			results[sid] = map[string]interface{}{
+				"correct": correct,
+				"guess":   p.LastGuess,
+			}
+		}
+
+		revealData = map[string]interface{}{
+			"song":    songDTO,
+			"results": results,
+		}
+	}
+
 	return map[string]interface{}{
 		"room_id":       r.RoomID,
 		"status":        r.Status,
@@ -1086,6 +1137,7 @@ func (r *LobbyRoom) getRoomStatePayload() map[string]interface{} {
 		"spectators":    spectatorsList,
 		"timer_left":    timerLeft,
 		"round_data":    roundData,
+		"reveal_data":   revealData,
 	}
 }
 

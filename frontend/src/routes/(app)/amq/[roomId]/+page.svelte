@@ -304,6 +304,9 @@
           roomState = msg.payload;
           localTimer = msg.payload.timer_left ?? 0;
           playersVersion++; // Force re-key all player items
+          if (roomState.status === "reveal" && roomState.reveal_data && !roundResult) {
+            roundResult = roomState.reveal_data;
+          }
           break;
         case "round_start":
           currentRoundData = msg.payload;
@@ -954,7 +957,7 @@
                     {roundResult.song.song_romaji || "Unknown Theme"}
                   </h3>
                   <div class="text-sm font-bold text-on-surface-variant">
-                    by {roundResult.song.artists.map((a: any) => a.name).join(", ")}
+                    by {roundResult.song.artists?.map((a: any) => a.name).join(", ") || "Unknown Artist"}
                   </div>
                   <div class="text-xs text-on-surface-variant pt-2">
                     Anime: <span class="font-bold text-on-surface">{roundResult.song.anime?.title}</span>

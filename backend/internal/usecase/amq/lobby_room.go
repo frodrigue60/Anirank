@@ -266,6 +266,15 @@ func (r *LobbyRoom) handleJoin(ev *JoinEvent) {
 		existingPlayer.SessionID = ev.SessionID
 		existingPlayer.Offline = false
 		existingPlayer.OfflineSince = nil
+		existingPlayer.Nickname = ev.Nickname
+		if ev.User != nil && ev.User.AvatarUrl != nil {
+			avatar := *ev.User.AvatarUrl
+			existingPlayer.AvatarURL = &avatar
+		}
+		if ev.User != nil && ev.User.ProfileColor != nil {
+			color := *ev.User.ProfileColor
+			existingPlayer.ProfileColor = &color
+		}
 
 		r.Players[ev.SessionID] = existingPlayer
 		r.Conns[ev.SessionID] = ev.Conn

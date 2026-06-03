@@ -68,6 +68,7 @@ type LobbyRoom struct {
 	TimerType     string // "guess", "reveal"
 	TimerStart    time.Time
 	TimerDuration time.Duration
+	StartPercent  float64
 
 	// Dependencies
 	AnimeRepo    domain.AnimeRepository
@@ -541,6 +542,9 @@ func (r *LobbyRoom) startRound() {
 		}
 	}
 
+	// Generate random starting percent between 0% and 55%
+	r.StartPercent = rand.Float64() * 0.55
+
 	// Prepare multiple choice options payload
 	r.CurrentOptions = nil
 	if r.Config.GameType == "multiple-choice" && r.CurrentSong.Anime != nil {
@@ -572,6 +576,7 @@ func (r *LobbyRoom) startRound() {
 		"audio_url":     audioURL,
 		"game_type":     r.Config.GameType,
 		"options":       r.CurrentOptions,
+		"start_percent": r.StartPercent,
 	})
 	r.broadcast("lobby_state_update", r.getRoomStatePayload())
 }
@@ -820,6 +825,7 @@ func (r *LobbyRoom) getRoomStatePayload() map[string]interface{} {
 			"audio_url":     audioURL,
 			"game_type":     r.Config.GameType,
 			"options":       r.CurrentOptions,
+			"start_percent": r.StartPercent,
 		}
 	}
 

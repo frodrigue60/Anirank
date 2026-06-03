@@ -85,6 +85,36 @@
     localStorage.setItem("amq_only_audio", onlyAudio.toString());
   }
 
+  function handleLoadedMetadata() {
+    if (!videoElement || !activeRound) return;
+    
+    const startPercent = activeRound.start_percent ?? 0;
+    const duration = videoElement.duration;
+    
+    if (isNaN(duration) || duration <= 0) return;
+
+    let targetTime = duration * startPercent;
+    
+    // If the round is in progress (e.g. on page refresh/reconnection),
+    // offset the current time by the elapsed time in the guess phase.
+    if (status === "playing") {
+      const guessTime = activeRound.guess_time ?? 20;
+      const elapsed = Math.max(0, guessTime - localTimer);
+      targetTime += elapsed;
+    } else if (status === "reveal") {
+      // In reveal phase, offset by full guess time
+      const guessTime = activeRound.guess_time ?? 20;
+      targetTime += guessTime;
+    }
+    
+    if (targetTime < duration) {
+      videoElement.currentTime = targetTime;
+    } else {
+      videoElement.currentTime = 0;
+    }
+    console.log(`[AMQ] Seeking media to ${targetTime}s (StartPercent: ${startPercent}, Duration: ${duration}s)`);
+  }
+
   let fadeInterval: any;
   function fadeInVolume() {
     clearInterval(fadeInterval);
@@ -148,7 +178,6 @@
           // Autoplay video/audio
           setTimeout(() => {
             if (videoElement) {
-              videoElement.currentTime = 0;
               fadeInVolume();
               videoElement.play().catch(e => console.warn("Autoplay blocked:", e));
             }
@@ -396,6 +425,7 @@
               <video
                 bind:this={videoElement}
                 src={activeRound.audio_url}
+                onloadedmetadata={handleLoadedMetadata}
                 class="w-full h-full object-cover {(status === 'playing' || onlyAudio) ? 'opacity-0 absolute pointer-events-none w-0 h-0' : 'opacity-100 block'}"
               >
                 <track kind="captions" />

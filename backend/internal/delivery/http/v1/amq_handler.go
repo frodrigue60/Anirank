@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"anirank/api/internal/domain"
@@ -212,7 +213,11 @@ func (h *AMQHandler) WSHandler(c *websocket.Conn) {
 			var payload struct {
 				TargetSessionID string `json:"target_session_id"`
 			}
-			if err := json.Unmarshal(msg.Payload, &payload); err == nil && payload.TargetSessionID != "" {
+			log.Printf("[AMQ] Received transfer_host request with payload: %s", string(msg.Payload))
+			if err := json.Unmarshal(msg.Payload, &payload); err != nil {
+				log.Printf("[AMQ] Error unmarshaling transfer_host payload: %v", err)
+			} else {
+				log.Printf("[AMQ] Dispatching EvTransferHost: SessionID=%s, TargetSessionID=%s", sessionID, payload.TargetSessionID)
 				room.SendEvent(amq.RoomEvent{Type: amq.EvTransferHost, Data: &amq.TransferHostEvent{
 					SessionID:       sessionID,
 					TargetSessionID: payload.TargetSessionID,

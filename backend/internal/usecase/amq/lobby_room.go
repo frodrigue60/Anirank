@@ -1197,17 +1197,37 @@ func (r *LobbyRoom) ensureHostActive() {
 // handleTransferHost handles transferring the host status manually.
 func (r *LobbyRoom) handleTransferHost(ev *TransferHostEvent) {
 	r.mu.Lock()
-	defer r.mu.Unlock()
+
+	log.Printf("[AMQ] handleTransferHost: ev.SessionID=%s, ev.TargetSessionID=%s", ev.SessionID, ev.TargetSessionID)
 
 	// Verify requester is the host
 	requester, exists := r.Players[ev.SessionID]
-	if !exists || !requester.IsHost {
+	if !exists {
+		log.Printf("[AMQ] transfer_host failed: requester session %s not found in room", ev.SessionID)
+		r.mu.Unlock()
+		return
+	}
+	if !requester.IsHost {
+		log.Printf("[AMQ] transfer_host failed: requester %s is not host (IsHost=%t)", requester.Nickname, requester.IsHost)
+		r.mu.Unlock()
 		return
 	}
 
 	// Verify target player exists and is online/not spectator
 	target, exists := r.Players[ev.TargetSessionID]
-	if !exists || target.Offline || target.IsSpectator {
+	if !exists {
+		log.Printf("[AMQ] transfer_host failed: target session %s not found in room", ev.TargetSessionID)
+		r.mu.Unlock()
+		return
+	}
+	if target.Offline {
+		log.Printf("[AMQ] transfer_host failed: target %s is offline", target.Nickname)
+		r.mu.Unlock()
+		return
+	}
+	if target.IsSpectator {
+		log.Printf("[AMQ] transfer_host failed: target %s is a spectator", target.Nickname)
+		r.mu.Unlock()
 		return
 	}
 
@@ -1217,12 +1237,17 @@ func (r *LobbyRoom) handleTransferHost(ev *TransferHostEvent) {
 	target.IsReady = true // Host is always ready
 	log.Printf("[AMQ] Host transferred manually from %s to %s", requester.Nickname, target.Nickname)
 
+	requesterName := requester.Nickname
+	targetName := target.Nickname
+
+	r.mu.Unlock()
+
 	// Broadcast updated state
 	r.broadcast("lobby_state_update", r.getRoomStatePayload())
 
 	r.broadcast("chat_message", map[string]interface{}{
 		"sender":    "System",
-		"text":      fmt.Sprintf("%s transferred host to %s", requester.Nickname, target.Nickname),
+		"text":      fmt.Sprintf("%s transferred host to %s", requesterName, targetName),
 		"type":      "system",
 		"timestamp": time.Now(),
 	})

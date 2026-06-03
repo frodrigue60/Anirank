@@ -92,6 +92,7 @@ type LobbyRoom struct {
 	CreatedAt     time.Time
 	LastActive    time.Time
 	Closed        bool
+	OnDestroy     func(roomID string)
 
 	// Dependencies
 	AnimeRepo    domain.AnimeRepository
@@ -1307,4 +1308,8 @@ func (r *LobbyRoom) handleCloseRoom(sessionID string) {
 
 	// Close all connections and exit event loop
 	r.Close()
+
+	if r.OnDestroy != nil {
+		r.OnDestroy(r.RoomID)
+	}
 }

@@ -87,6 +87,12 @@ func (m *LobbyManager) CreateRoom(ctx context.Context, config domain.AMQConfig, 
 
 	// Save in registry and start event loop
 	m.rooms[roomID] = room
+	room.OnDestroy = func(rid string) {
+		m.mu.Lock()
+		delete(m.rooms, rid)
+		m.mu.Unlock()
+		log.Printf("[AMQ] Room %s immediately removed from registry", rid)
+	}
 	room.Start()
 
 	return roomID, nil

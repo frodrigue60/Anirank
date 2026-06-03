@@ -15,8 +15,8 @@
     room_id: string;
     name: string;
     host_nickname: string;
-    player_count: int;
-    max_rounds: int;
+    player_count: number;
+    max_rounds: number;
     status: string;
     private: boolean;
     theme_type: string;

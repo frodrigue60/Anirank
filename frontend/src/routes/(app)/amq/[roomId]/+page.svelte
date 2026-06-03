@@ -179,6 +179,9 @@
           setTimeout(() => {
             if (videoElement) {
               fadeInVolume();
+              if (videoElement.readyState >= 1) {
+                handleLoadedMetadata();
+              }
               videoElement.play().catch(e => console.warn("Autoplay blocked:", e));
             }
           }, 100);

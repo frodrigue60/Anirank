@@ -10,6 +10,7 @@
   import Play from "lucide-svelte/icons/play";
   import RefreshCw from "lucide-svelte/icons/refresh-cw";
   import Eye from "lucide-svelte/icons/eye";
+  import UserIcon from "lucide-svelte/icons/user";
 
   interface RoomInfo {
     room_id: string;
@@ -32,6 +33,7 @@
   // Guest details (for unauthenticated users)
   let guestNickname = $state("");
   let deviceId = $state("");
+  let hasSavedNickname = $state(false);
 
   // Room config form
   let roomName = $state("");
@@ -56,11 +58,15 @@
       }
       deviceId = storedDeviceId;
       guestNickname = localStorage.getItem("amq_nickname") || "";
-      if (!authState.isAuthenticated && !guestNickname) {
-        showNicknameModal = true;
-      }
+      hasSavedNickname = !!guestNickname;
     }
     fetchRooms();
+  });
+
+  $effect(() => {
+    if (!authState.loading && !authState.isAuthenticated && !hasSavedNickname) {
+      showNicknameModal = true;
+    }
   });
 
   async function fetchRooms() {
@@ -85,9 +91,16 @@
       return false;
     }
     localStorage.setItem("amq_nickname", guestNickname.trim());
+    hasSavedNickname = true;
     showNicknameModal = false;
     errorMsg = "";
     return true;
+  }
+
+  function cancelNicknameChange() {
+    guestNickname = localStorage.getItem("amq_nickname") || "";
+    showNicknameModal = false;
+    errorMsg = "";
   }
 
   async function handleCreateRoom() {
@@ -212,6 +225,15 @@
         <RefreshCw size={16} class={loading ? "animate-spin" : ""} />
         Refresh
       </button>
+      {#if !authState.isAuthenticated && hasSavedNickname}
+        <button
+          onclick={() => showNicknameModal = true}
+          class="h-12 bg-surface-highest text-on-surface border border-outline-variant hover:bg-surface-container px-4 rounded-sm font-bold text-sm flex items-center gap-2 transition-all cursor-pointer"
+        >
+          <UserIcon size={16} />
+          Change Nickname
+        </button>
+      {/if}
     </div>
 
     <div class="flex gap-2">
@@ -433,7 +455,9 @@
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-[#09070e] p-4">
       <div class="bg-surface-highest max-w-sm w-full rounded-md shadow-2xl relative z-10 p-8 space-y-6 border border-outline-variant text-center">
         <div class="space-y-2">
-          <h3 class="text-2xl font-black text-on-surface tracking-tight">Enter Guest Nickname</h3>
+          <h3 class="text-2xl font-black text-on-surface tracking-tight">
+            {hasSavedNickname ? "Change Nickname" : "Enter Guest Nickname"}
+          </h3>
           <p class="text-xs text-on-surface-variant leading-relaxed">
             Set a temporary nickname to join or create lobbies. To save stats, earn badges, and gain XP, please log in.
           </p>
@@ -453,12 +477,22 @@
             <p class="text-red-500 text-xs font-semibold">{errorMsg}</p>
           {/if}
 
-          <button
-            onclick={saveNickname}
-            class="w-full h-12 bg-primary hover:bg-primary-container text-white rounded-sm font-bold text-sm transition-colors cursor-pointer"
-          >
-            Enter Lobby
-          </button>
+          <div class="flex gap-4">
+            {#if hasSavedNickname}
+              <button
+                onclick={cancelNicknameChange}
+                class="flex-1 h-12 bg-surface hover:bg-surface-low border border-outline-variant text-on-surface rounded-sm font-bold text-sm transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+            {/if}
+            <button
+              onclick={saveNickname}
+              class="flex-1 h-12 bg-primary hover:bg-primary-container text-white rounded-sm font-bold text-sm transition-colors cursor-pointer {!hasSavedNickname ? 'w-full' : ''}"
+            >
+              {hasSavedNickname ? "Save" : "Enter Lobby"}
+            </button>
+          </div>
         </div>
       </div>
     </div>

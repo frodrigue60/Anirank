@@ -1207,24 +1207,19 @@ func (r *LobbyRoom) handleChat(ev *ChatEvent) {
 
 // ensureHostActive assumes the room lock (r.mu) is already held.
 func (r *LobbyRoom) ensureHostActive() {
-	var onlineHost *domain.AMQPlayer
+	var currentHost *domain.AMQPlayer
 	var firstOnlinePlayer *domain.AMQPlayer
 
 	for _, p := range r.Players {
-		if !p.Offline && !p.IsSpectator {
-			if firstOnlinePlayer == nil {
-				firstOnlinePlayer = p
-			}
-			if p.IsHost {
-				onlineHost = p
-			}
+		if p.IsHost {
+			currentHost = p
+		}
+		if !p.Offline && !p.IsSpectator && firstOnlinePlayer == nil {
+			firstOnlinePlayer = p
 		}
 	}
 
-	if onlineHost == nil && firstOnlinePlayer != nil {
-		for _, p := range r.Players {
-			p.IsHost = false
-		}
+	if currentHost == nil && firstOnlinePlayer != nil {
 		firstOnlinePlayer.IsHost = true
 		firstOnlinePlayer.IsReady = true
 		log.Printf("[AMQ] Host assigned/migrated to online player %s", firstOnlinePlayer.Nickname)
@@ -1294,22 +1289,33 @@ func (r *LobbyRoom) handleTransferHost(ev *TransferHostEvent) {
 }
 
 func (r *LobbyRoom) handleCloseRoom(sessionID string) {
+	log.Printf("[AMQ] handleCloseRoom requested by sessionID: %s", sessionID)
 	r.mu.Lock()
 	player, exists := r.Players[sessionID]
-	if !exists || !player.IsHost {
+	if !exists {
+		log.Printf("[AMQ] handleCloseRoom failed: player session %s not found in room", sessionID)
+		r.mu.Unlock()
+		return
+	}
+	if !player.IsHost {
+		log.Printf("[AMQ] handleCloseRoom failed: player %s (session %s) is not the host (IsHost=false)", player.Nickname, sessionID)
 		r.mu.Unlock()
 		return
 	}
 	r.Closed = true
+	log.Printf("[AMQ] Room %s marked as Closed", r.RoomID)
 	r.mu.Unlock()
 
 	// Broadcast room_closed to everyone
+	log.Printf("[AMQ] Broadcasting room_closed event to all sessions in room %s", r.RoomID)
 	r.broadcast("room_closed", nil)
 
 	// Close all connections and exit event loop
+	log.Printf("[AMQ] Closing connections for room %s", r.RoomID)
 	r.Close()
 
 	if r.OnDestroy != nil {
+		log.Printf("[AMQ] Invoking OnDestroy callback for room %s", r.RoomID)
 		r.OnDestroy(r.RoomID)
 	}
 }

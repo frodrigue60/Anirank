@@ -96,14 +96,49 @@
   let isRedirecting = false;
 
 
+  let showNicknamePrompt = $state(false);
+  let nicknameError = $state("");
+
   onMount(() => {
     deviceId = localStorage.getItem("amq_device_id") || "";
-    guestNickname = localStorage.getItem("amq_nickname") || "Guest";
+    if (!deviceId) {
+      deviceId = crypto.randomUUID();
+      localStorage.setItem("amq_device_id", deviceId);
+    }
     onlyAudio = localStorage.getItem("amq_only_audio") === "true";
     const urlParams = new URLSearchParams(window.location.search);
     isSpectator = urlParams.get("spectator") === "true";
-    connectWebSocket();
+
+    if (!authState.isAuthenticated) {
+      const savedNickname = localStorage.getItem("amq_nickname") || "";
+      if (!savedNickname) {
+        showNicknamePrompt = true;
+      } else {
+        guestNickname = savedNickname;
+        connectWebSocket();
+      }
+    } else {
+      connectWebSocket();
+    }
   });
+
+  function confirmNickname() {
+    nicknameError = "";
+    if (!guestNickname.trim()) {
+      nicknameError = "Nickname is required.";
+      return;
+    }
+    localStorage.setItem("amq_nickname", guestNickname.trim());
+    showNicknamePrompt = false;
+
+    if (isSpectator) {
+      const url = new URL(window.location.href);
+      url.searchParams.set("spectator", "true");
+      window.history.replaceState({}, "", url.toString());
+    }
+
+    connectWebSocket();
+  }
 
   onDestroy(() => {
     closeWebSocket();
@@ -879,6 +914,48 @@
       </section>
     {/if}
   </div>
+  {/if}
+
+  {#if showNicknamePrompt}
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-[#09070e]/80 p-4 backdrop-blur-xs">
+      <div class="bg-surface-highest max-w-sm w-full rounded-md shadow-2xl p-8 border border-outline-variant space-y-6 text-center">
+        <div class="space-y-2">
+          <h3 class="text-xl font-black text-on-surface tracking-tight">Join Game Room</h3>
+          <p class="text-xs text-on-surface-variant">Enter a nickname to identify yourself in the lobby.</p>
+        </div>
+
+        <div class="space-y-4">
+          <input
+            type="text"
+            bind:value={guestNickname}
+            placeholder="Type your nickname..."
+            maxlength="15"
+            class="w-full h-12 bg-surface border border-outline-variant rounded-sm px-4 text-sm text-center text-on-surface focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all font-bold"
+            onkeydown={(e) => { if (e.key === "Enter") confirmNickname(); }}
+          />
+
+          {#if nicknameError}
+            <p class="text-xs text-red-500 font-bold">{nicknameError}</p>
+          {/if}
+        </div>
+
+        <div class="flex gap-3 pt-2">
+          <button
+            onclick={() => { isSpectator = true; confirmNickname(); }}
+            class="flex-1 h-11 bg-surface hover:bg-surface-low border border-outline-variant text-on-surface rounded-sm font-bold text-xs transition-colors cursor-pointer flex items-center justify-center gap-1"
+          >
+            <Eye size={14} />
+            Watch
+          </button>
+          <button
+            onclick={() => { isSpectator = false; confirmNickname(); }}
+            class="flex-1 h-11 bg-primary hover:bg-primary-container text-white rounded-sm font-bold text-xs transition-colors cursor-pointer"
+          >
+            Play Game
+          </button>
+        </div>
+      </div>
+    </div>
   {/if}
 </main>
 

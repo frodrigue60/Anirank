@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -266,6 +267,7 @@ func (r *LobbyRoom) sendTo(sessionID string, msgType string, payload interface{}
 }
 
 func (r *LobbyRoom) handleJoin(ev *JoinEvent) {
+	debugLog("[JOIN] handleJoin start: sessionID=%s, nickname=%s, deviceID=%s, spectator=%t", ev.SessionID, ev.Nickname, ev.DeviceID, ev.AsSpectator)
 	r.mu.Lock()
 	// Check if this guest already exists in the room by DeviceID
 	var existingPlayer *domain.AMQPlayer
@@ -273,7 +275,7 @@ func (r *LobbyRoom) handleJoin(ev *JoinEvent) {
 
 	if ev.User == nil && ev.DeviceID != "" {
 		for sid, p := range r.Players {
-			if p.UserUUID == "" && p.DeviceID == ev.DeviceID {
+			if p.UserUUID == "" && p.DeviceID == ev.DeviceID && p.Nickname == ev.Nickname {
 				existingPlayer = p
 				oldSessionID = sid
 				break
@@ -291,30 +293,21 @@ func (r *LobbyRoom) handleJoin(ev *JoinEvent) {
 	}
 
 	if existingPlayer == nil && ev.User == nil {
-		// Fallback for guests: match by Nickname (prefer offline, but fallback to online to prevent duplication)
-		var match *domain.AMQPlayer
-		var matchSid string
+		// Fallback for guests: match by Nickname but ONLY if the existing player is offline.
+		// We should never hijack an online player's active session.
 		for sid, p := range r.Players {
-			if p.UserUUID == "" && p.Nickname == ev.Nickname {
-				if p.Offline {
-					match = p
-					matchSid = sid
-					break
-				} else {
-					match = p
-					matchSid = sid
-				}
+			if p.UserUUID == "" && p.Nickname == ev.Nickname && p.Offline {
+				existingPlayer = p
+				oldSessionID = sid
+				break
 			}
-		}
-		if match != nil {
-			existingPlayer = match
-			oldSessionID = matchSid
 		}
 	}
 
 	if existingPlayer != nil {
 		// Reconnection: transfer state to new SessionID
 		log.Printf("[AMQ] Reassociating player %s (old session %s, new session %s)", existingPlayer.Nickname, oldSessionID, ev.SessionID)
+		debugLog("[JOIN] Reassociating player %s (old session %s, new session %s, deviceID=%s)", existingPlayer.Nickname, oldSessionID, ev.SessionID, existingPlayer.DeviceID)
 
 		// Do NOT call oldConn.Close() here. A forced close from the server side
 		// causes the client's WebSocket onclose event to fire with wasClean=false,
@@ -475,9 +468,11 @@ func (r *LobbyRoom) handleConfigUpdate(ev *ConfigUpdateEvent) {
 }
 
 func (r *LobbyRoom) handleStartGame(sessionID string) {
+	debugLog("[START] handleStartGame called: sessionID=%s", sessionID)
 	r.mu.Lock()
 	player, exists := r.Players[sessionID]
 	if !exists || !player.IsHost || r.Status != "lobby" {
+		debugLog("[START] handleStartGame early return: exists=%t, IsHost=%t, r.Status=%s", exists, exists && player.IsHost, r.Status)
 		r.mu.Unlock()
 		return
 	}
@@ -485,6 +480,7 @@ func (r *LobbyRoom) handleStartGame(sessionID string) {
 	// Verify all active players are ready
 	for _, p := range r.Players {
 		if !p.Offline && !p.IsSpectator && !p.IsReady {
+			debugLog("[START] Cannot start. Player %s (session %s) is not ready.", p.Nickname, p.SessionID)
 			r.mu.Unlock()
 			r.sendTo(sessionID, "error", "Cannot start. All active players must toggle Ready.")
 			return
@@ -507,9 +503,11 @@ func (r *LobbyRoom) handleStartGame(sessionID string) {
 	}
 	r.mu.Unlock()
 
+	debugLog("[START] Broadcasting lobby_state_update. Status=playing, MaxRounds=%d, PersonalizedPool=%t, playerUserUUIDs=%v", maxRounds, personalizedPool, playerUserUUIDs)
 	r.broadcast("lobby_state_update", r.getRoomStatePayload())
 
 	go func() {
+		debugLog("[START] Async song pool loading goroutine started")
 		anilistCtx, anilistCancel := context.WithTimeout(context.Background(), 8*time.Second)
 		dbCtx, dbCancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer func() {
@@ -517,6 +515,7 @@ func (r *LobbyRoom) handleStartGame(sessionID string) {
 			dbCancel()
 			if err := recover(); err != nil {
 				log.Printf("[AMQ] StartGame crashed: %v", err)
+				debugLog("[START] Async goroutine crashed (panic): %v", err)
 				r.SendEvent(RoomEvent{Type: EvResetToLobby, Data: "Game could not start due to an internal error."})
 			}
 		}()
@@ -1401,4 +1400,14 @@ func (r *LobbyRoom) handleCloseRoom(sessionID string) {
 		log.Printf("[AMQ] Invoking OnDestroy callback for room %s", r.RoomID)
 		r.OnDestroy(r.RoomID)
 	}
+}
+
+func debugLog(format string, args ...interface{}) {
+	f, err := os.OpenFile("tmp/amq_debug.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	logStr := fmt.Sprintf("[%s] ", time.Now().Format("15:04:05.000")) + fmt.Sprintf(format, args...) + "\n"
+	_, _ = f.WriteString(logStr)
 }

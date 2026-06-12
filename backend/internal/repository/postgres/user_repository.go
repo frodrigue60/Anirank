@@ -493,7 +493,7 @@ func (r *userRepository) GetFollowingCount(ctx context.Context, userID uint64) (
 func (r *userRepository) GetFollowers(ctx context.Context, userID uint64, limit, offset int) ([]domain.User, error) {
 	var users []domain.User
 	query := `
-		SELECT u.id, u.uuid, u.name, u.slug, u.avatar, u.banner
+		SELECT u.id, u.uuid, u.name, u.slug, u.avatar, u.banner, u.xp, u.level, u.created_at
 		FROM users u
 		JOIN follows f ON u.id = f.follower_id
 		WHERE f.followed_id = $1
@@ -510,7 +510,7 @@ func (r *userRepository) GetFollowers(ctx context.Context, userID uint64, limit,
 func (r *userRepository) GetFollowing(ctx context.Context, userID uint64, limit, offset int) ([]domain.User, error) {
 	var users []domain.User
 	query := `
-		SELECT u.id, u.uuid, u.name, u.slug, u.avatar, u.banner
+		SELECT u.id, u.uuid, u.name, u.slug, u.avatar, u.banner, u.xp, u.level, u.created_at
 		FROM users u
 		JOIN follows f ON u.id = f.followed_id
 		WHERE f.follower_id = $1

@@ -9,7 +9,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "5700:5432"
 
   # --- CACHE ---
   redis:
@@ -61,6 +61,7 @@ services:
       - ./backend/.env
     environment:
       DB_HOST: db
+      DB_PORT: "5432"
       REDIS_URL: redis://redis:6379
       S3_ENDPOINT: http://minio:9000
       S3_USE_SSL: "false"

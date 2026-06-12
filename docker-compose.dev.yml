@@ -16,6 +16,8 @@ services:
       - go_mod_cache:/go/pkg/mod
     environment:
       - APP_ENV=development
+      - DB_HOST=db
+      - DB_PORT=5432
     ports:
       - "8080:8080"
 

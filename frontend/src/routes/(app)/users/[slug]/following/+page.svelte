@@ -67,7 +67,7 @@
       {#each following as user}
         <a
           href={`/users/${user.slug}`}
-          class="group bg-surface-container rounded-sm p-4 border border-on-surface-variant/10 hover:border-primary/30 transition-all hover:bg-surface-highest flex items-center gap-4 shadow-sm"
+          class="group bg-surface-container p-4 rounded-sm border border-on-surface-variant/10 hover:border-primary/30 transition-all hover:bg-surface-highest flex items-center gap-4 shadow-sm"
         >
           <div
             class="size-14 rounded-md overflow-hidden bg-surface-low border border-on-surface-variant/10 group-hover:border-primary/50 transition-colors shadow-inner"
@@ -86,7 +86,7 @@
             >
               {user.name}
             </h3>
-            <p class="text-on-surface-variant text-xs truncate font-medium">@{user.slug}</p>
+            <p class="text-on-surface-variant text-xs truncate font-medium">Lvl {user.level}</p>
           </div>
           <ChevronRight
             class="text-on-surface-variant/30 group-hover:text-primary transition-colors"

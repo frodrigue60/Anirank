@@ -12,6 +12,7 @@
   import Sparkles from "lucide-svelte/icons/sparkles";
   import Settings from "lucide-svelte/icons/settings";
   import BellOff from "lucide-svelte/icons/bell-off";
+  import Trophy from "lucide-svelte/icons/trophy";
   import OptimizedImage from "$lib/components/OptimizedImage.svelte";
 
   let { data } = $props();
@@ -80,6 +81,7 @@
     like: Heart,
     artist_new_song: Music,
     badge_award: Sparkles,
+    level_up: Trophy,
   };
 
   function getNotificationIcon(type: string) {
@@ -99,6 +101,8 @@
         return "text-purple-400 bg-purple-400/10";
       case "badge_award":
         return "text-amber-400 bg-amber-400/10 shadow-lg shadow-amber-400/5";
+      case "level_up":
+        return "text-teal-400 bg-teal-400/10 shadow-lg shadow-teal-400/5";
       default:
         return "text-primary bg-primary/10";
     }
@@ -292,6 +296,8 @@
                           Someone liked your content
                         {:else if notification.type === "badge_award"}
                           You've earned the <span class="font-black text-amber-400">{notification.data.badge_name}</span> insignia!
+                        {:else if notification.type === "level_up"}
+                          You've leveled up to Level <span class="font-black text-teal-400">{notification.data.level}</span>!
                         {:else}
                           New notification
                         {/if}

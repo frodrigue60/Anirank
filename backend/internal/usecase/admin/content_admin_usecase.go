@@ -2574,7 +2574,7 @@ func (u *ContentAdminUsecase) UpdateVariant(ctx context.Context, v *domain.SongV
 	return nil
 }
 
-func (u *ContentAdminUsecase) HandleVariantVideo(c *fiber.Ctx, v *domain.SongVariant) {
+func (u *ContentAdminUsecase) HandleVariantVideo(c *fiber.Ctx, v *domain.SongVariant) error {
 	updated := false
 	statusStr := c.FormValue("status")
 	if statusStr != "" {
@@ -2593,14 +2593,20 @@ func (u *ContentAdminUsecase) HandleVariantVideo(c *fiber.Ctx, v *domain.SongVar
 			// Validation: mp4, webm only
 			if contentType != "video/mp4" && contentType != "video/webm" {
 				log.Printf("[ADMIN-ERROR] Invalid video content type: %s\n", contentType)
-				return
+				return fmt.Errorf("invalid video format: only mp4 and webm are accepted")
+			}
+
+			// Enforce 200MB size limit at the usecase layer
+			const maxVideoSize = 200 * 1024 * 1024 // 200MB
+			if fileHeader.Size > maxVideoSize {
+				return fmt.Errorf("video file exceeds the 200MB maximum allowed size")
 			}
 
 			// Determine storage folder based on year/season
 			prefix := u.resolveVideoStoragePath(c.Context(), v)
 
 			// Use specialized UploadVideo to avoid image optimization logic
-			if path, url, err := u.mediaService.UploadVideo(c.Context(), prefix, v.ID, file, fileHeader.Size, contentType, fileHeader.Filename); err == nil {
+			if path, url, uploadErr := u.mediaService.UploadVideo(c.Context(), prefix, v.ID, file, fileHeader.Size, contentType, fileHeader.Filename); uploadErr == nil {
 				if v.Video == nil {
 					v.Video = &domain.SongVariantVideo{}
 				}
@@ -2611,7 +2617,8 @@ func (u *ContentAdminUsecase) HandleVariantVideo(c *fiber.Ctx, v *domain.SongVar
 				v.Video.EmbedCode = nil
 				updated = true
 			} else {
-				log.Printf("[ADMIN-ERROR] Video upload failed for variant %d: %v\n", v.ID, err)
+				log.Printf("[ADMIN-ERROR] Video upload failed for variant %d: %v\n", v.ID, uploadErr)
+				return fmt.Errorf("video upload failed: %w", uploadErr)
 			}
 		}
 	} else {
@@ -2634,6 +2641,7 @@ func (u *ContentAdminUsecase) HandleVariantVideo(c *fiber.Ctx, v *domain.SongVar
 	if updated {
 		_ = u.variantRepo.Update(c.Context(), v)
 	}
+	return nil
 }
 
 func (u *ContentAdminUsecase) DeleteVariant(ctx context.Context, id uint64, meta domain.AuditMetadata) error {

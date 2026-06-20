@@ -249,7 +249,7 @@
               <p class="pl-1">or drag and drop</p>
             </div>
             <p class="text-[10px] text-zinc-500 font-medium italic">
-              MP4 or WEBM recommended (Max 100MB)
+              MP4 or WEBM recommended (Max 200MB)
             </p>
           </div>
         </div>

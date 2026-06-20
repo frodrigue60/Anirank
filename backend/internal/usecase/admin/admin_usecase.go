@@ -240,8 +240,8 @@ func (u *AdminUsecase) UpdateVariant(ctx context.Context, v *domain.SongVariant,
 	return u.contentAdmin.UpdateVariant(ctx, v, meta)
 }
 
-func (u *AdminUsecase) HandleVariantVideo(c *fiber.Ctx, v *domain.SongVariant) {
-	u.contentAdmin.HandleVariantVideo(c, v)
+func (u *AdminUsecase) HandleVariantVideo(c *fiber.Ctx, v *domain.SongVariant) error {
+	return u.contentAdmin.HandleVariantVideo(c, v)
 }
 
 func (u *AdminUsecase) DeleteVariant(ctx context.Context, id uint64, meta domain.AuditMetadata) error {

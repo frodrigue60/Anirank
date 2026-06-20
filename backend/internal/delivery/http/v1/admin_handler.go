@@ -1005,7 +1005,9 @@ func (h *AdminHandler) UpdateVariantVideo(c *fiber.Ctx) error {
 		return err
 	}
 
-	h.usecase.HandleVariantVideo(c, v)
+	if err := h.usecase.HandleVariantVideo(c, v); err != nil {
+		return domain.NewAppError(422, err.Error(), err)
+	}
 	if err := h.usecase.UpdateVariant(c.Context(), v, h.getAuditMetadata(c)); err != nil {
 		return err
 	}

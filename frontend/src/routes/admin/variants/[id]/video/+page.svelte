@@ -20,11 +20,13 @@
   let videoFile: File | null = $state(null);
   // svelte-ignore state_referenced_locally
   let embedCode = $state(variant?.video?.embed_code || variant?.video?.embed_url || "");
+  let uploadProgress = $state(0);
 
   async function handleSave() {
     loading = true;
     errorMsg = "";
     successMsg = "";
+    uploadProgress = 0;
 
     try {
       const formData = new FormData();
@@ -49,6 +51,13 @@
         {
           headers: {
             "Content-Type": "multipart/form-data",
+          },
+          onUploadProgress: (progressEvent) => {
+            if (progressEvent.total) {
+              uploadProgress = Math.round(
+                (progressEvent.loaded * 100) / progressEvent.total
+              );
+            }
           },
         },
       );
@@ -301,6 +310,22 @@
         </p>
       </div>
 
+      <!-- Progress Bar -->
+      {#if loading && videoFile}
+        <div class="space-y-2" transition:slide>
+          <div class="flex justify-between items-center text-xs text-zinc-400 font-medium">
+            <span>Uploading "{videoFile.name}"</span>
+            <span class="font-bold text-blue-400">{uploadProgress}%</span>
+          </div>
+          <div class="w-full bg-zinc-800 rounded-full h-2 overflow-hidden border border-zinc-700/50">
+            <div 
+              class="bg-blue-500 h-full rounded-full transition-all duration-300 ease-out" 
+              style="width: {uploadProgress}%"
+            ></div>
+          </div>
+        </div>
+      {/if}
+
       <!-- Save Button -->
       <div class="pt-4">
         <button
@@ -328,7 +353,11 @@
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
               ></path>
             </svg>
-            SYNCHRONIZING ASSET...
+            {#if videoFile}
+              UPLOADING VIDEO ({uploadProgress}%)...
+            {:else}
+              SYNCHRONIZING ASSET...
+            {/if}
           {:else}
             <svg
               class="w-4 h-4 group-hover:scale-110 transition-transform"

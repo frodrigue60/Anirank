@@ -896,7 +896,19 @@ func (r *animeRepository) UpsertFromAnimeThemes(ctx context.Context, anime *doma
 		}
 	}
 
-	// 3. Fresh insert
+	// 3. Fresh insert — resolve slug collisions before INSERT
+	merged, err := r.prepareAnimeSlugForInsert(ctx, anime)
+	if err != nil {
+		return result, err
+	}
+	if merged {
+		result.MergedAnilist = true
+		return result, nil
+	}
+	if anime.ID > 0 {
+		return result, nil
+	}
+
 	anime.UUID = uuid.New().String()
 	var returnedID uint64
 	err = r.db.QueryRowContext(ctx, `
@@ -933,6 +945,15 @@ func (r *animeRepository) UpsertFromAnimeThemes(ctx context.Context, anime *doma
 				return result, nil
 			}
 		}
+		if isPQUniqueViolation(err, "posts_slug_unique") && anime.AnimeThemesID != nil {
+			if retryID, retryErr := r.retryAnimeInsertWithUniqueSlug(ctx, anime, now); retryErr != nil {
+				return result, retryErr
+			} else if retryID > 0 {
+				anime.ID = retryID
+				result.Created = true
+				return result, nil
+			}
+		}
 		return result, err
 	}
 
@@ -966,10 +987,143 @@ func (r *animeRepository) EnrichFromAniList(ctx context.Context, anilistID int64
 	return err
 }
 
-// buildUniqueAnimeSlug generates a slug and, on collision, appends the anime_themes_id.
-func buildUniqueAnimeSlug(base string, animeThemesID uint64) string {
+// prepareAnimeSlugForInsert ensures the slug is free or merges onto an existing row.
+// Returns true when an existing catalog row was linked by slug.
+func (r *animeRepository) prepareAnimeSlugForInsert(ctx context.Context, anime *domain.Anime) (bool, error) {
+	if anime.AnimeThemesID == nil {
+		return false, fmt.Errorf("anime_themes_id is required")
+	}
+
+	anime.Slug = sanitizeAnimeSlug(anime.Slug, *anime.AnimeThemesID)
+
+	existing, err := r.getAnimeBySlugAnyStatus(ctx, anime.Slug)
+	if err != nil {
+		return false, err
+	}
+	if existing != nil {
+		if existing.AnimeThemesID == nil {
+			anime.ID = existing.ID
+			now := time.Now().UTC()
+			_, err = r.db.ExecContext(ctx, `
+				UPDATE animes SET
+					anime_themes_id = $1,
+					title = COALESCE(NULLIF($2, ''), title),
+					description = COALESCE($3, description),
+					anilist_id = COALESCE(anilist_id, $4),
+					year_id = $5,
+					season_id = $6,
+					format_id = $7,
+					updated_at = $8
+				WHERE id = $9 AND anime_themes_id IS NULL
+			`,
+				anime.AnimeThemesID, anime.Title, anime.Description, anime.AnilistID,
+				anime.YearID, anime.SeasonID, anime.FormatID, now, existing.ID,
+			)
+			return true, err
+		}
+		if *existing.AnimeThemesID == *anime.AnimeThemesID {
+			anime.ID = existing.ID
+			return false, nil
+		}
+	}
+
+	unique, err := r.resolveUniqueAnimeSlug(ctx, anime.Slug, *anime.AnimeThemesID)
+	if err != nil {
+		return false, err
+	}
+	anime.Slug = unique
+	return false, nil
+}
+
+func (r *animeRepository) retryAnimeInsertWithUniqueSlug(ctx context.Context, anime *domain.Anime, now time.Time) (uint64, error) {
+	if anime.AnimeThemesID == nil {
+		return 0, fmt.Errorf("anime_themes_id is required")
+	}
+	if anime.ID > 0 {
+		return anime.ID, nil
+	}
+
+	unique, err := r.resolveUniqueAnimeSlug(ctx, anime.Slug, *anime.AnimeThemesID)
+	if err != nil {
+		return 0, err
+	}
+	anime.Slug = unique
+
+	if anime.UUID == "" {
+		anime.UUID = uuid.New().String()
+	}
+
+	var returnedID uint64
+	err = r.db.QueryRowContext(ctx, `
+		INSERT INTO animes (uuid, title, slug, description, anilist_id, anime_themes_id, status, year_id, season_id, format_id, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, false, $7, $8, $9, $10, $10)
+		ON CONFLICT (anime_themes_id) DO NOTHING
+		RETURNING id
+	`,
+		anime.UUID, anime.Title, anime.Slug, anime.Description,
+		anime.AnilistID, anime.AnimeThemesID,
+		anime.YearID, anime.SeasonID, anime.FormatID,
+		now,
+	).Scan(&returnedID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			err2 := r.db.QueryRowContext(ctx,
+				`SELECT id FROM animes WHERE anime_themes_id = $1`, anime.AnimeThemesID,
+			).Scan(&returnedID)
+			return returnedID, err2
+		}
+		return 0, err
+	}
+	return returnedID, nil
+}
+
+func (r *animeRepository) getAnimeBySlugAnyStatus(ctx context.Context, slug string) (*domain.Anime, error) {
+	var anime domain.Anime
+	err := r.db.GetContext(ctx, &anime, `SELECT * FROM animes WHERE slug = $1 LIMIT 1`, slug)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &anime, nil
+}
+
+func (r *animeRepository) slugExists(ctx context.Context, slug string) (bool, error) {
+	var id uint64
+	err := r.db.GetContext(ctx, &id, `SELECT id FROM animes WHERE slug = $1 LIMIT 1`, slug)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func (r *animeRepository) resolveUniqueAnimeSlug(ctx context.Context, base string, atID uint64) (string, error) {
+	slug := sanitizeAnimeSlug(base, atID)
+	candidate := slug
+	for n := 0; n < 100; n++ {
+		exists, err := r.slugExists(ctx, candidate)
+		if err != nil {
+			return "", err
+		}
+		if !exists {
+			return candidate, nil
+		}
+		if n == 0 {
+			candidate = fmt.Sprintf("%s-%d", slug, atID)
+		} else {
+			candidate = fmt.Sprintf("%s-%d-%d", slug, atID, n)
+		}
+	}
+	return fmt.Sprintf("anime-%d", atID), nil
+}
+
+// sanitizeAnimeSlug normalizes a slug from AnimeThemes or title text.
+func sanitizeAnimeSlug(base string, animeThemesID uint64) string {
 	s := strings.ToLower(base)
-	// Replace non-alphanumeric characters with hyphens
 	var b strings.Builder
 	for _, r := range s {
 		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
@@ -979,7 +1133,6 @@ func buildUniqueAnimeSlug(base string, animeThemesID uint64) string {
 		}
 	}
 	clean := strings.Trim(b.String(), "-")
-	// Collapse consecutive hyphens
 	for strings.Contains(clean, "--") {
 		clean = strings.ReplaceAll(clean, "--", "-")
 	}
@@ -987,6 +1140,11 @@ func buildUniqueAnimeSlug(base string, animeThemesID uint64) string {
 		clean = fmt.Sprintf("anime-%d", animeThemesID)
 	}
 	return clean
+}
+
+// buildUniqueAnimeSlug is kept as an alias for callers outside this file.
+func buildUniqueAnimeSlug(base string, animeThemesID uint64) string {
+	return sanitizeAnimeSlug(base, animeThemesID)
 }
 
 // GetAnimesWithMissingTitleVariants returns animes that have an anilist_id but are still

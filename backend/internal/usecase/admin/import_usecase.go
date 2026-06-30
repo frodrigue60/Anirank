@@ -465,11 +465,17 @@ func (u *ImportUsecase) processAnime(ctx context.Context, job *domain.ImportJob,
 		FormatID:      format.ID,
 	}
 
-	created, err := u.animeRepo.UpsertFromAnimeThemes(ctx, anime)
+	upsertResult, err := u.animeRepo.UpsertFromAnimeThemes(ctx, anime)
 	if err != nil {
 		return fmt.Errorf("upsert anime: %w", err)
 	}
-	if created {
+	if upsertResult.DuplicateAnilist && anilistID != nil {
+		job.Errors = append(job.Errors, fmt.Sprintf(
+			"anime %d: duplicate anilist_id %d — songs linked to existing catalog entry",
+			atAnime.ID, *anilistID,
+		))
+	}
+	if upsertResult.Created {
 		job.Created++
 	} else {
 		job.Skipped++

@@ -2,6 +2,8 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -309,7 +311,7 @@ func (r *taxonomyRepository) GetCurrentSeason(ctx context.Context) (*domain.Seas
 }
 
 func makeSlug(s string) string {
-	s = strings.ToLower(s)
+	s = strings.ToLower(strings.TrimSpace(s))
 	s = strings.ReplaceAll(s, " ", "-")
 	return s
 }
@@ -376,62 +378,103 @@ func (r *taxonomyRepository) GetOrCreateFormat(ctx context.Context, name string)
 }
 
 func (r *taxonomyRepository) GetOrCreateGenre(ctx context.Context, name string) (*domain.Genre, error) {
+	name = strings.TrimSpace(name)
+	slug := makeSlug(name)
+
 	var g domain.Genre
-	err := r.db.GetContext(ctx, &g, "SELECT id, uuid, name, slug, created_at, updated_at FROM genres WHERE name = $1 LIMIT 1", name)
+	err := r.db.GetContext(ctx, &g, "SELECT id, uuid, name, slug, created_at, updated_at FROM genres WHERE LOWER(TRIM(name)) = LOWER($1) LIMIT 1", name)
 	if err == nil {
 		return &g, nil
 	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
+	}
 
-	slug := makeSlug(name)
+	err = r.db.GetContext(ctx, &g, "SELECT id, uuid, name, slug, created_at, updated_at FROM genres WHERE slug = $1 LIMIT 1", slug)
+	if err == nil {
+		return &g, nil
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
+	}
+
 	uid := uuid.New().String()
-	query := "INSERT INTO genres (uuid, name, slug, created_at, updated_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id"
-	err = r.db.QueryRowContext(ctx, query, uid, name, slug).Scan(&g.ID)
+	err = r.db.QueryRowContext(ctx, `
+		INSERT INTO genres (uuid, name, slug, created_at, updated_at)
+		VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		ON CONFLICT (slug) DO UPDATE SET updated_at = CURRENT_TIMESTAMP
+		RETURNING id, uuid, name, slug, created_at, updated_at
+	`, uid, name, slug).Scan(&g.ID, &g.UUID, &g.Name, &g.Slug, &g.CreatedAt, &g.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
-	g.UUID = uid
-	g.Name = name
-	g.Slug = slug
 	return &g, nil
 }
 
 func (r *taxonomyRepository) GetOrCreateStudio(ctx context.Context, name string) (*domain.Studio, error) {
+	name = strings.TrimSpace(name)
+	slug := makeSlug(name)
+
 	var s domain.Studio
-	err := r.db.GetContext(ctx, &s, "SELECT id, uuid, name, slug, created_at, updated_at FROM studios WHERE name = $1 LIMIT 1", name)
+	err := r.db.GetContext(ctx, &s, "SELECT id, uuid, name, slug, created_at, updated_at FROM studios WHERE LOWER(TRIM(name)) = LOWER($1) LIMIT 1", name)
 	if err == nil {
 		return &s, nil
 	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
+	}
 
-	slug := makeSlug(name)
+	err = r.db.GetContext(ctx, &s, "SELECT id, uuid, name, slug, created_at, updated_at FROM studios WHERE slug = $1 LIMIT 1", slug)
+	if err == nil {
+		return &s, nil
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
+	}
+
 	uid := uuid.New().String()
-	query := "INSERT INTO studios (uuid, name, slug, created_at, updated_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id"
-	err = r.db.QueryRowContext(ctx, query, uid, name, slug).Scan(&s.ID)
+	err = r.db.QueryRowContext(ctx, `
+		INSERT INTO studios (uuid, name, slug, created_at, updated_at)
+		VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		RETURNING id, uuid, name, slug, created_at, updated_at
+	`, uid, name, slug).Scan(&s.ID, &s.UUID, &s.Name, &s.Slug, &s.CreatedAt, &s.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
-	s.UUID = uid
-	s.Name = name
-	s.Slug = slug
 	return &s, nil
 }
 
 func (r *taxonomyRepository) GetOrCreateProducer(ctx context.Context, name string) (*domain.Producer, error) {
+	name = strings.TrimSpace(name)
+	slug := makeSlug(name)
+
 	var p domain.Producer
-	err := r.db.GetContext(ctx, &p, "SELECT id, uuid, name, slug, created_at, updated_at FROM producers WHERE name = $1 LIMIT 1", name)
+	err := r.db.GetContext(ctx, &p, "SELECT id, uuid, name, slug, created_at, updated_at FROM producers WHERE LOWER(TRIM(name)) = LOWER($1) LIMIT 1", name)
 	if err == nil {
 		return &p, nil
 	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
+	}
 
-	slug := makeSlug(name)
+	err = r.db.GetContext(ctx, &p, "SELECT id, uuid, name, slug, created_at, updated_at FROM producers WHERE slug = $1 LIMIT 1", slug)
+	if err == nil {
+		return &p, nil
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
+	}
+
 	uid := uuid.New().String()
-	query := "INSERT INTO producers (uuid, name, slug, created_at, updated_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id"
-	err = r.db.QueryRowContext(ctx, query, uid, name, slug).Scan(&p.ID)
+	err = r.db.QueryRowContext(ctx, `
+		INSERT INTO producers (uuid, name, slug, created_at, updated_at)
+		VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		ON CONFLICT (slug) DO UPDATE SET updated_at = CURRENT_TIMESTAMP
+		RETURNING id, uuid, name, slug, created_at, updated_at
+	`, uid, name, slug).Scan(&p.ID, &p.UUID, &p.Name, &p.Slug, &p.CreatedAt, &p.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
-	p.UUID = uid
-	p.Name = name
-	p.Slug = slug
 	return &p, nil
 }
 

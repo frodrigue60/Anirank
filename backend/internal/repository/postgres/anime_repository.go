@@ -838,15 +838,68 @@ func (r *animeRepository) GetPublicSlugs(ctx context.Context) ([]domain.SitemapI
 	return items, err
 }
 
-// UpsertFromAnimeThemes inserts an anime by its anime_themes_id.
-// If a record with the same anime_themes_id already exists, it is a no-op (idempotent).
-// Returns (true, nil) if the record was created, (false, nil) if it already existed.
-func (r *animeRepository) UpsertFromAnimeThemes(ctx context.Context, anime *domain.Anime) (bool, error) {
-	anime.UUID = uuid.New().String()
+// UpsertFromAnimeThemes inserts or links an anime by its anime_themes_id.
+// When anilist_id already exists locally, it merges onto the existing row instead of failing.
+func (r *animeRepository) UpsertFromAnimeThemes(ctx context.Context, anime *domain.Anime) (domain.AnimeThemesUpsertResult, error) {
+	var result domain.AnimeThemesUpsertResult
 	now := time.Now().UTC()
 
+	if anime.AnimeThemesID == nil {
+		return result, fmt.Errorf("anime_themes_id is required")
+	}
+
+	// 1. Already imported by anime_themes_id
+	var existingID uint64
+	err := r.db.GetContext(ctx, &existingID, `SELECT id FROM animes WHERE anime_themes_id = $1 LIMIT 1`, *anime.AnimeThemesID)
+	if err == nil {
+		anime.ID = existingID
+		return result, nil
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return result, err
+	}
+
+	// 2. Merge with an existing AniList-linked catalog entry
+	if anime.AnilistID != nil {
+		existing, err := r.GetByAnilistID(ctx, *anime.AnilistID)
+		if err != nil {
+			return result, err
+		}
+		if existing != nil {
+			anime.ID = existing.ID
+			if existing.AnimeThemesID == nil {
+				_, err = r.db.ExecContext(ctx, `
+					UPDATE animes SET
+						anime_themes_id = $1,
+						title = COALESCE(NULLIF($2, ''), title),
+						slug = COALESCE(NULLIF($3, ''), slug),
+						description = COALESCE($4, description),
+						year_id = $5,
+						season_id = $6,
+						format_id = $7,
+						updated_at = $8
+					WHERE id = $9 AND anime_themes_id IS NULL
+				`,
+					anime.AnimeThemesID, anime.Title, anime.Slug, anime.Description,
+					anime.YearID, anime.SeasonID, anime.FormatID, now, existing.ID,
+				)
+				if err != nil {
+					return result, err
+				}
+				result.MergedAnilist = true
+				return result, nil
+			}
+			if *existing.AnimeThemesID != *anime.AnimeThemesID {
+				result.DuplicateAnilist = true
+			}
+			return result, nil
+		}
+	}
+
+	// 3. Fresh insert
+	anime.UUID = uuid.New().String()
 	var returnedID uint64
-	err := r.db.QueryRowContext(ctx, `
+	err = r.db.QueryRowContext(ctx, `
 		INSERT INTO animes (uuid, title, slug, description, anilist_id, anime_themes_id, status, year_id, season_id, format_id, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, false, $7, $8, $9, $10, $10)
 		ON CONFLICT (anime_themes_id) DO NOTHING
@@ -860,16 +913,40 @@ func (r *animeRepository) UpsertFromAnimeThemes(ctx context.Context, anime *doma
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			// ON CONFLICT DO NOTHING — row already existed, fetch its ID
 			err2 := r.db.QueryRowContext(ctx,
 				`SELECT id FROM animes WHERE anime_themes_id = $1`, anime.AnimeThemesID,
 			).Scan(&anime.ID)
-			return false, err2
+			return result, err2
 		}
-		return false, err
+		if isPQUniqueViolation(err, "animes_anilist_id_unique") && anime.AnilistID != nil {
+			existing, lookupErr := r.GetByAnilistID(ctx, *anime.AnilistID)
+			if lookupErr != nil {
+				return result, lookupErr
+			}
+			if existing != nil {
+				anime.ID = existing.ID
+				if existing.AnimeThemesID != nil && *existing.AnimeThemesID != *anime.AnimeThemesID {
+					result.DuplicateAnilist = true
+				} else {
+					result.MergedAnilist = true
+				}
+				return result, nil
+			}
+		}
+		return result, err
 	}
+
 	anime.ID = returnedID
-	return true, nil
+	result.Created = true
+	return result, nil
+}
+
+func isPQUniqueViolation(err error, constraint string) bool {
+	var pqErr *pq.Error
+	if errors.As(err, &pqErr) {
+		return pqErr.Code == "23505" && pqErr.Constraint == constraint
+	}
+	return false
 }
 
 // EnrichFromAniList updates cover, banner and description from AniList data

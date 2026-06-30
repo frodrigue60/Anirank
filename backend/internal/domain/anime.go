@@ -179,6 +179,7 @@ type AnimeRepository interface {
 	GetByAnilistIDs(ctx context.Context, anilistIDs []int) ([]Anime, error)
 	GetPaginated(ctx context.Context, limit, offset int, filters AnimeFilters) ([]Anime, error)
 	Count(ctx context.Context, filters AnimeFilters) (int, error)
+	CountWithAnilistID(ctx context.Context) (int, error)
 	Create(ctx context.Context, anime *Anime) error
 	Update(ctx context.Context, anime *Anime) error
 	Delete(ctx context.Context, id uint64) error

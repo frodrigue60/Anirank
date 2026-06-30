@@ -46,6 +46,8 @@ type ImportJob struct {
 
 	// Transient — not persisted, populated from ErrorsJSON after fetch
 	Errors []string `db:"-" json:"errors"`
+	// Transient — 1 = AnimeThemes import, 2 = AniList enrichment (bulk import only)
+	Phase int `db:"-" json:"phase"`
 }
 
 // ImportJobRepository handles persistence of ImportJob entities.

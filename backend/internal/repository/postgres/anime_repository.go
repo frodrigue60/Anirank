@@ -285,6 +285,12 @@ func (r *animeRepository) Count(ctx context.Context, filters domain.AnimeFilters
 	return count, err
 }
 
+func (r *animeRepository) CountWithAnilistID(ctx context.Context) (int, error) {
+	var count int
+	err := r.db.GetContext(ctx, &count, `SELECT COUNT(*) FROM animes WHERE anilist_id IS NOT NULL`)
+	return count, err
+}
+
 // Write Operations
 func (r *animeRepository) Create(ctx context.Context, anime *domain.Anime) error {
 	query := `

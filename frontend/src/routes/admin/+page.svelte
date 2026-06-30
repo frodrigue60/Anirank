@@ -225,6 +225,7 @@
     if (raw.error || typeof raw.status !== "string") return null;
     return {
       ...raw,
+      phase: Number(raw.phase ?? 1),
       current_page: Number(raw.current_page ?? 0),
       total_pages: Number(raw.total_pages ?? 0),
       processed: Number(raw.processed ?? 0),
@@ -234,17 +235,24 @@
   }
 
   function formatImportProgressLog(data: Record<string, unknown>) {
+    const phase = Number(data.phase ?? 1);
     const page = data.current_page ?? 0;
     const total = data.total_pages ?? 0;
     const processed = data.processed ?? 0;
     const created = data.created ?? 0;
+    const skipped = data.skipped ?? 0;
+    const phaseLabel =
+      phase === 2 ? "Phase 2 (AniList)" : "Phase 1 (AnimeThemes)";
     if (data.status === "done") {
-      return `✅ Job finished. Processed: ${processed}, Created: ${created}`;
+      return `✅ Job finished. Processed: ${processed}, Created: ${created}, Skipped: ${skipped}`;
     }
     if (data.status === "canceled" || data.status === "failed") {
       return `❌ Job ${data.status}.`;
     }
-    return `[Phase 1] Page ${page}/${total || "?"} - Processed: ${processed}, Created: ${created}`;
+    if (phase === 2) {
+      return `[${phaseLabel}] Chunk ${page}/${total || "?"} — enriched batch progress (Phase 1 processed: ${processed}, skipped: ${skipped})`;
+    }
+    return `[${phaseLabel}] Page ${page}/${total || "?"} - Processed: ${processed}, Created: ${created}`;
   }
 
   // Fetch initial status on mount
@@ -1264,7 +1272,8 @@
                 {/if}
               </div>
               <span class="text-xs font-mono text-on-surface-variant/70">
-                {importJobStatus.current_page} / {importJobStatus.total_pages || '?'} pages
+                {(importJobStatus.phase === 2 ? "AniList chunk" : "AT page")}
+                {importJobStatus.current_page} / {importJobStatus.total_pages || '?'}
               </span>
             </div>
             

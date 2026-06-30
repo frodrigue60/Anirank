@@ -387,6 +387,7 @@ func (u *ImportUsecase) phaseBackfillTitles(ctx context.Context, job *domain.Imp
 
 func (u *ImportUsecase) phaseAnimeThemes(ctx context.Context, job *domain.ImportJob) error {
 	page := 1
+	job.Phase = 1
 
 	for {
 		// Check for cancellation
@@ -628,6 +629,18 @@ func (u *ImportUsecase) processSong(
 // ─── Phase 2: AniList Enrichment ─────────────────────────────────────────────
 
 func (u *ImportUsecase) phaseAniList(ctx context.Context, job *domain.ImportJob) error {
+	job.Phase = 2
+	job.CurrentPage = 0
+	if total, err := u.animeRepo.CountWithAnilistID(ctx); err != nil {
+		return fmt.Errorf("anilist enrichment: count animes: %w", err)
+	} else {
+		job.TotalPages = (total + alChunkSize - 1) / alChunkSize
+		if job.TotalPages < 1 {
+			job.TotalPages = 1
+		}
+	}
+	_ = u.jobRepo.UpdateProgress(ctx, job)
+
 	offset := 0
 	const dbBatchSize = 200
 	totalProcessed := 0
@@ -661,10 +674,33 @@ func (u *ImportUsecase) phaseAniList(ctx context.Context, job *domain.ImportJob)
 				}
 				subChunk := chunkAnilistIDs[idx:subEnd]
 
+				var needsEnrichment []int
+				for _, id := range subChunk {
+					anime := chunkAnimeMap[int64(id)]
+					if anime == nil {
+						continue
+					}
+					if animeFullyEnrichedFromAniList(anime) {
+						job.Skipped++
+						continue
+					}
+					needsEnrichment = append(needsEnrichment, id)
+				}
+
+				if len(needsEnrichment) == 0 {
+					totalProcessed += len(subChunk)
+					job.CurrentPage = totalProcessed / alChunkSize
+					if job.CurrentPage < 1 && totalProcessed > 0 {
+						job.CurrentPage = 1
+					}
+					_ = u.jobRepo.UpdateProgress(ctx, job)
+					continue
+				}
+
 				var medias []anilist.Media
 				var lastErr error
 				for attempt := 0; attempt < alMaxRetries; attempt++ {
-					medias, lastErr = u.alClient.GetMediaByIDs(ctx, subChunk)
+					medias, lastErr = u.alClient.GetMediaByIDs(ctx, needsEnrichment)
 					if lastErr == nil {
 						break
 					}
@@ -704,7 +740,7 @@ func (u *ImportUsecase) phaseAniList(ctx context.Context, job *domain.ImportJob)
 					}
 
 					var finalCover, finalBanner *string
-					if cover != "" {
+					if cover != "" && !hasStoredImage(anime.Cover) {
 						if path, err := u.downloadAndStore(ctx, cover, "animes/covers", anime.ID, infrastructure.PresetPoster); err == nil {
 							finalCover = &path
 							time.Sleep(200 * time.Millisecond)
@@ -712,7 +748,7 @@ func (u *ImportUsecase) phaseAniList(ctx context.Context, job *domain.ImportJob)
 							job.Errors = append(job.Errors, fmt.Sprintf("failed to download cover for anime %d: %v", anime.ID, err))
 						}
 					}
-					if banner != "" {
+					if banner != "" && !hasStoredImage(anime.Banner) {
 						if path, err := u.downloadAndStore(ctx, banner, "animes/banners", anime.ID, infrastructure.PresetLandscape); err == nil {
 							finalBanner = &path
 							time.Sleep(200 * time.Millisecond)
@@ -724,10 +760,14 @@ func (u *ImportUsecase) phaseAniList(ctx context.Context, job *domain.ImportJob)
 					coverToSave := coverPtr
 					if finalCover != nil {
 						coverToSave = finalCover
+					} else if hasStoredImage(anime.Cover) {
+						coverToSave = nil
 					}
 					bannerToSave := bannerPtr
 					if finalBanner != nil {
 						bannerToSave = finalBanner
+					} else if hasStoredImage(anime.Banner) {
+						bannerToSave = nil
 					}
 
 					var titleEnglishPtr *string
@@ -823,7 +863,10 @@ func (u *ImportUsecase) phaseAniList(ctx context.Context, job *domain.ImportJob)
 				}
 
 				totalProcessed += len(subChunk)
-				job.CurrentPage = totalProcessed/alChunkSize + 1
+				job.CurrentPage = totalProcessed / alChunkSize
+				if job.CurrentPage < 1 && totalProcessed > 0 {
+					job.CurrentPage = 1
+				}
 				_ = u.jobRepo.UpdateProgress(ctx, job)
 
 				time.Sleep(time.Duration(alInterChunkSec) * time.Second)
@@ -934,6 +977,7 @@ func MarshalJob(job *domain.ImportJob) string {
 	b, _ := json.Marshal(map[string]interface{}{
 		"id":           job.ID,
 		"status":       job.Status,
+		"phase":        job.Phase,
 		"current_page": job.CurrentPage,
 		"total_pages":  job.TotalPages,
 		"processed":    job.Processed,
@@ -942,6 +986,26 @@ func MarshalJob(job *domain.ImportJob) string {
 		"errors":       job.Errors,
 	})
 	return string(b)
+}
+
+func hasStoredImage(path *string) bool {
+	return path != nil && strings.TrimSpace(*path) != ""
+}
+
+func hasStoredText(value *string) bool {
+	return value != nil && strings.TrimSpace(*value) != ""
+}
+
+// animeFullyEnrichedFromAniList reports whether AniList metadata and media are already present.
+func animeFullyEnrichedFromAniList(anime *domain.Anime) bool {
+	if anime == nil {
+		return false
+	}
+	return hasStoredImage(anime.Cover) &&
+		hasStoredImage(anime.Banner) &&
+		hasStoredText(anime.TitleEnglish) &&
+		hasStoredText(anime.TitleNative) &&
+		hasStoredText(anime.Description)
 }
 
 func (u *ImportUsecase) downloadAndStore(ctx context.Context, url string, prefix string, id uint64, preset infrastructure.ResolutionPreset) (string, error) {

@@ -3,7 +3,6 @@ package v1
 import (
 	"bufio"
 	"context"
-	"fmt"
 	"time"
 
 	"anirank/api/internal/domain"
@@ -117,37 +116,15 @@ func (h *AdminHandler) StreamVideoAuditProgress(c *fiber.Ctx) error {
 		return domain.NewAppError(400, "jobID is required", nil)
 	}
 
-	c.Set("Content-Type", "text/event-stream")
-	c.Set("Cache-Control", "no-cache")
-	c.Set("Connection", "keep-alive")
-	c.Set("Transfer-Encoding", "chunked")
+	setSSEHeaders(c)
 
 	auditUC := h.videoAuditUsecase
 
 	c.Context().SetBodyStreamWriter(func(w *bufio.Writer) {
-		ticker := time.NewTicker(2 * time.Second)
-		defer ticker.Stop()
-
 		bgCtx := context.Background()
-
-		for range ticker.C {
-			job, err := auditUC.GetJobStatus(bgCtx, jobID)
-			if err != nil {
-				fmt.Fprintf(w, "data: {\"error\": \"job not found\"}\n\n")
-				w.Flush()
-				return
-			}
-
-			payload := adminUC.MarshalJob(job)
-			fmt.Fprintf(w, "data: %s\n\n", payload)
-			w.Flush()
-
-			if job.Status == domain.ImportJobDone ||
-				job.Status == domain.ImportJobFailed ||
-				job.Status == domain.ImportJobCanceled {
-				return
-			}
-		}
+		streamImportJobSSE(w, 2*time.Second, func() (*domain.ImportJob, error) {
+			return auditUC.GetJobStatus(bgCtx, jobID)
+		})
 	})
 
 	return nil

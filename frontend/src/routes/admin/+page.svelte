@@ -232,19 +232,17 @@
   });
 
   // Automatically manage SSE stream based on importJobStatus
-  $effect(() => {
-    if (importJobStatus) {
-      const isRunning = importJobStatus.status === 'running' || importJobStatus.status === 'pending';
-      if (isRunning && !importEventSource) {
-        connectImportStream(importJobStatus.id);
-      }
-    }
-  });
+  // (initial connect happens in fetchImportStatus / startImportJob / onerror retry)
 
   async function fetchImportStatus() {
     try {
       const res = await api.get("/admin/import/animethemes/status");
       importJobStatus = res.data;
+      const running =
+        res.data?.status === "running" || res.data?.status === "pending";
+      if (running && !importEventSource) {
+        connectImportStream(res.data.id);
+      }
     } catch(err: any) {
       if (err.response?.status !== 404) {
         console.error("Failed to fetch import status", err);
@@ -259,6 +257,7 @@
       importLogs = ["Starting AnimeThemes bulk import pipeline..."];
       const res = await api.post("/admin/import/animethemes/start");
       importJobStatus = { id: res.data.job_id, status: 'pending' };
+      connectImportStream(res.data.job_id);
       toastState.addToast("Import job started successfully", "success");
     } catch (err: any) {
       toastState.addToast(getApiErrorMessage(err, "Failed to start import job"), "error");
@@ -276,7 +275,7 @@
     }
   }
 
-  function connectImportStream(jobId: string) {
+  function connectImportStream(jobId: string, isReconnect = false) {
     if (importEventSource) {
       importEventSource.close();
     }
@@ -287,9 +286,17 @@
     // Show logs panel and set initial status logs on reconnect
     showImportLogs = true;
     if (importLogs.length === 0) {
-      importLogs = ["Reconnecting to active import job..."];
+      importLogs = ["Connecting to import job stream..."];
     }
     importEventSource = new EventSource(url, { withCredentials: true });
+
+    let isFinished = false;
+
+    importEventSource.onopen = () => {
+      if (isReconnect) {
+        importLogs = [...importLogs, "🔄 Reconnected to import stream."];
+      }
+    };
 
     importEventSource.onmessage = (event) => {
       try {
@@ -299,10 +306,12 @@
         let msg = `[Phase 1] Page ${data.current_page}/${data.total_pages} - Processed: ${data.processed}, Created: ${data.created}`;
         if (data.status === 'done') {
            msg = `✅ Job finished. Processed: ${data.processed}, Created: ${data.created}`;
+           isFinished = true;
            importEventSource?.close();
            importEventSource = null;
         } else if (data.status === 'canceled' || data.status === 'failed') {
            msg = `❌ Job ${data.status}.`;
+           isFinished = true;
            importEventSource?.close();
            importEventSource = null;
         }
@@ -314,11 +323,29 @@
       } catch(e) {}
     };
 
-    importEventSource.onerror = (err) => {
-      console.error("Import SSE Error:", err);
-      importLogs = [...importLogs, "❌ Connection lost."];
+    importEventSource.onerror = () => {
       importEventSource?.close();
       importEventSource = null;
+
+      const stillRunning =
+        importJobStatus?.status === "running" ||
+        importJobStatus?.status === "pending";
+      if (!isFinished && stillRunning && importJobStatus?.id === jobId) {
+        importLogs = [
+          ...importLogs,
+          "⚠️ Connection lost. Reconnecting in 3 seconds...",
+        ];
+        setTimeout(() => {
+          const status = importJobStatus?.status;
+          if (
+            !isFinished &&
+            (status === "running" || status === "pending") &&
+            importJobStatus?.id === jobId
+          ) {
+            connectImportStream(jobId, true);
+          }
+        }, 3000);
+      }
     };
   }
 
@@ -342,19 +369,17 @@
   });
 
   // Automatically manage SSE stream based on backfillJobStatus
-  $effect(() => {
-    if (backfillJobStatus) {
-      const isRunning = backfillJobStatus.status === 'running' || backfillJobStatus.status === 'pending';
-      if (isRunning && !backfillEventSource) {
-        connectBackfillStream(backfillJobStatus.id);
-      }
-    }
-  });
+  // (initial connect happens in fetchBackfillStatus / startBackfillJob / onerror retry)
 
   async function fetchBackfillStatus() {
     try {
       const res = await api.get("/admin/import/backfill-titles/status");
       backfillJobStatus = res.data;
+      const running =
+        res.data?.status === "running" || res.data?.status === "pending";
+      if (running && !backfillEventSource) {
+        connectBackfillStream(res.data.id);
+      }
     } catch(err: any) {
       if (err.response?.status !== 404) {
         console.error("Failed to fetch backfill status", err);
@@ -369,6 +394,7 @@
       backfillLogs = ["Starting AniList title variants backfill job..."];
       const res = await api.post("/admin/import/backfill-titles/start");
       backfillJobStatus = { id: res.data.job_id, status: 'pending' };
+      connectBackfillStream(res.data.job_id);
       toastState.addToast("Title backfill job started successfully", "success");
     } catch (err: any) {
       toastState.addToast(getApiErrorMessage(err, "Failed to start title backfill job"), "error");
@@ -386,7 +412,7 @@
     }
   }
 
-  function connectBackfillStream(jobId: string) {
+  function connectBackfillStream(jobId: string, isReconnect = false) {
     if (backfillEventSource) {
       backfillEventSource.close();
     }
@@ -396,9 +422,17 @@
     
     showBackfillLogs = true;
     if (backfillLogs.length === 0) {
-      backfillLogs = ["Reconnecting to active backfill job..."];
+      backfillLogs = ["Connecting to backfill job stream..."];
     }
     backfillEventSource = new EventSource(url, { withCredentials: true });
+
+    let isFinished = false;
+
+    backfillEventSource.onopen = () => {
+      if (isReconnect) {
+        backfillLogs = [...backfillLogs, "🔄 Reconnected to backfill stream."];
+      }
+    };
 
     backfillEventSource.onmessage = (event) => {
       try {
@@ -408,10 +442,12 @@
         let msg = `[Backfill] Chunk ${data.current_page}/${data.total_pages} - Processed: ${data.processed}`;
         if (data.status === 'done') {
            msg = `✅ Backfill finished. Processed: ${data.processed} animes.`;
+           isFinished = true;
            backfillEventSource?.close();
            backfillEventSource = null;
         } else if (data.status === 'canceled' || data.status === 'failed') {
            msg = `❌ Backfill job ${data.status}.`;
+           isFinished = true;
            backfillEventSource?.close();
            backfillEventSource = null;
         }
@@ -422,11 +458,29 @@
       } catch(e) {}
     };
 
-    backfillEventSource.onerror = (err) => {
-      console.error("Backfill SSE Error:", err);
-      backfillLogs = [...backfillLogs, "❌ Connection lost."];
+    backfillEventSource.onerror = () => {
       backfillEventSource?.close();
       backfillEventSource = null;
+
+      const stillRunning =
+        backfillJobStatus?.status === "running" ||
+        backfillJobStatus?.status === "pending";
+      if (!isFinished && stillRunning && backfillJobStatus?.id === jobId) {
+        backfillLogs = [
+          ...backfillLogs,
+          "⚠️ Connection lost. Reconnecting in 3 seconds...",
+        ];
+        setTimeout(() => {
+          const status = backfillJobStatus?.status;
+          if (
+            !isFinished &&
+            (status === "running" || status === "pending") &&
+            backfillJobStatus?.id === jobId
+          ) {
+            connectBackfillStream(jobId, true);
+          }
+        }, 3000);
+      }
     };
   }
 
@@ -453,27 +507,15 @@
     };
   });
 
-  $effect(() => {
-    if (videoAuditJobStatus) {
-      const isRunning =
-        videoAuditJobStatus.status === "running" ||
-        videoAuditJobStatus.status === "pending";
-      if (isRunning && !videoAuditEventSource) {
-        connectVideoAuditStream(videoAuditJobStatus.id);
-      }
-      if (
-        videoAuditJobStatus.status === "done" &&
-        !videoAuditReport
-      ) {
-        fetchVideoAuditReport(videoAuditJobStatus.id);
-      }
-    }
-  });
-
   async function fetchVideoAuditStatus() {
     try {
       const res = await api.get("/admin/system/video-audit/status");
       videoAuditJobStatus = res.data;
+      const running =
+        res.data?.status === "running" || res.data?.status === "pending";
+      if (running && !videoAuditEventSource) {
+        connectVideoAuditStream(res.data.id);
+      }
       if (res.data?.status === "done") {
         await fetchVideoAuditReport(res.data.id);
       }
@@ -505,6 +547,7 @@
         include_orphans: videoAuditIncludeOrphans,
       });
       videoAuditJobStatus = { id: res.data.job_id, status: "pending" };
+      connectVideoAuditStream(res.data.job_id);
       toastState.addToast("Video storage audit started", "success");
     } catch (err: any) {
       toastState.addToast(
@@ -533,7 +576,7 @@
     }
   }
 
-  function connectVideoAuditStream(jobId: string) {
+  function connectVideoAuditStream(jobId: string, isReconnect = false) {
     if (videoAuditEventSource) {
       videoAuditEventSource.close();
     }
@@ -542,9 +585,17 @@
     const url = `${api.defaults.baseURL}/admin/system/video-audit/${jobId}/stream?token=${token}`;
 
     if (videoAuditLogs.length === 0) {
-      videoAuditLogs = ["Reconnecting to active video audit..."];
+      videoAuditLogs = ["Connecting to video audit stream..."];
     }
     videoAuditEventSource = new EventSource(url, { withCredentials: true });
+
+    let isFinished = false;
+
+    videoAuditEventSource.onopen = () => {
+      if (isReconnect) {
+        videoAuditLogs = [...videoAuditLogs, "🔄 Reconnected to audit stream."];
+      }
+    };
 
     videoAuditEventSource.onmessage = (event) => {
       try {
@@ -554,11 +605,13 @@
         let msg = `[Audit] Checked ${data.current_page}/${data.total_pages || "?"} paths — missing: ${data.created}, present: ${data.skipped}`;
         if (data.status === "done") {
           msg = `✅ Audit finished. Missing: ${data.created}, present: ${data.skipped}, rows: ${data.processed}`;
+          isFinished = true;
           videoAuditEventSource?.close();
           videoAuditEventSource = null;
           fetchVideoAuditReport(data.id);
         } else if (data.status === "canceled" || data.status === "failed") {
           msg = `❌ Audit ${data.status}.`;
+          isFinished = true;
           videoAuditEventSource?.close();
           videoAuditEventSource = null;
         }
@@ -573,9 +626,28 @@
     };
 
     videoAuditEventSource.onerror = () => {
-      videoAuditLogs = [...videoAuditLogs, "❌ Connection lost."];
       videoAuditEventSource?.close();
       videoAuditEventSource = null;
+
+      const stillRunning =
+        videoAuditJobStatus?.status === "running" ||
+        videoAuditJobStatus?.status === "pending";
+      if (!isFinished && stillRunning && videoAuditJobStatus?.id === jobId) {
+        videoAuditLogs = [
+          ...videoAuditLogs,
+          "⚠️ Connection lost. Reconnecting in 3 seconds...",
+        ];
+        setTimeout(() => {
+          const status = videoAuditJobStatus?.status;
+          if (
+            !isFinished &&
+            (status === "running" || status === "pending") &&
+            videoAuditJobStatus?.id === jobId
+          ) {
+            connectVideoAuditStream(jobId, true);
+          }
+        }, 3000);
+      }
     };
   }
 

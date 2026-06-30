@@ -3,11 +3,9 @@ package v1
 import (
 	"bufio"
 	"context"
-	"fmt"
 	"time"
 
 	"anirank/api/internal/domain"
-	adminUC "anirank/api/internal/usecase/admin"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -126,40 +124,16 @@ func (h *AdminHandler) StreamImportProgress(c *fiber.Ctx) error {
 		return domain.NewAppError(400, "jobID is required", nil)
 	}
 
-	c.Set("Content-Type", "text/event-stream")
-	c.Set("Cache-Control", "no-cache")
-	c.Set("Connection", "keep-alive")
-	c.Set("Transfer-Encoding", "chunked")
+	setSSEHeaders(c)
 
 	// Capture usecase reference so the goroutine outlives the handler scope
 	importUC := h.importUsecase
 
 	c.Context().SetBodyStreamWriter(func(w *bufio.Writer) {
-		ticker := time.NewTicker(2 * time.Second)
-		defer ticker.Stop()
-
-		// Use a detached context because c.Context() gets recycled when the handler returns
 		bgCtx := context.Background()
-
-		for range ticker.C {
-			job, err := importUC.GetJobStatus(bgCtx, jobID)
-			if err != nil {
-				fmt.Fprintf(w, "data: {\"error\": \"job not found\"}\n\n")
-				w.Flush()
-				return
-			}
-
-			payload := adminUC.MarshalJob(job)
-			fmt.Fprintf(w, "data: %s\n\n", payload)
-			w.Flush()
-
-			// Stop streaming when job has reached a terminal state
-			if job.Status == domain.ImportJobDone ||
-				job.Status == domain.ImportJobFailed ||
-				job.Status == domain.ImportJobCanceled {
-				return
-			}
-		}
+		streamImportJobSSE(w, 2*time.Second, func() (*domain.ImportJob, error) {
+			return importUC.GetJobStatus(bgCtx, jobID)
+		})
 	})
 
 	return nil

@@ -470,12 +470,10 @@ func (u *ImportUsecase) processAnime(ctx context.Context, job *domain.ImportJob,
 		return fmt.Errorf("upsert anime: %w", err)
 	}
 	if upsertResult.DuplicateAnilist && anilistID != nil {
-		job.Errors = append(job.Errors, fmt.Sprintf(
-			"anime %d: duplicate anilist_id %d — songs linked to existing catalog entry",
-			atAnime.ID, *anilistID,
-		))
-	}
-	if upsertResult.Created {
+		// Expected when AnimeThemes has multiple entries for the same AniList ID.
+		// Songs are still linked to the canonical catalog row — not a failure.
+		job.Skipped++
+	} else if upsertResult.Created {
 		job.Created++
 	} else {
 		job.Skipped++

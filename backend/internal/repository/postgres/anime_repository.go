@@ -838,6 +838,19 @@ func (r *animeRepository) GetPublicSlugs(ctx context.Context) ([]domain.SitemapI
 	return items, err
 }
 
+// GetIDByAnimeThemesID returns the internal anime ID for a linked AnimeThemes entry, or 0 if absent.
+func (r *animeRepository) GetIDByAnimeThemesID(ctx context.Context, animeThemesID uint64) (uint64, error) {
+	var id uint64
+	err := r.db.GetContext(ctx, &id, `SELECT id FROM animes WHERE anime_themes_id = $1 LIMIT 1`, animeThemesID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
+}
+
 // UpsertFromAnimeThemes inserts or links an anime by its anime_themes_id.
 // When anilist_id already exists locally, it merges onto the existing row instead of failing.
 func (r *animeRepository) UpsertFromAnimeThemes(ctx context.Context, anime *domain.Anime) (domain.AnimeThemesUpsertResult, error) {
@@ -853,6 +866,7 @@ func (r *animeRepository) UpsertFromAnimeThemes(ctx context.Context, anime *doma
 	err := r.db.GetContext(ctx, &existingID, `SELECT id FROM animes WHERE anime_themes_id = $1 LIMIT 1`, *anime.AnimeThemesID)
 	if err == nil {
 		anime.ID = existingID
+		result.AlreadyImported = true
 		return result, nil
 	}
 	if !errors.Is(err, sql.ErrNoRows) {

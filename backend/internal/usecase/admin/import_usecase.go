@@ -426,6 +426,14 @@ func (u *ImportUsecase) phaseAnimeThemes(ctx context.Context, job *domain.Import
 }
 
 func (u *ImportUsecase) processAnime(ctx context.Context, job *domain.ImportJob, atAnime *animethemes.ATAnime) error {
+	// Fast path: skip taxonomy/songs when this AT anime is already in the catalog.
+	if existingID, err := u.animeRepo.GetIDByAnimeThemesID(ctx, uint64(atAnime.ID)); err != nil {
+		return err
+	} else if existingID > 0 {
+		job.Skipped++
+		return nil
+	}
+
 	// 1. Resolve taxonomy IDs
 	year, err := u.taxonomyRepo.GetOrCreateYear(ctx, fmt.Sprintf("%d", atAnime.Year))
 	if err != nil {
@@ -468,6 +476,10 @@ func (u *ImportUsecase) processAnime(ctx context.Context, job *domain.ImportJob,
 	upsertResult, err := u.animeRepo.UpsertFromAnimeThemes(ctx, anime)
 	if err != nil {
 		return fmt.Errorf("upsert anime: %w", err)
+	}
+	if upsertResult.AlreadyImported {
+		job.Skipped++
+		return nil
 	}
 	if upsertResult.DuplicateAnilist && anilistID != nil {
 		// Expected when AnimeThemes has multiple entries for the same AniList ID.
@@ -526,9 +538,10 @@ func (u *ImportUsecase) processSong(
 		job.Created++
 	} else {
 		job.Skipped++
+		return nil
 	}
 
-	// Artists
+	// Artists (new songs only — avatar generation runs once at creation time)
 	for _, atArtist := range theme.Song.Artists {
 		artist := &domain.Artist{
 			Name:          atArtist.Name,

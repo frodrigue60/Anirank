@@ -163,6 +163,7 @@ type ProducerFilters struct {
 // AnimeThemesUpsertResult describes the outcome of an AnimeThemes bulk-import upsert.
 type AnimeThemesUpsertResult struct {
 	Created          bool
+	AlreadyImported  bool // anime_themes_id already linked — catalog row is complete
 	MergedAnilist    bool // linked anime_themes_id onto an existing AniList row
 	DuplicateAnilist bool // same anilist_id already linked to a different AT entry
 }
@@ -204,6 +205,7 @@ type AnimeRepository interface {
 	GetPublicSlugs(ctx context.Context) ([]SitemapItem, error)
 
 	// Import pipeline — idempotent bulk import methods
+	GetIDByAnimeThemesID(ctx context.Context, animeThemesID uint64) (uint64, error)
 	UpsertFromAnimeThemes(ctx context.Context, anime *Anime) (AnimeThemesUpsertResult, error)
 	EnrichFromAniList(ctx context.Context, anilistID int64, cover, banner, description, titleEnglish, titleNative *string, synonyms []string) error
 

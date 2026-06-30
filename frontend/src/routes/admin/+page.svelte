@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onDestroy } from "svelte";
   import api from "$lib/api";
   import { toastState } from "$lib/state/toast.svelte";
   import { getAuthToken } from "$lib/state/auth.svelte";
@@ -218,17 +219,37 @@
   let showImportLogs = $state(false);
   let isImporting = $derived(importJobStatus?.status === 'running' || importJobStatus?.status === 'pending');
   let importEventSource = $state<EventSource | null>(null);
+  let importStreamJobId: string | null = null;
+
+  function normalizeImportJobPayload(raw: Record<string, unknown>) {
+    if (raw.error || typeof raw.status !== "string") return null;
+    return {
+      ...raw,
+      current_page: Number(raw.current_page ?? 0),
+      total_pages: Number(raw.total_pages ?? 0),
+      processed: Number(raw.processed ?? 0),
+      created: Number(raw.created ?? 0),
+      skipped: Number(raw.skipped ?? 0),
+    };
+  }
+
+  function formatImportProgressLog(data: Record<string, unknown>) {
+    const page = data.current_page ?? 0;
+    const total = data.total_pages ?? 0;
+    const processed = data.processed ?? 0;
+    const created = data.created ?? 0;
+    if (data.status === "done") {
+      return `✅ Job finished. Processed: ${processed}, Created: ${created}`;
+    }
+    if (data.status === "canceled" || data.status === "failed") {
+      return `❌ Job ${data.status}.`;
+    }
+    return `[Phase 1] Page ${page}/${total || "?"} - Processed: ${processed}, Created: ${created}`;
+  }
 
   // Fetch initial status on mount
   $effect(() => {
     fetchImportStatus();
-    
-    return () => {
-      if (importEventSource) {
-        importEventSource.close();
-        importEventSource = null;
-      }
-    };
   });
 
   // Automatically manage SSE stream based on importJobStatus
@@ -240,7 +261,11 @@
       importJobStatus = res.data;
       const running =
         res.data?.status === "running" || res.data?.status === "pending";
-      if (running && !importEventSource) {
+      if (
+        running &&
+        res.data?.id &&
+        importStreamJobId !== res.data.id
+      ) {
         connectImportStream(res.data.id);
       }
     } catch(err: any) {
@@ -256,8 +281,23 @@
       showImportLogs = true;
       importLogs = ["Starting AnimeThemes bulk import pipeline..."];
       const res = await api.post("/admin/import/animethemes/start");
-      importJobStatus = { id: res.data.job_id, status: 'pending' };
-      connectImportStream(res.data.job_id);
+      const jobId = res.data.job_id;
+      try {
+        const statusRes = await api.get("/admin/import/animethemes/status");
+        importJobStatus = statusRes.data;
+      } catch {
+        importJobStatus = {
+          id: jobId,
+          status: "running",
+          current_page: 0,
+          total_pages: 0,
+          processed: 0,
+          created: 0,
+          skipped: 0,
+          errors: [],
+        };
+      }
+      connectImportStream(jobId);
       toastState.addToast("Import job started successfully", "success");
     } catch (err: any) {
       toastState.addToast(getApiErrorMessage(err, "Failed to start import job"), "error");
@@ -276,9 +316,17 @@
   }
 
   function connectImportStream(jobId: string, isReconnect = false) {
+    if (!jobId) return;
+    if (importStreamJobId === jobId && importEventSource && !isReconnect) {
+      return;
+    }
+
     if (importEventSource) {
       importEventSource.close();
+      importEventSource = null;
     }
+
+    importStreamJobId = jobId;
     
     const token = getAuthToken();
     const url = `${api.defaults.baseURL}/admin/import/${jobId}/stream?token=${token}`;
@@ -300,20 +348,26 @@
 
     importEventSource.onmessage = (event) => {
       try {
-        const data = JSON.parse(event.data);
-        importJobStatus = data;
+        const parsed = JSON.parse(event.data) as Record<string, unknown>;
+        const data = normalizeImportJobPayload(parsed);
+        if (!data) {
+          if (parsed.error) {
+            importLogs = [
+              ...importLogs,
+              `⚠️ Stream error: ${String(parsed.error)}`,
+            ];
+          }
+          return;
+        }
+
+        importJobStatus = { ...importJobStatus, ...data };
         
-        let msg = `[Phase 1] Page ${data.current_page}/${data.total_pages} - Processed: ${data.processed}, Created: ${data.created}`;
-        if (data.status === 'done') {
-           msg = `✅ Job finished. Processed: ${data.processed}, Created: ${data.created}`;
+        let msg = formatImportProgressLog(data);
+        if (data.status === 'done' || data.status === 'canceled' || data.status === 'failed') {
            isFinished = true;
            importEventSource?.close();
            importEventSource = null;
-        } else if (data.status === 'canceled' || data.status === 'failed') {
-           msg = `❌ Job ${data.status}.`;
-           isFinished = true;
-           importEventSource?.close();
-           importEventSource = null;
+           importStreamJobId = null;
         }
 
         // Avoid flooding by checking if the last log is the exact same
@@ -343,8 +397,12 @@
             importJobStatus?.id === jobId
           ) {
             connectImportStream(jobId, true);
+          } else {
+            importStreamJobId = null;
           }
         }, 3000);
+      } else {
+        importStreamJobId = null;
       }
     };
   }
@@ -355,17 +413,11 @@
   let showBackfillLogs = $state(false);
   let isBackfilling = $derived(backfillJobStatus?.status === 'running' || backfillJobStatus?.status === 'pending');
   let backfillEventSource = $state<EventSource | null>(null);
+  let backfillStreamJobId: string | null = null;
 
   // Fetch initial backfill status on mount
   $effect(() => {
     fetchBackfillStatus();
-    
-    return () => {
-      if (backfillEventSource) {
-        backfillEventSource.close();
-        backfillEventSource = null;
-      }
-    };
   });
 
   // Automatically manage SSE stream based on backfillJobStatus
@@ -377,7 +429,11 @@
       backfillJobStatus = res.data;
       const running =
         res.data?.status === "running" || res.data?.status === "pending";
-      if (running && !backfillEventSource) {
+      if (
+        running &&
+        res.data?.id &&
+        backfillStreamJobId !== res.data.id
+      ) {
         connectBackfillStream(res.data.id);
       }
     } catch(err: any) {
@@ -393,8 +449,20 @@
       showBackfillLogs = true;
       backfillLogs = ["Starting AniList title variants backfill job..."];
       const res = await api.post("/admin/import/backfill-titles/start");
-      backfillJobStatus = { id: res.data.job_id, status: 'pending' };
-      connectBackfillStream(res.data.job_id);
+      const jobId = res.data.job_id;
+      try {
+        const statusRes = await api.get("/admin/import/backfill-titles/status");
+        backfillJobStatus = statusRes.data;
+      } catch {
+        backfillJobStatus = {
+          id: jobId,
+          status: "running",
+          current_page: 0,
+          total_pages: 0,
+          processed: 0,
+        };
+      }
+      connectBackfillStream(jobId);
       toastState.addToast("Title backfill job started successfully", "success");
     } catch (err: any) {
       toastState.addToast(getApiErrorMessage(err, "Failed to start title backfill job"), "error");
@@ -413,9 +481,17 @@
   }
 
   function connectBackfillStream(jobId: string, isReconnect = false) {
+    if (!jobId) return;
+    if (backfillStreamJobId === jobId && backfillEventSource && !isReconnect) {
+      return;
+    }
+
     if (backfillEventSource) {
       backfillEventSource.close();
+      backfillEventSource = null;
     }
+
+    backfillStreamJobId = jobId;
     
     const token = getAuthToken();
     const url = `${api.defaults.baseURL}/admin/import/${jobId}/stream?token=${token}`;
@@ -436,20 +512,38 @@
 
     backfillEventSource.onmessage = (event) => {
       try {
-        const data = JSON.parse(event.data);
-        backfillJobStatus = data;
+        const parsed = JSON.parse(event.data) as Record<string, unknown>;
+        if (parsed.error || typeof parsed.status !== "string") {
+          if (parsed.error) {
+            backfillLogs = [
+              ...backfillLogs,
+              `⚠️ Stream error: ${String(parsed.error)}`,
+            ];
+          }
+          return;
+        }
+
+        const data = {
+          ...parsed,
+          current_page: Number(parsed.current_page ?? 0),
+          total_pages: Number(parsed.total_pages ?? 0),
+          processed: Number(parsed.processed ?? 0),
+        };
+        backfillJobStatus = { ...backfillJobStatus, ...data };
         
-        let msg = `[Backfill] Chunk ${data.current_page}/${data.total_pages} - Processed: ${data.processed}`;
+        let msg = `[Backfill] Chunk ${data.current_page}/${data.total_pages || "?"} - Processed: ${data.processed}`;
         if (data.status === 'done') {
            msg = `✅ Backfill finished. Processed: ${data.processed} animes.`;
            isFinished = true;
            backfillEventSource?.close();
            backfillEventSource = null;
+           backfillStreamJobId = null;
         } else if (data.status === 'canceled' || data.status === 'failed') {
            msg = `❌ Backfill job ${data.status}.`;
            isFinished = true;
            backfillEventSource?.close();
            backfillEventSource = null;
+           backfillStreamJobId = null;
         }
 
         if (backfillLogs.length === 0 || backfillLogs[backfillLogs.length - 1] !== msg) {
@@ -478,8 +572,12 @@
             backfillJobStatus?.id === jobId
           ) {
             connectBackfillStream(jobId, true);
+          } else {
+            backfillStreamJobId = null;
           }
         }, 3000);
+      } else {
+        backfillStreamJobId = null;
       }
     };
   }
@@ -495,16 +593,10 @@
       videoAuditJobStatus?.status === "pending",
   );
   let videoAuditEventSource = $state<EventSource | null>(null);
+  let videoAuditStreamJobId: string | null = null;
 
   $effect(() => {
     fetchVideoAuditStatus();
-
-    return () => {
-      if (videoAuditEventSource) {
-        videoAuditEventSource.close();
-        videoAuditEventSource = null;
-      }
-    };
   });
 
   async function fetchVideoAuditStatus() {
@@ -513,7 +605,11 @@
       videoAuditJobStatus = res.data;
       const running =
         res.data?.status === "running" || res.data?.status === "pending";
-      if (running && !videoAuditEventSource) {
+      if (
+        running &&
+        res.data?.id &&
+        videoAuditStreamJobId !== res.data.id
+      ) {
         connectVideoAuditStream(res.data.id);
       }
       if (res.data?.status === "done") {
@@ -546,8 +642,22 @@
         prefix: videoAuditPrefix.trim() || "videos/",
         include_orphans: videoAuditIncludeOrphans,
       });
-      videoAuditJobStatus = { id: res.data.job_id, status: "pending" };
-      connectVideoAuditStream(res.data.job_id);
+      const jobId = res.data.job_id;
+      try {
+        const statusRes = await api.get("/admin/system/video-audit/status");
+        videoAuditJobStatus = statusRes.data;
+      } catch {
+        videoAuditJobStatus = {
+          id: jobId,
+          status: "running",
+          current_page: 0,
+          total_pages: 0,
+          processed: 0,
+          created: 0,
+          skipped: 0,
+        };
+      }
+      connectVideoAuditStream(jobId);
       toastState.addToast("Video storage audit started", "success");
     } catch (err: any) {
       toastState.addToast(
@@ -577,9 +687,17 @@
   }
 
   function connectVideoAuditStream(jobId: string, isReconnect = false) {
+    if (!jobId) return;
+    if (videoAuditStreamJobId === jobId && videoAuditEventSource && !isReconnect) {
+      return;
+    }
+
     if (videoAuditEventSource) {
       videoAuditEventSource.close();
+      videoAuditEventSource = null;
     }
+
+    videoAuditStreamJobId = jobId;
 
     const token = getAuthToken();
     const url = `${api.defaults.baseURL}/admin/system/video-audit/${jobId}/stream?token=${token}`;
@@ -599,8 +717,26 @@
 
     videoAuditEventSource.onmessage = (event) => {
       try {
-        const data = JSON.parse(event.data);
-        videoAuditJobStatus = data;
+        const parsed = JSON.parse(event.data) as Record<string, unknown>;
+        if (parsed.error || typeof parsed.status !== "string") {
+          if (parsed.error) {
+            videoAuditLogs = [
+              ...videoAuditLogs,
+              `⚠️ Stream error: ${String(parsed.error)}`,
+            ];
+          }
+          return;
+        }
+
+        const data = {
+          ...parsed,
+          current_page: Number(parsed.current_page ?? 0),
+          total_pages: Number(parsed.total_pages ?? 0),
+          processed: Number(parsed.processed ?? 0),
+          created: Number(parsed.created ?? 0),
+          skipped: Number(parsed.skipped ?? 0),
+        };
+        videoAuditJobStatus = { ...videoAuditJobStatus, ...data };
 
         let msg = `[Audit] Checked ${data.current_page}/${data.total_pages || "?"} paths — missing: ${data.created}, present: ${data.skipped}`;
         if (data.status === "done") {
@@ -608,12 +744,14 @@
           isFinished = true;
           videoAuditEventSource?.close();
           videoAuditEventSource = null;
-          fetchVideoAuditReport(data.id);
+          videoAuditStreamJobId = null;
+          fetchVideoAuditReport(String(data.id));
         } else if (data.status === "canceled" || data.status === "failed") {
           msg = `❌ Audit ${data.status}.`;
           isFinished = true;
           videoAuditEventSource?.close();
           videoAuditEventSource = null;
+          videoAuditStreamJobId = null;
         }
 
         if (
@@ -645,11 +783,21 @@
             videoAuditJobStatus?.id === jobId
           ) {
             connectVideoAuditStream(jobId, true);
+          } else {
+            videoAuditStreamJobId = null;
           }
         }, 3000);
+      } else {
+        videoAuditStreamJobId = null;
       }
     };
   }
+
+  onDestroy(() => {
+    importEventSource?.close();
+    backfillEventSource?.close();
+    videoAuditEventSource?.close();
+  });
 
   function downloadVideoAuditCsv() {
     if (!videoAuditReport?.missing?.length) return;

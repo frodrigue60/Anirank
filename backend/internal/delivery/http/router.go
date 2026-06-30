@@ -98,8 +98,9 @@ func SetupPublicRoutes(app *fiber.App,
 		log.Printf("Warning: failed to clean stale import jobs on startup: %v", err)
 	}
 	importUsecase := admin.NewImportUsecase(importJobRepo, animeRepo, songRepo, artistRepo, taxonomyRepo, atClient, anilistClient, mediaService)
+	videoAuditUsecase := admin.NewVideoAuditUsecase(importJobRepo, songRepo, mediaService, storageService)
 
-	adminHandler := v1.NewAdminHandler(adminUsecase, importUsecase, songRepo, userRepo, animeRepo, artistRepo, playlistRepo)
+	adminHandler := v1.NewAdminHandler(adminUsecase, importUsecase, videoAuditUsecase, songRepo, userRepo, animeRepo, artistRepo, playlistRepo)
 	moderationHandler := v1.NewModerationHandler(moderationUsecase, songRepo, commentRepo, userRepo)
 	tournamentHandler := v1.NewTournamentHandler(tournamentUsecase)
 
@@ -348,6 +349,11 @@ func SetupPublicRoutes(app *fiber.App,
 	// Dashboard & System
 	adminOnly.Get("/dashboard", adminHandler.GetDashboard)
 	adminOnly.Get("/system/api-status", adminHandler.GetApiStatus)
+	adminOnly.Get("/system/video-audit/status", adminHandler.GetLatestVideoAuditStatus)
+	adminOnly.Post("/system/video-audit/start", middleware.HasPermissionMiddleware("song.edit", userRepo), adminHandler.StartVideoAudit)
+	adminOnly.Get("/system/video-audit/:jobID/report", adminHandler.GetVideoAuditReport)
+	adminOnly.Get("/system/video-audit/:jobID/stream", adminHandler.StreamVideoAuditProgress)
+	adminOnly.Post("/system/video-audit/:jobID/cancel", middleware.HasPermissionMiddleware("song.edit", userRepo), adminHandler.CancelVideoAudit)
 	adminOnly.Post("/og/flush", ogHandler.FlushOGCache)
 
 	// Admin Moderation Tickets Review

@@ -197,6 +197,10 @@ type SongRepository interface {
 	UpsertSongFromAnimeThemes(ctx context.Context, song *Song) (created bool, err error)
 	UpsertVariantFromAnimeThemes(ctx context.Context, v *SongVariant, videos []SongVariantVideo) (created bool, err error)
 	LinkArtistToSong(ctx context.Context, songID, artistID uint64) error
+
+	// Storage audit
+	GetVideoAuditCandidates(ctx context.Context, filters VideoAuditFilters) ([]VideoAuditCandidate, error)
+	GetDistinctVideoSrcPaths(ctx context.Context, prefix string) ([]string, error)
 }
 
 type SongVariantRepository interface {

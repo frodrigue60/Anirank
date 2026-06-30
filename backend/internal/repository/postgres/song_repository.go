@@ -1289,6 +1289,60 @@ func (r *songRepository) LinkArtistToSong(ctx context.Context, songID, artistID 
 	return err
 }
 
+func (r *songRepository) GetVideoAuditCandidates(ctx context.Context, filters domain.VideoAuditFilters) ([]domain.VideoAuditCandidate, error) {
+	query := `
+		SELECT
+			v.video_src,
+			sv.uuid AS variant_uuid,
+			sv.slug AS variant_slug,
+			s.uuid AS song_uuid,
+			COALESCE(NULLIF(s.song_romaji, ''), NULLIF(s.song_en, ''), 'Untitled') AS song_title,
+			a.slug AS anime_slug,
+			a.title AS anime_title
+		FROM videos v
+		INNER JOIN song_variants sv ON sv.id = v.song_variant_id
+		INNER JOIN songs s ON s.id = sv.song_id
+		INNER JOIN animes a ON a.id = s.anime_id
+		WHERE v.video_src IS NOT NULL
+			AND v.video_src <> ''
+			AND v.video_src NOT LIKE 'http%'
+			AND (v.embed_code IS NULL OR v.embed_code = '')
+	`
+	args := []interface{}{}
+	if filters.Prefix != "" {
+		query += ` AND v.video_src LIKE $1`
+		args = append(args, filters.Prefix+"%")
+	}
+	query += ` ORDER BY a.title, s.song_romaji, sv.slug, v.video_src`
+
+	var rows []domain.VideoAuditCandidate
+	if err := r.db.SelectContext(ctx, &rows, query, args...); err != nil {
+		return nil, err
+	}
+	return rows, nil
+}
+
+func (r *songRepository) GetDistinctVideoSrcPaths(ctx context.Context, prefix string) ([]string, error) {
+	query := `
+		SELECT DISTINCT v.video_src
+		FROM videos v
+		WHERE v.video_src IS NOT NULL
+			AND v.video_src <> ''
+			AND v.video_src NOT LIKE 'http%'
+			AND (v.embed_code IS NULL OR v.embed_code = '')
+	`
+	args := []interface{}{}
+	if prefix != "" {
+		query += ` AND v.video_src LIKE $1`
+		args = append(args, prefix+"%")
+	}
+	var paths []string
+	if err := r.db.SelectContext(ctx, &paths, query, args...); err != nil {
+		return nil, err
+	}
+	return paths, nil
+}
+
 func (r *songRepository) GetRandomSongsForAMQ(ctx context.Context, animeIDs []uint64, themeTypes []string, limit int, excludeIDs []uint64) ([]domain.Song, error) {
 	var conditions []string
 	var args []interface{}

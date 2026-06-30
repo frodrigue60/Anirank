@@ -22,6 +22,8 @@
   import Image from "lucide-svelte/icons/image";
   import DownloadCloud from "lucide-svelte/icons/download-cloud";
   import StopCircle from "lucide-svelte/icons/stop-circle";
+  import FileSearch from "lucide-svelte/icons/file-search";
+  import FileDown from "lucide-svelte/icons/file-down";
 
   let { data } = $props();
 
@@ -426,6 +428,183 @@
       backfillEventSource?.close();
       backfillEventSource = null;
     };
+  }
+
+  // --- Video Storage Audit ---
+  let videoAuditJobStatus = $state<any>(null);
+  let videoAuditReport = $state<any>(null);
+  let videoAuditLogs = $state<string[]>([]);
+  let videoAuditPrefix = $state("videos/");
+  let videoAuditIncludeOrphans = $state(false);
+  let isVideoAuditing = $derived(
+    videoAuditJobStatus?.status === "running" ||
+      videoAuditJobStatus?.status === "pending",
+  );
+  let videoAuditEventSource = $state<EventSource | null>(null);
+
+  $effect(() => {
+    fetchVideoAuditStatus();
+
+    return () => {
+      if (videoAuditEventSource) {
+        videoAuditEventSource.close();
+        videoAuditEventSource = null;
+      }
+    };
+  });
+
+  $effect(() => {
+    if (videoAuditJobStatus) {
+      const isRunning =
+        videoAuditJobStatus.status === "running" ||
+        videoAuditJobStatus.status === "pending";
+      if (isRunning && !videoAuditEventSource) {
+        connectVideoAuditStream(videoAuditJobStatus.id);
+      }
+      if (
+        videoAuditJobStatus.status === "done" &&
+        !videoAuditReport
+      ) {
+        fetchVideoAuditReport(videoAuditJobStatus.id);
+      }
+    }
+  });
+
+  async function fetchVideoAuditStatus() {
+    try {
+      const res = await api.get("/admin/system/video-audit/status");
+      videoAuditJobStatus = res.data;
+      if (res.data?.status === "done") {
+        await fetchVideoAuditReport(res.data.id);
+      }
+    } catch (err: any) {
+      if (err.response?.status !== 404) {
+        console.error("Failed to fetch video audit status", err);
+      }
+    }
+  }
+
+  async function fetchVideoAuditReport(jobId: string) {
+    try {
+      const res = await api.get(`/admin/system/video-audit/${jobId}/report`);
+      videoAuditReport = res.data.data;
+    } catch (err: any) {
+      if (err.response?.status !== 409) {
+        console.error("Failed to fetch video audit report", err);
+      }
+    }
+  }
+
+  async function startVideoAuditJob() {
+    if (isVideoAuditing) return;
+    try {
+      videoAuditReport = null;
+      videoAuditLogs = ["Starting video storage audit..."];
+      const res = await api.post("/admin/system/video-audit/start", {
+        prefix: videoAuditPrefix.trim() || "videos/",
+        include_orphans: videoAuditIncludeOrphans,
+      });
+      videoAuditJobStatus = { id: res.data.job_id, status: "pending" };
+      toastState.addToast("Video storage audit started", "success");
+    } catch (err: any) {
+      toastState.addToast(
+        getApiErrorMessage(err, "Failed to start video audit"),
+        "error",
+      );
+    }
+  }
+
+  async function cancelVideoAuditJob() {
+    if (!videoAuditJobStatus?.id) return;
+    try {
+      await api.post(
+        `/admin/system/video-audit/${videoAuditJobStatus.id}/cancel`,
+      );
+      toastState.addToast("Video audit cancellation requested", "success");
+      videoAuditLogs = [
+        ...videoAuditLogs,
+        "Cancellation requested. Waiting for worker to stop...",
+      ];
+    } catch (err: any) {
+      toastState.addToast(
+        getApiErrorMessage(err, "Failed to cancel video audit"),
+        "error",
+      );
+    }
+  }
+
+  function connectVideoAuditStream(jobId: string) {
+    if (videoAuditEventSource) {
+      videoAuditEventSource.close();
+    }
+
+    const token = getAuthToken();
+    const url = `${api.defaults.baseURL}/admin/system/video-audit/${jobId}/stream?token=${token}`;
+
+    if (videoAuditLogs.length === 0) {
+      videoAuditLogs = ["Reconnecting to active video audit..."];
+    }
+    videoAuditEventSource = new EventSource(url, { withCredentials: true });
+
+    videoAuditEventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        videoAuditJobStatus = data;
+
+        let msg = `[Audit] Checked ${data.current_page}/${data.total_pages || "?"} paths — missing: ${data.created}, present: ${data.skipped}`;
+        if (data.status === "done") {
+          msg = `✅ Audit finished. Missing: ${data.created}, present: ${data.skipped}, rows: ${data.processed}`;
+          videoAuditEventSource?.close();
+          videoAuditEventSource = null;
+          fetchVideoAuditReport(data.id);
+        } else if (data.status === "canceled" || data.status === "failed") {
+          msg = `❌ Audit ${data.status}.`;
+          videoAuditEventSource?.close();
+          videoAuditEventSource = null;
+        }
+
+        if (
+          videoAuditLogs.length === 0 ||
+          videoAuditLogs[videoAuditLogs.length - 1] !== msg
+        ) {
+          videoAuditLogs = [...videoAuditLogs.slice(-49), msg];
+        }
+      } catch (e) {}
+    };
+
+    videoAuditEventSource.onerror = () => {
+      videoAuditLogs = [...videoAuditLogs, "❌ Connection lost."];
+      videoAuditEventSource?.close();
+      videoAuditEventSource = null;
+    };
+  }
+
+  function downloadVideoAuditCsv() {
+    if (!videoAuditReport?.missing?.length) return;
+    const header =
+      "video_src,anime_slug,anime_title,song_title,variant_slug,variant_uuid,song_uuid";
+    const rows = videoAuditReport.missing.map((m: any) =>
+      [
+        m.video_src,
+        m.anime_slug,
+        m.anime_title,
+        m.song_title,
+        m.variant_slug,
+        m.variant_uuid,
+        m.song_uuid,
+      ]
+        .map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`)
+        .join(","),
+    );
+    const blob = new Blob([[header, ...rows].join("\n")], {
+      type: "text/csv;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `video-audit-missing-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   // --- Chart Logic ---
@@ -1003,6 +1182,178 @@
                       {/each}
                     </div>
                   {/if}
+                </div>
+              </div>
+            {/if}
+          </div>
+        {/if}
+      </div>
+
+      <!-- Video Storage Audit Widget -->
+      <div class="mt-8 pt-6 border-t border-outline-variant">
+        <div class="flex flex-wrap items-start justify-between gap-4 mb-4">
+          <div>
+            <h4 class="text-lg font-bold text-on-surface flex items-center gap-2">
+              <FileSearch size={20} class="text-sky-400" />
+              Video Storage Audit
+            </h4>
+            <p class="text-xs text-on-surface-variant/70 mt-1 max-w-xl">
+              Compares database video paths against R2/S3 objects and reports files missing from cloud storage.
+            </p>
+          </div>
+          <div class="flex items-center gap-3">
+            {#if isVideoAuditing}
+              <button
+                onclick={cancelVideoAuditJob}
+                class="flex items-center gap-2 px-3 py-1.5 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 transition-colors border border-rose-500/20 rounded-lg text-xs font-bold"
+              >
+                <StopCircle size={14} />
+                Cancel Audit
+              </button>
+            {:else}
+              <button
+                onclick={startVideoAuditJob}
+                class="flex items-center gap-2 px-3 py-1.5 bg-sky-500/10 text-sky-400 hover:bg-sky-500/20 transition-colors border border-sky-500/20 rounded-lg text-xs font-bold"
+              >
+                <FileSearch size={14} />
+                Run Audit
+              </button>
+            {/if}
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-end gap-3 mb-4">
+          <div class="flex flex-col gap-1 min-w-[200px] flex-1">
+            <label for="videoAuditPrefix" class="text-[10px] font-bold uppercase text-on-surface-variant/50 ml-1">Storage prefix</label>
+            <input
+              id="videoAuditPrefix"
+              type="text"
+              bind:value={videoAuditPrefix}
+              disabled={isVideoAuditing}
+              placeholder="videos/"
+              class="bg-black/40 border border-outline-variant rounded-lg px-3 py-2 text-sm text-on-surface placeholder-white/20 focus:outline-none focus:border-sky-500 disabled:opacity-50"
+            />
+          </div>
+          <label class="flex items-center gap-2 text-xs text-on-surface-variant/70 pb-2 cursor-pointer">
+            <input
+              type="checkbox"
+              bind:checked={videoAuditIncludeOrphans}
+              disabled={isVideoAuditing}
+              class="rounded border-outline-variant"
+            />
+            Include orphan files in R2 (not in DB)
+          </label>
+        </div>
+
+        {#if videoAuditJobStatus}
+          <div class="bg-surface-highest rounded-xl p-4 border border-outline-variant/50">
+            <div class="flex justify-between items-center mb-2">
+              <div class="flex items-center gap-3">
+                <span class="text-xs font-bold uppercase tracking-wider {videoAuditJobStatus.status === 'running' ? 'text-sky-400' : 'text-on-surface-variant/70'}">
+                  Status: {videoAuditJobStatus.status}
+                </span>
+                {#if isVideoAuditing}
+                  <Loader2 size={12} class="animate-spin text-sky-400" />
+                {/if}
+              </div>
+              <span class="text-xs font-mono text-on-surface-variant/70">
+                {videoAuditJobStatus.current_page} / {videoAuditJobStatus.total_pages || "?"} paths
+              </span>
+            </div>
+
+            <div class="w-full bg-black/40 rounded-full h-2 overflow-hidden mb-4 border border-white/5">
+              <div
+                class="bg-sky-500 h-full transition-all duration-500"
+                style="width: {(videoAuditJobStatus.current_page / Math.max(videoAuditJobStatus.total_pages || 1, 1)) * 100}%"
+              ></div>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div class="bg-black/20 rounded-lg p-2 text-center">
+                <p class="text-[10px] uppercase font-bold text-on-surface-variant/50">DB Rows</p>
+                <p class="text-sm font-black text-on-surface">{videoAuditJobStatus.processed}</p>
+              </div>
+              <div class="bg-black/20 rounded-lg p-2 text-center">
+                <p class="text-[10px] uppercase font-bold text-on-surface-variant/50">Missing</p>
+                <p class="text-sm font-black text-rose-400">{videoAuditJobStatus.created ?? videoAuditReport?.missing_count ?? 0}</p>
+              </div>
+              <div class="bg-black/20 rounded-lg p-2 text-center">
+                <p class="text-[10px] uppercase font-bold text-on-surface-variant/50">Present</p>
+                <p class="text-sm font-black text-emerald-400">{videoAuditJobStatus.skipped ?? videoAuditReport?.present_count ?? 0}</p>
+              </div>
+              <div class="bg-black/20 rounded-lg p-2 text-center">
+                <p class="text-[10px] uppercase font-bold text-on-surface-variant/50">Orphans</p>
+                <p class="text-sm font-black text-amber-400">{videoAuditReport?.orphan_count ?? 0}</p>
+              </div>
+            </div>
+
+            {#if videoAuditLogs.length > 0 || isVideoAuditing}
+              <div class="mt-4 pt-4 border-t border-outline-variant/30">
+                <span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Audit Log</span>
+                <div class="bg-black/40 rounded-lg p-3 font-mono text-[10px] h-24 overflow-y-auto space-y-1 custom-scrollbar mt-2">
+                  {#each videoAuditLogs as log}
+                    <div class="text-on-surface-variant/80">
+                      <span class="text-sky-400/50 mr-2">></span>
+                      {log}
+                    </div>
+                  {/each}
+                </div>
+              </div>
+            {/if}
+
+            {#if videoAuditReport?.missing?.length > 0}
+              <div class="mt-4 pt-4 border-t border-outline-variant/30">
+                <div class="flex items-center justify-between mb-3">
+                  <span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">
+                    Missing files ({videoAuditReport.missing_count})
+                  </span>
+                  <button
+                    onclick={downloadVideoAuditCsv}
+                    class="flex items-center gap-1.5 px-2 py-1 text-[10px] font-bold uppercase text-sky-400 hover:text-sky-300 transition-colors"
+                  >
+                    <FileDown size={12} />
+                    Export CSV
+                  </button>
+                </div>
+                <div class="max-h-48 overflow-y-auto custom-scrollbar rounded-lg border border-outline-variant/30">
+                  <table class="w-full text-left text-[11px]">
+                    <thead class="sticky top-0 bg-surface-highest text-on-surface-variant/70">
+                      <tr>
+                        <th class="p-2 font-bold">Anime</th>
+                        <th class="p-2 font-bold">Song</th>
+                        <th class="p-2 font-bold">Path</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {#each videoAuditReport.missing.slice(0, 100) as item}
+                        <tr class="border-t border-outline-variant/20 hover:bg-black/20">
+                          <td class="p-2 text-on-surface truncate max-w-[120px]" title={item.anime_title}>{item.anime_title}</td>
+                          <td class="p-2 text-on-surface-variant/80 truncate max-w-[100px]" title={item.song_title}>{item.song_title}</td>
+                          <td class="p-2 font-mono text-rose-400/90 truncate max-w-[200px]" title={item.video_src}>{item.video_src}</td>
+                        </tr>
+                      {/each}
+                    </tbody>
+                  </table>
+                  {#if videoAuditReport.missing.length > 100}
+                    <p class="p-2 text-[10px] text-on-surface-variant/50 text-center">
+                      Showing first 100 — export CSV for the full list.
+                    </p>
+                  {/if}
+                </div>
+              </div>
+            {:else if videoAuditReport && videoAuditJobStatus.status === "done"}
+              <p class="mt-4 text-sm text-emerald-400/90">All checked video paths exist in cloud storage.</p>
+            {/if}
+
+            {#if videoAuditReport?.orphans?.length > 0}
+              <div class="mt-4 pt-4 border-t border-outline-variant/30">
+                <span class="text-[10px] font-bold text-amber-400 uppercase tracking-wider mb-2 block">
+                  Orphan files in R2 ({videoAuditReport.orphan_count})
+                </span>
+                <div class="bg-black/40 rounded-lg p-3 font-mono text-[10px] max-h-32 overflow-y-auto custom-scrollbar space-y-1">
+                  {#each videoAuditReport.orphans.slice(0, 50) as orphan}
+                    <div class="text-amber-400/80 truncate" title={orphan}>{orphan}</div>
+                  {/each}
                 </div>
               </div>
             {/if}

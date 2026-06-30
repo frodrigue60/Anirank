@@ -584,28 +584,14 @@ func (u *ImportUsecase) processSong(
 		}
 
 		// Process all videos for this variant entry
-		var videos []domain.SongVariantVideo
+		videoInputs := make([]ATVideoInput, 0, len(entry.Videos))
 		for _, entryVideo := range entry.Videos {
-			path := entryVideo.Path
-			if path != "" {
-				isNC, isBD, resolution, isUncensored, isSubbed, isLyrics, source, overlap := parseVideoTags(entryVideo.Tags)
-				vSrc := path
-				if !strings.HasPrefix(strings.ToLower(vSrc), "videos/") {
-					vSrc = "videos/" + vSrc
-				}
-				videos = append(videos, domain.SongVariantVideo{
-					VideoSrc:     &vSrc,
-					IsNC:         isNC,
-					IsBD:         isBD,
-					Resolution:   resolution,
-					IsUncensored: isUncensored,
-					IsSubbed:     isSubbed,
-					IsLyrics:     isLyrics,
-					Source:       source,
-					Overlap:      overlap,
-				})
-			}
+			videoInputs = append(videoInputs, ATVideoInput{
+				Path: entryVideo.Path,
+				Tags: entryVideo.Tags,
+			})
 		}
+		videos := buildVideosFromATInputs(videoInputs)
 
 		variantCreated, err := u.songRepo.UpsertVariantFromAnimeThemes(ctx, variant, videos)
 		if err != nil {
@@ -939,54 +925,6 @@ func MarshalJob(job *domain.ImportJob) string {
 		"errors":       job.Errors,
 	})
 	return string(b)
-}
-
-func parseVideoTags(tags string) (isNC bool, isBD bool, resolution int, isUncensored bool, isSubbed bool, isLyrics bool, source string, overlap string) {
-	normalized := strings.ToUpper(tags)
-	isNC = strings.Contains(normalized, "NC")
-	isBD = strings.Contains(normalized, "BD")
-	isUncensored = strings.Contains(normalized, "UNCENSORED")
-	isSubbed = strings.Contains(normalized, "SUBBED")
-	isLyrics = strings.Contains(normalized, "LYRICS")
-
-	// Determine Source (BD, TV, WEB, DVD, LD)
-	if strings.Contains(normalized, "BD") || strings.Contains(normalized, "BLU-RAY") {
-		source = "BD"
-	} else if strings.Contains(normalized, "WEB") {
-		source = "WEB"
-	} else if strings.Contains(normalized, "DVD") {
-		source = "DVD"
-	} else if strings.Contains(normalized, "LD") {
-		source = "LD"
-	} else {
-		source = "TV" // Default to TV
-	}
-
-	// Determine Overlap
-	if strings.Contains(normalized, "OVERLAP") {
-		overlap = "Overlap"
-	} else if strings.Contains(normalized, "TRANSITION") {
-		overlap = "Transition"
-	} else {
-		overlap = "None"
-	}
-
-	if strings.Contains(normalized, "2160") {
-		resolution = 2160
-	} else if strings.Contains(normalized, "1440") {
-		resolution = 1440
-	} else if strings.Contains(normalized, "1080") {
-		resolution = 1080
-	} else if strings.Contains(normalized, "720") {
-		resolution = 720
-	} else if strings.Contains(normalized, "576") {
-		resolution = 576
-	} else if strings.Contains(normalized, "480") {
-		resolution = 480
-	} else if strings.Contains(normalized, "360") {
-		resolution = 360
-	}
-	return
 }
 
 func (u *ImportUsecase) downloadAndStore(ctx context.Context, url string, prefix string, id uint64, preset infrastructure.ResolutionPreset) (string, error) {

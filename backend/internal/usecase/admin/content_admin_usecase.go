@@ -996,31 +996,26 @@ func (u *ContentAdminUsecase) HydrateSeason(ctx context.Context, year int, seaso
 	}
 
 	sendProgress(fmt.Sprintf("Fetching %s %d from AnimeThemes...", seasonName, year))
-	url := fmt.Sprintf("https://api.animethemes.moe/anime?include=animethemes.song.artists,animethemes.group,images,animethemes.animethemeentries.videos,studios,resources&filter[year]=%d&filter[season]=%s&page[size]=100", year, strings.ToLower(seasonName))
 
-	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := client.Get(url)
+	client := newATHTTPClient()
+	stubs, err := fetchSeasonAnimeStubs(ctx, client, year, seasonName)
 	if err != nil {
 		return fmt.Errorf("failed to fetch from AnimeThemes: %w", err)
 	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("AnimeThemes API returned status %d", resp.StatusCode)
-	}
-
-	var atResp ATResponse
-	if err := json.NewDecoder(resp.Body).Decode(&atResp); err != nil {
-		return fmt.Errorf("failed to decode AnimeThemes response: %w", err)
-	}
-
-	totalAnime := len(atResp.Anime)
-	if totalAnime == 0 {
+	if len(stubs) == 0 {
 		sendProgress("No animes found for this season.")
 		return nil
 	}
 
-	return u.syncAnimeThemesCollection(ctx, atResp.Anime, lang, meta, progress)
+	sendProgress(fmt.Sprintf("Found %d animes. Deep-fetching songs, variants, and video metadata...", len(stubs)))
+	fullAnimeList := deepFetchAnimeCollection(ctx, client, stubs, progress)
+	if len(fullAnimeList) == 0 {
+		sendProgress("No animes could be fully loaded from AnimeThemes.")
+		return nil
+	}
+
+	return u.syncAnimeThemesCollection(ctx, fullAnimeList, lang, meta, progress)
 }
 
 func (u *ContentAdminUsecase) SearchAnimeThemes(ctx context.Context, query string) ([]ATAnimeData, error) {
@@ -1077,7 +1072,7 @@ func (u *ContentAdminUsecase) HydrateAnimeThemes(ctx context.Context, ids []uint
 
 	// 1. Initial fetch to get slugs for deep-fetch
 	url := fmt.Sprintf("https://api.animethemes.moe/anime?filter[id]=%s&page[size]=100", strings.Join(idStrings, ","))
-	client := &http.Client{Timeout: 30 * time.Second}
+	client := newATHTTPClient()
 
 	sendProgress(fmt.Sprintf("Verifying %d animes on AnimeThemes...", len(ids)))
 	resp, err := client.Get(url)
@@ -1095,27 +1090,8 @@ func (u *ContentAdminUsecase) HydrateAnimeThemes(ctx context.Context, ids []uint
 		return fmt.Errorf("no animes found for IDs: %s", strings.Join(idStrings, ","))
 	}
 
-	// 2. Deep-fetch each anime individually to ensure all relationships (songs, studios) are populated
-	// AnimeThemes index/filter endpoints are unreliable for nested includes
-	var fullAnimeList []ATAnimeData
-	for i, a := range atResp.Anime {
-		sendProgress(fmt.Sprintf("[%d/%d] Fetching full record for: %s", i+1, len(atResp.Anime), a.Name))
-		detailUrl := fmt.Sprintf("https://api.animethemes.moe/anime/%s?include=animethemes.song.artists,animethemes.group,images,animethemes.animethemeentries.videos,studios,resources", a.Slug)
-
-		dResp, err := client.Get(detailUrl)
-		if err != nil {
-			log.Printf("[ERROR] Failed to deep-fetch slug %s: %v\n", a.Slug, err)
-			continue
-		}
-
-		var detailResp struct {
-			Anime ATAnimeData `json:"anime"`
-		}
-		if err := json.NewDecoder(dResp.Body).Decode(&detailResp); err == nil {
-			fullAnimeList = append(fullAnimeList, detailResp.Anime)
-		}
-		dResp.Body.Close()
-	}
+	sendProgress(fmt.Sprintf("Deep-fetching %d animes for full song/video data...", len(atResp.Anime)))
+	fullAnimeList := deepFetchAnimeCollection(ctx, client, atResp.Anime, progress)
 
 	return u.syncAnimeThemesCollection(ctx, fullAnimeList, lang, meta, progress)
 }
@@ -1134,7 +1110,7 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 	sendProgress(fmt.Sprintf("Found %d animes. Collecting IDs for enrichment...", totalAnime))
 
 	log.Printf("[INFO] Starting sync of %d animes from AnimeThemes...\n", totalAnime)
-	var createdCount, updatedCount, skippedCount int
+	var createdCount, updatedCount, skippedCount, videosSyncedCount int
 
 	allProcessedArtistIDs := make(map[uint64]bool)
 	allProcessedAnimeIDs := make(map[uint64]bool)
@@ -1694,33 +1670,20 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 
 				// Process and sync Videos for this variant
 				if variant.ID > 0 {
-					var videos []domain.SongVariantVideo
+					videoInputs := make([]ATVideoInput, 0, len(entry.Videos))
 					for _, entryVideo := range entry.Videos {
-						path := entryVideo.Path
-						if path != "" {
-							isNC, isBD, resolution, isUncensored, isSubbed, isLyrics, source, overlap := parseVideoTags(entryVideo.Tags)
-							vSrc := path
-							if !strings.HasPrefix(strings.ToLower(vSrc), "videos/") {
-								vSrc = "videos/" + vSrc
-							}
-							videos = append(videos, domain.SongVariantVideo{
-								VideoSrc:     &vSrc,
-								IsNC:         isNC,
-								IsBD:         isBD,
-								Resolution:   resolution,
-								IsUncensored: isUncensored,
-								IsSubbed:     isSubbed,
-								IsLyrics:     isLyrics,
-								Source:       source,
-								Overlap:      overlap,
-							})
-						}
+						videoInputs = append(videoInputs, ATVideoInput{
+							Path: entryVideo.Path,
+							Tags: entryVideo.Tags,
+						})
 					}
+					videos := buildVideosFromATInputs(videoInputs)
 
 					if len(videos) > 0 {
 						if _, err := u.songRepo.UpsertVariantFromAnimeThemes(ctx, variant, videos); err != nil {
 							fmt.Printf("[ERROR] Failed to sync videos for variant %d (%s): %v\n", variant.ID, variant.Slug, err)
 						} else {
+							videosSyncedCount += len(videos)
 							fmt.Printf("[INFO] Synced %d videos for variant %d (%s)\n", len(videos), variant.ID, variant.Slug)
 						}
 					}
@@ -1875,7 +1838,7 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 
 	log.Printf("[PHASE] Targeted stats recount completed in %v\n", time.Since(recountStart))
 
-	summary := fmt.Sprintf("Hydration completed! Created: %d, Updated: %d, Skipped: %d", createdCount, updatedCount, skippedCount)
+	summary := fmt.Sprintf("Hydration completed! Created: %d, Updated: %d, Skipped: %d, Videos: %d", createdCount, updatedCount, skippedCount, videosSyncedCount)
 	log.Printf("[SUCCESS] %s\n", summary)
 	sendProgress(summary)
 	return nil

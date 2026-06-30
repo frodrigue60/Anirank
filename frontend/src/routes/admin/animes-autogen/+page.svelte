@@ -269,6 +269,7 @@
 
     isHydrating = true;
     progressMessage = "Connecting to hydration stream...";
+    let lastProgressMessage = "";
     try {
       const response = await fetch(
         `${api.defaults.baseURL}/admin/animes/hydrate`,
@@ -306,15 +307,16 @@
           for (const msg of messages) {
             if (msg.startsWith("data: ")) {
               progressMessage = msg.replace("data: ", "");
+              lastProgressMessage = progressMessage;
             }
           }
         }
       }
 
-      toastState.addToast(
-        `Hydration for ${atSeason} ${atYear} completed`,
-        "success",
-      );
+      const toastDetail = lastProgressMessage.includes("Videos:")
+        ? lastProgressMessage
+        : `Hydration for ${atSeason} ${atYear} completed`;
+      toastState.addToast(toastDetail, "success");
     } catch (err: any) {
       console.error(err);
       toastState.addToast(getApiErrorMessage(err, "Hydration failed"), "error");
@@ -620,7 +622,7 @@
         <div class="mb-6 relative">
           <h3 class="text-lg font-bold text-on-surface">Seasonal Music Hydration</h3>
           <p class="text-sm text-on-surface-variant/70">
-            Enrich existing animes with songs and variants.
+            Enrich existing animes with songs, variants, and video metadata (paths and tags, not media files).
           </p>
         </div>
 

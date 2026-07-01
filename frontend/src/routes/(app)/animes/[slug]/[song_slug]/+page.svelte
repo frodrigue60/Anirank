@@ -6,6 +6,7 @@
     getSongArtistNames,
     getSongName,
     getFormattedScore,
+    resolveVariantIndex,
   } from "$lib/song-utils";
   import { goto } from "$app/navigation";
   import { toastState } from "$lib/state/toast.svelte";
@@ -110,22 +111,12 @@
     currentSong = data.song;
     relatedSongs = data.related;
     comments = data.comments?.map(mapComment) || [];
-    selectedVariantIndex = 0;
+    selectedVariantIndex = resolveVariantIndex(
+      data.song.variants,
+      page.url.searchParams.get("v"),
+    );
     selectedVideoIndex = 0;
     videoError = false;
-
-    const v = page.url.searchParams.get("v");
-    if (v !== null) {
-      const idx = Number.parseInt(v, 10);
-      if (
-        !Number.isNaN(idx) &&
-        idx >= 0 &&
-        data.song.variants &&
-        idx < data.song.variants.length
-      ) {
-        selectedVariantIndex = idx;
-      }
-    }
   });
 
   // Smart Recommendations State
@@ -199,6 +190,25 @@
     selectedVariantIndex = index;
     selectedVideoIndex = 0;
     videoError = false;
+
+    const variant = currentSong.variants?.[index];
+    if (!variant) return;
+
+    const url = new URL(page.url);
+    const versionNumber = variant.version_number ?? 1;
+    const hasMultipleVariants = (currentSong.variants?.length ?? 0) > 1;
+
+    if (hasMultipleVariants && versionNumber > 0) {
+      url.searchParams.set("v", String(versionNumber));
+    } else {
+      url.searchParams.delete("v");
+    }
+
+    const next = `${url.pathname}${url.search}`;
+    const current = `${page.url.pathname}${page.url.search}`;
+    if (next !== current) {
+      goto(next, { replaceState: true, keepFocus: true, noScroll: true });
+    }
   }
 
   let showRatingModal = $state(false);

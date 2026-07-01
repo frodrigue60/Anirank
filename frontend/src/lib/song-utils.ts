@@ -13,6 +13,44 @@ export function getSongArtistNames(
   );
   return names.join(", ");
 }
+
+/** Minimal variant shape for URL/index resolution. */
+export type VariantVersionRef = { version_number?: number };
+
+/**
+ * Maps ?v= query param to a variant array index.
+ * Primary: version_number (V1 → ?v=1). Fallback: legacy 0-based array index.
+ */
+export function resolveVariantIndex(
+  variants: VariantVersionRef[] | undefined | null,
+  param: string | null,
+): number {
+  if (!variants?.length) return 0;
+  if (param === null || param.trim() === "") return 0;
+
+  const parsed = Number.parseInt(param, 10);
+  if (Number.isNaN(parsed)) return 0;
+
+  const byVersionNumber = variants.findIndex(
+    (variant) => (variant.version_number ?? 0) === parsed,
+  );
+  if (byVersionNumber >= 0) return byVersionNumber;
+
+  if (parsed >= 0 && parsed < variants.length) return parsed;
+
+  return 0;
+}
+
+export function buildSongPlayHref(
+  animeSlug: string,
+  songSlug: string,
+  versionNumber?: number,
+): string {
+  const base = `/animes/${animeSlug}/${songSlug}`;
+  if (!versionNumber || versionNumber < 1) return base;
+  return `${base}?v=${versionNumber}`;
+}
+
 export function getFormattedScore(
   score: string | number | undefined,
   format: string = "POINT_10_DECIMAL",

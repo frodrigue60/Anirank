@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { PageData } from "./$types";
-  import { getSongName, getFormattedScore } from "$lib/song-utils";
+  import { getSongName, getFormattedScore, buildSongPlayHref } from "$lib/song-utils";
   import SEO from "$lib/components/SEO.svelte";
   import { authState } from "$lib/state/auth.svelte";
   import { configState } from "$lib/state/config.svelte";
@@ -165,8 +165,8 @@
     return variant;
   }
 
-  function songPlayHref(songSlug: string, variantIndex = 0) {
-    return `/animes/${anime.slug}/${songSlug}?v=${variantIndex}`;
+  function songPlayHref(songSlug: string, versionNumber: number) {
+    return buildSongPlayHref(anime.slug, songSlug, versionNumber);
   }
 
   function formatResolution(resolution?: number) {
@@ -575,7 +575,10 @@
                               class="flex items-center gap-1.5 shrink-0 bg-secondary-container/25 border border-outline-variant/30 rounded-full pl-0.5 pr-1.5 py-0.5"
                             >
                               <a
-                                href={songPlayHref(song.slug, variantIndex)}
+                                href={songPlayHref(
+                                  song.slug,
+                                  variant.version_number || 1,
+                                )}
                                 class="w-7 h-7 rounded-full flex items-center justify-center text-white bg-primary hover:bg-primary-container transition-colors"
                                 title="Play {getSongName(song)} v{variant.version_number || 1}"
                                 aria-label="Play {getSongName(song)} version {variant.version_number || 1}"

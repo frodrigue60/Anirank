@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { PageData } from "./$types";
-  import { getSongName, getSongArtistNames, getFormattedScore } from "$lib/song-utils";
+  import { getSongName, getFormattedScore } from "$lib/song-utils";
   import SEO from "$lib/components/SEO.svelte";
   import { authState } from "$lib/state/auth.svelte";
   import { configState } from "$lib/state/config.svelte";
@@ -12,8 +12,11 @@
   import ChevronUp from "lucide-svelte/icons/chevron-up";
   import Star from "lucide-svelte/icons/star";
   import Play from "lucide-svelte/icons/play";
+  import Clapperboard from "lucide-svelte/icons/clapperboard";
   import { PUBLIC_API_URL } from "$lib/api";
   import OptimizedImage from "$lib/components/OptimizedImage.svelte";
+  import ArtistListCell from "$lib/components/ArtistListCell.svelte";
+  import type { SongVariant, SongVariantVideo } from "$lib/types/song";
 
   let { data }: { data: PageData } = $props();
   let anime = $derived(data.data);
@@ -26,6 +29,24 @@
   let filterType = $state("all");
   let sortBy = $state("theme_num");
 
+  function getSongTypeSortOrder(type: string | undefined): number {
+    switch ((type || "").toUpperCase()) {
+      case "OP":
+        return 0;
+      case "ED":
+        return 1;
+      default:
+        return 2;
+    }
+  }
+
+  function compareSongsByType(a: { type?: string }, b: { type?: string }) {
+    const typeOrder =
+      getSongTypeSortOrder(a.type) - getSongTypeSortOrder(b.type);
+    if (typeOrder !== 0) return typeOrder;
+    return (a.type || "").localeCompare(b.type || "");
+  }
+
   let filteredAndSortedSongs = $derived.by(() => {
     let songs = anime.songs ? [...anime.songs] : [];
 
@@ -36,28 +57,36 @@
       );
     }
 
-    // Sort
+    // Sort: OP → ED → otros tipos, luego por theme_num o score
     songs.sort((a, b) => {
+      const typeOrder = compareSongsByType(a, b);
+      if (typeOrder !== 0) return typeOrder;
+
       if (sortBy === "theme_num") {
-        // Sort by type first based on DB order
-        if (a.type !== b.type) {
-          const order: Record<string, number> = {};
-          configState.songTypes.forEach((st, i) => {
-            order[st.slug] = i + 1;
-          });
-          return (order[a.type] || 99) - (order[b.type] || 99);
-        }
-        // Then natural numeric sort by theme_num
         return (a.theme_num || "").localeCompare(b.theme_num || "", undefined, {
           numeric: true,
         });
-      } else {
-        return (b.average_rating || 0) - (a.average_rating || 0);
       }
+
+      return (b.average_rating || 0) - (a.average_rating || 0);
     });
 
     return songs;
   });
+
+  function getPrimaryVideo(variant: SongVariant): SongVariantVideo | SongVariant {
+    if (variant.videos?.length) return variant.videos[0];
+    return variant;
+  }
+
+  function songPlayHref(songSlug: string, variantIndex = 0) {
+    return `/animes/${anime.slug}/${songSlug}?v=${variantIndex}`;
+  }
+
+  function formatResolution(resolution?: number) {
+    if (!resolution || resolution <= 0) return null;
+    return `${resolution}p`;
+  }
 </script>
 
 <SEO
@@ -357,68 +386,124 @@
         </div>
 
         <div
-          class="bg-surface-container border border-white/5 rounded-md overflow-hidden"
+          class="rounded-md overflow-hidden"
         >
-          <table class="w-full text-left border-collapse">
+          <table class="w-full text-left border-separate border-spacing-0 text-sm px-2">
             <thead>
               <tr
                 class="border-b border-primary/10 text-xs uppercase tracking-widest text-on-surface-variant"
               >
-                <th class="p-5 font-bold w-24">Type</th>
-                <th class="p-5 font-bold">Song Title</th>
-                <th class="p-5 font-bold">Artist</th>
-                <th class="p-5 font-bold text-right">Avg Rating</th>
-                <th class="p-5 font-bold w-16"></th>
+                <th class="px-4 py-3 font-bold w-24">Type</th>
+                <th class="px-4 py-3 font-bold">Song Title</th>
+                <th class="px-4 py-3 font-bold">Artist</th>
+                <th class="px-4 py-3 font-bold text-right">Avg Rating</th>
               </tr>
             </thead>
-            <tbody class="text-sm">
-              {#each filteredAndSortedSongs as song}
-                <tr
-                  class="hover:bg-primary/10 border-b border-primary/10 group transition-colors"
-                >
-                  <td class="p-5">
+            {#each filteredAndSortedSongs as song}
+              {@const variants = song.variants?.length ? song.variants : [{ version_number: 1 }]}
+              <tbody class="group/song">
+                <tr class="transition-colors group-hover/song:bg-primary/[0.04] bg-surface-container">
+                  <td
+                    class="px-4 pt-3 pb-1 align-top border-l border-t border-b-0 border-outline-variant/25 group-hover/song:border-outline-variant/40 transition-colors rounded-tl-sm"
+                  >
                     <span
-                      class="inline-flex items-center justify-center px-2.5 py-1 rounded-sm {song.type ===
+                      class="inline-flex items-center justify-center px-2 py-0.5 rounded-sm {song.type ===
                       'OP'
                         ? 'bg-green-500/10 text-green-400 border-green-500/40'
                         : 'bg-blue-500/10 text-blue-400 border-blue-500/40'} border text-[10px] font-bold"
                       >{song.type}{song.theme_num}</span
                     >
                   </td>
-                  <td class="p-5">
+                  <td
+                    class="px-4 pt-3 pb-1 align-top border-t border-b-0 border-outline-variant/25 group-hover/song:border-outline-variant/40 transition-colors"
+                  >
                     <div
-                      class="font-bold text-on-surface text-base hover:text-primary transition-colors"
+                      class="font-bold text-on-surface text-sm leading-snug hover:text-primary transition-colors"
                     >
                       <a href="/animes/{anime.slug}/{song.slug}"
                         >{getSongName(song)}</a
                       >
                     </div>
                   </td>
-                  <td class="p-5 text-on-surface-variant">
-                    {getSongArtistNames(song.artists)}
+                  <td
+                    class="px-4 pt-3 pb-1 align-top text-xs border-t border-b-0 border-outline-variant/25 group-hover/song:border-outline-variant/40 transition-colors max-w-0 w-[28%]"
+                  >
+                    <ArtistListCell
+                      artists={song.artists}
+                      popoverId="artists-{song.id}"
+                    />
                   </td>
-                  <td class="p-5 text-right">
-                    <div class="flex items-center justify-end gap-1.5">
-                      <Star size={14} class="text-yellow-400 fill-current" />
-
-                      <span class="font-bold text-on-surface text-lg"
+                  <td
+                    class="px-4 pt-3 pb-1 align-top text-right border-t border-r border-b-0 border-outline-variant/25 group-hover/song:border-outline-variant/40 transition-colors rounded-tr-sm"
+                  >
+                    <div class="flex items-center justify-end gap-1">
+                      <Star size={12} class="text-yellow-400 fill-current" />
+                      <span class="font-bold text-on-surface text-base leading-none"
                         >{formatScore(song.average_rating)}</span
                       >
                     </div>
                   </td>
-                  <td class="p-5 text-right">
-                    <a
-                      href="/animes/{anime.slug}/{song.slug}"
-                      class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface bg-primary/20 hover:bg-primary hover:text-white/50 transition-colors"
-                      title="Play theme: {getSongName(song)}"
-                    >
-                      <Play size={18} class="fill-current" />
-
-                    </a>
-                  </td>
                 </tr>
-              {/each}
-            </tbody>
+
+                {#each variants as variant, variantIndex}
+                  {@const isLast = variantIndex === variants.length - 1}
+                  {@const video = song.variants?.length ? getPrimaryVideo(variant as SongVariant) : null}
+                  <tr class="transition-colors group-hover/song:bg-primary/[0.04] bg-surface-container">
+                    <td
+                      colspan="4"
+                      class="px-4 py-1.5 border-l border-r border-outline-variant/25 group-hover/song:border-outline-variant/40 transition-colors {variantIndex > 0 ? 'border-t border-outline-variant/10' : 'border-t-0'} {isLast ? 'border-b rounded-b-sm pb-2.5' : ''}"
+                    >
+                      <div class="flex items-center justify-between gap-3 pl-1 md:pl-4">
+                        <div class="flex items-center gap-2.5 min-w-0 text-on-surface-variant/80">
+                          <span class="text-[10px] font-bold uppercase tracking-wider shrink-0">
+                            V{variant.version_number || 1}
+                          </span>
+                          {#if variant.episodes}
+                            <span
+                              class="flex items-center gap-1 text-[11px] font-medium min-w-0"
+                              title="Episodes where this version appears"
+                            >
+                              <Clapperboard size={12} class="shrink-0 text-on-surface-variant/70" />
+                              <span class="truncate">{variant.episodes}</span>
+                            </span>
+                          {/if}
+                        </div>
+
+                        <div class="flex items-center gap-1.5 shrink-0 bg-secondary-container/25 border border-outline-variant/30 rounded-full pl-0.5 pr-1.5 py-0.5">
+                          <a
+                            href={songPlayHref(song.slug, variantIndex)}
+                            class="w-7 h-7 rounded-full flex items-center justify-center text-white bg-primary hover:bg-primary-container transition-colors"
+                            title="Play {getSongName(song)} v{variant.version_number || 1}"
+                            aria-label="Play {getSongName(song)} version {variant.version_number || 1}"
+                          >
+                            <Play size={14} class="fill-current ml-0.5" />
+                          </a>
+                          {#if video?.resolution && formatResolution(video.resolution)}
+                            <span class="text-[9px] font-black uppercase tracking-wider text-on-surface-variant px-0.5">
+                              {formatResolution(video.resolution)}
+                            </span>
+                          {/if}
+                          {#if video?.is_nc}
+                            <span class="text-[8px] font-black uppercase tracking-wider bg-surface-highest text-on-surface-variant px-1 py-0.5 rounded-sm">
+                              NC
+                            </span>
+                          {/if}
+                          {#if video?.is_bd}
+                            <span class="text-[8px] font-black uppercase tracking-wider bg-surface-highest text-on-surface-variant px-1 py-0.5 rounded-sm">
+                              BD
+                            </span>
+                          {/if}
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                {/each}
+
+                <tr aria-hidden="true">
+                  <td colspan="4" class="h-2 p-0 border-none"></td>
+                </tr>
+              </tbody>
+            {/each}
           </table>
         </div>
       </div>

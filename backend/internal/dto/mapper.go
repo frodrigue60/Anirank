@@ -260,7 +260,101 @@ func ToSongMinimalDTO(s *domain.Song) SongMinimalDTO {
 		res.PrevRank = &val
 	}
 
+	if len(s.Variants) > 0 {
+		variants := make([]SongVariantDTO, 0, len(s.Variants))
+		for i := range s.Variants {
+			variants = append(variants, ToSongVariantDTO(&s.Variants[i], &res))
+		}
+		res.Variants = variants
+	}
+
 	return res
+}
+
+func ToSongVariantDTO(v *domain.SongVariant, songMinimal *SongMinimalDTO) SongVariantDTO {
+	if v == nil {
+		return SongVariantDTO{}
+	}
+
+	var videoUrl *string
+	if v.Video != nil {
+		if v.Video.LocalUrl != nil {
+			videoUrl = v.Video.LocalUrl
+		} else if v.Video.EmbedUrl != nil {
+			videoUrl = v.Video.EmbedUrl
+		}
+	}
+
+	vDTO := SongVariantDTO{
+		ID:            v.UUID,
+		VersionNumber: v.VersionNumber,
+		Slug:          v.Slug,
+		VideoUrl:      videoUrl,
+		Episodes:      v.Episodes,
+		Spoiler:       v.Spoiler,
+		NSFW:          v.NSFW,
+		Videos:        []SongVariantVideoDTO{},
+	}
+
+	if v.Video != nil {
+		vDTO.EmbedCode = v.Video.EmbedCode
+		vDTO.VideoSrc = v.Video.VideoSrc
+		vDTO.EmbedUrl = v.Video.EmbedUrl
+		vDTO.LocalUrl = v.Video.LocalUrl
+		vDTO.IsNC = v.Video.IsNC
+		vDTO.IsBD = v.Video.IsBD
+		vDTO.Resolution = v.Video.Resolution
+		vDTO.IsUncensored = v.Video.IsUncensored
+		vDTO.IsSubbed = v.Video.IsSubbed
+		vDTO.IsLyrics = v.Video.IsLyrics
+		vDTO.Source = v.Video.Source
+		vDTO.Overlap = v.Video.Overlap
+	}
+
+	for _, vid := range v.Videos {
+		var vidUrl *string
+		if vid.LocalUrl != nil {
+			vidUrl = vid.LocalUrl
+		} else if vid.EmbedUrl != nil {
+			vidUrl = vid.EmbedUrl
+		}
+
+		vDTO.Videos = append(vDTO.Videos, SongVariantVideoDTO{
+			VideoUrl:     vidUrl,
+			EmbedUrl:     vid.EmbedUrl,
+			LocalUrl:     vid.LocalUrl,
+			EmbedCode:    vid.EmbedCode,
+			VideoSrc:     vid.VideoSrc,
+			IsNC:         vid.IsNC,
+			IsBD:         vid.IsBD,
+			Resolution:   vid.Resolution,
+			IsUncensored: vid.IsUncensored,
+			IsSubbed:     vid.IsSubbed,
+			IsLyrics:     vid.IsLyrics,
+			Source:       vid.Source,
+			Overlap:      vid.Overlap,
+		})
+	}
+
+	if v.Season != nil {
+		sd := ToSeasonDTO(v.Season)
+		vDTO.Season = &sd
+	}
+	if v.Year != nil {
+		yd := ToYearDTO(v.Year)
+		vDTO.Year = &yd
+	}
+
+	if songMinimal != nil {
+		if vDTO.Season == nil {
+			vDTO.Season = songMinimal.Season
+		}
+		if vDTO.Year == nil {
+			vDTO.Year = songMinimal.Year
+		}
+	}
+
+	return vDTO
 }
 
 func ToSongSlimDTO(s *domain.Song) SongSlimDTO {
@@ -371,90 +465,8 @@ func ToSongDTO(s *domain.Song) SongDTO {
 	}
 
 	minimalDTO := ToSongMinimalDTO(s)
-
-	variants := make([]SongVariantDTO, 0)
-	for _, v := range s.Variants {
-		var videoUrl *string
-		if v.Video != nil {
-			if v.Video.LocalUrl != nil {
-				videoUrl = v.Video.LocalUrl
-			} else if v.Video.EmbedUrl != nil {
-				videoUrl = v.Video.EmbedUrl
-			}
-		}
-
-		vDTO := SongVariantDTO{
-			ID:            v.UUID,
-			VersionNumber: v.VersionNumber,
-			Slug:          v.Slug,
-			VideoUrl:      videoUrl,
-			Episodes:      v.Episodes,
-			Spoiler:       v.Spoiler,
-			NSFW:          v.NSFW,
-			Videos:        []SongVariantVideoDTO{},
-		}
-
-		if v.Video != nil {
-			vDTO.EmbedCode = v.Video.EmbedCode
-			vDTO.VideoSrc = v.Video.VideoSrc
-			vDTO.EmbedUrl = v.Video.EmbedUrl
-			vDTO.LocalUrl = v.Video.LocalUrl
-			vDTO.IsNC = v.Video.IsNC
-			vDTO.IsBD = v.Video.IsBD
-			vDTO.Resolution = v.Video.Resolution
-			vDTO.IsUncensored = v.Video.IsUncensored
-			vDTO.IsSubbed = v.Video.IsSubbed
-			vDTO.IsLyrics = v.Video.IsLyrics
-			vDTO.Source = v.Video.Source
-			vDTO.Overlap = v.Video.Overlap
-		}
-
-		for _, vid := range v.Videos {
-			var vidUrl *string
-			if vid.LocalUrl != nil {
-				vidUrl = vid.LocalUrl
-			} else if vid.EmbedUrl != nil {
-				vidUrl = vid.EmbedUrl
-			}
-
-			vDTO.Videos = append(vDTO.Videos, SongVariantVideoDTO{
-				VideoUrl:     vidUrl,
-				EmbedUrl:     vid.EmbedUrl,
-				LocalUrl:     vid.LocalUrl,
-				EmbedCode:    vid.EmbedCode,
-				VideoSrc:     vid.VideoSrc,
-				IsNC:         vid.IsNC,
-				IsBD:         vid.IsBD,
-				Resolution:   vid.Resolution,
-				IsUncensored: vid.IsUncensored,
-				IsSubbed:     vid.IsSubbed,
-				IsLyrics:     vid.IsLyrics,
-				Source:       vid.Source,
-				Overlap:      vid.Overlap,
-			})
-		}
-
-		// ─── Heritage Fallback Logic (Variant Level) ───
-		// 1. Try Variant's own season/year
-		if v.Season != nil {
-			sd := ToSeasonDTO(v.Season)
-			vDTO.Season = &sd
-		}
-		if v.Year != nil {
-			yd := ToYearDTO(v.Year)
-			vDTO.Year = &yd
-		}
-
-		// 2. Fallback to parent Song's resolved season/year if still nil
-		if vDTO.Season == nil {
-			vDTO.Season = minimalDTO.Season
-		}
-		if vDTO.Year == nil {
-			vDTO.Year = minimalDTO.Year
-		}
-
-		variants = append(variants, vDTO)
-	}
+	variants := minimalDTO.Variants
+	minimalDTO.Variants = nil
 
 	return SongDTO{
 		SongMinimalDTO: minimalDTO,

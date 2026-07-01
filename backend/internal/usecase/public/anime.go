@@ -34,10 +34,18 @@ func (u *AnimeUsecase) GetAnimeBySlug(ctx context.Context, slug string) (*domain
 
 	u.enrichAnime(ctx, anime)
 
-	// Enrich songs with computed Name and Artists
-	for i := range anime.Songs {
-		s := &anime.Songs[i]
-		// Compute Name
+	// Enrich songs with computed Name, Artists, and active variants
+	if len(anime.Songs) > 0 {
+		u.enrichAnimeSongs(ctx, anime.Songs)
+	}
+
+	return anime, nil
+}
+
+func (u *AnimeUsecase) enrichAnimeSongs(ctx context.Context, songs []domain.Song) {
+	songIDs := make([]uint64, len(songs))
+	for i := range songs {
+		s := &songs[i]
 		if s.SongRomaji != nil {
 			s.Name = *s.SongRomaji
 		} else if s.SongEN != nil {
@@ -45,12 +53,19 @@ func (u *AnimeUsecase) GetAnimeBySlug(ctx context.Context, slug string) (*domain
 		} else if s.SongJP != nil {
 			s.Name = *s.SongJP
 		}
-		// Load artists
 		artists, _ := u.songRepo.GetArtistsBySongID(ctx, s.ID, false)
 		s.Artists = artists
+		songIDs[i] = s.ID
 	}
 
-	return anime, nil
+	variantsMap, err := u.songRepo.GetVariantsBySongIDs(ctx, songIDs)
+	if err != nil {
+		return
+	}
+
+	for i := range songs {
+		songs[i].Variants = activeVariantsForSong(variantsMap[songs[i].ID], u.mediaService)
+	}
 }
 
 func (u *AnimeUsecase) GetPaginatedAnimes(ctx context.Context, limit, offset int, filters domain.AnimeFilters) ([]domain.Anime, int, error) {

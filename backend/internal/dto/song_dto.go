@@ -32,6 +32,7 @@ type SongMinimalDTO struct {
 	SeasonID         string             `json:"season_id"`
 	Season           *SeasonDTO         `json:"season,omitempty"`
 	Year             *YearDTO           `json:"year,omitempty"`
+	Variants         []SongVariantDTO   `json:"variants,omitempty"`
 }
 
 type SongSlimDTO struct {

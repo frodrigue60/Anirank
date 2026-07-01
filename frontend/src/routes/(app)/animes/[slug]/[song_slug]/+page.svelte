@@ -113,6 +113,19 @@
     selectedVariantIndex = 0;
     selectedVideoIndex = 0;
     videoError = false;
+
+    const v = page.url.searchParams.get("v");
+    if (v !== null) {
+      const idx = Number.parseInt(v, 10);
+      if (
+        !Number.isNaN(idx) &&
+        idx >= 0 &&
+        data.song.variants &&
+        idx < data.song.variants.length
+      ) {
+        selectedVariantIndex = idx;
+      }
+    }
   });
 
   // Smart Recommendations State

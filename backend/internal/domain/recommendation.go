@@ -68,7 +68,7 @@ type Recommendation struct {
 
 // RecommendationRepository define las consultas de persistencia vectorial en PostgreSQL
 type RecommendationRepository interface {
-	GetSimilarSongsByVector(ctx context.Context, embedding Vector, excludeSongID uint64, limit int) ([]Song, error)
+	GetSimilarSongsByVector(ctx context.Context, embedding Vector, excludeSongID, excludeAnimeID uint64, limit int) ([]Song, error)
 	UpdateSongEmbedding(ctx context.Context, songID uint64, embedding Vector) error
 	GetSongsWithoutEmbeddings(ctx context.Context, limit int) ([]Song, error)
 	GetUserPreferencesVector(ctx context.Context, userID uint64) (Vector, error)

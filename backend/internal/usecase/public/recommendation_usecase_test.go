@@ -14,15 +14,15 @@ import (
 
 // MockRecommendationRepository stub for usecase testing
 type MockRecommendationRepository struct {
-	GetSimilarSongsByVectorFunc func(embedding domain.Vector, excludeSongID uint64, limit int) ([]domain.Song, error)
+	GetSimilarSongsByVectorFunc func(embedding domain.Vector, excludeSongID, excludeAnimeID uint64, limit int) ([]domain.Song, error)
 	UpdateSongEmbeddingFunc    func(songID uint64, embedding domain.Vector) error
 	GetSongsWithoutEmbeddingsFunc func(limit int) ([]domain.Song, error)
 	GetUserPreferencesVectorFunc func(userID uint64) (domain.Vector, error)
 }
 
-func (m *MockRecommendationRepository) GetSimilarSongsByVector(ctx context.Context, embedding domain.Vector, excludeSongID uint64, limit int) ([]domain.Song, error) {
+func (m *MockRecommendationRepository) GetSimilarSongsByVector(ctx context.Context, embedding domain.Vector, excludeSongID, excludeAnimeID uint64, limit int) ([]domain.Song, error) {
 	if m.GetSimilarSongsByVectorFunc != nil {
-		return m.GetSimilarSongsByVectorFunc(embedding, excludeSongID, limit)
+		return m.GetSimilarSongsByVectorFunc(embedding, excludeSongID, excludeAnimeID, limit)
 	}
 	return []domain.Song{}, nil
 }
@@ -139,7 +139,7 @@ func TestRecommendationUsecase_GetSimilarSongs(t *testing.T) {
 		mockCache,
 	)
 
-	t.Run("Related Songs Fallback when no Embedding present", func(t *testing.T) {
+	t.Run("Discover fallback when no Embedding present", func(t *testing.T) {
 		songWithoutVector := &domain.Song{
 			ID:      1,
 			UUID:    "song-uuid",
@@ -153,24 +153,27 @@ func TestRecommendationUsecase_GetSimilarSongs(t *testing.T) {
 			return nil, domain.ErrNotFound
 		}
 
-		mockSongRepo.GetByAnimeIDFunc = func(animeID uint64, isAdmin bool) ([]domain.Song, error) {
-			assert.Equal(t, uint64(10), animeID)
+		mockSongRepo.GetPaginatedFunc = func(limit, offset int, filters domain.SongFilters) ([]domain.Song, error) {
+			assert.Equal(t, "views", filters.Sort)
 			return []domain.Song{
-				{ID: 1, UUID: "song-uuid"},
-				{ID: 2, UUID: "other-song-uuid"},
+				{ID: 1, UUID: "song-uuid", AnimeID: 10},
+				{ID: 2, UUID: "other-anime-song", AnimeID: 20},
+				{ID: 3, UUID: "same-anime-song", AnimeID: 10},
 			}, nil
 		}
 
 		songs, err := usecase.GetSimilarSongs(context.Background(), nil, "song-uuid", 5)
 		assert.NoError(t, err)
 		assert.Len(t, songs, 1)
-		assert.Equal(t, uint64(2), songs[0].ID) // Base song ID 1 filtered out
+		assert.Equal(t, uint64(2), songs[0].ID)
+		assert.Equal(t, uint64(20), songs[0].AnimeID)
 	})
 
 	t.Run("Related Songs using pgvector cosine", func(t *testing.T) {
 		songWithVector := &domain.Song{
 			ID:        1,
 			UUID:      "song-uuid",
+			AnimeID:   10,
 			Embedding: domain.Vector{0.1, 0.2, 0.3},
 		}
 
@@ -181,12 +184,13 @@ func TestRecommendationUsecase_GetSimilarSongs(t *testing.T) {
 			return nil, domain.ErrNotFound
 		}
 
-		mockRecRepo.GetSimilarSongsByVectorFunc = func(embedding domain.Vector, excludeSongID uint64, limit int) ([]domain.Song, error) {
+		mockRecRepo.GetSimilarSongsByVectorFunc = func(embedding domain.Vector, excludeSongID, excludeAnimeID uint64, limit int) ([]domain.Song, error) {
 			assert.Equal(t, domain.Vector{0.1, 0.2, 0.3}, embedding)
 			assert.Equal(t, uint64(1), excludeSongID)
+			assert.Equal(t, uint64(10), excludeAnimeID)
 			assert.Equal(t, 5, limit)
 			return []domain.Song{
-				{ID: 3, UUID: "recommended-1"},
+				{ID: 3, UUID: "recommended-1", AnimeID: 99},
 			}, nil
 		}
 
@@ -195,6 +199,20 @@ func TestRecommendationUsecase_GetSimilarSongs(t *testing.T) {
 		assert.Len(t, songs, 1)
 		assert.Equal(t, uint64(3), songs[0].ID)
 	})
+}
+
+func TestFilterDiscoverySongs(t *testing.T) {
+	songs := []domain.Song{
+		{ID: 1, AnimeID: 10},
+		{ID: 2, AnimeID: 20},
+		{ID: 3, AnimeID: 10},
+		{ID: 4, AnimeID: 30},
+	}
+
+	filtered := filterDiscoverySongs(songs, 1, 10, 2)
+	assert.Len(t, filtered, 2)
+	assert.Equal(t, uint64(2), filtered[0].ID)
+	assert.Equal(t, uint64(4), filtered[1].ID)
 }
 
 func TestRecommendationUsecase_GetPersonalizedRecommendations(t *testing.T) {

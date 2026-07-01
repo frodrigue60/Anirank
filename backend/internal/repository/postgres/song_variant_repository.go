@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strconv"
+	"strings"
 
 	"anirank/api/internal/domain"
 
@@ -213,13 +214,8 @@ func (r *songVariantRepository) Create(ctx context.Context, variant *domain.Song
 	}
 
 	// In legacy structure, we also insert into the videos table
-	if variant.Video != nil && (variant.Video.LocalUrl != nil || variant.Video.EmbedUrl != nil) {
-		videoQuery := `
-			INSERT INTO videos (song_variant_id, video_src, embed_code, is_nc, is_bd, resolution, status, created_at, updated_at)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-		`
-		_, err = tx.ExecContext(ctx, videoQuery, variant.ID, variant.Video.VideoSrc, variant.Video.EmbedCode, variant.Video.IsNC, variant.Video.IsBD, variant.Video.Resolution, variant.Status)
-		if err != nil {
+	if variant.Video != nil && (variant.Video.LocalUrl != nil || variant.Video.EmbedUrl != nil || variant.Video.VideoSrc != nil || variant.Video.EmbedCode != nil) {
+		if err := r.insertVideoTx(ctx, tx, variant.ID, variant.Video, variant.Status); err != nil {
 			return err
 		}
 	}
@@ -246,24 +242,181 @@ func (r *songVariantRepository) Update(ctx context.Context, variant *domain.Song
 		return err
 	}
 
-	// Upsert the Video. Delete existing then insert to resolve complexity.
-	_, err = tx.ExecContext(ctx, "DELETE FROM videos WHERE song_variant_id = $1", variant.ID)
+	return tx.Commit()
+}
+
+func defaultVideoSource(source string) string {
+	if strings.TrimSpace(source) == "" {
+		return "TV"
+	}
+	return source
+}
+
+func defaultVideoOverlap(overlap string) string {
+	if strings.TrimSpace(overlap) == "" {
+		return "None"
+	}
+	return overlap
+}
+
+func (r *songVariantRepository) insertVideoTx(ctx context.Context, tx *sqlx.Tx, variantID uint64, video *domain.SongVariantVideo, status bool) error {
+	if video == nil {
+		return nil
+	}
+
+	videoQuery := `
+		INSERT INTO videos (
+			song_variant_id, video_src, embed_code,
+			is_nc, is_bd, resolution,
+			is_uncensored, is_subbed, is_lyrics,
+			source, overlap, status, created_at, updated_at
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		ON CONFLICT (song_variant_id, video_src) DO UPDATE SET
+			embed_code = EXCLUDED.embed_code,
+			is_nc = EXCLUDED.is_nc,
+			is_bd = EXCLUDED.is_bd,
+			resolution = EXCLUDED.resolution,
+			is_uncensored = EXCLUDED.is_uncensored,
+			is_subbed = EXCLUDED.is_subbed,
+			is_lyrics = EXCLUDED.is_lyrics,
+			source = EXCLUDED.source,
+			overlap = EXCLUDED.overlap,
+			status = EXCLUDED.status,
+			updated_at = CURRENT_TIMESTAMP
+	`
+	_, err := tx.ExecContext(
+		ctx,
+		videoQuery,
+		variantID,
+		video.VideoSrc,
+		video.EmbedCode,
+		video.IsNC,
+		video.IsBD,
+		video.Resolution,
+		video.IsUncensored,
+		video.IsSubbed,
+		video.IsLyrics,
+		defaultVideoSource(video.Source),
+		defaultVideoOverlap(video.Overlap),
+		status,
+	)
+	return err
+}
+
+func (r *songVariantRepository) UpsertVideo(ctx context.Context, variantID uint64, video *domain.SongVariantVideo, status bool) error {
+	if video == nil {
+		return nil
+	}
+
+	tx, err := r.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback()
 
-	if variant.Video != nil && (variant.Video.LocalUrl != nil || variant.Video.EmbedUrl != nil) {
-		videoQuery := `
-			INSERT INTO videos (song_variant_id, video_src, embed_code, is_nc, is_bd, resolution, status, created_at, updated_at)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-		`
-		_, err = tx.ExecContext(ctx, videoQuery, variant.ID, variant.Video.VideoSrc, variant.Video.EmbedCode, variant.Video.IsNC, variant.Video.IsBD, variant.Video.Resolution, variant.Status)
+	if video.VideoSrc != nil && *video.VideoSrc != "" {
+		if err := r.insertVideoTx(ctx, tx, variantID, video, status); err != nil {
+			return err
+		}
+		return tx.Commit()
+	}
+
+	if video.EmbedCode != nil && *video.EmbedCode != "" {
+		var existingID uint64
+		err := tx.GetContext(ctx, &existingID,
+			`SELECT id FROM videos WHERE song_variant_id = $1 AND embed_code = $2 LIMIT 1`,
+			variantID, *video.EmbedCode,
+		)
+		if err == nil && existingID > 0 {
+			_, err = tx.ExecContext(ctx, `
+				UPDATE videos SET
+					is_nc = $3, is_bd = $4, resolution = $5,
+					is_uncensored = $6, is_subbed = $7, is_lyrics = $8,
+					source = $9, overlap = $10, status = $11, updated_at = CURRENT_TIMESTAMP
+				WHERE id = $2 AND song_variant_id = $1
+			`, variantID, existingID,
+				video.IsNC, video.IsBD, video.Resolution,
+				video.IsUncensored, video.IsSubbed, video.IsLyrics,
+				defaultVideoSource(video.Source), defaultVideoOverlap(video.Overlap), status,
+			)
+			if err != nil {
+				return err
+			}
+			return tx.Commit()
+		}
+
+		_, err = tx.ExecContext(ctx, `
+			INSERT INTO videos (
+				song_variant_id, video_src, embed_code,
+				is_nc, is_bd, resolution,
+				is_uncensored, is_subbed, is_lyrics,
+				source, overlap, status, created_at, updated_at
+			)
+			VALUES ($1, NULL, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		`, variantID, video.EmbedCode,
+			video.IsNC, video.IsBD, video.Resolution,
+			video.IsUncensored, video.IsSubbed, video.IsLyrics,
+			defaultVideoSource(video.Source), defaultVideoOverlap(video.Overlap), status,
+		)
 		if err != nil {
 			return err
 		}
+		return tx.Commit()
 	}
 
-	return tx.Commit()
+	return nil
+}
+
+func (r *songVariantRepository) UpdateVideoMetadata(ctx context.Context, variantID uint64, videoSrc, embedCode *string, video *domain.SongVariantVideo, status bool) error {
+	if video == nil {
+		return errors.New("video metadata is required")
+	}
+
+	var query string
+	var args []interface{}
+
+	if videoSrc != nil && *videoSrc != "" {
+		query = `
+			UPDATE videos SET
+				is_nc = $3, is_bd = $4, resolution = $5,
+				is_uncensored = $6, is_subbed = $7, is_lyrics = $8,
+				source = $9, overlap = $10, status = $11, updated_at = CURRENT_TIMESTAMP
+			WHERE song_variant_id = $1 AND video_src = $2
+		`
+		args = []interface{}{
+			variantID, *videoSrc,
+			video.IsNC, video.IsBD, video.Resolution,
+			video.IsUncensored, video.IsSubbed, video.IsLyrics,
+			defaultVideoSource(video.Source), defaultVideoOverlap(video.Overlap), status,
+		}
+	} else if embedCode != nil && *embedCode != "" {
+		query = `
+			UPDATE videos SET
+				is_nc = $3, is_bd = $4, resolution = $5,
+				is_uncensored = $6, is_subbed = $7, is_lyrics = $8,
+				source = $9, overlap = $10, status = $11, updated_at = CURRENT_TIMESTAMP
+			WHERE song_variant_id = $1 AND embed_code = $2
+		`
+		args = []interface{}{
+			variantID, *embedCode,
+			video.IsNC, video.IsBD, video.Resolution,
+			video.IsUncensored, video.IsSubbed, video.IsLyrics,
+			defaultVideoSource(video.Source), defaultVideoOverlap(video.Overlap), status,
+		}
+	} else {
+		return errors.New("video target is required for metadata update")
+	}
+
+	res, err := r.db.ExecContext(ctx, query, args...)
+	if err != nil {
+		return err
+	}
+	affected, err := res.RowsAffected()
+	if err == nil && affected == 0 {
+		return errors.New("video not found for metadata update")
+	}
+	return err
 }
 
 func (r *songVariantRepository) Delete(ctx context.Context, id uint64) error {

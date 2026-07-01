@@ -216,6 +216,8 @@ type SongVariantRepository interface {
 	ToggleStatus(ctx context.Context, id uint64) error
 	ToggleSpoiler(ctx context.Context, id uint64) error
 	ToggleNSFW(ctx context.Context, id uint64) error
+	UpsertVideo(ctx context.Context, variantID uint64, video *SongVariantVideo, status bool) error
+	UpdateVideoMetadata(ctx context.Context, variantID uint64, videoSrc, embedCode *string, video *SongVariantVideo, status bool) error
 	DeleteVideo(ctx context.Context, variantID uint64, videoSrc *string, embedCode *string) error
 }
 

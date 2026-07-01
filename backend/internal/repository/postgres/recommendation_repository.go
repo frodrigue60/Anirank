@@ -18,19 +18,23 @@ func NewRecommendationRepository(db *sqlx.DB) domain.RecommendationRepository {
 	return &recommendationRepository{db: db.Unsafe()}
 }
 
-// GetSimilarSongsByVector realiza una búsqueda de vecinos más cercanos utilizando similitud de coseno
-func (r *recommendationRepository) GetSimilarSongsByVector(ctx context.Context, embedding domain.Vector, excludeSongID uint64, limit int) ([]domain.Song, error) {
+// GetSimilarSongsByVector realiza una búsqueda de vecinos más cercanos utilizando similitud de coseno.
+// excludeAnimeID > 0 omite temas de esa serie (p. ej. descubrimiento fuera del anime actual).
+func (r *recommendationRepository) GetSimilarSongsByVector(ctx context.Context, embedding domain.Vector, excludeSongID, excludeAnimeID uint64, limit int) ([]domain.Song, error) {
 	var songs []domain.Song
 	query := fmt.Sprintf(`
 		SELECT %s
 		FROM songs s
 		LEFT JOIN song_types st ON s.type_id = st.id
-		WHERE s.status = true AND s.id != $1 AND s.embedding IS NOT NULL
+		WHERE s.status = true
+			AND s.id != $1
+			AND s.embedding IS NOT NULL
+			AND ($4 = 0 OR s.anime_id != $4)
 		ORDER BY s.embedding <=> $2
 		LIMIT $3
 	`, songColumns)
 
-	err := r.db.SelectContext(ctx, &songs, query, excludeSongID, embedding, limit)
+	err := r.db.SelectContext(ctx, &songs, query, excludeSongID, embedding, limit, excludeAnimeID)
 	if err != nil {
 		return nil, err
 	}

@@ -1015,7 +1015,12 @@ func (h *AdminHandler) UpdateVariantVideo(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(fiber.Map{"data": v})
+	refreshed, err := h.usecase.GetVariant(c.Context(), id)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{"data": refreshed})
 }
 
 func (h *AdminHandler) DeleteVariant(c *fiber.Ctx) error {

@@ -24,6 +24,7 @@ func TestRecommendationRepository_GetSimilarSongsByVector(t *testing.T) {
 
 	vector := domain.Vector{0.1, 0.2, 0.3}
 	excludeSongID := uint64(5)
+	excludeAnimeID := uint64(42)
 	limit := 10
 
 	rows := sqlmock.NewRows([]string{"id", "uuid", "song_romaji"}).
@@ -31,10 +32,10 @@ func TestRecommendationRepository_GetSimilarSongsByVector(t *testing.T) {
 		AddRow(2, "uuid-2", "Similar Song 2")
 
 	mock.ExpectQuery(regexp.QuoteMeta("SELECT")).
-		WithArgs(excludeSongID, vector, limit).
+		WithArgs(excludeSongID, vector, limit, excludeAnimeID).
 		WillReturnRows(rows)
 
-	songs, err := repo.GetSimilarSongsByVector(context.Background(), vector, excludeSongID, limit)
+	songs, err := repo.GetSimilarSongsByVector(context.Background(), vector, excludeSongID, excludeAnimeID, limit)
 	assert.NoError(t, err)
 	assert.Len(t, songs, 2)
 	assert.Equal(t, uint64(1), songs[0].ID)

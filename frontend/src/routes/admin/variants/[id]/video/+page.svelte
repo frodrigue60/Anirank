@@ -1,13 +1,26 @@
 <script lang="ts">
   import api from "$lib/api";
   import { onMount } from "svelte";
-  import { fade, slide } from "svelte/transition";
+  import { slide } from "svelte/transition";
   import { goto } from "$app/navigation";
   import StatusControl from "$lib/components/admin/StatusControl.svelte";
   import {
     fetchVariantVideoStorageCheck,
     normalizeStoragePath,
   } from "$lib/admin/videoStorage";
+  import {
+    appendVideoMetadataToFormData,
+    metadataFormsEqual,
+    metadataPreviewLabel,
+    metadataTargetKey,
+    videoToMetadataForm,
+    VIDEO_OVERLAP_OPTIONS,
+    VIDEO_RESOLUTION_OPTIONS,
+    VIDEO_SOURCE_OPTIONS,
+    DEFAULT_VIDEO_METADATA,
+    type VideoMetadataForm,
+  } from "$lib/admin/videoMetadata";
+  import { getVideoTagText } from "$lib/song-utils";
 
   let { data } = $props();
   // svelte-ignore state_referenced_locally
@@ -27,6 +40,37 @@
   // svelte-ignore state_referenced_locally
   let embedCode = $state(variant?.video?.embed_code || variant?.video?.embed_url || "");
   let uploadProgress = $state(0);
+  let metadataTarget = $state("new");
+  let metadataForm = $state<VideoMetadataForm>(
+    videoToMetadataForm(variant?.video || variant?.videos?.[0]),
+  );
+
+  function findVideoByTarget(target: string) {
+    return (variant?.videos || []).find((video) => metadataTargetKey(video) === target);
+  }
+
+  function baselineMetadata(): VideoMetadataForm {
+    if (metadataTarget === "new") {
+      return { ...DEFAULT_VIDEO_METADATA };
+    }
+    return videoToMetadataForm(findVideoByTarget(metadataTarget));
+  }
+
+  function loadMetadataForTarget(target: string) {
+    metadataTarget = target;
+    metadataForm =
+      target === "new"
+        ? { ...DEFAULT_VIDEO_METADATA }
+        : videoToMetadataForm(findVideoByTarget(target));
+  }
+
+  function handleSourceChange(value: string) {
+    metadataForm = {
+      ...metadataForm,
+      source: value,
+      is_bd: value === "BD" ? true : metadataForm.is_bd,
+    };
+  }
 
   async function checkVideoStorage() {
     if (!variant?.id) return;
@@ -61,12 +105,33 @@
 
       formData.append("status", status ? "true" : "false");
 
-      if (!videoFile && !embedCode && status === variant.status) {
+      const metadataChanged = !metadataFormsEqual(metadataForm, baselineMetadata());
+      const hasUpload = Boolean(videoFile || embedCode.trim());
+      const statusChanged = status !== variant.status;
+      const metadataOnly =
+        !hasUpload &&
+        metadataChanged &&
+        (metadataTarget !== "new" ||
+          (variant.videos?.length === 1 && metadataTarget === "new"));
+
+      if (!hasUpload && !metadataChanged && !statusChanged) {
         errorMsg =
-          "Please provide either a video file, an embed code, or change the status.";
+          "Provide a video file, embed code, metadata changes, or change the status.";
         loading = false;
         return;
       }
+
+      if (!hasUpload && metadataChanged && metadataTarget === "new" && (variant.videos?.length ?? 0) > 1) {
+        errorMsg =
+          "Select an existing video in metadata target before saving metadata only.";
+        loading = false;
+        return;
+      }
+
+      appendVideoMetadataToFormData(formData, metadataForm, {
+        metadataTarget,
+        metadataOnly,
+      });
 
       const res = await api.put(
         `/admin/variants/${variant.id}/video`,
@@ -193,7 +258,8 @@
           </div>
 
           <div class="grid grid-cols-1 gap-2">
-            {#each variant.videos as vid}
+            {#each variant.videos as vid, i}
+              {@const vidLabel = getVideoTagText(vid, i)}
               <div class="flex items-start gap-3 p-3 bg-black/40 border border-zinc-800/80 rounded-2xl">
                 {#if vid.type === "file"}
                   <div class="flex items-center justify-center w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
@@ -201,14 +267,8 @@
                   </div>
                   <div class="min-w-0 flex-1">
                     <div class="flex items-center gap-1.5 flex-wrap">
-                      <span class="text-[11px] font-bold text-zinc-200 uppercase tracking-normal">Cloud Storage File</span>
-                      <span class="bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider">{vid.source || "TV"}</span>
-                      {#if vid.resolution > 0}
-                        <span class="bg-zinc-800 text-zinc-400 px-1 py-0.5 rounded text-[8px] font-mono">{vid.resolution}p</span>
-                      {/if}
-                      {#if vid.is_nc}
-                        <span class="bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded text-[8px] font-black">NC</span>
-                      {/if}
+                      <span class="text-[11px] font-bold text-zinc-200 uppercase tracking-normal">{vidLabel}</span>
+                      <span class="bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider">File</span>
                       {#if storageCheckLoading}
                         <span class="bg-zinc-800 text-zinc-500 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider flex items-center gap-0.5">
                           <span class="material-symbols-outlined text-[10px] animate-spin">progress_activity</span>
@@ -230,6 +290,13 @@
                       {/if}
                     </div>
                     <p class="text-[9px] font-mono text-zinc-500 truncate mt-1 select-all">{vid.video_src}</p>
+                    <button
+                      type="button"
+                      class="mt-2 text-[9px] font-black uppercase tracking-widest text-blue-400 hover:text-blue-300"
+                      onclick={() => loadMetadataForTarget(metadataTargetKey(vid))}
+                    >
+                      Edit metadata
+                    </button>
                   </div>
                 {:else}
                   <div class="flex items-center justify-center w-8 h-8 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 shrink-0">
@@ -237,10 +304,17 @@
                   </div>
                   <div class="min-w-0 flex-1">
                     <div class="flex items-center gap-1.5 flex-wrap">
-                      <span class="text-[11px] font-bold text-zinc-200 uppercase tracking-normal">Embed / Iframe Code</span>
+                      <span class="text-[11px] font-bold text-zinc-200 uppercase tracking-normal">{vidLabel}</span>
                       <span class="bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider">Embed</span>
                     </div>
                     <p class="text-[9px] font-mono text-zinc-500 truncate mt-1 select-all">{vid.embed_code || vid.embed_url}</p>
+                    <button
+                      type="button"
+                      class="mt-2 text-[9px] font-black uppercase tracking-widest text-blue-400 hover:text-blue-300"
+                      onclick={() => loadMetadataForTarget(metadataTargetKey(vid))}
+                    >
+                      Edit metadata
+                    </button>
                   </div>
                 {/if}
               </div>
@@ -410,6 +484,107 @@
         <p class="text-[10px] text-zinc-500 italic">
           Supports direct .mp4/webm links or iframe embed snippets.
         </p>
+      </div>
+
+      <!-- Video Metadata -->
+      <div
+        class="space-y-4 bg-zinc-950/30 p-6 rounded-2xl border border-zinc-800/50"
+      >
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <label
+            for="metadata-target"
+            class="text-[10px] font-black text-zinc-400 uppercase tracking-widest"
+          >
+            Video Metadata
+          </label>
+          <span class="text-[10px] font-bold text-primary">
+            Preview: {metadataPreviewLabel(metadataForm)}
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="space-y-2">
+            <label for="metadata-target" class="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Apply to</label>
+            <select
+              id="metadata-target"
+              class="block w-full bg-zinc-900 border border-zinc-800 text-on-surface rounded-xl px-3 py-2.5 text-sm"
+              value={metadataTarget}
+              onchange={(e) => loadMetadataForTarget((e.currentTarget as HTMLSelectElement).value)}
+            >
+              <option value="new">New upload / embed</option>
+              {#each variant.videos || [] as vid, i}
+                <option value={metadataTargetKey(vid)}>
+                  {getVideoTagText(vid, i)}
+                </option>
+              {/each}
+            </select>
+          </div>
+
+          <div class="space-y-2">
+            <label for="video-source" class="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Source</label>
+            <select
+              id="video-source"
+              class="block w-full bg-zinc-900 border border-zinc-800 text-on-surface rounded-xl px-3 py-2.5 text-sm"
+              value={metadataForm.source}
+              onchange={(e) => handleSourceChange((e.currentTarget as HTMLSelectElement).value)}
+            >
+              {#each VIDEO_SOURCE_OPTIONS as option}
+                <option value={option}>{option}</option>
+              {/each}
+            </select>
+          </div>
+
+          <div class="space-y-2">
+            <label for="video-resolution" class="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Resolution</label>
+            <select
+              id="video-resolution"
+              class="block w-full bg-zinc-900 border border-zinc-800 text-on-surface rounded-xl px-3 py-2.5 text-sm"
+              bind:value={metadataForm.resolution}
+            >
+              {#each VIDEO_RESOLUTION_OPTIONS as option}
+                <option value={option}>{option === 0 ? "None" : `${option}p`}</option>
+              {/each}
+            </select>
+          </div>
+
+          <div class="space-y-2">
+            <label for="video-overlap" class="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Overlap</label>
+            <select
+              id="video-overlap"
+              class="block w-full bg-zinc-900 border border-zinc-800 text-on-surface rounded-xl px-3 py-2.5 text-sm"
+              bind:value={metadataForm.overlap}
+            >
+              {#each VIDEO_OVERLAP_OPTIONS as option}
+                <option value={option}>{option}</option>
+              {/each}
+            </select>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap gap-4 pt-1">
+          <label class="inline-flex items-center gap-2 text-xs text-zinc-300">
+            <input type="checkbox" bind:checked={metadataForm.is_nc} class="rounded border-zinc-700 bg-zinc-900" />
+            NC
+          </label>
+          {#if metadataForm.source !== "BD"}
+            <label class="inline-flex items-center gap-2 text-xs text-zinc-300">
+              <input type="checkbox" bind:checked={metadataForm.is_bd} class="rounded border-zinc-700 bg-zinc-900" />
+              BD
+            </label>
+          {/if}
+          <label class="inline-flex items-center gap-2 text-xs text-zinc-300">
+            <input type="checkbox" bind:checked={metadataForm.is_uncensored} class="rounded border-zinc-700 bg-zinc-900" />
+            Uncensored
+          </label>
+          <label class="inline-flex items-center gap-2 text-xs text-zinc-300">
+            <input type="checkbox" bind:checked={metadataForm.is_subbed} class="rounded border-zinc-700 bg-zinc-900" />
+            Subbed
+          </label>
+          <label class="inline-flex items-center gap-2 text-xs text-zinc-300">
+            <input type="checkbox" bind:checked={metadataForm.is_lyrics} class="rounded border-zinc-700 bg-zinc-900" />
+            Lyrics
+          </label>
+        </div>
       </div>
 
       <!-- Progress Bar -->

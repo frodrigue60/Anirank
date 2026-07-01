@@ -2578,63 +2578,108 @@ func (u *ContentAdminUsecase) HandleVariantVideo(c *fiber.Ctx, v *domain.SongVar
 		}
 	}
 
+	target := MetadataTargetFromForm(c)
+	targetSrc, targetEmbed := parseMetadataTargetKey(target)
+	isNewTarget := target == "new" || target == ""
+
 	if fileHeader, err := c.FormFile("video"); err == nil {
 		if file, err := fileHeader.Open(); err == nil {
 			defer file.Close()
 			contentType := fileHeader.Header.Get("Content-Type")
 
-			// Validation: mp4, webm only
 			if contentType != "video/mp4" && contentType != "video/webm" {
 				log.Printf("[ADMIN-ERROR] Invalid video content type: %s\n", contentType)
 				return fmt.Errorf("invalid video format: only mp4 and webm are accepted")
 			}
 
-			// Enforce 200MB size limit at the usecase layer
-			const maxVideoSize = 200 * 1024 * 1024 // 200MB
+			const maxVideoSize = 200 * 1024 * 1024
 			if fileHeader.Size > maxVideoSize {
 				return fmt.Errorf("video file exceeds the 200MB maximum allowed size")
 			}
 
-			// Determine storage folder based on year/season
 			prefix := u.resolveVideoStoragePath(c.Context(), v)
-
-			// Use specialized UploadVideo to avoid image optimization logic
 			if path, url, uploadErr := u.mediaService.UploadVideo(c.Context(), prefix, v.ID, file, fileHeader.Size, contentType, fileHeader.Filename); uploadErr == nil {
-				if v.Video == nil {
-					v.Video = &domain.SongVariantVideo{}
+				video := &domain.SongVariantVideo{
+					VideoSrc:  &path,
+					LocalUrl:  &url,
+					Type:      "file",
+					Source:    "TV",
+					Overlap:   "None",
 				}
-				v.Video.VideoSrc = &path
-				v.Video.LocalUrl = &url
-				v.Video.Type = "file"
-				v.Video.EmbedUrl = nil
-				v.Video.EmbedCode = nil
+				ApplyVideoMetadataFromForm(c, video)
+				if err := u.variantRepo.UpsertVideo(c.Context(), v.ID, video, v.Status); err != nil {
+					log.Printf("[ADMIN-ERROR] Failed to save uploaded video for variant %d: %v\n", v.ID, err)
+					return fmt.Errorf("failed to save video metadata: %w", err)
+				}
+				v.Video = video
 				updated = true
 			} else {
 				log.Printf("[ADMIN-ERROR] Video upload failed for variant %d: %v\n", v.ID, uploadErr)
 				return fmt.Errorf("video upload failed: %w", uploadErr)
 			}
 		}
-	} else {
-		embed := c.FormValue("embed")
-		if embed != "" {
-			if v.Video == nil {
-				v.Video = &domain.SongVariantVideo{}
+	} else if embed := strings.TrimSpace(c.FormValue("embed")); embed != "" {
+		video := &domain.SongVariantVideo{
+			EmbedCode: &embed,
+			EmbedUrl:  &embed,
+			Type:      "embed",
+			Source:    "TV",
+			Overlap:   "None",
+		}
+		ApplyVideoMetadataFromForm(c, video)
+		if err := u.variantRepo.UpsertVideo(c.Context(), v.ID, video, v.Status); err != nil {
+			return fmt.Errorf("failed to save embed video: %w", err)
+		}
+		v.Video = video
+		updated = true
+	} else if !isNewTarget && (targetSrc != nil || targetEmbed != nil) {
+		video := &domain.SongVariantVideo{Source: "TV", Overlap: "None"}
+		ApplyVideoMetadataFromForm(c, video)
+		if err := u.variantRepo.UpdateVideoMetadata(c.Context(), v.ID, targetSrc, targetEmbed, video, v.Status); err != nil {
+			return fmt.Errorf("failed to update video metadata: %w", err)
+		}
+		updated = true
+	} else if isNewTarget && c.FormValue("metadata_only") == "true" {
+		if len(v.Videos) == 1 {
+			existing := v.Videos[0]
+			video := existing
+			ApplyVideoMetadataFromForm(c, &video)
+			var src, embed *string
+			if existing.VideoSrc != nil && *existing.VideoSrc != "" {
+				src = existing.VideoSrc
+			} else if existing.EmbedCode != nil && *existing.EmbedCode != "" {
+				embed = existing.EmbedCode
 			}
-			if v.Video.EmbedCode == nil || *v.Video.EmbedCode != embed {
-				v.Video.EmbedCode = &embed
-				v.Video.EmbedUrl = &embed // Will be cleaned up by Resolve in public catalog
-				v.Video.Type = "embed"
-				v.Video.LocalUrl = nil
-				v.Video.VideoSrc = nil
+			if src != nil || embed != nil {
+				if err := u.variantRepo.UpdateVideoMetadata(c.Context(), v.ID, src, embed, &video, v.Status); err != nil {
+					return fmt.Errorf("failed to update video metadata: %w", err)
+				}
 				updated = true
 			}
 		}
 	}
 
-	if updated {
-		_ = u.variantRepo.Update(c.Context(), v)
+	if !updated && statusStr == "" {
+		return fmt.Errorf("no video, embed, or metadata changes were provided")
 	}
+
 	return nil
+}
+
+func parseMetadataTargetKey(target string) (videoSrc, embedCode *string) {
+	if strings.HasPrefix(target, "src:") {
+		value := strings.TrimPrefix(target, "src:")
+		if value != "" {
+			return &value, nil
+		}
+	}
+	if strings.HasPrefix(target, "embed:") {
+		value := strings.TrimPrefix(target, "embed:")
+		if value != "" {
+			return nil, &value
+		}
+	}
+	return nil, nil
 }
 
 func (u *ContentAdminUsecase) DeleteVariant(ctx context.Context, id uint64, meta domain.AuditMetadata) error {

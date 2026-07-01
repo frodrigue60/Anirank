@@ -49,8 +49,8 @@ func (u *recommendationUsecase) GetSimilarSongs(ctx context.Context, userID *uin
 		return nil, domain.NewAppError(404, "Base song not found", err)
 	}
 
-	// 2. Intentar buscar en caché
-	cacheKey := fmt.Sprintf("similar:songs:%d:%d", baseSong.ID, limit)
+	// 2. Intentar buscar en caché (v2: excluye la serie actual)
+	cacheKey := fmt.Sprintf("similar:songs:v2:%d:%d:%d", baseSong.ID, baseSong.AnimeID, limit)
 	var cachedSongs []domain.Song
 	if err := u.safeCacheGet(ctx, cacheKey, &cachedSongs); err == nil {
 		if userID != nil {
@@ -59,28 +59,15 @@ func (u *recommendationUsecase) GetSimilarSongs(ctx context.Context, userID *uin
 		return cachedSongs, nil
 	}
 
-	// 3. Si la canción no tiene embedding, caemos a una lista segura del mismo anime
+	// 3. Sin embedding: tendencias globales fuera de la serie actual
 	if len(baseSong.Embedding) == 0 {
-		fallbackSongs, err := u.songRepo.GetByAnimeID(ctx, baseSong.AnimeID, false)
-		if err != nil {
-			return []domain.Song{}, nil
-		}
-		// Filtrar la canción base
-		var filtered []domain.Song
-		for _, s := range fallbackSongs {
-			if s.ID != baseSong.ID {
-				filtered = append(filtered, s)
-			}
-		}
-		if len(filtered) > limit {
-			filtered = filtered[:limit]
-		}
+		filtered := u.fallbackDiscoverSongs(ctx, baseSong, limit)
 		u.enrichSongsBulk(ctx, userID, filtered)
 		return filtered, nil
 	}
 
-	// 4. Buscar canciones similares en DB
-	songs, err := u.recommendationRepo.GetSimilarSongsByVector(ctx, baseSong.Embedding, baseSong.ID, limit)
+	// 4. Buscar canciones similares en DB (excluye la serie del tema actual)
+	songs, err := u.recommendationRepo.GetSimilarSongsByVector(ctx, baseSong.Embedding, baseSong.ID, baseSong.AnimeID, limit)
 	if err != nil {
 		return nil, domain.NewAppError(500, "Failed to load similar songs", err)
 	}
@@ -122,7 +109,7 @@ func (u *recommendationUsecase) GetPersonalizedRecommendations(ctx context.Conte
 		recommendedSongs = songs
 	} else {
 		// 4. Buscar canciones similares al vector del usuario (excluimos id=0 porque no representa canción real)
-		songs, err := u.recommendationRepo.GetSimilarSongsByVector(ctx, userVector, 0, limit)
+		songs, err := u.recommendationRepo.GetSimilarSongsByVector(ctx, userVector, 0, 0, limit)
 		if err != nil {
 			return nil, domain.NewAppError(500, "Failed to calculate recommendations", err)
 		}
@@ -135,6 +122,35 @@ func (u *recommendationUsecase) GetPersonalizedRecommendations(ctx context.Conte
 	// 6. Hidratar relaciones en lote
 	u.enrichSongsBulk(ctx, &userID, recommendedSongs)
 	return recommendedSongs, nil
+}
+
+// fallbackDiscoverSongs devuelve temas populares de otras series cuando no hay embedding.
+func (u *recommendationUsecase) fallbackDiscoverSongs(ctx context.Context, baseSong *domain.Song, limit int) []domain.Song {
+	if u.songRepo == nil || limit < 1 {
+		return []domain.Song{}
+	}
+
+	// Pedimos de más para compensar filtros por serie/canción actual.
+	candidates, err := u.songRepo.GetPaginated(ctx, limit*4, 0, domain.SongFilters{Sort: "views"})
+	if err != nil {
+		return []domain.Song{}
+	}
+
+	return filterDiscoverySongs(candidates, baseSong.ID, baseSong.AnimeID, limit)
+}
+
+func filterDiscoverySongs(songs []domain.Song, excludeSongID, excludeAnimeID uint64, limit int) []domain.Song {
+	filtered := make([]domain.Song, 0, limit)
+	for _, s := range songs {
+		if s.ID == excludeSongID || s.AnimeID == excludeAnimeID {
+			continue
+		}
+		filtered = append(filtered, s)
+		if len(filtered) >= limit {
+			break
+		}
+	}
+	return filtered
 }
 
 // ─── Métodos Auxiliares de Caché Resiliente ───

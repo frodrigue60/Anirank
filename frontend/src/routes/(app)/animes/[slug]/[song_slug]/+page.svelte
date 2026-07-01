@@ -7,6 +7,7 @@
     getSongName,
     getFormattedScore,
     getVideoTagText,
+    hasMeaningfulVideoTag,
     resolveVariantIndex,
   } from "$lib/song-utils";
   import { goto } from "$app/navigation";
@@ -107,31 +108,18 @@
   let videoError = $state(false);
 
   type VariantContextPart =
-    | { kind: "version"; text: string }
     | { kind: "episodes"; text: string }
-    | { kind: "source"; text: string }
     | { kind: "period"; text: string };
 
   let variantContextParts = $derived.by((): VariantContextPart[] => {
     const parts: VariantContextPart[] = [];
     const variant = selectedVariant;
-    const hasMultipleVariants = (currentSong.variants?.length ?? 0) > 1;
-
-    if (hasMultipleVariants && variant) {
-      parts.push({
-        kind: "version",
-        text: `v${variant.version_number ?? selectedVariantIndex + 1}`,
-      });
-    }
 
     if (variant?.episodes?.trim()) {
       parts.push({ kind: "episodes", text: variant.episodes.trim() });
     }
 
-    const source = selectedVideo?.source || variant?.source;
-    if (source?.trim() && source !== "None") {
-      parts.push({ kind: "source", text: source.trim() });
-    }
+    // Video tag (720p, NC, etc.) is shown on the pill/badge next to OPENING — not duplicated here.
 
     const season = variant?.season || currentSong.season;
     const year = variant?.year || currentSong.year;
@@ -162,6 +150,10 @@
     );
     selectedVideoIndex = 0;
     videoError = false;
+
+    if (data.song?.id) {
+      fetchComments(data.song.id);
+    }
   });
 
   // Smart Recommendations State
@@ -728,17 +720,6 @@
       toastState.addToast("Failed to update reaction", "error");
     }
   }
-
-  $effect(() => {
-    currentSong = data.song;
-    relatedSongs = data.related;
-    selectedVariantIndex = 0;
-    selectedVideoIndex = 0;
-
-    if (data.song?.id) {
-      fetchComments(data.song.id);
-    }
-  });
 </script>
 
 <SEO
@@ -824,30 +805,33 @@
 
       <!-- Details -->
       <div class="space-y-4">
-        <div class="space-y-2">
-          <div class="flex items-center gap-3">
+        <div class="space-y-3">
+          <!-- Playback controls + variant meta -->
+          <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
             <div
-              class="flex bg-surface-highest rounded-full p-1 border border-on-surface-variant/10 shadow-sm"
+              class="inline-flex flex-wrap items-center gap-1 rounded-full border border-on-surface-variant/10 bg-surface-highest p-1 shadow-sm"
+              role="group"
+              aria-label="Theme type, version, and video source"
             >
               <span
-                class="px-3 py-1.5 rounded-full text-[10px] font-black bg-primary text-white uppercase tracking-widest"
+                class="px-3 py-1.5 rounded-full text-[10px] font-black bg-primary text-white uppercase tracking-widest shrink-0"
                 title={currentSong.song_type?.description}
               >
                 {currentSong.song_type?.name || currentSong.type}
                 {currentSong.theme_num || ""}
               </span>
-            </div>
-            <!-- Version Selector -->
-            {#if currentSong.variants && currentSong.variants.length > 1}
-              <div
-                class="flex bg-surface-highest rounded-full p-1 border border-on-surface-variant/10 shadow-sm"
-              >
+
+              {#if currentSong.variants && currentSong.variants.length > 1}
+                <span
+                  class="mx-0.5 h-4 w-px bg-on-surface-variant/20 shrink-0"
+                  aria-hidden="true"
+                ></span>
                 {#each currentSong.variants as variant, i}
                   <button
                     class="px-3 py-1.5 rounded-full text-[10px] font-bold transition-all {selectedVariantIndex ===
                     i
                       ? 'bg-primary text-white shadow-lg shadow-primary/20'
-                      : 'hover:bg-on-surface-variant/10 text-on-surface-variant/60'}"
+                      : 'hover:bg-on-surface-variant/10 text-on-surface-variant/70'}"
                     onclick={() => changeVariant(i)}
                     title="Select version {variant.version_number}"
                     aria-label="Select version {variant.version_number}"
@@ -855,73 +839,83 @@
                     V{variant.version_number}
                   </button>
                 {/each}
-              </div>
-            {/if}
+              {/if}
 
-            <!-- Video Quality/Tags Selector -->
-            {#if selectedVariant?.videos && selectedVariant.videos.length > 1}
+              {#if selectedVariant?.videos && selectedVariant.videos.length > 0}
+                {#if selectedVariant.videos.length > 1 || selectedVariant.videos.some((video, i) =>
+                  hasMeaningfulVideoTag(video, i, selectedVariant),
+                )}
+                  <span
+                    class="mx-0.5 h-4 w-px bg-on-surface-variant/20 shrink-0"
+                    aria-hidden="true"
+                  ></span>
+                  {#each selectedVariant.videos as video, i}
+                    {@const tagText = getVideoTagText(video, i, selectedVariant)}
+                    {#if selectedVariant.videos.length > 1}
+                      <button
+                        class="px-3 py-1.5 rounded-full text-[10px] font-bold transition-all {selectedVideoIndex ===
+                        i
+                          ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                          : 'hover:bg-on-surface-variant/10 text-on-surface-variant/70'}"
+                        onclick={() => {
+                          selectedVideoIndex = i;
+                          videoError = false;
+                        }}
+                        title="Select video {tagText}"
+                        aria-label="Select video {tagText}"
+                      >
+                        {tagText}
+                      </button>
+                    {:else if hasMeaningfulVideoTag(video, i, selectedVariant)}
+                      <span
+                        class="px-3 py-1.5 rounded-full text-[10px] font-bold bg-surface-container text-on-surface-variant border border-on-surface-variant/15"
+                        title="Active video source"
+                      >
+                        {tagText}
+                      </span>
+                    {/if}
+                  {/each}
+                {/if}
+              {/if}
+            </div>
+
+            {#if variantContextParts.length > 0}
               <div
-                class="flex bg-surface-highest rounded-sm p-1 border border-on-surface-variant/10 shadow-sm gap-1"
+                class="flex flex-wrap items-center gap-2 text-[11px] text-on-surface-variant/80"
+                aria-label="Version metadata"
               >
-                {#each selectedVariant.videos as video, i}
-                  {@const tagText = getVideoTagText(video, i)}
-                  <button
-                    class="px-3 py-1.5 rounded-sm text-[10px] font-bold transition-all {selectedVideoIndex ===
-                    i
-                      ? 'bg-primary text-white shadow-lg shadow-primary/20'
-                      : 'hover:bg-on-surface-variant/10 text-on-surface-variant/60'}"
-                    onclick={() => {
-                      selectedVideoIndex = i;
-                      videoError = false;
-                    }}
-                    title="Select video {tagText}"
-                    aria-label="Select video {tagText}"
-                  >
-                    {tagText}
-                  </button>
+                {#each variantContextParts as part}
+                  {#if part.kind === "episodes"}
+                    <span
+                      class="inline-flex items-center gap-1 rounded-sm border border-on-surface-variant/10 bg-surface-container px-2.5 py-1 font-medium"
+                      title="Episodes where this version appears"
+                    >
+                      <Clapperboard
+                        size={12}
+                        class="shrink-0 text-on-surface-variant/70"
+                      />
+                      {part.text}
+                    </span>
+                  {:else}
+                    <span
+                      class="rounded-sm border border-on-surface-variant/10 bg-surface-container px-2.5 py-1 font-medium"
+                    >
+                      {part.text}
+                    </span>
+                  {/if}
                 {/each}
               </div>
             {/if}
           </div>
 
-          {#if variantContextParts.length > 0}
-            <div
-              class="flex flex-wrap items-center gap-1.5 text-xs text-on-surface-variant/80"
-              aria-label="Active version details"
+          <div class="space-y-1.5">
+            <h1
+              class="text-2xl md:text-4xl font-black text-on-surface tracking-tight"
             >
-              {#each variantContextParts as part, i}
-                {#if i > 0}
-                  <span class="text-on-surface-variant/40" aria-hidden="true">·</span>
-                {/if}
-                {#if part.kind === "episodes"}
-                  <span
-                    class="inline-flex items-center gap-1 font-medium"
-                    title="Episodes where this version appears"
-                  >
-                    <Clapperboard
-                      size={12}
-                      class="shrink-0 text-on-surface-variant/70"
-                    />
-                    {part.text}
-                  </span>
-                {:else if part.kind === "version"}
-                  <span class="font-bold uppercase tracking-wider text-on-surface-variant/70">
-                    {part.text}
-                  </span>
-                {:else}
-                  <span class="font-medium">{part.text}</span>
-                {/if}
-              {/each}
-            </div>
-          {/if}
-
-          <h1
-            class="text-2xl md:text-4xl font-black text-on-surface tracking-tight"
-          >
-            {getSongName(currentSong)}
-          </h1>
-          <!-- Artists -->
-          <div class="flex flex-wrap items-center gap-y-1">
+              {getSongName(currentSong)}
+            </h1>
+            <!-- Artists -->
+            <div class="flex flex-wrap items-center gap-y-1">
             {#if currentSong.artists?.length}
               {#each currentSong.artists as artist, i}
                 {#if i > 0}
@@ -950,7 +944,7 @@
           <div class="flex items-center gap-2">
             <a
               href="/animes/{currentSong.anime?.slug}"
-              class="text-on-surface-variant/60 hover:text-primary text-sm font-black uppercase tracking-widest italic transition-colors"
+              class="text-on-surface-variant/70 hover:text-primary text-sm font-black uppercase tracking-widest italic transition-colors"
               title="View anime: {currentSong.anime?.title}"
             >
               {currentSong.anime?.title}
@@ -967,95 +961,82 @@
               </span>
             {/if}
           </div>
+          </div>
         </div>
         <!-- Meta Info Bar -->
         <div
-          class="bg-surface-container rounded-md p-4 border border-outline-variant/10 flex flex-wrap items-center justify-between gap-6"
+          class="bg-surface-container rounded-md p-3 md:p-4 border border-outline-variant/10"
         >
-          <div class="flex items-center gap-8">
-            <!-- Integrated Views & Interactions -->
-            <div class="flex flex-col min-w-[120px] max-w-[160px]">
-              <div
-                class="text-sm text-on-surface font-medium tracking-wide mb-1"
-              >
-                {currentSong.views.toLocaleString()} views
-              </div>
-
-              <div
-                class="h-[6px] w-full bg-primary/20 rounded-full overflow-hidden flex mb-1.5"
-              >
-                <div
-                  class="h-full bg-primary transition-all duration-500 ease-out"
-                  style="width: {(currentSong.likes_count || 0) +
-                    (currentSong.dislikes_count || 0) >
-                  0
-                    ? ((currentSong.likes_count || 0) /
-                        ((currentSong.likes_count || 0) +
-                          (currentSong.dislikes_count || 0))) *
-                      100
-                    : 50}%"
-                ></div>
-              </div>
-
-              <div class="flex items-center justify-between px-0.5">
-                <button
-                  class="flex items-center gap-1 transition-colors {currentSong.is_liked
-                    ? 'text-primary'
-                    : 'text-on-surface-variant hover:text-on-surface'}"
-                  onclick={toggleLike}
-                  title={currentSong.is_liked
-                    ? "Remove like"
-                    : "Like this theme"}
-                  aria-label={currentSong.is_liked
-                    ? "Unlike theme"
-                    : "Like theme"}
+          <div
+            class="flex flex-wrap items-center justify-between gap-4"
+          >
+            <div class="flex flex-wrap items-center gap-4 md:gap-6 min-w-0">
+              <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+                <span
+                  class="text-sm font-medium text-on-surface tracking-wide whitespace-nowrap"
                 >
-                  <ThumbsUp
-                    size={14}
-                    class={currentSong.is_liked ? "fill-primary" : ""}
-                  />
-                  <span class="text-[10px] font-bold"
-                    >{currentSong.likes_count || 0}</span
+                  {currentSong.views.toLocaleString()} views
+                </span>
+                <div class="flex items-center gap-3">
+                  <button
+                    class="flex items-center gap-1.5 transition-colors {currentSong.is_liked
+                      ? 'text-primary'
+                      : 'text-on-surface-variant hover:text-on-surface'}"
+                    onclick={toggleLike}
+                    title={currentSong.is_liked
+                      ? "Remove like"
+                      : "Like this theme"}
+                    aria-label={currentSong.is_liked
+                      ? "Unlike theme"
+                      : "Like theme"}
                   >
-                </button>
-
-                <button
-                  class="flex items-center gap-1 transition-colors {currentSong.is_disliked
-                    ? 'text-red-500'
-                    : 'text-on-surface-variant hover:text-on-surface'}"
-                  onclick={toggleDislike}
-                  title={currentSong.is_disliked
-                    ? "Remove dislike"
-                    : "Dislike this theme"}
-                  aria-label={currentSong.is_disliked
-                    ? "Undislike theme"
-                    : "Dislike theme"}
-                >
-                  <ThumbsDown
-                    size={14}
-                    class={currentSong.is_disliked ? "fill-red-500" : ""}
-                  />
-                  <span class="text-[10px] font-bold"
-                    >{currentSong.dislikes_count || 0}</span
+                    <ThumbsUp
+                      size={15}
+                      class={currentSong.is_liked ? "fill-primary" : ""}
+                    />
+                    <span class="text-xs font-bold"
+                      >{currentSong.likes_count || 0}</span
+                    >
+                  </button>
+                  <button
+                    class="flex items-center gap-1.5 transition-colors {currentSong.is_disliked
+                      ? 'text-red-500'
+                      : 'text-on-surface-variant hover:text-on-surface'}"
+                    onclick={toggleDislike}
+                    title={currentSong.is_disliked
+                      ? "Remove dislike"
+                      : "Dislike this theme"}
+                    aria-label={currentSong.is_disliked
+                      ? "Undislike theme"
+                      : "Dislike theme"}
                   >
-                </button>
+                    <ThumbsDown
+                      size={15}
+                      class={currentSong.is_disliked ? "fill-red-500" : ""}
+                    />
+                    <span class="text-xs font-bold"
+                      >{currentSong.dislikes_count || 0}</span
+                    >
+                  </button>
+                </div>
               </div>
-            </div>
 
-            <div class="h-10 w-px bg-outline-variant/20"></div>
-
-            <button
-              onclick={handleRatingClick}
-              class="flex flex-col items-start hover:bg-surface-highest px-3 py-1.5 rounded-sm transition-all group active:scale-95"
-              title="Rate this theme"
-              aria-label="Rate this theme"
-            >
               <span
-                class="text-on-surface-variant/60 text-[10px] font-bold uppercase tracking-wider group-hover:text-primary transition-colors"
-                >Rating</span
+                class="hidden sm:block h-8 w-px bg-outline-variant/20 shrink-0"
+                aria-hidden="true"
+              ></span>
+
+              <button
+                onclick={handleRatingClick}
+                class="flex items-center gap-2 hover:bg-surface-highest px-2 py-1 rounded-sm transition-all group active:scale-95"
+                title="Rate this theme"
+                aria-label="Rate this theme"
               >
-              <div class="flex items-center gap-2">
-                <span class="text-yellow-400 font-bold text-lg"
+                <span
+                  class="text-on-surface-variant/70 text-[10px] font-bold uppercase tracking-wider group-hover:text-primary transition-colors"
+                  >Rating</span
+                >
+                <span class="text-yellow-400 font-bold text-lg leading-none"
                   >{getFormattedScore(
                     currentSong.average_rating,
                     authState.user?.score_format,
@@ -1065,11 +1046,10 @@
                   size={16}
                   class="fill-yellow-400 text-yellow-400 group-hover:rotate-12 transition-transform"
                 />
-              </div>
-            </button>
-          </div>
+              </button>
+            </div>
 
-          <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 shrink-0">
             <button
               class="w-10 h-10 flex items-center justify-center bg-surface-highest hover:bg-primary/10 border border-outline-variant/10 rounded-full transition-colors {currentSong.is_favorited
                 ? 'text-pink-500'
@@ -1114,6 +1094,23 @@
               />
             </button>
           </div>
+          </div>
+
+          {#if (currentSong.likes_count || 0) + (currentSong.dislikes_count || 0) > 0}
+            <div
+              class="mt-3 h-1 w-full overflow-hidden rounded-full bg-primary/20"
+              role="presentation"
+              aria-hidden="true"
+            >
+              <div
+                class="h-full bg-primary transition-all duration-500 ease-out"
+                style="width: {((currentSong.likes_count || 0) /
+                  ((currentSong.likes_count || 0) +
+                    (currentSong.dislikes_count || 0))) *
+                  100}%"
+              ></div>
+            </div>
+          {/if}
         </div>
       </div>
     </div>
@@ -1190,13 +1187,14 @@
       </div>
       <!-- Recommendation Section -->
       <div class="mt-10 space-y-4">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-bold flex items-center gap-2 text-on-surface">
-            <Sparkles size={20} class="text-primary animate-pulse" />
-            Recommendations
-          </h2>
-          {#if totalRecommendedPages > 1}
-            <div class="flex items-center gap-2 bg-surface-low border border-outline-variant/10 px-2 py-1 rounded-sm">
+        <div class="mb-4">
+          <div class="flex items-center justify-between gap-3">
+            <h2 class="text-lg font-bold flex items-center gap-2 text-on-surface">
+              <Sparkles size={20} class="text-primary animate-pulse" />
+              Recommendations
+            </h2>
+            {#if totalRecommendedPages > 1}
+              <div class="flex items-center gap-2 bg-surface-low border border-outline-variant/10 px-2 py-1 rounded-sm">
               <button
                 class="p-1 rounded-sm text-on-surface-variant/60 hover:text-primary hover:bg-surface-highest transition-colors disabled:opacity-30 disabled:pointer-events-none"
                 disabled={recommendedPage === 0}
@@ -1218,6 +1216,10 @@
               </button>
             </div>
           {/if}
+          </div>
+          <p class="text-[11px] text-on-surface-variant/70 mt-1">
+            Similar themes from other series
+          </p>
         </div>
 
         {#if recommendedLoading}

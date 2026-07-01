@@ -58,18 +58,53 @@ export type VideoTagSource = {
   is_uncensored?: boolean;
   is_subbed?: boolean;
   is_lyrics?: boolean;
+  source?: string;
 };
 
-/** Label for a variant video selector pill (resolution + quality tags). */
-export function getVideoTagText(video: VideoTagSource, index: number): string {
-  const tags: string[] = [];
-  if (video.resolution) tags.push(`${video.resolution}p`);
-  if (video.is_nc) tags.push("NC");
-  if (video.is_bd) tags.push("BD");
-  if (video.is_uncensored) tags.push("UNCEN");
-  if (video.is_subbed) tags.push("SUB");
-  if (video.is_lyrics) tags.push("LYRICS");
-  return tags.length > 0 ? tags.join(" ") : `Video ${index + 1}`;
+function meaningfulSource(source?: string): string | null {
+  const trimmed = source?.trim();
+  if (!trimmed) return null;
+  const lower = trimmed.toLowerCase();
+  if (lower === "none" || lower === "unknown") return null;
+  return trimmed;
+}
+
+function positiveResolution(resolution?: number): number | undefined {
+  return resolution && resolution > 0 ? resolution : undefined;
+}
+
+/** Label for a variant video selector pill (source, resolution, quality tags). */
+export function getVideoTagText(
+  video: VideoTagSource,
+  index: number,
+  variantFallback?: Pick<VideoTagSource, "source" | "resolution">,
+): string {
+  const parts: string[] = [];
+
+  const source =
+    meaningfulSource(video.source) ?? meaningfulSource(variantFallback?.source);
+  if (source) parts.push(source);
+
+  const resolution =
+    positiveResolution(video.resolution) ??
+    positiveResolution(variantFallback?.resolution);
+  if (resolution) parts.push(`${resolution}p`);
+
+  if (video.is_nc) parts.push("NC");
+  if (video.is_bd && source?.toUpperCase() !== "BD") parts.push("BD");
+  if (video.is_uncensored) parts.push("UNCEN");
+  if (video.is_subbed) parts.push("SUB");
+  if (video.is_lyrics) parts.push("LYRICS");
+
+  return parts.length > 0 ? parts.join(" ") : `Video ${index + 1}`;
+}
+
+export function hasMeaningfulVideoTag(
+  video: VideoTagSource,
+  index: number,
+  variantFallback?: Pick<VideoTagSource, "source" | "resolution">,
+): boolean {
+  return getVideoTagText(video, index, variantFallback) !== `Video ${index + 1}`;
 }
 
 export function getFormattedScore(

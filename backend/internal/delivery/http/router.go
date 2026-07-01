@@ -184,9 +184,10 @@ func SetupPublicRoutes(app *fiber.App,
 	catalogApi.Get("/songs", middleware.OptionalAuthMiddleware(jwtService, userRepo, appCache), middleware.NewResponseCache(storage, 5*time.Minute), catalogHandler.SongIndex)
 	catalogApi.Get("/songs/ranking/:type", middleware.OptionalAuthMiddleware(jwtService, userRepo, appCache), middleware.NewResponseCache(storage, 5*time.Minute), catalogHandler.SongRanking)
 	catalogApi.Get("/songs/:uuid/comments", middleware.OptionalAuthMiddleware(jwtService, userRepo, appCache), middleware.NewResponseCache(storage, 5*time.Minute), interactionHandler.GetSongComments)
+	// Must be registered before /songs/:anime_slug/:song_slug — otherwise UUID/related is parsed as anime_slug/song_slug.
+	catalogApi.Get("/songs/:uuid/related", middleware.OptionalAuthMiddleware(jwtService, userRepo, appCache), recommendationHandler.GetSimilarSongs)
 	catalogApi.Get("/songs/:anime_slug/:song_slug", middleware.OptionalAuthMiddleware(jwtService, userRepo, appCache), middleware.NewResponseCache(storage, 5*time.Minute), catalogHandler.SongShow)
 	catalogApi.Get("/animes/:anime_slug/songs/:song_slug", middleware.OptionalAuthMiddleware(jwtService, userRepo, appCache), middleware.NewResponseCache(storage, 5*time.Minute), catalogHandler.SongShow)
-	catalogApi.Get("/songs/:uuid/related", middleware.OptionalAuthMiddleware(jwtService, userRepo, appCache), recommendationHandler.GetSimilarSongs)
 
 	// Catalog: Artists
 	catalogApi.Get("/artists", middleware.NewResponseCache(storage, 5*time.Minute), catalogHandler.ArtistIndex)

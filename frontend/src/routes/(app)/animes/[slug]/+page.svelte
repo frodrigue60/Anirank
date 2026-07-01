@@ -16,7 +16,9 @@
   import { PUBLIC_API_URL } from "$lib/api";
   import OptimizedImage from "$lib/components/OptimizedImage.svelte";
   import ArtistListCell from "$lib/components/ArtistListCell.svelte";
-  import type { SongVariant, SongVariantVideo } from "$lib/types/song";
+  import type { Song, SongVariant, SongVariantVideo } from "$lib/types/song";
+
+  const FILTER_TYPE_ORDER = ["OP", "ED"];
 
   let { data }: { data: PageData } = $props();
   let anime = $derived(data.data);
@@ -73,6 +75,90 @@
 
     return songs;
   });
+
+  let songTypeCounts = $derived.by(() => {
+    const counts: Record<string, number> = { all: anime.songs?.length ?? 0 };
+    for (const song of anime.songs ?? []) {
+      const type = (song.type || "").toUpperCase();
+      counts[type] = (counts[type] ?? 0) + 1;
+    }
+    return counts;
+  });
+
+  let orderedFilterTypes = $derived.by(() => {
+    return [...configState.songTypes].sort((a, b) => {
+      const aIdx = FILTER_TYPE_ORDER.indexOf(a.slug.toUpperCase());
+      const bIdx = FILTER_TYPE_ORDER.indexOf(b.slug.toUpperCase());
+      const aOrder = aIdx === -1 ? FILTER_TYPE_ORDER.length + 1 : aIdx;
+      const bOrder = bIdx === -1 ? FILTER_TYPE_ORDER.length + 1 : bIdx;
+      if (aOrder !== bOrder) return aOrder - bOrder;
+      return a.slug.localeCompare(b.slug);
+    });
+  });
+
+  let songGroups = $derived.by(() => {
+    const songs = filteredAndSortedSongs;
+    if (songs.length === 0) return [];
+
+    if (filterType !== "all") {
+      return [
+        {
+          id: filterType,
+          label: getGroupLabel(filterType),
+          songs,
+        },
+      ];
+    }
+
+    const openings = songs.filter((s) => s.type?.toUpperCase() === "OP");
+    const endings = songs.filter((s) => s.type?.toUpperCase() === "ED");
+    const others = songs.filter((s) => {
+      const type = s.type?.toUpperCase() ?? "";
+      return type !== "OP" && type !== "ED";
+    });
+
+    const groups: { id: string; label: string; songs: Song[] }[] = [];
+    if (openings.length > 0) {
+      groups.push({ id: "op", label: "Openings", songs: openings });
+    }
+    if (endings.length > 0) {
+      groups.push({ id: "ed", label: "Endings", songs: endings });
+    }
+    if (others.length > 0) {
+      groups.push({ id: "other", label: "Other Themes", songs: others });
+    }
+    return groups;
+  });
+
+  function getGroupLabel(type: string): string {
+    switch (type.toUpperCase()) {
+      case "OP":
+        return "Openings";
+      case "ED":
+        return "Endings";
+      case "INS":
+        return "Insert Songs";
+      default:
+        return type.toUpperCase();
+    }
+  }
+
+  function typeBadgeClass(type: string | undefined): string {
+    switch ((type || "").toUpperCase()) {
+      case "OP":
+        return "bg-green-500/10 text-green-400 border-green-500/40";
+      case "ED":
+        return "bg-blue-500/10 text-blue-400 border-blue-500/40";
+      default:
+        return "bg-primary/10 text-primary border-primary/30";
+    }
+  }
+
+  function formatThemeRating(score: number | string | null | undefined): string | null {
+    const raw = typeof score === "string" ? parseFloat(score) : score;
+    if (raw == null || Number.isNaN(raw) || raw <= 0) return null;
+    return formatScore(score);
+  }
 
   function getPrimaryVideo(variant: SongVariant): SongVariantVideo | SongVariant {
     if (variant.videos?.length) return variant.videos[0];
@@ -347,26 +433,29 @@
         </div>
 
         <div class="flex flex-col md:flex-row items-center justify-between gap-4">
-          <div class="flex flex-wrap items-center gap-1 bg-surface-container p-1 rounded-sm border border-white/5">
+          <div class="flex flex-wrap items-center gap-1 bg-surface-container p-1 rounded-sm border border-outline-variant/30">
             <button
               onclick={() => (filterType = "all")}
-              class="px-4 py-1.5 rounded-sm text-[10px] font-bold uppercase tracking-widest transition-all {filterType ===
+              class="px-3 py-1.5 rounded-sm text-[10px] font-bold uppercase tracking-widest transition-colors {filterType ===
               'all'
-                ? 'bg-primary text-white shadow-lg shadow-primary/20'
-                : 'text-on-surface-variant hover:text-on-surface'}"
+                ? 'bg-primary text-white'
+                : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-low'}"
             >
-              all
+              All ({songTypeCounts.all})
             </button>
-            {#each configState.songTypes as type}
-              <button
-                onclick={() => (filterType = type.slug)}
-                class="px-4 py-1.5 rounded-sm text-[10px] font-bold uppercase tracking-widest transition-all {filterType ===
-                type.slug
-                  ? 'bg-primary text-white shadow-lg shadow-primary/20'
-                  : 'text-on-surface-variant hover:text-on-surface'}"
-              >
-                {type.slug}
-              </button>
+            {#each orderedFilterTypes as type}
+              {@const count = songTypeCounts[type.slug.toUpperCase()] ?? 0}
+              {#if count > 0}
+                <button
+                  onclick={() => (filterType = type.slug)}
+                  class="px-3 py-1.5 rounded-sm text-[10px] font-bold uppercase tracking-widest transition-colors {filterType ===
+                  type.slug
+                    ? 'bg-primary text-white'
+                    : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-low'}"
+                >
+                  {type.slug} ({count})
+                </button>
+              {/if}
             {/each}
           </div>
 
@@ -377,7 +466,7 @@
             >
             <select
               bind:value={sortBy}
-              class="bg-surface-container border border-white/5 text-on-surface text-xs font-bold py-2 px-4 rounded-sm outline-hidden focus:border-primary/50 transition-colors"
+              class="bg-surface-container border border-outline-variant/30 text-on-surface text-xs font-bold py-2 px-4 rounded-sm outline-hidden focus:border-primary transition-colors"
             >
               <option value="theme_num">Theme Number</option>
               <option value="score">Avg Score</option>
@@ -385,127 +474,146 @@
           </div>
         </div>
 
-        <div
-          class="rounded-md overflow-hidden"
-        >
-          <table class="w-full text-left border-separate border-spacing-0 text-sm px-2">
-            <thead>
-              <tr
-                class="border-b border-primary/10 text-xs uppercase tracking-widest text-on-surface-variant"
-              >
-                <th class="px-4 py-3 font-bold w-24">Type</th>
-                <th class="px-4 py-3 font-bold">Song Title</th>
-                <th class="px-4 py-3 font-bold">Artist</th>
-                <th class="px-4 py-3 font-bold text-right">Avg Rating</th>
-              </tr>
-            </thead>
-            {#each filteredAndSortedSongs as song}
-              {@const variants = song.variants?.length ? song.variants : [{ version_number: 1 }]}
-              <tbody class="group/song">
-                <tr class="transition-colors group-hover/song:bg-primary/[0.04] bg-surface-container">
-                  <td
-                    class="px-4 pt-3 pb-1 align-top border-l border-t border-b-0 border-outline-variant/25 group-hover/song:border-outline-variant/40 transition-colors rounded-tl-sm"
-                  >
-                    <span
-                      class="inline-flex items-center justify-center px-2 py-0.5 rounded-sm {song.type ===
-                      'OP'
-                        ? 'bg-green-500/10 text-green-400 border-green-500/40'
-                        : 'bg-blue-500/10 text-blue-400 border-blue-500/40'} border text-[10px] font-bold"
-                      >{song.type}{song.theme_num}</span
-                    >
-                  </td>
-                  <td
-                    class="px-4 pt-3 pb-1 align-top border-t border-b-0 border-outline-variant/25 group-hover/song:border-outline-variant/40 transition-colors"
-                  >
-                    <div
-                      class="font-bold text-on-surface text-sm leading-snug hover:text-primary transition-colors"
-                    >
-                      <a href="/animes/{anime.slug}/{song.slug}"
-                        >{getSongName(song)}</a
-                      >
-                    </div>
-                  </td>
-                  <td
-                    class="px-4 pt-3 pb-1 align-top text-xs border-t border-b-0 border-outline-variant/25 group-hover/song:border-outline-variant/40 transition-colors max-w-0 w-[28%]"
-                  >
-                    <ArtistListCell
-                      artists={song.artists}
-                      popoverId="artists-{song.id}"
-                    />
-                  </td>
-                  <td
-                    class="px-4 pt-3 pb-1 align-top text-right border-t border-r border-b-0 border-outline-variant/25 group-hover/song:border-outline-variant/40 transition-colors rounded-tr-sm"
-                  >
-                    <div class="flex items-center justify-end gap-1">
-                      <Star size={12} class="text-yellow-400 fill-current" />
-                      <span class="font-bold text-on-surface text-base leading-none"
-                        >{formatScore(song.average_rating)}</span
-                      >
-                    </div>
-                  </td>
-                </tr>
+        {#if filteredAndSortedSongs.length === 0}
+          <div
+            class="rounded-sm border border-outline-variant/30 bg-surface-container px-6 py-10 text-center"
+          >
+            <p class="text-sm font-medium text-on-surface-variant">
+              No themes match this filter.
+            </p>
+          </div>
+        {:else}
+          <div class="space-y-5">
+            {#each songGroups as group}
+              {#if filterType === "all" && songGroups.length > 1}
+                <h3
+                  class="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/80 flex items-center gap-2"
+                >
+                  <span class="w-1 h-3 bg-primary rounded-full"></span>
+                  {group.label}
+                  <span class="text-on-surface-variant/50">({group.songs.length})</span>
+                </h3>
+              {/if}
 
-                {#each variants as variant, variantIndex}
-                  {@const isLast = variantIndex === variants.length - 1}
-                  {@const video = song.variants?.length ? getPrimaryVideo(variant as SongVariant) : null}
-                  <tr class="transition-colors group-hover/song:bg-primary/[0.04] bg-surface-container">
-                    <td
-                      colspan="4"
-                      class="px-4 py-1.5 border-l border-r border-outline-variant/25 group-hover/song:border-outline-variant/40 transition-colors {variantIndex > 0 ? 'border-t border-outline-variant/10' : 'border-t-0'} {isLast ? 'border-b rounded-b-sm pb-2.5' : ''}"
+              <ul class="space-y-2">
+                {#each group.songs as song}
+                  {@const variants = song.variants?.length ? song.variants : [{ version_number: 1 }]}
+                  {@const rating = formatThemeRating(song.average_rating)}
+                  <li>
+                    <article
+                      class="rounded-sm border border-outline-variant/25 bg-surface-container hover:bg-surface-low transition-colors overflow-hidden"
                     >
-                      <div class="flex items-center justify-between gap-3 pl-1 md:pl-4">
-                        <div class="flex items-center gap-2.5 min-w-0 text-on-surface-variant/80">
-                          <span class="text-[10px] font-bold uppercase tracking-wider shrink-0">
-                            V{variant.version_number || 1}
+                      <div class="px-4 pt-3 pb-1 flex items-start justify-between gap-3">
+                        <div class="flex items-start gap-3 min-w-0 flex-1">
+                          <span
+                            class="inline-flex items-center justify-center px-2 py-0.5 rounded-sm border text-[10px] font-bold shrink-0 mt-0.5 {typeBadgeClass(song.type)}"
+                          >
+                            {song.type}{song.theme_num}
                           </span>
-                          {#if variant.episodes}
-                            <span
-                              class="flex items-center gap-1 text-[11px] font-medium min-w-0"
-                              title="Episodes where this version appears"
+                          <div class="min-w-0 flex-1">
+                            <a
+                              href="/animes/{anime.slug}/{song.slug}"
+                              class="font-bold text-on-surface text-sm leading-snug hover:text-primary transition-colors block truncate"
+                              title={getSongName(song)}
                             >
-                              <Clapperboard size={12} class="shrink-0 text-on-surface-variant/70" />
-                              <span class="truncate">{variant.episodes}</span>
-                            </span>
-                          {/if}
+                              {getSongName(song)}
+                            </a>
+                            <div class="mt-0.5">
+                              <ArtistListCell
+                                artists={song.artists}
+                                popoverId="artists-{song.id}"
+                              />
+                            </div>
+                          </div>
                         </div>
 
-                        <div class="flex items-center gap-1.5 shrink-0 bg-secondary-container/25 border border-outline-variant/30 rounded-full pl-0.5 pr-1.5 py-0.5">
-                          <a
-                            href={songPlayHref(song.slug, variantIndex)}
-                            class="w-7 h-7 rounded-full flex items-center justify-center text-white bg-primary hover:bg-primary-container transition-colors"
-                            title="Play {getSongName(song)} v{variant.version_number || 1}"
-                            aria-label="Play {getSongName(song)} version {variant.version_number || 1}"
-                          >
-                            <Play size={14} class="fill-current ml-0.5" />
-                          </a>
-                          {#if video?.resolution && formatResolution(video.resolution)}
-                            <span class="text-[9px] font-black uppercase tracking-wider text-on-surface-variant px-0.5">
-                              {formatResolution(video.resolution)}
-                            </span>
-                          {/if}
-                          {#if video?.is_nc}
-                            <span class="text-[8px] font-black uppercase tracking-wider bg-surface-highest text-on-surface-variant px-1 py-0.5 rounded-sm">
-                              NC
-                            </span>
-                          {/if}
-                          {#if video?.is_bd}
-                            <span class="text-[8px] font-black uppercase tracking-wider bg-surface-highest text-on-surface-variant px-1 py-0.5 rounded-sm">
-                              BD
+                        <div
+                          class="shrink-0 text-right"
+                          title={rating ? "Average rating" : "No ratings yet"}
+                        >
+                          {#if rating}
+                            <div class="flex items-center justify-end gap-1">
+                              <Star size={12} class="text-yellow-400 fill-current" />
+                              <span class="font-bold text-on-surface text-sm leading-none">
+                                {rating}
+                              </span>
+                            </div>
+                          {:else}
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant/50">
+                              Unrated
                             </span>
                           {/if}
                         </div>
                       </div>
-                    </td>
-                  </tr>
-                {/each}
 
-                <tr aria-hidden="true">
-                  <td colspan="4" class="h-2 p-0 border-none"></td>
-                </tr>
-              </tbody>
+                      <div class="px-4 pb-2.5">
+                        {#each variants as variant, variantIndex}
+                          {@const video = song.variants?.length ? getPrimaryVideo(variant as SongVariant) : null}
+                          {@const isLast = variantIndex === variants.length - 1}
+                          <div
+                            class="flex items-center justify-between gap-3 {variantIndex === 0 ? 'pt-0.5' : 'pt-2 mt-1 border-t border-outline-variant/10'} {isLast ? '' : 'pb-0.5'}"
+                          >
+                            <div class="flex items-center gap-2.5 min-w-0 text-on-surface-variant/80 pl-1">
+                              <span class="text-[10px] font-bold uppercase tracking-wider shrink-0">
+                                v{variant.version_number || 1}
+                              </span>
+                              {#if variant.episodes}
+                                <span
+                                  class="flex items-center gap-1 text-[11px] font-medium min-w-0"
+                                  title="Episodes where this version appears"
+                                >
+                                  <Clapperboard
+                                    size={12}
+                                    class="shrink-0 text-on-surface-variant/70"
+                                  />
+                                  <span class="truncate">{variant.episodes}</span>
+                                </span>
+                              {/if}
+                            </div>
+
+                            <div
+                              class="flex items-center gap-1.5 shrink-0 bg-secondary-container/25 border border-outline-variant/30 rounded-full pl-0.5 pr-1.5 py-0.5"
+                            >
+                              <a
+                                href={songPlayHref(song.slug, variantIndex)}
+                                class="w-7 h-7 rounded-full flex items-center justify-center text-white bg-primary hover:bg-primary-container transition-colors"
+                                title="Play {getSongName(song)} v{variant.version_number || 1}"
+                                aria-label="Play {getSongName(song)} version {variant.version_number || 1}"
+                              >
+                                <Play size={14} class="fill-current ml-0.5" />
+                              </a>
+                              {#if video?.resolution && formatResolution(video.resolution)}
+                                <span
+                                  class="text-[9px] font-black uppercase tracking-wider text-on-surface-variant px-0.5"
+                                >
+                                  {formatResolution(video.resolution)}
+                                </span>
+                              {/if}
+                              {#if video?.is_nc}
+                                <span
+                                  class="text-[8px] font-black uppercase tracking-wider bg-surface-highest text-on-surface-variant px-1 py-0.5 rounded-sm"
+                                >
+                                  NC
+                                </span>
+                              {/if}
+                              {#if video?.is_bd}
+                                <span
+                                  class="text-[8px] font-black uppercase tracking-wider bg-surface-highest text-on-surface-variant px-1 py-0.5 rounded-sm"
+                                >
+                                  BD
+                                </span>
+                              {/if}
+                            </div>
+                          </div>
+                        {/each}
+                      </div>
+                    </article>
+                  </li>
+                {/each}
+              </ul>
             {/each}
-          </table>
-        </div>
+          </div>
+        {/if}
       </div>
     </section>
   </div>

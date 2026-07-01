@@ -4,6 +4,10 @@
   import { fade, slide } from "svelte/transition";
   import { goto } from "$app/navigation";
   import StatusControl from "$lib/components/admin/StatusControl.svelte";
+  import {
+    fetchVariantVideoStorageCheck,
+    normalizeStoragePath,
+  } from "$lib/admin/videoStorage";
 
   let { data } = $props();
   // svelte-ignore state_referenced_locally
@@ -13,6 +17,8 @@
   let loading = $state(false);
   let errorMsg = $state("");
   let successMsg = $state("");
+  let storageCheckLoading = $state(false);
+  let storageExists = $state<Record<string, boolean>>({});
 
   // svelte-ignore state_referenced_locally
   let status = $state(variant?.status || false);
@@ -21,6 +27,23 @@
   // svelte-ignore state_referenced_locally
   let embedCode = $state(variant?.video?.embed_code || variant?.video?.embed_url || "");
   let uploadProgress = $state(0);
+
+  async function checkVideoStorage() {
+    if (!variant?.id) return;
+    storageCheckLoading = true;
+    try {
+      storageExists = await fetchVariantVideoStorageCheck(variant.id);
+    } catch (err: any) {
+      console.error(err);
+      storageExists = {};
+    } finally {
+      storageCheckLoading = false;
+    }
+  }
+
+  onMount(() => {
+    checkVideoStorage();
+  });
 
   async function handleSave() {
     loading = true;
@@ -64,6 +87,7 @@
 
       variant = res.data.data;
       successMsg = "Video asset updated successfully!";
+      await checkVideoStorage();
 
       // Redirect back to Anime Hub -> Song detail after short delay for feedback
       setTimeout(() => {
@@ -144,8 +168,86 @@
     class="bg-zinc-900/50 border border-zinc-800 rounded-3xl shadow-xl overflow-hidden p-8 max-w-4xl"
   >
     <div class="space-y-8">
-      <!-- Current Video Preview if exists -->
-      {#if variant.video}
+      <!-- Registered Videos -->
+      {#if variant.videos && variant.videos.length > 0}
+        <div
+          class="space-y-4 bg-zinc-950/50 p-6 rounded-2xl border border-blue-500/20 shadow-inner"
+        >
+          <div class="flex items-center justify-between gap-2">
+            <h3
+              class="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] flex items-center gap-2"
+            >
+              <span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+              Registered Videos ({variant.videos.length})
+            </h3>
+            <button
+              type="button"
+              onclick={checkVideoStorage}
+              disabled={storageCheckLoading}
+              class="text-[9px] font-black uppercase tracking-widest text-zinc-500 hover:text-zinc-300 disabled:opacity-50 flex items-center gap-1"
+              title="Verificar archivos en R2/S3"
+            >
+              <span class="material-symbols-outlined text-xs {storageCheckLoading ? 'animate-spin' : ''}">sync</span>
+              {storageCheckLoading ? "Verificando…" : "Verificar R2"}
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 gap-2">
+            {#each variant.videos as vid}
+              <div class="flex items-start gap-3 p-3 bg-black/40 border border-zinc-800/80 rounded-2xl">
+                {#if vid.type === "file"}
+                  <div class="flex items-center justify-center w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
+                    <span class="material-symbols-outlined text-base">movie</span>
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                      <span class="text-[11px] font-bold text-zinc-200 uppercase tracking-normal">Cloud Storage File</span>
+                      <span class="bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider">{vid.source || "TV"}</span>
+                      {#if vid.resolution > 0}
+                        <span class="bg-zinc-800 text-zinc-400 px-1 py-0.5 rounded text-[8px] font-mono">{vid.resolution}p</span>
+                      {/if}
+                      {#if vid.is_nc}
+                        <span class="bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded text-[8px] font-black">NC</span>
+                      {/if}
+                      {#if storageCheckLoading}
+                        <span class="bg-zinc-800 text-zinc-500 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider flex items-center gap-0.5">
+                          <span class="material-symbols-outlined text-[10px] animate-spin">progress_activity</span>
+                          R2
+                        </span>
+                      {:else if vid.video_src}
+                        {@const storageKey = normalizeStoragePath(vid.video_src)}
+                        {#if storageExists[storageKey] === true}
+                          <span class="bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider flex items-center gap-0.5" title="Archivo presente en R2/S3">
+                            <span class="material-symbols-outlined text-[10px]">check_circle</span>
+                            En R2
+                          </span>
+                        {:else if storageExists[storageKey] === false}
+                          <span class="bg-red-500/10 text-red-400 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider flex items-center gap-0.5" title="Ruta en DB pero archivo no encontrado en R2/S3">
+                            <span class="material-symbols-outlined text-[10px]">cancel</span>
+                            No en R2
+                          </span>
+                        {/if}
+                      {/if}
+                    </div>
+                    <p class="text-[9px] font-mono text-zinc-500 truncate mt-1 select-all">{vid.video_src}</p>
+                  </div>
+                {:else}
+                  <div class="flex items-center justify-center w-8 h-8 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 shrink-0">
+                    <span class="material-symbols-outlined text-base">code</span>
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                      <span class="text-[11px] font-bold text-zinc-200 uppercase tracking-normal">Embed / Iframe Code</span>
+                      <span class="bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider">Embed</span>
+                    </div>
+                    <p class="text-[9px] font-mono text-zinc-500 truncate mt-1 select-all">{vid.embed_code || vid.embed_url}</p>
+                  </div>
+                {/if}
+              </div>
+            {/each}
+          </div>
+        </div>
+      {:else if variant.video}
         <div
           class="space-y-4 bg-zinc-950/50 p-6 rounded-2xl border border-blue-500/20 shadow-inner"
         >

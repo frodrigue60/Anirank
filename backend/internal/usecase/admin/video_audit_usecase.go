@@ -25,6 +25,7 @@ const (
 type VideoAuditUsecase struct {
 	jobRepo      domain.ImportJobRepository
 	songRepo     domain.SongRepository
+	variantRepo  domain.SongVariantRepository
 	mediaService infrastructure.MediaService
 	storage      infrastructure.StorageService
 
@@ -36,12 +37,14 @@ type VideoAuditUsecase struct {
 func NewVideoAuditUsecase(
 	jobRepo domain.ImportJobRepository,
 	songRepo domain.SongRepository,
+	variantRepo domain.SongVariantRepository,
 	mediaService infrastructure.MediaService,
 	storage infrastructure.StorageService,
 ) *VideoAuditUsecase {
 	return &VideoAuditUsecase{
 		jobRepo:      jobRepo,
 		songRepo:     songRepo,
+		variantRepo:  variantRepo,
 		mediaService: mediaService,
 		storage:      storage,
 		cancelMap:    make(map[string]context.CancelFunc),
@@ -221,6 +224,68 @@ func (u *VideoAuditUsecase) runAudit(ctx context.Context, job *domain.ImportJob,
 	_ = u.jobRepo.UpdateProgress(context.Background(), job)
 }
 
+// CheckStoragePaths verifies each relative storage key against R2/S3 (HeadObject).
+func (u *VideoAuditUsecase) CheckStoragePaths(ctx context.Context, paths []string) map[string]bool {
+	return u.checkPathsConcurrently(ctx, nil, paths)
+}
+
+// CheckSongVideoStorage checks all file video_src paths linked to a song's variants.
+func (u *VideoAuditUsecase) CheckSongVideoStorage(ctx context.Context, songID uint64) (map[string]bool, error) {
+	variants, err := u.songRepo.GetVariantsBySongID(ctx, songID)
+	if err != nil {
+		return nil, err
+	}
+
+	return u.CheckStoragePaths(ctx, collectStoragePathsFromVariants(variants)), nil
+}
+
+// CheckVariantVideoStorage checks file video_src paths linked to a single variant.
+func (u *VideoAuditUsecase) CheckVariantVideoStorage(ctx context.Context, variantID uint64) (map[string]bool, error) {
+	if u.variantRepo == nil {
+		return map[string]bool{}, nil
+	}
+
+	variant, err := u.variantRepo.GetByID(ctx, variantID)
+	if err != nil {
+		return nil, err
+	}
+
+	return u.CheckStoragePaths(ctx, collectStoragePathsFromVideos(variant.Videos)), nil
+}
+
+func collectStoragePathsFromVariants(variants []domain.SongVariant) []string {
+	pathSet := make(map[string]struct{})
+	for _, variant := range variants {
+		for _, p := range collectStoragePathsFromVideos(variant.Videos) {
+			pathSet[p] = struct{}{}
+		}
+	}
+	return mapKeysToSlice(pathSet)
+}
+
+func collectStoragePathsFromVideos(videos []domain.SongVariantVideo) []string {
+	pathSet := make(map[string]struct{})
+	for _, vid := range videos {
+		if vid.VideoSrc == nil {
+			continue
+		}
+		src := strings.TrimSpace(*vid.VideoSrc)
+		if src == "" || strings.HasPrefix(src, "http") {
+			continue
+		}
+		pathSet[normalizeStorageKey(src)] = struct{}{}
+	}
+	return mapKeysToSlice(pathSet)
+}
+
+func mapKeysToSlice(set map[string]struct{}) []string {
+	paths := make([]string, 0, len(set))
+	for p := range set {
+		paths = append(paths, p)
+	}
+	return paths
+}
+
 func (u *VideoAuditUsecase) checkPathsConcurrently(ctx context.Context, job *domain.ImportJob, paths []string) map[string]bool {
 	results := make(map[string]bool, len(paths))
 	if len(paths) == 0 {
@@ -252,7 +317,7 @@ func (u *VideoAuditUsecase) checkPathsConcurrently(ctx context.Context, job *dom
 			mu.Unlock()
 
 			n := checked.Add(1)
-			if int(n)%videoAuditProgress == 0 || int(n) == len(paths) {
+			if job != nil && (int(n)%videoAuditProgress == 0 || int(n) == len(paths)) {
 				job.CurrentPage = int(n)
 				_ = u.jobRepo.UpdateProgress(context.Background(), job)
 			}
@@ -260,7 +325,9 @@ func (u *VideoAuditUsecase) checkPathsConcurrently(ctx context.Context, job *dom
 	}
 
 	wg.Wait()
-	job.CurrentPage = len(paths)
+	if job != nil {
+		job.CurrentPage = len(paths)
+	}
 	return results
 }
 

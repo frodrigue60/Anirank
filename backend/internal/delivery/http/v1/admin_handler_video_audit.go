@@ -3,6 +3,7 @@ package v1
 import (
 	"bufio"
 	"context"
+	"strconv"
 	"time"
 
 	"anirank/api/internal/domain"
@@ -104,6 +105,42 @@ func (h *AdminHandler) CancelVideoAudit(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{"message": "Video audit cancellation requested"})
+}
+
+func (h *AdminHandler) CheckSongVideoStorage(c *fiber.Ctx) error {
+	if h.videoAuditUsecase == nil {
+		return domain.NewAppError(503, "Video audit service not available", nil)
+	}
+
+	id, err := h.resolveID(c, "song")
+	if err != nil {
+		return err
+	}
+
+	results, err := h.videoAuditUsecase.CheckSongVideoStorage(c.Context(), id)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{"data": results})
+}
+
+func (h *AdminHandler) CheckVariantVideoStorage(c *fiber.Ctx) error {
+	if h.videoAuditUsecase == nil {
+		return domain.NewAppError(503, "Video audit service not available", nil)
+	}
+
+	id, err := strconv.ParseUint(c.Params("id"), 10, 64)
+	if err != nil || id == 0 {
+		return domain.NewAppError(400, "Invalid variant ID", err)
+	}
+
+	results, err := h.videoAuditUsecase.CheckVariantVideoStorage(c.Context(), id)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{"data": results})
 }
 
 func (h *AdminHandler) StreamVideoAuditProgress(c *fiber.Ctx) error {

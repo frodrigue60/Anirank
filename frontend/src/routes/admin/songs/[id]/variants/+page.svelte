@@ -3,6 +3,10 @@
   import { onMount } from "svelte";
   import { fade, slide } from "svelte/transition";
   import { goto } from "$app/navigation";
+  import {
+    fetchSongVideoStorageCheck,
+    normalizeStoragePath,
+  } from "$lib/admin/videoStorage";
 
   let { data } = $props();
   // svelte-ignore state_referenced_locally
@@ -23,6 +27,25 @@
   let loading = $state(false);
   let status = $state(true);
   let errorMsg = $state("");
+  let storageCheckLoading = $state(false);
+  let storageExists = $state<Record<string, boolean>>({});
+
+  async function checkVideoStorage() {
+    if (!song?.id) return;
+    storageCheckLoading = true;
+    try {
+      storageExists = await fetchSongVideoStorageCheck(song.id);
+    } catch (err: any) {
+      console.error(err);
+      storageExists = {};
+    } finally {
+      storageCheckLoading = false;
+    }
+  }
+
+  onMount(() => {
+    checkVideoStorage();
+  });
 
   async function createVariant() {
     loading = true;
@@ -36,6 +59,7 @@
       const refresh = await api.get(`/admin/songs/${song.id}`);
       song = refresh.data.data;
       variants = song.song_variants || [];
+      await checkVideoStorage();
     } catch (err: any) {
       console.error(err);
       errorMsg = err.response?.data?.message || "Failed to create variant";
@@ -140,6 +164,7 @@
             : null;
       }
       variants = [...variants];
+      await checkVideoStorage();
     } catch (err: any) {
       console.error(err);
       errorMsg = err.response?.data?.message || "Failed to detach video";
@@ -186,6 +211,7 @@
             : null;
       }
       variants = [...variants];
+      await checkVideoStorage();
     } catch (err: any) {
       console.error(err);
       errorMsg = err.response?.data?.message || "Failed to delete video file";
@@ -594,9 +620,21 @@
 
                 <!-- Video Manager -->
                 <div class="mt-4 pt-4 border-t border-zinc-800/50">
-                  <div class="text-[10px] uppercase font-black tracking-widest text-zinc-500 mb-3 flex items-center gap-1.5">
-                    <span class="material-symbols-outlined text-sm">settings</span>
-                    Video Manager
+                  <div class="text-[10px] uppercase font-black tracking-widest text-zinc-500 mb-3 flex items-center justify-between gap-2">
+                    <span class="flex items-center gap-1.5">
+                      <span class="material-symbols-outlined text-sm">settings</span>
+                      Video Manager
+                    </span>
+                    <button
+                      type="button"
+                      onclick={checkVideoStorage}
+                      disabled={storageCheckLoading}
+                      class="text-[9px] font-black uppercase tracking-widest text-zinc-500 hover:text-zinc-300 disabled:opacity-50 flex items-center gap-1"
+                      title="Verificar archivos en R2/S3"
+                    >
+                      <span class="material-symbols-outlined text-xs {storageCheckLoading ? 'animate-spin' : ''}">sync</span>
+                      {storageCheckLoading ? "Verificando…" : "Verificar R2"}
+                    </button>
                   </div>
                   {#if variant.videos && variant.videos.length > 0}
                     <div class="grid grid-cols-1 gap-2">
@@ -616,6 +654,25 @@
                                   {/if}
                                   {#if vid.is_nc}
                                     <span class="bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded text-[8px] font-black">NC</span>
+                                  {/if}
+                                  {#if storageCheckLoading}
+                                    <span class="bg-zinc-800 text-zinc-500 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider flex items-center gap-0.5">
+                                      <span class="material-symbols-outlined text-[10px] animate-spin">progress_activity</span>
+                                      R2
+                                    </span>
+                                  {:else if vid.video_src}
+                                    {@const storageKey = normalizeStoragePath(vid.video_src)}
+                                    {#if storageExists[storageKey] === true}
+                                      <span class="bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider flex items-center gap-0.5" title="Archivo presente en R2/S3">
+                                        <span class="material-symbols-outlined text-[10px]">check_circle</span>
+                                        En R2
+                                      </span>
+                                    {:else if storageExists[storageKey] === false}
+                                      <span class="bg-red-500/10 text-red-400 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider flex items-center gap-0.5" title="Ruta en DB pero archivo no encontrado en R2/S3">
+                                        <span class="material-symbols-outlined text-[10px]">cancel</span>
+                                        No en R2
+                                      </span>
+                                    {/if}
                                   {/if}
                                 </div>
                                 <p class="text-[9px] font-mono text-zinc-500 truncate mt-1 select-all">{vid.video_src}</p>

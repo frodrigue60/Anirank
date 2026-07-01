@@ -98,7 +98,7 @@ func SetupPublicRoutes(app *fiber.App,
 		log.Printf("Warning: failed to clean stale import jobs on startup: %v", err)
 	}
 	importUsecase := admin.NewImportUsecase(importJobRepo, animeRepo, songRepo, artistRepo, taxonomyRepo, atClient, anilistClient, mediaService)
-	videoAuditUsecase := admin.NewVideoAuditUsecase(importJobRepo, songRepo, mediaService, storageService)
+	videoAuditUsecase := admin.NewVideoAuditUsecase(importJobRepo, songRepo, postgres.NewSongVariantRepository(db), mediaService, storageService)
 
 	adminHandler := v1.NewAdminHandler(adminUsecase, importUsecase, videoAuditUsecase, songRepo, userRepo, animeRepo, artistRepo, playlistRepo)
 	moderationHandler := v1.NewModerationHandler(moderationUsecase, songRepo, commentRepo, userRepo)
@@ -430,6 +430,7 @@ func SetupPublicRoutes(app *fiber.App,
 	// Songs Group
 	adminOnly.Get("/songs", adminHandler.GetSongs)
 	adminOnly.Get("/songs/latest-number", adminHandler.GetLatestSongNumber)
+	adminOnly.Get("/songs/:id/video-storage-check", adminHandler.CheckSongVideoStorage)
 	adminOnly.Get("/songs/:id", adminHandler.GetSong)
 	adminOnly.Post("/songs", middleware.HasPermissionMiddleware("song.create", userRepo), adminHandler.CreateSong)
 	adminOnly.Put("/songs/:id", middleware.HasPermissionMiddleware("song.edit", userRepo), adminHandler.UpdateSong)
@@ -439,6 +440,7 @@ func SetupPublicRoutes(app *fiber.App,
 	// SongVariant Operations
 	adminOnly.Get("/variants", adminHandler.GetVariants)
 	adminOnly.Get("/videos", adminHandler.GetVideos)
+	adminOnly.Get("/variants/:id<int>/video-storage-check", adminHandler.CheckVariantVideoStorage)
 	adminOnly.Get("/variants/:id<int>", adminHandler.GetVariant)
 	adminOnly.Post("/variants", middleware.HasPermissionMiddleware("song.edit", userRepo), adminHandler.CreateVariant)
 	adminOnly.Put("/variants/:id<int>", middleware.HasPermissionMiddleware("song.edit", userRepo), adminHandler.UpdateVariant)

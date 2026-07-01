@@ -6,6 +6,7 @@
     getSongArtistNames,
     getSongName,
     getFormattedScore,
+    getVideoTagText,
     resolveVariantIndex,
   } from "$lib/song-utils";
   import { goto } from "$app/navigation";
@@ -863,27 +864,7 @@
                 class="flex bg-surface-highest rounded-sm p-1 border border-on-surface-variant/10 shadow-sm gap-1"
               >
                 {#each selectedVariant.videos as video, i}
-                  {@const tagsList = []}
-                  {#if video.resolution}
-                    {tagsList.push(`${video.resolution}p`)}
-                  {/if}
-                  {#if video.is_nc}
-                    {tagsList.push("NC")}
-                  {/if}
-                  {#if video.is_bd}
-                    {tagsList.push("BD")}
-                  {/if}
-                  {#if video.is_uncensored}
-                    {tagsList.push("UNCEN")}
-                  {/if}
-                  {#if video.is_subbed}
-                    {tagsList.push("SUB")}
-                  {/if}
-                  {#if video.is_lyrics}
-                    {tagsList.push("LYRICS")}
-                  {/if}
-                  {@const tagText =
-                    tagsList.length > 0 ? tagsList.join(" ") : `Video ${i + 1}`}
+                  {@const tagText = getVideoTagText(video, i)}
                   <button
                     class="px-3 py-1.5 rounded-sm text-[10px] font-bold transition-all {selectedVideoIndex ===
                     i

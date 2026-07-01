@@ -51,6 +51,27 @@ export function buildSongPlayHref(
   return `${base}?v=${versionNumber}`;
 }
 
+export type VideoTagSource = {
+  resolution?: number;
+  is_nc?: boolean;
+  is_bd?: boolean;
+  is_uncensored?: boolean;
+  is_subbed?: boolean;
+  is_lyrics?: boolean;
+};
+
+/** Label for a variant video selector pill (resolution + quality tags). */
+export function getVideoTagText(video: VideoTagSource, index: number): string {
+  const tags: string[] = [];
+  if (video.resolution) tags.push(`${video.resolution}p`);
+  if (video.is_nc) tags.push("NC");
+  if (video.is_bd) tags.push("BD");
+  if (video.is_uncensored) tags.push("UNCEN");
+  if (video.is_subbed) tags.push("SUB");
+  if (video.is_lyrics) tags.push("LYRICS");
+  return tags.length > 0 ? tags.join(" ") : `Video ${index + 1}`;
+}
+
 export function getFormattedScore(
   score: string | number | undefined,
   format: string = "POINT_10_DECIMAL",

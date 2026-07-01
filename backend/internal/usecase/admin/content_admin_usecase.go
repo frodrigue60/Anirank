@@ -830,6 +830,34 @@ func (u *ContentAdminUsecase) SyncArtistsFromString(ctx context.Context, songID 
 	return nil
 }
 
+func enrichAnimeTitlesFromAnilist(anime *domain.Anime, alData *anilist.Media) {
+	if anime == nil {
+		return
+	}
+	if alData != nil {
+		if alData.Title.English != "" {
+			titleEnglish := alData.Title.English
+			anime.TitleEnglish = &titleEnglish
+		}
+		if alData.Title.Native != "" {
+			titleNative := alData.Title.Native
+			anime.TitleNative = &titleNative
+		}
+		if len(alData.Synonyms) > 0 {
+			synonyms := make(domain.StringArray, 0, len(alData.Synonyms))
+			for _, s := range alData.Synonyms {
+				if s != "" {
+					synonyms = append(synonyms, s)
+				}
+			}
+			anime.Synonyms = synonyms
+		}
+	}
+	if anime.Synonyms == nil {
+		anime.Synonyms = domain.StringArray{}
+	}
+}
+
 func (u *ContentAdminUsecase) ensureLocalImages(ctx context.Context, anime *domain.Anime, preferredCover, preferredBanner string, anilistID int64) {
 	updated := false
 
@@ -1404,6 +1432,7 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 			anime.YearID = yearObj.ID
 			anime.SeasonID = seasonObj.ID
 			anime.FormatID = formatObj.ID
+			enrichAnimeTitlesFromAnilist(anime, alData)
 			err := u.animeRepo.Update(ctx, anime)
 			if err != nil {
 				errMsg := fmt.Sprintf("[ERROR] Failed to update anime %d (%s): %v", anime.ID, anime.Title, err)
@@ -1420,19 +1449,20 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 			// Create
 			atID := a.ID
 			anime = &domain.Anime{
-				Title:       a.Name,
-				Slug:        animeSlug,
-				Description: &a.Synopsis,
-				Cover:       coverPtr, // Will be updated by ensureLocalImages
-				Banner:      bannerPtr,
-				AnilistID:   alIDPtr,
+				Title:         a.Name,
+				Slug:          animeSlug,
+				Description:   &a.Synopsis,
+				Cover:         coverPtr, // Will be updated by ensureLocalImages
+				Banner:        bannerPtr,
+				AnilistID:     alIDPtr,
 				AnimeThemesID: &atID,
-				YearID:      yearObj.ID,
-				SeasonID:    seasonObj.ID,
-				FormatID:    formatObj.ID,
-				Status:      true,
-				UUID:        uuid.New().String(),
+				YearID:        yearObj.ID,
+				SeasonID:      seasonObj.ID,
+				FormatID:      formatObj.ID,
+				Status:        true,
+				UUID:          uuid.New().String(),
 			}
+			enrichAnimeTitlesFromAnilist(anime, alData)
 
 			// Force Draft status for creators
 			u.validateStatusPermissions(meta.Role, &anime.Status, true)

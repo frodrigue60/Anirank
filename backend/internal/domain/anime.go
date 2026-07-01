@@ -352,10 +352,7 @@ func (a *StringArray) Scan(src interface{}) error {
 
 // Value implements the driver.Valuer interface.
 func (a StringArray) Value() (driver.Value, error) {
-	if a == nil {
-		return nil, nil
-	}
-	if len(a) == 0 {
+	if a == nil || len(a) == 0 {
 		return "{}", nil
 	}
 

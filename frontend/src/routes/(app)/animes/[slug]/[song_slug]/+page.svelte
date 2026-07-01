@@ -35,6 +35,7 @@
   import Sparkles from "lucide-svelte/icons/sparkles";
   import ChevronLeft from "lucide-svelte/icons/chevron-left";
   import ChevronRight from "lucide-svelte/icons/chevron-right";
+  import Clapperboard from "lucide-svelte/icons/clapperboard";
   import OptimizedImage from "$lib/components/OptimizedImage.svelte";
   import type { ImageSource } from "$lib/types/media";
   import api from "$lib/api";
@@ -103,6 +104,49 @@
     },
   );
   let videoError = $state(false);
+
+  type VariantContextPart =
+    | { kind: "version"; text: string }
+    | { kind: "episodes"; text: string }
+    | { kind: "source"; text: string }
+    | { kind: "period"; text: string };
+
+  let variantContextParts = $derived.by((): VariantContextPart[] => {
+    const parts: VariantContextPart[] = [];
+    const variant = selectedVariant;
+    const hasMultipleVariants = (currentSong.variants?.length ?? 0) > 1;
+
+    if (hasMultipleVariants && variant) {
+      parts.push({
+        kind: "version",
+        text: `v${variant.version_number ?? selectedVariantIndex + 1}`,
+      });
+    }
+
+    if (variant?.episodes?.trim()) {
+      parts.push({ kind: "episodes", text: variant.episodes.trim() });
+    }
+
+    const source = selectedVideo?.source || variant?.source;
+    if (source?.trim() && source !== "None") {
+      parts.push({ kind: "source", text: source.trim() });
+    }
+
+    const season = variant?.season || currentSong.season;
+    const year = variant?.year || currentSong.year;
+    if (year?.name && season?.name) {
+      parts.push({
+        kind: "period",
+        text: `${year.name} ${season.name}`,
+      });
+    }
+
+    return parts;
+  });
+
+  let variantContextHasPeriod = $derived(
+    variantContextParts.some((part) => part.kind === "period"),
+  );
 
   // svelte-ignore state_referenced_locally
   let comments: Comment[] = $state(data.comments?.map(mapComment) || []);
@@ -858,6 +902,38 @@
               </div>
             {/if}
           </div>
+
+          {#if variantContextParts.length > 0}
+            <div
+              class="flex flex-wrap items-center gap-1.5 text-xs text-on-surface-variant/80"
+              aria-label="Active version details"
+            >
+              {#each variantContextParts as part, i}
+                {#if i > 0}
+                  <span class="text-on-surface-variant/40" aria-hidden="true">·</span>
+                {/if}
+                {#if part.kind === "episodes"}
+                  <span
+                    class="inline-flex items-center gap-1 font-medium"
+                    title="Episodes where this version appears"
+                  >
+                    <Clapperboard
+                      size={12}
+                      class="shrink-0 text-on-surface-variant/70"
+                    />
+                    {part.text}
+                  </span>
+                {:else if part.kind === "version"}
+                  <span class="font-bold uppercase tracking-wider text-on-surface-variant/70">
+                    {part.text}
+                  </span>
+                {:else}
+                  <span class="font-medium">{part.text}</span>
+                {/if}
+              {/each}
+            </div>
+          {/if}
+
           <h1
             class="text-2xl md:text-4xl font-black text-on-surface tracking-tight"
           >
@@ -898,7 +974,7 @@
             >
               {currentSong.anime?.title}
             </a>
-            {#if (selectedVariant?.season && selectedVariant?.year) || (currentSong.season && currentSong.year)}
+            {#if !variantContextHasPeriod && ((selectedVariant?.season && selectedVariant?.year) || (currentSong.season && currentSong.year))}
               {@const displaySeason =
                 selectedVariant?.season || currentSong.season}
               {@const displayYear = selectedVariant?.year || currentSong.year}

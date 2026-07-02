@@ -954,18 +954,20 @@
         >
           <div class="flex justify-between mb-3">
             <div class="flex items-center min-w-0">
-              {#if variantEpisodes}
-                <span
-                  class="inline-flex items-center gap-1 font-medium text-on-surface-variant"
-                  title="Episodes where this version appears"
-                >
-                  <Clapperboard
-                    size={14}
-                    class="shrink-0 text-on-surface-variant/70"
-                  />
-                  {variantEpisodes}
-                </span>
-              {/if}
+              <span
+                class="inline-flex items-center gap-1 font-medium {variantEpisodes
+                  ? 'text-on-surface-variant'
+                  : 'text-on-surface-variant/50'}"
+                title={variantEpisodes
+                  ? "Episodes where this version appears"
+                  : "Episode range not available for this version"}
+              >
+                <Clapperboard
+                  size={14}
+                  class="shrink-0 text-on-surface-variant/70"
+                />
+                {variantEpisodes || "N/A"}
+              </span>
             </div>
             <div class="flex items-center gap-2 shrink-0">
               <button

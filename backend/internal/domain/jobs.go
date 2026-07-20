@@ -32,7 +32,7 @@ const (
 // ImportJob tracks the progress of a bulk data import from an external source.
 type ImportJob struct {
 	ID          string          `db:"id" json:"id"`
-	Source      string          `db:"source" json:"source"`       // "animethemes" | "anilist"
+	Source      string          `db:"source" json:"source"`       // "animethemes" | "anilist" | "backfill_titles" | "at_song_incremental"
 	Status      ImportJobStatus `db:"status" json:"status"`
 	CurrentPage int             `db:"current_page" json:"current_page"`
 	TotalPages  int             `db:"total_pages" json:"total_pages"`

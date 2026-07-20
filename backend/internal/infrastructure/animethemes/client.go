@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -13,6 +14,9 @@ const baseURL = "https://api.animethemes.moe"
 // AnimeThemesClient defines the interface for the AnimeThemes API.
 type AnimeThemesClient interface {
 	FetchAnimePage(ctx context.Context, page, pageSize int) (*AnimePageResponse, error)
+	FetchSongPage(ctx context.Context, page, pageSize int, idGt uint64) (*SongPageResponse, error)
+	FetchThemeByID(ctx context.Context, themeID uint64) (*ATTheme, error)
+	FetchAnimeBySlug(ctx context.Context, slug string) (*ATAnime, error)
 }
 
 // Client is the concrete HTTP client for api.animethemes.moe.
@@ -38,6 +42,23 @@ type AnimePageResponse struct {
 	Meta  PageMeta  `json:"meta"`
 }
 
+// SongPageResponse is the top-level response for the /song endpoint.
+type SongPageResponse struct {
+	Songs []ATSongListItem `json:"songs"`
+	Links PageLinks        `json:"links"`
+	Meta  PageMeta         `json:"meta"`
+}
+
+// ThemeShowResponse wraps a single animetheme resource.
+type ThemeShowResponse struct {
+	AnimeTheme ATTheme `json:"animetheme"`
+}
+
+// AnimeShowResponse wraps a single anime resource.
+type AnimeShowResponse struct {
+	Anime ATAnime `json:"anime"`
+}
+
 // PageLinks holds first/last/prev/next pagination URLs.
 type PageLinks struct {
 	First *string `json:"first"`
@@ -56,15 +77,15 @@ type PageMeta struct {
 
 // ATAnime represents a single anime entry from AnimeThemes.
 type ATAnime struct {
-	ID          uint64      `json:"id"`
-	Name        string      `json:"name"`
-	Slug        string      `json:"slug"`
-	Year        int         `json:"year"`
-	Season      string      `json:"season"`       // "Winter","Spring","Summer","Fall"
-	MediaFormat string      `json:"media_format"` // "TV","OVA","Movie","ONA","Special","Music"
-	Synopsis    *string     `json:"synopsis"`
+	ID          uint64       `json:"id"`
+	Name        string       `json:"name"`
+	Slug        string       `json:"slug"`
+	Year        int          `json:"year"`
+	Season      string       `json:"season"`       // "Winter","Spring","Summer","Fall"
+	MediaFormat string       `json:"media_format"` // "TV","OVA","Movie","ONA","Special","Music"
+	Synopsis    *string      `json:"synopsis"`
 	Resources   []ATResource `json:"resources"`
-	AnimeThemes []ATTheme   `json:"animethemes"`
+	AnimeThemes []ATTheme    `json:"animethemes"`
 }
 
 // ATResource holds external links (including anilist_id).
@@ -81,8 +102,16 @@ type ATTheme struct {
 	Type     string    `json:"type"`     // "OP" | "ED"
 	Sequence *int      `json:"sequence"` // nil = OP1/ED1
 	Slug     string    `json:"slug"`
+	Anime    *ATAnime  `json:"anime,omitempty"`
 	Song     *ATSong   `json:"song"`
 	Entries  []ATEntry `json:"animethemeentries"`
+}
+
+// ATSongListItem is a song row from the /song index (may include theme stubs).
+type ATSongListItem struct {
+	ID          uint64    `json:"id"`
+	Title       string    `json:"title"`
+	AnimeThemes []ATTheme `json:"animethemes"`
 }
 
 // ATSong is the song metadata of a theme.
@@ -94,9 +123,9 @@ type ATSong struct {
 
 // ATArtist represents a performing artist.
 type ATArtist struct {
-	ID   uint64  `json:"id"`
-	Name string  `json:"name"`
-	Slug string  `json:"slug"`
+	ID   uint64 `json:"id"`
+	Name string `json:"name"`
+	Slug string `json:"slug"`
 	// AnimeThemes returns anilist_id via resources on the artist endpoint,
 	// but on the anime include it's not present — we store anime_themes_id only.
 }
@@ -130,10 +159,61 @@ func (c *Client) FetchAnimePage(ctx context.Context, page, pageSize int) (*Anime
 		"%s/anime?include=animethemes.song.artists,animethemes.animethemeentries.videos,resources&page[size]=%d&page[number]=%d",
 		baseURL, pageSize, page,
 	)
+	var result AnimePageResponse
+	if err := c.getJSON(ctx, url, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+// FetchSongPage fetches songs with id greater than idGt (watermark), ascending by id.
+// Includes theme stubs (ids only) — use FetchThemeByID for full graph data.
+func (c *Client) FetchSongPage(ctx context.Context, page, pageSize int, idGt uint64) (*SongPageResponse, error) {
+	u := fmt.Sprintf(
+		"%s/song?include=animethemes&page[size]=%d&page[number]=%d&sort=id&filter[id-gt]=%d",
+		baseURL, pageSize, page, idGt,
+	)
+	var result SongPageResponse
+	if err := c.getJSON(ctx, u, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// FetchThemeByID loads a single animetheme with anime, song artists, entries, and videos.
+// Uses the show endpoint because filter[id]+include often returns empty nested relations.
+func (c *Client) FetchThemeByID(ctx context.Context, themeID uint64) (*ATTheme, error) {
+	u := fmt.Sprintf(
+		"%s/animetheme/%d?include=anime,song.artists,animethemeentries.videos",
+		baseURL, themeID,
+	)
+	var result ThemeShowResponse
+	if err := c.getJSON(ctx, u, &result); err != nil {
+		return nil, err
+	}
+	if result.AnimeTheme.ID == 0 {
+		return nil, fmt.Errorf("animethemes: theme %d not found", themeID)
+	}
+	return &result.AnimeTheme, nil
+}
+
+// FetchAnimeBySlug loads anime resources (AniList id, etc.) by slug.
+func (c *Client) FetchAnimeBySlug(ctx context.Context, slug string) (*ATAnime, error) {
+	u := fmt.Sprintf("%s/anime/%s?include=resources", baseURL, url.PathEscape(slug))
+	var result AnimeShowResponse
+	if err := c.getJSON(ctx, u, &result); err != nil {
+		return nil, err
+	}
+	if result.Anime.ID == 0 {
+		return nil, fmt.Errorf("animethemes: anime slug %q not found", slug)
+	}
+	return &result.Anime, nil
+}
+
+func (c *Client) getJSON(ctx context.Context, rawURL string, dest interface{}) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
 	if err != nil {
-		return nil, fmt.Errorf("animethemes: build request: %w", err)
+		return fmt.Errorf("animethemes: build request: %w", err)
 	}
 
 	req.Header.Set("Accept", "application/json")
@@ -141,21 +221,22 @@ func (c *Client) FetchAnimePage(ctx context.Context, page, pageSize int) (*Anime
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("animethemes: do request: %w", err)
+		return fmt.Errorf("animethemes: do request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusTooManyRequests {
-		return nil, fmt.Errorf("animethemes: rate limited (429)")
+		return fmt.Errorf("animethemes: rate limited (429)")
+	}
+	if resp.StatusCode == http.StatusNotFound {
+		return fmt.Errorf("animethemes: not found")
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("animethemes: unexpected status %d", resp.StatusCode)
+		return fmt.Errorf("animethemes: unexpected status %d", resp.StatusCode)
 	}
 
-	var result AnimePageResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("animethemes: decode response: %w", err)
+	if err := json.NewDecoder(resp.Body).Decode(dest); err != nil {
+		return fmt.Errorf("animethemes: decode response: %w", err)
 	}
-
-	return &result, nil
+	return nil
 }

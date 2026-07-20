@@ -27,8 +27,9 @@ const (
 	alChunkSize      = 50           // max IDs per AniList batch request
 	alInterChunkSec  = 1            // seconds between AniList chunks
 	alMaxRetries     = 3            // retries on AniList 429
-	importSource     = "animethemes"
-	backfillSource   = "backfill_titles"
+	importSource            = "animethemes"
+	backfillSource          = "backfill_titles"
+	incrementalSongSource   = "at_song_incremental"
 )
 
 // ImportUsecase handles the full AnimeThemes + AniList data hydration pipeline.

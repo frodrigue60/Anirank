@@ -183,3 +183,48 @@ func (h *AdminHandler) GetLatestTitleBackfillStatus(c *fiber.Ctx) error {
 
 	return c.JSON(job)
 }
+
+// StartIncrementalSongSync godoc
+// @Summary     Start incremental AnimeThemes song sync
+// @Description Imports only songs with AnimeThemes IDs greater than the local watermark (MAX songs.anime_themes_id), then upserts parent anime and variants.
+// @Tags        admin,import
+// @Produce     json
+// @Success     202 {object} fiber.Map{"job_id": "string"}
+// @Failure     409 {object} domain.AppError
+// @Router      /admin/import/animethemes/incremental/start [post]
+func (h *AdminHandler) StartIncrementalSongSync(c *fiber.Ctx) error {
+	if h.importUsecase == nil {
+		return domain.NewAppError(503, "Import service not available", nil)
+	}
+
+	jobID, err := h.importUsecase.StartIncrementalSongSync(c.Context())
+	if err != nil {
+		return domain.NewAppError(409, err.Error(), err)
+	}
+
+	return c.Status(fiber.StatusAccepted).JSON(fiber.Map{
+		"job_id":  jobID,
+		"message": "Incremental song sync started. Use /import/:jobID/stream or /import/:jobID/status to monitor progress.",
+	})
+}
+
+// GetLatestIncrementalSongSyncStatus godoc
+// @Summary     Get latest incremental song sync status
+// @Description Returns the most recent at_song_incremental import job.
+// @Tags        admin,import
+// @Produce     json
+// @Success     200 {object} domain.ImportJob
+// @Failure     404 {object} domain.AppError
+// @Router      /admin/import/animethemes/incremental/status [get]
+func (h *AdminHandler) GetLatestIncrementalSongSyncStatus(c *fiber.Ctx) error {
+	if h.importUsecase == nil {
+		return domain.NewAppError(503, "Import service not available", nil)
+	}
+
+	job, err := h.importUsecase.GetLatestJobStatus(c.Context(), "at_song_incremental")
+	if err != nil {
+		return domain.NewAppError(404, "No incremental sync job found", err)
+	}
+
+	return c.JSON(job)
+}

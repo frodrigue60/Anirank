@@ -415,6 +415,219 @@
     };
   }
 
+  // --- Incremental Song Sync Job ---
+  let incrementalJobStatus = $state<any>(null);
+  let incrementalLogs = $state<string[]>([]);
+  let showIncrementalLogs = $state(false);
+  let isIncrementalSyncing = $derived(
+    incrementalJobStatus?.status === "running" ||
+      incrementalJobStatus?.status === "pending",
+  );
+  let incrementalEventSource = $state<EventSource | null>(null);
+  let incrementalStreamJobId: string | null = null;
+
+  function formatIncrementalProgressLog(data: Record<string, unknown>) {
+    const phase = Number(data.phase ?? 1);
+    const page = data.current_page ?? 0;
+    const total = data.total_pages ?? 0;
+    const processed = data.processed ?? 0;
+    const created = data.created ?? 0;
+    const skipped = data.skipped ?? 0;
+    const phaseLabel =
+      phase === 2 ? "Phase 2 (AniList)" : "Phase 1 (Songs Δ)";
+    if (data.status === "done") {
+      return `✅ Incremental sync finished. Processed: ${processed}, Created: ${created}, Skipped: ${skipped}`;
+    }
+    if (data.status === "canceled" || data.status === "failed") {
+      return `❌ Incremental sync ${data.status}.`;
+    }
+    if (phase === 2) {
+      return `[${phaseLabel}] Chunk ${page}/${total || "?"} — enriching touched animes`;
+    }
+    return `[${phaseLabel}] Page ${page}/${total || "?"} - Processed: ${processed}, Created: ${created}`;
+  }
+
+  $effect(() => {
+    fetchIncrementalStatus();
+  });
+
+  async function fetchIncrementalStatus() {
+    try {
+      const res = await api.get("/admin/import/animethemes/incremental/status");
+      incrementalJobStatus = res.data;
+      const running =
+        res.data?.status === "running" || res.data?.status === "pending";
+      if (
+        running &&
+        res.data?.id &&
+        incrementalStreamJobId !== res.data.id
+      ) {
+        connectIncrementalStream(res.data.id);
+      }
+    } catch (err: any) {
+      if (err.response?.status !== 404) {
+        console.error("Failed to fetch incremental sync status", err);
+      }
+    }
+  }
+
+  async function startIncrementalJob() {
+    if (isIncrementalSyncing) return;
+    try {
+      showIncrementalLogs = true;
+      incrementalLogs = [
+        "Starting incremental AnimeThemes song sync (watermark → newest)...",
+      ];
+      const res = await api.post("/admin/import/animethemes/incremental/start");
+      const jobId = res.data.job_id;
+      try {
+        const statusRes = await api.get(
+          "/admin/import/animethemes/incremental/status",
+        );
+        incrementalJobStatus = statusRes.data;
+      } catch {
+        incrementalJobStatus = {
+          id: jobId,
+          status: "running",
+          current_page: 0,
+          total_pages: 0,
+          processed: 0,
+          created: 0,
+          skipped: 0,
+          errors: [],
+        };
+      }
+      connectIncrementalStream(jobId);
+      toastState.addToast("Incremental song sync started", "success");
+    } catch (err: any) {
+      toastState.addToast(
+        getApiErrorMessage(err, "Failed to start incremental sync"),
+        "error",
+      );
+    }
+  }
+
+  async function cancelIncrementalJob() {
+    if (!incrementalJobStatus?.id) return;
+    try {
+      await api.post(`/admin/import/${incrementalJobStatus.id}/cancel`);
+      toastState.addToast("Incremental sync cancellation requested", "success");
+      incrementalLogs = [
+        ...incrementalLogs,
+        "Cancellation requested. Waiting for worker to stop...",
+      ];
+    } catch (err: any) {
+      toastState.addToast(
+        getApiErrorMessage(err, "Failed to cancel incremental sync"),
+        "error",
+      );
+    }
+  }
+
+  function connectIncrementalStream(jobId: string, isReconnect = false) {
+    if (!jobId) return;
+    if (
+      incrementalStreamJobId === jobId &&
+      incrementalEventSource &&
+      !isReconnect
+    ) {
+      return;
+    }
+
+    if (incrementalEventSource) {
+      incrementalEventSource.close();
+      incrementalEventSource = null;
+    }
+
+    incrementalStreamJobId = jobId;
+
+    const token = getAuthToken();
+    const url = `${api.defaults.baseURL}/admin/import/${jobId}/stream?token=${token}`;
+
+    showIncrementalLogs = true;
+    if (incrementalLogs.length === 0) {
+      incrementalLogs = ["Connecting to incremental sync stream..."];
+    }
+    incrementalEventSource = new EventSource(url, { withCredentials: true });
+
+    let isFinished = false;
+
+    incrementalEventSource.onopen = () => {
+      if (isReconnect) {
+        incrementalLogs = [
+          ...incrementalLogs,
+          "🔄 Reconnected to incremental sync stream.",
+        ];
+      }
+    };
+
+    incrementalEventSource.onmessage = (event) => {
+      try {
+        const parsed = JSON.parse(event.data) as Record<string, unknown>;
+        const data = normalizeImportJobPayload(parsed);
+        if (!data) {
+          if (parsed.error) {
+            incrementalLogs = [
+              ...incrementalLogs,
+              `⚠️ Stream error: ${String(parsed.error)}`,
+            ];
+          }
+          return;
+        }
+
+        incrementalJobStatus = { ...incrementalJobStatus, ...data };
+
+        let msg = formatIncrementalProgressLog(data);
+        if (
+          data.status === "done" ||
+          data.status === "canceled" ||
+          data.status === "failed"
+        ) {
+          isFinished = true;
+          incrementalEventSource?.close();
+          incrementalEventSource = null;
+          incrementalStreamJobId = null;
+        }
+
+        if (
+          incrementalLogs.length === 0 ||
+          incrementalLogs[incrementalLogs.length - 1] !== msg
+        ) {
+          incrementalLogs = [...incrementalLogs.slice(-49), msg];
+        }
+      } catch (e) {}
+    };
+
+    incrementalEventSource.onerror = () => {
+      incrementalEventSource?.close();
+      incrementalEventSource = null;
+
+      const stillRunning =
+        incrementalJobStatus?.status === "running" ||
+        incrementalJobStatus?.status === "pending";
+      if (!isFinished && stillRunning && incrementalJobStatus?.id === jobId) {
+        incrementalLogs = [
+          ...incrementalLogs,
+          "⚠️ Connection lost. Reconnecting in 3 seconds...",
+        ];
+        setTimeout(() => {
+          const status = incrementalJobStatus?.status;
+          if (
+            !isFinished &&
+            (status === "running" || status === "pending") &&
+            incrementalJobStatus?.id === jobId
+          ) {
+            connectIncrementalStream(jobId, true);
+          } else {
+            incrementalStreamJobId = null;
+          }
+        }, 3000);
+      } else {
+        incrementalStreamJobId = null;
+      }
+    };
+  }
+
   // --- Title Backfill Job ---
   let backfillJobStatus = $state<any>(null);
   let backfillLogs = $state<string[]>([]);
@@ -803,6 +1016,7 @@
 
   onDestroy(() => {
     importEventSource?.close();
+    incrementalEventSource?.close();
     backfillEventSource?.close();
     videoAuditEventSource?.close();
   });
@@ -1315,6 +1529,113 @@
                     <div class="mt-2 pt-2 border-t border-rose-500/20">
                       <span class="text-rose-400 font-bold mb-1 block">Errors ({importJobStatus.errors.length}):</span>
                       {#each importJobStatus.errors.slice(-5) as err}
+                        <div class="text-rose-400/80 break-words">- {err}</div>
+                      {/each}
+                    </div>
+                  {/if}
+                </div>
+              </div>
+            {/if}
+          </div>
+        {/if}
+      </div>
+
+      <!-- Incremental Song Sync Widget -->
+      <div class="mt-8 pt-6 border-t border-outline-variant">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h4 class="text-lg font-bold text-on-surface flex items-center gap-2">
+              <Zap size={20} class="text-sky-400" />
+              Incremental Song Sync
+            </h4>
+            <p class="text-xs text-on-surface-variant/70 mt-1">
+              Pulls only AnimeThemes songs newer than your local watermark, then upserts anime + variants.
+            </p>
+          </div>
+          <div class="flex items-center gap-3">
+            {#if isIncrementalSyncing}
+              <button
+                onclick={cancelIncrementalJob}
+                class="flex items-center gap-2 px-3 py-1.5 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 transition-colors border border-rose-500/20 rounded-lg text-xs font-bold"
+              >
+                <StopCircle size={14} />
+                Cancel Sync
+              </button>
+            {:else}
+              <button
+                onclick={startIncrementalJob}
+                class="flex items-center gap-2 px-3 py-1.5 bg-sky-500/10 text-sky-400 hover:bg-sky-500/20 transition-colors border border-sky-500/20 rounded-lg text-xs font-bold"
+              >
+                <Zap size={14} />
+                Sync New Songs
+              </button>
+            {/if}
+          </div>
+        </div>
+
+        {#if incrementalJobStatus}
+          <div class="bg-surface-highest rounded-xl p-4 border border-outline-variant/50">
+            <div class="flex justify-between items-center mb-2">
+              <div class="flex items-center gap-3">
+                <span
+                  class="text-xs font-bold uppercase tracking-wider {incrementalJobStatus.status === 'running'
+                    ? 'text-sky-400'
+                    : 'text-on-surface-variant/70'}"
+                >
+                  Status: {incrementalJobStatus.status}
+                </span>
+                {#if isIncrementalSyncing}
+                  <Loader2 size={12} class="animate-spin text-sky-400" />
+                {/if}
+              </div>
+              <span class="text-xs font-mono text-on-surface-variant/70">
+                {(incrementalJobStatus.phase === 2 ? "AniList chunk" : "Song page")}
+                {incrementalJobStatus.current_page} / {incrementalJobStatus.total_pages || "?"}
+              </span>
+            </div>
+
+            <div class="w-full bg-black/40 rounded-full h-2 overflow-hidden mb-4 border border-white/5">
+              <div
+                class="bg-sky-500 h-full transition-all duration-500"
+                style="width: {(incrementalJobStatus.current_page /
+                  Math.max(incrementalJobStatus.total_pages || 1, 1)) *
+                  100}%"
+              ></div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2">
+              <div class="bg-black/20 rounded-lg p-2 text-center">
+                <p class="text-[10px] uppercase font-bold text-on-surface-variant/50">Processed</p>
+                <p class="text-sm font-black text-on-surface">{incrementalJobStatus.processed}</p>
+              </div>
+              <div class="bg-black/20 rounded-lg p-2 text-center">
+                <p class="text-[10px] uppercase font-bold text-on-surface-variant/50">Created</p>
+                <p class="text-sm font-black text-sky-400">{incrementalJobStatus.created}</p>
+              </div>
+              <div class="bg-black/20 rounded-lg p-2 text-center">
+                <p class="text-[10px] uppercase font-bold text-on-surface-variant/50">Skipped</p>
+                <p class="text-sm font-black text-on-surface-variant/70">{incrementalJobStatus.skipped}</p>
+              </div>
+            </div>
+
+            {#if showIncrementalLogs || isIncrementalSyncing}
+              <div class="mt-4 pt-4 border-t border-outline-variant/30">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Sync Log</span>
+                </div>
+                <div class="bg-black/40 rounded-lg p-3 font-mono text-[10px] h-32 overflow-y-auto space-y-1 custom-scrollbar">
+                  {#each incrementalLogs as log}
+                    <div class="text-on-surface-variant/80">
+                      <span class="text-sky-400/50 mr-2">></span>
+                      {log}
+                    </div>
+                  {/each}
+                  {#if incrementalJobStatus?.errors?.length > 0}
+                    <div class="mt-2 pt-2 border-t border-rose-500/20">
+                      <span class="text-rose-400 font-bold mb-1 block"
+                        >Errors ({incrementalJobStatus.errors.length}):</span
+                      >
+                      {#each incrementalJobStatus.errors.slice(-5) as err}
                         <div class="text-rose-400/80 break-words">- {err}</div>
                       {/each}
                     </div>

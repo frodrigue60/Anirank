@@ -1253,32 +1253,43 @@ func (r *songRepository) UpsertVariantFromAnimeThemes(ctx context.Context, v *do
 		}
 	}
 
-	// Insert video rows only when the variant was newly created.
-	if isCreated {
-		for _, video := range videos {
-			if video.VideoSrc != nil && *video.VideoSrc != "" {
-				_, errVideo := r.db.ExecContext(ctx, `
-					INSERT INTO videos (song_variant_id, video_src, is_nc, is_bd, resolution, is_uncensored, is_subbed, is_lyrics, source, overlap, status, created_at, updated_at)
-					VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, false, $11, $11)
-					ON CONFLICT (song_variant_id, video_src) DO UPDATE SET
-						is_nc = EXCLUDED.is_nc,
-						is_bd = EXCLUDED.is_bd,
-						resolution = EXCLUDED.resolution,
-						is_uncensored = EXCLUDED.is_uncensored,
-						is_subbed = EXCLUDED.is_subbed,
-						is_lyrics = EXCLUDED.is_lyrics,
-						source = EXCLUDED.source,
-						overlap = EXCLUDED.overlap,
-						updated_at = EXCLUDED.updated_at
-				`, v.ID, video.VideoSrc, video.IsNC, video.IsBD, video.Resolution, video.IsUncensored, video.IsSubbed, video.IsLyrics, video.Source, video.Overlap, now)
-				if errVideo != nil {
-					fmt.Printf("[UpsertVariantFromAnimeThemes] Error inserting video %s for variant %d: %v\n", *video.VideoSrc, v.ID, errVideo)
-				}
+	// Upsert video rows for new and existing variants (idempotent on song_variant_id + video_src).
+	for _, video := range videos {
+		if video.VideoSrc != nil && *video.VideoSrc != "" {
+			_, errVideo := r.db.ExecContext(ctx, `
+				INSERT INTO videos (song_variant_id, video_src, is_nc, is_bd, resolution, is_uncensored, is_subbed, is_lyrics, source, overlap, status, created_at, updated_at)
+				VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, false, $11, $11)
+				ON CONFLICT (song_variant_id, video_src) DO UPDATE SET
+					is_nc = EXCLUDED.is_nc,
+					is_bd = EXCLUDED.is_bd,
+					resolution = EXCLUDED.resolution,
+					is_uncensored = EXCLUDED.is_uncensored,
+					is_subbed = EXCLUDED.is_subbed,
+					is_lyrics = EXCLUDED.is_lyrics,
+					source = EXCLUDED.source,
+					overlap = EXCLUDED.overlap,
+					updated_at = EXCLUDED.updated_at
+			`, v.ID, video.VideoSrc, video.IsNC, video.IsBD, video.Resolution, video.IsUncensored, video.IsSubbed, video.IsLyrics, video.Source, video.Overlap, now)
+			if errVideo != nil {
+				fmt.Printf("[UpsertVariantFromAnimeThemes] Error inserting video %s for variant %d: %v\n", *video.VideoSrc, v.ID, errVideo)
 			}
 		}
 	}
 
 	return isCreated, nil
+}
+
+// GetMaxAnimeThemesID returns the highest linked AnimeThemes song id, or 0 if none.
+func (r *songRepository) GetMaxAnimeThemesID(ctx context.Context) (uint64, error) {
+	var maxID *uint64
+	err := r.db.GetContext(ctx, &maxID, `SELECT MAX(anime_themes_id) FROM songs WHERE anime_themes_id IS NOT NULL`)
+	if err != nil {
+		return 0, err
+	}
+	if maxID == nil {
+		return 0, nil
+	}
+	return *maxID, nil
 }
 
 // LinkArtistToSong creates an artist_song pivot row idempotently.

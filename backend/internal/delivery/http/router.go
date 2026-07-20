@@ -415,6 +415,8 @@ func SetupPublicRoutes(app *fiber.App,
 	// Bulk Import Pipeline
 	adminOnly.Get("/import/animethemes/status", adminHandler.GetLatestAnimeThemesImportStatus)
 	adminOnly.Post("/import/animethemes/start", middleware.HasPermissionMiddleware("anime.create", userRepo), adminHandler.StartAnimeThemesImport)
+	adminOnly.Get("/import/animethemes/incremental/status", adminHandler.GetLatestIncrementalSongSyncStatus)
+	adminOnly.Post("/import/animethemes/incremental/start", middleware.HasPermissionMiddleware("anime.create", userRepo), adminHandler.StartIncrementalSongSync)
 	adminOnly.Get("/import/:jobID/status", adminHandler.GetImportJobStatus)
 	adminOnly.Get("/import/:jobID/stream", adminHandler.StreamImportProgress)
 	adminOnly.Post("/import/:jobID/cancel", adminHandler.CancelImportJob)

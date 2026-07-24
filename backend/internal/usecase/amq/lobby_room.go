@@ -37,6 +37,8 @@ const (
 	EvChat
 	EvTransferHost
 	EvCloseRoom
+	EvSelectCandidate
+	EvSkipWinnerPlayback
 )
 
 type RoomEvent struct {
@@ -84,6 +86,15 @@ type LobbyRoom struct {
 	CurrentFakes  []domain.Anime
 	CurrentOptions []dto.AnimeMinimalDTO
 	SongPool      []domain.Song
+	SaveRounds        []domain.AMQSaveRound
+	SaveRoundHistory  []domain.AMQSaveRoundResult
+	SaveCandidates    []domain.Song
+	RoundPhase    string // preview_select, winner_playback
+	PreviewIndex  int
+	WinnerPlayIndex int
+	RoundWinners  []string
+	RoundVoteCounts map[string]int
+	StartPercents []float64
 	EventChan     chan RoomEvent
 	Timer         *time.Timer
 	TimerType     string // "guess", "reveal"
@@ -196,13 +207,19 @@ func (r *LobbyRoom) handleEvent(ev RoomEvent) {
 	case EvStartGame:
 		r.handleStartGame(ev.Data.(string))
 	case EvPoolLoaded:
-		r.startRound()
+		if IsSaveGameType(r.Config.GameType) {
+			r.startSaveRound()
+		} else {
+			r.startRound()
+		}
 	case EvSubmitGuess:
 		r.handleSubmitGuess(ev.Data.(*GuessEvent))
 	case EvTimerExpired:
 		r.handleTimerExpired(ev.Data.(string))
 	case EvSkipSummary:
 		r.handleSkipSummary(ev.Data.(string))
+	case EvSkipWinnerPlayback:
+		r.handleSkipSavePlayback(ev.Data.(string))
 	case EvResetToLobby:
 		dataStr := ev.Data.(string)
 		r.mu.Lock()
@@ -220,6 +237,8 @@ func (r *LobbyRoom) handleEvent(ev RoomEvent) {
 		r.handleTransferHost(ev.Data.(*TransferHostEvent))
 	case EvCloseRoom:
 		r.handleCloseRoom(ev.Data.(string))
+	case EvSelectCandidate:
+		r.handleSelectCandidate(ev.Data.(*SelectCandidateEvent))
 	}
 }
 
@@ -451,14 +470,18 @@ func (r *LobbyRoom) handleConfigUpdate(ev *ConfigUpdateEvent) {
 	
 	// Sanitize config
 	cfg := ev.Config
-	if cfg.MaxRounds < 5 || cfg.MaxRounds > 50 {
-		cfg.MaxRounds = 10
-	}
-	if cfg.GuessTime < 10 || cfg.GuessTime > 60 {
-		cfg.GuessTime = 20
-	}
-	if cfg.RevealTime < 5 || cfg.RevealTime > 30 {
-		cfg.RevealTime = 10
+	if IsSaveGameType(cfg.GameType) {
+		sanitizeSaveConfig(&cfg)
+	} else {
+		if cfg.MaxRounds < 5 || cfg.MaxRounds > 50 {
+			cfg.MaxRounds = 10
+		}
+		if cfg.GuessTime < 10 || cfg.GuessTime > 60 {
+			cfg.GuessTime = 20
+		}
+		if cfg.RevealTime < 5 || cfg.RevealTime > 30 {
+			cfg.RevealTime = 10
+		}
 	}
 
 	r.Config = cfg
@@ -490,11 +513,14 @@ func (r *LobbyRoom) handleStartGame(sessionID string) {
 	// 1. Prepare Song Pool
 	r.Status = "playing"
 	r.CurrentRound = 0
+	r.resetSaveStateLocked()
 
 	// Extract variables to prevent data races inside async goroutine
-	personalizedPool := r.Config.PersonalizedPool
+	isSaveMode := IsSaveGameType(r.Config.GameType)
+	personalizedPool := r.Config.PersonalizedPool && !isSaveMode
 	maxRounds := r.Config.MaxRounds
 	themeTypeConfig := r.Config.ThemeType
+	gameType := r.Config.GameType
 	var playerUserUUIDs []string
 	for _, p := range r.Players {
 		if p.UserUUID != "" && !p.Offline && !p.IsSpectator {
@@ -507,11 +533,9 @@ func (r *LobbyRoom) handleStartGame(sessionID string) {
 	r.broadcast("lobby_state_update", r.getRoomStatePayload())
 
 	go func() {
-		debugLog("[START] Async song pool loading goroutine started")
-		anilistCtx, anilistCancel := context.WithTimeout(context.Background(), 8*time.Second)
-		dbCtx, dbCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		debugLog("[START] Async song pool loading goroutine started (save=%t)", isSaveMode)
+		dbCtx, dbCancel := context.WithTimeout(context.Background(), 15*time.Second)
 		defer func() {
-			anilistCancel()
 			dbCancel()
 			if err := recover(); err != nil {
 				log.Printf("[AMQ] StartGame crashed: %v", err)
@@ -519,6 +543,24 @@ func (r *LobbyRoom) handleStartGame(sessionID string) {
 				r.SendEvent(RoomEvent{Type: EvResetToLobby, Data: "Game could not start due to an internal error."})
 			}
 		}()
+
+		if isSaveMode {
+			saveRounds, err := r.buildSaveRoundPool(dbCtx, maxRounds, gameType, themeTypeConfig)
+			if err != nil || len(saveRounds) == 0 {
+				log.Printf("[AMQ] Failed to initialize save round pool: %v", err)
+				r.SendEvent(RoomEvent{Type: EvResetToLobby, Data: "Failed to initialize save round pool. Please try again."})
+				return
+			}
+			r.mu.Lock()
+			r.SaveRounds = saveRounds
+			r.SongPool = nil
+			r.mu.Unlock()
+			r.SendEvent(RoomEvent{Type: EvPoolLoaded, Data: nil})
+			return
+		}
+
+		anilistCtx, anilistCancel := context.WithTimeout(context.Background(), 8*time.Second)
+		defer anilistCancel()
 
 		// Gather linked AniList IDs
 		var watchedAnimeIDs []uint64
@@ -793,7 +835,17 @@ func (r *LobbyRoom) handleTimerExpired(timerType string) {
 		r.mu.Unlock()
 		return
 	}
+	isSave := IsSaveGameType(r.Config.GameType)
 	r.mu.Unlock()
+
+	if timerType == "preview_step" && isSave {
+		r.handlePreviewStepExpired()
+		return
+	}
+	if timerType == "winner_step" && isSave {
+		r.handleWinnerStepExpired()
+		return
+	}
 
 	if timerType == "guess" {
 		r.revealAnswers()
@@ -910,7 +962,16 @@ func (r *LobbyRoom) revealAnswers() {
 func (r *LobbyRoom) handleSkipSummary(sessionID string) {
 	r.mu.Lock()
 	player, exists := r.Players[sessionID]
-	if !exists || !player.IsHost || r.Status != "reveal" {
+	if !exists || !player.IsHost {
+		r.mu.Unlock()
+		return
+	}
+	if IsSaveGameType(r.Config.GameType) && r.RoundPhase == "winner_playback" {
+		r.mu.Unlock()
+		r.handleSkipSavePlayback(sessionID)
+		return
+	}
+	if r.Status != "reveal" {
 		r.mu.Unlock()
 		return
 	}
@@ -936,6 +997,7 @@ func (r *LobbyRoom) handleResetToLobby(sessionID string) {
 	r.CurrentRound = 0
 	r.CurrentSong = nil
 	r.SongPool = nil
+	r.resetSaveStateLocked()
 
 	for _, p := range r.Players {
 		p.Score = 0
@@ -943,6 +1005,7 @@ func (r *LobbyRoom) handleResetToLobby(sessionID string) {
 		p.IsReady = p.IsHost // Host ready, others not
 		p.LastGuess = ""
 		p.LastGuessCorrect = false
+		p.SelectedSongUUID = ""
 	}
 	r.mu.Unlock()
 
@@ -955,6 +1018,7 @@ func (r *LobbyRoom) forceResetToLobby(errMsg string) {
 	r.CurrentRound = 0
 	r.CurrentSong = nil
 	r.SongPool = nil
+	r.resetSaveStateLocked()
 
 	for _, p := range r.Players {
 		p.Score = 0
@@ -962,6 +1026,7 @@ func (r *LobbyRoom) forceResetToLobby(errMsg string) {
 		p.IsReady = p.IsHost // Host ready, others not
 		p.LastGuess = ""
 		p.LastGuessCorrect = false
+		p.SelectedSongUUID = ""
 	}
 	r.mu.Unlock()
 
@@ -1057,12 +1122,14 @@ func (r *LobbyRoom) getRoomStatePayload() map[string]interface{} {
 		elapsed := time.Since(r.TimerStart)
 		rem := r.TimerDuration - elapsed
 		if rem > 0 {
-			timerLeft = int(rem.Seconds())
+			timerLeft = int(rem.Seconds()) + 1
 		}
 	}
 
 	var roundData map[string]interface{}
-	if (r.Status == "playing" || r.Status == "reveal") && r.CurrentSong != nil {
+	if IsSaveGameType(r.Config.GameType) && r.Status == "playing" && len(r.SaveCandidates) > 0 {
+		roundData = r.buildSaveRoundDataPayload()
+	} else if (r.Status == "playing" || r.Status == "reveal") && r.CurrentSong != nil {
 		audioURL := r.resolveAudioURL(r.CurrentSong)
 
 		roundData = map[string]interface{}{
@@ -1128,39 +1195,53 @@ func (r *LobbyRoom) getRoomStatePayload() map[string]interface{} {
 	}
 
 	var playedSongs []interface{}
+	var saveRoundHistory []map[string]interface{}
 	if r.Status == "finished" || r.Status == "reveal" {
-		limit := r.CurrentRound + 1
-		if r.Status == "finished" {
-			limit = len(r.SongPool)
-		}
-		for i := 0; i < limit && i < len(r.SongPool); i++ {
-			s := r.SongPool[i]
-			sDTO := dto.ToSongMinimalDTO(&s)
-			if s.Anime != nil {
-				if s.Anime.Cover != nil {
-					resolved := r.MediaService.GetURL(*s.Anime.Cover)
-					sDTO.Anime.CoverUrl = resolved
-				}
-				if s.Anime.Banner != nil {
-					resolved := r.MediaService.Resolve(s.Anime.Banner)
-					sDTO.Anime.BannerUrl = resolved
-				}
+		if IsSaveGameType(r.Config.GameType) && len(r.SaveRounds) > 0 {
+			limit := r.CurrentRound
+			if r.Status == "finished" {
+				limit = len(r.SaveRounds)
 			}
-			playedSongs = append(playedSongs, sDTO)
+			playedSongs = buildSavePlayedSongsDTO(r, limit)
+		} else {
+			limit := r.CurrentRound + 1
+			if r.Status == "finished" {
+				limit = len(r.SongPool)
+			}
+			for i := 0; i < limit && i < len(r.SongPool); i++ {
+				s := r.SongPool[i]
+				sDTO := dto.ToSongMinimalDTO(&s)
+				if s.Anime != nil {
+					if s.Anime.Cover != nil {
+						resolved := r.MediaService.GetURL(*s.Anime.Cover)
+						sDTO.Anime.CoverUrl = resolved
+					}
+					if s.Anime.Banner != nil {
+						resolved := r.MediaService.Resolve(s.Anime.Banner)
+						sDTO.Anime.BannerUrl = resolved
+					}
+				}
+				playedSongs = append(playedSongs, sDTO)
+			}
 		}
 	}
 
+	if IsSaveGameType(r.Config.GameType) && r.Status == "finished" && len(r.SaveRoundHistory) > 0 {
+		saveRoundHistory = buildSaveRoundHistoryPayload(r.SaveRoundHistory)
+	}
+
 	return map[string]interface{}{
-		"room_id":       r.RoomID,
-		"status":        r.Status,
-		"config":        r.Config,
-		"current_round": r.CurrentRound + 1,
-		"players":       playersList,
-		"spectators":    spectatorsList,
-		"timer_left":    timerLeft,
-		"round_data":    roundData,
-		"reveal_data":   revealData,
-		"played_songs":  playedSongs,
+		"room_id":            r.RoomID,
+		"status":             r.Status,
+		"config":             r.Config,
+		"current_round":      r.CurrentRound + 1,
+		"players":            playersList,
+		"spectators":         spectatorsList,
+		"timer_left":         timerLeft,
+		"round_data":         roundData,
+		"reveal_data":        revealData,
+		"played_songs":       playedSongs,
+		"save_round_history": saveRoundHistory,
 	}
 }
 
@@ -1200,16 +1281,18 @@ func (r *LobbyRoom) GetRoomInfo() domain.AMQRoomInfo {
 	}
 
 	return domain.AMQRoomInfo{
-		RoomID:         r.RoomID,
-		Name:           r.Config.Name,
-		HostNickname:   hostNick,
-		PlayerCount:    playerCount,
-		SpectatorCount: spectatorCount,
-		MaxRounds:      r.Config.MaxRounds,
-		Status:         r.Status,
-		Private:        r.Config.Private,
-		ThemeType:      r.Config.ThemeType,
-		GameType:       r.Config.GameType,
+		RoomID:            r.RoomID,
+		Name:              r.Config.Name,
+		HostNickname:      hostNick,
+		PlayerCount:       playerCount,
+		SpectatorCount:    spectatorCount,
+		MaxRounds:         r.Config.MaxRounds,
+		Status:            r.Status,
+		Private:           r.Config.Private,
+		ThemeType:         r.Config.ThemeType,
+		GameType:          r.Config.GameType,
+		PreviewSeconds:    r.Config.PreviewSeconds,
+		ThemeDistribution: r.Config.ThemeDistribution,
 	}
 }
 

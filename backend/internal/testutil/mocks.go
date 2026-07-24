@@ -48,6 +48,12 @@ func (m *MockSongRepository) GetMaxAnimeThemesID(ctx context.Context) (uint64, e
 func (m *MockSongRepository) GetVideoAuditCandidates(ctx context.Context, filters domain.VideoAuditFilters) ([]domain.VideoAuditCandidate, error) { return nil, nil }
 func (m *MockSongRepository) GetDistinctVideoSrcPaths(ctx context.Context, prefix string) ([]string, error) { return nil, nil }
 func (m *MockSongRepository) GetRandomSongsForAMQ(ctx context.Context, animeIDs []uint64, themeTypes []string, limit int, excludeIDs []uint64) ([]domain.Song, error) { return nil, nil }
+func (m *MockSongRepository) FindRandomArtistForAMQSave(ctx context.Context, themeTypes []string, minSongs int) (*domain.AMQSaveThemeAnchor, error) { return nil, nil }
+func (m *MockSongRepository) FindRandomYearForAMQSave(ctx context.Context, themeTypes []string, minSongs int) (*domain.AMQSaveThemeAnchor, error) { return nil, nil }
+func (m *MockSongRepository) FindRandomSeasonYearForAMQSave(ctx context.Context, themeTypes []string, minSongs int) (*domain.AMQSaveThemeAnchor, error) { return nil, nil }
+func (m *MockSongRepository) FindRandomAnimeForAMQSave(ctx context.Context, themeTypes []string, minThemes int) (*domain.AMQSaveThemeAnchor, error) { return nil, nil }
+func (m *MockSongRepository) FindRandomGenreForAMQSave(ctx context.Context, themeTypes []string, minSongs int) (*domain.AMQSaveThemeAnchor, error) { return nil, nil }
+func (m *MockSongRepository) GetRandomSongIDsForAMQSave(ctx context.Context, anchor domain.AMQSaveThemeAnchor, themeTypes []string, count int) ([]uint64, error) { return nil, nil }
 
 type MockCommentRepository struct {
 	GetByIDFunc func(id uint64) (*domain.Comment, error)

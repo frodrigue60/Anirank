@@ -55,14 +55,18 @@ func (m *LobbyManager) CreateRoom(ctx context.Context, config domain.AMQConfig, 
 	defer m.mu.Unlock()
 
 	// Sanitize and validate config (Issue #11)
-	if config.MaxRounds < 5 || config.MaxRounds > 50 {
-		config.MaxRounds = 10
-	}
-	if config.GuessTime < 10 || config.GuessTime > 60 {
-		config.GuessTime = 20
-	}
-	if config.RevealTime < 5 || config.RevealTime > 30 {
-		config.RevealTime = 10
+	if IsSaveGameType(config.GameType) {
+		sanitizeSaveConfig(&config)
+	} else {
+		if config.MaxRounds < 5 || config.MaxRounds > 50 {
+			config.MaxRounds = 10
+		}
+		if config.GuessTime < 10 || config.GuessTime > 60 {
+			config.GuessTime = 20
+		}
+		if config.RevealTime < 5 || config.RevealTime > 30 {
+			config.RevealTime = 10
+		}
 	}
 
 	// Generate a unique 8-character uppercase RoomID

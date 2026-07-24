@@ -137,6 +137,23 @@ type ArtistFilters struct {
 	IsAdmin bool
 }
 
+// AMQSaveThemeAnchor identifies a thematic dimension for save-mode rounds.
+type AMQSaveThemeAnchor struct {
+	Kind       string // artist, year, season, anime, genre, fallback
+	ArtistID   *uint64
+	ArtistUUID string
+	ArtistName string
+	YearID     *uint64
+	YearName   string
+	SeasonID   *uint64
+	SeasonName string
+	AnimeID    *uint64
+	AnimeUUID  string
+	AnimeTitle string
+	GenreID    *uint64
+	GenreName  string
+}
+
 type SongFilters struct {
 	Search   string
 	YearID   uint64
@@ -173,6 +190,14 @@ type SongRepository interface {
 	IncrementViews(ctx context.Context, id uint64) error
 	GetMany(ctx context.Context, ids []uint64) ([]Song, error)
 	GetRandomSongsForAMQ(ctx context.Context, animeIDs []uint64, themeTypes []string, limit int, excludeIDs []uint64) ([]Song, error)
+
+	// AMQ save-mode thematic pool helpers (local video only).
+	FindRandomArtistForAMQSave(ctx context.Context, themeTypes []string, minSongs int) (*AMQSaveThemeAnchor, error)
+	FindRandomYearForAMQSave(ctx context.Context, themeTypes []string, minSongs int) (*AMQSaveThemeAnchor, error)
+	FindRandomSeasonYearForAMQSave(ctx context.Context, themeTypes []string, minSongs int) (*AMQSaveThemeAnchor, error)
+	FindRandomAnimeForAMQSave(ctx context.Context, themeTypes []string, minThemes int) (*AMQSaveThemeAnchor, error)
+	FindRandomGenreForAMQSave(ctx context.Context, themeTypes []string, minSongs int) (*AMQSaveThemeAnchor, error)
+	GetRandomSongIDsForAMQSave(ctx context.Context, anchor AMQSaveThemeAnchor, themeTypes []string, count int) ([]uint64, error)
 
 	// Admin CRUD
 	Create(ctx context.Context, song *Song) error

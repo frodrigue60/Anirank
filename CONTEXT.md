@@ -431,6 +431,8 @@ func (r *LobbyRoom) run() {
 | `EvResetToLobby` | `reset_to_lobby` | `handleResetToLobby` / `forceResetToLobby` |
 | `EvChat` | `send_chat_message` | `handleChat` |
 | `EvTransferHost` | `transfer_host` (host only) | `handleTransferHost` |
+| `EvSelectCandidate` | `select_candidate` | `handleSelectCandidate` (save mode) |
+| `EvSkipWinnerPlayback` | `skip_winner_playback` (host) | `handleSkipSavePlayback` (save mode) |
 
 ---
 
@@ -548,6 +550,91 @@ lobby ──[start_game + all ready]──► playing ──[timer expires / all
 - **`playing`**: song is playing, players submit guesses. Timer counts down. Ends when all players lock OR timer hits 0.
 - **`reveal`**: correct answer shown, scores updated, XP awarded. Ends when reveal timer expires or majority skips.
 - **`finished`**: game over screen. Host (or any player via force) can reset to lobby.
+
+---
+
+### Save Mode (`save-4` / `save-6`)
+
+Social voting mode: no objective correct answer. Each round presents 4 or 6 candidate songs (local video only). Players vote during rotating previews; winner(s) = most votes (ties include 0 votes).
+
+#### Config (save-only fields)
+
+| Field | JSON | Notes |
+|-------|------|-------|
+| `PreviewSeconds` | `preview_seconds` | Per-candidate preview and winner playback; sanitized **10–15** (default 12) |
+| `ThemeDistribution` | `theme_distribution` | `"random"` (default) or `"balanced"` — how theme kinds rotate across rounds |
+| `PersonalizedPool` | `personalized_pool` | Always forced **false** for save modes |
+
+Sanitization: `sanitizeSaveConfig()` in `save_pool_builder.go` / `save_round.go`. Max rounds **5–30**.
+
+#### Round pool (`save_pool_builder.go`)
+
+- Theme kinds: `artist`, `year`, `season`, `anime`, `genre`.
+- Each round is **all OP or all ED** (`RoundThemeType`); lobby `"both"` picks OP or ED randomly per round.
+- Theme keys deduplicated within a game (`ThemeKey`).
+- Minimum **2** candidates per round; ideal count is 4 (`save-4`) or 6 (`save-6`). Anime anchors require ≥2 distinct `(type:theme_num)` themes.
+- Fallback rounds (`IsFallback: true`) use the global local-video pool only — **no embed URLs**.
+- `balanced` distribution prioritizes one kind per round slot before retrying others.
+
+#### Save state machine
+
+```
+lobby ──[start_game]──► playing (preview_select)
+                              │
+                    [preview_step timer × N candidates]
+                              │
+                         tally votes
+                              │
+                         winner_playback
+                              │
+                    [winner_step timer × tied winners]
+                              │
+                         finishSaveRound ──► next round OR finished
+```
+
+Phases stored in `LobbyRoom.RoundPhase`: `preview_select`, `winner_playback`.
+
+#### Additional backend events
+
+| Constant | Trigger | Handler |
+|----------|---------|---------|
+| `EvSelectCandidate` | `select_candidate` WS | `handleSelectCandidate` — toggle vote during preview |
+| `EvSkipWinnerPlayback` | `skip_winner_playback` WS | `handleSkipSavePlayback` — host skips remaining winner playback |
+
+Timer types: `preview_step`, `winner_step` (both use `PreviewSeconds`).
+
+#### Additional server → client messages
+
+| Type | When | Key payload fields |
+|------|------|-------------------|
+| `round_start` | Save round begins | `round_phase`, `preview_index`, `preview_seconds`, `theme_label`, `round_theme_type`, `is_fallback`, `candidates[]` |
+| `phase_change` | Preview index or winner playback step | `round_phase`, `preview_index` or `winner_play_index`, optional `votes`, `winners` |
+| `round_results` | After preview tally | `votes`, `winners` |
+
+`lobby_state_update` may include `round_data` (full save snapshot for reconnect) and `save_round_history` when `status === "finished"`.
+
+#### Additional client → server messages
+
+| Type | Payload | Permission |
+|------|---------|-----------|
+| `select_candidate` | `{ "song_uuid": string }` — empty string deselects | Non-spectator players during `preview_select` |
+| `skip_winner_playback` | (none) | Host only during `winner_playback` |
+
+`skip_summary` remains for quiz **reveal** skip; save mode winner skip uses `skip_winner_playback`.
+
+#### Vote rules
+
+- Last `SelectedSongUUID` at preview end counts; offline/spectator votes ignored.
+- Ties at max votes → all tied candidates are winners (each gets winner playback).
+- Zero total votes → all candidates tie as winners.
+
+#### Key files
+
+| File | Role |
+|------|------|
+| `save_pool_builder.go` | Thematic pool + fallback |
+| `save_round.go` | Preview/tally/playback loop, history, config sanitize |
+| `song_repository_amq_save.go` | Anchor queries + local-video-only eligibility |
 
 ---
 

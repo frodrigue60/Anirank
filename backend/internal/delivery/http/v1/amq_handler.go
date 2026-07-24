@@ -195,6 +195,16 @@ func (h *AMQHandler) WSHandler(c *websocket.Conn) {
 					AnimeSlug: guessPayload.AnimeSlug,
 				}})
 			}
+		case "select_candidate":
+			var selectPayload struct {
+				SongUUID string `json:"song_uuid"`
+			}
+			if err := json.Unmarshal(msg.Payload, &selectPayload); err == nil {
+				room.SendEvent(amq.RoomEvent{Type: amq.EvSelectCandidate, Data: &amq.SelectCandidateEvent{
+					SessionID: sessionID,
+					SongUUID:  selectPayload.SongUUID,
+				}})
+			}
 		case "update_lobby_config":
 			var configPayload domain.AMQConfig
 			if err := json.Unmarshal(msg.Payload, &configPayload); err == nil {
@@ -207,6 +217,8 @@ func (h *AMQHandler) WSHandler(c *websocket.Conn) {
 			room.StartGame(sessionID)
 		case "skip_summary":
 			room.SendEvent(amq.RoomEvent{Type: amq.EvSkipSummary, Data: sessionID})
+		case "skip_winner_playback":
+			room.SendEvent(amq.RoomEvent{Type: amq.EvSkipWinnerPlayback, Data: sessionID})
 		case "reset_to_lobby":
 			room.SendEvent(amq.RoomEvent{Type: amq.EvResetToLobby, Data: sessionID})
 		case "transfer_host":

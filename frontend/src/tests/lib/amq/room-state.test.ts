@@ -41,6 +41,17 @@ describe("AMQ save room-state reducer", () => {
 		expect(result.currentRoundData?.candidates?.[0].is_winner).toBe(true);
 	});
 
+	it("skips winner_playback phase when there are no winners", () => {
+		const current = {
+			game_type: "save-4",
+			round_phase: "preview_select",
+			candidates: [{ song_uuid: "a" }, { song_uuid: "b" }],
+		};
+		const result = applySaveRoundResults(current, { votes: {}, winners: [] });
+		expect(result.currentRoundData?.round_phase).toBe("preview_select");
+		expect(result.currentRoundData?.winners).toEqual([]);
+	});
+
 	it("restores selection on reconnect during preview", () => {
 		const result = applySaveLobbyStateUpdate(
 			{

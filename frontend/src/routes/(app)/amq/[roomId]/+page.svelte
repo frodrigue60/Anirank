@@ -363,6 +363,7 @@
           selectedGuess = null;
           selectedCandidate = "";
           saveVideoEls = {};
+          savePlaybackSyncToken = "";
           isPlaying = true;
           nextAudioUrl = "";
           
@@ -532,7 +533,16 @@
     let targetTime = duration * startPercent;
     const elapsed = Math.max(0, stepSeconds - localTimer);
     targetTime += elapsed;
-    vid.currentTime = Math.min(Math.max(0, targetTime), duration - 0.05);
+    targetTime = Math.min(Math.max(0, targetTime), duration - 0.05);
+    if (Math.abs(vid.currentTime - targetTime) > 0.25) {
+      vid.currentTime = targetTime;
+    }
+  }
+
+  function saveActivePlaybackToken(): string {
+    if (!activeRound?.candidates?.length) return "";
+    const activeIdx = getSaveActiveCandidateIndex();
+    return `${savePhase}|${activeIdx}|${activeRound.preview_index ?? 0}|${activeRound.winner_play_index ?? 0}`;
   }
 
   function onSaveVideoMetadata(idx: number, candidate: any) {
@@ -541,10 +551,10 @@
     if (vid) syncSaveVideoPlayback(vid, candidate);
   }
 
+  // Play/pause grid tiles when the active slot changes — do not seek on every timer tick.
   $effect(() => {
     if (!isSaveMode || status !== "playing" || !activeRound?.candidates?.length) return;
     const activeIdx = getSaveActiveCandidateIndex();
-    const _tick = localTimer;
     const _phase = savePhase;
     const _preview = activeRound.preview_index;
     const _winner = activeRound.winner_play_index;
@@ -553,14 +563,29 @@
       const vid = saveVideoEls[candidate.song_uuid];
       if (!vid) return;
       if (idx === activeIdx) {
-        if (vid.readyState >= 1) {
-          syncSaveVideoPlayback(vid, candidate);
-        }
         vid.play().catch(() => {});
       } else {
         vid.pause();
       }
     });
+  });
+
+  // Seek only when preview/winner slot changes (or on metadata load), not every localTimer tick.
+  let savePlaybackSyncToken = $state("");
+  $effect(() => {
+    if (!isSaveMode || status !== "playing" || !activeRound?.candidates?.length) return;
+    const token = saveActivePlaybackToken();
+    const _timer = localTimer;
+    if (!token || token === savePlaybackSyncToken) return;
+    savePlaybackSyncToken = token;
+
+    const activeIdx = getSaveActiveCandidateIndex();
+    const candidate = activeRound.candidates[activeIdx];
+    if (!candidate) return;
+    const vid = saveVideoEls[candidate.song_uuid];
+    if (vid && vid.readyState >= 1) {
+      syncSaveVideoPlayback(vid, candidate);
+    }
   });
 
   // Autocomplete search

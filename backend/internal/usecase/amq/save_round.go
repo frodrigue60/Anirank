@@ -116,11 +116,7 @@ func (r *LobbyRoom) handlePreviewStepExpired() {
 	}
 
 	winners := make([]string, 0)
-	if maxVotes == 0 {
-		for uuid := range validUUIDs {
-			winners = append(winners, uuid)
-		}
-	} else {
+	if maxVotes > 0 {
 		for uuid, count := range r.RoundVoteCounts {
 			if count == maxVotes {
 				winners = append(winners, uuid)

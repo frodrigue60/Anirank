@@ -100,13 +100,19 @@ func TestTallyVotesTie(t *testing.T) {
 	}
 }
 
-func TestTallyVotesZeroVotesAllWin(t *testing.T) {
+func TestTallyVotesZeroVotesSkipsWinnerPlayback(t *testing.T) {
 	room := setupRoomForTally(t)
 
 	room.handlePreviewStepExpired()
 
-	if len(room.RoundWinners) != 4 {
-		t.Fatalf("expected all candidates to tie at 0 votes, got %v", room.RoundWinners)
+	if len(room.RoundWinners) != 0 {
+		t.Fatalf("zero votes must not produce winners, got %v", room.RoundWinners)
+	}
+	if room.RoundPhase != "" {
+		t.Fatalf("expected round to finish without winner playback, got phase %q", room.RoundPhase)
+	}
+	if room.CurrentRound != 1 {
+		t.Fatalf("expected round to advance, got currentRound=%d", room.CurrentRound)
 	}
 }
 

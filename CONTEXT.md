@@ -626,7 +626,8 @@ Timer types: `preview_step`, `winner_step` (both use `PreviewSeconds`).
 
 - Last `SelectedSongUUID` at preview end counts; offline/spectator votes ignored.
 - Ties at max votes → all tied candidates are winners (each gets winner playback).
-- Zero total votes → all candidates tie as winners.
+- Zero total votes → no winner playback (round advances immediately).
+- Two or more candidates tied at the highest vote count (> 0) → each tied winner gets playback.
 
 #### Key files
 

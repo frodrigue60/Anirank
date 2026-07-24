@@ -95,16 +95,29 @@ export function applySaveRoundResults(
 		return { currentRoundData, saveRoundResults: payload };
 	}
 
+	const candidates = currentRoundData.candidates.map((c) => ({
+		...c,
+		vote_count: payload.votes?.[c.song_uuid] ?? 0,
+		is_winner: payload.winners?.includes(c.song_uuid),
+	}));
+
+	if (!payload.winners?.length) {
+		return {
+			currentRoundData: {
+				...currentRoundData,
+				winners: [],
+				candidates,
+			},
+			saveRoundResults: payload,
+		};
+	}
+
 	return {
 		currentRoundData: {
 			...currentRoundData,
 			round_phase: "winner_playback",
 			winners: payload.winners,
-			candidates: currentRoundData.candidates.map((c) => ({
-				...c,
-				vote_count: payload.votes?.[c.song_uuid] ?? 0,
-				is_winner: payload.winners?.includes(c.song_uuid),
-			})),
+			candidates,
 		},
 		saveRoundResults: payload,
 	};

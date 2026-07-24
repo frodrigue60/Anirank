@@ -72,6 +72,10 @@
   let selectedCandidate = $state("");
   let saveRoundResults = $state<any>(null);
   let saveVideoEls = $state<Record<string, HTMLVideoElement>>({});
+  /** Tracks which candidates already received their one-time start seek this round. */
+  let saveVideoStarted = $state<Record<string, boolean>>({});
+  /** After reconnect, realign the active clip once to server timer. */
+  let saveReconnectPending = $state(false);
 
   let isSaveMode = $derived(isSaveGameTypeHelper(config.game_type));
   let saveRoundHistory = $derived(roomState?.save_round_history || []);
@@ -322,6 +326,10 @@
     ws.onopen = () => {
       if (thisGeneration !== connectionGeneration) return;
       wsError = "";
+      if (roomState?.status === "playing" && isSaveRoundData(roomState.round_data)) {
+        saveVideoStarted = {};
+        saveReconnectPending = true;
+      }
     };
 
     ws.onmessage = (event) => {
@@ -363,7 +371,8 @@
           selectedGuess = null;
           selectedCandidate = "";
           saveVideoEls = {};
-          savePlaybackSyncToken = "";
+          saveVideoStarted = {};
+          saveReconnectPending = false;
           isPlaying = true;
           nextAudioUrl = "";
           
@@ -525,33 +534,39 @@
     return getSaveActiveCandidateIndexHelper(activeRound, savePhase, saveRoundResults);
   }
 
-  function syncSaveVideoPlayback(vid: HTMLVideoElement, candidate: any) {
+  function prepareSaveVideoPlayback(
+    vid: HTMLVideoElement,
+    candidate: { song_uuid: string; start_percent?: number },
+    mode: "initial" | "realign"
+  ) {
     const duration = vid.duration;
     if (isNaN(duration) || duration <= 0) return;
+
     const startPercent = candidate.start_percent ?? 0;
-    const stepSeconds = activeRound?.preview_seconds ?? config.preview_seconds ?? 12;
     let targetTime = duration * startPercent;
-    const elapsed = Math.max(0, stepSeconds - localTimer);
-    targetTime += elapsed;
+
+    if (mode === "realign") {
+      const stepSeconds = activeRound?.preview_seconds ?? config.preview_seconds ?? 12;
+      targetTime += Math.max(0, stepSeconds - localTimer);
+    }
+
     targetTime = Math.min(Math.max(0, targetTime), duration - 0.05);
-    if (Math.abs(vid.currentTime - targetTime) > 0.25) {
+
+    if (mode === "initial" || Math.abs(vid.currentTime - targetTime) > 0.25) {
       vid.currentTime = targetTime;
     }
-  }
 
-  function saveActivePlaybackToken(): string {
-    if (!activeRound?.candidates?.length) return "";
-    const activeIdx = getSaveActiveCandidateIndex();
-    return `${savePhase}|${activeIdx}|${activeRound.preview_index ?? 0}|${activeRound.winner_play_index ?? 0}`;
+    saveVideoStarted = { ...saveVideoStarted, [candidate.song_uuid]: true };
   }
 
   function onSaveVideoMetadata(idx: number, candidate: any) {
     if (getSaveActiveCandidateIndex() !== idx) return;
     const vid = saveVideoEls[candidate.song_uuid];
-    if (vid) syncSaveVideoPlayback(vid, candidate);
+    if (!vid || saveVideoStarted[candidate.song_uuid]) return;
+    prepareSaveVideoPlayback(vid, candidate, "initial");
   }
 
-  // Play/pause grid tiles when the active slot changes — do not seek on every timer tick.
+  // Play/pause tiles; seek only once per candidate (realign once after reconnect).
   $effect(() => {
     if (!isSaveMode || status !== "playing" || !activeRound?.candidates?.length) return;
     const activeIdx = getSaveActiveCandidateIndex();
@@ -562,30 +577,21 @@
     activeRound.candidates.forEach((candidate: any, idx: number) => {
       const vid = saveVideoEls[candidate.song_uuid];
       if (!vid) return;
+
       if (idx === activeIdx) {
+        if (vid.readyState >= 1) {
+          if (saveReconnectPending) {
+            prepareSaveVideoPlayback(vid, candidate, "realign");
+            saveReconnectPending = false;
+          } else if (!saveVideoStarted[candidate.song_uuid]) {
+            prepareSaveVideoPlayback(vid, candidate, "initial");
+          }
+        }
         vid.play().catch(() => {});
       } else {
         vid.pause();
       }
     });
-  });
-
-  // Seek only when preview/winner slot changes (or on metadata load), not every localTimer tick.
-  let savePlaybackSyncToken = $state("");
-  $effect(() => {
-    if (!isSaveMode || status !== "playing" || !activeRound?.candidates?.length) return;
-    const token = saveActivePlaybackToken();
-    const _timer = localTimer;
-    if (!token || token === savePlaybackSyncToken) return;
-    savePlaybackSyncToken = token;
-
-    const activeIdx = getSaveActiveCandidateIndex();
-    const candidate = activeRound.candidates[activeIdx];
-    if (!candidate) return;
-    const vid = saveVideoEls[candidate.song_uuid];
-    if (vid && vid.readyState >= 1) {
-      syncSaveVideoPlayback(vid, candidate);
-    }
   });
 
   // Autocomplete search

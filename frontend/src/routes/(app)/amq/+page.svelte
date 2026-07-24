@@ -11,6 +11,7 @@
   import RefreshCw from "lucide-svelte/icons/refresh-cw";
   import Eye from "lucide-svelte/icons/eye";
   import UserIcon from "lucide-svelte/icons/user";
+  import { saveGameModeLabel, isSaveGameType as isSaveGameTypeHelper } from "$lib/amq/save-mode";
 
   interface RoomInfo {
     room_id: string;
@@ -23,6 +24,8 @@
     private: boolean;
     theme_type: string;
     game_type: string;
+    preview_seconds?: number;
+    theme_distribution?: string;
   }
 
   let rooms = $state<RoomInfo[]>([]);
@@ -40,10 +43,14 @@
   let maxRounds = $state(10);
   let guessTime = $state(20);
   let revealTime = $state(10);
+  let previewSeconds = $state(12);
   let themeType = $state("both"); // "OP", "ED", "both"
-  let gameType = $state("type-in"); // "type-in", "multiple-choice"
+  let themeDistribution = $state("random"); // "random" | "balanced" (save modes)
+  let gameType = $state("type-in"); // "type-in", "multiple-choice", "save-4", "save-6"
   let personalizedPool = $state(false);
   let isPrivate = $state(false);
+
+  let isSaveGameType = $derived(isSaveGameTypeHelper(gameType));
 
   let joinCode = $state("");
   let errorMsg = $state("");
@@ -138,9 +145,11 @@
           max_rounds: maxRounds,
           guess_time: guessTime,
           reveal_time: revealTime,
+          preview_seconds: previewSeconds,
           theme_type: themeType,
+          theme_distribution: isSaveGameType ? themeDistribution : "random",
           game_type: gameType,
-          personalized_pool: personalizedPool,
+          personalized_pool: isSaveGameType ? false : personalizedPool,
           private: isPrivate,
         },
         guest_nickname: nickname,
@@ -280,11 +289,18 @@
         {#each rooms as room}
           <div class="bg-surface-container p-6 rounded-md flex flex-col justify-between hover:bg-surface-low transition-all relative">
             <div class="space-y-4">
-              <div class="flex justify-between items-start">
-                <h4 class="font-black text-lg text-on-surface tracking-tight truncate pr-6">{room.name}</h4>
-                {#if room.private}
-                  <span class="text-on-surface-variant mt-1"><Lock size={16} /></span>
-                {/if}
+              <div class="flex justify-between items-start gap-2">
+                <h4 class="font-black text-lg text-on-surface tracking-tight truncate pr-2">{room.name}</h4>
+                <div class="flex items-center gap-1 shrink-0">
+                  {#if room.game_type === "save-4"}
+                    <span class="text-[10px] font-black uppercase tracking-widest bg-primary/15 text-primary border border-primary/30 px-2 py-0.5 rounded-sm">Save 1 of 4</span>
+                  {:else if room.game_type === "save-6"}
+                    <span class="text-[10px] font-black uppercase tracking-widest bg-secondary/15 text-secondary border border-secondary/30 px-2 py-0.5 rounded-sm">Save 1 of 6</span>
+                  {/if}
+                  {#if room.private}
+                    <span class="text-on-surface-variant mt-0.5"><Lock size={16} /></span>
+                  {/if}
+                </div>
               </div>
 
               <div class="grid grid-cols-2 gap-y-2 text-xs text-on-surface-variant">
@@ -292,8 +308,15 @@
                 <div>Players: <span class="font-semibold text-on-surface">{room.player_count}</span></div>
                 <div>Watching: <span class="font-semibold text-on-surface">{room.spectator_count || 0}</span></div>
                 <div>Rounds: <span class="font-semibold text-on-surface">{room.max_rounds}</span></div>
-                <div>Type: <span class="font-semibold text-on-surface capitalize">{room.game_type}</span></div>
-                <div>Themes: <span class="font-semibold text-on-surface uppercase">{room.theme_type}</span></div>
+                {#if room.game_type === "save-4" || room.game_type === "save-6"}
+                  <div>Mode: <span class="font-semibold text-on-surface">{saveGameModeLabel(room.game_type)}</span></div>
+                  <div>Preview: <span class="font-semibold text-on-surface">{room.preview_seconds || 12}s</span></div>
+                  <div>Themes: <span class="font-semibold text-on-surface uppercase">{room.theme_type}</span></div>
+                  <div>Pool: <span class="font-semibold text-on-surface capitalize">{room.theme_distribution || "random"}</span></div>
+                {:else}
+                  <div>Type: <span class="font-semibold text-on-surface">{room.game_type}</span></div>
+                  <div>Themes: <span class="font-semibold text-on-surface uppercase">{room.theme_type}</span></div>
+                {/if}
                 <div class="col-span-2">Status: <span class="font-semibold text-primary capitalize">{room.status}</span></div>
               </div>
             </div>
@@ -347,40 +370,54 @@
           </div>
 
           <!-- Rounds and Timers -->
-          <div class="grid grid-cols-3 gap-4">
+          <div class="grid grid-cols-2 gap-4">
             <div class="flex flex-col gap-2">
               <label for="rounds" class="text-[10px] uppercase font-black text-on-surface-variant tracking-widest ml-1">Rounds</label>
               <input
                 id="rounds"
                 type="number"
                 min="5"
-                max="50"
+                max={isSaveGameType ? "30" : "50"}
                 bind:value={maxRounds}
                 class="h-12 bg-surface border border-outline-variant rounded-sm px-4 text-sm text-on-surface focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all"
               />
             </div>
-            <div class="flex flex-col gap-2">
-              <label for="guess-time" class="text-[10px] uppercase font-black text-on-surface-variant tracking-widest ml-1">Guess (s)</label>
-              <input
-                id="guess-time"
-                type="number"
-                min="10"
-                max="60"
-                bind:value={guessTime}
-                class="h-12 bg-surface border border-outline-variant rounded-sm px-4 text-sm text-on-surface focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all"
-              />
-            </div>
-            <div class="flex flex-col gap-2">
-              <label for="reveal-time" class="text-[10px] uppercase font-black text-on-surface-variant tracking-widest ml-1">Reveal (s)</label>
-              <input
-                id="reveal-time"
-                type="number"
-                min="5"
-                max="30"
-                bind:value={revealTime}
-                class="h-12 bg-surface border border-outline-variant rounded-sm px-4 text-sm text-on-surface focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all"
-              />
-            </div>
+            {#if isSaveGameType}
+              <div class="flex flex-col gap-2">
+                <label for="preview-seconds" class="text-[10px] uppercase font-black text-on-surface-variant tracking-widest ml-1">Preview (s)</label>
+                <input
+                  id="preview-seconds"
+                  type="number"
+                  min="10"
+                  max="15"
+                  bind:value={previewSeconds}
+                  class="h-12 bg-surface border border-outline-variant rounded-sm px-4 text-sm text-on-surface focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all"
+                />
+              </div>
+            {:else}
+              <div class="flex flex-col gap-2">
+                <label for="guess-time" class="text-[10px] uppercase font-black text-on-surface-variant tracking-widest ml-1">Guess (s)</label>
+                <input
+                  id="guess-time"
+                  type="number"
+                  min="10"
+                  max="60"
+                  bind:value={guessTime}
+                  class="h-12 bg-surface border border-outline-variant rounded-sm px-4 text-sm text-on-surface focus:outline-hidden focus:ring-4 focus:ring-primary/10 transition-all"
+                />
+              </div>
+              <div class="flex flex-col gap-2 col-span-2">
+                <label for="reveal-time" class="text-[10px] uppercase font-black text-on-surface-variant tracking-widest ml-1">Reveal (s)</label>
+                <input
+                  id="reveal-time"
+                  type="number"
+                  min="5"
+                  max="30"
+                  bind:value={revealTime}
+                  class="h-12 bg-surface border border-outline-variant rounded-sm px-4 text-sm text-on-surface focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all"
+                />
+              </div>
+            {/if}
           </div>
 
           <!-- Theme Pool and Game Type -->
@@ -406,12 +443,28 @@
               >
                 <option value="type-in">Type-In (Autocomplete)</option>
                 <option value="multiple-choice">Multiple Choice</option>
+                <option value="save-4">Save 1 of 4</option>
+                <option value="save-6">Save 1 of 6</option>
               </select>
             </div>
           </div>
 
+          {#if isSaveGameType}
+            <div class="flex flex-col gap-2">
+              <label for="theme-distribution" class="text-[10px] uppercase font-black text-on-surface-variant tracking-widest ml-1">Theme Pool</label>
+              <select
+                id="theme-distribution"
+                bind:value={themeDistribution}
+                class="h-12 bg-surface border border-outline-variant rounded-sm px-4 text-sm text-on-surface focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
+              >
+                <option value="random">Random themes</option>
+                <option value="balanced">Balanced themes</option>
+              </select>
+            </div>
+          {/if}
+
           <!-- Personalized Pools Checkbox -->
-          {#if authState.isAuthenticated}
+          {#if authState.isAuthenticated && !isSaveGameType}
             <div class="flex items-center gap-3 p-3 bg-surface rounded-sm border border-outline-variant">
               <input
                 id="personalized"

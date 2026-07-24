@@ -23,6 +23,19 @@
   import ChevronLeft from "lucide-svelte/icons/chevron-left";
   import ChevronRight from "lucide-svelte/icons/chevron-right";
   import Settings from "lucide-svelte/icons/settings";
+  import {
+    isSaveGameType as isSaveGameTypeHelper,
+    saveGameModeLabel,
+    getSaveActiveCandidateIndex as getSaveActiveCandidateIndexHelper,
+    shouldShowSavedSelection,
+  } from "$lib/amq/save-mode";
+  import {
+    applySaveLobbyStateUpdate,
+    applySavePhaseChange,
+    applySaveRoundResults,
+    applySaveRoundStart,
+    isSaveRoundData,
+  } from "$lib/amq/room-state";
 
   const roomId = page.params.roomId;
 
@@ -56,6 +69,13 @@
   let currentRoundData = $state<any>(null);
   let activeRound = $derived(currentRoundData || roomState?.round_data || null);
   let roundResult = $state<any>(null);
+  let selectedCandidate = $state("");
+  let saveRoundResults = $state<any>(null);
+  let saveVideoEls = $state<Record<string, HTMLVideoElement>>({});
+
+  let isSaveMode = $derived(isSaveGameTypeHelper(config.game_type));
+  let saveRoundHistory = $derived(roomState?.save_round_history || []);
+  let savePhase = $derived(activeRound?.round_phase || "");
 
   let guessInput = $state("");
   let searchResults = $state<any[]>([]);
@@ -108,10 +128,14 @@
   let editMaxRounds = $state(10);
   let editGuessTime = $state(20);
   let editRevealTime = $state(10);
+  let editPreviewSeconds = $state(12);
   let editThemeType = $state("both");
   let editGameType = $state("type-in");
+  let editThemeDistribution = $state("random");
   let editPersonalizedPool = $state(false);
   let editIsPrivate = $state(false);
+
+  let editIsSaveMode = $derived(editGameType === "save-4" || editGameType === "save-6");
 
   function openEditConfigModal() {
     if (!config) return;
@@ -119,8 +143,10 @@
     editMaxRounds = config.max_rounds || 10;
     editGuessTime = config.guess_time || 20;
     editRevealTime = config.reveal_time || 10;
+    editPreviewSeconds = config.preview_seconds || 12;
     editThemeType = config.theme_type || "both";
     editGameType = config.game_type || "type-in";
+    editThemeDistribution = config.theme_distribution || "random";
     editPersonalizedPool = config.personalized_pool || false;
     editIsPrivate = config.private || false;
     showEditConfigModal = true;
@@ -132,9 +158,11 @@
       max_rounds: Number(editMaxRounds),
       guess_time: Number(editGuessTime),
       reveal_time: Number(editRevealTime),
+      preview_seconds: Number(editPreviewSeconds),
       theme_type: editThemeType,
       game_type: editGameType,
-      personalized_pool: editPersonalizedPool,
+      theme_distribution: editIsSaveMode ? editThemeDistribution : "random",
+      personalized_pool: editIsSaveMode ? false : editPersonalizedPool,
       private: editIsPrivate,
     };
     sendWSMessage("update_lobby_config", updated);
@@ -211,21 +239,22 @@
   function handleLoadedMetadata() {
     if (!videoElement || !activeRound) return;
     
-    const startPercent = activeRound.start_percent ?? 0;
+    const startPercent = activeRound.start_percent ?? activeRound.candidates?.[activeRound.preview_index ?? 0]?.start_percent ?? 0;
     const duration = videoElement.duration;
     
     if (isNaN(duration) || duration <= 0) return;
 
     let targetTime = duration * startPercent;
+    const stepSeconds = activeRound.preview_seconds ?? config.preview_seconds ?? 12;
     
-    // If the round is in progress (e.g. on page refresh/reconnection),
-    // offset the current time by the elapsed time in the guess phase.
-    if (status === "playing") {
+    if (isSaveMode && status === "playing") {
+      const elapsed = Math.max(0, stepSeconds - localTimer);
+      targetTime += elapsed;
+    } else if (status === "playing") {
       const guessTime = activeRound.guess_time ?? 20;
       const elapsed = Math.max(0, guessTime - localTimer);
       targetTime += elapsed;
     } else if (status === "reveal") {
-      // In reveal phase, offset by full guess time
       const guessTime = activeRound.guess_time ?? 20;
       targetTime += guessTime;
     }
@@ -303,23 +332,40 @@
         case "lobby_state_update":
           roomState = msg.payload;
           localTimer = msg.payload.timer_left ?? 0;
-          playersVersion++; // Force re-key all player items
+          playersVersion++;
+          if (isSaveRoundData(roomState.round_data)) {
+            const saveSync = applySaveLobbyStateUpdate(roomState, {
+              isAuthenticated: authState.isAuthenticated,
+              userUuid: authState.user?.uuid,
+              deviceId,
+            });
+            currentRoundData = saveSync.currentRoundData;
+            selectedCandidate = saveSync.selectedCandidate;
+          }
           if (roomState.status === "reveal" && roomState.reveal_data && !roundResult) {
             roundResult = roomState.reveal_data;
           }
           break;
         case "round_start":
-          currentRoundData = msg.payload;
-          localTimer = msg.payload.guess_time;
+          if (isSaveRoundData(msg.payload)) {
+            const saveStart = applySaveRoundStart(msg.payload);
+            currentRoundData = saveStart.currentRoundData;
+            localTimer = saveStart.localTimer;
+          } else {
+            currentRoundData = msg.payload;
+            localTimer = msg.payload.preview_seconds ?? msg.payload.guess_time ?? 20;
+          }
           roundResult = null;
+          saveRoundResults = null;
           guessInput = "";
           searchResults = [];
           isLocked = false;
           selectedGuess = null;
+          selectedCandidate = "";
+          saveVideoEls = {};
           isPlaying = true;
-          nextAudioUrl = ""; // Clear prefetch url on round start
+          nextAudioUrl = "";
           
-          // Autoplay video/audio
           setTimeout(() => {
             if (videoElement) {
               fadeInVolume();
@@ -329,6 +375,41 @@
               videoElement.play().catch(e => console.warn("Autoplay blocked:", e));
             }
           }, 100);
+          break;
+        case "phase_change":
+          if (isSaveRoundData(currentRoundData) || isSaveRoundData(msg.payload)) {
+            const savePhaseUpdate = applySavePhaseChange(
+              currentRoundData,
+              msg.payload,
+              config.preview_seconds ?? 12
+            );
+            currentRoundData = savePhaseUpdate.currentRoundData;
+            if (savePhaseUpdate.saveRoundResults) {
+              saveRoundResults = savePhaseUpdate.saveRoundResults;
+            }
+            localTimer = savePhaseUpdate.localTimer;
+          } else if (currentRoundData) {
+            currentRoundData = { ...currentRoundData, ...msg.payload };
+            localTimer = currentRoundData?.preview_seconds ?? config.preview_seconds ?? 12;
+          }
+          setTimeout(() => {
+            if (videoElement) {
+              if (videoElement.readyState >= 1) {
+                handleLoadedMetadata();
+              }
+              videoElement.play().catch(e => console.warn("Autoplay blocked:", e));
+            }
+          }, 100);
+          break;
+        case "round_results":
+          if (isSaveRoundData(currentRoundData)) {
+            const saveResults = applySaveRoundResults(currentRoundData, msg.payload);
+            currentRoundData = saveResults.currentRoundData;
+            saveRoundResults = saveResults.saveRoundResults;
+            selectedCandidate = "";
+          } else {
+            saveRoundResults = msg.payload;
+          }
           break;
         case "round_ended":
           roundResult = msg.payload;
@@ -409,9 +490,77 @@
 
   // Volume control reactivity
   $effect(() => {
+    const vol = isMuted ? 0 : activeVolume;
     if (videoElement) {
-      videoElement.volume = isMuted ? 0 : activeVolume;
+      videoElement.volume = vol;
     }
+    if (isSaveMode) {
+      for (const vid of Object.values(saveVideoEls)) {
+        vid.volume = vol;
+      }
+    }
+  });
+
+  function getSavePreviewCandidate() {
+    if (!activeRound?.candidates?.length) return null;
+    const idx = getSaveActiveCandidateIndex();
+    return activeRound.candidates[idx] || null;
+  }
+
+  function saveVideoRef(node: HTMLVideoElement, songUuid: string) {
+    saveVideoEls = { ...saveVideoEls, [songUuid]: node };
+    return {
+      destroy() {
+        if (saveVideoEls[songUuid] === node) {
+          const next = { ...saveVideoEls };
+          delete next[songUuid];
+          saveVideoEls = next;
+        }
+      },
+    };
+  }
+
+  function getSaveActiveCandidateIndex(): number {
+    return getSaveActiveCandidateIndexHelper(activeRound, savePhase, saveRoundResults);
+  }
+
+  function syncSaveVideoPlayback(vid: HTMLVideoElement, candidate: any) {
+    const duration = vid.duration;
+    if (isNaN(duration) || duration <= 0) return;
+    const startPercent = candidate.start_percent ?? 0;
+    const stepSeconds = activeRound?.preview_seconds ?? config.preview_seconds ?? 12;
+    let targetTime = duration * startPercent;
+    const elapsed = Math.max(0, stepSeconds - localTimer);
+    targetTime += elapsed;
+    vid.currentTime = Math.min(Math.max(0, targetTime), duration - 0.05);
+  }
+
+  function onSaveVideoMetadata(idx: number, candidate: any) {
+    if (getSaveActiveCandidateIndex() !== idx) return;
+    const vid = saveVideoEls[candidate.song_uuid];
+    if (vid) syncSaveVideoPlayback(vid, candidate);
+  }
+
+  $effect(() => {
+    if (!isSaveMode || status !== "playing" || !activeRound?.candidates?.length) return;
+    const activeIdx = getSaveActiveCandidateIndex();
+    const _tick = localTimer;
+    const _phase = savePhase;
+    const _preview = activeRound.preview_index;
+    const _winner = activeRound.winner_play_index;
+
+    activeRound.candidates.forEach((candidate: any, idx: number) => {
+      const vid = saveVideoEls[candidate.song_uuid];
+      if (!vid) return;
+      if (idx === activeIdx) {
+        if (vid.readyState >= 1) {
+          syncSaveVideoPlayback(vid, candidate);
+        }
+        vid.play().catch(() => {});
+      } else {
+        vid.pause();
+      }
+    });
   });
 
   // Autocomplete search
@@ -458,6 +607,17 @@
     });
   }
 
+  function selectSaveCandidate(songUuid: string) {
+    if (savePhase !== "preview_select" || !selfPlayer || selfPlayer.is_spectator) return;
+    if (selectedCandidate === songUuid) {
+      selectedCandidate = "";
+      sendWSMessage("select_candidate", { song_uuid: "" });
+    } else {
+      selectedCandidate = songUuid;
+      sendWSMessage("select_candidate", { song_uuid: songUuid });
+    }
+  }
+
   function sendWSMessage(type: string, payload: any) {
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify({ type, payload }));
@@ -480,6 +640,10 @@
 
   function skipSummary() {
     sendWSMessage("skip_summary", null);
+  }
+
+  function skipWinnerPlayback() {
+    sendWSMessage("skip_winner_playback", null);
   }
 
   // Return to Lobby after finished
@@ -703,24 +867,31 @@
                 <div class="font-bold text-on-surface">{config.max_rounds} rounds</div>
               </div>
               <div class="space-y-1">
-                <div class="text-[10px] uppercase font-black text-on-surface-variant tracking-widest">Guess Time</div>
-                <div class="font-bold text-on-surface">{config.guess_time} seconds</div>
+                <div class="text-[10px] uppercase font-black text-on-surface-variant tracking-widest">Game Mode</div>
+                <div class="font-bold text-on-surface">{saveGameModeLabel(config.game_type)}</div>
               </div>
               <div class="space-y-1">
                 <div class="text-[10px] uppercase font-black text-on-surface-variant tracking-widest">Theme Type</div>
                 <div class="font-bold text-on-surface uppercase">{config.theme_type}</div>
               </div>
-              <div class="space-y-1">
-                <div class="text-[10px] uppercase font-black text-on-surface-variant tracking-widest">Game Mode</div>
-                <div class="font-bold text-on-surface capitalize">{config.game_type}</div>
-              </div>
+              {#if isSaveMode}
+                <div class="space-y-1">
+                  <div class="text-[10px] uppercase font-black text-on-surface-variant tracking-widest">Preview Time</div>
+                  <div class="font-bold text-on-surface">{config.preview_seconds || 12} seconds</div>
+                </div>
+              {:else}
+                <div class="space-y-1">
+                  <div class="text-[10px] uppercase font-black text-on-surface-variant tracking-widest">Guess Time</div>
+                  <div class="font-bold text-on-surface">{config.guess_time} seconds</div>
+                </div>
+                <div class="space-y-1">
+                  <div class="text-[10px] uppercase font-black text-on-surface-variant tracking-widest">AniList Sync</div>
+                  <div class="font-bold text-on-surface">{config.personalized_pool ? "Enabled" : "Disabled"}</div>
+                </div>
+              {/if}
               <div class="space-y-1">
                 <div class="text-[10px] uppercase font-black text-on-surface-variant tracking-widest">Visibility</div>
                 <div class="font-bold text-on-surface">{config.private ? "Private" : "Public"}</div>
-              </div>
-              <div class="space-y-1">
-                <div class="text-[10px] uppercase font-black text-on-surface-variant tracking-widest">AniList Sync</div>
-                <div class="font-bold text-on-surface">{config.personalized_pool ? "Enabled" : "Disabled"}</div>
               </div>
             </div>
 
@@ -762,7 +933,126 @@
             </div>
           </div>
 
-        <!-- 2. GAME IN PROGRESS (Playing or Reveal) -->
+        <!-- 2. SAVE MODE IN PROGRESS -->
+        {:else if status === "playing" && isSaveMode}
+          <div class="space-y-4">
+            <div class="bg-surface-container px-5 py-4 rounded-md border border-white/5 flex flex-wrap items-center justify-between gap-3">
+              <div class="space-y-1 min-w-0 flex-1">
+                <div class="text-[10px] uppercase font-black text-primary tracking-widest">
+                  Round {activeRound?.current_round}/{activeRound?.max_rounds}
+                  {#if activeRound?.round_theme_type}
+                    <span class="text-on-surface-variant"> · {activeRound.round_theme_type}</span>
+                  {/if}
+                </div>
+                <h2 class="text-lg font-black text-on-surface tracking-tight leading-snug">{activeRound?.theme_label || "Save Round"}</h2>
+                {#if savePhase === "preview_select" && getSavePreviewCandidate()}
+                  <p class="text-[11px] text-on-surface-variant truncate">
+                    Now playing: <span class="font-bold text-on-surface">{getSavePreviewCandidate()?.theme_label}</span>
+                    — {getSavePreviewCandidate()?.anime_title}
+                  </p>
+                {/if}
+              </div>
+              <div class="flex items-center gap-3 shrink-0">
+                {#if activeRound?.is_fallback}
+                  <span class="text-[10px] uppercase font-black tracking-widest bg-amber-500/15 text-amber-600 border border-amber-500/30 px-3 py-1 rounded-sm">
+                    Fallback
+                  </span>
+                {/if}
+                <div class="flex items-center gap-2 bg-surface-low border border-outline-variant rounded-sm px-2 py-1 text-white">
+                  <button onclick={() => isMuted = !isMuted} class="cursor-pointer text-on-surface">
+                    {#if isMuted || volume === 0}
+                      <VolumeX size={16} />
+                    {:else}
+                      <Volume2 size={16} />
+                    {/if}
+                  </button>
+                  <input type="range" min="0" max="1" step="0.05" bind:value={volume} class="w-16 accent-primary cursor-pointer h-1" />
+                </div>
+                <div class="text-right min-w-[72px]">
+                  <div class="text-[10px] uppercase font-black text-on-surface-variant tracking-widest">
+                    {savePhase === "winner_playback" ? "Winner" : "Preview"}
+                  </div>
+                  <div class="text-2xl font-black text-primary leading-none">{localTimer}s</div>
+                </div>
+                {#if savePhase === "winner_playback" && selfPlayer?.is_host}
+                  <button
+                    onclick={skipWinnerPlayback}
+                    class="bg-primary hover:bg-primary-container text-white px-3 py-2 rounded-sm font-bold text-[10px] flex items-center gap-1 transition-colors cursor-pointer"
+                  >
+                    <SkipForward size={12} />
+                    Skip winners
+                  </button>
+                {/if}
+              </div>
+            </div>
+
+            {#if activeRound?.candidates?.length}
+              <div class="grid grid-cols-2 {activeRound.candidates.length > 4 ? 'lg:grid-cols-3' : ''} gap-3">
+                {#each activeRound.candidates as candidate, idx (candidate.song_uuid)}
+                  {@const isActiveWinner = savePhase === "winner_playback" && getSaveActiveCandidateIndex() === idx}
+                  {@const isSelected = shouldShowSavedSelection(savePhase, selectedCandidate, candidate.song_uuid)}
+                  {@const isWinner = candidate.is_winner && savePhase === "winner_playback"}
+                  <button
+                    type="button"
+                    onclick={() => selectSaveCandidate(candidate.song_uuid)}
+                    disabled={savePhase !== "preview_select" || selfPlayer?.is_spectator}
+                    class="relative aspect-video rounded-sm border overflow-hidden transition-all cursor-pointer disabled:cursor-default text-left
+                      {isWinner ? 'border-primary ring-2 ring-primary/50' : 'border-outline-variant'}
+                      {isActiveWinner ? 'ring-2 ring-primary border-primary' : ''}
+                      {isSelected ? 'ring-2 ring-green-500/80 border-green-500/60' : ''}
+                      {savePhase === 'preview_select' && !selfPlayer?.is_spectator && !isSelected ? 'hover:border-primary/40' : ''}"
+                  >
+                    <video
+                      use:saveVideoRef={candidate.song_uuid}
+                      src={candidate.audio_url}
+                      preload="auto"
+                      playsinline
+                      onloadedmetadata={() => onSaveVideoMetadata(idx, candidate)}
+                      class="absolute inset-0 w-full h-full object-cover bg-[#09070e] {onlyAudio ? 'opacity-0' : 'opacity-100'}"
+                    >
+                      <track kind="captions" />
+                    </video>
+
+                    {#if onlyAudio}
+                      <div class="absolute inset-0 bg-[#09070e] flex items-center justify-center pointer-events-none">
+                        <Music size={28} class="text-primary/50" />
+                      </div>
+                    {/if}
+
+                    <div class="absolute inset-x-0 bottom-0 bg-[#09070e]/90 px-2.5 py-2 pointer-events-none">
+                      <div class="text-[9px] font-black text-primary uppercase tracking-widest">{candidate.theme_label}</div>
+                      <div class="text-[11px] font-bold text-white truncate" title={candidate.anime_title}>
+                        {candidate.anime_title || "Unknown Anime"}
+                      </div>
+                    </div>
+
+                    {#if isSelected}
+                      <div class="absolute top-2 right-2 text-[9px] font-black uppercase bg-green-600 text-white px-2 py-0.5 rounded-sm pointer-events-none">
+                        Saved
+                      </div>
+                    {/if}
+
+                    {#if savePhase === "winner_playback"}
+                      <div class="absolute top-2 right-2 text-[10px] font-black bg-black/75 text-white px-2 py-0.5 rounded-sm pointer-events-none">
+                        {candidate.vote_count ?? 0} votes
+                      </div>
+                    {/if}
+                  </button>
+                {/each}
+              </div>
+            {/if}
+
+            {#if selfPlayer?.is_spectator}
+              <div class="p-4 bg-surface-low border border-outline-variant text-on-surface-variant text-sm font-bold rounded-sm text-center flex items-center justify-center gap-2">
+                <Eye size={18} class="text-primary" />
+                Watching as a spectator. Vote counts appear after preview ends.
+              </div>
+            {:else if savePhase === "preview_select"}
+              <p class="text-xs text-on-surface-variant text-center">Click a video to save it. Nothing is selected until you choose one.</p>
+            {/if}
+          </div>
+
+        <!-- 3. QUIZ MODE IN PROGRESS (Playing or Reveal) -->
         {:else if status === "playing" || status === "reveal"}
           <!-- Audio/Video Player Layer -->
           <div class="bg-surface-low rounded-md overflow-hidden border border-outline-variant flex flex-col items-center justify-center relative aspect-video w-full max-h-[360px] lg:max-h-[380px]">
@@ -982,11 +1272,47 @@
             <header class="space-y-2">
               <Trophy size={60} class="mx-auto text-primary animate-bounce" />
               <h2 class="text-3xl font-black text-on-surface tracking-tight">GAME FINISHED</h2>
-              <p class="text-sm text-on-surface-variant">Check out the final rankings below.</p>
+              <p class="text-sm text-on-surface-variant">{isSaveMode ? "Review how each round was saved." : "Check out the final rankings below."}</p>
             </header>
 
-            <!-- Played Songs Summary -->
-            {#if roomState?.played_songs && roomState.played_songs.length > 0}
+            {#if isSaveMode && saveRoundHistory.length > 0}
+              <div class="space-y-4 max-w-3xl mx-auto text-left">
+                {#each saveRoundHistory as round (round.round_number)}
+                  <div class="bg-surface-low border border-outline-variant rounded-sm p-4 space-y-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-outline-variant pb-2">
+                      <div>
+                        <div class="text-[10px] uppercase font-black text-primary tracking-widest">Round {round.round_number}</div>
+                        <h3 class="text-sm font-black text-on-surface">{round.theme_label}</h3>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        {#if round.round_theme_type}
+                          <span class="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">{round.round_theme_type}</span>
+                        {/if}
+                        {#if round.is_fallback}
+                          <span class="text-[10px] uppercase font-black tracking-widest bg-amber-500/15 text-amber-600 border border-amber-500/30 px-2 py-0.5 rounded-sm">Fallback</span>
+                        {/if}
+                      </div>
+                    </div>
+                    <div class="space-y-2">
+                      {#each round.candidates || [] as candidate (candidate.song_uuid)}
+                        <div class="flex items-center justify-between gap-3 text-xs py-1.5 border-b border-outline-variant/40 last:border-0">
+                          <div class="min-w-0">
+                            <span class="font-bold text-on-surface">{candidate.theme_label}</span>
+                            <span class="text-on-surface-variant"> — {candidate.anime_title}</span>
+                          </div>
+                          <div class="flex items-center gap-2 shrink-0">
+                            <span class="font-black text-on-surface-variant">{candidate.vote_count ?? 0} votes</span>
+                            {#if candidate.is_winner}
+                              <span class="text-[10px] font-black uppercase tracking-widest text-primary">Winner</span>
+                            {/if}
+                          </div>
+                        </div>
+                      {/each}
+                    </div>
+                  </div>
+                {/each}
+              </div>
+            {:else if roomState?.played_songs && roomState.played_songs.length > 0}
               <div class="bg-surface-low border border-outline-variant rounded-sm p-4 text-left space-y-3 max-w-2xl mx-auto">
                 <h3 class="text-xs font-black text-on-surface-variant uppercase tracking-widest border-b border-outline-variant pb-2">
                   Song List ({roomState.played_songs.length})
@@ -1149,40 +1475,54 @@
           </div>
 
           <!-- Rounds and Timers -->
-          <div class="grid grid-cols-3 gap-4">
+          <div class="grid grid-cols-2 gap-4">
             <div class="flex flex-col gap-2">
               <label for="edit-rounds" class="text-[10px] uppercase font-black text-on-surface-variant tracking-widest ml-1">Rounds</label>
               <input
                 id="edit-rounds"
                 type="number"
                 min="5"
-                max="50"
+                max={editIsSaveMode ? "30" : "50"}
                 bind:value={editMaxRounds}
                 class="h-12 bg-surface border border-outline-variant rounded-sm px-4 text-sm text-on-surface focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all"
               />
             </div>
-            <div class="flex flex-col gap-2">
-              <label for="edit-guess-time" class="text-[10px] uppercase font-black text-on-surface-variant tracking-widest ml-1">Guess (s)</label>
-              <input
-                id="edit-guess-time"
-                type="number"
-                min="10"
-                max="60"
-                bind:value={editGuessTime}
-                class="h-12 bg-surface border border-outline-variant rounded-sm px-4 text-sm text-on-surface focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all"
-              />
-            </div>
-            <div class="flex flex-col gap-2">
-              <label for="edit-reveal-time" class="text-[10px] uppercase font-black text-on-surface-variant tracking-widest ml-1">Reveal (s)</label>
-              <input
-                id="edit-reveal-time"
-                type="number"
-                min="5"
-                max="30"
-                bind:value={editRevealTime}
-                class="h-12 bg-surface border border-outline-variant rounded-sm px-4 text-sm text-on-surface focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all"
-              />
-            </div>
+            {#if editIsSaveMode}
+              <div class="flex flex-col gap-2">
+                <label for="edit-preview-seconds" class="text-[10px] uppercase font-black text-on-surface-variant tracking-widest ml-1">Preview (s)</label>
+                <input
+                  id="edit-preview-seconds"
+                  type="number"
+                  min="10"
+                  max="15"
+                  bind:value={editPreviewSeconds}
+                  class="h-12 bg-surface border border-outline-variant rounded-sm px-4 text-sm text-on-surface focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all"
+                />
+              </div>
+            {:else}
+              <div class="flex flex-col gap-2">
+                <label for="edit-guess-time" class="text-[10px] uppercase font-black text-on-surface-variant tracking-widest ml-1">Guess (s)</label>
+                <input
+                  id="edit-guess-time"
+                  type="number"
+                  min="10"
+                  max="60"
+                  bind:value={editGuessTime}
+                  class="h-12 bg-surface border border-outline-variant rounded-sm px-4 text-sm text-on-surface focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all"
+                />
+              </div>
+              <div class="flex flex-col gap-2 col-span-2">
+                <label for="edit-reveal-time" class="text-[10px] uppercase font-black text-on-surface-variant tracking-widest ml-1">Reveal (s)</label>
+                <input
+                  id="edit-reveal-time"
+                  type="number"
+                  min="5"
+                  max="30"
+                  bind:value={editRevealTime}
+                  class="h-12 bg-surface border border-outline-variant rounded-sm px-4 text-sm text-on-surface focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all"
+                />
+              </div>
+            {/if}
           </div>
 
           <!-- Theme Pool and Game Type -->
@@ -1208,12 +1548,27 @@
               >
                 <option value="type-in">Type-In (Autocomplete)</option>
                 <option value="multiple-choice">Multiple Choice</option>
+                <option value="save-4">Save 1 of 4</option>
+                <option value="save-6">Save 1 of 6</option>
               </select>
             </div>
           </div>
 
-          <!-- Personalized Pools Checkbox (visible to host if authenticated) -->
-          {#if authState.isAuthenticated}
+          {#if editIsSaveMode}
+            <div class="flex flex-col gap-2">
+              <label for="edit-theme-distribution" class="text-[10px] uppercase font-black text-on-surface-variant tracking-widest ml-1">Theme Pool</label>
+              <select
+                id="edit-theme-distribution"
+                bind:value={editThemeDistribution}
+                class="h-12 bg-surface border border-outline-variant rounded-sm px-4 text-sm text-on-surface focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
+              >
+                <option value="random">Random themes</option>
+                <option value="balanced">Balanced themes</option>
+              </select>
+            </div>
+          {/if}
+
+          {#if authState.isAuthenticated && !editIsSaveMode}
             <div class="flex items-center gap-3 p-3 bg-surface rounded-sm border border-outline-variant">
               <input
                 id="edit-personalized"

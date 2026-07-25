@@ -1,4 +1,4 @@
-import { isSaveGameType } from "$lib/amq/save-mode";
+import { DEFAULT_SAVE_VOTE_SECONDS, isSaveGameType } from "$lib/amq/save-mode";
 
 export interface SaveRoundResults {
 	votes: Record<string, number>;
@@ -83,7 +83,7 @@ export function applySavePhaseChange(
 		saveRoundResults,
 		localTimer:
 			merged.round_phase === "vote_select"
-				? (payload.vote_seconds ?? merged.vote_seconds ?? 10)
+				? (payload.vote_seconds ?? merged.vote_seconds ?? DEFAULT_SAVE_VOTE_SECONDS)
 				: (merged.preview_seconds ?? fallbackPreviewSeconds),
 	};
 }

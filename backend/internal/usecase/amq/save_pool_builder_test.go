@@ -117,6 +117,23 @@ func TestSanitizeSaveConfig(t *testing.T) {
 	if cfg.ThemeDistribution != "random" {
 		t.Fatalf("expected random distribution default, got %q", cfg.ThemeDistribution)
 	}
+	if saveVoteSecondsValue(cfg.VoteSeconds) != defaultSaveVoteSeconds {
+		t.Fatalf("expected default vote seconds %d, got %d", defaultSaveVoteSeconds, saveVoteSecondsValue(cfg.VoteSeconds))
+	}
+
+	zero := 0
+	cfg.VoteSeconds = &zero
+	sanitizeSaveConfig(&cfg)
+	if saveVoteSecondsValue(cfg.VoteSeconds) != 0 {
+		t.Fatalf("expected instant vote (0), got %d", saveVoteSecondsValue(cfg.VoteSeconds))
+	}
+
+	over := 99
+	cfg.VoteSeconds = &over
+	sanitizeSaveConfig(&cfg)
+	if saveVoteSecondsValue(cfg.VoteSeconds) != maxSaveVoteSeconds {
+		t.Fatalf("expected vote seconds capped to %d, got %d", maxSaveVoteSeconds, saveVoteSecondsValue(cfg.VoteSeconds))
+	}
 }
 
 func TestThemeKindsForRoundBalancedPrioritizesSlot(t *testing.T) {

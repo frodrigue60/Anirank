@@ -562,6 +562,7 @@ Social voting mode: no objective correct answer. Each round presents 4 or 6 cand
 | Field | JSON | Notes |
 |-------|------|-------|
 | `PreviewSeconds` | `preview_seconds` | Per-candidate preview and winner playback; sanitized **10–15** (default 12) |
+| `VoteSeconds` | `vote_seconds` | Post-preview vote window; sanitized **0–60** (default 10). **0** skips `vote_select` and tallies immediately |
 | `ThemeDistribution` | `theme_distribution` | `"random"` (default) or `"balanced"` — how theme kinds rotate across rounds |
 | `PersonalizedPool` | `personalized_pool` | Always forced **false** for save modes |
 
@@ -583,7 +584,7 @@ lobby ──[start_game]──► playing (preview_select)
                               │
                     [preview_step timer × N candidates]
                               │
-                         vote_select (10s)
+                         vote_select (VoteSeconds, 0 = instant)
                               │
                          tally votes
                               │
@@ -603,7 +604,7 @@ Phases stored in `LobbyRoom.RoundPhase`: `preview_select`, `vote_select`, `winne
 | `EvSelectCandidate` | `select_candidate` WS | `handleSelectCandidate` — toggle vote during preview |
 | `EvSkipWinnerPlayback` | `skip_winner_playback` WS | `handleSkipSavePlayback` — host skips remaining winner playback |
 
-Timer types: `preview_step`, `vote_step` (10s fixed), `winner_step` (both preview/winner use `PreviewSeconds` for playback steps).
+Timer types: `preview_step`, `vote_step` (`VoteSeconds` from lobby config, 0 skips the phase), `winner_step` (both preview/winner use `PreviewSeconds` for playback steps).
 
 #### Additional server → client messages
 

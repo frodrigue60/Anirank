@@ -26,6 +26,7 @@
   import {
     isSaveGameType as isSaveGameTypeHelper,
     saveGameModeLabel,
+    formatSaveVoteSeconds,
     getSaveActiveCandidateIndex as getSaveActiveCandidateIndexHelper,
     shouldShowSavedSelection,
     canSelectSaveCandidate,
@@ -141,6 +142,7 @@
   let editGuessTime = $state(20);
   let editRevealTime = $state(10);
   let editPreviewSeconds = $state(12);
+  let editVoteSeconds = $state(10);
   let editThemeType = $state("both");
   let editGameType = $state("type-in");
   let editThemeDistribution = $state("random");
@@ -156,6 +158,7 @@
     editGuessTime = config.guess_time || 20;
     editRevealTime = config.reveal_time || 10;
     editPreviewSeconds = config.preview_seconds || 12;
+    editVoteSeconds = config.vote_seconds ?? 10;
     editThemeType = config.theme_type || "both";
     editGameType = config.game_type || "type-in";
     editThemeDistribution = config.theme_distribution || "random";
@@ -171,6 +174,7 @@
       guess_time: Number(editGuessTime),
       reveal_time: Number(editRevealTime),
       preview_seconds: Number(editPreviewSeconds),
+      vote_seconds: Number(editVoteSeconds),
       theme_type: editThemeType,
       game_type: editGameType,
       theme_distribution: editIsSaveMode ? editThemeDistribution : "random",
@@ -936,6 +940,10 @@
                   <div class="text-[10px] uppercase font-black text-on-surface-variant tracking-widest">Preview Time</div>
                   <div class="font-bold text-on-surface">{config.preview_seconds || 12} seconds</div>
                 </div>
+                <div class="space-y-1">
+                  <div class="text-[10px] uppercase font-black text-on-surface-variant tracking-widest">Vote Time</div>
+                  <div class="font-bold text-on-surface">{formatSaveVoteSeconds(config.vote_seconds)}</div>
+                </div>
               {:else}
                 <div class="space-y-1">
                   <div class="text-[10px] uppercase font-black text-on-surface-variant tracking-widest">Guess Time</div>
@@ -1559,6 +1567,18 @@
                   bind:value={editPreviewSeconds}
                   class="h-12 bg-surface border border-outline-variant rounded-sm px-4 text-sm text-on-surface focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all"
                 />
+              </div>
+              <div class="flex flex-col gap-2 col-span-2">
+                <label for="edit-vote-seconds" class="text-[10px] uppercase font-black text-on-surface-variant tracking-widest ml-1">Vote (s)</label>
+                <input
+                  id="edit-vote-seconds"
+                  type="number"
+                  min="0"
+                  max="60"
+                  bind:value={editVoteSeconds}
+                  class="h-12 bg-surface border border-outline-variant rounded-sm px-4 text-sm text-on-surface focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all"
+                />
+                <span class="text-[11px] text-on-surface-variant ml-1">0 = tally immediately after previews</span>
               </div>
             {:else}
               <div class="flex flex-col gap-2">

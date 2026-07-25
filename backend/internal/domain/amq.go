@@ -11,6 +11,7 @@ type AMQConfig struct {
 	GuessTime          int    `json:"guess_time"`    // in seconds (quiz modes)
 	RevealTime         int    `json:"reveal_time"`   // in seconds (quiz modes)
 	PreviewSeconds     int    `json:"preview_seconds"` // per-candidate preview/playback (save modes)
+	VoteSeconds        *int   `json:"vote_seconds,omitempty"` // post-preview vote window (save modes); 0 = instant tally
 	ThemeType          string `json:"theme_type"`  // "OP", "ED", "both"
 	GameType           string `json:"game_type"`   // "type-in", "multiple-choice", "save-4", "save-6"
 	ThemeDistribution  string `json:"theme_distribution"` // "random" or "balanced" (save modes)
@@ -78,6 +79,7 @@ type AMQRoomInfo struct {
 	ThemeType         string `json:"theme_type"`
 	GameType          string `json:"game_type"`
 	PreviewSeconds    int    `json:"preview_seconds,omitempty"`
+	VoteSeconds       int    `json:"vote_seconds,omitempty"`
 	ThemeDistribution string `json:"theme_distribution,omitempty"`
 }
 

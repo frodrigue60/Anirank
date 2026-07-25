@@ -13,7 +13,36 @@ type SelectCandidateEvent struct {
 	SongUUID  string
 }
 
-const saveVoteSeconds = 10
+const (
+	defaultSaveVoteSeconds = 10
+	maxSaveVoteSeconds     = 60
+)
+
+func normalizeSaveVoteSeconds(voteSeconds *int) *int {
+	if voteSeconds == nil {
+		v := defaultSaveVoteSeconds
+		return &v
+	}
+	v := *voteSeconds
+	if v < 0 {
+		v = defaultSaveVoteSeconds
+	}
+	if v > maxSaveVoteSeconds {
+		v = maxSaveVoteSeconds
+	}
+	return &v
+}
+
+func saveVoteSecondsValue(voteSeconds *int) int {
+	if voteSeconds == nil {
+		return defaultSaveVoteSeconds
+	}
+	return *voteSeconds
+}
+
+func (r *LobbyRoom) effectiveVoteSeconds() int {
+	return saveVoteSecondsValue(r.Config.VoteSeconds)
+}
 
 func (r *LobbyRoom) startSaveRound() {
 	r.mu.Lock()
@@ -95,6 +124,12 @@ func (r *LobbyRoom) handlePreviewStepExpired() {
 }
 
 func (r *LobbyRoom) startVoteSelectPhase() {
+	voteSecs := r.effectiveVoteSeconds()
+	if voteSecs == 0 {
+		r.tallySaveRoundVotes()
+		return
+	}
+
 	r.mu.Lock()
 	r.RoundPhase = "vote_select"
 	if r.Timer != nil {
@@ -102,19 +137,19 @@ func (r *LobbyRoom) startVoteSelectPhase() {
 	}
 	r.mu.Unlock()
 
-	r.scheduleVoteStepTimer()
+	r.scheduleVoteStepTimer(voteSecs)
 	r.broadcast("phase_change", map[string]interface{}{
 		"round_phase":  "vote_select",
-		"vote_seconds": saveVoteSeconds,
+		"vote_seconds": voteSecs,
 	})
 	r.broadcast("lobby_state_update", r.getRoomStatePayload())
 }
 
-func (r *LobbyRoom) scheduleVoteStepTimer() {
+func (r *LobbyRoom) scheduleVoteStepTimer(voteSecs int) {
 	r.mu.Lock()
 	r.TimerType = "vote_step"
 	r.TimerStart = time.Now()
-	r.TimerDuration = time.Duration(saveVoteSeconds) * time.Second
+	r.TimerDuration = time.Duration(voteSecs) * time.Second
 	if r.Timer != nil {
 		r.Timer.Stop()
 	}
@@ -347,6 +382,7 @@ func (r *LobbyRoom) broadcastSaveRoundStart(currentRound, maxRounds, previewSeco
 		"round_phase":     "preview_select",
 		"preview_index":   0,
 		"preview_seconds": previewSeconds,
+		"vote_seconds":    r.effectiveVoteSeconds(),
 		"theme_label":      saveRound.ThemeLabel,
 		"round_theme_type": saveRound.RoundThemeType,
 		"is_fallback":      saveRound.IsFallback,
@@ -422,7 +458,7 @@ func (r *LobbyRoom) buildSaveRoundDataPayload() map[string]interface{} {
 		"preview_index":       r.PreviewIndex,
 		"winner_play_index":   r.WinnerPlayIndex,
 		"preview_seconds":     r.Config.PreviewSeconds,
-		"vote_seconds":        saveVoteSeconds,
+		"vote_seconds":        r.effectiveVoteSeconds(),
 		"theme_label":         themeLabel,
 		"round_theme_type":    roundThemeType,
 		"is_fallback":         isFallback,
@@ -506,6 +542,7 @@ func sanitizeSaveConfig(cfg *domain.AMQConfig) {
 	if cfg.ThemeDistribution != "balanced" {
 		cfg.ThemeDistribution = "random"
 	}
+	cfg.VoteSeconds = normalizeSaveVoteSeconds(cfg.VoteSeconds)
 	cfg.PersonalizedPool = false
 }
 

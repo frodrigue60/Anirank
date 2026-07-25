@@ -54,6 +54,27 @@ func TestPreviewCompleteEntersVoteSelect(t *testing.T) {
 	}
 }
 
+func TestInstantVoteSkipsVoteSelectPhase(t *testing.T) {
+	room := newSaveTestRoom(nil)
+	room.RoundPhase = "preview_select"
+	room.Status = "playing"
+	room.SaveCandidates = testSaveSongs(4)
+	room.PreviewIndex = 3
+	room.RoundVoteCounts = make(map[string]int)
+	room.Players["p1"] = &domain.AMQPlayer{SessionID: "p1", SelectedSongUUID: "song-uuid-2"}
+	zero := 0
+	room.Config.VoteSeconds = &zero
+
+	room.handlePreviewStepExpired()
+
+	if room.RoundPhase != "winner_playback" {
+		t.Fatalf("expected winner_playback after instant vote, got %q", room.RoundPhase)
+	}
+	if len(room.RoundWinners) != 1 || room.RoundWinners[0] != "song-uuid-2" {
+		t.Fatalf("expected song-uuid-2 winner, got %v", room.RoundWinners)
+	}
+}
+
 func TestSelectCandidateAllowedDuringVoteSelect(t *testing.T) {
 	room := newSaveTestRoom(nil)
 	room.RoundPhase = "vote_select"

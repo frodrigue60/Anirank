@@ -1296,6 +1296,7 @@ func (r *LobbyRoom) GetRoomInfo() domain.AMQRoomInfo {
 		ThemeType:         r.Config.ThemeType,
 		GameType:          r.Config.GameType,
 		PreviewSeconds:    r.Config.PreviewSeconds,
+		VoteSeconds:       saveVoteSecondsValue(r.Config.VoteSeconds),
 		ThemeDistribution: r.Config.ThemeDistribution,
 	}
 }

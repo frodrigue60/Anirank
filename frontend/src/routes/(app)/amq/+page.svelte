@@ -11,7 +11,7 @@
   import RefreshCw from "lucide-svelte/icons/refresh-cw";
   import Eye from "lucide-svelte/icons/eye";
   import UserIcon from "lucide-svelte/icons/user";
-  import { saveGameModeLabel, isSaveGameType as isSaveGameTypeHelper } from "$lib/amq/save-mode";
+  import { saveGameModeLabel, isSaveGameType as isSaveGameTypeHelper, formatSaveVoteSeconds } from "$lib/amq/save-mode";
 
   interface RoomInfo {
     room_id: string;
@@ -25,6 +25,7 @@
     theme_type: string;
     game_type: string;
     preview_seconds?: number;
+    vote_seconds?: number;
     theme_distribution?: string;
   }
 
@@ -44,6 +45,7 @@
   let guessTime = $state(20);
   let revealTime = $state(10);
   let previewSeconds = $state(12);
+  let voteSeconds = $state(10);
   let themeType = $state("both"); // "OP", "ED", "both"
   let themeDistribution = $state("random"); // "random" | "balanced" (save modes)
   let gameType = $state("type-in"); // "type-in", "multiple-choice", "save-4", "save-6"
@@ -146,6 +148,7 @@
           guess_time: guessTime,
           reveal_time: revealTime,
           preview_seconds: previewSeconds,
+          vote_seconds: voteSeconds,
           theme_type: themeType,
           theme_distribution: isSaveGameType ? themeDistribution : "random",
           game_type: gameType,
@@ -311,6 +314,7 @@
                 {#if room.game_type === "save-4" || room.game_type === "save-6"}
                   <div>Mode: <span class="font-semibold text-on-surface">{saveGameModeLabel(room.game_type)}</span></div>
                   <div>Preview: <span class="font-semibold text-on-surface">{room.preview_seconds || 12}s</span></div>
+                  <div>Vote: <span class="font-semibold text-on-surface">{formatSaveVoteSeconds(room.vote_seconds)}</span></div>
                   <div>Themes: <span class="font-semibold text-on-surface uppercase">{room.theme_type}</span></div>
                   <div>Pool: <span class="font-semibold text-on-surface capitalize">{room.theme_distribution || "random"}</span></div>
                 {:else}
@@ -393,6 +397,18 @@
                   bind:value={previewSeconds}
                   class="h-12 bg-surface border border-outline-variant rounded-sm px-4 text-sm text-on-surface focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all"
                 />
+              </div>
+              <div class="flex flex-col gap-2">
+                <label for="vote-seconds" class="text-[10px] uppercase font-black text-on-surface-variant tracking-widest ml-1">Vote (s)</label>
+                <input
+                  id="vote-seconds"
+                  type="number"
+                  min="0"
+                  max="60"
+                  bind:value={voteSeconds}
+                  class="h-12 bg-surface border border-outline-variant rounded-sm px-4 text-sm text-on-surface focus:outline-hidden focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all"
+                />
+                <span class="text-[11px] text-on-surface-variant ml-1">0 = tally immediately after previews</span>
               </div>
             {:else}
               <div class="flex flex-col gap-2">

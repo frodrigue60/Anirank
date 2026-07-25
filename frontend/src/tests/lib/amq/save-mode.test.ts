@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
 	isSaveGameType,
 	saveGameModeLabel,
+	formatSaveVoteSeconds,
 	getSaveActiveCandidateIndex,
 	shouldShowSavedSelection,
 } from "$lib/amq/save-mode";
@@ -16,6 +17,12 @@ describe("AMQ save mode helpers", () => {
 	it("formats save mode labels", () => {
 		expect(saveGameModeLabel("save-4")).toBe("Save 1 of 4");
 		expect(saveGameModeLabel("save-6")).toBe("Save 1 of 6");
+	});
+
+	it("formats vote seconds for display", () => {
+		expect(formatSaveVoteSeconds(10)).toBe("10s");
+		expect(formatSaveVoteSeconds(0)).toBe("Instant");
+		expect(formatSaveVoteSeconds(undefined)).toBe("10s");
 	});
 
 	it("returns preview index during preview_select", () => {

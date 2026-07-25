@@ -10,7 +10,12 @@ export interface SaveRoundView {
 	vote_seconds?: number;
 }
 
-export const SAVE_VOTE_SECONDS = 10;
+export const DEFAULT_SAVE_VOTE_SECONDS = 10;
+
+export function formatSaveVoteSeconds(seconds: number | undefined | null): string {
+	if (seconds === 0) return "Instant";
+	return `${seconds ?? DEFAULT_SAVE_VOTE_SECONDS}s`;
+}
 
 export function isSaveGameType(gameType: string | undefined): boolean {
 	return gameType === "save-4" || gameType === "save-6";

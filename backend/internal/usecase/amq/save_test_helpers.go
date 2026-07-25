@@ -129,7 +129,13 @@ func newSaveTestRoom(repo *saveTestSongRepo) *LobbyRoom {
 	}
 	return NewLobbyRoom(
 		"TESTROOM",
-		domain.AMQConfig{GameType: "save-4", MaxRounds: 5, PreviewSeconds: 12, ThemeType: "OP"},
+		domain.AMQConfig{
+			GameType:       "save-4",
+			MaxRounds:      5,
+			PreviewSeconds: 12,
+			VoteSeconds:    intPtr(defaultSaveVoteSeconds),
+			ThemeType:      "OP",
+		},
 		nil,
 		repo,
 		nil,
@@ -158,5 +164,7 @@ func testSaveSongs(n int) []domain.Song {
 }
 
 func strPtr(s string) *string { return &s }
+
+func intPtr(n int) *int { return &n }
 
 var _ infrastructure.MediaService = stubMediaService{}

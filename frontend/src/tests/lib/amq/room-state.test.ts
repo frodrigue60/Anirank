@@ -30,6 +30,16 @@ describe("AMQ save room-state reducer", () => {
 		expect(result.localTimer).toBe(12);
 	});
 
+	it("uses vote_seconds for vote_select timer", () => {
+		const current = { game_type: "save-4", preview_seconds: 12, candidates: [{ song_uuid: "a" }] };
+		const result = applySavePhaseChange(
+			current,
+			{ round_phase: "vote_select", vote_seconds: 5 },
+			12
+		);
+		expect(result.localTimer).toBe(5);
+	});
+
 	it("maps round_results onto candidates", () => {
 		const current = {
 			game_type: "save-4",

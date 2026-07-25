@@ -77,6 +77,14 @@ func TestBuildSaveThemeLabelUsesSingleTypeNeverMixed(t *testing.T) {
 	if edLabel != "Best ED of Kuroko no Basket 3rd SEASON" {
 		t.Fatalf("unexpected ED label: %q", edLabel)
 	}
+
+	genreLabel := buildSaveThemeLabel(domain.AMQSaveThemeAnchor{
+		Kind:      "genre",
+		GenreName: "Action",
+	}, "OP")
+	if genreLabel != "Best OP — Action genre" {
+		t.Fatalf("unexpected genre label: %q", genreLabel)
+	}
 }
 
 func TestBuildSaveThemeKeyScopesByRoundType(t *testing.T) {
@@ -180,6 +188,40 @@ func TestBuildSaveRoundPoolDedupThemeKeys(t *testing.T) {
 		if contains(r.ThemeLabel, "OP/ED") {
 			t.Fatalf("label must not mix types: %q", r.ThemeLabel)
 		}
+	}
+}
+
+func TestBuildSaveRoundPoolBalancedCanUseGenreTheme(t *testing.T) {
+	genreID := uint64(9)
+	repo := &saveTestSongRepo{
+		genreAnchor: &domain.AMQSaveThemeAnchor{
+			Kind:      "genre",
+			GenreID:   &genreID,
+			GenreName: "Action",
+		},
+		songIDs: []uint64{1, 2, 3, 4},
+	}
+	room := newSaveTestRoom(repo)
+	room.Config.ThemeType = "OP"
+	room.Config.ThemeDistribution = "balanced"
+	room.Config.MaxRounds = 5
+
+	rounds, err := room.buildSaveRoundPool(context.Background(), 5, "save-4", "OP")
+	if err != nil {
+		t.Fatalf("buildSaveRoundPool: %v", err)
+	}
+
+	foundGenre := false
+	for _, round := range rounds {
+		if round.ThemeKind == "genre" {
+			foundGenre = true
+			if round.ThemeLabel != "Best OP — Action genre" {
+				t.Fatalf("unexpected genre label: %q", round.ThemeLabel)
+			}
+		}
+	}
+	if !foundGenre {
+		t.Fatal("expected at least one genre-themed round when genre anchors resolve")
 	}
 }
 

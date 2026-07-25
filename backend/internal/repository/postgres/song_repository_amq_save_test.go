@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"strings"
 	"testing"
 
 	"anirank/api/internal/domain"
@@ -227,4 +228,24 @@ func TestAMQSaveQueries_RequireLocalVideoOnly(t *testing.T) {
 	_, err := repo.FindRandomArtistForAMQSave(context.Background(), []string{"OP"}, 4)
 	require.NoError(t, err)
 	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestFindRandomArtistForAMQSave_QueryJoinBeforeWhere(t *testing.T) {
+	query, args := buildFindRandomArtistForAMQSaveQuery([]string{"OP"}, 4)
+	artistJoin := strings.Index(query, "JOIN artist_song")
+	whereClause := strings.Index(query, "WHERE s.status = true")
+	require.Greater(t, artistJoin, 0)
+	require.Greater(t, whereClause, 0)
+	assert.Less(t, artistJoin, whereClause)
+	assert.Equal(t, []interface{}{"OP", 4}, args)
+}
+
+func TestFindRandomGenreForAMQSave_QueryJoinBeforeWhere(t *testing.T) {
+	query, args := buildFindRandomGenreForAMQSaveQuery([]string{"ED"}, 6)
+	genreJoin := strings.Index(query, "JOIN anime_genre")
+	whereClause := strings.Index(query, "WHERE s.status = true")
+	require.Greater(t, genreJoin, 0)
+	require.Greater(t, whereClause, 0)
+	assert.Less(t, genreJoin, whereClause)
+	assert.Equal(t, []interface{}{"ED", 6}, args)
 }

@@ -38,6 +38,7 @@
     warmSaveVideoElements,
     resetSaveMediaPrefetchCache,
   } from "$lib/amq/save-video-prefetch";
+  import { watchSaveVideoPlayback, type SaveVideoPlaybackContext } from "$lib/amq/save-video-playback";
   import {
     applySaveLobbyStateUpdate,
     applySavePhaseChange,
@@ -549,45 +550,28 @@
     return getSaveActiveCandidateIndexHelper(activeRound, savePhase, saveRoundResults);
   }
 
-  function prepareSaveVideoPlayback(
-    vid: HTMLVideoElement,
+  function buildSaveVideoPlaybackContext(
     candidate: { song_uuid: string; start_percent?: number },
-    mode: "initial" | "realign"
-  ) {
-    const duration = vid.duration;
-    if (isNaN(duration) || duration <= 0) return;
-
-    const startPercent = candidate.start_percent ?? 0;
-    let targetTime = duration * startPercent;
-
-    if (mode === "realign") {
-      const stepSeconds = activeRound?.preview_seconds ?? config.preview_seconds ?? 12;
-      targetTime += Math.max(0, stepSeconds - localTimer);
-    }
-
-    targetTime = Math.min(Math.max(0, targetTime), duration - 0.05);
-
-    if (mode === "initial" || Math.abs(vid.currentTime - targetTime) > 0.25) {
-      vid.currentTime = targetTime;
-    }
-
-    saveVideoStarted = { ...saveVideoStarted, [candidate.song_uuid]: true };
+    mode: SaveVideoPlaybackContext["mode"]
+  ): SaveVideoPlaybackContext {
+    const stepSeconds = activeRound?.preview_seconds ?? config.preview_seconds ?? 12;
+    return {
+      startPercent: candidate.start_percent ?? 0,
+      mode,
+      stepSeconds,
+      elapsedSeconds: mode === "realign" ? Math.max(0, stepSeconds - localTimer) : undefined,
+    };
   }
 
-  function onSaveVideoMetadata(idx: number, candidate: any) {
-    if (getSaveActiveCandidateIndex() !== idx) return;
-    const vid = saveVideoEls[candidate.song_uuid];
-    if (!vid || saveVideoStarted[candidate.song_uuid]) return;
-    prepareSaveVideoPlayback(vid, candidate, "initial");
-  }
-
-  // Play/pause tiles; seek only once per candidate (realign once after reconnect).
+  // Play/pause tiles; retry seek/play until the active video is ready.
   $effect(() => {
     if (!isSaveMode || status !== "playing" || !activeRound?.candidates?.length) return;
     const activeIdx = getSaveActiveCandidateIndex();
     const _phase = savePhase;
     const _preview = activeRound.preview_index;
     const _winner = activeRound.winner_play_index;
+    const _timer = localTimer;
+    const cleanups: Array<() => void> = [];
 
     if (savePhase === "vote_select") {
       activeRound.candidates.forEach((candidate: any) => {
@@ -604,19 +588,35 @@
       if (!vid) return;
 
       if (idx === activeIdx) {
-        if (vid.readyState >= 1) {
-          if (saveReconnectPending) {
-            prepareSaveVideoPlayback(vid, candidate, "realign");
-            saveReconnectPending = false;
-          } else if (!saveVideoStarted[candidate.song_uuid]) {
-            prepareSaveVideoPlayback(vid, candidate, "initial");
-          }
+        const playbackMode: SaveVideoPlaybackContext["mode"] = saveReconnectPending ? "realign" : "initial";
+        const alreadyStarted = saveVideoStarted[candidate.song_uuid];
+
+        if (!alreadyStarted || saveReconnectPending) {
+          cleanups.push(
+            watchSaveVideoPlayback(
+              vid,
+              () => {
+                if (getSaveActiveCandidateIndex() !== idx) return null;
+                return buildSaveVideoPlaybackContext(candidate, playbackMode);
+              },
+              () => {
+                saveVideoStarted = { ...saveVideoStarted, [candidate.song_uuid]: true };
+                if (saveReconnectPending) saveReconnectPending = false;
+              }
+            )
+          );
+        } else {
+          warmSaveVideoElement(vid);
+          vid.play().catch(() => {});
         }
-        vid.play().catch(() => {});
       } else {
         vid.pause();
       }
     });
+
+    return () => {
+      for (const cleanup of cleanups) cleanup();
+    };
   });
 
   $effect(() => {
@@ -1076,7 +1076,6 @@
                       src={candidate.audio_url}
                       preload="auto"
                       playsinline
-                      onloadedmetadata={() => onSaveVideoMetadata(idx, candidate)}
                       class="absolute inset-0 w-full h-full object-cover bg-[#09070e] {onlyAudio ? 'opacity-0' : 'opacity-100'}"
                     >
                       <track kind="captions" />

@@ -8,12 +8,15 @@ import (
 	"anirank/api/internal/domain"
 )
 
-const amqSaveEligibleSongJoin = `
+const amqSaveEligibleSongFrom = `
 FROM songs s
 JOIN animes a ON s.anime_id = a.id
 JOIN song_types st ON s.type_id = st.id
 JOIN song_variants sv ON s.id = sv.song_id
 JOIN videos v ON sv.id = v.song_variant_id
+`
+
+const amqSaveEligibleSongWhere = `
 WHERE s.status = true
   AND a.status = true
   AND sv.status = true
@@ -21,6 +24,8 @@ WHERE s.status = true
   AND v.video_src <> ''
   AND v.video_src NOT LIKE 'http%%'
 `
+
+const amqSaveEligibleSongJoin = amqSaveEligibleSongFrom + amqSaveEligibleSongWhere
 
 func amqSaveThemeTypeClause(themeTypes []string, argIdx int) (string, []interface{}, int) {
 	if len(themeTypes) == 0 {
@@ -36,7 +41,7 @@ func amqSaveThemeTypeClause(themeTypes []string, argIdx int) (string, []interfac
 	return clause, args, argIdx + len(themeTypes)
 }
 
-func (r *songRepository) FindRandomArtistForAMQSave(ctx context.Context, themeTypes []string, minSongs int) (*domain.AMQSaveThemeAnchor, error) {
+func buildFindRandomArtistForAMQSaveQuery(themeTypes []string, minSongs int) (string, []interface{}) {
 	typeClause, typeArgs, nextIdx := amqSaveThemeTypeClause(themeTypes, 1)
 	query := fmt.Sprintf(`
 		SELECT ar.id, ar.uuid, ar.name
@@ -45,15 +50,18 @@ func (r *songRepository) FindRandomArtistForAMQSave(ctx context.Context, themeTy
 		  AND (
 		    SELECT COUNT(DISTINCT s.id)
 		    %s
-		    JOIN artist_song asng ON s.id = asng.song_id
-		    AND asng.artist_id = ar.id
+		    JOIN artist_song asng ON s.id = asng.song_id AND asng.artist_id = ar.id
+		    %s
 		    %s
 		  ) >= $%d
 		ORDER BY RANDOM()
 		LIMIT 1
-	`, amqSaveEligibleSongJoin, typeClause, nextIdx)
+	`, amqSaveEligibleSongFrom, amqSaveEligibleSongWhere, typeClause, nextIdx)
+	return query, append(typeArgs, minSongs)
+}
 
-	args := append(typeArgs, minSongs)
+func (r *songRepository) FindRandomArtistForAMQSave(ctx context.Context, themeTypes []string, minSongs int) (*domain.AMQSaveThemeAnchor, error) {
+	query, args := buildFindRandomArtistForAMQSaveQuery(themeTypes, minSongs)
 	var row struct {
 		ID   uint64 `db:"id"`
 		UUID string `db:"uuid"`
@@ -194,7 +202,7 @@ func (r *songRepository) FindRandomAnimeForAMQSave(ctx context.Context, themeTyp
 	}, nil
 }
 
-func (r *songRepository) FindRandomGenreForAMQSave(ctx context.Context, themeTypes []string, minSongs int) (*domain.AMQSaveThemeAnchor, error) {
+func buildFindRandomGenreForAMQSaveQuery(themeTypes []string, minSongs int) (string, []interface{}) {
 	typeClause, typeArgs, nextIdx := amqSaveThemeTypeClause(themeTypes, 1)
 	query := fmt.Sprintf(`
 		SELECT g.id, g.name
@@ -202,15 +210,18 @@ func (r *songRepository) FindRandomGenreForAMQSave(ctx context.Context, themeTyp
 		WHERE (
 		  SELECT COUNT(DISTINCT s.id)
 		  %s
-		  JOIN anime_genre ag ON ag.anime_id = s.anime_id
-		  AND ag.genre_id = g.id
+		  JOIN anime_genre ag ON ag.anime_id = s.anime_id AND ag.genre_id = g.id
+		  %s
 		  %s
 		) >= $%d
 		ORDER BY RANDOM()
 		LIMIT 1
-	`, amqSaveEligibleSongJoin, typeClause, nextIdx)
+	`, amqSaveEligibleSongFrom, amqSaveEligibleSongWhere, typeClause, nextIdx)
+	return query, append(typeArgs, minSongs)
+}
 
-	args := append(typeArgs, minSongs)
+func (r *songRepository) FindRandomGenreForAMQSave(ctx context.Context, themeTypes []string, minSongs int) (*domain.AMQSaveThemeAnchor, error) {
+	query, args := buildFindRandomGenreForAMQSaveQuery(themeTypes, minSongs)
 	var row struct {
 		ID   uint64 `db:"id"`
 		Name string `db:"name"`

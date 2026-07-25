@@ -9,6 +9,7 @@ export interface SaveRoundData {
 	game_type?: string;
 	round_phase?: string;
 	preview_seconds?: number;
+	vote_seconds?: number;
 	preview_index?: number;
 	candidates?: Array<{
 		song_uuid: string;
@@ -44,7 +45,7 @@ export function resolveSelectedCandidateOnReconnect(
 	roundPhase: string | undefined,
 	selectedSongUuid: string | undefined
 ): string {
-	if (roundPhase === "preview_select") {
+	if (roundPhase === "preview_select" || roundPhase === "vote_select") {
 		return selectedSongUuid || "";
 	}
 	return "";
@@ -80,7 +81,10 @@ export function applySavePhaseChange(
 	return {
 		currentRoundData: merged,
 		saveRoundResults,
-		localTimer: merged.preview_seconds ?? fallbackPreviewSeconds,
+		localTimer:
+			merged.round_phase === "vote_select"
+				? (payload.vote_seconds ?? merged.vote_seconds ?? 10)
+				: (merged.preview_seconds ?? fallbackPreviewSeconds),
 	};
 }
 

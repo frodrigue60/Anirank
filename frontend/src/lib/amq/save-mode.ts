@@ -7,7 +7,10 @@ export interface SaveRoundView {
 	preview_index?: number;
 	winner_play_index?: number;
 	winners?: string[];
+	vote_seconds?: number;
 }
+
+export const SAVE_VOTE_SECONDS = 10;
 
 export function isSaveGameType(gameType: string | undefined): boolean {
 	return gameType === "save-4" || gameType === "save-6";
@@ -19,12 +22,23 @@ export function saveGameModeLabel(type: string): string {
 	return type;
 }
 
+export function canSelectSaveCandidate(savePhase: string): boolean {
+	return savePhase === "preview_select" || savePhase === "vote_select";
+}
+
+export function savePhaseTimerLabel(savePhase: string): string {
+	if (savePhase === "winner_playback") return "Winner";
+	if (savePhase === "vote_select") return "Vote";
+	return "Preview";
+}
+
 export function getSaveActiveCandidateIndex(
 	activeRound: SaveRoundView | null | undefined,
 	savePhase: string,
 	saveRoundResults: { winners?: string[] } | null | undefined
 ): number {
-	if (!activeRound?.candidates?.length) return 0;
+	if (!activeRound?.candidates?.length) return -1;
+	if (savePhase === "vote_select") return -1;
 
 	if (savePhase === "winner_playback") {
 		const winners = activeRound.winners || saveRoundResults?.winners || [];
@@ -37,5 +51,5 @@ export function getSaveActiveCandidateIndex(
 }
 
 export function shouldShowSavedSelection(savePhase: string, selectedUuid: string, candidateUuid: string): boolean {
-	return savePhase === "preview_select" && selectedUuid === candidateUuid;
+	return canSelectSaveCandidate(savePhase) && selectedUuid === candidateUuid;
 }

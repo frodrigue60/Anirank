@@ -43,9 +43,19 @@ describe("AMQ save mode helpers", () => {
 		expect(idx).toBe(1);
 	});
 
-	it("only shows saved badge during preview when selected", () => {
+	it("only shows saved badge during preview or vote when selected", () => {
 		expect(shouldShowSavedSelection("preview_select", "a", "a")).toBe(true);
+		expect(shouldShowSavedSelection("vote_select", "a", "a")).toBe(true);
 		expect(shouldShowSavedSelection("preview_select", "a", "b")).toBe(false);
 		expect(shouldShowSavedSelection("winner_playback", "a", "a")).toBe(false);
+	});
+
+	it("returns no active preview index during vote_select", () => {
+		const idx = getSaveActiveCandidateIndex(
+			{ candidates: [{ song_uuid: "a" }, { song_uuid: "b" }], preview_index: 1 },
+			"vote_select",
+			null
+		);
+		expect(idx).toBe(-1);
 	});
 });

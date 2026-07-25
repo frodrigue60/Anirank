@@ -583,6 +583,8 @@ lobby ──[start_game]──► playing (preview_select)
                               │
                     [preview_step timer × N candidates]
                               │
+                         vote_select (10s)
+                              │
                          tally votes
                               │
                          winner_playback
@@ -592,7 +594,7 @@ lobby ──[start_game]──► playing (preview_select)
                          finishSaveRound ──► next round OR finished
 ```
 
-Phases stored in `LobbyRoom.RoundPhase`: `preview_select`, `winner_playback`.
+Phases stored in `LobbyRoom.RoundPhase`: `preview_select`, `vote_select`, `winner_playback`.
 
 #### Additional backend events
 
@@ -601,7 +603,7 @@ Phases stored in `LobbyRoom.RoundPhase`: `preview_select`, `winner_playback`.
 | `EvSelectCandidate` | `select_candidate` WS | `handleSelectCandidate` — toggle vote during preview |
 | `EvSkipWinnerPlayback` | `skip_winner_playback` WS | `handleSkipSavePlayback` — host skips remaining winner playback |
 
-Timer types: `preview_step`, `winner_step` (both use `PreviewSeconds`).
+Timer types: `preview_step`, `vote_step` (10s fixed), `winner_step` (both preview/winner use `PreviewSeconds` for playback steps).
 
 #### Additional server → client messages
 
@@ -617,7 +619,7 @@ Timer types: `preview_step`, `winner_step` (both use `PreviewSeconds`).
 
 | Type | Payload | Permission |
 |------|---------|-----------|
-| `select_candidate` | `{ "song_uuid": string }` — empty string deselects | Non-spectator players during `preview_select` |
+| `select_candidate` | `{ "song_uuid": string }` — empty string deselects | Non-spectator players during `preview_select` or `vote_select` |
 | `skip_winner_playback` | (none) | Host only during `winner_playback` |
 
 `skip_summary` remains for quiz **reveal** skip; save mode winner skip uses `skip_winner_playback`.

@@ -89,7 +89,7 @@ type LobbyRoom struct {
 	SaveRounds        []domain.AMQSaveRound
 	SaveRoundHistory  []domain.AMQSaveRoundResult
 	SaveCandidates    []domain.Song
-	RoundPhase    string // preview_select, winner_playback
+	RoundPhase    string // preview_select, vote_select, winner_playback
 	PreviewIndex  int
 	WinnerPlayIndex int
 	RoundWinners  []string
@@ -840,6 +840,10 @@ func (r *LobbyRoom) handleTimerExpired(timerType string) {
 
 	if timerType == "preview_step" && isSave {
 		r.handlePreviewStepExpired()
+		return
+	}
+	if timerType == "vote_step" && isSave {
+		r.handleVoteStepExpired()
 		return
 	}
 	if timerType == "winner_step" && isSave {

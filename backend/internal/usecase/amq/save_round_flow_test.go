@@ -29,6 +29,12 @@ func TestSaveRoundLifecycle(t *testing.T) {
 		room.handlePreviewStepExpired()
 	}
 
+	if room.RoundPhase != "vote_select" {
+		t.Fatalf("expected vote_select after previews, got %q", room.RoundPhase)
+	}
+
+	room.handleVoteStepExpired()
+
 	if room.RoundPhase != "winner_playback" {
 		t.Fatalf("expected winner_playback after previews, got %q", room.RoundPhase)
 	}

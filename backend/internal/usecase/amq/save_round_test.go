@@ -29,13 +29,41 @@ func TestTallyWithNilVoteCountsMap(t *testing.T) {
 	room.RoundVoteCounts = nil
 	room.Players["p1"].SelectedSongUUID = "song-uuid-1"
 
-	room.handlePreviewStepExpired()
+	room.handleVoteStepExpired()
 
 	if room.RoundVoteCounts == nil {
 		t.Fatal("vote counts map must be initialized")
 	}
 	if room.RoundVoteCounts["song-uuid-1"] != 1 {
 		t.Fatalf("expected 1 vote, got %d", room.RoundVoteCounts["song-uuid-1"])
+	}
+}
+
+func TestPreviewCompleteEntersVoteSelect(t *testing.T) {
+	room := newSaveTestRoom(nil)
+	room.RoundPhase = "preview_select"
+	room.Status = "playing"
+	room.SaveCandidates = testSaveSongs(4)
+	room.PreviewIndex = 3
+	room.RoundVoteCounts = make(map[string]int)
+
+	room.handlePreviewStepExpired()
+
+	if room.RoundPhase != "vote_select" {
+		t.Fatalf("expected vote_select after previews, got %q", room.RoundPhase)
+	}
+}
+
+func TestSelectCandidateAllowedDuringVoteSelect(t *testing.T) {
+	room := newSaveTestRoom(nil)
+	room.RoundPhase = "vote_select"
+	room.Status = "playing"
+	room.SaveCandidates = testSaveSongs(4)
+	room.Players["p1"] = &domain.AMQPlayer{SessionID: "p1"}
+
+	room.handleSelectCandidate(&SelectCandidateEvent{SessionID: "p1", SongUUID: "song-uuid-3"})
+	if room.Players["p1"].SelectedSongUUID != "song-uuid-3" {
+		t.Fatalf("expected vote during vote_select phase")
 	}
 }
 
@@ -75,7 +103,7 @@ func TestTallyVotesSingleWinner(t *testing.T) {
 	room.Players["p2"].SelectedSongUUID = "song-uuid-1"
 	room.Players["p3"].SelectedSongUUID = "song-uuid-2"
 
-	room.handlePreviewStepExpired()
+	room.handleVoteStepExpired()
 
 	if len(room.RoundWinners) != 1 || room.RoundWinners[0] != "song-uuid-1" {
 		t.Fatalf("expected song-uuid-1 winner, got %v", room.RoundWinners)
@@ -93,7 +121,7 @@ func TestTallyVotesTie(t *testing.T) {
 	room.Players["p1"].SelectedSongUUID = "song-uuid-1"
 	room.Players["p2"].SelectedSongUUID = "song-uuid-2"
 
-	room.handlePreviewStepExpired()
+	room.handleVoteStepExpired()
 
 	if len(room.RoundWinners) != 2 {
 		t.Fatalf("expected 2 tied winners, got %v", room.RoundWinners)
@@ -103,7 +131,7 @@ func TestTallyVotesTie(t *testing.T) {
 func TestTallyVotesZeroVotesSkipsWinnerPlayback(t *testing.T) {
 	room := setupRoomForTally(t)
 
-	room.handlePreviewStepExpired()
+	room.handleVoteStepExpired()
 
 	if len(room.RoundWinners) != 0 {
 		t.Fatalf("zero votes must not produce winners, got %v", room.RoundWinners)
@@ -147,7 +175,7 @@ func TestOfflinePlayersDoNotVote(t *testing.T) {
 	room.Players["p2"].SelectedSongUUID = "song-uuid-2"
 	room.Players["p2"].Offline = true
 
-	room.handlePreviewStepExpired()
+	room.handleVoteStepExpired()
 
 	if room.RoundVoteCounts["song-uuid-2"] != 0 {
 		t.Fatal("offline player vote must not count")
@@ -201,10 +229,10 @@ func TestRecordSaveRoundHistory(t *testing.T) {
 func setupRoomForTally(t *testing.T) *LobbyRoom {
 	t.Helper()
 	room := newSaveTestRoom(nil)
-	room.RoundPhase = "preview_select"
+	room.RoundPhase = "vote_select"
 	room.Status = "playing"
 	room.SaveCandidates = testSaveSongs(4)
-	room.PreviewIndex = 4 // preview finished
+	room.PreviewIndex = 4
 	room.RoundVoteCounts = make(map[string]int)
 
 	room.Players["p1"] = &domain.AMQPlayer{SessionID: "p1"}

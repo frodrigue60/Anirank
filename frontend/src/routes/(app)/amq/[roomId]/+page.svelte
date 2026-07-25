@@ -28,7 +28,15 @@
     saveGameModeLabel,
     getSaveActiveCandidateIndex as getSaveActiveCandidateIndexHelper,
     shouldShowSavedSelection,
+    canSelectSaveCandidate,
+    savePhaseTimerLabel,
   } from "$lib/amq/save-mode";
+  import {
+    prefetchSaveCandidateMedia,
+    warmSaveVideoElement,
+    warmSaveVideoElements,
+    resetSaveMediaPrefetchCache,
+  } from "$lib/amq/save-video-prefetch";
   import {
     applySaveLobbyStateUpdate,
     applySavePhaseChange,
@@ -359,6 +367,7 @@
             const saveStart = applySaveRoundStart(msg.payload);
             currentRoundData = saveStart.currentRoundData;
             localTimer = saveStart.localTimer;
+            prefetchSaveCandidateMedia(msg.payload.candidates);
           } else {
             currentRoundData = msg.payload;
             localTimer = msg.payload.preview_seconds ?? msg.payload.guess_time ?? 20;
@@ -373,6 +382,7 @@
           saveVideoEls = {};
           saveVideoStarted = {};
           saveReconnectPending = false;
+          resetSaveMediaPrefetchCache();
           isPlaying = true;
           nextAudioUrl = "";
           
@@ -519,6 +529,7 @@
 
   function saveVideoRef(node: HTMLVideoElement, songUuid: string) {
     saveVideoEls = { ...saveVideoEls, [songUuid]: node };
+    warmSaveVideoElement(node);
     return {
       destroy() {
         if (saveVideoEls[songUuid] === node) {
@@ -574,6 +585,16 @@
     const _preview = activeRound.preview_index;
     const _winner = activeRound.winner_play_index;
 
+    if (savePhase === "vote_select") {
+      activeRound.candidates.forEach((candidate: any) => {
+        const vid = saveVideoEls[candidate.song_uuid];
+        if (vid) vid.pause();
+      });
+      return;
+    }
+
+    if (activeIdx < 0) return;
+
     activeRound.candidates.forEach((candidate: any, idx: number) => {
       const vid = saveVideoEls[candidate.song_uuid];
       if (!vid) return;
@@ -592,6 +613,11 @@
         vid.pause();
       }
     });
+  });
+
+  $effect(() => {
+    if (!isSaveMode || status !== "playing" || !activeRound?.candidates?.length) return;
+    warmSaveVideoElements(saveVideoEls);
   });
 
   // Autocomplete search
@@ -639,7 +665,7 @@
   }
 
   function selectSaveCandidate(songUuid: string) {
-    if (savePhase !== "preview_select" || !selfPlayer || selfPlayer.is_spectator) return;
+    if (!canSelectSaveCandidate(savePhase) || !selfPlayer || selfPlayer.is_spectator) return;
     if (selectedCandidate === songUuid) {
       selectedCandidate = "";
       sendWSMessage("select_candidate", { song_uuid: "" });
@@ -976,7 +1002,11 @@
                   {/if}
                 </div>
                 <h2 class="text-lg font-black text-on-surface tracking-tight leading-snug">{activeRound?.theme_label || "Save Round"}</h2>
-                {#if savePhase === "preview_select" && getSavePreviewCandidate()}
+                {#if savePhase === "vote_select"}
+                  <p class="text-[11px] text-on-surface-variant">
+                    Final vote — pick your save before time runs out.
+                  </p>
+                {:else if savePhase === "preview_select" && getSavePreviewCandidate()}
                   <p class="text-[11px] text-on-surface-variant truncate">
                     Now playing: <span class="font-bold text-on-surface">{getSavePreviewCandidate()?.theme_label}</span>
                     — {getSavePreviewCandidate()?.anime_title}
@@ -1001,7 +1031,7 @@
                 </div>
                 <div class="text-right min-w-[72px]">
                   <div class="text-[10px] uppercase font-black text-on-surface-variant tracking-widest">
-                    {savePhase === "winner_playback" ? "Winner" : "Preview"}
+                    {savePhaseTimerLabel(savePhase)}
                   </div>
                   <div class="text-2xl font-black text-primary leading-none">{localTimer}s</div>
                 </div>
@@ -1026,12 +1056,12 @@
                   <button
                     type="button"
                     onclick={() => selectSaveCandidate(candidate.song_uuid)}
-                    disabled={savePhase !== "preview_select" || selfPlayer?.is_spectator}
+                    disabled={!canSelectSaveCandidate(savePhase) || selfPlayer?.is_spectator}
                     class="relative aspect-video rounded-sm border overflow-hidden transition-all cursor-pointer disabled:cursor-default text-left
                       {isWinner ? 'border-primary ring-2 ring-primary/50' : 'border-outline-variant'}
                       {isActiveWinner ? 'ring-2 ring-primary border-primary' : ''}
                       {isSelected ? 'ring-2 ring-green-500/80 border-green-500/60' : ''}
-                      {savePhase === 'preview_select' && !selfPlayer?.is_spectator && !isSelected ? 'hover:border-primary/40' : ''}"
+                      {canSelectSaveCandidate(savePhase) && !selfPlayer?.is_spectator && !isSelected ? 'hover:border-primary/40' : ''}"
                   >
                     <video
                       use:saveVideoRef={candidate.song_uuid}

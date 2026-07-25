@@ -13,6 +13,8 @@ type SelectCandidateEvent struct {
 	SongUUID  string
 }
 
+const saveVoteSeconds = 10
+
 func (r *LobbyRoom) startSaveRound() {
 	r.mu.Lock()
 	if r.CurrentRound >= len(r.SaveRounds) || r.CurrentRound >= r.Config.MaxRounds {
@@ -88,7 +90,54 @@ func (r *LobbyRoom) handlePreviewStepExpired() {
 		return
 	}
 
-	// Preview finished — lock selections and tally votes.
+	r.mu.Unlock()
+	r.startVoteSelectPhase()
+}
+
+func (r *LobbyRoom) startVoteSelectPhase() {
+	r.mu.Lock()
+	r.RoundPhase = "vote_select"
+	if r.Timer != nil {
+		r.Timer.Stop()
+	}
+	r.mu.Unlock()
+
+	r.scheduleVoteStepTimer()
+	r.broadcast("phase_change", map[string]interface{}{
+		"round_phase":  "vote_select",
+		"vote_seconds": saveVoteSeconds,
+	})
+	r.broadcast("lobby_state_update", r.getRoomStatePayload())
+}
+
+func (r *LobbyRoom) scheduleVoteStepTimer() {
+	r.mu.Lock()
+	r.TimerType = "vote_step"
+	r.TimerStart = time.Now()
+	r.TimerDuration = time.Duration(saveVoteSeconds) * time.Second
+	if r.Timer != nil {
+		r.Timer.Stop()
+	}
+	r.Timer = time.AfterFunc(r.TimerDuration, func() {
+		r.SendEvent(RoomEvent{Type: EvTimerExpired, Data: "vote_step"})
+	})
+	r.mu.Unlock()
+
+	r.broadcast("lobby_state_update", r.getRoomStatePayload())
+}
+
+func (r *LobbyRoom) handleVoteStepExpired() {
+	r.mu.Lock()
+	if r.RoundPhase != "vote_select" {
+		r.mu.Unlock()
+		return
+	}
+	r.mu.Unlock()
+	r.tallySaveRoundVotes()
+}
+
+func (r *LobbyRoom) tallySaveRoundVotes() {
+	r.mu.Lock()
 	if r.RoundVoteCounts == nil {
 		r.RoundVoteCounts = make(map[string]int)
 	}
@@ -237,7 +286,7 @@ func (r *LobbyRoom) finishSaveRound() {
 
 func (r *LobbyRoom) handleSelectCandidate(ev *SelectCandidateEvent) {
 	r.mu.Lock()
-	if r.RoundPhase != "preview_select" || r.Status != "playing" {
+	if (r.RoundPhase != "preview_select" && r.RoundPhase != "vote_select") || r.Status != "playing" {
 		r.mu.Unlock()
 		return
 	}
@@ -373,6 +422,7 @@ func (r *LobbyRoom) buildSaveRoundDataPayload() map[string]interface{} {
 		"preview_index":       r.PreviewIndex,
 		"winner_play_index":   r.WinnerPlayIndex,
 		"preview_seconds":     r.Config.PreviewSeconds,
+		"vote_seconds":        saveVoteSeconds,
 		"theme_label":         themeLabel,
 		"round_theme_type":    roundThemeType,
 		"is_fallback":         isFallback,

@@ -27,6 +27,9 @@ WHERE s.status = true
 
 const amqSaveEligibleSongJoin = amqSaveEligibleSongFrom + amqSaveEligibleSongWhere
 
+// Normalized display name used to dedupe same theme performed by different artists.
+const amqSaveSongNameKey = `LOWER(TRIM(COALESCE(NULLIF(s.song_romaji, ''), NULLIF(s.song_en, ''), NULLIF(s.song_jp, ''), s.uuid)))`
+
 func amqSaveThemeTypeClause(themeTypes []string, argIdx int) (string, []interface{}, int) {
 	if len(themeTypes) == 0 {
 		return "", nil, argIdx
@@ -164,24 +167,27 @@ func (r *songRepository) FindRandomSeasonYearForAMQSave(ctx context.Context, the
 	}, nil
 }
 
-func (r *songRepository) FindRandomAnimeForAMQSave(ctx context.Context, themeTypes []string, minThemes int) (*domain.AMQSaveThemeAnchor, error) {
+func buildFindRandomAnimeForAMQSaveQuery(themeTypes []string, minDistinctNames int) (string, []interface{}) {
 	typeClause, typeArgs, nextIdx := amqSaveThemeTypeClause(themeTypes, 1)
 	query := fmt.Sprintf(`
 		SELECT a.id, a.uuid, a.title
 		FROM (
 		  SELECT s.anime_id,
-		         COUNT(DISTINCT (st.slug || ':' || s.theme_num)) AS theme_count
+		         COUNT(DISTINCT %s) AS distinct_name_count
 		  %s
 		  %s
 		  GROUP BY s.anime_id
-		  HAVING COUNT(DISTINCT (st.slug || ':' || s.theme_num)) >= $%d
+		  HAVING COUNT(DISTINCT %s) >= $%d
 		) q
 		JOIN animes a ON q.anime_id = a.id
 		ORDER BY RANDOM()
 		LIMIT 1
-	`, amqSaveEligibleSongJoin, typeClause, nextIdx)
+	`, amqSaveSongNameKey, amqSaveEligibleSongJoin, typeClause, amqSaveSongNameKey, nextIdx)
+	return query, append(typeArgs, minDistinctNames)
+}
 
-	args := append(typeArgs, minThemes)
+func (r *songRepository) FindRandomAnimeForAMQSave(ctx context.Context, themeTypes []string, minDistinctNames int) (*domain.AMQSaveThemeAnchor, error) {
+	query, args := buildFindRandomAnimeForAMQSaveQuery(themeTypes, minDistinctNames)
 	var row struct {
 		ID    uint64 `db:"id"`
 		UUID  string `db:"uuid"`
@@ -271,9 +277,7 @@ func (r *songRepository) GetRandomSongIDsForAMQSave(ctx context.Context, anchor 
 		if anchor.AnimeID == nil {
 			return nil, fmt.Errorf("anime anchor missing anime_id")
 		}
-		filterClause = fmt.Sprintf(" AND s.anime_id = $%d", nextIdx)
-		filterArgs = append(filterArgs, *anchor.AnimeID)
-		nextIdx++
+		return r.getRandomAnimeSongIDsForAMQSave(ctx, *anchor.AnimeID, themeTypes, count)
 	case "genre":
 		if anchor.GenreID == nil {
 			return nil, fmt.Errorf("genre anchor missing genre_id")
@@ -301,6 +305,37 @@ func (r *songRepository) GetRandomSongIDsForAMQSave(ctx context.Context, anchor 
 	args := append(typeArgs, filterArgs...)
 	args = append(args, count)
 
+	var ids []uint64
+	if err := r.db.SelectContext(ctx, &ids, query, args...); err != nil {
+		return nil, err
+	}
+	if ids == nil {
+		return []uint64{}, nil
+	}
+	return ids, nil
+}
+
+func buildGetRandomAnimeSongIDsForAMQSaveQuery(themeTypes []string, animeID uint64, count int) (string, []interface{}) {
+	typeClause, typeArgs, nextIdx := amqSaveThemeTypeClause(themeTypes, 1)
+	query := fmt.Sprintf(`
+		SELECT id FROM (
+		  SELECT id FROM (
+		    SELECT s.id,
+		           ROW_NUMBER() OVER (PARTITION BY %s ORDER BY RANDOM()) AS rn
+		    %s
+		    %s
+		    AND s.anime_id = $%d
+		  ) ranked
+		  WHERE rn = 1
+		) distinct_names
+		ORDER BY RANDOM()
+		LIMIT $%d
+	`, amqSaveSongNameKey, amqSaveEligibleSongJoin, typeClause, nextIdx, nextIdx+1)
+	return query, append(append(typeArgs, animeID), count)
+}
+
+func (r *songRepository) getRandomAnimeSongIDsForAMQSave(ctx context.Context, animeID uint64, themeTypes []string, count int) ([]uint64, error) {
+	query, args := buildGetRandomAnimeSongIDsForAMQSaveQuery(themeTypes, animeID, count)
 	var ids []uint64
 	if err := r.db.SelectContext(ctx, &ids, query, args...); err != nil {
 		return nil, err

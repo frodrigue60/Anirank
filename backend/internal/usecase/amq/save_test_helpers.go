@@ -40,10 +40,11 @@ func (stubMediaService) FileExists(ctx context.Context, path string) (bool, erro
 
 type saveTestSongRepo struct {
 	testutil.MockSongRepository
-	artistAnchor *domain.AMQSaveThemeAnchor
-	genreAnchor  *domain.AMQSaveThemeAnchor
-	songIDs      []uint64
-	roundType    string
+	artistAnchor      *domain.AMQSaveThemeAnchor
+	genreAnchor       *domain.AMQSaveThemeAnchor
+	songIDs           []uint64
+	roundType         string
+	onFindRandomAnime func(minDistinctNames int)
 }
 
 func (r *saveTestSongRepo) FindRandomArtistForAMQSave(ctx context.Context, themeTypes []string, minSongs int) (*domain.AMQSaveThemeAnchor, error) {
@@ -62,6 +63,9 @@ func (r *saveTestSongRepo) FindRandomSeasonYearForAMQSave(ctx context.Context, t
 }
 
 func (r *saveTestSongRepo) FindRandomAnimeForAMQSave(ctx context.Context, themeTypes []string, minThemes int) (*domain.AMQSaveThemeAnchor, error) {
+	if r.onFindRandomAnime != nil {
+		r.onFindRandomAnime(minThemes)
+	}
 	return nil, nil
 }
 

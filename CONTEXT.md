@@ -573,7 +573,7 @@ Sanitization: `sanitizeSaveConfig()` in `save_pool_builder.go` / `save_round.go`
 - Theme kinds: `artist`, `year`, `season`, `anime`, `genre`.
 - Each round is **all OP or all ED** (`RoundThemeType`); lobby `"both"` picks OP or ED randomly per round.
 - Theme keys deduplicated within a game (`ThemeKey`).
-- Minimum **2** candidates per round; ideal count is 4 (`save-4`) or 6 (`save-6`). Anime anchors require ≥2 distinct `(type:theme_num)` themes.
+- Minimum **2** candidates per round; ideal count is 4 (`save-4`) or 6 (`save-6`). Anime anchors require ≥**4** eligible songs with **distinct normalized titles** (same `theme_num` by different artists/seiyu does not count as separate options).
 - Fallback rounds (`IsFallback: true`) use the global local-video pool only — **no embed URLs**.
 - `balanced` distribution prioritizes one kind per round slot before retrying others.
 

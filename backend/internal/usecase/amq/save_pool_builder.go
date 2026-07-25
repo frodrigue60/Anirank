@@ -9,8 +9,9 @@ import (
 )
 
 const (
-	saveRoundMaxAttempts = 12
-	saveMinCandidates    = 2
+	saveRoundMaxAttempts      = 12
+	saveMinCandidates         = 2
+	saveAnimeMinDistinctNames = 4
 )
 
 var saveThemeKinds = []string{"artist", "year", "season", "anime", "genre"}
@@ -188,7 +189,11 @@ func (r *LobbyRoom) findSaveAnchor(ctx context.Context, kind string, themeTypes 
 	case "season":
 		return r.SongRepo.FindRandomSeasonYearForAMQSave(ctx, themeTypes, minPool)
 	case "anime":
-		return r.SongRepo.FindRandomAnimeForAMQSave(ctx, themeTypes, saveMinCandidates)
+		minDistinctNames := saveAnimeMinDistinctNames
+		if optionCount > minDistinctNames {
+			minDistinctNames = optionCount
+		}
+		return r.SongRepo.FindRandomAnimeForAMQSave(ctx, themeTypes, minDistinctNames)
 	case "genre":
 		return r.SongRepo.FindRandomGenreForAMQSave(ctx, themeTypes, minPool)
 	default:

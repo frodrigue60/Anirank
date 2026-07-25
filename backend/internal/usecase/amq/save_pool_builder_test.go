@@ -152,6 +152,25 @@ func TestThemeKindsForRoundBalancedPrioritizesSlot(t *testing.T) {
 	}
 }
 
+func TestFindSaveAnchorAnimeRequiresFourDistinctNames(t *testing.T) {
+	lastMin := 0
+	repo := &saveTestSongRepo{
+		onFindRandomAnime: func(minDistinctNames int) {
+			lastMin = minDistinctNames
+		},
+	}
+	room := newSaveTestRoom(repo)
+	room.findSaveAnchor(context.Background(), "anime", []string{"OP"}, 4)
+	if lastMin != 4 {
+		t.Fatalf("expected min 4 distinct names for save-4, got %d", lastMin)
+	}
+
+	room.findSaveAnchor(context.Background(), "anime", []string{"OP"}, 6)
+	if lastMin != 6 {
+		t.Fatalf("expected min 6 distinct names for save-6, got %d", lastMin)
+	}
+}
+
 func TestBuildSaveRoundPoolDedupThemeKeys(t *testing.T) {
 	repo := &saveTestSongRepo{
 		artistAnchor: &domain.AMQSaveThemeAnchor{

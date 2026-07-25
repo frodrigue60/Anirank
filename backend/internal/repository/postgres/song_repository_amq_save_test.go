@@ -107,12 +107,12 @@ func TestFindRandomSeasonYearForAMQSave(t *testing.T) {
 func TestFindRandomAnimeForAMQSave(t *testing.T) {
 	repo, mock := newAMQSaveTestRepo(t)
 
-	mock.ExpectQuery("HAVING COUNT\\(DISTINCT \\(st.slug \\|\\| ':' \\|\\| s.theme_num\\)\\)").
-		WithArgs("OP", 2).
+	mock.ExpectQuery("HAVING COUNT\\(DISTINCT LOWER\\(TRIM\\(COALESCE").
+		WithArgs("OP", 4).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "uuid", "title"}).
 			AddRow(uint64(99), "anime-uuid", "Test Anime"))
 
-	anchor, err := repo.FindRandomAnimeForAMQSave(context.Background(), []string{"OP"}, 2)
+	anchor, err := repo.FindRandomAnimeForAMQSave(context.Background(), []string{"OP"}, 4)
 	require.NoError(t, err)
 	require.NotNil(t, anchor)
 	assert.Equal(t, "anime", anchor.Kind)
@@ -120,6 +120,13 @@ func TestFindRandomAnimeForAMQSave(t *testing.T) {
 	assert.Equal(t, "anime-uuid", anchor.AnimeUUID)
 	assert.Equal(t, "Test Anime", anchor.AnimeTitle)
 	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestFindRandomAnimeForAMQSave_QueryUsesDistinctSongNames(t *testing.T) {
+	query, args := buildFindRandomAnimeForAMQSaveQuery([]string{"OP"}, 4)
+	assert.Contains(t, query, amqSaveSongNameKey)
+	assert.NotContains(t, query, "theme_num")
+	assert.Equal(t, []interface{}{"OP", 4}, args)
 }
 
 func TestFindRandomGenreForAMQSave(t *testing.T) {
@@ -181,7 +188,7 @@ func TestGetRandomSongIDsForAMQSave_AnimeAnchor(t *testing.T) {
 	repo, mock := newAMQSaveTestRepo(t)
 	animeID := uint64(99)
 
-	mock.ExpectQuery("AND s.anime_id = \\$2").
+	mock.ExpectQuery("ROW_NUMBER\\(\\) OVER \\(PARTITION BY").
 		WithArgs("ED", animeID, 3).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).
 			AddRow(uint64(501)).
@@ -195,6 +202,13 @@ func TestGetRandomSongIDsForAMQSave_AnimeAnchor(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, ids, 3)
 	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestGetRandomAnimeSongIDsForAMQSave_QueryDedupesBySongName(t *testing.T) {
+	query, args := buildGetRandomAnimeSongIDsForAMQSaveQuery([]string{"OP"}, 42, 4)
+	assert.Contains(t, query, "ROW_NUMBER() OVER (PARTITION BY")
+	assert.Contains(t, query, amqSaveSongNameKey)
+	assert.Equal(t, []interface{}{"OP", uint64(42), 4}, args)
 }
 
 func TestGetRandomSongIDsForAMQSave_MissingArtistID(t *testing.T) {

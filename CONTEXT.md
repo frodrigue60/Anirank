@@ -580,7 +580,11 @@ Sanitization: `sanitizeSaveConfig()` in `save_pool_builder.go` / `save_round.go`
 #### Save state machine
 
 ```
-lobby ──[start_game]──► playing (preview_select)
+lobby ──[start_game]──► playing (media_buffer)
+                              │
+                    [host media_ready OR 8s timeout]
+                              │
+                         preview_select
                               │
                     [preview_step timer × N candidates]
                               │
@@ -595,23 +599,26 @@ lobby ──[start_game]──► playing (preview_select)
                          finishSaveRound ──► next round OR finished
 ```
 
-Phases stored in `LobbyRoom.RoundPhase`: `preview_select`, `vote_select`, `winner_playback`.
+Phases stored in `LobbyRoom.RoundPhase`: `media_buffer`, `preview_select`, `vote_select`, `winner_playback`.
 
 #### Additional backend events
 
 | Constant | Trigger | Handler |
 |----------|---------|---------|
 | `EvSelectCandidate` | `select_candidate` WS | `handleSelectCandidate` — toggle vote during preview |
+| `EvMediaReady` | `media_ready` WS | Host signals slot-0 video buffered; starts preview (8s timeout fallback) |
 | `EvSkipWinnerPlayback` | `skip_winner_playback` WS | `handleSkipSavePlayback` — host skips remaining winner playback |
 
-Timer types: `preview_step`, `vote_step` (`VoteSeconds` from lobby config, 0 skips the phase), `winner_step` (both preview/winner use `PreviewSeconds` for playback steps).
+Timer types: `media_buffer` (8s max, no preview countdown), `preview_step`, `vote_step` (`VoteSeconds` from lobby config, 0 skips the phase), `winner_step` (both preview/winner use `PreviewSeconds` for playback steps).
+
+`round_results` / winner `phase_change` may include `next_round` with upcoming candidate URLs for client-side preload during vote/winner playback.
 
 #### Additional server → client messages
 
 | Type | When | Key payload fields |
 |------|------|-------------------|
-| `round_start` | Save round begins | `round_phase`, `preview_index`, `preview_seconds`, `theme_label`, `round_theme_type`, `is_fallback`, `candidates[]` |
-| `phase_change` | Preview index or winner playback step | `round_phase`, `preview_index` or `winner_play_index`, optional `votes`, `winners` |
+| `round_start` | Save round begins | `round_phase` (`media_buffer`), `preview_index`, `preview_seconds`, `media_buffer_seconds`, `theme_label`, `candidates[]` |
+| `phase_change` | Buffer ends, preview index, or winner step | `round_phase`, `preview_index` or `winner_play_index`, optional `votes`, `winners`, `next_round` |
 | `round_results` | After preview tally | `votes`, `winners` |
 
 `lobby_state_update` may include `round_data` (full save snapshot for reconnect) and `save_round_history` when `status === "finished"`.
@@ -621,6 +628,7 @@ Timer types: `preview_step`, `vote_step` (`VoteSeconds` from lobby config, 0 ski
 | Type | Payload | Permission |
 |------|---------|-----------|
 | `select_candidate` | `{ "song_uuid": string }` — empty string deselects | Non-spectator players during `preview_select` or `vote_select` |
+| `media_ready` | `{ "round_number": int }` | Host only during `media_buffer` |
 | `skip_winner_playback` | (none) | Host only during `winner_playback` |
 
 `skip_summary` remains for quiz **reveal** skip; save mode winner skip uses `skip_winner_playback`.

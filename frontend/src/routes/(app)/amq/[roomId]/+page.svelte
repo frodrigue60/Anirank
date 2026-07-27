@@ -31,13 +31,19 @@
     shouldShowSavedSelection,
     canSelectSaveCandidate,
     savePhaseTimerLabel,
+    isSaveMediaBufferPhase,
   } from "$lib/amq/save-mode";
   import {
-    prefetchSaveCandidateMedia,
+    resetSaveMediaPrefetchCache,
     warmSaveVideoElement,
     warmSaveVideoElements,
-    resetSaveMediaPrefetchCache,
   } from "$lib/amq/save-video-prefetch";
+  import {
+    SaveMediaPreloadController,
+    buildSavePreloadOrder,
+    preloadSaveMediaUrls,
+    resetSaveVideoWarmCache,
+  } from "$lib/amq/save-video-preload";
   import { watchSaveVideoPlayback, type SaveVideoPlaybackContext } from "$lib/amq/save-video-playback";
   import {
     applySaveLobbyStateUpdate,
@@ -86,6 +92,10 @@
   let saveVideoStarted = $state<Record<string, boolean>>({});
   /** After reconnect, realign the active clip once to server timer. */
   let saveReconnectPending = $state(false);
+  let saveMediaPreload = new SaveMediaPreloadController();
+  let saveMediaReadyCount = $state(0);
+  let saveMediaTotalCount = $state(0);
+  let saveMediaBufferSent = $state(false);
 
   let isSaveMode = $derived(isSaveGameTypeHelper(config.game_type));
   let saveRoundHistory = $derived(roomState?.save_round_history || []);
@@ -372,7 +382,11 @@
             const saveStart = applySaveRoundStart(msg.payload);
             currentRoundData = saveStart.currentRoundData;
             localTimer = saveStart.localTimer;
-            prefetchSaveCandidateMedia(msg.payload.candidates);
+            saveMediaPreload.cancel();
+            saveMediaPreload = new SaveMediaPreloadController();
+            saveMediaReadyCount = 0;
+            saveMediaTotalCount = msg.payload.candidates?.length ?? 0;
+            saveMediaBufferSent = false;
           } else {
             currentRoundData = msg.payload;
             localTimer = msg.payload.preview_seconds ?? msg.payload.guess_time ?? 20;
@@ -388,6 +402,7 @@
           saveVideoStarted = {};
           saveReconnectPending = false;
           resetSaveMediaPrefetchCache();
+          resetSaveVideoWarmCache();
           isPlaying = true;
           nextAudioUrl = "";
           
@@ -413,6 +428,13 @@
               saveRoundResults = savePhaseUpdate.saveRoundResults;
             }
             localTimer = savePhaseUpdate.localTimer;
+            if (msg.payload.next_round?.candidates?.length) {
+              void preloadSaveMediaUrls(
+                msg.payload.next_round.candidates
+                  .map((c: { audio_url?: string }) => c.audio_url)
+                  .filter(Boolean)
+              );
+            }
           } else if (currentRoundData) {
             currentRoundData = { ...currentRoundData, ...msg.payload };
             localTimer = currentRoundData?.preview_seconds ?? config.preview_seconds ?? 12;
@@ -432,6 +454,13 @@
             currentRoundData = saveResults.currentRoundData;
             saveRoundResults = saveResults.saveRoundResults;
             selectedCandidate = "";
+            if (msg.payload.next_round?.candidates?.length) {
+              void preloadSaveMediaUrls(
+                msg.payload.next_round.candidates
+                  .map((c: { audio_url?: string }) => c.audio_url)
+                  .filter(Boolean)
+              );
+            }
           } else {
             saveRoundResults = msg.payload;
           }
@@ -563,6 +592,55 @@
     };
   }
 
+  function trySendSaveMediaReady(roundNumber: number | undefined) {
+    if (saveMediaBufferSent || !selfPlayer?.is_host || selfPlayer.is_spectator) return;
+    saveMediaBufferSent = true;
+    sendWSMessage("media_ready", { round_number: roundNumber ?? activeRound?.current_round ?? 0 });
+  }
+
+  // Buffer phase: sequential preload; host signals when slot 0 is ready.
+  $effect(() => {
+    if (!isSaveMode || savePhase !== "media_buffer" || !activeRound?.candidates?.length) return;
+
+    const candidates = activeRound.candidates;
+    const roundNumber = activeRound.current_round;
+    const videoKeys = Object.keys(saveVideoEls);
+    if (videoKeys.length < candidates.length) return;
+
+    saveMediaPreload.cancel();
+    saveMediaPreload = new SaveMediaPreloadController();
+    saveMediaBufferSent = false;
+    const order = buildSavePreloadOrder(candidates.length, 0);
+    saveMediaTotalCount = order.length;
+    saveMediaReadyCount = 0;
+
+    void (async () => {
+      const result = await saveMediaPreload.preloadRoundSlots(
+        candidates,
+        saveVideoEls,
+        order,
+        (ready, total) => {
+          saveMediaReadyCount = ready;
+          saveMediaTotalCount = total;
+        }
+      );
+      if (result.slotZeroReady && savePhase === "media_buffer") {
+        trySendSaveMediaReady(typeof roundNumber === "number" ? roundNumber : undefined);
+      }
+    })();
+
+    return () => saveMediaPreload.cancel();
+  });
+
+  // Lookahead: warm the next preview slot during the current one.
+  $effect(() => {
+    if (!isSaveMode || savePhase !== "preview_select" || !activeRound?.candidates?.length) return;
+    const nextIdx = (activeRound.preview_index ?? 0) + 1;
+    const nextCandidate = activeRound.candidates[nextIdx];
+    if (!nextCandidate) return;
+    void saveMediaPreload.preloadLookaheadSlot(nextCandidate, saveVideoEls);
+  });
+
   // Play/pause tiles; retry seek/play until the active video is ready.
   $effect(() => {
     if (!isSaveMode || status !== "playing" || !activeRound?.candidates?.length) return;
@@ -573,7 +651,7 @@
     const _timer = localTimer;
     const cleanups: Array<() => void> = [];
 
-    if (savePhase === "vote_select") {
+    if (savePhase === "media_buffer" || savePhase === "vote_select") {
       activeRound.candidates.forEach((candidate: any) => {
         const vid = saveVideoEls[candidate.song_uuid];
         if (vid) vid.pause();
@@ -1014,6 +1092,13 @@
                   <p class="text-[11px] text-on-surface-variant">
                     Final vote — pick your save before time runs out.
                   </p>
+                {:else if isSaveMediaBufferPhase(savePhase)}
+                  <p class="text-[11px] text-on-surface-variant">
+                    Preparing videos… {saveMediaReadyCount}/{saveMediaTotalCount || activeRound?.candidates?.length || 0} ready
+                    {#if selfPlayer?.is_host && !selfPlayer?.is_spectator}
+                      <span class="block text-[10px] mt-0.5">Preview starts when the first video is buffered.</span>
+                    {/if}
+                  </p>
                 {:else if savePhase === "preview_select" && getSavePreviewCandidate()}
                   <p class="text-[11px] text-on-surface-variant truncate">
                     Now playing: <span class="font-bold text-on-surface">{getSavePreviewCandidate()?.theme_label}</span>
@@ -1056,6 +1141,16 @@
             </div>
 
             {#if activeRound?.candidates?.length}
+              <div class="relative">
+                {#if isSaveMediaBufferPhase(savePhase)}
+                  <div class="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 rounded-md bg-[#09070e]/90 border border-outline-variant">
+                    <RefreshCw size={28} class="text-primary animate-spin" />
+                    <p class="text-sm font-bold text-on-surface">Preparing videos</p>
+                    <p class="text-[11px] text-on-surface-variant">
+                      {saveMediaReadyCount} / {saveMediaTotalCount || activeRound.candidates.length} ready
+                    </p>
+                  </div>
+                {/if}
               <div class="grid grid-cols-2 {activeRound.candidates.length > 4 ? 'lg:grid-cols-3' : ''} gap-3">
                 {#each activeRound.candidates as candidate, idx (candidate.song_uuid)}
                   {@const isActiveWinner = savePhase === "winner_playback" && getSaveActiveCandidateIndex() === idx}
@@ -1107,6 +1202,7 @@
                     {/if}
                   </button>
                 {/each}
+              </div>
               </div>
             {/if}
 

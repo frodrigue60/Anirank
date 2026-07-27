@@ -14,8 +14,9 @@ type SelectCandidateEvent struct {
 }
 
 const (
-	defaultSaveVoteSeconds = 10
-	maxSaveVoteSeconds     = 60
+	defaultSaveVoteSeconds    = 10
+	maxSaveVoteSeconds        = 60
+	defaultMediaBufferSeconds = 8
 )
 
 func normalizeSaveVoteSeconds(voteSeconds *int) *int {
@@ -54,7 +55,7 @@ func (r *LobbyRoom) startSaveRound() {
 
 	saveRound := r.SaveRounds[r.CurrentRound]
 	r.Status = "playing"
-	r.RoundPhase = "preview_select"
+	r.RoundPhase = "media_buffer"
 	r.PreviewIndex = 0
 	r.WinnerPlayIndex = 0
 	r.SaveCandidates = saveRound.Candidates
@@ -75,7 +76,74 @@ func (r *LobbyRoom) startSaveRound() {
 	r.mu.Unlock()
 
 	r.broadcastSaveRoundStart(currentRound, maxRounds, previewSeconds, &saveRound)
+	r.scheduleMediaBufferTimeout()
+}
+
+func (r *LobbyRoom) scheduleMediaBufferTimeout() {
+	r.mu.Lock()
+	if r.RoundPhase != "media_buffer" {
+		r.mu.Unlock()
+		return
+	}
+	bufferSecs := defaultMediaBufferSeconds
+	r.TimerType = "media_buffer"
+	r.TimerStart = time.Now()
+	r.TimerDuration = time.Duration(bufferSecs) * time.Second
+	if r.Timer != nil {
+		r.Timer.Stop()
+	}
+	r.Timer = time.AfterFunc(r.TimerDuration, func() {
+		r.SendEvent(RoomEvent{Type: EvTimerExpired, Data: "media_buffer"})
+	})
+	r.mu.Unlock()
+
+	r.broadcast("lobby_state_update", r.getRoomStatePayload())
+}
+
+func (r *LobbyRoom) beginPreviewSelectAfterBuffer() {
+	r.mu.Lock()
+	if r.RoundPhase != "media_buffer" {
+		r.mu.Unlock()
+		return
+	}
+	r.RoundPhase = "preview_select"
+	r.PreviewIndex = 0
+	if r.Timer != nil {
+		r.Timer.Stop()
+	}
+	previewSeconds := r.Config.PreviewSeconds
+	if previewSeconds <= 0 {
+		previewSeconds = 12
+	}
+	r.mu.Unlock()
+
+	r.broadcast("phase_change", map[string]interface{}{
+		"round_phase":     "preview_select",
+		"preview_index":   0,
+		"preview_seconds": previewSeconds,
+	})
 	r.schedulePreviewStepTimer()
+}
+
+func (r *LobbyRoom) handleMediaReady(ev *MediaReadyEvent) {
+	r.mu.Lock()
+	player, exists := r.Players[ev.SessionID]
+	if !exists || !player.IsHost || player.IsSpectator || player.Offline {
+		r.mu.Unlock()
+		return
+	}
+	if r.RoundPhase != "media_buffer" || r.Status != "playing" {
+		r.mu.Unlock()
+		return
+	}
+	expectedRound := r.CurrentRound + 1
+	if ev.RoundNumber > 0 && ev.RoundNumber != expectedRound {
+		r.mu.Unlock()
+		return
+	}
+	r.mu.Unlock()
+
+	r.beginPreviewSelectAfterBuffer()
 }
 
 func (r *LobbyRoom) schedulePreviewStepTimer() {
@@ -225,8 +293,9 @@ func (r *LobbyRoom) tallySaveRoundVotes() {
 	r.mu.Unlock()
 
 	r.broadcast("round_results", map[string]interface{}{
-		"votes":   voteSnapshot,
-		"winners": winnersSnapshot,
+		"votes":      voteSnapshot,
+		"winners":    winnersSnapshot,
+		"next_round": r.buildNextSaveRoundPreviewPayload(),
 	})
 	r.startWinnerPlaybackStep()
 }
@@ -276,6 +345,7 @@ func (r *LobbyRoom) startWinnerPlaybackStep() {
 		"winner_play_index": winnerPlayIndex,
 		"votes":             voteSnapshot,
 		"winners":           winnersSnapshot,
+		"next_round":        r.buildNextSaveRoundPreviewPayload(),
 	})
 	r.broadcast("lobby_state_update", r.getRoomStatePayload())
 }
@@ -376,13 +446,14 @@ func (r *LobbyRoom) handleSkipSavePlayback(sessionID string) {
 
 func (r *LobbyRoom) broadcastSaveRoundStart(currentRound, maxRounds, previewSeconds int, saveRound *domain.AMQSaveRound) {
 	payload := map[string]interface{}{
-		"current_round":   currentRound,
-		"max_rounds":      maxRounds,
-		"game_type":       r.Config.GameType,
-		"round_phase":     "preview_select",
-		"preview_index":   0,
-		"preview_seconds": previewSeconds,
-		"vote_seconds":    r.effectiveVoteSeconds(),
+		"current_round":        currentRound,
+		"max_rounds":           maxRounds,
+		"game_type":            r.Config.GameType,
+		"round_phase":          "media_buffer",
+		"preview_index":        0,
+		"preview_seconds":      previewSeconds,
+		"media_buffer_seconds": defaultMediaBufferSeconds,
+		"vote_seconds":         r.effectiveVoteSeconds(),
 		"theme_label":      saveRound.ThemeLabel,
 		"round_theme_type": saveRound.RoundThemeType,
 		"is_fallback":      saveRound.IsFallback,
@@ -391,6 +462,31 @@ func (r *LobbyRoom) broadcastSaveRoundStart(currentRound, maxRounds, previewSeco
 	}
 	r.broadcast("round_start", payload)
 	r.broadcast("lobby_state_update", r.getRoomStatePayload())
+}
+
+func (r *LobbyRoom) buildNextSaveRoundPreviewPayload() map[string]interface{} {
+	nextIdx := r.CurrentRound + 1
+	if nextIdx >= len(r.SaveRounds) || nextIdx >= r.Config.MaxRounds {
+		return nil
+	}
+	saveRound := r.SaveRounds[nextIdx]
+	candidates := make([]map[string]interface{}, 0, len(saveRound.Candidates))
+	for _, song := range saveRound.Candidates {
+		animeTitle := ""
+		if song.Anime != nil {
+			animeTitle = truncateAnimeTitle(song.Anime.Title, 32)
+		}
+		candidates = append(candidates, map[string]interface{}{
+			"song_uuid":   song.UUID,
+			"audio_url":   r.resolveAudioURL(&song),
+			"anime_title": animeTitle,
+			"theme_label": songThemeLabel(&song),
+		})
+	}
+	return map[string]interface{}{
+		"round_number": nextIdx + 1,
+		"candidates":   candidates,
+	}
 }
 
 func (r *LobbyRoom) buildSaveCandidatesPayload(candidates []domain.Song, voteCounts map[string]int, winners []string) []map[string]interface{} {
@@ -458,6 +554,7 @@ func (r *LobbyRoom) buildSaveRoundDataPayload() map[string]interface{} {
 		"preview_index":       r.PreviewIndex,
 		"winner_play_index":   r.WinnerPlayIndex,
 		"preview_seconds":     r.Config.PreviewSeconds,
+		"media_buffer_seconds": defaultMediaBufferSeconds,
 		"vote_seconds":        r.effectiveVoteSeconds(),
 		"theme_label":         themeLabel,
 		"round_theme_type":    roundThemeType,

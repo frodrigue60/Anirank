@@ -31,7 +31,12 @@ export function canSelectSaveCandidate(savePhase: string): boolean {
 	return savePhase === "preview_select" || savePhase === "vote_select";
 }
 
+export function isSaveMediaBufferPhase(savePhase: string): boolean {
+	return savePhase === "media_buffer";
+}
+
 export function savePhaseTimerLabel(savePhase: string): string {
+	if (savePhase === "media_buffer") return "Preparing";
 	if (savePhase === "winner_playback") return "Winner";
 	if (savePhase === "vote_select") return "Vote";
 	return "Preview";
@@ -44,6 +49,7 @@ export function getSaveActiveCandidateIndex(
 ): number {
 	if (!activeRound?.candidates?.length) return -1;
 	if (savePhase === "vote_select") return -1;
+	if (savePhase === "media_buffer") return -1;
 
 	if (savePhase === "winner_playback") {
 		const winners = activeRound.winners || saveRoundResults?.winners || [];

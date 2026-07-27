@@ -39,6 +39,7 @@ const (
 	EvCloseRoom
 	EvSelectCandidate
 	EvSkipWinnerPlayback
+	EvMediaReady
 )
 
 type RoomEvent struct {
@@ -75,6 +76,11 @@ type ChatEvent struct {
 	Text      string
 }
 
+type MediaReadyEvent struct {
+	SessionID   string
+	RoundNumber int
+}
+
 type LobbyRoom struct {
 	RoomID        string
 	Config        domain.AMQConfig
@@ -89,7 +95,7 @@ type LobbyRoom struct {
 	SaveRounds        []domain.AMQSaveRound
 	SaveRoundHistory  []domain.AMQSaveRoundResult
 	SaveCandidates    []domain.Song
-	RoundPhase    string // preview_select, vote_select, winner_playback
+	RoundPhase    string // media_buffer, preview_select, vote_select, winner_playback
 	PreviewIndex  int
 	WinnerPlayIndex int
 	RoundWinners  []string
@@ -220,6 +226,8 @@ func (r *LobbyRoom) handleEvent(ev RoomEvent) {
 		r.handleSkipSummary(ev.Data.(string))
 	case EvSkipWinnerPlayback:
 		r.handleSkipSavePlayback(ev.Data.(string))
+	case EvMediaReady:
+		r.handleMediaReady(ev.Data.(*MediaReadyEvent))
 	case EvResetToLobby:
 		dataStr := ev.Data.(string)
 		r.mu.Lock()
@@ -838,6 +846,10 @@ func (r *LobbyRoom) handleTimerExpired(timerType string) {
 	isSave := IsSaveGameType(r.Config.GameType)
 	r.mu.Unlock()
 
+	if timerType == "media_buffer" && isSave {
+		r.beginPreviewSelectAfterBuffer()
+		return
+	}
 	if timerType == "preview_step" && isSave {
 		r.handlePreviewStepExpired()
 		return
@@ -1120,9 +1132,9 @@ func (r *LobbyRoom) getRoomStatePayload() map[string]interface{} {
 		}
 	}
 
-	// Calculate remaining timer ticks
+	// Calculate remaining timer ticks (preview/vote/winner only — not media_buffer)
 	var timerLeft int = 0
-	if r.Status == "playing" || r.Status == "reveal" {
+	if (r.Status == "playing" || r.Status == "reveal") && r.RoundPhase != "media_buffer" {
 		elapsed := time.Since(r.TimerStart)
 		rem := r.TimerDuration - elapsed
 		if rem > 0 {

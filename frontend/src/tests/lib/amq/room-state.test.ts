@@ -18,6 +18,17 @@ describe("AMQ save room-state reducer", () => {
 		expect(result.currentRoundData.game_type).toBe("save-4");
 	});
 
+	it("applies round_start in media_buffer with zero timer", () => {
+		const result = applySaveRoundStart({
+			game_type: "save-4",
+			round_phase: "media_buffer",
+			preview_seconds: 12,
+			candidates: [{ song_uuid: "a" }],
+		});
+		expect(result.localTimer).toBe(0);
+		expect(result.currentRoundData.round_phase).toBe("media_buffer");
+	});
+
 	it("merges phase_change and preserves vote snapshot", () => {
 		const current = { game_type: "save-4", preview_seconds: 12, candidates: [{ song_uuid: "a" }] };
 		const result = applySavePhaseChange(

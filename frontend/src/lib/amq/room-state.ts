@@ -55,9 +55,10 @@ export function applySaveRoundStart(payload: SaveRoundData): {
 	currentRoundData: SaveRoundData;
 	localTimer: number;
 } {
+	const isBuffer = payload.round_phase === "media_buffer";
 	return {
 		currentRoundData: payload,
-		localTimer: payload.preview_seconds ?? 12,
+		localTimer: isBuffer ? 0 : (payload.preview_seconds ?? 12),
 	};
 }
 
@@ -82,9 +83,11 @@ export function applySavePhaseChange(
 		currentRoundData: merged,
 		saveRoundResults,
 		localTimer:
-			merged.round_phase === "vote_select"
-				? (payload.vote_seconds ?? merged.vote_seconds ?? DEFAULT_SAVE_VOTE_SECONDS)
-				: (merged.preview_seconds ?? fallbackPreviewSeconds),
+			merged.round_phase === "media_buffer"
+				? 0
+				: merged.round_phase === "vote_select"
+					? (payload.vote_seconds ?? merged.vote_seconds ?? DEFAULT_SAVE_VOTE_SECONDS)
+					: (payload.preview_seconds ?? merged.preview_seconds ?? fallbackPreviewSeconds),
 	};
 }
 

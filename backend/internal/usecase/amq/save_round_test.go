@@ -185,8 +185,35 @@ func TestStartSaveRoundClearsSelections(t *testing.T) {
 	if room.PreviewIndex != 0 {
 		t.Fatalf("preview must start at index 0, got %d", room.PreviewIndex)
 	}
+	if room.RoundPhase != "media_buffer" {
+		t.Fatalf("expected media_buffer, got %q", room.RoundPhase)
+	}
+}
+
+func TestMediaReadyFromHostStartsPreview(t *testing.T) {
+	room := newSaveTestRoom(nil)
+	room.Status = "playing"
+	room.RoundPhase = "media_buffer"
+	room.CurrentRound = 0
+	room.Config.MaxRounds = 5
+	room.Players["host"] = &domain.AMQPlayer{SessionID: "host", IsHost: true}
+
+	room.handleMediaReady(&MediaReadyEvent{SessionID: "host", RoundNumber: 1})
+
 	if room.RoundPhase != "preview_select" {
-		t.Fatalf("expected preview_select, got %q", room.RoundPhase)
+		t.Fatalf("expected preview_select after media_ready, got %q", room.RoundPhase)
+	}
+}
+
+func TestMediaBufferTimeoutStartsPreview(t *testing.T) {
+	room := newSaveTestRoom(nil)
+	room.Status = "playing"
+	room.RoundPhase = "media_buffer"
+
+	room.beginPreviewSelectAfterBuffer()
+
+	if room.RoundPhase != "preview_select" {
+		t.Fatalf("expected preview_select after buffer timeout, got %q", room.RoundPhase)
 	}
 }
 

@@ -20,6 +20,10 @@ func TestSaveRoundLifecycle(t *testing.T) {
 	room.Players["host"] = &domain.AMQPlayer{SessionID: "host", IsHost: true}
 
 	room.startSaveRound()
+	if room.RoundPhase != "media_buffer" {
+		t.Fatalf("expected media_buffer, got %q", room.RoundPhase)
+	}
+	room.beginPreviewSelectAfterBuffer()
 	if room.RoundPhase != "preview_select" {
 		t.Fatalf("expected preview_select, got %q", room.RoundPhase)
 	}

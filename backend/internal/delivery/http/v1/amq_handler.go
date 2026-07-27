@@ -219,6 +219,16 @@ func (h *AMQHandler) WSHandler(c *websocket.Conn) {
 			room.SendEvent(amq.RoomEvent{Type: amq.EvSkipSummary, Data: sessionID})
 		case "skip_winner_playback":
 			room.SendEvent(amq.RoomEvent{Type: amq.EvSkipWinnerPlayback, Data: sessionID})
+		case "media_ready":
+			var mediaPayload struct {
+				RoundNumber int `json:"round_number"`
+			}
+			if err := json.Unmarshal(msg.Payload, &mediaPayload); err == nil {
+				room.SendEvent(amq.RoomEvent{Type: amq.EvMediaReady, Data: &amq.MediaReadyEvent{
+					SessionID:   sessionID,
+					RoundNumber: mediaPayload.RoundNumber,
+				}})
+			}
 		case "reset_to_lobby":
 			room.SendEvent(amq.RoomEvent{Type: amq.EvResetToLobby, Data: sessionID})
 		case "transfer_host":

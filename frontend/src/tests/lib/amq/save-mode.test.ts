@@ -5,6 +5,7 @@ import {
 	formatSaveVoteSeconds,
 	getSaveActiveCandidateIndex,
 	shouldShowSavedSelection,
+	shouldRevealSaveCandidateLabels,
 } from "$lib/amq/save-mode";
 
 describe("AMQ save mode helpers", () => {
@@ -64,5 +65,12 @@ describe("AMQ save mode helpers", () => {
 			null
 		);
 		expect(idx).toBe(-1);
+	});
+
+	it("hides candidate labels until winner_playback reveals all options", () => {
+		expect(shouldRevealSaveCandidateLabels("media_buffer")).toBe(false);
+		expect(shouldRevealSaveCandidateLabels("preview_select")).toBe(false);
+		expect(shouldRevealSaveCandidateLabels("vote_select")).toBe(false);
+		expect(shouldRevealSaveCandidateLabels("winner_playback")).toBe(true);
 	});
 });

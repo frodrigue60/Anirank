@@ -64,3 +64,8 @@ export function getSaveActiveCandidateIndex(
 export function shouldShowSavedSelection(savePhase: string, selectedUuid: string, candidateUuid: string): boolean {
 	return canSelectSaveCandidate(savePhase) && selectedUuid === candidateUuid;
 }
+
+/** Candidate song/anime labels stay hidden until winner_playback reveals all options. */
+export function shouldRevealSaveCandidateLabels(savePhase: string): boolean {
+	return savePhase === "winner_playback";
+}

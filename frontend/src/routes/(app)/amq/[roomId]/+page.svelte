@@ -29,6 +29,7 @@
     formatSaveVoteSeconds,
     getSaveActiveCandidateIndex as getSaveActiveCandidateIndexHelper,
     shouldShowSavedSelection,
+    shouldRevealSaveCandidateLabels,
     canSelectSaveCandidate,
     savePhaseTimerLabel,
     isSaveMediaBufferPhase,
@@ -1101,8 +1102,7 @@
                   </p>
                 {:else if savePhase === "preview_select" && getSavePreviewCandidate()}
                   <p class="text-[11px] text-on-surface-variant truncate">
-                    Now playing: <span class="font-bold text-on-surface">{getSavePreviewCandidate()?.theme_label}</span>
-                    — {getSavePreviewCandidate()?.anime_title}
+                    Now playing: <span class="font-bold text-on-surface">Option {getSaveActiveCandidateIndex() + 1}</span>
                   </p>
                 {/if}
               </div>
@@ -1156,6 +1156,7 @@
                   {@const isActiveWinner = savePhase === "winner_playback" && getSaveActiveCandidateIndex() === idx}
                   {@const isSelected = shouldShowSavedSelection(savePhase, selectedCandidate, candidate.song_uuid)}
                   {@const isWinner = candidate.is_winner && savePhase === "winner_playback"}
+                  {@const revealLabels = shouldRevealSaveCandidateLabels(savePhase)}
                   <button
                     type="button"
                     onclick={() => selectSaveCandidate(candidate.song_uuid)}
@@ -1183,10 +1184,14 @@
                     {/if}
 
                     <div class="absolute inset-x-0 bottom-0 bg-[#09070e]/90 px-2.5 py-2 pointer-events-none">
-                      <div class="text-[9px] font-black text-primary uppercase tracking-widest">{candidate.theme_label}</div>
-                      <div class="text-[11px] font-bold text-white truncate" title={candidate.anime_title}>
-                        {candidate.anime_title || "Unknown Anime"}
-                      </div>
+                      {#if revealLabels}
+                        <div class="text-[9px] font-black text-primary uppercase tracking-widest">{candidate.theme_label}</div>
+                        <div class="text-[11px] font-bold text-white truncate" title={candidate.anime_title}>
+                          {candidate.anime_title || "Unknown Anime"}
+                        </div>
+                      {:else}
+                        <div class="text-[9px] font-black text-on-surface-variant uppercase tracking-widest">Option {idx + 1}</div>
+                      {/if}
                     </div>
 
                     {#if isSelected}

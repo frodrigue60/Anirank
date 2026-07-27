@@ -69,3 +69,15 @@ export function shouldShowSavedSelection(savePhase: string, selectedUuid: string
 export function shouldRevealSaveCandidateLabels(savePhase: string): boolean {
 	return savePhase === "winner_playback";
 }
+
+/** Video thumbnails stay hidden until each candidate's preview turn (cumulative during preview_select). */
+export function shouldRevealSaveCandidateMedia(
+	savePhase: string,
+	candidateIndex: number,
+	previewIndex: number
+): boolean {
+	if (savePhase === "media_buffer") return false;
+	if (savePhase === "vote_select" || savePhase === "winner_playback") return true;
+	if (savePhase === "preview_select") return candidateIndex <= previewIndex;
+	return false;
+}

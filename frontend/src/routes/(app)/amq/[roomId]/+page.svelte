@@ -30,6 +30,7 @@
     getSaveActiveCandidateIndex as getSaveActiveCandidateIndexHelper,
     shouldShowSavedSelection,
     shouldRevealSaveCandidateLabels,
+    shouldRevealSaveCandidateMedia,
     canSelectSaveCandidate,
     savePhaseTimerLabel,
     isSaveMediaBufferPhase,
@@ -1157,6 +1158,7 @@
                   {@const isSelected = shouldShowSavedSelection(savePhase, selectedCandidate, candidate.song_uuid)}
                   {@const isWinner = candidate.is_winner && savePhase === "winner_playback"}
                   {@const revealLabels = shouldRevealSaveCandidateLabels(savePhase)}
+                  {@const revealMedia = shouldRevealSaveCandidateMedia(savePhase, idx, activeRound.preview_index ?? 0)}
                   <button
                     type="button"
                     onclick={() => selectSaveCandidate(candidate.song_uuid)}
@@ -1172,12 +1174,16 @@
                       src={candidate.audio_url}
                       preload="auto"
                       playsinline
-                      class="absolute inset-0 w-full h-full object-cover bg-[#09070e] {onlyAudio ? 'opacity-0' : 'opacity-100'}"
+                      class="absolute inset-0 w-full h-full object-cover bg-[#09070e] {(onlyAudio || !revealMedia) ? 'opacity-0' : 'opacity-100'}"
                     >
                       <track kind="captions" />
                     </video>
 
-                    {#if onlyAudio}
+                    {#if !revealMedia}
+                      <div class="absolute inset-0 z-[1] bg-[#09070e] flex items-center justify-center pointer-events-none">
+                        <span class="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">Option {idx + 1}</span>
+                      </div>
+                    {:else if onlyAudio}
                       <div class="absolute inset-0 bg-[#09070e] flex items-center justify-center pointer-events-none">
                         <Music size={28} class="text-primary/50" />
                       </div>

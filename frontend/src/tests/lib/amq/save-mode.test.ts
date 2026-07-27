@@ -6,6 +6,7 @@ import {
 	getSaveActiveCandidateIndex,
 	shouldShowSavedSelection,
 	shouldRevealSaveCandidateLabels,
+	shouldRevealSaveCandidateMedia,
 } from "$lib/amq/save-mode";
 
 describe("AMQ save mode helpers", () => {
@@ -72,5 +73,16 @@ describe("AMQ save mode helpers", () => {
 		expect(shouldRevealSaveCandidateLabels("preview_select")).toBe(false);
 		expect(shouldRevealSaveCandidateLabels("vote_select")).toBe(false);
 		expect(shouldRevealSaveCandidateLabels("winner_playback")).toBe(true);
+	});
+
+	it("reveals candidate media consecutively during preview_select", () => {
+		expect(shouldRevealSaveCandidateMedia("media_buffer", 0, 0)).toBe(false);
+		expect(shouldRevealSaveCandidateMedia("preview_select", 0, 0)).toBe(true);
+		expect(shouldRevealSaveCandidateMedia("preview_select", 1, 0)).toBe(false);
+		expect(shouldRevealSaveCandidateMedia("preview_select", 0, 2)).toBe(true);
+		expect(shouldRevealSaveCandidateMedia("preview_select", 2, 2)).toBe(true);
+		expect(shouldRevealSaveCandidateMedia("preview_select", 3, 2)).toBe(false);
+		expect(shouldRevealSaveCandidateMedia("vote_select", 3, 0)).toBe(true);
+		expect(shouldRevealSaveCandidateMedia("winner_playback", 0, 0)).toBe(true);
 	});
 });

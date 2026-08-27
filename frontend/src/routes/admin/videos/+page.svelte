@@ -70,10 +70,9 @@
   }
 
   function getSourceType(variant: any) {
-    if (variant.video?.type === "embed") return "Embed";
-    if (variant.video?.type === "file") return "Direct File";
-    if (variant.video?.embed_url) return "Embed";
-    if (variant.video?.local_url) return "Direct File";
+    if (variant.video?.video_src || variant.video?.local_url || variant.video?.type === "file") {
+      return "Direct File";
+    }
     return "None";
   }
 </script>
@@ -169,10 +168,7 @@
             <!-- Source -->
             <td class="py-4 px-6 whitespace-nowrap">
               <span
-                class="inline-flex items-center px-2 py-1 rounded text-[10px] font-bold uppercase tracking-tighter {variant
-                  .video?.type === 'embed'
-                  ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
-                  : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'}"
+                class="inline-flex items-center px-2 py-1 rounded text-[10px] font-bold uppercase tracking-tighter bg-blue-500/10 text-blue-400 border border-blue-500/20"
               >
                 {getSourceType(variant)}
               </span>

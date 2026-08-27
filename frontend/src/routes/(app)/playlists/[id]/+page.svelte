@@ -29,6 +29,7 @@
   import SEO from "$lib/components/SEO.svelte";
   import { PUBLIC_API_URL } from "$lib/api";
   import OptimizedImage from "$lib/components/OptimizedImage.svelte";
+  import { storagePlaybackUrl } from "$lib/videoStorageSrc";
 
   let { data } = $props();
   // svelte-ignore state_referenced_locally
@@ -42,6 +43,12 @@
   let selectedVariantIndex = $state(0);
   let selectedVariant = $derived(
     currentSong?.song_variants?.[selectedVariantIndex],
+  );
+  let playbackUrl = $derived(
+    storagePlaybackUrl(selectedVariant?.video) ||
+      storagePlaybackUrl(
+        selectedVariant?.videos?.find((v) => storagePlaybackUrl(v)),
+      ),
   );
 
   let showReportModal = $state(false);
@@ -245,12 +252,6 @@
     }
   }
 
-  function getAutoplayUrl(url: string | undefined) {
-    if (!url) return "";
-    const separator = url.includes("?") ? "&" : "?";
-    return `${url}${separator}autoplay=1&muted=1`;
-  }
-
   function fadeInVolume() {
     if (!videoElement) return;
     videoElement.volume = 0;
@@ -386,21 +387,11 @@
       <div
         class="relative aspect-video rounded-md overflow-hidden bg-black shadow-2xl mb-6 group neon-border"
       >
-        {#if selectedVariant?.video}
-          {#if selectedVariant.video.type === "embed"}
-            <iframe
-              src={getAutoplayUrl(selectedVariant.video.embed_url)}
-              class="w-full h-full"
-              frameborder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowfullscreen
-              title="Song Video"
-            ></iframe>
-          {:else}
+        {#if playbackUrl}
             <video
               bind:this={videoElement}
               bind:paused={isPaused}
-              src={selectedVariant.video.local_url}
+              src={playbackUrl}
               class="w-full h-full"
               controls
               autoplay
@@ -410,8 +401,7 @@
             >
               <track kind="captions" />
             </video>
-          {/if}
-        {:else if currentSong}
+          {:else if currentSong}
           <OptimizedImage
             src={currentSong.anime?.banner_url}
             sources={currentSong.anime?.banner_sources}
@@ -713,21 +703,11 @@
     >
       <!-- Video -->
       <div class="relative aspect-video w-full overflow-hidden bg-black">
-        {#if selectedVariant?.video}
-          {#if selectedVariant.video.type === "embed"}
-            <iframe
-              src={getAutoplayUrl(selectedVariant.video.embed_url)}
-              class="w-full h-full"
-              frameborder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowfullscreen
-              title="Song Video"
-            ></iframe>
-          {:else}
+        {#if playbackUrl}
             <video
               bind:this={videoElement}
               bind:paused={isPaused}
-              src={selectedVariant.video.local_url}
+              src={playbackUrl}
               class="w-full h-full"
               controls
               autoplay
@@ -737,8 +717,7 @@
             >
               <track kind="captions" />
             </video>
-          {/if}
-        {:else if currentSong}
+          {:else if currentSong}
           <OptimizedImage
             src={currentSong.anime?.banner_url}
             sources={currentSong.anime?.banner_sources}

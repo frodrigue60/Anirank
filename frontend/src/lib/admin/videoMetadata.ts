@@ -58,10 +58,8 @@ export function metadataPreviewLabel(form: VideoMetadataForm, index = 0): string
 
 export function metadataTargetKey(video: {
   video_src?: string | null;
-  embed_code?: string | null;
 }): string {
   if (video.video_src?.trim()) return `src:${video.video_src.trim()}`;
-  if (video.embed_code?.trim()) return `embed:${video.embed_code.trim()}`;
   return "new";
 }
 

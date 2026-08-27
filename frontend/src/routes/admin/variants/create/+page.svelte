@@ -14,10 +14,8 @@
   let episodes = $state("");
 
 
-  // Video State
-  let video_type = $state("file");
-  let embed_url = $state("");
-  let local_url = $state(""); // Could be an upload in the future, for now mostly URL input
+  // Video State — storage path / URL only (S3/R2)
+  let video_src = $state("");
 
   // UI State
   let loading = $state(false);
@@ -38,12 +36,13 @@
         spoiler,
         nsfw,
         episodes,
-        video: {
-
-          type: video_type,
-          embed_url: video_type === "embed" ? embed_url : null,
-          local_url: video_type === "file" ? local_url : null,
-        },
+        video: video_src.trim()
+          ? {
+              type: "file",
+              video_src: video_src.trim(),
+              local_url: video_src.trim(),
+            }
+          : null,
       };
 
       const res = await api.post("/admin/variants", payload);
@@ -262,54 +261,22 @@
     <div class="space-y-4">
       <div>
         <label
-          for="video_type"
+          for="video_src"
           class="block text-sm font-medium text-on-surface-variant mb-1"
-          >Source Type</label
+          >Storage path (S3/R2)</label
         >
-        <select
-          id="video_type"
-          title="Video Type"
-          bind:value={video_type}
-          class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all [&>option]:bg-surface-container"
-        >
-          <option value="file">Direct File URL (MP4, WebM)</option>
-          <option value="embed">Embed Code (YouTube, Custom)</option>
-        </select>
+        <input
+          type="text"
+          id="video_src"
+          title="Video storage path"
+          bind:value={video_src}
+          class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface placeholder-gray-500 focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all"
+          placeholder="videos/2025/winter/example-OP1.webm"
+        />
+        <p class="mt-1 text-xs text-on-surface-variant/60">
+          Relative object key only. Upload via the variant video page for new files.
+        </p>
       </div>
-
-      {#if video_type === "file"}
-        <div>
-          <label
-            for="local_url"
-            class="block text-sm font-medium text-on-surface-variant mb-1"
-            >Direct Video URL</label
-          >
-          <input
-            type="text"
-            id="local_url"
-            title="Local URL"
-            bind:value={local_url}
-            class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface placeholder-gray-500 focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all"
-            placeholder="https://example.com/video.webm"
-          />
-        </div>
-      {:else}
-        <div>
-          <label
-            for="embed_url"
-            class="block text-sm font-medium text-on-surface-variant mb-1"
-            >Embed Code or URL</label
-          >
-          <textarea
-            id="embed_url"
-            title="Embed URL or Code"
-            bind:value={embed_url}
-            rows="3"
-            class="w-full bg-surface-highest border border-outline-variant rounded-xl py-2.5 px-4 text-on-surface placeholder-gray-500 focus:outline-none focus:border-primary/30 focus:bg-surface-highest transition-all"
-            placeholder="<iframe src='...'></iframe>"
-          ></textarea>
-        </div>
-      {/if}
     </div>
   </div>
 

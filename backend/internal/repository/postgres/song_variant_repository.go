@@ -23,7 +23,7 @@ func (r *songVariantRepository) GetByID(ctx context.Context, id uint64) (*domain
 	query := `
 		SELECT 
 			sv.id, sv.uuid, sv.version_number, sv.song_id, sv.slug, sv.views, sv.season_id, sv.year_id, sv.episodes, sv.spoiler, sv.nsfw, sv.status, sv.created_at, sv.updated_at, sv.anime_themes_id,
-			v.video_src, v.embed_code,
+			v.video_src,
 			COALESCE(v.is_nc, false) AS is_nc,
 			COALESCE(v.is_bd, false) AS is_bd,
 			COALESCE(v.resolution, 0) AS resolution,
@@ -41,7 +41,6 @@ func (r *songVariantRepository) GetByID(ctx context.Context, id uint64) (*domain
 	type VariantWithVideoStruct struct {
 		domain.SongVariant
 		VideoSrc     *string `db:"video_src"`
-		EmbedCode    *string `db:"embed_code"`
 		IsNC         bool    `db:"is_nc"`
 		IsBD         bool    `db:"is_bd"`
 		Resolution   int     `db:"resolution"`
@@ -62,17 +61,15 @@ func (r *songVariantRepository) GetByID(ctx context.Context, id uint64) (*domain
 		return nil, domain.ErrNotFound
 	}
 
-	// Group rows
 	v := rows[0].SongVariant
 	v.Videos = []domain.SongVariantVideo{}
 
 	for _, row := range rows {
-		if row.VideoSrc != nil || row.EmbedCode != nil {
+		if row.VideoSrc != nil && *row.VideoSrc != "" {
 			vid := domain.SongVariantVideo{
-				EmbedCode:    row.EmbedCode,
 				VideoSrc:     row.VideoSrc,
-				EmbedUrl:     row.EmbedCode, // Initial assignment
 				LocalUrl:     row.VideoSrc,
+				Type:         "file",
 				IsNC:         row.IsNC,
 				IsBD:         row.IsBD,
 				Resolution:   row.Resolution,
@@ -82,13 +79,6 @@ func (r *songVariantRepository) GetByID(ctx context.Context, id uint64) (*domain
 				Source:       row.Source,
 				Overlap:      row.Overlap,
 			}
-
-			if row.VideoSrc != nil && *row.VideoSrc != "" {
-				vid.Type = "file"
-			} else if row.EmbedCode != nil && *row.EmbedCode != "" {
-				vid.Type = "embed"
-			}
-
 			v.Videos = append(v.Videos, vid)
 		}
 	}
@@ -187,8 +177,7 @@ func (r *songVariantRepository) Count(ctx context.Context, filters map[string]in
 }
 
 func (r *songVariantRepository) IncrementViews(ctx context.Context, id uint64) error {
-	query := "UPDATE song_variants SET views = views + 1 WHERE id = $1"
-	_, err := r.db.ExecContext(ctx, query, id)
+	_, err := r.db.ExecContext(ctx, `UPDATE song_variants SET views = views + 1 WHERE id = $1`, id)
 	return err
 }
 
@@ -213,8 +202,7 @@ func (r *songVariantRepository) Create(ctx context.Context, variant *domain.Song
 		return err
 	}
 
-	// In legacy structure, we also insert into the videos table
-	if variant.Video != nil && (variant.Video.LocalUrl != nil || variant.Video.EmbedUrl != nil || variant.Video.VideoSrc != nil || variant.Video.EmbedCode != nil) {
+	if variant.Video != nil && (variant.Video.LocalUrl != nil || variant.Video.VideoSrc != nil) {
 		if err := r.insertVideoTx(ctx, tx, variant.ID, variant.Video, variant.Status); err != nil {
 			return err
 		}
@@ -260,20 +248,19 @@ func defaultVideoOverlap(overlap string) string {
 }
 
 func (r *songVariantRepository) insertVideoTx(ctx context.Context, tx *sqlx.Tx, variantID uint64, video *domain.SongVariantVideo, status bool) error {
-	if video == nil {
+	if video == nil || video.VideoSrc == nil || *video.VideoSrc == "" {
 		return nil
 	}
 
 	videoQuery := `
 		INSERT INTO videos (
-			song_variant_id, video_src, embed_code,
+			song_variant_id, video_src,
 			is_nc, is_bd, resolution,
 			is_uncensored, is_subbed, is_lyrics,
 			source, overlap, status, created_at, updated_at
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 		ON CONFLICT (song_variant_id, video_src) DO UPDATE SET
-			embed_code = EXCLUDED.embed_code,
 			is_nc = EXCLUDED.is_nc,
 			is_bd = EXCLUDED.is_bd,
 			resolution = EXCLUDED.resolution,
@@ -290,7 +277,6 @@ func (r *songVariantRepository) insertVideoTx(ctx context.Context, tx *sqlx.Tx, 
 		videoQuery,
 		variantID,
 		video.VideoSrc,
-		video.EmbedCode,
 		video.IsNC,
 		video.IsBD,
 		video.Resolution,
@@ -308,6 +294,9 @@ func (r *songVariantRepository) UpsertVideo(ctx context.Context, variantID uint6
 	if video == nil {
 		return nil
 	}
+	if video.VideoSrc == nil || *video.VideoSrc == "" {
+		return errors.New("video_src is required")
+	}
 
 	tx, err := r.db.BeginTxx(ctx, nil)
 	if err != nil {
@@ -315,97 +304,32 @@ func (r *songVariantRepository) UpsertVideo(ctx context.Context, variantID uint6
 	}
 	defer tx.Rollback()
 
-	if video.VideoSrc != nil && *video.VideoSrc != "" {
-		if err := r.insertVideoTx(ctx, tx, variantID, video, status); err != nil {
-			return err
-		}
-		return tx.Commit()
+	if err := r.insertVideoTx(ctx, tx, variantID, video, status); err != nil {
+		return err
 	}
-
-	if video.EmbedCode != nil && *video.EmbedCode != "" {
-		var existingID uint64
-		err := tx.GetContext(ctx, &existingID,
-			`SELECT id FROM videos WHERE song_variant_id = $1 AND embed_code = $2 LIMIT 1`,
-			variantID, *video.EmbedCode,
-		)
-		if err == nil && existingID > 0 {
-			_, err = tx.ExecContext(ctx, `
-				UPDATE videos SET
-					is_nc = $3, is_bd = $4, resolution = $5,
-					is_uncensored = $6, is_subbed = $7, is_lyrics = $8,
-					source = $9, overlap = $10, status = $11, updated_at = CURRENT_TIMESTAMP
-				WHERE id = $2 AND song_variant_id = $1
-			`, variantID, existingID,
-				video.IsNC, video.IsBD, video.Resolution,
-				video.IsUncensored, video.IsSubbed, video.IsLyrics,
-				defaultVideoSource(video.Source), defaultVideoOverlap(video.Overlap), status,
-			)
-			if err != nil {
-				return err
-			}
-			return tx.Commit()
-		}
-
-		_, err = tx.ExecContext(ctx, `
-			INSERT INTO videos (
-				song_variant_id, video_src, embed_code,
-				is_nc, is_bd, resolution,
-				is_uncensored, is_subbed, is_lyrics,
-				source, overlap, status, created_at, updated_at
-			)
-			VALUES ($1, NULL, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-		`, variantID, video.EmbedCode,
-			video.IsNC, video.IsBD, video.Resolution,
-			video.IsUncensored, video.IsSubbed, video.IsLyrics,
-			defaultVideoSource(video.Source), defaultVideoOverlap(video.Overlap), status,
-		)
-		if err != nil {
-			return err
-		}
-		return tx.Commit()
-	}
-
-	return nil
+	return tx.Commit()
 }
 
-func (r *songVariantRepository) UpdateVideoMetadata(ctx context.Context, variantID uint64, videoSrc, embedCode *string, video *domain.SongVariantVideo, status bool) error {
+func (r *songVariantRepository) UpdateVideoMetadata(ctx context.Context, variantID uint64, videoSrc *string, video *domain.SongVariantVideo, status bool) error {
 	if video == nil {
 		return errors.New("video metadata is required")
 	}
+	if videoSrc == nil || *videoSrc == "" {
+		return errors.New("video_src is required for metadata update")
+	}
 
-	var query string
-	var args []interface{}
-
-	if videoSrc != nil && *videoSrc != "" {
-		query = `
-			UPDATE videos SET
-				is_nc = $3, is_bd = $4, resolution = $5,
-				is_uncensored = $6, is_subbed = $7, is_lyrics = $8,
-				source = $9, overlap = $10, status = $11, updated_at = CURRENT_TIMESTAMP
-			WHERE song_variant_id = $1 AND video_src = $2
-		`
-		args = []interface{}{
-			variantID, *videoSrc,
-			video.IsNC, video.IsBD, video.Resolution,
-			video.IsUncensored, video.IsSubbed, video.IsLyrics,
-			defaultVideoSource(video.Source), defaultVideoOverlap(video.Overlap), status,
-		}
-	} else if embedCode != nil && *embedCode != "" {
-		query = `
-			UPDATE videos SET
-				is_nc = $3, is_bd = $4, resolution = $5,
-				is_uncensored = $6, is_subbed = $7, is_lyrics = $8,
-				source = $9, overlap = $10, status = $11, updated_at = CURRENT_TIMESTAMP
-			WHERE song_variant_id = $1 AND embed_code = $2
-		`
-		args = []interface{}{
-			variantID, *embedCode,
-			video.IsNC, video.IsBD, video.Resolution,
-			video.IsUncensored, video.IsSubbed, video.IsLyrics,
-			defaultVideoSource(video.Source), defaultVideoOverlap(video.Overlap), status,
-		}
-	} else {
-		return errors.New("video target is required for metadata update")
+	query := `
+		UPDATE videos SET
+			is_nc = $3, is_bd = $4, resolution = $5,
+			is_uncensored = $6, is_subbed = $7, is_lyrics = $8,
+			source = $9, overlap = $10, status = $11, updated_at = CURRENT_TIMESTAMP
+		WHERE song_variant_id = $1 AND video_src = $2
+	`
+	args := []interface{}{
+		variantID, *videoSrc,
+		video.IsNC, video.IsBD, video.Resolution,
+		video.IsUncensored, video.IsSubbed, video.IsLyrics,
+		defaultVideoSource(video.Source), defaultVideoOverlap(video.Overlap), status,
 	}
 
 	res, err := r.db.ExecContext(ctx, query, args...)
@@ -420,7 +344,6 @@ func (r *songVariantRepository) UpdateVideoMetadata(ctx context.Context, variant
 }
 
 func (r *songVariantRepository) Delete(ctx context.Context, id uint64) error {
-	// The video table has ON DELETE CASCADE for song_variant_id
 	query := "DELETE FROM song_variants WHERE id = $1"
 	res, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
@@ -452,16 +375,13 @@ func (r *songVariantRepository) ToggleNSFW(ctx context.Context, id uint64) error
 	return err
 }
 
-func (r *songVariantRepository) DeleteVideo(ctx context.Context, variantID uint64, videoSrc *string, embedCode *string) error {
+func (r *songVariantRepository) DeleteVideo(ctx context.Context, variantID uint64, videoSrc *string) error {
 	var query string
 	var args []interface{}
 
 	if videoSrc != nil && *videoSrc != "" {
 		query = "DELETE FROM videos WHERE song_variant_id = $1 AND video_src = $2"
 		args = []interface{}{variantID, *videoSrc}
-	} else if embedCode != nil && *embedCode != "" {
-		query = "DELETE FROM videos WHERE song_variant_id = $1 AND embed_code = $2"
-		args = []interface{}{variantID, *embedCode}
 	} else {
 		query = "DELETE FROM videos WHERE song_variant_id = $1"
 		args = []interface{}{variantID}

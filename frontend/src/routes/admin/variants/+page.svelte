@@ -76,10 +76,9 @@
 
   // Helper to format source type
   function getSourceType(variant: any) {
-    if (variant.video?.type === "embed") return "Embed";
-    if (variant.video?.type === "file") return "Direct File";
-    if (variant.video?.embed_url) return "Embed";
-    if (variant.video?.local_url) return "Direct File";
+    if (variant.video?.video_src || variant.video?.local_url || variant.video?.type === "file") {
+      return "Direct File";
+    }
     return "None";
   }
 </script>

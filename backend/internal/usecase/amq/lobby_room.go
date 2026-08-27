@@ -1269,9 +1269,8 @@ func (r *LobbyRoom) resolveAudioURL(song *domain.Song) string {
 	if v.Video != nil {
 		if v.Video.LocalUrl != nil {
 			return r.MediaService.GetURL(*v.Video.LocalUrl)
-		} else if v.Video.EmbedUrl != nil {
-			return *v.Video.EmbedUrl
-		} else if v.Video.VideoSrc != nil {
+		}
+		if v.Video.VideoSrc != nil {
 			return r.MediaService.GetURL(*v.Video.VideoSrc)
 		}
 	}

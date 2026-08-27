@@ -66,9 +66,7 @@ export interface Artist {
 export interface SongVariantVideo {
     type?: string;
     video_url?: string;
-    embed_url?: string;
     local_url?: string;
-    embed_code?: string;
     video_src?: string;
     is_nc: boolean;
     is_bd: boolean;
@@ -86,9 +84,7 @@ export interface SongVariant {
     song_id: string;
     slug: string;
     video_url?: string;
-    embed_url?: string;
     local_url?: string;
-    embed_code?: string;
     video_src?: string;
     is_nc?: boolean;
     is_bd?: boolean;
@@ -100,10 +96,9 @@ export interface SongVariant {
     overlap?: string;
     video?: {
         type: string;
-        embed_code?: string;
         video_src?: string;
-        embed_url?: string;
         local_url?: string;
+        video_url?: string;
         is_nc?: boolean;
         is_bd?: boolean;
         resolution?: number;

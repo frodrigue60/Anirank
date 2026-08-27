@@ -65,7 +65,7 @@ func formBool(c *fiber.Ctx, key string) bool {
 }
 
 // MetadataTargetFromForm returns how metadata should be applied.
-// "new" = upcoming upload; otherwise keys like "src:<path>" or "embed:<code>".
+// "new" = upcoming upload; otherwise keys like "src:<path>".
 func MetadataTargetFromForm(c *fiber.Ctx) string {
 	target := strings.TrimSpace(c.FormValue("metadata_target"))
 	if target == "" {

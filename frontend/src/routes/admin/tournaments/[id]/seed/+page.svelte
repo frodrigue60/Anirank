@@ -669,7 +669,7 @@
             {#if previewSong.song_variants && previewSong.song_variants.length > 0}
               {@const v = previewSong.song_variants[0].video}
               {#if v}
-                {#if v.type === "file"}
+                {#if v.local_url || v.video_src}
                   <!-- svelte-ignore a11y-media-has-caption -->
                   <video
                     src={v.local_url}
@@ -677,15 +677,6 @@
                     autoplay
                     class="w-full h-full object-contain"
                   ></video>
-                {:else if v.type === "embed"}
-                  <iframe
-                    src={v.embed_url}
-                    title="Video Preview"
-                    frameborder="0"
-                    allow="autoplay; encrypted-media"
-                    allowfullscreen
-                    class="w-full h-full"
-                  ></iframe>
                 {/if}
               {:else}
                 <div

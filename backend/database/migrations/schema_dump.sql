@@ -2431,7 +2431,6 @@ ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
 
 CREATE TABLE public.videos (
     id bigint NOT NULL,
-    embed_code text,
     video_src text,
     song_variant_id bigint NOT NULL,
     created_at timestamp(0) without time zone,

@@ -1040,16 +1040,10 @@ func (h *AdminHandler) DeleteVariantVideo(c *fiber.Ctx) error {
 		videoSrc = &videoSrcStr
 	}
 
-	embedCodeStr := c.Query("embed_code")
-	var embedCode *string
-	if embedCodeStr != "" {
-		embedCode = &embedCodeStr
-	}
-
 	purgeStr := c.Query("purge")
 	purge := purgeStr == "true" || purgeStr == "1"
 
-	if err := h.usecase.DeleteVariantVideo(c.Context(), id, videoSrc, embedCode, purge, h.getAuditMetadata(c)); err != nil {
+	if err := h.usecase.DeleteVariantVideo(c.Context(), id, videoSrc, purge, h.getAuditMetadata(c)); err != nil {
 		return err
 	}
 

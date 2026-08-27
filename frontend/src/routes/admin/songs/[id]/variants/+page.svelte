@@ -138,11 +138,9 @@
     errorMsg = "";
     try {
       const src = video.video_src || "";
-      const embed = video.embed_code || "";
       await api.delete(`/admin/variants/${variant.id}/video`, {
         params: {
           video_src: src,
-          embed_code: embed,
           purge: false,
         },
       });
@@ -150,14 +148,10 @@
       // Update local state to reflect deletion
       if (variant.videos) {
         variant.videos = variant.videos.filter(
-          (v: any) => v.video_src !== src || v.embed_code !== embed,
+          (v: any) => v.video_src !== src,
         );
       }
-      if (
-        variant.video &&
-        variant.video.video_src === src &&
-        variant.video.embed_code === embed
-      ) {
+      if (variant.video && variant.video.video_src === src) {
         variant.video =
           variant.videos && variant.videos.length > 0
             ? variant.videos[0]
@@ -185,11 +179,9 @@
     errorMsg = "";
     try {
       const src = video.video_src || "";
-      const embed = video.embed_code || "";
       await api.delete(`/admin/variants/${variant.id}/video`, {
         params: {
           video_src: src,
-          embed_code: embed,
           purge: true,
         },
       });
@@ -197,14 +189,10 @@
       // Update local state to reflect deletion
       if (variant.videos) {
         variant.videos = variant.videos.filter(
-          (v: any) => v.video_src !== src || v.embed_code !== embed,
+          (v: any) => v.video_src !== src,
         );
       }
-      if (
-        variant.video &&
-        variant.video.video_src === src &&
-        variant.video.embed_code === embed
-      ) {
+      if (variant.video && variant.video.video_src === src) {
         variant.video =
           variant.videos && variant.videos.length > 0
             ? variant.videos[0]
@@ -596,17 +584,6 @@
                 <div class="flex flex-col md:flex-row gap-4 md:gap-8 text-[10px] uppercase font-black tracking-widest">
                   <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2 mb-1.5">
-                      <span class="text-zinc-600">Embed Configuration</span>
-                      {#if variant.embed_code || variant.video?.embed_code}
-                        <span class="bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded text-[8px]">EMBED</span>
-                      {/if}
-                    </div>
-                    <div class="bg-black/60 p-2.5 rounded-lg border border-zinc-800/50 font-mono text-[9px] text-zinc-500 break-all leading-relaxed line-clamp-1 hover:line-clamp-none transition-all cursor-text select-all">
-                      {variant.embed_code || variant.video?.embed_code || "NOT CONFIGURED"}
-                    </div>
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-2 mb-1.5">
                       <span class="text-zinc-600">Storage Reference</span>
                       {#if variant.video_src || variant.video?.video_src}
                         <span class="bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded text-[8px]">FILE</span>
@@ -641,7 +618,6 @@
                       {#each variant.videos as vid}
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-black/40 border border-zinc-800/80 rounded-2xl transition-all hover:border-zinc-700/50">
                           <div class="flex items-center gap-3 min-w-0">
-                            {#if vid.type === 'file'}
                               <div class="flex items-center justify-center w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
                                 <span class="material-symbols-outlined text-base">movie</span>
                               </div>
@@ -677,18 +653,6 @@
                                 </div>
                                 <p class="text-[9px] font-mono text-zinc-500 truncate mt-1 select-all">{vid.video_src}</p>
                               </div>
-                            {:else}
-                              <div class="flex items-center justify-center w-8 h-8 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 shrink-0">
-                                <span class="material-symbols-outlined text-base">code</span>
-                              </div>
-                              <div class="min-w-0 flex-1">
-                                <div class="flex items-center gap-1.5 flex-wrap">
-                                  <span class="text-[11px] font-bold text-zinc-200 uppercase tracking-normal">Embed / Iframe Code</span>
-                                  <span class="bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider">Embed</span>
-                                </div>
-                                <p class="text-[9px] font-mono text-zinc-500 truncate mt-1 select-all">{vid.embed_code}</p>
-                              </div>
-                            {/if}
                           </div>
                           <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
                             <button

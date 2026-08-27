@@ -3007,9 +3007,6 @@ const docTemplate = `{
                 "created_at": {
                     "type": "string"
                 },
-                "embed_code": {
-                    "type": "string"
-                },
                 "id": {
                     "type": "integer"
                 },
@@ -3047,7 +3044,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "video_type": {
-                    "description": "file, embed",
+                    "description": "file",
                     "type": "string"
                 },
                 "views": {

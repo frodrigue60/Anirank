@@ -2579,7 +2579,7 @@ func (u *ContentAdminUsecase) HandleVariantVideo(c *fiber.Ctx, v *domain.SongVar
 	}
 
 	target := MetadataTargetFromForm(c)
-	targetSrc, targetEmbed := parseMetadataTargetKey(target)
+	targetSrc := parseMetadataTargetKey(target)
 	isNewTarget := target == "new" || target == ""
 
 	if fileHeader, err := c.FormFile("video"); err == nil {
@@ -2600,11 +2600,11 @@ func (u *ContentAdminUsecase) HandleVariantVideo(c *fiber.Ctx, v *domain.SongVar
 			prefix := u.resolveVideoStoragePath(c.Context(), v)
 			if path, url, uploadErr := u.mediaService.UploadVideo(c.Context(), prefix, v.ID, file, fileHeader.Size, contentType, fileHeader.Filename); uploadErr == nil {
 				video := &domain.SongVariantVideo{
-					VideoSrc:  &path,
-					LocalUrl:  &url,
-					Type:      "file",
-					Source:    "TV",
-					Overlap:   "None",
+					VideoSrc: &path,
+					LocalUrl: &url,
+					Type:     "file",
+					Source:   "TV",
+					Overlap:  "None",
 				}
 				ApplyVideoMetadataFromForm(c, video)
 				if err := u.variantRepo.UpsertVideo(c.Context(), v.ID, video, v.Status); err != nil {
@@ -2618,24 +2618,10 @@ func (u *ContentAdminUsecase) HandleVariantVideo(c *fiber.Ctx, v *domain.SongVar
 				return fmt.Errorf("video upload failed: %w", uploadErr)
 			}
 		}
-	} else if embed := strings.TrimSpace(c.FormValue("embed")); embed != "" {
-		video := &domain.SongVariantVideo{
-			EmbedCode: &embed,
-			EmbedUrl:  &embed,
-			Type:      "embed",
-			Source:    "TV",
-			Overlap:   "None",
-		}
-		ApplyVideoMetadataFromForm(c, video)
-		if err := u.variantRepo.UpsertVideo(c.Context(), v.ID, video, v.Status); err != nil {
-			return fmt.Errorf("failed to save embed video: %w", err)
-		}
-		v.Video = video
-		updated = true
-	} else if !isNewTarget && (targetSrc != nil || targetEmbed != nil) {
+	} else if !isNewTarget && targetSrc != nil {
 		video := &domain.SongVariantVideo{Source: "TV", Overlap: "None"}
 		ApplyVideoMetadataFromForm(c, video)
-		if err := u.variantRepo.UpdateVideoMetadata(c.Context(), v.ID, targetSrc, targetEmbed, video, v.Status); err != nil {
+		if err := u.variantRepo.UpdateVideoMetadata(c.Context(), v.ID, targetSrc, video, v.Status); err != nil {
 			return fmt.Errorf("failed to update video metadata: %w", err)
 		}
 		updated = true
@@ -2644,14 +2630,8 @@ func (u *ContentAdminUsecase) HandleVariantVideo(c *fiber.Ctx, v *domain.SongVar
 			existing := v.Videos[0]
 			video := existing
 			ApplyVideoMetadataFromForm(c, &video)
-			var src, embed *string
 			if existing.VideoSrc != nil && *existing.VideoSrc != "" {
-				src = existing.VideoSrc
-			} else if existing.EmbedCode != nil && *existing.EmbedCode != "" {
-				embed = existing.EmbedCode
-			}
-			if src != nil || embed != nil {
-				if err := u.variantRepo.UpdateVideoMetadata(c.Context(), v.ID, src, embed, &video, v.Status); err != nil {
+				if err := u.variantRepo.UpdateVideoMetadata(c.Context(), v.ID, existing.VideoSrc, &video, v.Status); err != nil {
 					return fmt.Errorf("failed to update video metadata: %w", err)
 				}
 				updated = true
@@ -2660,26 +2640,20 @@ func (u *ContentAdminUsecase) HandleVariantVideo(c *fiber.Ctx, v *domain.SongVar
 	}
 
 	if !updated && statusStr == "" {
-		return fmt.Errorf("no video, embed, or metadata changes were provided")
+		return fmt.Errorf("no video file or metadata changes were provided")
 	}
 
 	return nil
 }
 
-func parseMetadataTargetKey(target string) (videoSrc, embedCode *string) {
+func parseMetadataTargetKey(target string) (videoSrc *string) {
 	if strings.HasPrefix(target, "src:") {
 		value := strings.TrimPrefix(target, "src:")
 		if value != "" {
-			return &value, nil
+			return &value
 		}
 	}
-	if strings.HasPrefix(target, "embed:") {
-		value := strings.TrimPrefix(target, "embed:")
-		if value != "" {
-			return nil, &value
-		}
-	}
-	return nil, nil
+	return nil
 }
 
 func (u *ContentAdminUsecase) DeleteVariant(ctx context.Context, id uint64, meta domain.AuditMetadata) error {
@@ -2691,7 +2665,7 @@ func (u *ContentAdminUsecase) DeleteVariant(ctx context.Context, id uint64, meta
 	return nil
 }
 
-func (u *ContentAdminUsecase) DeleteVariantVideo(ctx context.Context, id uint64, videoSrc *string, embedCode *string, purge bool, meta domain.AuditMetadata) error {
+func (u *ContentAdminUsecase) DeleteVariantVideo(ctx context.Context, id uint64, videoSrc *string, purge bool, meta domain.AuditMetadata) error {
 	existing, err := u.variantRepo.GetByID(ctx, id)
 	if err != nil {
 		return err
@@ -2701,7 +2675,7 @@ func (u *ContentAdminUsecase) DeleteVariantVideo(ctx context.Context, id uint64,
 		u.mediaService.DeleteMedia(ctx, *videoSrc)
 	}
 
-	if err := u.variantRepo.DeleteVideo(ctx, id, videoSrc, embedCode); err != nil {
+	if err := u.variantRepo.DeleteVideo(ctx, id, videoSrc); err != nil {
 		return err
 	}
 

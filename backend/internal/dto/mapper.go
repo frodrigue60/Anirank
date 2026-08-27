@@ -280,8 +280,6 @@ func ToSongVariantDTO(v *domain.SongVariant, songMinimal *SongMinimalDTO) SongVa
 	if v.Video != nil {
 		if v.Video.LocalUrl != nil {
 			videoUrl = v.Video.LocalUrl
-		} else if v.Video.EmbedUrl != nil {
-			videoUrl = v.Video.EmbedUrl
 		}
 	}
 
@@ -297,9 +295,7 @@ func ToSongVariantDTO(v *domain.SongVariant, songMinimal *SongMinimalDTO) SongVa
 	}
 
 	if v.Video != nil {
-		vDTO.EmbedCode = v.Video.EmbedCode
 		vDTO.VideoSrc = v.Video.VideoSrc
-		vDTO.EmbedUrl = v.Video.EmbedUrl
 		vDTO.LocalUrl = v.Video.LocalUrl
 		vDTO.IsNC = v.Video.IsNC
 		vDTO.IsBD = v.Video.IsBD
@@ -315,15 +311,11 @@ func ToSongVariantDTO(v *domain.SongVariant, songMinimal *SongMinimalDTO) SongVa
 		var vidUrl *string
 		if vid.LocalUrl != nil {
 			vidUrl = vid.LocalUrl
-		} else if vid.EmbedUrl != nil {
-			vidUrl = vid.EmbedUrl
 		}
 
 		vDTO.Videos = append(vDTO.Videos, SongVariantVideoDTO{
 			VideoUrl:     vidUrl,
-			EmbedUrl:     vid.EmbedUrl,
 			LocalUrl:     vid.LocalUrl,
-			EmbedCode:    vid.EmbedCode,
 			VideoSrc:     vid.VideoSrc,
 			IsNC:         vid.IsNC,
 			IsBD:         vid.IsBD,

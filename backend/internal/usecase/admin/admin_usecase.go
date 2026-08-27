@@ -248,8 +248,8 @@ func (u *AdminUsecase) DeleteVariant(ctx context.Context, id uint64, meta domain
 	return u.contentAdmin.DeleteVariant(ctx, id, meta)
 }
 
-func (u *AdminUsecase) DeleteVariantVideo(ctx context.Context, id uint64, videoSrc *string, embedCode *string, purge bool, meta domain.AuditMetadata) error {
-	return u.contentAdmin.DeleteVariantVideo(ctx, id, videoSrc, embedCode, purge, meta)
+func (u *AdminUsecase) DeleteVariantVideo(ctx context.Context, id uint64, videoSrc *string, purge bool, meta domain.AuditMetadata) error {
+	return u.contentAdmin.DeleteVariantVideo(ctx, id, videoSrc, purge, meta)
 }
 
 

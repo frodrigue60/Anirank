@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"strings"
 	"time"
 )
 
@@ -88,9 +89,7 @@ type SongVariant struct {
 
 type SongVariantVideo struct {
 	Type         string  `json:"type"`
-	EmbedUrl     *string `json:"embed_url,omitempty"`
 	LocalUrl     *string `json:"local_url,omitempty"`
-	EmbedCode    *string `json:"embed_code,omitempty"`
 	VideoSrc     *string `json:"video_src,omitempty"`
 	IsNC         bool    `json:"is_nc"`
 	IsBD         bool    `json:"is_bd"`
@@ -100,6 +99,20 @@ type SongVariantVideo struct {
 	IsLyrics     bool    `json:"is_lyrics"`
 	Source       string  `json:"source"`
 	Overlap      string  `json:"overlap"`
+}
+
+// IsStorageVideoSrc reports whether video_src is an object-storage key (S3/R2),
+// not an absolute http(s) URL left over from legacy embeds.
+func IsStorageVideoSrc(src *string) bool {
+	if src == nil {
+		return false
+	}
+	s := strings.TrimSpace(*src)
+	if s == "" {
+		return false
+	}
+	lower := strings.ToLower(s)
+	return !strings.HasPrefix(lower, "http://") && !strings.HasPrefix(lower, "https://")
 }
 
 type Artist struct {
@@ -244,8 +257,8 @@ type SongVariantRepository interface {
 	ToggleSpoiler(ctx context.Context, id uint64) error
 	ToggleNSFW(ctx context.Context, id uint64) error
 	UpsertVideo(ctx context.Context, variantID uint64, video *SongVariantVideo, status bool) error
-	UpdateVideoMetadata(ctx context.Context, variantID uint64, videoSrc, embedCode *string, video *SongVariantVideo, status bool) error
-	DeleteVideo(ctx context.Context, variantID uint64, videoSrc *string, embedCode *string) error
+	UpdateVideoMetadata(ctx context.Context, variantID uint64, videoSrc *string, video *SongVariantVideo, status bool) error
+	DeleteVideo(ctx context.Context, variantID uint64, videoSrc *string) error
 }
 
 type ArtistRepository interface {

@@ -737,16 +737,6 @@
         class="relative w-full aspect-video rounded-md overflow-hidden bg-black group border border-outline-variant/10 shadow-2xl"
       >
         {#if selectedVideo?.video_url && !videoError}
-          {#if selectedVideo.video_url.includes("youtube") || selectedVideo.video_url.includes("youtu.be")}
-            <iframe
-              src={getAutoplayUrl(selectedVideo.video_url)}
-              class="w-full h-full"
-              frameborder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowfullscreen
-              title="Song Video"
-            ></iframe>
-          {:else}
             <video
               bind:this={videoElement}
               src={selectedVideo.video_url}
@@ -758,16 +748,6 @@
             >
               <track kind="captions" />
             </video>
-          {/if}
-        {:else if selectedVariant?.embed_url}
-          <iframe
-            src={getAutoplayUrl(selectedVariant.embed_url)}
-            class="w-full h-full"
-            frameborder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowfullscreen
-            title="Song Video Fallback"
-          ></iframe>
         {:else}
           <div
             class="absolute inset-0 bg-cover bg-center opacity-50"
@@ -788,7 +768,7 @@
             >
             {#if !currentSong.variants || currentSong.variants.length === 0}
               <p class="text-on-surface-variant/30 text-sm mt-2 max-w-md">
-                We don't have a video file or embed for this theme yet. If you
+                We don't have a video file for this theme yet. If you
                 have it, you can contribute it on our community server!
               </p>
             {/if}

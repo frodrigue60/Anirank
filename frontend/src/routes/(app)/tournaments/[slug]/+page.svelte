@@ -308,15 +308,6 @@ import VideoOff from "lucide-svelte/icons/video-off";;
               >
                 <track kind="captions" />
               </video>
-            {:else if selectedVariant.video.embed_url}
-              <iframe
-                src={getAutoplayUrl(selectedVariant.video.embed_url)}
-                class="w-full h-full"
-                frameborder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowfullscreen
-                title="Song Video"
-              ></iframe>
             {:else}
               <div
                 class="flex flex-col items-center justify-center h-full gap-4 text-white/20"

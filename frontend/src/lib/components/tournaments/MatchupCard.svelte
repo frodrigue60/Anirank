@@ -43,12 +43,12 @@ import CheckCircle2 from "lucide-svelte/icons/check-circle-2";
 
   let hasPreview1 = $derived(
     matchup.song1?.song_variants?.some(
-      (v: any) => !!(v.video?.local_url || v.video?.embed_url),
+      (v: any) => !!(v.video?.local_url || v.video?.video_src),
     ) ?? false,
   );
   let hasPreview2 = $derived(
     matchup.song2?.song_variants?.some(
-      (v: any) => !!(v.video?.local_url || v.video?.embed_url),
+      (v: any) => !!(v.video?.local_url || v.video?.video_src),
     ) ?? false,
   );
 

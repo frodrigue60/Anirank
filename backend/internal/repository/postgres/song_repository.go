@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"regexp"
 	"time"
 
 	"anirank/api/internal/domain"
@@ -419,7 +418,7 @@ func (r *songRepository) GetVariantsBySongIDs(ctx context.Context, songIDs []uin
 	query, args, err := sqlx.In(`
 		SELECT 
 			sv.id, sv.uuid, sv.version_number, sv.song_id, sv.slug, sv.views, sv.season_id, sv.year_id, sv.episodes, sv.spoiler, sv.nsfw, sv.status, sv.created_at, sv.updated_at,
-			v.video_src, v.embed_code,
+			v.video_src,
 			COALESCE(v.is_nc, false) AS is_nc,
 			COALESCE(v.is_bd, false) AS is_bd,
 			COALESCE(v.resolution, 0) AS resolution,
@@ -441,7 +440,6 @@ func (r *songRepository) GetVariantsBySongIDs(ctx context.Context, songIDs []uin
 	type VariantWithVideoStruct struct {
 		domain.SongVariant
 		VideoSrc     *string `db:"video_src"`
-		EmbedCode    *string `db:"embed_code"`
 		IsNC         bool    `db:"is_nc"`
 		IsBD         bool    `db:"is_bd"`
 		Resolution   int     `db:"resolution"`
@@ -474,12 +472,11 @@ func (r *songRepository) GetVariantsBySongIDs(ctx context.Context, songIDs []uin
 			songVariantsOrder[songID] = append(songVariantsOrder[songID], svID)
 		}
 
-		if row.VideoSrc != nil || row.EmbedCode != nil {
+		if row.VideoSrc != nil && *row.VideoSrc != "" {
 			vid := domain.SongVariantVideo{
-				EmbedCode:    row.EmbedCode,
 				VideoSrc:     row.VideoSrc,
-				EmbedUrl:     extractSrcFromIframe(row.EmbedCode),
 				LocalUrl:     row.VideoSrc,
+				Type:         "file",
 				IsNC:         row.IsNC,
 				IsBD:         row.IsBD,
 				Resolution:   row.Resolution,
@@ -488,12 +485,6 @@ func (r *songRepository) GetVariantsBySongIDs(ctx context.Context, songIDs []uin
 				IsLyrics:     row.IsLyrics,
 				Source:       row.Source,
 				Overlap:      row.Overlap,
-			}
-
-			if row.VideoSrc != nil && *row.VideoSrc != "" {
-				vid.Type = "file"
-			} else if row.EmbedCode != nil && *row.EmbedCode != "" {
-				vid.Type = "embed"
 			}
 
 			variantMap[svID].Videos = append(variantMap[svID].Videos, vid)
@@ -520,7 +511,7 @@ func (r *songRepository) GetVariantsBySongID(ctx context.Context, songID uint64)
 	query := `
 		SELECT 
 			sv.id, sv.uuid, sv.version_number, sv.song_id, sv.slug, sv.views, sv.season_id, sv.year_id, sv.episodes, sv.spoiler, sv.nsfw, sv.status, sv.created_at, sv.updated_at,
-			v.video_src, v.embed_code,
+			v.video_src,
 			COALESCE(v.is_nc, false) AS is_nc,
 			COALESCE(v.is_bd, false) AS is_bd,
 			COALESCE(v.resolution, 0) AS resolution,
@@ -538,7 +529,6 @@ func (r *songRepository) GetVariantsBySongID(ctx context.Context, songID uint64)
 	type VariantWithVideoStruct struct {
 		domain.SongVariant
 		VideoSrc     *string `db:"video_src"`
-		EmbedCode    *string `db:"embed_code"`
 		IsNC         bool    `db:"is_nc"`
 		IsBD         bool    `db:"is_bd"`
 		Resolution   int     `db:"resolution"`
@@ -567,12 +557,11 @@ func (r *songRepository) GetVariantsBySongID(ctx context.Context, songID uint64)
 			orderedIDs = append(orderedIDs, svID)
 		}
 
-		if row.VideoSrc != nil || row.EmbedCode != nil {
+		if row.VideoSrc != nil && *row.VideoSrc != "" {
 			vid := domain.SongVariantVideo{
-				EmbedCode:    row.EmbedCode,
 				VideoSrc:     row.VideoSrc,
-				EmbedUrl:     extractSrcFromIframe(row.EmbedCode),
 				LocalUrl:     row.VideoSrc,
+				Type:         "file",
 				IsNC:         row.IsNC,
 				IsBD:         row.IsBD,
 				Resolution:   row.Resolution,
@@ -581,12 +570,6 @@ func (r *songRepository) GetVariantsBySongID(ctx context.Context, songID uint64)
 				IsLyrics:     row.IsLyrics,
 				Source:       row.Source,
 				Overlap:      row.Overlap,
-			}
-
-			if row.VideoSrc != nil && *row.VideoSrc != "" {
-				vid.Type = "file"
-			} else if row.EmbedCode != nil && *row.EmbedCode != "" {
-				vid.Type = "embed"
 			}
 
 			variantMap[svID].Videos = append(variantMap[svID].Videos, vid)
@@ -1058,21 +1041,6 @@ func (r *songRepository) Search(ctx context.Context, term string, limit int) ([]
 	return songs, err
 }
 
-func extractSrcFromIframe(iframe *string) *string {
-	if iframe == nil || *iframe == "" {
-		return nil
-	}
-
-	re := regexp.MustCompile(`src="([^"]+)"`)
-	matches := re.FindStringSubmatch(*iframe)
-	if len(matches) > 1 {
-		src := matches[1]
-		return &src
-	}
-
-	return iframe
-}
-
 func (r *songRepository) ToggleStatus(ctx context.Context, id uint64) error {
 	query := "UPDATE songs SET status = NOT status WHERE id = $1"
 	_, err := r.db.ExecContext(ctx, query, id)
@@ -1319,7 +1287,6 @@ func (r *songRepository) GetVideoAuditCandidates(ctx context.Context, filters do
 		WHERE v.video_src IS NOT NULL
 			AND v.video_src <> ''
 			AND v.video_src NOT LIKE 'http%'
-			AND (v.embed_code IS NULL OR v.embed_code = '')
 	`
 	args := []interface{}{}
 	if filters.Prefix != "" {
@@ -1342,7 +1309,6 @@ func (r *songRepository) GetDistinctVideoSrcPaths(ctx context.Context, prefix st
 		WHERE v.video_src IS NOT NULL
 			AND v.video_src <> ''
 			AND v.video_src NOT LIKE 'http%'
-			AND (v.embed_code IS NULL OR v.embed_code = '')
 	`
 	args := []interface{}{}
 	if prefix != "" {
@@ -1363,7 +1329,7 @@ func (r *songRepository) GetRandomSongsForAMQ(ctx context.Context, animeIDs []ui
 	conditions = append(conditions, "s.status = true")
 	conditions = append(conditions, "a.status = true")
 	conditions = append(conditions, "sv.status = true")
-	conditions = append(conditions, "(v.video_src IS NOT NULL OR v.embed_code IS NOT NULL)")
+	conditions = append(conditions, "v.video_src IS NOT NULL AND v.video_src <> ''")
 
 	if len(animeIDs) > 0 {
 		conditions = append(conditions, "s.anime_id IN (?)")

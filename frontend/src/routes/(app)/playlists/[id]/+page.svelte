@@ -29,7 +29,7 @@
   import SEO from "$lib/components/SEO.svelte";
   import { PUBLIC_API_URL } from "$lib/api";
   import OptimizedImage from "$lib/components/OptimizedImage.svelte";
-  import { storagePlaybackUrl } from "$lib/videoStorageSrc";
+  import { variantStoragePlaybackUrl } from "$lib/videoStorageSrc";
 
   let { data } = $props();
   // svelte-ignore state_referenced_locally
@@ -42,14 +42,9 @@
 
   let selectedVariantIndex = $state(0);
   let selectedVariant = $derived(
-    currentSong?.song_variants?.[selectedVariantIndex],
+    currentSong?.variants?.[selectedVariantIndex],
   );
-  let playbackUrl = $derived(
-    storagePlaybackUrl(selectedVariant?.video) ||
-      storagePlaybackUrl(
-        selectedVariant?.videos?.find((v) => storagePlaybackUrl(v)),
-      ),
-  );
+  let playbackUrl = $derived(variantStoragePlaybackUrl(selectedVariant));
 
   let showReportModal = $state(false);
 

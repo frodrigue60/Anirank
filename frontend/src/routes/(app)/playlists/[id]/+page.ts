@@ -2,6 +2,9 @@ import api from "$lib/api";
 import { error } from "@sveltejs/kit";
 import type { PageLoad } from "./$types";
 
+// Auth token lives in localStorage; SSR requests cannot access private playlists.
+export const ssr = false;
+
 export const load: PageLoad = async ({ params }) => {
   try {
     const response = await api.get(`/playlists/${params.id}`);

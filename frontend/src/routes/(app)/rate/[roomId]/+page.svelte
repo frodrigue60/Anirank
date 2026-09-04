@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
+  import { onMount, onDestroy, untrack } from "svelte";
   import { page } from "$app/state";
   import { goto } from "$app/navigation";
   import { authState, getAuthToken } from "$lib/state/auth.svelte";
@@ -64,8 +64,9 @@
 
   const VOLUME_STORAGE_KEY = "anirank_volume";
   const MUTED_STORAGE_KEY = "anirank_muted";
-  let playbackVolume = $state(1);
-  let playbackMuted = $state(false);
+  // Plain values (not $state) so volume tweaks don't re-run the media load effect.
+  let playbackVolume = 1;
+  let playbackMuted = false;
   let applyingPlaybackVolume = false;
 
   function applyPlaybackVolume(el: HTMLVideoElement) {
@@ -225,10 +226,12 @@
   });
 
   $effect(() => {
-    if (audioUrl && mediaEl) {
-      mediaEl.load();
-      applyPlaybackVolume(mediaEl);
-      mediaEl.play().catch(() => {});
+    const url = audioUrl;
+    const el = mediaEl;
+    if (url && el) {
+      el.load();
+      untrack(() => applyPlaybackVolume(el));
+      el.play().catch(() => {});
     }
   });
 

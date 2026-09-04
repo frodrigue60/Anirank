@@ -414,6 +414,16 @@ func (u *ModerationUsecase) checkAndApplyShadowban(ctx context.Context, userID u
 }
 
 func (u *ModerationUsecase) ValidateInteraction(ctx context.Context, userID uint64, content string) (bool, error) {
+	return u.validateInteraction(ctx, userID, content, false)
+}
+
+// ValidateLiveRoomInteraction skips the cooldown for email-verified users so /rate sessions
+// can submit many ratings without hitting "posting too fast". Softban still applies.
+func (u *ModerationUsecase) ValidateLiveRoomInteraction(ctx context.Context, userID uint64) (bool, error) {
+	return u.validateInteraction(ctx, userID, "", true)
+}
+
+func (u *ModerationUsecase) validateInteraction(ctx context.Context, userID uint64, content string, liveRoom bool) (bool, error) {
 	user, err := u.userRepo.GetByID(ctx, userID)
 	if err != nil {
 		return false, err
@@ -424,19 +434,22 @@ func (u *ModerationUsecase) ValidateInteraction(ctx context.Context, userID uint
 		return false, domain.NewAppError(403, "Your account is currently restricted due to low reputation or pending reports.", nil)
 	}
 
-	// 2. Rate Limit Check
-	lastTime, err := u.userRepo.GetLastInteractionTime(ctx, userID)
-	if err == nil && !lastTime.IsZero() {
-		limitSeconds := 0
-		if user.Level < 5 {
-			limitSeconds = 90
-		} else if user.Level < 10 {
-			limitSeconds = 60
-		}
+	// 2. Rate Limit Check (skipped for verified users inside live /rate rooms)
+	skipRateLimit := liveRoom && user.EmailVerifiedAt != nil
+	if !skipRateLimit {
+		lastTime, err := u.userRepo.GetLastInteractionTime(ctx, userID)
+		if err == nil && !lastTime.IsZero() {
+			limitSeconds := 0
+			if user.Level < 5 {
+				limitSeconds = 90
+			} else if user.Level < 10 {
+				limitSeconds = 60
+			}
 
-		if limitSeconds > 0 && time.Since(lastTime).Seconds() < float64(limitSeconds) {
-			remaining := limitSeconds - int(time.Since(lastTime).Seconds())
-			return false, domain.NewAppError(429, fmt.Sprintf("You are posting too fast. Please wait %d seconds.", remaining), nil)
+			if limitSeconds > 0 && time.Since(lastTime).Seconds() < float64(limitSeconds) {
+				remaining := limitSeconds - int(time.Since(lastTime).Seconds())
+				return false, domain.NewAppError(429, fmt.Sprintf("You are posting too fast. Please wait %d seconds.", remaining), nil)
+			}
 		}
 	}
 

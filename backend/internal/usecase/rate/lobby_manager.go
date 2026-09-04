@@ -16,7 +16,7 @@ import (
 
 // SongRater persists ratings to the global ranking (always-on for /rate).
 type SongRater interface {
-	RateSong(ctx context.Context, userID, songID uint64, score float64) (float64, float64, error)
+	RateSongInLiveRoom(ctx context.Context, userID, songID uint64, score float64) (float64, float64, error)
 }
 
 type LobbyManager struct {

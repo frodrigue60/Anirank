@@ -143,4 +143,6 @@ type ModerationUsecase interface {
 	ResolveUserReport(ctx context.Context, reportID uint64, isAccepted bool) error
 	DeleteUserReport(ctx context.Context, reportID uint64) error
 	ValidateInteraction(ctx context.Context, userID uint64, content string) (bool, error)
+	// ValidateLiveRoomInteraction is used by /rate sessions. Verified users skip the post rate limit.
+	ValidateLiveRoomInteraction(ctx context.Context, userID uint64) (bool, error)
 }

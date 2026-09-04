@@ -265,6 +265,36 @@ func TestModerationUsecase_ValidateInteraction(t *testing.T) {
 		assert.Contains(t, err.Error(), "not allowed to post links")
 	})
 
+	t.Run("Live room skips rate limit for verified users", func(t *testing.T) {
+		userID := uint64(20)
+		now := time.Now()
+		mockUserRepo.GetByIDFunc = func(id uint64) (*domain.User, error) {
+			return &domain.User{ID: id, Level: 1, EmailVerifiedAt: &now}, nil
+		}
+		mockUserRepo.GetLastInteractionTimeFunc = func(uID uint64) (time.Time, error) {
+			return time.Now().Add(-5 * time.Second), nil
+		}
+
+		isShadow, err := uc.ValidateLiveRoomInteraction(ctx, userID)
+		assert.NoError(t, err)
+		assert.False(t, isShadow)
+	})
+
+	t.Run("Live room still rate-limits unverified users", func(t *testing.T) {
+		userID := uint64(21)
+		mockUserRepo.GetByIDFunc = func(id uint64) (*domain.User, error) {
+			return &domain.User{ID: id, Level: 1, EmailVerifiedAt: nil}, nil
+		}
+		mockUserRepo.GetLastInteractionTimeFunc = func(uID uint64) (time.Time, error) {
+			return time.Now().Add(-5 * time.Second), nil
+		}
+
+		isShadow, err := uc.ValidateLiveRoomInteraction(ctx, userID)
+		assert.Error(t, err)
+		assert.False(t, isShadow)
+		assert.Contains(t, err.Error(), "too fast")
+	})
+
 	t.Run("Link Shadowbanned - Level 6", func(t *testing.T) {
 		userID := uint64(5)
 		mockUserRepo.GetByIDFunc = func(id uint64) (*domain.User, error) {

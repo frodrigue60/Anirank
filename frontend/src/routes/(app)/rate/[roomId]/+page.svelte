@@ -14,6 +14,9 @@
   import X from "lucide-svelte/icons/x";
   import Star from "lucide-svelte/icons/star";
   import MessageSquare from "lucide-svelte/icons/message-square";
+  import ChevronDown from "lucide-svelte/icons/chevron-down";
+  import ChevronUp from "lucide-svelte/icons/chevron-up";
+  import ListMusic from "lucide-svelte/icons/list-music";
   import {
     applyLobbyStateUpdate,
     applyRatingUpdate,
@@ -52,13 +55,27 @@
   let audioUrl = $derived(roomState?.audio_url || "");
   let currentSong = $derived(roomState?.current_song as any);
 
+  // Anime search modal
+  let showSearchModal = $state(false);
   let searchQuery = $state("");
-  let searchResults = $state<any[]>([]);
+  let animeResults = $state<any[]>([]);
   let searchLoading = $state(false);
   let searchTimer: ReturnType<typeof setTimeout> | null = null;
+  let selectedAnime = $state<any | null>(null);
+  let animeSongs = $state<any[]>([]);
+  let songsLoading = $state(false);
+  let themeFilter = $state<"ALL" | "OP" | "ED">("ALL");
+
+  let filteredSongs = $derived.by(() => {
+    if (themeFilter === "ALL") return animeSongs;
+    return animeSongs.filter((s) => (s.type || "").toUpperCase() === themeFilter);
+  });
+
+  let queueCollapsed = $state(false);
+  let chatCollapsed = $state(false);
 
   let scoreFormat = $derived(authState.user?.score_format || "POINT_10_DECIMAL");
-  let draftScore = $state(70); // canonical 0-100
+  let draftScore = $state(70);
   let submitting = $state(false);
 
   let displayDraft = $derived(fromCanonicalScore(draftScore, scoreFormat));
@@ -68,7 +85,26 @@
       : "—"
   );
 
-  let queuePermission = $derived(canAddToQueue(config || { queue_mode: "host_only", queue_limit_per_user: 3, reveal_mode: "blind", max_players: 16, auto_advance: "never", name: "", private: false }, me, queue));
+  let queuePermission = $derived(
+    canAddToQueue(
+      config || {
+        queue_mode: "host_only",
+        queue_limit_per_user: 3,
+        reveal_mode: "blind",
+        max_players: 16,
+        auto_advance: "never",
+        name: "",
+        private: false,
+      },
+      me,
+      queue
+    )
+  );
+
+  let canOpenSearch = $derived(
+    (status === "waiting" || status === "rating") &&
+      (isHost || (config?.queue_mode !== "disabled" && queuePermission.ok))
+  );
 
   onMount(() => {
     isSpectator = page.url.searchParams.get("spectator") === "true";
@@ -105,8 +141,7 @@
     ws = new WebSocket(wsUrl);
     ws.onmessage = (event) => {
       try {
-        const msg = JSON.parse(event.data);
-        handleMessage(msg);
+        handleMessage(JSON.parse(event.data));
       } catch (e) {
         console.warn("[RATE] bad message", e);
       }
@@ -178,44 +213,90 @@
     send("submit_rating", { score: draftScore });
   }
 
-  function runSearch() {
+  function openSearchModal() {
+    showSearchModal = true;
+    searchQuery = "";
+    animeResults = [];
+    selectedAnime = null;
+    animeSongs = [];
+    themeFilter = "ALL";
+  }
+
+  function closeSearchModal() {
+    showSearchModal = false;
+    selectedAnime = null;
+    animeSongs = [];
+    animeResults = [];
+    searchQuery = "";
+  }
+
+  function runAnimeSearch() {
     if (searchTimer) clearTimeout(searchTimer);
     searchTimer = setTimeout(async () => {
       const q = searchQuery.trim();
       if (q.length < 3) {
-        searchResults = [];
+        animeResults = [];
         return;
       }
       searchLoading = true;
       try {
         const res = await api.get("/search", { params: { q } });
-        searchResults = res.data?.data?.songs || [];
+        animeResults = res.data?.data?.animes || [];
       } catch {
-        searchResults = [];
+        animeResults = [];
       } finally {
         searchLoading = false;
       }
     }, 300);
   }
 
+  async function selectAnime(anime: any) {
+    selectedAnime = anime;
+    animeSongs = [];
+    songsLoading = true;
+    themeFilter = "ALL";
+    try {
+      const res = await api.get(`/animes/${anime.slug}`);
+      animeSongs = res.data?.data?.songs || [];
+    } catch {
+      errorBanner = "Failed to load anime themes";
+      animeSongs = [];
+    } finally {
+      songsLoading = false;
+    }
+  }
+
+  function songLabel(song: any) {
+    const type = (song.type || "").toUpperCase();
+    const num = song.theme_num || "";
+    const name = getSongName(song);
+    return `${type}${num} · ${name}`;
+  }
+
   function addSong(song: any) {
-    const uuid = song.uuid || song.id;
+    const uuid = song.id || song.uuid;
     if (!uuid) return;
+    if (!queuePermission.ok && !isHost) {
+      errorBanner = queuePermission.reason || "Cannot add to queue";
+      return;
+    }
+    if (config?.queue_mode === "disabled") {
+      if (isHost) playNow(song);
+      return;
+    }
     if (!queuePermission.ok) {
       errorBanner = queuePermission.reason || "Cannot add to queue";
       return;
     }
     send("queue_add", { song_uuid: uuid });
-    searchQuery = "";
-    searchResults = [];
+    closeSearchModal();
   }
 
   function playNow(song: any) {
-    const uuid = song.uuid || song.id;
+    const uuid = song.id || song.uuid;
     if (!uuid || !isHost) return;
     send("set_song", { song_uuid: uuid });
-    searchQuery = "";
-    searchResults = [];
+    closeSearchModal();
   }
 
   function sendChat() {
@@ -262,7 +343,6 @@
   {/if}
 
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
-    <!-- Players -->
     <aside class="lg:col-span-3 bg-surface-low rounded-sm p-4 space-y-3">
       <h2 class="text-sm font-black uppercase tracking-wide text-on-surface flex items-center gap-2">
         <Users size={16} /> Players
@@ -298,7 +378,6 @@
       {/if}
     </aside>
 
-    <!-- Center -->
     <section class="lg:col-span-6 bg-surface-container rounded-sm p-4 md:p-6 space-y-4">
       {#if status === "lobby"}
         <div class="text-center space-y-4 py-10">
@@ -416,139 +495,250 @@
             </div>
           {/if}
         {:else}
-          <div class="text-center py-16 space-y-2">
+          <div class="text-center py-16 space-y-3">
             <Play size={36} class="mx-auto text-primary" />
             <p class="font-bold text-on-surface">Waiting for a song</p>
             <p class="text-sm text-on-surface-variant">
-              {#if isHost}Search below to play a theme or advance the queue.{:else}Host will pick the next theme.{/if}
+              {#if canOpenSearch}
+                Search an anime to pick a theme.
+              {:else}
+                Host will pick the next theme.
+              {/if}
             </p>
+            {#if canOpenSearch}
+              <button
+                onclick={openSearchModal}
+                class="h-11 px-5 bg-primary text-white font-bold text-sm rounded-sm inline-flex items-center gap-2 cursor-pointer"
+              >
+                <Search size={16} /> Find anime
+              </button>
+            {/if}
           </div>
         {/if}
 
-        {#if isHost && (status === "waiting" || status === "rating")}
+        {#if status === "waiting" || status === "rating"}
           <div class="flex flex-wrap gap-2">
-            <button
-              onclick={() => send("next")}
-              class="h-10 px-4 bg-surface-highest text-primary font-bold text-sm rounded-sm flex items-center gap-2 cursor-pointer"
-            >
-              <SkipForward size={16} /> Next
-            </button>
-            <button
-              onclick={() => send("end_session")}
-              class="h-10 px-4 bg-surface-highest text-on-surface-variant font-bold text-sm rounded-sm cursor-pointer"
-            >
-              End session
-            </button>
+            {#if canOpenSearch}
+              <button
+                onclick={openSearchModal}
+                class="h-10 px-4 bg-primary text-white font-bold text-sm rounded-sm flex items-center gap-2 cursor-pointer"
+              >
+                <Search size={16} /> Search anime
+              </button>
+            {/if}
+            {#if isHost}
+              <button
+                onclick={() => send("next")}
+                class="h-10 px-4 bg-surface-highest text-primary font-bold text-sm rounded-sm flex items-center gap-2 cursor-pointer"
+              >
+                <SkipForward size={16} /> Next
+              </button>
+              <button
+                onclick={() => send("end_session")}
+                class="h-10 px-4 bg-surface-highest text-on-surface-variant font-bold text-sm rounded-sm cursor-pointer"
+              >
+                End session
+              </button>
+            {/if}
           </div>
         {/if}
       {/if}
     </section>
 
-    <!-- Queue / Search / Chat -->
     <aside class="lg:col-span-3 space-y-4">
-      {#if status !== "lobby" && status !== "finished" && config?.queue_mode !== "disabled"}
+      {#if status !== "lobby" && status !== "finished"}
         <div class="bg-surface-low rounded-sm p-4 space-y-3">
-          <h2 class="text-sm font-black uppercase tracking-wide text-on-surface">Queue ({queue.length})</h2>
-          {#if queuePermission.ok || isHost}
-            <div class="relative">
-              <Search size={14} class="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" />
-              <input
-                bind:value={searchQuery}
-                oninput={runSearch}
-                placeholder="Search themes…"
-                class="w-full h-10 pl-9 pr-3 bg-surface-highest border border-outline-variant rounded-sm text-sm"
-              />
-            </div>
-            {#if searchLoading}
-              <p class="text-xs text-on-surface-variant">Searching…</p>
-            {/if}
-            {#if searchResults.length}
-              <ul class="max-h-40 overflow-y-auto space-y-1">
-                {#each searchResults as song}
-                  <li class="flex items-center justify-between gap-2 bg-surface-container rounded-sm px-2 py-1.5">
-                    <span class="text-xs text-on-surface truncate">{song.song_romaji || song.name || "Song"}</span>
-                    <div class="flex gap-1 shrink-0">
-                      {#if isHost}
-                        <button onclick={() => playNow(song)} class="text-[10px] font-bold text-primary cursor-pointer" aria-label="Play now">Play</button>
-                      {/if}
-                      {#if queuePermission.ok}
-                        <button onclick={() => addSong(song)} class="text-[10px] font-bold text-on-surface-variant cursor-pointer" aria-label="Add to queue">+Q</button>
-                      {/if}
+          <button
+            type="button"
+            class="w-full flex items-center justify-between text-sm font-black uppercase tracking-wide text-on-surface cursor-pointer"
+            onclick={() => (queueCollapsed = !queueCollapsed)}
+            aria-expanded={!queueCollapsed}
+          >
+            <span class="flex items-center gap-2">
+              <ListMusic size={14} /> Queue ({queue.length})
+            </span>
+            {#if queueCollapsed}<ChevronDown size={16} />{:else}<ChevronUp size={16} />{/if}
+          </button>
+
+          {#if !queueCollapsed}
+            {#if config?.queue_mode === "disabled"}
+              <p class="text-xs text-on-surface-variant">Queue disabled — host plays songs directly.</p>
+            {:else}
+              <ul class="space-y-2 max-h-56 overflow-y-auto">
+                {#each queue as item (item.item_id)}
+                  <li class="bg-surface-container rounded-sm px-3 py-2 flex justify-between gap-2">
+                    <div class="min-w-0">
+                      <p class="text-xs font-bold text-on-surface truncate">{item.song_name}</p>
+                      <p class="text-[10px] text-on-surface-variant truncate">{item.anime_title} · {item.added_by_nickname}</p>
                     </div>
+                    {#if isHost || item.added_by_session_id === mySessionId}
+                      <button
+                        onclick={() => send("queue_remove", { item_id: item.item_id })}
+                        class="text-on-surface-variant cursor-pointer"
+                        aria-label="Remove from queue"
+                      >
+                        <X size={14} />
+                      </button>
+                    {/if}
                   </li>
+                {:else}
+                  <li class="text-xs text-on-surface-variant">Queue is empty</li>
                 {/each}
               </ul>
             {/if}
-          {:else if queuePermission.reason}
-            <p class="text-xs text-on-surface-variant">{queuePermission.reason}</p>
-          {/if}
-
-          <ul class="space-y-2 max-h-56 overflow-y-auto">
-            {#each queue as item (item.item_id)}
-              <li class="bg-surface-container rounded-sm px-3 py-2 flex justify-between gap-2">
-                <div class="min-w-0">
-                  <p class="text-xs font-bold text-on-surface truncate">{item.song_name}</p>
-                  <p class="text-[10px] text-on-surface-variant truncate">{item.anime_title} · {item.added_by_nickname}</p>
-                </div>
-                {#if isHost || item.added_by_session_id === mySessionId}
-                  <button
-                    onclick={() => send("queue_remove", { item_id: item.item_id })}
-                    class="text-on-surface-variant cursor-pointer"
-                    aria-label="Remove from queue"
-                  >
-                    <X size={14} />
-                  </button>
-                {/if}
-              </li>
-            {/each}
-          </ul>
-        </div>
-      {:else if isHost && (status === "waiting" || status === "rating")}
-        <div class="bg-surface-low rounded-sm p-4 space-y-3">
-          <h2 class="text-sm font-black uppercase tracking-wide text-on-surface">Pick a song</h2>
-          <div class="relative">
-            <Search size={14} class="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" />
-            <input
-              bind:value={searchQuery}
-              oninput={runSearch}
-              placeholder="Search themes…"
-              class="w-full h-10 pl-9 pr-3 bg-surface-highest border border-outline-variant rounded-sm text-sm"
-            />
-          </div>
-          {#if searchResults.length}
-            <ul class="max-h-48 overflow-y-auto space-y-1">
-              {#each searchResults as song}
-                <li class="flex items-center justify-between gap-2 bg-surface-container rounded-sm px-2 py-1.5">
-                  <span class="text-xs text-on-surface truncate">{song.song_romaji || song.name || "Song"}</span>
-                  <button onclick={() => playNow(song)} class="text-[10px] font-bold text-primary cursor-pointer">Play</button>
-                </li>
-              {/each}
-            </ul>
           {/if}
         </div>
       {/if}
 
       <div class="bg-surface-low rounded-sm p-4 space-y-3">
-        <h2 class="text-sm font-black uppercase tracking-wide text-on-surface flex items-center gap-2">
-          <MessageSquare size={14} /> Chat
-        </h2>
-        <div class="h-40 overflow-y-auto space-y-1 text-xs">
-          {#each chatMessages as m}
-            <p class={m.type === "system" ? "text-on-surface-variant italic" : "text-on-surface"}>
-              <strong>{m.sender}:</strong> {m.text}
-            </p>
-          {/each}
-        </div>
-        <div class="flex gap-2">
-          <input
-            bind:value={chatInput}
-            onkeydown={(e) => e.key === "Enter" && sendChat()}
-            class="flex-1 h-9 bg-surface-highest border border-outline-variant rounded-sm px-2 text-xs"
-            placeholder="Message…"
-          />
-          <button onclick={sendChat} class="h-9 px-3 bg-primary text-white text-xs font-bold rounded-sm cursor-pointer">Send</button>
-        </div>
+        <button
+          type="button"
+          class="w-full flex items-center justify-between text-sm font-black uppercase tracking-wide text-on-surface cursor-pointer"
+          onclick={() => (chatCollapsed = !chatCollapsed)}
+          aria-expanded={!chatCollapsed}
+        >
+          <span class="flex items-center gap-2">
+            <MessageSquare size={14} /> Chat
+          </span>
+          {#if chatCollapsed}<ChevronDown size={16} />{:else}<ChevronUp size={16} />{/if}
+        </button>
+
+        {#if !chatCollapsed}
+          <div class="h-40 overflow-y-auto space-y-1 text-xs">
+            {#each chatMessages as m}
+              <p class={m.type === "system" ? "text-on-surface-variant italic" : "text-on-surface"}>
+                <strong>{m.sender}:</strong> {m.text}
+              </p>
+            {/each}
+          </div>
+          <div class="flex gap-2">
+            <input
+              bind:value={chatInput}
+              onkeydown={(e) => e.key === "Enter" && sendChat()}
+              class="flex-1 h-9 bg-surface-highest border border-outline-variant rounded-sm px-2 text-xs"
+              placeholder="Message…"
+            />
+            <button onclick={sendChat} class="h-9 px-3 bg-primary text-white text-xs font-bold rounded-sm cursor-pointer">Send</button>
+          </div>
+        {/if}
       </div>
     </aside>
   </div>
 </main>
+
+{#if showSearchModal}
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+    onclick={closeSearchModal}
+  >
+    <div
+      class="bg-surface-highest w-full max-w-2xl max-h-[85vh] rounded-sm flex flex-col overflow-hidden"
+      onclick={(e) => e.stopPropagation()}
+    >
+      <div class="flex items-center justify-between gap-3 p-4 border-b border-outline-variant">
+        <h2 class="text-lg font-black text-on-surface">Search anime</h2>
+        <button onclick={closeSearchModal} class="text-on-surface-variant cursor-pointer" aria-label="Close search">
+          <X size={20} />
+        </button>
+      </div>
+
+      <div class="p-4 space-y-3 border-b border-outline-variant">
+        <div class="relative">
+          <Search size={16} class="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" />
+          <input
+            bind:value={searchQuery}
+            oninput={runAnimeSearch}
+            placeholder="Type an anime title…"
+            class="w-full h-12 pl-10 pr-3 bg-surface border border-outline-variant rounded-sm text-sm text-on-surface"
+            autofocus
+          />
+        </div>
+        {#if selectedAnime}
+          <div class="flex items-center justify-between gap-3">
+            <button
+              type="button"
+              class="text-xs font-bold text-primary cursor-pointer"
+              onclick={() => {
+                selectedAnime = null;
+                animeSongs = [];
+              }}
+            >
+              ← Back to results
+            </button>
+            <label class="flex items-center gap-2 text-xs text-on-surface-variant">
+              <span class="font-bold uppercase tracking-wide">Type</span>
+              <select
+                bind:value={themeFilter}
+                class="h-9 bg-surface border border-outline-variant rounded-sm px-2 text-sm text-on-surface"
+              >
+                <option value="ALL">ALL</option>
+                <option value="OP">OP</option>
+                <option value="ED">ED</option>
+              </select>
+            </label>
+          </div>
+        {/if}
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-4 space-y-2 min-h-[240px]">
+        {#if !selectedAnime}
+          {#if searchLoading}
+            <p class="text-sm text-on-surface-variant">Searching…</p>
+          {:else if searchQuery.trim().length < 3}
+            <p class="text-sm text-on-surface-variant">Type at least 3 characters to find animes.</p>
+          {:else if animeResults.length === 0}
+            <p class="text-sm text-on-surface-variant">No animes found.</p>
+          {:else}
+            {#each animeResults as anime}
+              <button
+                type="button"
+                class="w-full text-left bg-surface-container hover:bg-surface-low rounded-sm px-4 py-3 transition-colors cursor-pointer"
+                onclick={() => selectAnime(anime)}
+              >
+                <p class="font-bold text-on-surface">{anime.title}</p>
+                {#if anime.slug}
+                  <p class="text-xs text-on-surface-variant">{anime.slug}</p>
+                {/if}
+              </button>
+            {/each}
+          {/if}
+        {:else}
+          <p class="text-sm font-bold text-on-surface mb-2">{selectedAnime.title}</p>
+          {#if songsLoading}
+            <p class="text-sm text-on-surface-variant">Loading themes…</p>
+          {:else if filteredSongs.length === 0}
+            <p class="text-sm text-on-surface-variant">No themes for this filter.</p>
+          {:else}
+            {#each filteredSongs as song}
+              <div class="flex items-center justify-between gap-3 bg-surface-container rounded-sm px-3 py-2.5">
+                <div class="min-w-0">
+                  <p class="text-sm font-bold text-on-surface truncate">{songLabel(song)}</p>
+                </div>
+                <div class="flex gap-2 shrink-0">
+                  {#if isHost}
+                    <button
+                      onclick={() => playNow(song)}
+                      class="h-8 px-3 text-xs font-bold text-white bg-primary rounded-sm cursor-pointer"
+                    >
+                      Play
+                    </button>
+                  {/if}
+                  {#if config?.queue_mode !== "disabled" && queuePermission.ok}
+                    <button
+                      onclick={() => addSong(song)}
+                      class="h-8 px-3 text-xs font-bold text-primary bg-surface-highest rounded-sm cursor-pointer"
+                    >
+                      + Queue
+                    </button>
+                  {/if}
+                </div>
+              </div>
+            {/each}
+          {/if}
+        {/if}
+      </div>
+    </div>
+  </div>
+{/if}

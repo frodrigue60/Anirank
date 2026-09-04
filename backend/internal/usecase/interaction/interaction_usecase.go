@@ -60,6 +60,16 @@ func NewInteractionUsecase(
 const ratingSongType = "App\\Models\\Song"
 
 func (u *InteractionUsecase) RateSong(ctx context.Context, userID, songID uint64, score float64) (float64, float64, error) {
+	return u.rateSong(ctx, userID, songID, score, false)
+}
+
+// RateSongInLiveRoom persists ratings from /rate group sessions.
+// Email-verified users skip the interaction rate-limit cooldown.
+func (u *InteractionUsecase) RateSongInLiveRoom(ctx context.Context, userID, songID uint64, score float64) (float64, float64, error) {
+	return u.rateSong(ctx, userID, songID, score, true)
+}
+
+func (u *InteractionUsecase) rateSong(ctx context.Context, userID, songID uint64, score float64, liveRoom bool) (float64, float64, error) {
 	if songID == 0 {
 		return 0, 0, domain.NewAppError(400, "song_id is required and cannot be 0", nil)
 	}
@@ -68,8 +78,13 @@ func (u *InteractionUsecase) RateSong(ctx context.Context, userID, songID uint64
 		return 0, 0, domain.NewAppError(400, "Rating score must be between 0 and 100", nil)
 	}
 
-	// Automod check
-	isShadowbanned, err := u.moderationUsecase.ValidateInteraction(ctx, userID, "")
+	var isShadowbanned bool
+	var err error
+	if liveRoom {
+		isShadowbanned, err = u.moderationUsecase.ValidateLiveRoomInteraction(ctx, userID)
+	} else {
+		isShadowbanned, err = u.moderationUsecase.ValidateInteraction(ctx, userID, "")
+	}
 	if err != nil {
 		return 0, 0, err
 	}

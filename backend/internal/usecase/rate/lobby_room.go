@@ -322,6 +322,8 @@ func (r *LobbyRoom) handleJoin(ev *JoinEvent) {
 		}
 	}
 
+	isReconnect := existingPlayer != nil
+
 	if existingPlayer != nil {
 		delete(r.Conns, oldSessionID)
 		delete(r.Players, oldSessionID)
@@ -396,16 +398,19 @@ func (r *LobbyRoom) handleJoin(ev *JoinEvent) {
 	r.sendTo(ev.SessionID, "lobby_state_update", r.getRoomStatePayload(ev.SessionID))
 	r.broadcastPersonalizedState()
 
-	role := "player"
-	if ev.AsSpectator {
-		role = "spectator"
+	// Only announce first joins — reconnects/reassociations spam the chat otherwise.
+	if !isReconnect {
+		role := "player"
+		if ev.AsSpectator {
+			role = "spectator"
+		}
+		r.broadcast("chat_message", map[string]interface{}{
+			"sender":    "System",
+			"text":      fmt.Sprintf("%s joined as %s", ev.Nickname, role),
+			"type":      "system",
+			"timestamp": time.Now(),
+		})
 	}
-	r.broadcast("chat_message", map[string]interface{}{
-		"sender":    "System",
-		"text":      fmt.Sprintf("%s joined as %s", ev.Nickname, role),
-		"type":      "system",
-		"timestamp": time.Now(),
-	})
 }
 
 func (r *LobbyRoom) handleLeave(sessionID string) {
@@ -661,7 +666,7 @@ func (r *LobbyRoom) handleSubmitRating(ev *RatingEvent) {
 		return
 	}
 
-	_, _, err := r.SongRater.RateSong(context.Background(), player.UserID, song.ID, ev.Score)
+	_, _, err := r.SongRater.RateSongInLiveRoom(context.Background(), player.UserID, song.ID, ev.Score)
 	if err != nil {
 		log.Printf("[RATE] RateSong failed for user %d song %d: %v", player.UserID, song.ID, err)
 		msg := "Failed to save rating"

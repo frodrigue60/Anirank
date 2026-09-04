@@ -16,6 +16,8 @@
   import MessageSquare from "lucide-svelte/icons/message-square";
   import ChevronDown from "lucide-svelte/icons/chevron-down";
   import ChevronUp from "lucide-svelte/icons/chevron-up";
+  import ChevronLeft from "lucide-svelte/icons/chevron-left";
+  import ChevronRight from "lucide-svelte/icons/chevron-right";
   import ListMusic from "lucide-svelte/icons/list-music";
   import {
     applyLobbyStateUpdate,
@@ -77,6 +79,14 @@
 
   let queueCollapsed = $state(false);
   let chatCollapsed = $state(false);
+
+  let queuePanelVisible = $derived(status !== "lobby" && status !== "finished");
+  let centerColClass = $derived.by(() => {
+    if (!queuePanelVisible) return "lg:col-span-9";
+    if (queueCollapsed) return "lg:col-span-8";
+    return "lg:col-span-6";
+  });
+  let queueColClass = $derived(queueCollapsed ? "lg:col-span-1" : "lg:col-span-3");
 
   let scoreFormat = $derived(authState.user?.score_format || "POINT_10_DECIMAL");
   let draftScore = $state(0);
@@ -486,10 +496,68 @@
           </p>
         </div>
       </div>
+
+      <div
+        class="bg-surface-container rounded-sm p-4 flex flex-col {chatCollapsed ? '' : 'min-h-[240px] h-[300px] lg:h-[340px]'}"
+        data-purpose="chat-box"
+      >
+        <button
+          type="button"
+          class="flex items-center justify-between pb-2.5 mb-2.5 w-full cursor-pointer bg-surface-low -mx-4 -mt-4 px-4 pt-4 rounded-t-sm"
+          onclick={() => (chatCollapsed = !chatCollapsed)}
+          aria-expanded={!chatCollapsed}
+          aria-controls="rate-chat-panel"
+        >
+          <div class="flex items-center gap-2 text-xs font-bold tracking-wider text-primary uppercase">
+            <MessageSquare size={16} aria-hidden="true" />
+            <span>Chat</span>
+          </div>
+          {#if chatCollapsed}
+            <ChevronDown size={16} class="text-on-surface-variant" aria-hidden="true" />
+          {:else}
+            <ChevronUp size={16} class="text-on-surface-variant" aria-hidden="true" />
+          {/if}
+        </button>
+
+        {#if !chatCollapsed}
+          <div id="rate-chat-panel" class="flex-1 overflow-y-auto space-y-2 text-xs pr-1 min-h-0">
+            {#each chatMessages as m}
+              <p
+                class="text-[11px] leading-relaxed {m.type === 'system'
+                  ? 'text-on-surface-variant italic'
+                  : 'text-on-surface'}"
+              >
+                <strong class="text-primary not-italic font-semibold">{m.sender}:</strong>
+                {m.text}
+              </p>
+            {/each}
+          </div>
+          <form
+            class="mt-3 flex items-center gap-2 pt-2 bg-surface-low -mx-4 -mb-4 px-4 pb-4 rounded-b-sm"
+            onsubmit={(e) => {
+              e.preventDefault();
+              sendChat();
+            }}
+          >
+            <input
+              bind:value={chatInput}
+              class="flex-1 px-3 py-2 text-xs rounded-sm bg-surface-highest border border-outline-variant text-on-surface placeholder:text-on-surface-variant focus:outline-hidden focus:border-primary transition-colors"
+              placeholder="Message…"
+              aria-label="Chat message"
+            />
+            <button
+              class="px-3.5 py-2 rounded-sm bg-primary hover:bg-primary-container text-white font-semibold text-xs tracking-wide transition-colors cursor-pointer"
+              type="submit"
+            >
+              Send
+            </button>
+          </form>
+        {/if}
+      </div>
     </aside>
 
     <!-- CENTER: Playback + rating -->
-    <section class="lg:col-span-6 space-y-4 order-1 lg:order-2" data-purpose="playback-main-area">
+    <section class="{centerColClass} space-y-4 order-1 lg:order-2 transition-[grid-column] duration-200" data-purpose="playback-main-area">
       <div class="bg-surface-container rounded-sm p-5">
         {#if status === "lobby"}
           <div class="text-center space-y-4 py-8">
@@ -745,30 +813,64 @@
       </div>
     </section>
 
-    <!-- RIGHT: Queue + Chat -->
-    <aside class="lg:col-span-3 space-y-4 order-3" data-purpose="queue-chat-sidebar">
-      {#if status !== "lobby" && status !== "finished"}
-        <div class="bg-surface-container rounded-sm p-4 flex flex-col">
-          <button
-            type="button"
-            class="flex items-center justify-between pb-2.5 mb-2.5 w-full cursor-pointer bg-surface-low -mx-4 -mt-4 px-4 pt-4 rounded-t-sm"
-            onclick={() => (queueCollapsed = !queueCollapsed)}
-            aria-expanded={!queueCollapsed}
-            aria-controls="rate-queue-panel"
-          >
-            <div class="flex items-center gap-2 text-xs font-bold tracking-wider text-primary uppercase">
-              <ListMusic size={16} aria-hidden="true" />
-              <span>Queue ({queue.length})</span>
-            </div>
-            {#if queueCollapsed}
+    <!-- RIGHT: Queue (desktop can collapse horizontally to widen video) -->
+    {#if queuePanelVisible}
+      <aside class="{queueColClass} space-y-4 order-3 transition-[grid-column] duration-200" data-purpose="queue-sidebar">
+        {#if queueCollapsed}
+          <!-- Desktop rail -->
+          <div class="hidden lg:flex bg-surface-container rounded-sm p-2 flex-col items-center gap-3 min-h-[12rem]">
+            <button
+              type="button"
+              class="w-full flex flex-col items-center gap-2 py-3 px-1 rounded-sm bg-surface-low hover:bg-surface-highest text-primary cursor-pointer transition-colors"
+              onclick={() => (queueCollapsed = false)}
+              aria-expanded="false"
+              aria-controls="rate-queue-panel"
+              title="Expand queue"
+            >
+              <ChevronLeft size={18} aria-hidden="true" />
+              <ListMusic size={18} aria-hidden="true" />
+              <span class="text-[10px] font-bold uppercase tracking-wider [writing-mode:vertical-rl] rotate-180">
+                Queue ({queue.length})
+              </span>
+            </button>
+          </div>
+          <!-- Mobile collapsed header -->
+          <div class="lg:hidden bg-surface-container rounded-sm p-4">
+            <button
+              type="button"
+              class="flex items-center justify-between w-full cursor-pointer"
+              onclick={() => (queueCollapsed = false)}
+              aria-expanded="false"
+              aria-controls="rate-queue-panel"
+            >
+              <div class="flex items-center gap-2 text-xs font-bold tracking-wider text-primary uppercase">
+                <ListMusic size={16} aria-hidden="true" />
+                <span>Queue ({queue.length})</span>
+              </div>
               <ChevronDown size={16} class="text-on-surface-variant" aria-hidden="true" />
-            {:else}
-              <ChevronUp size={16} class="text-on-surface-variant" aria-hidden="true" />
-            {/if}
-          </button>
+            </button>
+          </div>
+        {:else}
+          <div class="bg-surface-container rounded-sm p-4 flex flex-col">
+            <div class="flex items-center justify-between pb-2.5 mb-2.5 bg-surface-low -mx-4 -mt-4 px-4 pt-4 rounded-t-sm">
+              <div class="flex items-center gap-2 text-xs font-bold tracking-wider text-primary uppercase">
+                <ListMusic size={16} aria-hidden="true" />
+                <span>Queue ({queue.length})</span>
+              </div>
+              <button
+                type="button"
+                class="text-on-surface-variant hover:text-primary p-1 cursor-pointer rounded-sm transition-colors"
+                onclick={() => (queueCollapsed = true)}
+                aria-expanded="true"
+                aria-controls="rate-queue-panel"
+                title="Collapse queue"
+              >
+                <span class="lg:hidden"><ChevronUp size={16} aria-hidden="true" /></span>
+                <span class="hidden lg:inline-flex"><ChevronRight size={16} aria-hidden="true" /></span>
+              </button>
+            </div>
 
-          {#if !queueCollapsed}
-            <div id="rate-queue-panel" class="space-y-2 max-h-56 overflow-y-auto pr-1">
+            <div id="rate-queue-panel" class="space-y-2 max-h-56 lg:max-h-[28rem] overflow-y-auto pr-1">
               {#if seasonalActive}
                 <p class="text-xs text-on-surface-variant">
                   Seasonal pool ({poolLabel}) — manual adds locked. Host can switch to manual in lobby.
@@ -804,68 +906,10 @@
                 {/each}
               {/if}
             </div>
-          {/if}
-        </div>
-      {/if}
-
-      <div
-        class="bg-surface-container rounded-sm p-4 flex flex-col {chatCollapsed ? '' : 'min-h-[280px] h-[340px]'}"
-        data-purpose="chat-box"
-      >
-        <button
-          type="button"
-          class="flex items-center justify-between pb-2.5 mb-2.5 w-full cursor-pointer bg-surface-low -mx-4 -mt-4 px-4 pt-4 rounded-t-sm"
-          onclick={() => (chatCollapsed = !chatCollapsed)}
-          aria-expanded={!chatCollapsed}
-          aria-controls="rate-chat-panel"
-        >
-          <div class="flex items-center gap-2 text-xs font-bold tracking-wider text-primary uppercase">
-            <MessageSquare size={16} aria-hidden="true" />
-            <span>Chat</span>
           </div>
-          {#if chatCollapsed}
-            <ChevronDown size={16} class="text-on-surface-variant" aria-hidden="true" />
-          {:else}
-            <ChevronUp size={16} class="text-on-surface-variant" aria-hidden="true" />
-          {/if}
-        </button>
-
-        {#if !chatCollapsed}
-          <div id="rate-chat-panel" class="flex-1 overflow-y-auto space-y-2 text-xs pr-1 min-h-0">
-            {#each chatMessages as m}
-              <p
-                class="text-[11px] leading-relaxed {m.type === 'system'
-                  ? 'text-on-surface-variant italic'
-                  : 'text-on-surface'}"
-              >
-                <strong class="text-primary not-italic font-semibold">{m.sender}:</strong>
-                {m.text}
-              </p>
-            {/each}
-          </div>
-          <form
-            class="mt-3 flex items-center gap-2 pt-2 bg-surface-low -mx-4 -mb-4 px-4 pb-4 rounded-b-sm"
-            onsubmit={(e) => {
-              e.preventDefault();
-              sendChat();
-            }}
-          >
-            <input
-              bind:value={chatInput}
-              class="flex-1 px-3 py-2 text-xs rounded-sm bg-surface-highest border border-outline-variant text-on-surface placeholder:text-on-surface-variant focus:outline-hidden focus:border-primary transition-colors"
-              placeholder="Message…"
-              aria-label="Chat message"
-            />
-            <button
-              class="px-3.5 py-2 rounded-sm bg-primary hover:bg-primary-container text-white font-semibold text-xs tracking-wide transition-colors cursor-pointer"
-              type="submit"
-            >
-              Send
-            </button>
-          </form>
         {/if}
-      </div>
-    </aside>
+      </aside>
+    {/if}
   </div>
 </main>
 

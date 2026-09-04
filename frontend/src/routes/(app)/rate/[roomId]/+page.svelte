@@ -92,6 +92,22 @@
   let draftScore = $state(0);
   let submitting = $state(false);
   let canSubmitRating = $derived(draftScore > 0);
+  let draftSongKey = $state("");
+
+  function applyDraftFromSong(songUUID: string | undefined, priorScore: number | null | undefined, sessionScore: number | null | undefined) {
+    const key = songUUID || "";
+    if (key && key === draftSongKey) return;
+    draftSongKey = key;
+    if (sessionScore != null && sessionScore > 0) {
+      draftScore = sessionScore;
+      return;
+    }
+    if (priorScore != null && priorScore > 0) {
+      draftScore = priorScore;
+      return;
+    }
+    draftScore = 0;
+  }
 
   let displayDraft = $derived(fromCanonicalScore(draftScore, scoreFormat));
   let sessionAvgDisplay = $derived(
@@ -153,7 +169,7 @@
   let editPoolYear = $state("");
   let editPoolSeason = $state("");
   let editPoolThemeType = $state<SeasonalPoolThemeType>("all");
-  let editPoolLimit = $state(30);
+  let editPoolLimit = $state<number | "">("");
   let sortedYears = $derived(
     [...configState.years].sort((a, b) => Number(b.slug) - Number(a.slug) || b.name.localeCompare(a.name))
   );
@@ -164,7 +180,7 @@
       editPoolYear = config.pool_year || "";
       editPoolSeason = config.pool_season || "";
       editPoolThemeType = (config.pool_theme_type as SeasonalPoolThemeType) || "all";
-      editPoolLimit = config.pool_limit || 30;
+      editPoolLimit = config.pool_limit && config.pool_limit > 0 ? config.pool_limit : "";
     }
   });
 
@@ -231,6 +247,15 @@
       case "lobby_state_update":
         roomState = applyLobbyStateUpdate(roomState, msg.payload);
         playersVersion += 1;
+        if (msg.payload?.status === "rating") {
+          applyDraftFromSong(
+            msg.payload?.rating_data?.song_uuid || msg.payload?.current_song?.uuid,
+            msg.payload?.rating_data?.prior_score,
+            msg.payload?.rating_data?.my_score
+          );
+        } else if (msg.payload?.status !== "rating") {
+          draftSongKey = "";
+        }
         break;
       case "rating_update":
         roomState = applyRatingUpdate(roomState, msg.payload);
@@ -246,7 +271,11 @@
             status: "rating",
           };
         }
-        draftScore = 0;
+        applyDraftFromSong(
+          msg.payload?.song?.uuid,
+          msg.payload?.prior_score,
+          null
+        );
         submitting = false;
         break;
       case "chat_message":
@@ -386,7 +415,10 @@
       pool_year: editSourceMode === "seasonal_pool" ? editPoolYear : "",
       pool_season: editSourceMode === "seasonal_pool" ? editPoolSeason : "",
       pool_theme_type: editSourceMode === "seasonal_pool" ? editPoolThemeType : "all",
-      pool_limit: editSourceMode === "seasonal_pool" ? editPoolLimit : 0,
+      pool_limit:
+        editSourceMode === "seasonal_pool" && typeof editPoolLimit === "number" && editPoolLimit > 0
+          ? editPoolLimit
+          : 0,
     });
   }
 
@@ -616,8 +648,16 @@
                     </select>
                   </label>
                   <label class="block space-y-1">
-                    <span class="text-xs font-bold text-on-surface-variant">Pool size</span>
-                    <input type="number" min="5" max="50" bind:value={editPoolLimit} class="w-full h-10 bg-surface border border-outline-variant rounded-sm px-2 text-sm" />
+                    <span class="text-xs font-bold text-on-surface-variant">Pool size (optional)</span>
+                    <input
+                      type="number"
+                      min="5"
+                      max="50"
+                      bind:value={editPoolLimit}
+                      placeholder="All themes"
+                      class="w-full h-10 bg-surface border border-outline-variant rounded-sm px-2 text-sm"
+                    />
+                    <span class="text-[10px] text-on-surface-variant">Empty = full season · 5–50 when set</span>
                   </label>
                 {/if}
                 <button

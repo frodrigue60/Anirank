@@ -23,9 +23,11 @@ const (
 	MaxQueueLimitPerUser     = 10
 	DefaultMaxPlayers        = 16
 	MaxQueueSize             = 50
-	DefaultPoolLimit         = 30
+	// PoolLimit 0 = no cap (optional). When set, clamp to [MinPoolLimit, MaxPoolLimit].
 	MinPoolLimit             = 5
 	MaxPoolLimit             = 50
+	// Safety ceiling when loading an uncapped seasonal pool from the catalog.
+	UnlimitedPoolFetchLimit  = 500
 )
 
 func sanitizeConfig(cfg *domain.RateConfig) {
@@ -63,8 +65,15 @@ func sanitizeConfig(cfg *domain.RateConfig) {
 	if cfg.SourceMode == SourceModeSeasonalPool {
 		// Seasonal rooms are pool-driven — no open/host queue adds.
 		cfg.QueueMode = QueueModeDisabled
-		if cfg.PoolLimit < MinPoolLimit || cfg.PoolLimit > MaxPoolLimit {
-			cfg.PoolLimit = DefaultPoolLimit
+		// 0 = unlimited (optional). Any other value must be within [Min, Max].
+		if cfg.PoolLimit < 0 {
+			cfg.PoolLimit = 0
+		} else if cfg.PoolLimit > 0 && (cfg.PoolLimit < MinPoolLimit || cfg.PoolLimit > MaxPoolLimit) {
+			if cfg.PoolLimit < MinPoolLimit {
+				cfg.PoolLimit = MinPoolLimit
+			} else {
+				cfg.PoolLimit = MaxPoolLimit
+			}
 		}
 		switch cfg.PoolThemeType {
 		case PoolThemeAll, PoolThemeOP, PoolThemeED:

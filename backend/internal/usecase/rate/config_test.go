@@ -65,11 +65,33 @@ func TestSanitizeSeasonalPool(t *testing.T) {
 	if cfg.QueueMode != QueueModeDisabled {
 		t.Fatalf("seasonal should force disabled queue, got %q", cfg.QueueMode)
 	}
-	if cfg.PoolLimit != DefaultPoolLimit {
-		t.Fatalf("expected pool limit clamp to %d, got %d", DefaultPoolLimit, cfg.PoolLimit)
+	if cfg.PoolLimit != MaxPoolLimit {
+		t.Fatalf("expected pool limit clamp to %d, got %d", MaxPoolLimit, cfg.PoolLimit)
 	}
 	if !isSeasonalPool(cfg) {
 		t.Fatal("expected seasonal pool")
+	}
+
+	uncapped := domain.RateConfig{
+		SourceMode: SourceModeSeasonalPool,
+		PoolYear:   "2026",
+		PoolSeason: "spring",
+		PoolLimit:  0,
+	}
+	sanitizeConfig(&uncapped)
+	if uncapped.PoolLimit != 0 {
+		t.Fatalf("expected optional pool limit 0 (unlimited), got %d", uncapped.PoolLimit)
+	}
+
+	tooSmall := domain.RateConfig{
+		SourceMode: SourceModeSeasonalPool,
+		PoolYear:   "2026",
+		PoolSeason: "spring",
+		PoolLimit:  2,
+	}
+	sanitizeConfig(&tooSmall)
+	if tooSmall.PoolLimit != MinPoolLimit {
+		t.Fatalf("expected bump to min %d, got %d", MinPoolLimit, tooSmall.PoolLimit)
 	}
 
 	manual := domain.RateConfig{

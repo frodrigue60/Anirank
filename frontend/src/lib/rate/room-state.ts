@@ -65,6 +65,8 @@ export interface RatingData {
 	player_count: number;
 	ratings: Record<string, RatingEntry>;
 	my_score?: number | null;
+	/** Existing global rating for this song (0–100), before submitting in the live session. */
+	prior_score?: number | null;
 	reveal_mode?: RevealMode;
 }
 

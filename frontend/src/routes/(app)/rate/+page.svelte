@@ -58,7 +58,7 @@
   let poolYear = $state("");
   let poolSeason = $state("");
   let poolThemeType = $state<SeasonalPoolThemeType>("all");
-  let poolLimit = $state(30);
+  let poolLimit = $state<number | "">("");
 
   let joinCode = $state("");
   let errorMsg = $state("");
@@ -158,7 +158,7 @@
                 pool_year: poolYear,
                 pool_season: poolSeason,
                 pool_theme_type: poolThemeType,
-                pool_limit: poolLimit,
+                pool_limit: typeof poolLimit === "number" && poolLimit > 0 ? poolLimit : 0,
               }
             : {}),
         },
@@ -382,8 +382,16 @@
           </select>
         </label>
         <label class="block space-y-1">
-          <span class="text-xs font-bold text-on-surface-variant uppercase tracking-wide">Pool size</span>
-          <input type="number" min="5" max="50" bind:value={poolLimit} class="w-full h-11 bg-surface border border-outline-variant rounded-sm px-3 text-sm" />
+          <span class="text-xs font-bold text-on-surface-variant uppercase tracking-wide">Pool size (optional)</span>
+          <input
+            type="number"
+            min="5"
+            max="50"
+            bind:value={poolLimit}
+            placeholder="All themes"
+            class="w-full h-11 bg-surface border border-outline-variant rounded-sm px-3 text-sm"
+          />
+          <span class="text-[11px] text-on-surface-variant">Leave empty to load the full season. Cap is 5–50 when set.</span>
         </label>
       {:else}
         <label class="block space-y-1">

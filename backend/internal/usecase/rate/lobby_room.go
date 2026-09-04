@@ -108,14 +108,16 @@ type LobbyRoom struct {
 	Conns      map[string]WSConn
 	Queue      []queuedSong
 	CurrentSong *domain.Song
-	// CurrentRatings maps sessionID -> score (0-100)
+	// CurrentRatings maps sessionID -> score (0-100) for this song in the live session.
 	CurrentRatings map[string]float64
-	SongsRated     int
-	EventChan      chan RoomEvent
-	CreatedAt      time.Time
-	LastActive     time.Time
-	Closed         bool
-	OnDestroy      func(roomID string)
+	// PriorScores maps sessionID -> existing global rating (0-100) loaded at beginRating.
+	PriorScores map[string]float64
+	SongsRated  int
+	EventChan   chan RoomEvent
+	CreatedAt   time.Time
+	LastActive  time.Time
+	Closed      bool
+	OnDestroy   func(roomID string)
 
 	SongRepo     domain.SongRepository
 	UserRepo     domain.UserRepository
@@ -146,6 +148,7 @@ func NewLobbyRoom(
 		Conns:          make(map[string]WSConn),
 		Queue:          make([]queuedSong, 0),
 		CurrentRatings: make(map[string]float64),
+		PriorScores:    make(map[string]float64),
 		EventChan:      make(chan RoomEvent, 100),
 		CreatedAt:      now,
 		LastActive:     now,
@@ -341,6 +344,10 @@ func (r *LobbyRoom) handleJoin(ev *JoinEvent) {
 			delete(r.CurrentRatings, oldSessionID)
 			r.CurrentRatings[ev.SessionID] = score
 		}
+		if prior, ok := r.PriorScores[oldSessionID]; ok {
+			delete(r.PriorScores, oldSessionID)
+			r.PriorScores[ev.SessionID] = prior
+		}
 
 		existingPlayer.SessionID = ev.SessionID
 		existingPlayer.Offline = false
@@ -402,7 +409,30 @@ func (r *LobbyRoom) handleJoin(ev *JoinEvent) {
 	}
 
 	r.ensureHostActive()
+	status := r.Status
+	song := r.CurrentSong
+	needsPrior := false
+	var joinUserID uint64
+	if p := r.Players[ev.SessionID]; p != nil {
+		_, hasPrior := r.PriorScores[ev.SessionID]
+		if !hasPrior && status == "rating" && song != nil && p.UserID > 0 && !p.IsSpectator {
+			needsPrior = true
+			joinUserID = p.UserID
+		}
+	}
 	r.mu.Unlock()
+
+	if needsPrior && r.SongRater != nil && song != nil {
+		rating, err := r.SongRater.GetUserSongRating(context.Background(), joinUserID, song.ID)
+		if err == nil && rating != nil && rating.Rating > 0 {
+			r.mu.Lock()
+			if r.PriorScores == nil {
+				r.PriorScores = make(map[string]float64)
+			}
+			r.PriorScores[ev.SessionID] = rating.Rating
+			r.mu.Unlock()
+		}
+	}
 
 	r.sendTo(ev.SessionID, "lobby_state_update", r.getRoomStatePayload(ev.SessionID))
 	r.broadcastPersonalizedState()
@@ -467,6 +497,7 @@ func (r *LobbyRoom) handleConfigUpdate(ev *ConfigUpdateEvent) {
 		r.Queue = make([]queuedSong, 0)
 		r.CurrentSong = nil
 		r.CurrentRatings = make(map[string]float64)
+		r.PriorScores = make(map[string]float64)
 	}
 	r.mu.Unlock()
 	r.broadcastPersonalizedState()
@@ -663,6 +694,7 @@ func (r *LobbyRoom) handleNext(sessionID string) {
 		}
 		r.CurrentSong = nil
 		r.CurrentRatings = make(map[string]float64)
+		r.PriorScores = make(map[string]float64)
 		r.Status = "waiting"
 		r.mu.Unlock()
 		r.broadcastPersonalizedState()
@@ -678,17 +710,61 @@ func (r *LobbyRoom) handleNext(sessionID string) {
 }
 
 func (r *LobbyRoom) beginRating(song *domain.Song) {
+	type lookup struct {
+		sessionID string
+		userID    uint64
+	}
+
 	r.mu.Lock()
 	if r.CurrentSong != nil {
 		r.SongsRated++
 	}
 	r.CurrentSong = song
 	r.CurrentRatings = make(map[string]float64)
+	r.PriorScores = make(map[string]float64)
 	r.Status = "rating"
+	lookups := make([]lookup, 0, len(r.Players))
+	for sid, p := range r.Players {
+		if p.UserID > 0 && !p.IsSpectator && !p.Offline {
+			lookups = append(lookups, lookup{sessionID: sid, userID: p.UserID})
+		}
+	}
 	r.mu.Unlock()
 
-	payload := r.buildSongStartedPayload(song)
-	r.broadcast("song_started", payload)
+	priors := make(map[string]float64, len(lookups))
+	if r.SongRater != nil && song != nil && song.ID > 0 {
+		for _, l := range lookups {
+			rating, err := r.SongRater.GetUserSongRating(context.Background(), l.userID, song.ID)
+			if err != nil || rating == nil {
+				continue
+			}
+			if rating.Rating > 0 {
+				priors[l.sessionID] = rating.Rating
+			}
+		}
+	}
+
+	r.mu.Lock()
+	r.PriorScores = priors
+	sessionIDs := make([]string, 0, len(r.Conns))
+	for sid, conn := range r.Conns {
+		if conn != nil {
+			sessionIDs = append(sessionIDs, sid)
+		}
+	}
+	r.mu.Unlock()
+
+	basePayload := r.buildSongStartedPayload(song)
+	for _, sid := range sessionIDs {
+		payload := map[string]interface{}{
+			"song":      basePayload["song"],
+			"audio_url": basePayload["audio_url"],
+		}
+		if prior, ok := priors[sid]; ok {
+			payload["prior_score"] = prior
+		}
+		r.sendTo(sid, "song_started", payload)
+	}
 	r.broadcastPersonalizedState()
 }
 
@@ -786,6 +862,7 @@ func (r *LobbyRoom) handleEndSession(sessionID string) {
 	r.Status = "finished"
 	r.CurrentSong = nil
 	r.CurrentRatings = make(map[string]float64)
+	r.PriorScores = make(map[string]float64)
 	r.mu.Unlock()
 	r.broadcastPersonalizedState()
 }
@@ -800,6 +877,7 @@ func (r *LobbyRoom) handleResetToLobby(sessionID string) {
 	r.Status = "lobby"
 	r.CurrentSong = nil
 	r.CurrentRatings = make(map[string]float64)
+	r.PriorScores = make(map[string]float64)
 	r.Queue = make([]queuedSong, 0)
 	r.SongsRated = 0
 	r.mu.Unlock()
@@ -999,7 +1077,7 @@ func (r *LobbyRoom) loadSeasonalPoolAsync() {
 			filters.Type = themeType
 		}
 		if limit <= 0 {
-			limit = DefaultPoolLimit
+			limit = UnlimitedPoolFetchLimit
 		}
 
 		songs, err := r.SongRepo.GetPaginated(ctx, limit, 0, filters)
@@ -1259,6 +1337,14 @@ func (r *LobbyRoom) buildRatingSnapshot(forSessionID string) map[string]interfac
 		myScore = &s
 	}
 
+	var priorScore *float64
+	if myScore == nil {
+		if prior, ok := r.PriorScores[forSessionID]; ok {
+			p := prior
+			priorScore = &p
+		}
+	}
+
 	songUUID := ""
 	if r.CurrentSong != nil {
 		songUUID = r.CurrentSong.UUID
@@ -1271,6 +1357,7 @@ func (r *LobbyRoom) buildRatingSnapshot(forSessionID string) map[string]interfac
 		"player_count":  eligible,
 		"ratings":       ratings,
 		"my_score":      myScore,
+		"prior_score":   priorScore,
 		"reveal_mode":   r.Config.RevealMode,
 	}
 }
@@ -1349,6 +1436,13 @@ func (r *LobbyRoom) getRoomStatePayload(forSessionID string) map[string]interfac
 		s := score
 		myScore = &s
 	}
+	var priorScore *float64
+	if myScore == nil {
+		if prior, ok := r.PriorScores[forSessionID]; ok {
+			p := prior
+			priorScore = &p
+		}
+	}
 
 	songUUID := ""
 	if r.CurrentSong != nil {
@@ -1372,6 +1466,7 @@ func (r *LobbyRoom) getRoomStatePayload(forSessionID string) map[string]interfac
 			"player_count": eligible,
 			"ratings":      ratings,
 			"my_score":     myScore,
+			"prior_score":  priorScore,
 			"reveal_mode":  r.Config.RevealMode,
 		},
 		"my_session_id": forSessionID,

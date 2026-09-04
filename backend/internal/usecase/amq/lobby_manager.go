@@ -178,13 +178,20 @@ func (m *LobbyManager) StartCleanupLoop() {
 
 func (m *LobbyManager) cleanupRooms() {
 	m.mu.Lock()
-	defer m.mu.Unlock()
-
+	toClose := make([]*LobbyRoom, 0)
 	for roomID, room := range m.rooms {
 		if room.ShouldDestroy() {
 			log.Printf("[AMQ] Cleaning up inactive/empty room %s", roomID)
-			room.Close()
+			toClose = append(toClose, room)
+			// Remove under the manager lock first. Close() invokes OnDestroy, which
+			// also takes m.mu — calling it while holding the lock deadlocks ListRooms.
 			delete(m.rooms, roomID)
 		}
+	}
+	m.mu.Unlock()
+
+	for _, room := range toClose {
+		room.OnDestroy = nil
+		room.Close()
 	}
 }

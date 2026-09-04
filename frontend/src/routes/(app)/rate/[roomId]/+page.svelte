@@ -79,8 +79,9 @@
   let chatCollapsed = $state(false);
 
   let scoreFormat = $derived(authState.user?.score_format || "POINT_10_DECIMAL");
-  let draftScore = $state(70);
+  let draftScore = $state(0);
   let submitting = $state(false);
+  let canSubmitRating = $derived(draftScore > 0);
 
   let displayDraft = $derived(fromCanonicalScore(draftScore, scoreFormat));
   let sessionAvgDisplay = $derived(
@@ -235,7 +236,7 @@
             status: "rating",
           };
         }
-        draftScore = 70;
+        draftScore = 0;
         submitting = false;
         break;
       case "chat_message":
@@ -260,6 +261,10 @@
   function submitRating() {
     if (!authState.isAuthenticated) {
       errorBanner = "Login required to rate";
+      return;
+    }
+    if (draftScore <= 0) {
+      errorBanner = "Pick a score greater than 0";
       return;
     }
     submitting = true;
@@ -677,10 +682,10 @@
 
                   <button
                     onclick={submitRating}
-                    disabled={submitting}
-                    class="w-full mt-3 py-2.5 px-4 rounded-sm font-bold text-sm text-white bg-primary hover:bg-primary-container transition-colors cursor-pointer disabled:opacity-50"
+                    disabled={submitting || !canSubmitRating}
+                    class="w-full mt-3 py-2.5 px-4 rounded-sm font-bold text-sm text-white bg-primary hover:bg-primary-container transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Submit rating
+                    {canSubmitRating ? "Submit rating" : "Pick a score to submit"}
                   </button>
                 {/if}
               </div>

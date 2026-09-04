@@ -37,8 +37,11 @@
   import Sparkles from "lucide-svelte/icons/sparkles";
   import ChevronLeft from "lucide-svelte/icons/chevron-left";
   import ChevronRight from "lucide-svelte/icons/chevron-right";
+  import ChevronDown from "lucide-svelte/icons/chevron-down";
+  import ChevronUp from "lucide-svelte/icons/chevron-up";
   import Clapperboard from "lucide-svelte/icons/clapperboard";
   import Eye from "lucide-svelte/icons/eye";
+  import Loader2 from "lucide-svelte/icons/loader-2";
   import OptimizedImage from "$lib/components/OptimizedImage.svelte";
   import type { ImageSource } from "$lib/types/media";
   import api from "$lib/api";
@@ -80,8 +83,10 @@
   }
 
   let { data } = $props<{
-    data: { song: Song; comments: any[]; related: Song[] };
+    data: { song: Song; related: Song[] };
   }>();
+
+  const COMMENTS_PAGE_SIZE = 10;
 
   // svelte-ignore state_referenced_locally
   let currentSong: Song = $state(data.song);
@@ -132,13 +137,24 @@
     variantContextParts.some((part) => part.kind === "period"),
   );
 
-  // svelte-ignore state_referenced_locally
-  let comments: Comment[] = $state(data.comments?.map(mapComment) || []);
+  let comments: Comment[] = $state([]);
+  let commentsTotal = $state(0);
+  let commentsHasMore = $state(false);
+  let commentsLoading = $state(false);
+  let commentsLoadingMore = $state(false);
+  /** Next API offset — independent of client prepends/deletes. */
+  let commentsNextOffset = $state(0);
+  /** Collapsed by default on mobile; desktop always visible via `md:block`. */
+  let commentsExpanded = $state(false);
 
   $effect(() => {
     currentSong = data.song;
     relatedSongs = data.related;
-    comments = data.comments?.map(mapComment) || [];
+    comments = [];
+    commentsTotal = 0;
+    commentsHasMore = false;
+    commentsNextOffset = 0;
+    commentsExpanded = false;
     selectedVariantIndex = resolveVariantIndex(
       data.song.variants,
       page.url.searchParams.get("v"),
@@ -451,15 +467,49 @@
     showReportModal = true;
   }
 
-  async function fetchComments(songId: string | number) {
+  async function fetchComments(
+    songId: string | number,
+    opts: { append?: boolean } = {},
+  ) {
     if (!songId) return;
+    const append = opts.append ?? false;
+    if (append) {
+      if (commentsLoadingMore || !commentsHasMore) return;
+      commentsLoadingMore = true;
+    } else {
+      commentsLoading = true;
+    }
+
     try {
-      const resp = await api.get(`/songs/${songId}/comments`);
-      comments = resp.data.data?.map(mapComment) || [];
+      const offset = append ? commentsNextOffset : 0;
+      const resp = await api.get(`/songs/${songId}/comments`, {
+        params: { limit: COMMENTS_PAGE_SIZE, offset },
+      });
+      const mapped: Comment[] = resp.data.data?.map(mapComment) || [];
+      const pagination = resp.data.pagination;
+
+      if (append) {
+        const seen = new Set(comments.map((c) => c.uuid));
+        comments = [
+          ...comments,
+          ...mapped.filter((c) => !seen.has(c.uuid)),
+        ];
+        commentsNextOffset = offset + mapped.length;
+      } else {
+        comments = mapped;
+        commentsNextOffset = mapped.length;
+      }
+
+      commentsTotal =
+        pagination?.total ??
+        (append ? Math.max(commentsTotal, comments.length) : mapped.length);
+      commentsHasMore =
+        pagination?.has_more ?? mapped.length >= COMMENTS_PAGE_SIZE;
 
       // Auto-scroll to comment if hash exists
       const hash = window.location.hash;
-      if (hash && hash.startsWith("#comment-")) {
+      if (!append && hash && hash.startsWith("#comment-")) {
+        commentsExpanded = true;
         const commentId = hash.slice(1);
         setTimeout(() => {
           const el = document.getElementById(commentId);
@@ -479,7 +529,15 @@
       }
     } catch (e) {
       console.error(e);
+    } finally {
+      commentsLoading = false;
+      commentsLoadingMore = false;
     }
+  }
+
+  async function loadMoreComments() {
+    if (!currentSong?.id) return;
+    await fetchComments(currentSong.id, { append: true });
   }
 
   async function postComment() {
@@ -499,6 +557,8 @@
         newComment.user = authState.user;
       }
       comments = comments ? [newComment, ...comments] : [newComment];
+      commentsTotal += 1;
+      commentsExpanded = true;
       newCommentText = "";
     } catch (e: any) {
       console.error(e);
@@ -582,6 +642,7 @@
         }
       } else {
         comments = comments.filter((c) => c.uuid !== uuid);
+        commentsTotal = Math.max(0, commentsTotal - 1);
       }
     } catch (error) {
       console.error("Error deleting comment:", error);
@@ -1121,213 +1182,43 @@
           {/if}
         </div>
       </div>
-    </div>
 
-    <!-- Sidebar (Right - YouTube Style) -->
-    <div class="lg:col-span-4 space-y-4">
-      <div>
-        <h2
-          class="text-lg font-bold flex items-center gap-2 mb-4 text-on-surface"
+      <!-- Comments Section -->
+      <section class="space-y-4">
+        <button
+          type="button"
+          class="flex md:hidden w-full items-center justify-between gap-3 rounded-md border border-outline-variant/10 bg-surface-container px-4 py-3 text-left transition-colors hover:bg-surface-highest"
+          onclick={() => (commentsExpanded = !commentsExpanded)}
+          aria-expanded={commentsExpanded}
+          aria-controls="song-comments-panel"
         >
-          <Library size={20} class="text-primary" />
-          More from this series
-        </h2>
-      </div>
-      <div
-        class="space-y-3 max-h-[480px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-outline-variant/30 scrollbar-track-transparent scroll-smooth"
-      >
-        {#each relatedSongs as related}
-          {@const isSelected = related.id === currentSong.id}
-          <a
-            use:bindActive={isSelected}
-            href="/animes/{currentSong.anime?.slug}/{related.slug}"
-            class="flex gap-3 group p-2 pl-1 rounded-r-md transition-all border-l-4 {isSelected
-              ? 'bg-surface-low border-primary shadow-sm'
-              : 'bg-transparent hover:bg-surface-highest border-transparent'}"
-            title="View theme: {getSongName(related)}"
-          >
-            <div
-              class="w-32 aspect-video rounded-md overflow-hidden shrink-0 border border-outline-variant/10"
-            >
-              <OptimizedImage
-                src={currentSong.anime?.cover_url}
-                sources={currentSong.anime?.cover_sources}
-                alt={getSongName(related)}
-                class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                sizes="(max-width: 1024px) 128px, 160px"
-              />
-            </div>
-            <div class="flex-1 min-w-0 flex flex-col justify-center">
-              <div class="flex items-center gap-1.5 mb-1">
-                <span
-                  class="bg-primary/20 text-primary text-[8px] font-black px-1.5 py-0.5 rounded uppercase"
-                  >{related.slug}</span
-                >
-                <span
-                  class="text-[10px] text-yellow-400 font-bold flex items-center gap-0.5"
-                >
-                  <Star size={10} class="fill-yellow-400" />
-                  {getFormattedScore(
-                    related.average_rating,
-                    authState.user?.score_format,
-                  )}
-                </span>
-              </div>
-              <h4
-                class="text-sm font-bold transition-colors line-clamp-1 {isSelected
-                  ? 'text-primary'
-                  : 'text-on-surface group-hover:text-primary'}"
-              >
-                {getSongName(related)}
-              </h4>
-              <p class="text-[10px] text-on-surface-variant/40 line-clamp-1">
-                by {getSongArtistNames(related.artists)}
-              </p>
-            </div>
-          </a>
-        {:else}
-          <div
-            class="text-center py-8 text-on-surface-variant/20 text-xs italic border border-dashed border-outline-variant/10 rounded-md"
-          >
-            No other themes found for this series.
-          </div>
-        {/each}
-      </div>
-      <!-- Recommendation Section -->
-      <div class="mt-10 space-y-4">
-        <div class="mb-4">
-          <div class="flex items-center justify-between gap-3">
-            <h2
-              class="text-lg font-bold flex items-center gap-2 text-on-surface"
-            >
-              <Sparkles size={20} class="text-primary" />
-              Recommendations
-            </h2>
-            {#if totalRecommendedPages > 1}
-              <div
-                class="flex items-center gap-2 bg-surface-low border border-outline-variant/10 px-2 py-1 rounded-sm"
-              >
-                <button
-                  class="p-1 rounded-sm text-on-surface-variant/60 hover:text-primary hover:bg-surface-highest transition-colors disabled:opacity-30 disabled:pointer-events-none"
-                  disabled={recommendedPage === 0}
-                  onclick={() => recommendedPage--}
-                  title="Previous page"
-                >
-                  <ChevronLeft size={16} />
-                </button>
-                <span
-                  class="text-[10px] font-bold text-on-surface-variant/60 tracking-wider uppercase select-none"
-                >
-                  {recommendedPage + 1} / {totalRecommendedPages}
-                </span>
-                <button
-                  class="p-1 rounded-sm text-on-surface-variant/60 hover:text-primary hover:bg-surface-highest transition-colors disabled:opacity-30 disabled:pointer-events-none"
-                  disabled={recommendedPage >= totalRecommendedPages - 1}
-                  onclick={() => recommendedPage++}
-                  title="Next page"
-                >
-                  <ChevronRight size={16} />
-                </button>
-              </div>
+          <span class="flex items-center gap-2 text-sm font-bold text-on-surface min-w-0">
+            <MessageCircle size={18} class="text-primary shrink-0" aria-hidden="true" />
+            <span>Comments</span>
+            {#if commentsTotal > 0}
+              <span class="text-on-surface-variant/70 font-semibold">({commentsTotal})</span>
             {/if}
-          </div>
-          <p class="text-[11px] text-on-surface-variant/70 mt-1">
-            Similar themes from other series
-          </p>
-        </div>
+          </span>
+          {#if commentsExpanded}
+            <ChevronUp size={18} class="text-on-surface-variant shrink-0" aria-hidden="true" />
+          {:else}
+            <ChevronDown size={18} class="text-on-surface-variant shrink-0" aria-hidden="true" />
+          {/if}
+        </button>
 
-        {#if recommendedLoading}
-          <div class="space-y-3">
-            {#each Array(3) as _}
-              <div
-                class="flex gap-3 p-2 rounded-r-md border-l-4 border-transparent bg-surface-low/30 animate-pulse"
-              >
-                <div
-                  class="w-32 aspect-video bg-surface-highest rounded-md shrink-0"
-                ></div>
-                <div class="flex-1 space-y-2 py-1">
-                  <div class="h-3 bg-surface-highest rounded w-1/3"></div>
-                  <div class="h-4 bg-surface-highest rounded w-3/4"></div>
-                  <div class="h-2 bg-surface-highest rounded w-1/2"></div>
-                </div>
-              </div>
-            {/each}
-          </div>
-        {:else}
-          <div class="space-y-3">
-            {#each paginatedRecommendations as recommended}
-              <a
-                href="/animes/{recommended.anime?.slug}/{recommended.slug}"
-                class="flex gap-3 group p-2 pl-1 rounded-r-md transition-all border-l-4 border-transparent bg-transparent hover:bg-surface-highest"
-                title="View theme: {getSongName(recommended)}"
-              >
-                <div
-                  class="w-32 aspect-video rounded-md overflow-hidden shrink-0 border border-outline-variant/10"
-                >
-                  <OptimizedImage
-                    src={recommended.anime?.cover_url}
-                    sources={recommended.anime?.cover_sources}
-                    alt={getSongName(recommended)}
-                    class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    sizes="(max-width: 1024px) 128px, 160px"
-                  />
-                </div>
-                <div class="flex-1 min-w-0 flex flex-col justify-center">
-                  <div class="flex items-center gap-1.5 mb-1 flex-wrap">
-                    <span
-                      class="bg-primary/20 text-primary text-[8px] font-black px-1.5 py-0.5 rounded uppercase"
-                    >
-                      {recommended.slug}
-                    </span>
-                    <span
-                      class="text-[10px] text-yellow-400 font-bold flex items-center gap-0.5"
-                    >
-                      <Star size={10} class="fill-yellow-400" />
-                      {getFormattedScore(
-                        recommended.average_rating,
-                        authState.user?.score_format,
-                      )}
-                    </span>
-                    {#if recommended.anime}
-                      <span
-                        class="text-[9px] text-on-surface-variant/40 line-clamp-1 truncate max-w-[120px]"
-                      >
-                        • {recommended.anime.title}
-                      </span>
-                    {/if}
-                  </div>
-                  <h4
-                    class="text-sm font-bold transition-colors line-clamp-1 text-on-surface group-hover:text-primary"
-                  >
-                    {getSongName(recommended)}
-                  </h4>
-                  <p
-                    class="text-[10px] text-on-surface-variant/40 line-clamp-1"
-                  >
-                    by {getSongArtistNames(recommended.artists)}
-                  </p>
-                </div>
-              </a>
-            {:else}
-              <div
-                class="text-center py-8 text-on-surface-variant/20 text-xs italic border border-dashed border-outline-variant/10 rounded-md"
-              >
-                No recommendations found for this theme.
-              </div>
-            {/each}
-          </div>
-        {/if}
-      </div>
-    </div>
-  </div>
-  <!-- Comments Section -->
-  <div class="space-y-6">
-    <h2 class="text-2xl font-bold flex items-center gap-3">
-      <MessageCircle size={24} class="text-primary" />
-      Comments
-    </h2>
+        <div
+          id="song-comments-panel"
+          class="space-y-6 {commentsExpanded ? 'block' : 'hidden'} md:block"
+        >
+          <h2 class="hidden md:flex text-xl font-bold items-center gap-3">
+            <MessageCircle size={22} class="text-primary" aria-hidden="true" />
+            Comments
+            {#if commentsTotal > 0}
+              <span class="text-base font-semibold text-on-surface-variant/50">({commentsTotal})</span>
+            {/if}
+          </h2>
 
-    <!-- New Comment Input -->
+          <!-- New Comment Input -->
     <div class="flex gap-4">
       <div class="w-10 h-10 rounded-full bg-white/10 overflow-hidden shrink-0">
         {#if authState.isAuthenticated && authState.user}
@@ -1385,7 +1276,7 @@
     </div>
 
     <!-- Comments List -->
-    <div class="space-y-4 pb-12">
+    <div class="space-y-4 pb-2">
       {#each comments as comment (comment.uuid)}
         <div class="flex gap-4" id="comment-{comment.uuid}">
           <div
@@ -1763,15 +1654,241 @@
         </div>
       {:else}
         <div class="text-center py-8">
-          <MessageSquare size={48} class="text-on-surface-variant/10 mb-2" />
-          <p class="text-on-surface-variant/40 font-bold text-sm">
-            No comments yet
-          </p>
-          <p class="text-on-surface-variant/20 text-xs mt-1">
-            Be the first to share your thoughts on this song!
-          </p>
+          {#if commentsLoading}
+            <Loader2 size={32} class="text-on-surface-variant/30 mb-2 animate-spin mx-auto" />
+            <p class="text-on-surface-variant/40 font-bold text-sm">
+              Loading comments…
+            </p>
+          {:else}
+            <MessageSquare size={48} class="text-on-surface-variant/10 mb-2 mx-auto" />
+            <p class="text-on-surface-variant/40 font-bold text-sm">
+              No comments yet
+            </p>
+            <p class="text-on-surface-variant/20 text-xs mt-1">
+              Be the first to share your thoughts on this song!
+            </p>
+          {/if}
         </div>
       {/each}
+    </div>
+
+          {#if commentsHasMore}
+            <div class="flex justify-center pt-2 pb-2">
+              <button
+                type="button"
+                onclick={loadMoreComments}
+                disabled={commentsLoadingMore}
+                class="inline-flex items-center justify-center gap-2 min-h-[44px] px-4 py-2 rounded-sm border border-outline-variant/15 bg-surface-highest text-xs font-bold text-on-surface-variant hover:text-on-surface hover:border-primary/40 transition-colors disabled:opacity-50"
+                aria-label="Load more comments"
+              >
+                {#if commentsLoadingMore}
+                  <Loader2 size={14} class="animate-spin" aria-hidden="true" />
+                  Loading…
+                {:else}
+                  Load more
+                {/if}
+              </button>
+            </div>
+          {/if}
+        </div>
+      </section>
+    </div>
+
+    <!-- Sidebar (Right - YouTube Style) -->
+    <div class="lg:col-span-4 space-y-4">
+      <div>
+        <h2
+          class="text-lg font-bold flex items-center gap-2 mb-4 text-on-surface"
+        >
+          <Library size={20} class="text-primary" />
+          More from this series
+        </h2>
+      </div>
+      <div
+        class="space-y-3 max-h-[480px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-outline-variant/30 scrollbar-track-transparent scroll-smooth"
+      >
+        {#each relatedSongs as related}
+          {@const isSelected = related.id === currentSong.id}
+          <a
+            use:bindActive={isSelected}
+            href="/animes/{currentSong.anime?.slug}/{related.slug}"
+            class="flex gap-3 group p-2 pl-1 rounded-r-md transition-all border-l-4 {isSelected
+              ? 'bg-surface-low border-primary shadow-sm'
+              : 'bg-transparent hover:bg-surface-highest border-transparent'}"
+            title="View theme: {getSongName(related)}"
+          >
+            <div
+              class="w-32 aspect-video rounded-md overflow-hidden shrink-0 border border-outline-variant/10"
+            >
+              <OptimizedImage
+                src={currentSong.anime?.cover_url}
+                sources={currentSong.anime?.cover_sources}
+                alt={getSongName(related)}
+                class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                sizes="(max-width: 1024px) 128px, 160px"
+              />
+            </div>
+            <div class="flex-1 min-w-0 flex flex-col justify-center">
+              <div class="flex items-center gap-1.5 mb-1">
+                <span
+                  class="bg-primary/20 text-primary text-[8px] font-black px-1.5 py-0.5 rounded uppercase"
+                  >{related.slug}</span
+                >
+                <span
+                  class="text-[10px] text-yellow-400 font-bold flex items-center gap-0.5"
+                >
+                  <Star size={10} class="fill-yellow-400" />
+                  {getFormattedScore(
+                    related.average_rating,
+                    authState.user?.score_format,
+                  )}
+                </span>
+              </div>
+              <h4
+                class="text-sm font-bold transition-colors line-clamp-1 {isSelected
+                  ? 'text-primary'
+                  : 'text-on-surface group-hover:text-primary'}"
+              >
+                {getSongName(related)}
+              </h4>
+              <p class="text-[10px] text-on-surface-variant/40 line-clamp-1">
+                by {getSongArtistNames(related.artists)}
+              </p>
+            </div>
+          </a>
+        {:else}
+          <div
+            class="text-center py-8 text-on-surface-variant/20 text-xs italic border border-dashed border-outline-variant/10 rounded-md"
+          >
+            No other themes found for this series.
+          </div>
+        {/each}
+      </div>
+      <!-- Recommendation Section -->
+      <div class="mt-10 space-y-4">
+        <div class="mb-4">
+          <div class="flex items-center justify-between gap-3">
+            <h2
+              class="text-lg font-bold flex items-center gap-2 text-on-surface"
+            >
+              <Sparkles size={20} class="text-primary" />
+              Recommendations
+            </h2>
+            {#if totalRecommendedPages > 1}
+              <div
+                class="flex items-center gap-2 bg-surface-low border border-outline-variant/10 px-2 py-1 rounded-sm"
+              >
+                <button
+                  class="p-1 rounded-sm text-on-surface-variant/60 hover:text-primary hover:bg-surface-highest transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                  disabled={recommendedPage === 0}
+                  onclick={() => recommendedPage--}
+                  title="Previous page"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <span
+                  class="text-[10px] font-bold text-on-surface-variant/60 tracking-wider uppercase select-none"
+                >
+                  {recommendedPage + 1} / {totalRecommendedPages}
+                </span>
+                <button
+                  class="p-1 rounded-sm text-on-surface-variant/60 hover:text-primary hover:bg-surface-highest transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                  disabled={recommendedPage >= totalRecommendedPages - 1}
+                  onclick={() => recommendedPage++}
+                  title="Next page"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            {/if}
+          </div>
+          <p class="text-[11px] text-on-surface-variant/70 mt-1">
+            Similar themes from other series
+          </p>
+        </div>
+
+        {#if recommendedLoading}
+          <div class="space-y-3">
+            {#each Array(3) as _}
+              <div
+                class="flex gap-3 p-2 rounded-r-md border-l-4 border-transparent bg-surface-low/30 animate-pulse"
+              >
+                <div
+                  class="w-32 aspect-video bg-surface-highest rounded-md shrink-0"
+                ></div>
+                <div class="flex-1 space-y-2 py-1">
+                  <div class="h-3 bg-surface-highest rounded w-1/3"></div>
+                  <div class="h-4 bg-surface-highest rounded w-3/4"></div>
+                  <div class="h-2 bg-surface-highest rounded w-1/2"></div>
+                </div>
+              </div>
+            {/each}
+          </div>
+        {:else}
+          <div class="space-y-3">
+            {#each paginatedRecommendations as recommended}
+              <a
+                href="/animes/{recommended.anime?.slug}/{recommended.slug}"
+                class="flex gap-3 group p-2 pl-1 rounded-r-md transition-all border-l-4 border-transparent bg-transparent hover:bg-surface-highest"
+                title="View theme: {getSongName(recommended)}"
+              >
+                <div
+                  class="w-32 aspect-video rounded-md overflow-hidden shrink-0 border border-outline-variant/10"
+                >
+                  <OptimizedImage
+                    src={recommended.anime?.cover_url}
+                    sources={recommended.anime?.cover_sources}
+                    alt={getSongName(recommended)}
+                    class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    sizes="(max-width: 1024px) 128px, 160px"
+                  />
+                </div>
+                <div class="flex-1 min-w-0 flex flex-col justify-center">
+                  <div class="flex items-center gap-1.5 mb-1 flex-wrap">
+                    <span
+                      class="bg-primary/20 text-primary text-[8px] font-black px-1.5 py-0.5 rounded uppercase"
+                    >
+                      {recommended.slug}
+                    </span>
+                    <span
+                      class="text-[10px] text-yellow-400 font-bold flex items-center gap-0.5"
+                    >
+                      <Star size={10} class="fill-yellow-400" />
+                      {getFormattedScore(
+                        recommended.average_rating,
+                        authState.user?.score_format,
+                      )}
+                    </span>
+                    {#if recommended.anime}
+                      <span
+                        class="text-[9px] text-on-surface-variant/40 line-clamp-1 truncate max-w-[120px]"
+                      >
+                        • {recommended.anime.title}
+                      </span>
+                    {/if}
+                  </div>
+                  <h4
+                    class="text-sm font-bold transition-colors line-clamp-1 text-on-surface group-hover:text-primary"
+                  >
+                    {getSongName(recommended)}
+                  </h4>
+                  <p
+                    class="text-[10px] text-on-surface-variant/40 line-clamp-1"
+                  >
+                    by {getSongArtistNames(recommended.artists)}
+                  </p>
+                </div>
+              </a>
+            {:else}
+              <div
+                class="text-center py-8 text-on-surface-variant/20 text-xs italic border border-dashed border-outline-variant/10 rounded-md"
+              >
+                No recommendations found for this theme.
+              </div>
+            {/each}
+          </div>
+        {/if}
+      </div>
     </div>
   </div>
 </main>

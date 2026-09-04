@@ -18,6 +18,7 @@ import (
 	"anirank/api/internal/usecase/notification"
 	"anirank/api/internal/usecase/playlist"
 	"anirank/api/internal/usecase/amq"
+	"anirank/api/internal/usecase/rate"
 	"anirank/api/internal/usecase/public"
 	"anirank/api/internal/usecase/tournament"
 	"context"
@@ -128,6 +129,9 @@ func SetupPublicRoutes(app *fiber.App,
  
 	amqLobbyManager := amq.NewLobbyManager(animeRepo, songRepo, userRepo, xpUsecase, mediaService, anilistClient)
 	amqHandler := v1.NewAMQHandler(amqLobbyManager, jwtService, userRepo)
+
+	rateLobbyManager := rate.NewLobbyManager(songRepo, userRepo, mediaService, interactionUsecase)
+	rateHandler := v1.NewRateHandler(rateLobbyManager, jwtService, userRepo)
 
 	// API V1 Group
 	api := app.Group("/api")
@@ -272,6 +276,10 @@ func SetupPublicRoutes(app *fiber.App,
 	api.Post("/amq/rooms", middleware.OptionalAuthMiddleware(jwtService, userRepo, appCache), amqHandler.CreateRoom)
 	api.Get("/amq/rooms", amqHandler.ListRooms)
 	api.Get("/amq/ws/:roomID", amqHandler.WSUpgrade, websocket.New(amqHandler.WSHandler))
+
+	api.Post("/rate/rooms", middleware.OptionalAuthMiddleware(jwtService, userRepo, appCache), rateHandler.CreateRoom)
+	api.Get("/rate/rooms", rateHandler.ListRooms)
+	api.Get("/rate/ws/:roomID", rateHandler.WSUpgrade, websocket.New(rateHandler.WSHandler))
  
 	// --- PROTECTED ROUTES ---
 	protected := api.Group("/", middleware.AuthMiddleware(jwtService, userRepo, appCache))

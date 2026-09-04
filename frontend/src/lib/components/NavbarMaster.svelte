@@ -15,6 +15,7 @@
   import ListMusic from "lucide-svelte/icons/list-music";
   import Trophy from "lucide-svelte/icons/trophy";
   import BarChart3 from "lucide-svelte/icons/bar-chart-3";
+  import Star from "lucide-svelte/icons/star";
   import Search from "lucide-svelte/icons/search";
   import Bell from "lucide-svelte/icons/bell";
   import User from "lucide-svelte/icons/user";
@@ -179,6 +180,22 @@
                 title="View Tournaments"
               >
                 <Trophy size={18} /> Tournaments
+              </a>
+              <a
+                href="/rate"
+                class="flex items-center gap-3 px-4 py-2 text-sm text-on-surface-variant transition-colors hover:bg-surface-low hover:text-primary"
+                title="Rate Party — group rating sessions"
+                aria-label="Open Rate Party lobbies"
+              >
+                <Star size={18} /> Rate Party
+              </a>
+              <a
+                href="/amq"
+                class="flex items-center gap-3 px-4 py-2 text-sm text-on-surface-variant transition-colors hover:bg-surface-low hover:text-primary"
+                title="Anime Music Quiz"
+                aria-label="Open Anime Music Quiz"
+              >
+                <Music size={18} /> AMQ
               </a>
               <a
                 href="/users/ranking"
@@ -414,6 +431,20 @@
         >
           <BarChart3 size={18} />
           <span class="text-sm font-medium">User Ranking</span>
+        </a>
+        <a
+          href="/rate"
+          class="flex items-center gap-3 rounded-sm px-4 py-3 text-on-surface-variant transition-all hover:bg-surface-low hover:text-on-surface"
+        >
+          <Star size={18} />
+          <span class="text-sm font-medium">Rate Party</span>
+        </a>
+        <a
+          href="/amq"
+          class="flex items-center gap-3 rounded-sm px-4 py-3 text-on-surface-variant transition-all hover:bg-surface-low hover:text-on-surface"
+        >
+          <Music size={18} />
+          <span class="text-sm font-medium">AMQ</span>
         </a>
         <a
           href="/artists"

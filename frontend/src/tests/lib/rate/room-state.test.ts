@@ -1,0 +1,113 @@
+import { describe, expect, it } from "vitest";
+import {
+	applyLobbyStateUpdate,
+	applyRatingUpdate,
+	canAddToQueue,
+	fromCanonicalScore,
+	toCanonicalScore,
+	type RateConfig,
+	type RatePlayer,
+	type RateQueueItem,
+	type RateRoomState,
+} from "$lib/rate/room-state";
+
+const baseConfig: RateConfig = {
+	name: "Test",
+	private: false,
+	queue_mode: "everyone",
+	queue_limit_per_user: 2,
+	reveal_mode: "blind",
+	max_players: 16,
+	auto_advance: "never",
+};
+
+const authPlayer: RatePlayer = {
+	session_id: "s1",
+	user_uuid: "u1",
+	nickname: "Luis",
+	device_id: "d1",
+	is_host: false,
+	is_spectator: false,
+	offline: false,
+};
+
+describe("canAddToQueue", () => {
+	it("enforces per-user limit in everyone mode", () => {
+		const queue: RateQueueItem[] = [
+			{
+				item_id: "1",
+				song_uuid: "a",
+				song_name: "A",
+				added_by_session_id: "s1",
+				added_by_user_uuid: "u1",
+				added_by_nickname: "Luis",
+			},
+			{
+				item_id: "2",
+				song_uuid: "b",
+				song_name: "B",
+				added_by_session_id: "s1",
+				added_by_user_uuid: "u1",
+				added_by_nickname: "Luis",
+			},
+		];
+		const result = canAddToQueue(baseConfig, authPlayer, queue);
+		expect(result.ok).toBe(false);
+		expect(result.reason).toContain("Limit");
+	});
+
+	it("allows host in host_only mode", () => {
+		const host = { ...authPlayer, is_host: true };
+		const result = canAddToQueue(
+			{ ...baseConfig, queue_mode: "host_only" },
+			host,
+			[]
+		);
+		expect(result.ok).toBe(true);
+	});
+});
+
+describe("score conversion", () => {
+	it("converts POINT_10_DECIMAL to canonical", () => {
+		expect(toCanonicalScore(7.5, "POINT_10_DECIMAL")).toBe(75);
+		expect(fromCanonicalScore(75, "POINT_10_DECIMAL")).toBe(7.5);
+	});
+
+	it("converts POINT_100", () => {
+		expect(toCanonicalScore(88, "POINT_100")).toBe(88);
+	});
+});
+
+describe("room state reducers", () => {
+	it("applies lobby and rating updates", () => {
+		const lobby = applyLobbyStateUpdate(null, {
+			room_id: "ABC",
+			status: "rating",
+			config: baseConfig,
+			players: [authPlayer],
+			spectators: [],
+			queue: [],
+			my_session_id: "s1",
+			rating_data: {
+				rated_count: 0,
+				player_count: 1,
+				ratings: {},
+				session_avg: null,
+			},
+		} as RateRoomState);
+
+		expect(lobby.room_id).toBe("ABC");
+
+		const next = applyRatingUpdate(lobby, {
+			rated_count: 1,
+			player_count: 1,
+			ratings: { s1: { rated: true, score: 80 } },
+			session_avg: 80,
+			my_score: 80,
+			reveal_mode: "blind",
+		});
+
+		expect(next?.rating_data?.session_avg).toBe(80);
+		expect(next?.rating_data?.my_score).toBe(80);
+	});
+});

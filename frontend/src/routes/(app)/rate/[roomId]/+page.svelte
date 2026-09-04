@@ -437,7 +437,7 @@
 
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
     <!-- LEFT: Players -->
-    <aside class="lg:col-span-3 space-y-4 order-2 lg:order-1" data-purpose="players-sidebar">
+    <aside class="lg:col-span-3 space-y-4 order-2 lg:order-1 min-w-0" data-purpose="players-sidebar">
       <div class="bg-surface-container rounded-sm p-4">
         <div class="flex items-center gap-2 text-xs font-bold tracking-wider text-primary uppercase pb-3 mb-3 bg-surface-low -mx-4 -mt-4 px-4 pt-4 rounded-t-sm">
           <Users size={16} class="text-primary" aria-hidden="true" />
@@ -498,32 +498,34 @@
       </div>
 
       <div
-        class="bg-surface-container rounded-sm p-4 flex flex-col {chatCollapsed ? '' : 'min-h-[240px] h-[300px] lg:h-[340px]'}"
+        class="bg-surface-container rounded-sm flex flex-col overflow-hidden min-w-0 {chatCollapsed
+          ? ''
+          : 'min-h-[240px] h-[300px] lg:h-[340px]'}"
         data-purpose="chat-box"
       >
         <button
           type="button"
-          class="flex items-center justify-between pb-2.5 mb-2.5 w-full cursor-pointer bg-surface-low -mx-4 -mt-4 px-4 pt-4 rounded-t-sm"
+          class="flex items-center justify-between gap-2 w-full shrink-0 cursor-pointer bg-surface-low px-4 py-3"
           onclick={() => (chatCollapsed = !chatCollapsed)}
           aria-expanded={!chatCollapsed}
           aria-controls="rate-chat-panel"
         >
-          <div class="flex items-center gap-2 text-xs font-bold tracking-wider text-primary uppercase">
-            <MessageSquare size={16} aria-hidden="true" />
+          <div class="flex items-center gap-2 text-xs font-bold tracking-wider text-primary uppercase min-w-0">
+            <MessageSquare size={16} class="shrink-0" aria-hidden="true" />
             <span>Chat</span>
           </div>
           {#if chatCollapsed}
-            <ChevronDown size={16} class="text-on-surface-variant" aria-hidden="true" />
+            <ChevronDown size={16} class="text-on-surface-variant shrink-0" aria-hidden="true" />
           {:else}
-            <ChevronUp size={16} class="text-on-surface-variant" aria-hidden="true" />
+            <ChevronUp size={16} class="text-on-surface-variant shrink-0" aria-hidden="true" />
           {/if}
         </button>
 
         {#if !chatCollapsed}
-          <div id="rate-chat-panel" class="flex-1 overflow-y-auto space-y-2 text-xs pr-1 min-h-0">
+          <div id="rate-chat-panel" class="flex-1 overflow-y-auto overflow-x-hidden space-y-2 text-xs px-4 py-3 min-h-0 min-w-0">
             {#each chatMessages as m}
               <p
-                class="text-[11px] leading-relaxed {m.type === 'system'
+                class="text-[11px] leading-relaxed break-words {m.type === 'system'
                   ? 'text-on-surface-variant italic'
                   : 'text-on-surface'}"
               >
@@ -533,7 +535,7 @@
             {/each}
           </div>
           <form
-            class="mt-3 flex items-center gap-2 pt-2 bg-surface-low -mx-4 -mb-4 px-4 pb-4 rounded-b-sm"
+            class="shrink-0 flex items-center gap-2 px-4 py-3 bg-surface-low min-w-0"
             onsubmit={(e) => {
               e.preventDefault();
               sendChat();
@@ -541,12 +543,12 @@
           >
             <input
               bind:value={chatInput}
-              class="flex-1 px-3 py-2 text-xs rounded-sm bg-surface-highest border border-outline-variant text-on-surface placeholder:text-on-surface-variant focus:outline-hidden focus:border-primary transition-colors"
+              class="min-w-0 flex-1 px-3 py-2 text-xs rounded-sm bg-surface-highest border border-outline-variant text-on-surface placeholder:text-on-surface-variant focus:outline-hidden focus:border-primary transition-colors"
               placeholder="Message…"
               aria-label="Chat message"
             />
             <button
-              class="px-3.5 py-2 rounded-sm bg-primary hover:bg-primary-container text-white font-semibold text-xs tracking-wide transition-colors cursor-pointer"
+              class="shrink-0 px-3.5 py-2 rounded-sm bg-primary hover:bg-primary-container text-white font-semibold text-xs tracking-wide transition-colors cursor-pointer"
               type="submit"
             >
               Send

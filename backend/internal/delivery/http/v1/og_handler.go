@@ -3,7 +3,9 @@ package v1
 import (
 	"bytes"
 	"fmt"
+	"image"
 	"image/png"
+	"log"
 	"net/http"
 	"os"
 
@@ -33,20 +35,58 @@ func NewOGHandler(g *og.Generator, a *public.AnimeUsecase, c *public.CatalogUsec
 	}
 }
 
+// respondGenerated runs PNG generation under the concurrency semaphore, then caches and sends.
+func (h *OGHandler) respondGenerated(c *fiber.Ctx, cacheKey string, nocache bool, maxAge int, alwaysCache bool, generate func() (image.Image, error)) error {
+	var buffer bytes.Buffer
+	acquired, err := h.generator.TryGenerate(func() error {
+		img, genErr := generate()
+		if genErr != nil {
+			return genErr
+		}
+		return png.Encode(&buffer, img)
+	})
+	if !acquired {
+		c.Set("Retry-After", "5")
+		return c.Status(http.StatusServiceUnavailable).SendString("OG generation busy, retry shortly")
+	}
+	if err != nil {
+		log.Printf("[OG Handler] generate failed: %v", err)
+		return c.Status(http.StatusInternalServerError).SendString(err.Error())
+	}
+
+	if alwaysCache || !nocache {
+		_ = h.generator.SaveCache(cacheKey, buffer.Bytes())
+	}
+	if !nocache {
+		c.Set("Cache-Control", fmt.Sprintf("public, max-age=%d", maxAge))
+	} else {
+		c.Set("Cache-Control", "no-cache, no-store, must-revalidate")
+	}
+	c.Set("Content-Type", "image/png")
+	return c.Send(buffer.Bytes())
+}
+
+func (h *OGHandler) serveCached(c *fiber.Ctx, cacheKey string, nocache bool, maxAge int) (bool, error) {
+	if nocache {
+		return false, nil
+	}
+	path := h.generator.GetCachePath(cacheKey)
+	if _, err := os.Stat(path); err != nil {
+		return false, nil
+	}
+	c.Set("Content-Type", "image/png")
+	c.Set("Cache-Control", fmt.Sprintf("public, max-age=%d", maxAge))
+	return true, c.SendFile(path)
+}
+
 func (h *OGHandler) SongOG(c *fiber.Ctx) error {
 	animeSlug := c.Params("anime_slug")
 	songSlug := c.Params("song_slug")
 	cacheKey := fmt.Sprintf("song_v2_%s_%s_v%d", animeSlug, songSlug, h.generator.GetVersion())
 	nocache := c.Query("nocache") == "true"
 
-	// Check cache
-	if !nocache {
-		path := h.generator.GetCachePath(cacheKey)
-		if _, err := os.Stat(path); err == nil {
-			c.Set("Content-Type", "image/png")
-			c.Set("Cache-Control", "public, max-age=86400")
-			return c.SendFile(path)
-		}
+	if ok, err := h.serveCached(c, cacheKey, nocache, 86400); ok {
+		return err
 	}
 
 	song, _, err := h.catalogUsecase.GetSongByAnimeSongSlug(c.Context(), nil, animeSlug, songSlug)
@@ -54,7 +94,6 @@ func (h *OGHandler) SongOG(c *fiber.Ctx) error {
 		return c.Status(http.StatusNotFound).SendString("Song not found")
 	}
 
-	// Prepare data for generator
 	title := song.Name
 	artists := ""
 	for i, a := range song.Artists {
@@ -74,27 +113,9 @@ func (h *OGHandler) SongOG(c *fiber.Ctx) error {
 		}
 	}
 
-	img, err := h.generator.GenerateSongOG(title, artists, animeTitle, song.Type, song.AverageRating, bgUrl)
-	if err != nil {
-		fmt.Printf("[OG Handler] Error generating Song OG for %s/%s: %v\n", animeSlug, songSlug, err)
-		return c.Status(http.StatusInternalServerError).SendString(err.Error())
-	}
-
-	buffer := new(bytes.Buffer)
-	if err := png.Encode(buffer, img); err != nil {
-		return c.Status(http.StatusInternalServerError).SendString(err.Error())
-	}
-
-	// Save to cache
-	if !nocache {
-		h.generator.SaveCache(cacheKey, buffer.Bytes())
-		c.Set("Cache-Control", "public, max-age=86400")
-	} else {
-		c.Set("Cache-Control", "no-cache, no-store, must-revalidate")
-	}
-
-	c.Set("Content-Type", "image/png")
-	return c.Send(buffer.Bytes())
+	return h.respondGenerated(c, cacheKey, nocache, 86400, false, func() (image.Image, error) {
+		return h.generator.GenerateSongOG(title, artists, animeTitle, song.Type, song.AverageRating, bgUrl)
+	})
 }
 
 func (h *OGHandler) AnimeOG(c *fiber.Ctx) error {
@@ -102,14 +123,8 @@ func (h *OGHandler) AnimeOG(c *fiber.Ctx) error {
 	cacheKey := fmt.Sprintf("anime_v1_%s_v%d", slug, h.generator.GetVersion())
 	nocache := c.Query("nocache") == "true"
 
-	// Check cache
-	if !nocache {
-		path := h.generator.GetCachePath(cacheKey)
-		if _, err := os.Stat(path); err == nil {
-			c.Set("Content-Type", "image/png")
-			c.Set("Cache-Control", "public, max-age=86400")
-			return c.SendFile(path)
-		}
+	if ok, err := h.serveCached(c, cacheKey, nocache, 86400); ok {
+		return err
 	}
 
 	anime, err := h.animeUsecase.GetAnimeBySlug(c.Context(), slug)
@@ -132,27 +147,9 @@ func (h *OGHandler) AnimeOG(c *fiber.Ctx) error {
 		bannerUrl = *anime.CoverUrl
 	}
 
-	img, err := h.generator.GenerateAnimeOG(anime.Title, studios, anime.SongsCount, 0, bannerUrl)
-	if err != nil {
-		fmt.Printf("[OG Handler] Error generating Anime OG for %s: %v\n", slug, err)
-		return c.Status(http.StatusInternalServerError).SendString(err.Error())
-	}
-
-	buffer := new(bytes.Buffer)
-	if err := png.Encode(buffer, img); err != nil {
-		return c.Status(http.StatusInternalServerError).SendString(err.Error())
-	}
-
-	// Save to cache
-	if !nocache {
-		h.generator.SaveCache(cacheKey, buffer.Bytes())
-		c.Set("Cache-Control", "public, max-age=86400")
-	} else {
-		c.Set("Cache-Control", "no-cache, no-store, must-revalidate")
-	}
-
-	c.Set("Content-Type", "image/png")
-	return c.Send(buffer.Bytes())
+	return h.respondGenerated(c, cacheKey, nocache, 86400, false, func() (image.Image, error) {
+		return h.generator.GenerateAnimeOG(anime.Title, studios, anime.SongsCount, 0, bannerUrl)
+	})
 }
 
 func (h *OGHandler) ArtistOG(c *fiber.Ctx) error {
@@ -160,14 +157,8 @@ func (h *OGHandler) ArtistOG(c *fiber.Ctx) error {
 	cacheKey := fmt.Sprintf("artist_v2_%s_v%d", slug, h.generator.GetVersion())
 	nocache := c.Query("nocache") == "true"
 
-	// Check cache
-	if !nocache {
-		path := h.generator.GetCachePath(cacheKey)
-		if _, err := os.Stat(path); err == nil {
-			c.Set("Content-Type", "image/png")
-			c.Set("Cache-Control", "public, max-age=86400")
-			return c.SendFile(path)
-		}
+	if ok, err := h.serveCached(c, cacheKey, nocache, 86400); ok {
+		return err
 	}
 
 	artist, _, totalSongs, err := h.catalogUsecase.GetSongsByArtistSlug(c.Context(), nil, slug, 1, 0, domain.SongFilters{})
@@ -185,27 +176,9 @@ func (h *OGHandler) ArtistOG(c *fiber.Ctx) error {
 		bannerUrl = *artist.LatestBannerUrl
 	}
 
-	img, err := h.generator.GenerateArtistOG(artist.Name, totalSongs, int(artist.FavoritesCount), avatarUrl, bannerUrl)
-	if err != nil {
-		fmt.Printf("[OG Handler] Error generating Artist OG for %s: %v\n", slug, err)
-		return c.Status(http.StatusInternalServerError).SendString(err.Error())
-	}
-
-	buffer := new(bytes.Buffer)
-	if err := png.Encode(buffer, img); err != nil {
-		return c.Status(http.StatusInternalServerError).SendString(err.Error())
-	}
-
-	// Save to cache
-	if !nocache {
-		h.generator.SaveCache(cacheKey, buffer.Bytes())
-		c.Set("Cache-Control", "public, max-age=86400")
-	} else {
-		c.Set("Cache-Control", "no-cache, no-store, must-revalidate")
-	}
-
-	c.Set("Content-Type", "image/png")
-	return c.Send(buffer.Bytes())
+	return h.respondGenerated(c, cacheKey, nocache, 86400, false, func() (image.Image, error) {
+		return h.generator.GenerateArtistOG(artist.Name, totalSongs, int(artist.FavoritesCount), avatarUrl, bannerUrl)
+	})
 }
 
 func (h *OGHandler) UserOG(c *fiber.Ctx) error {
@@ -213,14 +186,8 @@ func (h *OGHandler) UserOG(c *fiber.Ctx) error {
 	cacheKey := fmt.Sprintf("user_v2_%s_v%d", slug, h.generator.GetVersion())
 	nocache := c.Query("nocache") == "true"
 
-	// Check cache
-	if !nocache {
-		path := h.generator.GetCachePath(cacheKey)
-		if _, err := os.Stat(path); err == nil {
-			c.Set("Content-Type", "image/png")
-			c.Set("Cache-Control", "public, max-age=86400")
-			return c.SendFile(path)
-		}
+	if ok, err := h.serveCached(c, cacheKey, nocache, 86400); ok {
+		return err
 	}
 
 	user, err := h.catalogUsecase.GetUserBySlug(c.Context(), nil, slug)
@@ -237,78 +204,32 @@ func (h *OGHandler) UserOG(c *fiber.Ctx) error {
 		bannerUrl = *user.BannerUrl
 	}
 
-	fmt.Printf("[OG User] slug=%s avatar_raw=%v banner_raw=%v avatarUrl=%s bannerUrl=%s\n", slug, user.Avatar, user.Banner, avatarUrl, bannerUrl)
-
-	img, err := h.generator.GenerateUserOG(user.Name, int(user.Level), int(user.XP), user.FollowersCount, user.RatingsCount, avatarUrl, bannerUrl)
-	if err != nil {
-		fmt.Printf("[OG Handler] Error generating User OG for %s: %v\n", slug, err)
-		return c.Status(http.StatusInternalServerError).SendString(err.Error())
-	}
-
-	buffer := new(bytes.Buffer)
-	if err := png.Encode(buffer, img); err != nil {
-		return c.Status(http.StatusInternalServerError).SendString(err.Error())
-	}
-
-	// Save to cache
-	if !nocache {
-		h.generator.SaveCache(cacheKey, buffer.Bytes())
-		c.Set("Cache-Control", "public, max-age=86400")
-	} else {
-		c.Set("Cache-Control", "no-cache, no-store, must-revalidate")
-	}
-
-	c.Set("Content-Type", "image/png")
-	return c.Send(buffer.Bytes())
+	return h.respondGenerated(c, cacheKey, nocache, 86400, false, func() (image.Image, error) {
+		return h.generator.GenerateUserOG(user.Name, int(user.Level), int(user.XP), user.FollowersCount, user.RatingsCount, avatarUrl, bannerUrl)
+	})
 }
 
 func (h *OGHandler) HomeOG(c *fiber.Ctx) error {
 	cacheKey := fmt.Sprintf("home_v7_v%d", h.generator.GetVersion())
-
 	nocache := c.Query("nocache") == "true"
 
-	// Check cache
-	if !nocache {
-		path := h.generator.GetCachePath(cacheKey)
-		if _, err := os.Stat(path); err == nil {
-			c.Set("Content-Type", "image/png")
-			c.Set("Cache-Control", "public, max-age=3600") // 1h for home stats
-			return c.SendFile(path)
-		}
+	if ok, err := h.serveCached(c, cacheKey, nocache, 3600); ok {
+		return err
 	}
 
 	stats, err := h.statsUsecase.GetSiteStats(c.Context())
 	if err != nil {
-		// Fallback to default if stats fail
 		stats = &domain.SiteStats{}
 	}
 
-	img, err := h.generator.GenerateHomeOG(
-		stats.Overviews.TotalSongs,
-		stats.Overviews.TotalUsers,
-		stats.Overviews.TotalAnimes,
-		stats.Overviews.TotalArtists,
-	)
-	if err != nil {
-		fmt.Printf("[OG Handler] Error generating Home OG: %v\n", err)
-		return c.Status(http.StatusInternalServerError).SendString(err.Error())
-	}
-
-	buffer := new(bytes.Buffer)
-	if err := png.Encode(buffer, img); err != nil {
-		return c.Status(http.StatusInternalServerError).SendString(err.Error())
-	}
-
-	// Save to cache
-	if !nocache {
-		h.generator.SaveCache(cacheKey, buffer.Bytes())
-		c.Set("Cache-Control", "public, max-age=3600")
-	} else {
-		c.Set("Cache-Control", "no-cache, no-store, must-revalidate")
-	}
-
-	c.Set("Content-Type", "image/png")
-	return c.Send(buffer.Bytes())
+	return h.respondGenerated(c, cacheKey, nocache, 3600, false, func() (image.Image, error) {
+		return h.generator.GenerateHomeOG(
+			stats.Overviews.TotalSongs,
+			stats.Overviews.TotalUsers,
+			stats.Overviews.TotalAnimes,
+			stats.Overviews.TotalArtists,
+		)
+	})
 }
 
 func (h *OGHandler) PlaylistOG(c *fiber.Ctx) error {
@@ -319,14 +240,8 @@ func (h *OGHandler) PlaylistOG(c *fiber.Ctx) error {
 	cacheKey := fmt.Sprintf("playlist_v1_%s_v%d", idStr, h.generator.GetVersion())
 	nocache := c.Query("nocache") == "true"
 
-	// Check cache
-	if !nocache {
-		path := h.generator.GetCachePath(cacheKey)
-		if _, err := os.Stat(path); err == nil {
-			c.Set("Content-Type", "image/png")
-			c.Set("Cache-Control", "public, max-age=86400")
-			return c.SendFile(path)
-		}
+	if ok, err := h.serveCached(c, cacheKey, nocache, 86400); ok {
+		return err
 	}
 
 	playlist, err := h.playlistUsecase.GetPlaylist(c.Context(), id, nil)
@@ -344,28 +259,10 @@ func (h *OGHandler) PlaylistOG(c *fiber.Ctx) error {
 		bannerUrl = *playlist.BannerUrl
 	}
 
-	img, err := h.generator.GeneratePlaylistOG(playlist.Name, userName, playlist.SongCount, bannerUrl)
-	if err != nil {
-		fmt.Printf("[OG Handler] Error generating Playlist OG for %s: %v\n", idStr, err)
-		return c.Status(http.StatusInternalServerError).SendString(err.Error())
-	}
-
-	buffer := new(bytes.Buffer)
-	if err := png.Encode(buffer, img); err != nil {
-		return c.Status(http.StatusInternalServerError).SendString(err.Error())
-	}
-
-	// Save to cache
-	h.generator.SaveCache(cacheKey, buffer.Bytes())
-
-	if !nocache {
-		c.Set("Cache-Control", "public, max-age=86400")
-	} else {
-		c.Set("Cache-Control", "no-cache, no-store, must-revalidate")
-	}
-
-	c.Set("Content-Type", "image/png")
-	return c.Send(buffer.Bytes())
+	// Preserve previous behavior: always write disk cache for playlists.
+	return h.respondGenerated(c, cacheKey, nocache, 86400, true, func() (image.Image, error) {
+		return h.generator.GeneratePlaylistOG(playlist.Name, userName, playlist.SongCount, bannerUrl)
+	})
 }
 
 func (h *OGHandler) FlushOGCache(c *fiber.Ctx) error {
@@ -389,20 +286,13 @@ func (h *OGHandler) RankingOG(c *fiber.Ctx) error {
 	cacheKey := fmt.Sprintf("ranking_%s_v%d", rankingType, h.generator.GetVersion())
 	nocache := c.Query("nocache") == "true"
 
-	// Check cache
-	if !nocache {
-		path := h.generator.GetCachePath(cacheKey)
-		if _, err := os.Stat(path); err == nil {
-			c.Set("Content-Type", "image/png")
-			c.Set("Cache-Control", "public, max-age=3600")
-			return c.SendFile(path)
-		}
+	if ok, err := h.serveCached(c, cacheKey, nocache, 3600); ok {
+		return err
 	}
 
-	// Fetch top 3 songs for the ranking to display them on the OG image
 	ranking, err := h.catalogUsecase.GetSongRanking(c.Context(), nil, rankingType, "all", 3, 0)
 	if err != nil {
-		fmt.Printf("[OG Handler] Error getting ranking for OG: %v\n", err)
+		log.Printf("[OG Handler] Error getting ranking for OG: %v", err)
 	}
 
 	var songs []domain.Song
@@ -410,25 +300,7 @@ func (h *OGHandler) RankingOG(c *fiber.Ctx) error {
 		songs = ranking.Songs
 	}
 
-	img, err := h.generator.GenerateRankingOG(rankingType, songs)
-	if err != nil {
-		fmt.Printf("[OG Handler] Error generating Ranking OG for %s: %v\n", rankingType, err)
-		return c.Status(http.StatusInternalServerError).SendString(err.Error())
-	}
-
-	buffer := new(bytes.Buffer)
-	if err := png.Encode(buffer, img); err != nil {
-		return c.Status(http.StatusInternalServerError).SendString(err.Error())
-	}
-
-	// Save to cache
-	if !nocache {
-		h.generator.SaveCache(cacheKey, buffer.Bytes())
-		c.Set("Cache-Control", "public, max-age=3600")
-	} else {
-		c.Set("Cache-Control", "no-cache, no-store, must-revalidate")
-	}
-
-	c.Set("Content-Type", "image/png")
-	return c.Send(buffer.Bytes())
+	return h.respondGenerated(c, cacheKey, nocache, 3600, false, func() (image.Image, error) {
+		return h.generator.GenerateRankingOG(rankingType, songs)
+	})
 }

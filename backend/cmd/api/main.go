@@ -309,7 +309,11 @@ func main() {
 	webhookUsecase := admin.NewWebhookUsecase(webhookRepo, animeRepo, songRepo, webhookClient, mediaService)
 	partnerUsecase := admin.NewPartnerUsecase(partnerRepo, mediaService)
 
-	ogGenerator := og.NewGenerator(storageService.GetPublicURL(), storageService.GetEndpoint())
+	ogMaxConcurrent := 0
+	if v := os.Getenv("OG_MAX_CONCURRENT"); v != "" {
+		fmt.Sscanf(v, "%d", &ogMaxConcurrent)
+	}
+	ogGenerator := og.NewGenerator(storageService.GetPublicURL(), storageService.GetEndpoint(), ogMaxConcurrent)
 	shareHandler := v1.NewShareHandler(animeUsecase, catalogUsecase, playlistUsecase)
 
 	seoUsecase := public.NewSEOUsecase(animeRepo, songRepo, artistRepo, userRepo, playlistRepo, ogGenerator.GetVersion)

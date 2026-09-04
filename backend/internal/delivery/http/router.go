@@ -244,14 +244,16 @@ func SetupPublicRoutes(app *fiber.App,
 	api.Get("/share/playlist/:id", shareHandler.PlaylistShare)
 	api.Get("/share/user/:slug", shareHandler.UserShare)
 
-	// OG Images
-	api.Get("/og/anime/:slug", ogHandler.AnimeOG)
-	api.Get("/og/song/:anime_slug/:song_slug", ogHandler.SongOG)
-	api.Get("/og/artist/:slug", ogHandler.ArtistOG)
-	api.Get("/og/playlist/:pid", ogHandler.PlaylistOG)
-	api.Get("/og/user/:slug", ogHandler.UserOG)
-	api.Get("/og/home", ogHandler.HomeOG)
-	api.Get("/og/ranking/:type", ogHandler.RankingOG)
+	// OG Images (dedicated rate limit; generation also uses an in-process semaphore)
+	ogLimiter := middleware.NewOGLimiter(storage)
+	ogRoutes := api.Group("/og", ogLimiter)
+	ogRoutes.Get("/anime/:slug", ogHandler.AnimeOG)
+	ogRoutes.Get("/song/:anime_slug/:song_slug", ogHandler.SongOG)
+	ogRoutes.Get("/artist/:slug", ogHandler.ArtistOG)
+	ogRoutes.Get("/playlist/:pid", ogHandler.PlaylistOG)
+	ogRoutes.Get("/user/:slug", ogHandler.UserOG)
+	ogRoutes.Get("/home", ogHandler.HomeOG)
+	ogRoutes.Get("/ranking/:type", ogHandler.RankingOG)
 
 	// SEO Bot Proxy route
 	app.Get("/seo-bot/*", seoHandler.GetMetadata)

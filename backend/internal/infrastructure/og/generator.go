@@ -56,9 +56,12 @@ type Generator struct {
 	cacheDir    string
 	s3PublicURL string
 	s3Endpoint  string
+	// sem limits concurrent PNG renders to protect process memory under OG floods.
+	sem chan struct{}
 }
 
-func NewGenerator(s3PublicURL, s3Endpoint string) *Generator {
+// NewGenerator builds the OG renderer. maxConcurrent caps simultaneous Generate* calls (0 = default).
+func NewGenerator(s3PublicURL, s3Endpoint string, maxConcurrent int) *Generator {
 	// Read embedded font bytes
 	fBlack, _ := fontAssets.ReadFile("assets/fonts/Inter-Black.ttf")
 	fBold, _ := fontAssets.ReadFile("assets/fonts/Inter-Bold.ttf")
@@ -104,6 +107,7 @@ func NewGenerator(s3PublicURL, s3Endpoint string) *Generator {
 		cacheDir:    cacheDir,
 		s3PublicURL: s3PublicURL,
 		s3Endpoint:  s3Endpoint,
+		sem:         newSemaphore(maxConcurrent),
 	}
 }
 

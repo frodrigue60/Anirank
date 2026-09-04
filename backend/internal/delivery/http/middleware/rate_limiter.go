@@ -49,3 +49,19 @@ func NewPublicApiLimiter(storage fiber.Storage) fiber.Handler {
 		Storage: storage,
 	})
 }
+
+// NewOGLimiter creates a stricter rate limiter for OG image endpoints (CPU/RAM heavy on cache miss).
+func NewOGLimiter(storage fiber.Storage) fiber.Handler {
+	return limiter.New(limiter.Config{
+		Max:        30,
+		Expiration: 1 * time.Minute,
+		KeyGenerator: func(c *fiber.Ctx) string {
+			return "limiter:og:" + getClientIP(c)
+		},
+		LimitReached: func(c *fiber.Ctx) error {
+			c.Set("Retry-After", "60")
+			return domain.NewAppError(429, "Too many OG image requests. Please try again shortly.", nil)
+		},
+		Storage: storage,
+	})
+}

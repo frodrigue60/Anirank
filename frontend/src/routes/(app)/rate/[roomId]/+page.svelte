@@ -23,6 +23,7 @@
     applyLobbyStateUpdate,
     applyRatingUpdate,
     canAddToQueue,
+    defaultRateConfig,
     fromCanonicalScore,
     isSeasonalPool,
     toCanonicalScore,
@@ -60,6 +61,31 @@
   let mediaEl = $state<HTMLVideoElement | null>(null);
   let audioUrl = $derived(roomState?.audio_url || "");
   let currentSong = $derived(roomState?.current_song as any);
+
+  const VOLUME_STORAGE_KEY = "anirank_volume";
+  const MUTED_STORAGE_KEY = "anirank_muted";
+  let playbackVolume = $state(1);
+  let playbackMuted = $state(false);
+  let applyingPlaybackVolume = false;
+
+  function applyPlaybackVolume(el: HTMLVideoElement) {
+    applyingPlaybackVolume = true;
+    el.volume = playbackVolume;
+    el.muted = playbackMuted;
+    applyingPlaybackVolume = false;
+  }
+
+  function persistPlaybackVolume() {
+    if (!mediaEl || applyingPlaybackVolume) return;
+    playbackVolume = mediaEl.volume;
+    playbackMuted = mediaEl.muted;
+    try {
+      localStorage.setItem(VOLUME_STORAGE_KEY, String(playbackVolume));
+      localStorage.setItem(MUTED_STORAGE_KEY, playbackMuted ? "1" : "0");
+    } catch {
+      /* ignore quota / private mode */
+    }
+  }
 
   // Anime search modal
   let showSearchModal = $state(false);
@@ -136,19 +162,7 @@
   );
 
   let queuePermission = $derived(
-    canAddToQueue(
-      config || {
-        queue_mode: "host_only",
-        queue_limit_per_user: 3,
-        reveal_mode: "blind",
-        max_players: 16,
-        auto_advance: "never",
-        name: "",
-        private: false,
-      },
-      me,
-      queue
-    )
+    canAddToQueue(config || defaultRateConfig(), me, queue)
   );
 
   let canOpenSearch = $derived(
@@ -192,6 +206,14 @@
       deviceId = localStorage.getItem("rate_device_id") || crypto.randomUUID();
       localStorage.setItem("rate_device_id", deviceId);
       guestNickname = localStorage.getItem("rate_nickname") || "Guest";
+      const storedVolume = localStorage.getItem(VOLUME_STORAGE_KEY);
+      if (storedVolume !== null) {
+        const parsed = Number.parseFloat(storedVolume);
+        if (!Number.isNaN(parsed)) {
+          playbackVolume = Math.min(1, Math.max(0, parsed));
+        }
+      }
+      playbackMuted = localStorage.getItem(MUTED_STORAGE_KEY) === "1";
     }
     connectWebSocket();
   });
@@ -205,6 +227,7 @@
   $effect(() => {
     if (audioUrl && mediaEl) {
       mediaEl.load();
+      applyPlaybackVolume(mediaEl);
       mediaEl.play().catch(() => {});
     }
   });
@@ -710,6 +733,10 @@
               controls
               playsinline
               src={audioUrl || undefined}
+              onvolumechange={persistPlaybackVolume}
+              onloadedmetadata={() => {
+                if (mediaEl) applyPlaybackVolume(mediaEl);
+              }}
             >
               <track kind="captions" />
             </video>

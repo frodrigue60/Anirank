@@ -4,13 +4,19 @@ import "time"
 
 // RateConfig is the lobby configuration for group rating sessions (/rate).
 type RateConfig struct {
-	Name               string `json:"name"`
-	Private            bool   `json:"private"`
-	QueueMode          string `json:"queue_mode"`            // "host_only" | "everyone" | "disabled"
-	QueueLimitPerUser  int    `json:"queue_limit_per_user"`  // only for queue_mode=everyone; clamped 1–10
-	RevealMode         string `json:"reveal_mode"`           // "blind" | "live"
-	MaxPlayers         int    `json:"max_players"`
-	AutoAdvance        string `json:"auto_advance"` // "never" | "all_rated"
+	Name              string `json:"name"`
+	Private           bool   `json:"private"`
+	QueueMode         string `json:"queue_mode"`           // "host_only" | "everyone" | "disabled" (ignored when seasonal_pool)
+	QueueLimitPerUser int    `json:"queue_limit_per_user"` // only for queue_mode=everyone; clamped 1–10
+	RevealMode        string `json:"reveal_mode"`          // "blind" | "live"
+	MaxPlayers        int    `json:"max_players"`
+	AutoAdvance       string `json:"auto_advance"` // "never" | "all_rated"
+	// SourceMode: "manual" (search/queue) or "seasonal_pool" (fixed year/season pool; no manual adds).
+	SourceMode    string `json:"source_mode"`
+	PoolYear      string `json:"pool_year,omitempty"`       // years.slug
+	PoolSeason    string `json:"pool_season,omitempty"`     // seasons.slug
+	PoolThemeType string `json:"pool_theme_type,omitempty"` // "all" | "OP" | "ED"
+	PoolLimit     int    `json:"pool_limit,omitempty"`
 }
 
 // RatePlayer is a participant in a rate room. UserID is internal-only (never JSON).
@@ -54,4 +60,8 @@ type RateRoomInfo struct {
 	QueueMode      string `json:"queue_mode"`
 	RevealMode     string `json:"reveal_mode"`
 	QueueLength    int    `json:"queue_length"`
+	SourceMode     string `json:"source_mode"`
+	PoolYear       string `json:"pool_year,omitempty"`
+	PoolSeason     string `json:"pool_season,omitempty"`
+	PoolThemeType  string `json:"pool_theme_type,omitempty"`
 }

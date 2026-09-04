@@ -3,19 +3,29 @@ package rate
 import "anirank/api/internal/domain"
 
 const (
-	QueueModeHostOnly  = "host_only"
-	QueueModeEveryone  = "everyone"
-	QueueModeDisabled  = "disabled"
-	RevealModeBlind    = "blind"
-	RevealModeLive     = "live"
-	AutoAdvanceNever   = "never"
+	QueueModeHostOnly   = "host_only"
+	QueueModeEveryone   = "everyone"
+	QueueModeDisabled   = "disabled"
+	RevealModeBlind     = "blind"
+	RevealModeLive      = "live"
+	AutoAdvanceNever    = "never"
 	AutoAdvanceAllRated = "all_rated"
+
+	SourceModeManual       = "manual"
+	SourceModeSeasonalPool = "seasonal_pool"
+
+	PoolThemeAll = "all"
+	PoolThemeOP  = "OP"
+	PoolThemeED  = "ED"
 
 	DefaultQueueLimitPerUser = 3
 	MinQueueLimitPerUser     = 1
 	MaxQueueLimitPerUser     = 10
 	DefaultMaxPlayers        = 16
 	MaxQueueSize             = 50
+	DefaultPoolLimit         = 30
+	MinPoolLimit             = 5
+	MaxPoolLimit             = 50
 )
 
 func sanitizeConfig(cfg *domain.RateConfig) {
@@ -43,4 +53,32 @@ func sanitizeConfig(cfg *domain.RateConfig) {
 	default:
 		cfg.AutoAdvance = AutoAdvanceNever
 	}
+
+	switch cfg.SourceMode {
+	case SourceModeManual, SourceModeSeasonalPool:
+	default:
+		cfg.SourceMode = SourceModeManual
+	}
+
+	if cfg.SourceMode == SourceModeSeasonalPool {
+		// Seasonal rooms are pool-driven — no open/host queue adds.
+		cfg.QueueMode = QueueModeDisabled
+		if cfg.PoolLimit < MinPoolLimit || cfg.PoolLimit > MaxPoolLimit {
+			cfg.PoolLimit = DefaultPoolLimit
+		}
+		switch cfg.PoolThemeType {
+		case PoolThemeAll, PoolThemeOP, PoolThemeED:
+		default:
+			cfg.PoolThemeType = PoolThemeAll
+		}
+	} else {
+		cfg.PoolYear = ""
+		cfg.PoolSeason = ""
+		cfg.PoolThemeType = ""
+		cfg.PoolLimit = 0
+	}
+}
+
+func isSeasonalPool(cfg domain.RateConfig) bool {
+	return cfg.SourceMode == SourceModeSeasonalPool
 }

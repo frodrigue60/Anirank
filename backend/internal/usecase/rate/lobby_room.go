@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math/rand"
 	"sync"
 	"time"
 
@@ -37,6 +38,7 @@ const (
 	EvChat
 	EvTransferHost
 	EvCloseRoom
+	EvPoolLoaded
 )
 
 type RoomEvent struct {
@@ -86,6 +88,11 @@ type TransferHostEvent struct {
 type ChatEvent struct {
 	SessionID string
 	Text      string
+}
+
+type PoolLoadedEvent struct {
+	Songs []domain.Song
+	Error string
 }
 
 type queuedSong struct {
@@ -224,6 +231,8 @@ func (r *LobbyRoom) handleEvent(ev RoomEvent) {
 		r.handleTransferHost(ev.Data.(*TransferHostEvent))
 	case EvCloseRoom:
 		r.handleCloseRoom(ev.Data.(string))
+	case EvPoolLoaded:
+		r.handlePoolLoaded(ev.Data.(*PoolLoadedEvent))
 	}
 }
 
@@ -444,9 +453,21 @@ func (r *LobbyRoom) handleConfigUpdate(ev *ConfigUpdateEvent) {
 		r.mu.Unlock()
 		return
 	}
+	prevSeasonal := isSeasonalPool(r.Config)
 	cfg := ev.Config
 	sanitizeConfig(&cfg)
+	if cfg.SourceMode == SourceModeSeasonalPool && (cfg.PoolYear == "" || cfg.PoolSeason == "") {
+		r.mu.Unlock()
+		r.sendTo(ev.SessionID, "error", "Seasonal pool requires year and season")
+		return
+	}
 	r.Config = cfg
+	// Mode switch clears pending queue so manual vs pool never mix unexpectedly.
+	if prevSeasonal != isSeasonalPool(cfg) {
+		r.Queue = make([]queuedSong, 0)
+		r.CurrentSong = nil
+		r.CurrentRatings = make(map[string]float64)
+	}
 	r.mu.Unlock()
 	r.broadcastPersonalizedState()
 }
@@ -458,10 +479,28 @@ func (r *LobbyRoom) handleStartSession(sessionID string) {
 		r.mu.Unlock()
 		return
 	}
+	seasonal := isSeasonalPool(r.Config)
+	if seasonal && (r.Config.PoolYear == "" || r.Config.PoolSeason == "") {
+		r.mu.Unlock()
+		r.sendTo(sessionID, "error", "Seasonal pool requires year and season")
+		return
+	}
 	r.Status = "waiting"
 	r.SongsRated = 0
 	r.mu.Unlock()
 	r.broadcastPersonalizedState()
+
+	if seasonal {
+		r.broadcast("chat_message", map[string]interface{}{
+			"sender":    "System",
+			"text":      "Loading seasonal pool…",
+			"type":      "system",
+			"timestamp": time.Now(),
+		})
+		r.loadSeasonalPoolAsync()
+		return
+	}
+
 	r.broadcast("chat_message", map[string]interface{}{
 		"sender":    "System",
 		"text":      "Session started — add a song or play from the queue",
@@ -481,9 +520,14 @@ func (r *LobbyRoom) handleQueueAdd(ev *QueueAddEvent) {
 	queueMode := r.Config.QueueMode
 	limit := r.Config.QueueLimitPerUser
 	queueLen := len(r.Queue)
+	seasonal := isSeasonalPool(r.Config)
 	r.mu.RUnlock()
 
 	if !exists || player.IsSpectator || player.Offline {
+		return
+	}
+	if seasonal {
+		r.sendTo(ev.SessionID, "error", "Manual theme adds are disabled in seasonal pool mode. Host can switch to manual in lobby settings.")
 		return
 	}
 	if status != "lobby" && status != "waiting" && status != "rating" {
@@ -574,9 +618,14 @@ func (r *LobbyRoom) handleSetSong(ev *SetSongEvent) {
 	r.mu.RLock()
 	player, exists := r.Players[ev.SessionID]
 	status := r.Status
+	seasonal := isSeasonalPool(r.Config)
 	r.mu.RUnlock()
 
 	if !exists || !player.IsHost {
+		return
+	}
+	if seasonal {
+		r.sendTo(ev.SessionID, "error", "Manual theme picks are disabled in seasonal pool mode. Use Next to advance the pool.")
 		return
 	}
 	if status != "waiting" && status != "rating" {
@@ -922,6 +971,159 @@ func (r *LobbyRoom) GetRoomInfo() domain.RateRoomInfo {
 		QueueMode:      r.Config.QueueMode,
 		RevealMode:     r.Config.RevealMode,
 		QueueLength:    len(r.Queue),
+		SourceMode:     r.Config.SourceMode,
+		PoolYear:       r.Config.PoolYear,
+		PoolSeason:     r.Config.PoolSeason,
+		PoolThemeType:  r.Config.PoolThemeType,
+	}
+}
+
+func (r *LobbyRoom) loadSeasonalPoolAsync() {
+	r.mu.RLock()
+	year := r.Config.PoolYear
+	season := r.Config.PoolSeason
+	themeType := r.Config.PoolThemeType
+	limit := r.Config.PoolLimit
+	r.mu.RUnlock()
+
+	go func() {
+		ctx := context.Background()
+		statusTrue := true
+		filters := domain.SongFilters{
+			Year:   year,
+			Season: season,
+			Status: &statusTrue,
+			Sort:   "views",
+		}
+		if themeType != "" && themeType != PoolThemeAll {
+			filters.Type = themeType
+		}
+		if limit <= 0 {
+			limit = DefaultPoolLimit
+		}
+
+		songs, err := r.SongRepo.GetPaginated(ctx, limit, 0, filters)
+		if err != nil {
+			r.SendEvent(RoomEvent{Type: EvPoolLoaded, Data: &PoolLoadedEvent{Error: "Failed to load seasonal pool"}})
+			return
+		}
+		if len(songs) == 0 {
+			r.SendEvent(RoomEvent{Type: EvPoolLoaded, Data: &PoolLoadedEvent{Error: "No themes found for that season"}})
+			return
+		}
+
+		enriched := make([]domain.Song, 0, len(songs))
+		seen := make(map[string]struct{}, len(songs))
+		for i := range songs {
+			s := songs[i]
+			if s.UUID == "" {
+				continue
+			}
+			if _, ok := seen[s.UUID]; ok {
+				continue
+			}
+			seen[s.UUID] = struct{}{}
+			full, loadErr := r.loadSong(s.UUID)
+			if loadErr != nil || full == nil {
+				continue
+			}
+			enriched = append(enriched, *full)
+		}
+
+		if len(enriched) == 0 {
+			r.SendEvent(RoomEvent{Type: EvPoolLoaded, Data: &PoolLoadedEvent{Error: "No playable themes found for that season"}})
+			return
+		}
+
+		rand.Shuffle(len(enriched), func(i, j int) {
+			enriched[i], enriched[j] = enriched[j], enriched[i]
+		})
+
+		r.SendEvent(RoomEvent{Type: EvPoolLoaded, Data: &PoolLoadedEvent{Songs: enriched}})
+	}()
+}
+
+func (r *LobbyRoom) handlePoolLoaded(ev *PoolLoadedEvent) {
+	if ev.Error != "" {
+		r.broadcast("chat_message", map[string]interface{}{
+			"sender":    "System",
+			"text":      ev.Error,
+			"type":      "system",
+			"timestamp": time.Now(),
+		})
+		r.mu.Lock()
+		r.Status = "lobby"
+		r.mu.Unlock()
+		r.broadcastPersonalizedState()
+		return
+	}
+
+	r.mu.RLock()
+	seasonal := isSeasonalPool(r.Config)
+	status := r.Status
+	cfg := r.Config
+	r.mu.RUnlock()
+	if !seasonal || status != "waiting" {
+		return
+	}
+
+	queue := make([]queuedSong, 0, len(ev.Songs))
+	for i := range ev.Songs {
+		s := ev.Songs[i]
+		item := r.buildQueueItemFromPool(&s, cfg)
+		queue = append(queue, queuedSong{Item: item, Song: &ev.Songs[i]})
+	}
+
+	r.mu.Lock()
+	r.Queue = queue
+	r.mu.Unlock()
+
+	label := fmt.Sprintf("%s %s", cfg.PoolSeason, cfg.PoolYear)
+	if cfg.PoolThemeType != "" && cfg.PoolThemeType != PoolThemeAll {
+		label = fmt.Sprintf("%s (%s)", label, cfg.PoolThemeType)
+	}
+	r.broadcastPersonalizedState()
+	r.broadcast("chat_message", map[string]interface{}{
+		"sender":    "System",
+		"text":      fmt.Sprintf("Loaded %d themes from %s — use Next to start", len(queue), label),
+		"type":      "system",
+		"timestamp": time.Now(),
+	})
+}
+
+func (r *LobbyRoom) buildQueueItemFromPool(song *domain.Song, cfg domain.RateConfig) domain.RateQueueItem {
+	name := song.Name
+	if name == "" && song.SongRomaji != nil {
+		name = *song.SongRomaji
+	}
+	if name == "" && song.SongEN != nil {
+		name = *song.SongEN
+	}
+	if name == "" {
+		name = "Unknown Theme"
+	}
+	animeTitle := ""
+	animeSlug := ""
+	coverURL := ""
+	if song.Anime != nil {
+		animeTitle = song.Anime.Title
+		animeSlug = song.Anime.Slug
+		if song.Anime.Cover != nil {
+			coverURL = r.MediaService.GetURL(*song.Anime.Cover)
+		}
+	}
+	themeLabel := song.Type + song.ThemeNum
+	return domain.RateQueueItem{
+		ItemID:           generateUUID(),
+		SongUUID:         song.UUID,
+		SongName:         name,
+		AnimeTitle:       animeTitle,
+		AnimeSlug:        animeSlug,
+		ThemeLabel:       themeLabel,
+		CoverURL:         coverURL,
+		AddedBySessionID: "",
+		AddedByUserUUID:  "",
+		AddedByNickname:  fmt.Sprintf("Pool · %s %s", cfg.PoolSeason, cfg.PoolYear),
 	}
 }
 

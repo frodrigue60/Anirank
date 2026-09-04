@@ -51,6 +51,9 @@ func (m *LobbyManager) CreateRoom(ctx context.Context, config domain.RateConfig,
 	defer m.mu.Unlock()
 
 	sanitizeConfig(&config)
+	if config.SourceMode == SourceModeSeasonalPool && (config.PoolYear == "" || config.PoolSeason == "") {
+		return "", errors.New("seasonal pool requires year and season")
+	}
 
 	var roomID string
 	for {

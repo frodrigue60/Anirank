@@ -22,11 +22,15 @@
     applyRatingUpdate,
     canAddToQueue,
     fromCanonicalScore,
+    isSeasonalPool,
     toCanonicalScore,
     type RatePlayer,
     type RateRoomState,
+    type SourceMode,
+    type SeasonalPoolThemeType,
   } from "$lib/rate/room-state";
   import { getFormattedScore, getSongName } from "$lib/song-utils";
+  import { configState } from "$lib/state/config.svelte";
 
   const roomId = page.params.roomId;
 
@@ -85,6 +89,25 @@
       : "—"
   );
 
+  let ratedProgress = $derived.by(() => {
+    const total = ratingData?.player_count || 0;
+    const rated = ratingData?.rated_count || 0;
+    if (total <= 0) return 0;
+    return Math.min(100, Math.round((rated / total) * 100));
+  });
+
+  let statusLabel = $derived(
+    status === "rating"
+      ? "Rating"
+      : status === "waiting"
+        ? "Waiting"
+        : status === "lobby"
+          ? "Lobby"
+          : status === "finished"
+            ? "Finished"
+            : status
+  );
+
   let queuePermission = $derived(
     canAddToQueue(
       config || {
@@ -103,8 +126,38 @@
 
   let canOpenSearch = $derived(
     (status === "waiting" || status === "rating") &&
+      !isSeasonalPool(config) &&
       (isHost || (config?.queue_mode !== "disabled" && queuePermission.ok))
   );
+
+  let seasonalActive = $derived(isSeasonalPool(config));
+  let poolLabel = $derived.by(() => {
+    if (!seasonalActive || !config) return "";
+    const type =
+      config.pool_theme_type && config.pool_theme_type !== "all" ? ` · ${config.pool_theme_type}` : "";
+    return `${config.pool_season || ""} ${config.pool_year || ""}${type}`.trim();
+  });
+
+  let editSourceMode = $state<SourceMode>("manual");
+  let editPoolYear = $state("");
+  let editPoolSeason = $state("");
+  let editPoolThemeType = $state<SeasonalPoolThemeType>("all");
+  let editPoolLimit = $state(30);
+  let sortedYears = $derived(
+    [...configState.years].sort((a, b) => Number(b.slug) - Number(a.slug) || b.name.localeCompare(a.name))
+  );
+
+  $effect(() => {
+    if (status === "lobby" && config) {
+      editSourceMode = config.source_mode || "manual";
+      editPoolYear = config.pool_year || "";
+      editPoolSeason = config.pool_season || "";
+      editPoolThemeType = (config.pool_theme_type as SeasonalPoolThemeType) || "all";
+      editPoolLimit = config.pool_limit || 30;
+    }
+  });
+
+  let showSessionControls = $derived(status === "waiting" || status === "rating");
 
   onMount(() => {
     isSpectator = page.url.searchParams.get("spectator") === "true";
@@ -305,6 +358,23 @@
     chatInput = "";
   }
 
+  function saveLobbyConfig() {
+    if (!isHost || status !== "lobby") return;
+    if (editSourceMode === "seasonal_pool" && (!editPoolYear || !editPoolSeason)) {
+      errorBanner = "Pick year and season for seasonal pool";
+      return;
+    }
+    send("update_lobby_config", {
+      ...(config || {}),
+      source_mode: editSourceMode,
+      queue_mode: editSourceMode === "seasonal_pool" ? "disabled" : config?.queue_mode || "host_only",
+      pool_year: editSourceMode === "seasonal_pool" ? editPoolYear : "",
+      pool_season: editSourceMode === "seasonal_pool" ? editPoolSeason : "",
+      pool_theme_type: editSourceMode === "seasonal_pool" ? editPoolThemeType : "all",
+      pool_limit: editSourceMode === "seasonal_pool" ? editPoolLimit : 0,
+    });
+  }
+
   function playerRated(p: RatePlayer) {
     return !!ratingData?.ratings?.[p.session_id]?.rated;
   }
@@ -324,302 +394,470 @@
 
 <SEO title={`Rate Party ${roomId}`} description="Live group rating session" />
 
-<main class="max-w-[1440px] mx-auto px-4 md:px-6 py-6 space-y-4">
-  <div class="flex items-center justify-between gap-3 flex-wrap">
+<!-- Room sub-header (Stitch RoomSubHeader → DESIGN tokens) -->
+<div class="w-full bg-surface-low py-2.5 px-4 lg:px-8" data-purpose="room-context-header">
+  <div class="max-w-7xl mx-auto flex items-center justify-between gap-3 text-sm">
     <button
       onclick={() => goto("/rate")}
-      class="flex items-center gap-2 text-sm font-bold text-primary cursor-pointer"
+      class="inline-flex items-center gap-2 text-primary hover:text-primary-container font-medium transition-colors cursor-pointer group"
+      aria-label="Back to lobbies"
     >
-      <ArrowLeft size={16} /> Back to lobbies
+      <ArrowLeft size={16} class="group-hover:-translate-x-0.5 transition-transform" />
+      <span>Back to lobbies</span>
     </button>
-    <div class="text-sm text-on-surface-variant">
-      Room <span class="font-mono font-bold text-on-surface">{roomId}</span>
-      · <span class="capitalize">{status}</span>
+    <div class="flex items-center gap-2 text-on-surface-variant text-xs sm:text-sm">
+      <span>
+        Room <strong class="text-on-surface font-semibold font-mono">{roomId}</strong>
+      </span>
+      <span class="text-outline-variant" aria-hidden="true">·</span>
+      <span class="text-primary font-medium">{statusLabel}</span>
     </div>
   </div>
+</div>
 
+<main class="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-6 space-y-4">
   {#if errorBanner}
-    <div class="p-3 bg-red-50 text-red-700 text-sm rounded-sm">{errorBanner}</div>
+    <div class="p-3 bg-red-50 text-red-700 text-sm rounded-sm" role="alert">{errorBanner}</div>
   {/if}
 
-  <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
-    <aside class="lg:col-span-3 bg-surface-low rounded-sm p-4 space-y-3">
-      <h2 class="text-sm font-black uppercase tracking-wide text-on-surface flex items-center gap-2">
-        <Users size={16} /> Players
-      </h2>
-      <ul class="space-y-2">
-        {#each players as player (player.session_id + "-" + playersVersion)}
-          <li class="flex items-center justify-between gap-2 bg-surface-container rounded-sm px-3 py-2">
-            <div class="min-w-0">
-              <p class="text-sm font-bold text-on-surface truncate">
-                {player.nickname}
-                {#if player.is_host}<span class="text-primary text-xs ml-1">HOST</span>{/if}
-                {#if player.offline}<span class="text-on-surface-variant text-xs ml-1">offline</span>{/if}
-              </p>
-              {#if !player.user_uuid}
-                <p class="text-[10px] text-on-surface-variant">Guest (cannot rate)</p>
-              {/if}
-            </div>
-            {#if status === "rating"}
-              <span class="text-xs font-bold text-on-surface-variant shrink-0">{playerScoreLabel(player)}</span>
-            {/if}
-          </li>
-        {/each}
-      </ul>
-      {#if spectators.length}
-        <p class="text-xs text-on-surface-variant pt-2">Spectators: {spectators.length}</p>
-      {/if}
-      {#if ratingData && status === "rating"}
-        <div class="pt-2 space-y-1">
-          <p class="text-xs text-on-surface-variant">Session AVG</p>
-          <p class="text-2xl font-black text-primary">{sessionAvgDisplay}</p>
-          <p class="text-xs text-on-surface-variant">{ratingData.rated_count}/{ratingData.player_count} rated</p>
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+    <!-- LEFT: Players -->
+    <aside class="lg:col-span-3 space-y-4 order-2 lg:order-1" data-purpose="players-sidebar">
+      <div class="bg-surface-container rounded-sm p-4">
+        <div class="flex items-center gap-2 text-xs font-bold tracking-wider text-primary uppercase pb-3 mb-3 bg-surface-low -mx-4 -mt-4 px-4 pt-4 rounded-t-sm">
+          <Users size={16} class="text-primary" aria-hidden="true" />
+          <span>Players</span>
         </div>
-      {/if}
+
+        <ul class="space-y-2">
+          {#each players as player (player.session_id + "-" + playersVersion)}
+            <li class="flex items-center justify-between gap-2 p-2.5 rounded-sm bg-surface-highest">
+              <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-semibold text-on-surface truncate">{player.nickname}</span>
+                  {#if player.is_host}
+                    <span class="text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded-sm bg-primary text-white tracking-wide shrink-0">
+                      Host
+                    </span>
+                  {/if}
+                  {#if player.offline}
+                    <span class="text-[10px] text-on-surface-variant shrink-0">offline</span>
+                  {/if}
+                </div>
+                {#if !player.user_uuid}
+                  <p class="text-[10px] text-on-surface-variant mt-0.5">Guest (cannot rate)</p>
+                {/if}
+              </div>
+              {#if status === "rating"}
+                <span class="text-xs text-on-surface-variant font-mono shrink-0">{playerScoreLabel(player)}</span>
+              {:else}
+                <span class="text-xs text-on-surface-variant font-mono shrink-0">—</span>
+              {/if}
+            </li>
+          {/each}
+        </ul>
+
+        {#if spectators.length}
+          <p class="text-xs text-on-surface-variant pt-3">Spectators: {spectators.length}</p>
+        {/if}
+
+        <div class="mt-6 pt-4 bg-surface-low -mx-4 px-4 pb-1 rounded-b-sm">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs text-on-surface-variant font-medium">Session AVG</span>
+            <span class="text-lg font-black text-primary tabular-nums">{sessionAvgDisplay}</span>
+          </div>
+          <div
+            class="w-full bg-surface-highest h-1.5 rounded-sm overflow-hidden mb-2"
+            role="progressbar"
+            aria-valuenow={ratedProgress}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label="Players rated progress"
+          >
+            <div class="bg-primary h-full rounded-sm transition-all" style="width: {ratedProgress}%"></div>
+          </div>
+          <p class="text-xs text-on-surface-variant pb-3">
+            {ratingData?.rated_count ?? 0}/{ratingData?.player_count ?? 0} rated
+          </p>
+        </div>
+      </div>
     </aside>
 
-    <section class="lg:col-span-6 bg-surface-container rounded-sm p-4 md:p-6 space-y-4">
-      {#if status === "lobby"}
-        <div class="text-center space-y-4 py-10">
-          <Star size={40} class="mx-auto text-primary" />
-          <h1 class="text-2xl font-black text-on-surface">{config?.name || "Rate Party"}</h1>
-          <p class="text-sm text-on-surface-variant max-w-md mx-auto">
-            Queue: {config?.queue_mode}
-            {#if config?.queue_mode === "everyone"} (max {config.queue_limit_per_user}/user){/if}
-            · Reveal: {config?.reveal_mode}
-          </p>
-          {#if isHost}
-            <button
-              onclick={() => send("start_session")}
-              class="h-12 px-8 bg-primary text-white font-bold rounded-sm cursor-pointer"
-            >
-              Start Session
-            </button>
-          {:else}
-            <p class="text-sm text-on-surface-variant">Waiting for host to start…</p>
-          {/if}
-        </div>
-      {:else if status === "finished"}
-        <div class="text-center space-y-4 py-10">
-          <h1 class="text-2xl font-black text-on-surface">Session ended</h1>
-          <p class="text-sm text-on-surface-variant">Songs rated this session: {roomState?.songs_rated || 0}</p>
-          {#if isHost}
-            <button onclick={() => send("reset_to_lobby")} class="h-11 px-6 bg-primary text-white font-bold rounded-sm cursor-pointer">
-              Back to lobby
-            </button>
-          {/if}
-        </div>
-      {:else}
-        {#if currentSong}
-          <div class="space-y-2">
-            <p class="text-xs font-bold uppercase tracking-wide text-on-surface-variant">Now rating</p>
-            <h1 class="text-2xl font-black text-on-surface">{getSongName(currentSong) || currentSong.name || "Theme"}</h1>
-            {#if currentSong.anime}
-              <p class="text-sm text-on-surface-variant">{currentSong.anime.title}</p>
-            {/if}
-          </div>
-
-          <video
-            bind:this={mediaEl}
-            class="w-full aspect-video bg-on-surface rounded-sm"
-            controls
-            playsinline
-            src={audioUrl || undefined}
-          >
-            <track kind="captions" />
-          </video>
-
-          {#if status === "rating" && !me?.is_spectator}
-            <div class="bg-surface-highest rounded-sm p-4 space-y-3">
-              {#if !authState.isAuthenticated}
-                <p class="text-sm text-on-surface-variant">Log in to rate this song (saves to your global ranking).</p>
-              {:else if playerRated(me!)}
-                <p class="text-sm font-bold text-primary">
-                  Your score: {getFormattedScore(ratingData?.my_score ?? draftScore, scoreFormat)}
-                </p>
+    <!-- CENTER: Playback + rating -->
+    <section class="lg:col-span-6 space-y-4 order-1 lg:order-2" data-purpose="playback-main-area">
+      <div class="bg-surface-container rounded-sm p-5">
+        {#if status === "lobby"}
+          <div class="text-center space-y-4 py-8">
+            <Star size={40} class="mx-auto text-primary" aria-hidden="true" />
+            <h1 class="text-2xl font-black text-on-surface tracking-tight">{config?.name || "Rate Party"}</h1>
+            <p class="text-sm text-on-surface-variant max-w-md mx-auto">
+              {#if seasonalActive}
+                Seasonal pool: <span class="font-semibold text-on-surface capitalize">{poolLabel}</span>
+                · Manual adds locked until host switches to manual
               {:else}
-                <div class="flex items-center justify-between">
-                  <span class="text-sm font-bold text-on-surface">Your score</span>
-                  <span class="text-xl font-black text-primary">
-                    {scoreFormat === "POINT_10_DECIMAL" || scoreFormat === "POINT_5"
-                      ? displayDraft.toFixed(1)
-                      : Math.round(displayDraft)}
-                  </span>
-                </div>
-                {#if scoreFormat === "POINT_10" || scoreFormat === "POINT_10_DECIMAL"}
-                  <div class="grid grid-cols-5 gap-2">
-                    {#each [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as n}
-                      <button
-                        onclick={() => {
-                          draftScore = toCanonicalScore(n, scoreFormat);
-                        }}
-                        class="h-10 rounded-sm text-sm font-bold bg-surface-container hover:bg-primary hover:text-white cursor-pointer"
-                      >
-                        {n}
-                      </button>
-                    {/each}
+                Queue: {config?.queue_mode}
+                {#if config?.queue_mode === "everyone"} (max {config.queue_limit_per_user}/user){/if}
+              {/if}
+              · Reveal: {config?.reveal_mode}
+            </p>
+
+            {#if isHost}
+              <div class="text-left max-w-md mx-auto space-y-3 bg-surface-highest rounded-sm p-4">
+                <p class="text-xs font-bold uppercase tracking-wide text-on-surface-variant">Lobby settings</p>
+                <label class="block space-y-1">
+                  <span class="text-xs font-bold text-on-surface-variant">Theme source</span>
+                  <select bind:value={editSourceMode} class="w-full h-10 bg-surface border border-outline-variant rounded-sm px-3 text-sm">
+                    <option value="manual">Manual (search &amp; queue)</option>
+                    <option value="seasonal_pool">Seasonal pool</option>
+                  </select>
+                </label>
+                {#if editSourceMode === "seasonal_pool"}
+                  <div class="grid grid-cols-2 gap-2">
+                    <label class="block space-y-1">
+                      <span class="text-xs font-bold text-on-surface-variant">Year</span>
+                      <select bind:value={editPoolYear} class="w-full h-10 bg-surface border border-outline-variant rounded-sm px-2 text-sm">
+                        <option value="">Year</option>
+                        {#each sortedYears as y}
+                          <option value={y.slug}>{y.name}</option>
+                        {/each}
+                      </select>
+                    </label>
+                    <label class="block space-y-1">
+                      <span class="text-xs font-bold text-on-surface-variant">Season</span>
+                      <select bind:value={editPoolSeason} class="w-full h-10 bg-surface border border-outline-variant rounded-sm px-2 text-sm">
+                        <option value="">Season</option>
+                        {#each configState.seasons as s}
+                          <option value={s.slug}>{s.name}</option>
+                        {/each}
+                      </select>
+                    </label>
                   </div>
-                  {#if scoreFormat === "POINT_10_DECIMAL"}
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      step="1"
-                      bind:value={draftScore}
-                      class="w-full"
-                      aria-label="Score slider"
-                    />
-                  {/if}
-                {:else if scoreFormat === "POINT_100"}
-                  <input type="range" min="0" max="100" step="1" bind:value={draftScore} class="w-full" aria-label="Score slider" />
-                {:else}
-                  <div class="grid grid-cols-5 gap-2">
-                    {#each [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5] as n}
-                      <button
-                        onclick={() => (draftScore = toCanonicalScore(n, "POINT_5"))}
-                        class="h-10 rounded-sm text-sm font-bold bg-surface-container hover:bg-primary hover:text-white cursor-pointer"
-                      >
-                        {n}
-                      </button>
-                    {/each}
-                  </div>
+                  <label class="block space-y-1">
+                    <span class="text-xs font-bold text-on-surface-variant">Type</span>
+                    <select bind:value={editPoolThemeType} class="w-full h-10 bg-surface border border-outline-variant rounded-sm px-2 text-sm">
+                      <option value="all">ALL</option>
+                      <option value="OP">OP</option>
+                      <option value="ED">ED</option>
+                    </select>
+                  </label>
+                  <label class="block space-y-1">
+                    <span class="text-xs font-bold text-on-surface-variant">Pool size</span>
+                    <input type="number" min="5" max="50" bind:value={editPoolLimit} class="w-full h-10 bg-surface border border-outline-variant rounded-sm px-2 text-sm" />
+                  </label>
                 {/if}
                 <button
-                  onclick={submitRating}
-                  disabled={submitting}
-                  class="w-full h-12 bg-primary text-white font-bold rounded-sm cursor-pointer disabled:opacity-50"
+                  type="button"
+                  onclick={saveLobbyConfig}
+                  class="w-full h-10 bg-surface-container text-primary font-bold text-sm rounded-sm cursor-pointer"
                 >
-                  Submit rating
+                  Save settings
+                </button>
+              </div>
+
+              <button
+                onclick={() => send("start_session")}
+                class="h-12 px-8 bg-primary hover:bg-primary-container text-white font-bold rounded-sm cursor-pointer transition-colors"
+              >
+                Start Session
+              </button>
+            {:else}
+              <p class="text-sm text-on-surface-variant">Waiting for host to start…</p>
+            {/if}
+          </div>
+        {:else if status === "finished"}
+          <div class="text-center space-y-4 py-10">
+            <h1 class="text-2xl font-black text-on-surface">Session ended</h1>
+            <p class="text-sm text-on-surface-variant">Songs rated this session: {roomState?.songs_rated || 0}</p>
+            {#if isHost}
+              <button
+                onclick={() => send("reset_to_lobby")}
+                class="h-11 px-6 bg-primary hover:bg-primary-container text-white font-bold rounded-sm cursor-pointer transition-colors"
+              >
+                Back to lobby
+              </button>
+            {/if}
+          </div>
+        {:else}
+          {#if currentSong}
+            <div class="mb-3">
+              <div class="text-[10px] font-bold tracking-widest uppercase text-primary mb-1">Now rating</div>
+              <h1 class="text-2xl sm:text-3xl font-extrabold text-on-surface tracking-tight leading-tight">
+                {getSongName(currentSong) || currentSong.name || "Theme"}
+              </h1>
+              {#if currentSong.anime}
+                <p class="text-sm text-on-surface-variant mt-1">{currentSong.anime.title}</p>
+              {/if}
+            </div>
+
+            <video
+              bind:this={mediaEl}
+              class="relative w-full aspect-video rounded-sm overflow-hidden bg-on-surface"
+              controls
+              playsinline
+              src={audioUrl || undefined}
+            >
+              <track kind="captions" />
+            </video>
+
+            {#if status === "rating" && !me?.is_spectator}
+              <div class="mt-4 p-4 rounded-sm bg-surface-highest" data-purpose="rating-form">
+                {#if !authState.isAuthenticated}
+                  <p class="text-sm text-on-surface-variant">
+                    Log in to rate this song (saves to your global ranking).
+                  </p>
+                {:else if playerRated(me!)}
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold text-on-surface-variant">Your score</span>
+                    <span class="text-2xl font-black text-primary tabular-nums">
+                      {getFormattedScore(ratingData?.my_score ?? draftScore, scoreFormat)}
+                    </span>
+                  </div>
+                {:else}
+                  <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-semibold text-on-surface-variant">Your score</span>
+                    <span class="text-2xl font-black text-primary tabular-nums tracking-tight">
+                      {scoreFormat === "POINT_10_DECIMAL" || scoreFormat === "POINT_5"
+                        ? displayDraft.toFixed(1)
+                        : Math.round(displayDraft)}
+                    </span>
+                  </div>
+
+                  {#if scoreFormat === "POINT_10" || scoreFormat === "POINT_10_DECIMAL"}
+                    <div class="grid grid-cols-5 gap-2 mb-3">
+                      {#each [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as n}
+                        <button
+                          onclick={() => {
+                            draftScore = toCanonicalScore(n, scoreFormat);
+                          }}
+                          class="h-10 rounded-sm text-sm font-bold bg-surface-container text-on-surface hover:bg-primary hover:text-white cursor-pointer transition-colors"
+                          aria-label="Set score to {n}"
+                        >
+                          {n}
+                        </button>
+                      {/each}
+                    </div>
+                    {#if scoreFormat === "POINT_10_DECIMAL"}
+                      <div class="py-2">
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          step="1"
+                          bind:value={draftScore}
+                          class="w-full h-2 rounded-sm cursor-pointer accent-primary"
+                          aria-label="Score slider"
+                        />
+                      </div>
+                    {/if}
+                  {:else if scoreFormat === "POINT_100"}
+                    <div class="py-2">
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="1"
+                        bind:value={draftScore}
+                        class="w-full h-2 rounded-sm cursor-pointer accent-primary"
+                        aria-label="Score slider"
+                      />
+                    </div>
+                  {:else}
+                    <div class="grid grid-cols-5 gap-2 mb-3">
+                      {#each [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5] as n}
+                        <button
+                          onclick={() => (draftScore = toCanonicalScore(n, "POINT_5"))}
+                          class="h-10 rounded-sm text-sm font-bold bg-surface-container text-on-surface hover:bg-primary hover:text-white cursor-pointer transition-colors"
+                          aria-label="Set score to {n}"
+                        >
+                          {n}
+                        </button>
+                      {/each}
+                    </div>
+                  {/if}
+
+                  <button
+                    onclick={submitRating}
+                    disabled={submitting}
+                    class="w-full mt-3 py-2.5 px-4 rounded-sm font-bold text-sm text-white bg-primary hover:bg-primary-container transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    Submit rating
+                  </button>
+                {/if}
+              </div>
+            {/if}
+          {:else}
+            <div class="text-center py-16 space-y-3">
+              <Play size={36} class="mx-auto text-primary" aria-hidden="true" />
+              <p class="font-bold text-on-surface">Waiting for a song</p>
+              <p class="text-sm text-on-surface-variant">
+                {#if seasonalActive}
+                  Seasonal pool ready — host presses Next to play the next theme.
+                {:else if canOpenSearch}
+                  Search an anime to pick a theme.
+                {:else}
+                  Host will pick the next theme.
+                {/if}
+              </p>
+            </div>
+          {/if}
+
+          {#if showSessionControls}
+            <div class="mt-4 flex items-center justify-between gap-3 flex-wrap text-xs">
+              <div class="flex items-center gap-2 flex-wrap">
+                {#if canOpenSearch}
+                  <button
+                    onclick={openSearchModal}
+                    class="px-3.5 py-2 rounded-sm bg-primary hover:bg-primary-container text-white font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+                    type="button"
+                  >
+                    <Search size={14} aria-hidden="true" />
+                    <span>Search anime</span>
+                  </button>
+                {/if}
+                {#if isHost}
+                  <button
+                    onclick={() => send("next")}
+                    class="px-3 py-2 rounded-sm bg-surface-highest text-primary hover:bg-surface-low font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+                    type="button"
+                  >
+                    <SkipForward size={14} aria-hidden="true" />
+                    <span>{seasonalActive ? "Next from pool" : "Next"}</span>
+                  </button>
+                {/if}
+              </div>
+              {#if isHost}
+                <button
+                  onclick={() => send("end_session")}
+                  class="px-3 py-2 rounded-sm bg-surface-highest text-on-surface-variant hover:text-on-surface font-medium transition-colors cursor-pointer"
+                  type="button"
+                >
+                  End session
                 </button>
               {/if}
             </div>
           {/if}
-        {:else}
-          <div class="text-center py-16 space-y-3">
-            <Play size={36} class="mx-auto text-primary" />
-            <p class="font-bold text-on-surface">Waiting for a song</p>
-            <p class="text-sm text-on-surface-variant">
-              {#if canOpenSearch}
-                Search an anime to pick a theme.
-              {:else}
-                Host will pick the next theme.
-              {/if}
-            </p>
-            {#if canOpenSearch}
-              <button
-                onclick={openSearchModal}
-                class="h-11 px-5 bg-primary text-white font-bold text-sm rounded-sm inline-flex items-center gap-2 cursor-pointer"
-              >
-                <Search size={16} /> Find anime
-              </button>
-            {/if}
-          </div>
         {/if}
-
-        {#if status === "waiting" || status === "rating"}
-          <div class="flex flex-wrap gap-2">
-            {#if canOpenSearch}
-              <button
-                onclick={openSearchModal}
-                class="h-10 px-4 bg-primary text-white font-bold text-sm rounded-sm flex items-center gap-2 cursor-pointer"
-              >
-                <Search size={16} /> Search anime
-              </button>
-            {/if}
-            {#if isHost}
-              <button
-                onclick={() => send("next")}
-                class="h-10 px-4 bg-surface-highest text-primary font-bold text-sm rounded-sm flex items-center gap-2 cursor-pointer"
-              >
-                <SkipForward size={16} /> Next
-              </button>
-              <button
-                onclick={() => send("end_session")}
-                class="h-10 px-4 bg-surface-highest text-on-surface-variant font-bold text-sm rounded-sm cursor-pointer"
-              >
-                End session
-              </button>
-            {/if}
-          </div>
-        {/if}
-      {/if}
+      </div>
     </section>
 
-    <aside class="lg:col-span-3 space-y-4">
+    <!-- RIGHT: Queue + Chat -->
+    <aside class="lg:col-span-3 space-y-4 order-3" data-purpose="queue-chat-sidebar">
       {#if status !== "lobby" && status !== "finished"}
-        <div class="bg-surface-low rounded-sm p-4 space-y-3">
+        <div class="bg-surface-container rounded-sm p-4 flex flex-col">
           <button
             type="button"
-            class="w-full flex items-center justify-between text-sm font-black uppercase tracking-wide text-on-surface cursor-pointer"
+            class="flex items-center justify-between pb-2.5 mb-2.5 w-full cursor-pointer bg-surface-low -mx-4 -mt-4 px-4 pt-4 rounded-t-sm"
             onclick={() => (queueCollapsed = !queueCollapsed)}
             aria-expanded={!queueCollapsed}
+            aria-controls="rate-queue-panel"
           >
-            <span class="flex items-center gap-2">
-              <ListMusic size={14} /> Queue ({queue.length})
-            </span>
-            {#if queueCollapsed}<ChevronDown size={16} />{:else}<ChevronUp size={16} />{/if}
+            <div class="flex items-center gap-2 text-xs font-bold tracking-wider text-primary uppercase">
+              <ListMusic size={16} aria-hidden="true" />
+              <span>Queue ({queue.length})</span>
+            </div>
+            {#if queueCollapsed}
+              <ChevronDown size={16} class="text-on-surface-variant" aria-hidden="true" />
+            {:else}
+              <ChevronUp size={16} class="text-on-surface-variant" aria-hidden="true" />
+            {/if}
           </button>
 
           {#if !queueCollapsed}
-            {#if config?.queue_mode === "disabled"}
-              <p class="text-xs text-on-surface-variant">Queue disabled — host plays songs directly.</p>
-            {:else}
-              <ul class="space-y-2 max-h-56 overflow-y-auto">
+            <div id="rate-queue-panel" class="space-y-2 max-h-56 overflow-y-auto pr-1">
+              {#if seasonalActive}
+                <p class="text-xs text-on-surface-variant">
+                  Seasonal pool ({poolLabel}) — manual adds locked. Host can switch to manual in lobby.
+                </p>
+              {:else if config?.queue_mode === "disabled"}
+                <p class="text-xs text-on-surface-variant">Queue disabled — host plays songs directly.</p>
+              {/if}
+
+              {#if seasonalActive || config?.queue_mode !== "disabled"}
                 {#each queue as item (item.item_id)}
-                  <li class="bg-surface-container rounded-sm px-3 py-2 flex justify-between gap-2">
-                    <div class="min-w-0">
-                      <p class="text-xs font-bold text-on-surface truncate">{item.song_name}</p>
-                      <p class="text-[10px] text-on-surface-variant truncate">{item.anime_title} · {item.added_by_nickname}</p>
+                  <div class="flex items-start justify-between p-2 rounded-sm bg-surface-highest">
+                    <div class="min-w-0 pr-2">
+                      <h4 class="text-xs font-bold text-on-surface truncate">{item.song_name}</h4>
+                      <p class="text-[10px] text-on-surface-variant truncate mt-0.5">
+                        {item.anime_title} · {item.added_by_nickname}
+                      </p>
                     </div>
-                    {#if isHost || item.added_by_session_id === mySessionId}
+                    {#if isHost || (!seasonalActive && item.added_by_session_id === mySessionId)}
                       <button
                         onclick={() => send("queue_remove", { item_id: item.item_id })}
-                        class="text-on-surface-variant cursor-pointer"
-                        aria-label="Remove from queue"
+                        class="text-on-surface-variant hover:text-red-600 p-0.5 cursor-pointer shrink-0"
+                        aria-label="Remove {item.song_name} from queue"
+                        type="button"
                       >
                         <X size={14} />
                       </button>
                     {/if}
-                  </li>
+                  </div>
                 {:else}
-                  <li class="text-xs text-on-surface-variant">Queue is empty</li>
+                  <p class="text-xs text-on-surface-variant">
+                    {seasonalActive ? "Pool loading or empty" : "Queue is empty"}
+                  </p>
                 {/each}
-              </ul>
-            {/if}
+              {/if}
+            </div>
           {/if}
         </div>
       {/if}
 
-      <div class="bg-surface-low rounded-sm p-4 space-y-3">
+      <div
+        class="bg-surface-container rounded-sm p-4 flex flex-col {chatCollapsed ? '' : 'min-h-[280px] h-[340px]'}"
+        data-purpose="chat-box"
+      >
         <button
           type="button"
-          class="w-full flex items-center justify-between text-sm font-black uppercase tracking-wide text-on-surface cursor-pointer"
+          class="flex items-center justify-between pb-2.5 mb-2.5 w-full cursor-pointer bg-surface-low -mx-4 -mt-4 px-4 pt-4 rounded-t-sm"
           onclick={() => (chatCollapsed = !chatCollapsed)}
           aria-expanded={!chatCollapsed}
+          aria-controls="rate-chat-panel"
         >
-          <span class="flex items-center gap-2">
-            <MessageSquare size={14} /> Chat
-          </span>
-          {#if chatCollapsed}<ChevronDown size={16} />{:else}<ChevronUp size={16} />{/if}
+          <div class="flex items-center gap-2 text-xs font-bold tracking-wider text-primary uppercase">
+            <MessageSquare size={16} aria-hidden="true" />
+            <span>Chat</span>
+          </div>
+          {#if chatCollapsed}
+            <ChevronDown size={16} class="text-on-surface-variant" aria-hidden="true" />
+          {:else}
+            <ChevronUp size={16} class="text-on-surface-variant" aria-hidden="true" />
+          {/if}
         </button>
 
         {#if !chatCollapsed}
-          <div class="h-40 overflow-y-auto space-y-1 text-xs">
+          <div id="rate-chat-panel" class="flex-1 overflow-y-auto space-y-2 text-xs pr-1 min-h-0">
             {#each chatMessages as m}
-              <p class={m.type === "system" ? "text-on-surface-variant italic" : "text-on-surface"}>
-                <strong>{m.sender}:</strong> {m.text}
+              <p
+                class="text-[11px] leading-relaxed {m.type === 'system'
+                  ? 'text-on-surface-variant italic'
+                  : 'text-on-surface'}"
+              >
+                <strong class="text-primary not-italic font-semibold">{m.sender}:</strong>
+                {m.text}
               </p>
             {/each}
           </div>
-          <div class="flex gap-2">
+          <form
+            class="mt-3 flex items-center gap-2 pt-2 bg-surface-low -mx-4 -mb-4 px-4 pb-4 rounded-b-sm"
+            onsubmit={(e) => {
+              e.preventDefault();
+              sendChat();
+            }}
+          >
             <input
               bind:value={chatInput}
-              onkeydown={(e) => e.key === "Enter" && sendChat()}
-              class="flex-1 h-9 bg-surface-highest border border-outline-variant rounded-sm px-2 text-xs"
+              class="flex-1 px-3 py-2 text-xs rounded-sm bg-surface-highest border border-outline-variant text-on-surface placeholder:text-on-surface-variant focus:outline-hidden focus:border-primary transition-colors"
               placeholder="Message…"
+              aria-label="Chat message"
             />
-            <button onclick={sendChat} class="h-9 px-3 bg-primary text-white text-xs font-bold rounded-sm cursor-pointer">Send</button>
-          </div>
+            <button
+              class="px-3.5 py-2 rounded-sm bg-primary hover:bg-primary-container text-white font-semibold text-xs tracking-wide transition-colors cursor-pointer"
+              type="submit"
+            >
+              Send
+            </button>
+          </form>
         {/if}
       </div>
     </aside>
@@ -632,34 +870,48 @@
   <div
     class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
     onclick={closeSearchModal}
+    role="presentation"
   >
     <div
       class="bg-surface-highest w-full max-w-2xl max-h-[85vh] rounded-sm flex flex-col overflow-hidden"
       onclick={(e) => e.stopPropagation()}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Search anime"
     >
-      <div class="flex items-center justify-between gap-3 p-4 border-b border-outline-variant">
+      <div class="flex items-center justify-between gap-3 p-4 bg-surface-container">
         <h2 class="text-lg font-black text-on-surface">Search anime</h2>
-        <button onclick={closeSearchModal} class="text-on-surface-variant cursor-pointer" aria-label="Close search">
+        <button
+          onclick={closeSearchModal}
+          class="text-on-surface-variant hover:text-on-surface cursor-pointer min-h-11 min-w-11 flex items-center justify-center"
+          aria-label="Close search"
+          type="button"
+        >
           <X size={20} />
         </button>
       </div>
 
-      <div class="p-4 space-y-3 border-b border-outline-variant">
+      <div class="p-4 space-y-3 bg-surface-low">
         <div class="relative">
-          <Search size={16} class="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" />
+          <Search
+            size={16}
+            class="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant"
+            aria-hidden="true"
+          />
           <input
             bind:value={searchQuery}
             oninput={runAnimeSearch}
             placeholder="Type an anime title…"
-            class="w-full h-12 pl-10 pr-3 bg-surface border border-outline-variant rounded-sm text-sm text-on-surface"
+            class="w-full h-12 pl-10 pr-3 bg-surface border border-outline-variant rounded-sm text-sm text-on-surface focus:outline-hidden focus:border-primary"
             autofocus
+            aria-label="Anime search"
           />
         </div>
         {#if selectedAnime}
-          <div class="flex items-center justify-between gap-3">
+          <div class="flex items-center justify-between gap-3 flex-wrap">
             <button
               type="button"
-              class="text-xs font-bold text-primary cursor-pointer"
+              class="text-xs font-bold text-primary cursor-pointer min-h-11"
               onclick={() => {
                 selectedAnime = null;
                 animeSongs = [];
@@ -672,6 +924,7 @@
               <select
                 bind:value={themeFilter}
                 class="h-9 bg-surface border border-outline-variant rounded-sm px-2 text-sm text-on-surface"
+                aria-label="Filter theme type"
               >
                 <option value="ALL">ALL</option>
                 <option value="OP">OP</option>
@@ -720,7 +973,8 @@
                   {#if isHost}
                     <button
                       onclick={() => playNow(song)}
-                      class="h-8 px-3 text-xs font-bold text-white bg-primary rounded-sm cursor-pointer"
+                      class="h-9 px-3 text-xs font-bold text-white bg-primary hover:bg-primary-container rounded-sm cursor-pointer transition-colors"
+                      type="button"
                     >
                       Play
                     </button>
@@ -728,7 +982,8 @@
                   {#if config?.queue_mode !== "disabled" && queuePermission.ok}
                     <button
                       onclick={() => addSong(song)}
-                      class="h-8 px-3 text-xs font-bold text-primary bg-surface-highest rounded-sm cursor-pointer"
+                      class="h-9 px-3 text-xs font-bold text-primary bg-surface-highest hover:bg-surface-low rounded-sm cursor-pointer transition-colors"
+                      type="button"
                     >
                       + Queue
                     </button>

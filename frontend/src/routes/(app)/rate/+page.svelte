@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import { goto } from "$app/navigation";
   import { authState } from "$lib/state/auth.svelte";
+  import { configState } from "$lib/state/config.svelte";
   import api from "$lib/api";
   import SEO from "$lib/components/SEO.svelte";
   import Plus from "lucide-svelte/icons/plus";
@@ -11,7 +12,14 @@
   import Eye from "lucide-svelte/icons/eye";
   import UserIcon from "lucide-svelte/icons/user";
   import Star from "lucide-svelte/icons/star";
-  import { defaultRateConfig, type QueueMode, type RevealMode, type AutoAdvance } from "$lib/rate/room-state";
+  import {
+    defaultRateConfig,
+    type QueueMode,
+    type RevealMode,
+    type AutoAdvance,
+    type SourceMode,
+    type SeasonalPoolThemeType,
+  } from "$lib/rate/room-state";
 
   interface RoomInfo {
     room_id: string;
@@ -24,6 +32,10 @@
     queue_mode: string;
     reveal_mode: string;
     queue_length: number;
+    source_mode?: string;
+    pool_year?: string;
+    pool_season?: string;
+    pool_theme_type?: string;
   }
 
   let rooms = $state<RoomInfo[]>([]);
@@ -36,15 +48,24 @@
   let hasSavedNickname = $state(false);
 
   let roomName = $state("");
+  let sourceMode = $state<SourceMode>("manual");
   let queueMode = $state<QueueMode>("host_only");
   let queueLimitPerUser = $state(3);
   let revealMode = $state<RevealMode>("blind");
   let maxPlayers = $state(16);
   let autoAdvance = $state<AutoAdvance>("never");
   let isPrivate = $state(false);
+  let poolYear = $state("");
+  let poolSeason = $state("");
+  let poolThemeType = $state<SeasonalPoolThemeType>("all");
+  let poolLimit = $state(30);
 
   let joinCode = $state("");
   let errorMsg = $state("");
+
+  let sortedYears = $derived(
+    [...configState.years].sort((a, b) => Number(b.slug) - Number(a.slug) || b.name.localeCompare(a.name))
+  );
 
   function generateUUID(): string {
     if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -112,6 +133,13 @@
     if (!authState.isAuthenticated) saveNickname();
     if (!roomName.trim()) roomName = `${nickname}'s Rate Party`;
 
+    if (sourceMode === "seasonal_pool") {
+      if (!poolYear || !poolSeason) {
+        errorMsg = "Pick a year and season for the seasonal pool.";
+        return;
+      }
+    }
+
     try {
       const defaults = defaultRateConfig();
       const payload = {
@@ -119,11 +147,20 @@
           ...defaults,
           name: roomName.trim(),
           private: isPrivate,
-          queue_mode: queueMode,
+          queue_mode: sourceMode === "seasonal_pool" ? "disabled" : queueMode,
           queue_limit_per_user: queueLimitPerUser,
           reveal_mode: revealMode,
           max_players: maxPlayers,
           auto_advance: autoAdvance,
+          source_mode: sourceMode,
+          ...(sourceMode === "seasonal_pool"
+            ? {
+                pool_year: poolYear,
+                pool_season: poolSeason,
+                pool_theme_type: poolThemeType,
+                pool_limit: poolLimit,
+              }
+            : {}),
         },
         guest_nickname: nickname,
         guest_device_id: deviceId,
@@ -157,6 +194,14 @@
     if (mode === "everyone") return "Open queue";
     if (mode === "disabled") return "No queue";
     return "Host queue";
+  }
+
+  function sourceLabel(room: RoomInfo) {
+    if (room.source_mode === "seasonal_pool") {
+      const type = room.pool_theme_type && room.pool_theme_type !== "all" ? ` · ${room.pool_theme_type}` : "";
+      return `${room.pool_season || "season"} ${room.pool_year || ""}${type}`.trim();
+    }
+    return queueModeLabel(room.queue_mode);
   }
 </script>
 
@@ -254,7 +299,7 @@
             </div>
             <div class="flex flex-wrap gap-2 text-xs">
               <span class="bg-surface-highest text-on-surface-variant px-2 py-1 rounded-sm capitalize">{room.status}</span>
-              <span class="bg-surface-highest text-on-surface-variant px-2 py-1 rounded-sm">{queueModeLabel(room.queue_mode)}</span>
+              <span class="bg-surface-highest text-on-surface-variant px-2 py-1 rounded-sm">{sourceLabel(room)}</span>
               <span class="bg-surface-highest text-on-surface-variant px-2 py-1 rounded-sm">{room.reveal_mode === "live" ? "Live scores" : "Blind scores"}</span>
             </div>
             <div class="flex items-center justify-between">
@@ -297,19 +342,65 @@
       </label>
 
       <label class="block space-y-1">
-        <span class="text-xs font-bold text-on-surface-variant uppercase tracking-wide">Queue mode</span>
-        <select bind:value={queueMode} class="w-full h-11 bg-surface border border-outline-variant rounded-sm px-3 text-sm">
-          <option value="host_only">Host only</option>
-          <option value="everyone">Everyone (auth)</option>
-          <option value="disabled">Disabled</option>
+        <span class="text-xs font-bold text-on-surface-variant uppercase tracking-wide">Theme source</span>
+        <select bind:value={sourceMode} class="w-full h-11 bg-surface border border-outline-variant rounded-sm px-3 text-sm">
+          <option value="manual">Manual (search &amp; queue)</option>
+          <option value="seasonal_pool">Seasonal pool</option>
         </select>
       </label>
 
-      {#if queueMode === "everyone"}
+      {#if sourceMode === "seasonal_pool"}
+        <p class="text-xs text-on-surface-variant leading-relaxed">
+          Themes load from the selected season on start. Manual adds stay locked until the host switches back to manual in the lobby.
+        </p>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="block space-y-1">
+            <span class="text-xs font-bold text-on-surface-variant uppercase tracking-wide">Year</span>
+            <select bind:value={poolYear} class="w-full h-11 bg-surface border border-outline-variant rounded-sm px-3 text-sm">
+              <option value="">Select year</option>
+              {#each sortedYears as y}
+                <option value={y.slug}>{y.name}</option>
+              {/each}
+            </select>
+          </label>
+          <label class="block space-y-1">
+            <span class="text-xs font-bold text-on-surface-variant uppercase tracking-wide">Season</span>
+            <select bind:value={poolSeason} class="w-full h-11 bg-surface border border-outline-variant rounded-sm px-3 text-sm">
+              <option value="">Select season</option>
+              {#each configState.seasons as s}
+                <option value={s.slug}>{s.name}</option>
+              {/each}
+            </select>
+          </label>
+        </div>
         <label class="block space-y-1">
-          <span class="text-xs font-bold text-on-surface-variant uppercase tracking-wide">Songs per user</span>
-          <input type="number" min="1" max="10" bind:value={queueLimitPerUser} class="w-full h-11 bg-surface border border-outline-variant rounded-sm px-3 text-sm" />
+          <span class="text-xs font-bold text-on-surface-variant uppercase tracking-wide">Theme type</span>
+          <select bind:value={poolThemeType} class="w-full h-11 bg-surface border border-outline-variant rounded-sm px-3 text-sm">
+            <option value="all">ALL</option>
+            <option value="OP">OP</option>
+            <option value="ED">ED</option>
+          </select>
         </label>
+        <label class="block space-y-1">
+          <span class="text-xs font-bold text-on-surface-variant uppercase tracking-wide">Pool size</span>
+          <input type="number" min="5" max="50" bind:value={poolLimit} class="w-full h-11 bg-surface border border-outline-variant rounded-sm px-3 text-sm" />
+        </label>
+      {:else}
+        <label class="block space-y-1">
+          <span class="text-xs font-bold text-on-surface-variant uppercase tracking-wide">Queue mode</span>
+          <select bind:value={queueMode} class="w-full h-11 bg-surface border border-outline-variant rounded-sm px-3 text-sm">
+            <option value="host_only">Host only</option>
+            <option value="everyone">Everyone (auth)</option>
+            <option value="disabled">Disabled</option>
+          </select>
+        </label>
+
+        {#if queueMode === "everyone"}
+          <label class="block space-y-1">
+            <span class="text-xs font-bold text-on-surface-variant uppercase tracking-wide">Songs per user</span>
+            <input type="number" min="1" max="10" bind:value={queueLimitPerUser} class="w-full h-11 bg-surface border border-outline-variant rounded-sm px-3 text-sm" />
+          </label>
+        {/if}
       {/if}
 
       <label class="block space-y-1">

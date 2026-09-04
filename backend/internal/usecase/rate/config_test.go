@@ -16,6 +16,9 @@ func TestSanitizeConfig(t *testing.T) {
 	if cfg.QueueMode != QueueModeHostOnly {
 		t.Fatalf("expected host_only, got %q", cfg.QueueMode)
 	}
+	if cfg.SourceMode != SourceModeManual {
+		t.Fatalf("expected manual, got %q", cfg.SourceMode)
+	}
 	if cfg.QueueLimitPerUser != DefaultQueueLimitPerUser {
 		t.Fatalf("expected limit %d, got %d", DefaultQueueLimitPerUser, cfg.QueueLimitPerUser)
 	}
@@ -46,6 +49,39 @@ func TestSanitizeConfig(t *testing.T) {
 	sanitizeConfig(&cfg3)
 	if cfg3.QueueLimitPerUser != 5 {
 		t.Fatalf("expected 5, got %d", cfg3.QueueLimitPerUser)
+	}
+}
+
+func TestSanitizeSeasonalPool(t *testing.T) {
+	cfg := domain.RateConfig{
+		SourceMode:    SourceModeSeasonalPool,
+		PoolYear:      "2026",
+		PoolSeason:    "summer",
+		PoolThemeType: "OP",
+		PoolLimit:     99,
+		QueueMode:     QueueModeEveryone,
+	}
+	sanitizeConfig(&cfg)
+	if cfg.QueueMode != QueueModeDisabled {
+		t.Fatalf("seasonal should force disabled queue, got %q", cfg.QueueMode)
+	}
+	if cfg.PoolLimit != DefaultPoolLimit {
+		t.Fatalf("expected pool limit clamp to %d, got %d", DefaultPoolLimit, cfg.PoolLimit)
+	}
+	if !isSeasonalPool(cfg) {
+		t.Fatal("expected seasonal pool")
+	}
+
+	manual := domain.RateConfig{
+		SourceMode:    SourceModeManual,
+		PoolYear:      "2026",
+		PoolSeason:    "summer",
+		PoolThemeType: "OP",
+		PoolLimit:     20,
+	}
+	sanitizeConfig(&manual)
+	if manual.PoolYear != "" || manual.PoolSeason != "" || manual.PoolLimit != 0 {
+		t.Fatalf("manual mode should clear pool fields: %+v", manual)
 	}
 }
 

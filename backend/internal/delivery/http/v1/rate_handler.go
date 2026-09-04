@@ -49,6 +49,9 @@ func (h *RateHandler) CreateRoom(c *fiber.Ctx) error {
 
 	roomID, err := h.lobbyManager.CreateRoom(c.Context(), body.Config, authUser, body.GuestNickname, body.GuestDeviceID)
 	if err != nil {
+		if err.Error() == "seasonal pool requires year and season" {
+			return domain.NewAppError(http.StatusBadRequest, err.Error(), err)
+		}
 		return domain.NewAppError(http.StatusInternalServerError, "Could not create room", err)
 	}
 

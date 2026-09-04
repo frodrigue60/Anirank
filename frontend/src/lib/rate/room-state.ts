@@ -2,6 +2,16 @@ export type QueueMode = "host_only" | "everyone" | "disabled";
 export type RevealMode = "blind" | "live";
 export type AutoAdvance = "never" | "all_rated";
 export type RateStatus = "lobby" | "waiting" | "rating" | "finished";
+export type SourceMode = "manual" | "seasonal_pool";
+export type SeasonalPoolThemeType = "all" | "OP" | "ED";
+
+/** Host → server: load happens automatically on start_session when source_mode is seasonal_pool. */
+export interface SeasonalPoolRequest {
+	year: string;
+	season: string;
+	theme_type: SeasonalPoolThemeType;
+	pool_limit?: number;
+}
 
 export interface RateConfig {
 	name: string;
@@ -11,6 +21,11 @@ export interface RateConfig {
 	reveal_mode: RevealMode;
 	max_players: number;
 	auto_advance: AutoAdvance;
+	source_mode: SourceMode;
+	pool_year?: string;
+	pool_season?: string;
+	pool_theme_type?: SeasonalPoolThemeType;
+	pool_limit?: number;
 }
 
 export interface RatePlayer {
@@ -76,7 +91,12 @@ export function defaultRateConfig(): RateConfig {
 		reveal_mode: "blind",
 		max_players: 16,
 		auto_advance: "never",
+		source_mode: "manual",
 	};
+}
+
+export function isSeasonalPool(config: RateConfig | undefined | null): boolean {
+	return config?.source_mode === "seasonal_pool";
 }
 
 export function canAddToQueue(
@@ -86,6 +106,12 @@ export function canAddToQueue(
 ): { ok: boolean; reason?: string } {
 	if (!player || player.is_spectator || player.offline) {
 		return { ok: false, reason: "Not allowed" };
+	}
+	if (isSeasonalPool(config)) {
+		return {
+			ok: false,
+			reason: "Seasonal pool mode — host must switch to manual in lobby to add themes",
+		};
 	}
 	if (config.queue_mode === "disabled") {
 		return { ok: false, reason: "Queue is disabled" };

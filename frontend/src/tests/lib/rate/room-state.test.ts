@@ -19,6 +19,7 @@ const baseConfig: RateConfig = {
 	reveal_mode: "blind",
 	max_players: 16,
 	auto_advance: "never",
+	source_mode: "manual",
 };
 
 const authPlayer: RatePlayer = {
@@ -64,6 +65,23 @@ describe("canAddToQueue", () => {
 			[]
 		);
 		expect(result.ok).toBe(true);
+	});
+
+	it("blocks adds in seasonal pool mode", () => {
+		const host = { ...authPlayer, is_host: true };
+		const result = canAddToQueue(
+			{
+				...baseConfig,
+				source_mode: "seasonal_pool",
+				pool_year: "2026",
+				pool_season: "summer",
+				queue_mode: "disabled",
+			},
+			host,
+			[]
+		);
+		expect(result.ok).toBe(false);
+		expect(result.reason).toMatch(/seasonal/i);
 	});
 });
 

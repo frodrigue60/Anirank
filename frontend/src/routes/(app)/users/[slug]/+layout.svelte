@@ -3,6 +3,7 @@
   import { page } from "$app/state";
   import { authState, setUser } from "$lib/state/auth.svelte";
   import { goto } from "$app/navigation";
+  import { toastState } from "$lib/state/toast.svelte";
   import api from "$lib/api";
   import XPProgressBar from "$lib/components/XPProgressBar.svelte";
   import UserReportModal from "$lib/components/UserReportModal.svelte";
@@ -12,6 +13,13 @@
   import UserPlus from "lucide-svelte/icons/user-plus";
   import Flag from "lucide-svelte/icons/flag";
   import UserX from "lucide-svelte/icons/user-x";
+  import Share2 from "lucide-svelte/icons/share-2";
+  import LibraryMusic from "lucide-svelte/icons/library";
+  import Star from "lucide-svelte/icons/star";
+  import Clapperboard from "lucide-svelte/icons/clapperboard";
+  import ListMusic from "lucide-svelte/icons/list-music";
+  import Calendar from "lucide-svelte/icons/calendar";
+  import Construction from "lucide-svelte/icons/construction";
   import OptimizedImage from "$lib/components/OptimizedImage.svelte";
 
   let { data, children } = $props();
@@ -25,14 +33,11 @@
   let isProcessing = $state(false);
   let showReportModal = $state(false);
 
-  // Sync state if data changes
   $effect(() => {
     isFollowing = data.profile?.is_following || false;
     followersCount = data.profile?.followers_count || 0;
     followingCount = data.profile?.following_count || 0;
 
-    // Sync authState if this is the logged-in user's profile
-    // This handles cases like daily login XP awarded during profile retrieval
     if (
       data.profile &&
       authState.user &&
@@ -74,7 +79,49 @@
     }
   }
 
-  // Reactive URLs that favor authState when viewing own profile
+  async function handleShare() {
+    const url = `${page.url.origin}/users/${data.profile.slug}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: `${data.profile.name} on AniRank`,
+          url,
+        });
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      toastState.addToast("Profile link copied", "success");
+    } catch (e: any) {
+      if (e?.name === "AbortError") return;
+      try {
+        await navigator.clipboard.writeText(url);
+        toastState.addToast("Profile link copied", "success");
+      } catch {
+        toastState.addToast("Could not share profile", "error");
+      }
+    }
+  }
+
+  function memberSinceLabel(createdAt: string | undefined) {
+    if (!createdAt) return null;
+    const d = new Date(createdAt);
+    if (Number.isNaN(d.getTime())) return null;
+    return d.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+    });
+  }
+
+  function tabActive(path: string) {
+    return page.url.pathname === path;
+  }
+
+  function tabClass(active: boolean) {
+    return active
+      ? "bg-primary text-white"
+      : "bg-surface-container text-on-surface-variant/80 hover:bg-surface-highest hover:text-on-surface";
+  }
+
   const isOwnProfile = $derived(
     authState.user && authState.user.uuid === data.profile?.uuid,
   );
@@ -91,7 +138,6 @@
     isOwnProfile ? authState.user?.banner_sources : data.profile?.banner_sources,
   );
 
-  // Quadratic XP formula: Min XP = Level * (Level - 1) / 2 * 1000
   const profileXP = $derived(
     isOwnProfile ? (authState.user?.xp ?? 0) : (data.profile?.xp ?? 0),
   );
@@ -101,7 +147,7 @@
   const accentColor = $derived(
     (isOwnProfile
       ? authState.user?.profile_color
-      : data.profile?.profile_color) || "#3db4f2",
+      : data.profile?.profile_color) || "#683bc9",
   );
 
   const currentLevelMinXP = $derived(
@@ -110,246 +156,409 @@
   const nextLevelXP = $derived(
     (((profileLevel + 1) * profileLevel) / 2) * 1000,
   );
+
+  const memberSince = $derived(memberSinceLabel(data.profile?.created_at));
+  const ratingsCount = $derived(data.profile?.ratings_count ?? 0);
+  const playlistsAndFavorites = $derived(
+    (data.playlistsCount ?? 0) + (data.favoritesCount ?? 0),
+  );
+
+  const basePath = $derived(`/users/${data.profile?.slug}`);
 </script>
 
 {#if data.profile}
-  <div>
-    <div class="relative h-[200px] md:h-[300px] w-full overflow-hidden">
-      <div
-        class="absolute inset-0 bg-linear-to-t from-surface-container via-transparent to-transparent z-10"
-      ></div>
-      <!-- svelte-ignore a11y_img_redundant_alt -->
-      {#if bannerUrl}
-        <OptimizedImage
-          src={bannerUrl}
-          sources={bannerSources}
-          alt="Cover Image"
-          class="w-full h-full object-cover"
-          sizes="100vw"
-        />
-      {:else}
-        <OptimizedImage
-          src="/images/placeholders/default-banner.svg"
-          alt="Cover Image"
-          class="w-full h-full object-cover"
-          sizes="100vw"
-        />
-      {/if}
-      <div
-        class="absolute bottom-0 left-0 w-full px-6 md:px-20 pb-8 z-20 flex flex-col md:flex-row items-end gap-6"
-      >
-        <div class="flex w-full gap-6">
-          <div class="relative group">
-            <div class="size-32 md:size-44 rounded-full overflow-hidden">
+  <div class="w-full bg-surface">
+    <!-- Banner -->
+    <section class="relative w-full overflow-hidden bg-surface-low">
+      <div class="relative w-full h-48 sm:h-64 md:h-80">
+        {#if bannerUrl}
+          <OptimizedImage
+            src={bannerUrl}
+            sources={bannerSources}
+            alt=""
+            class="w-full h-full object-cover"
+            sizes="100vw"
+          />
+        {:else}
+          <OptimizedImage
+            src="/images/placeholders/default-banner.svg"
+            alt=""
+            class="w-full h-full object-cover"
+            sizes="100vw"
+          />
+        {/if}
+        <div
+          class="absolute inset-0 bg-linear-to-b from-surface/30 via-surface/50 to-surface"
+        ></div>
+      </div>
+
+      <div class="max-w-7xl mx-auto px-6 lg:px-12 -mt-20 sm:-mt-24 relative z-10 pb-6">
+        <div
+          class="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-6"
+        >
+          <div
+            class="flex flex-col sm:flex-row items-center sm:items-end gap-5 text-center sm:text-left"
+          >
+            <div
+              class="size-28 sm:size-32 md:size-36 rounded-full overflow-hidden bg-surface-highest shrink-0 ring-4 ring-surface"
+            >
               {#if avatarUrl}
                 <OptimizedImage
                   src={avatarUrl}
                   sources={avatarSources}
-                  alt="Profile"
+                  alt="{data.profile.name}'s avatar"
                   class="w-full h-full object-cover"
-                  sizes="(max-width: 768px) 128px, 176px"
+                  sizes="(max-width: 640px) 112px, 144px"
                 />
               {:else}
                 <OptimizedImage
                   src="/images/placeholders/default.svg"
-                  alt="Profile"
+                  alt="{data.profile.name}'s avatar"
                   class="w-full h-full object-cover"
-                  sizes="(max-width: 768px) 128px, 176px"
+                  sizes="(max-width: 640px) 112px, 144px"
                 />
               {/if}
             </div>
+
+            <div class="flex flex-col gap-2 min-w-0">
+              <div
+                class="flex flex-wrap items-center justify-center sm:justify-start gap-2"
+              >
+                <h1
+                  class="text-3xl sm:text-4xl font-black tracking-tight text-on-surface"
+                >
+                  {data.profile.name}
+                </h1>
+                {#if data.profile.badges?.length}
+                  {#each data.profile.badges.slice(0, 3) as badge}
+                    <span
+                      class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm bg-surface-container text-[11px] font-bold uppercase tracking-wider text-on-surface"
+                      title={badge.description || badge.name}
+                    >
+                      <OptimizedImage
+                        src={badge.icon_url || badge.image_url}
+                        sources={badge.icon_sources}
+                        alt=""
+                        class="w-3.5 h-3.5"
+                        sizes="14px"
+                      />
+                      {badge.name}
+                    </span>
+                  {/each}
+                {/if}
+              </div>
+
+              <p
+                class="text-sm text-on-surface-variant/80 flex flex-wrap items-center justify-center sm:justify-start gap-x-2 gap-y-1"
+              >
+                <span>
+                  <span class="font-bold text-on-surface">{followersCount}</span>
+                  followers
+                </span>
+                <span class="text-outline-variant" aria-hidden="true">·</span>
+                <span>
+                  <span class="font-bold text-on-surface">{followingCount}</span>
+                  following
+                </span>
+                {#if memberSince}
+                  <span class="text-outline-variant" aria-hidden="true">·</span>
+                  <span class="inline-flex items-center gap-1">
+                    <Calendar size={14} class="text-primary shrink-0" aria-hidden="true" />
+                    Member since {memberSince}
+                  </span>
+                {/if}
+              </p>
+
+              <div class="mt-1 max-w-md mx-auto sm:mx-0 w-full">
+                <XPProgressBar
+                  xp={profileXP}
+                  level={profileLevel}
+                  {nextLevelXP}
+                  {currentLevelMinXP}
+                  {accentColor}
+                />
+              </div>
+            </div>
           </div>
 
-          <div class="flex-1 mb-1">
-            <h1
-              class="text-3xl md:text-5xl font-black text-on-surface tracking-tighter"
-            >
-              {data.profile.name}
-            </h1>
-            <p class="text-on-surface-variant font-medium text-lg mt-1">
-              followers {followersCount} | following {followingCount}
-            </p>
-            <div class="mt-4">
-              <XPProgressBar
-                xp={profileXP}
-                level={profileLevel}
-                {nextLevelXP}
-                {currentLevelMinXP}
-                {accentColor}
-              />
-            </div>
+          <div
+            class="flex flex-wrap items-center justify-center sm:justify-end gap-2"
+          >
+            {#if isOwnProfile}
+              <a
+                href="/settings"
+                class="inline-flex items-center justify-center gap-2 min-h-11 px-5 rounded-md bg-surface-highest text-on-surface font-bold text-sm hover:bg-surface-container transition-colors"
+                title="Edit profile"
+                aria-label="Edit profile"
+              >
+                <Settings size={16} aria-hidden="true" />
+                Edit Profile
+              </a>
+            {:else}
+              <button
+                type="button"
+                onclick={handleFollow}
+                disabled={isProcessing}
+                class="inline-flex items-center justify-center gap-2 min-h-11 px-5 rounded-md font-bold text-sm transition-colors disabled:opacity-50 {isFollowing
+                  ? 'bg-surface-highest text-on-surface hover:bg-surface-container'
+                  : 'bg-primary text-white hover:bg-primary-container'}"
+                title={isFollowing ? "Unfollow" : "Follow"}
+                aria-label={isFollowing ? "Unfollow user" : "Follow user"}
+              >
+                {#if isProcessing}
+                  <RefreshCw size={16} class="animate-spin" aria-hidden="true" />
+                {:else if isFollowing}
+                  <UserMinus size={16} aria-hidden="true" />
+                {:else}
+                  <UserPlus size={16} aria-hidden="true" />
+                {/if}
+                {isFollowing ? "Unfollow" : "Follow"}
+              </button>
+            {/if}
 
-            <div class="flex flex-col text-sm text-on-surface-variant mt-4">
-              {#if data.profile.badges}
-                <div class="flex gap-1 items-center">
-                  {#each data.profile.badges as badge}
-                    <OptimizedImage
-                      src={badge.icon_url || badge.image_url}
-                      sources={badge.icon_sources}
-                      alt={badge.name}
-                      class="w-5 h-5"
-                      sizes="20px"
-                    />
-                  {/each}
-                </div>
+            <button
+              type="button"
+              onclick={handleShare}
+              class="inline-flex items-center justify-center size-11 rounded-md bg-surface-highest text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors"
+              title="Share profile"
+              aria-label="Share profile"
+            >
+              <Share2 size={18} aria-hidden="true" />
+            </button>
+
+            {#if !isOwnProfile}
+              {#if authState.isAuthenticated}
+                <button
+                  type="button"
+                  onclick={() => (showReportModal = true)}
+                  class="inline-flex items-center justify-center size-11 rounded-md bg-surface-highest text-on-surface-variant hover:text-red-500 hover:bg-surface-container transition-colors"
+                  title="Report user"
+                  aria-label="Report user"
+                >
+                  <Flag size={18} aria-hidden="true" />
+                </button>
+              {:else}
+                <a
+                  href="/login?redirect={encodeURIComponent(page.url.pathname)}"
+                  class="inline-flex items-center justify-center size-11 rounded-md bg-surface-highest text-on-surface-variant hover:text-red-500 hover:bg-surface-container transition-colors"
+                  title="Report user"
+                  aria-label="Report user"
+                >
+                  <Flag size={18} aria-hidden="true" />
+                </a>
               {/if}
-            </div>
+            {/if}
           </div>
         </div>
-        <div class="hidden md:flex gap-3 mb-2">
-          {#if isOwnProfile}
-            <a
-              href="/settings"
-              class="flex items-center justify-center gap-2 px-6 h-11 rounded-sm bg-surface-highest/50 hover:bg-surface-highest text-on-surface border border-on-surface-variant/10 transition-all font-bold text-sm"
-            >
-              <Settings size={14} />
-              Edit Profile
-            </a>
-          {:else}
-            <button
-              onclick={handleFollow}
-              disabled={isProcessing}
-              class="flex items-center justify-center gap-2 px-8 h-11 rounded-sm font-bold text-sm transition-all shadow-lg {isFollowing
-                ? 'bg-surface-highest text-on-surface hover:bg-surface-highest/80'
-                : 'text-white hover:opacity-90 shadow-lg'}"
-              style={!isFollowing
-                ? `background-color: ${accentColor}; box-shadow: 0 10px 20px ${accentColor}33`
-                : ""}
-            >
-              {#if isProcessing}
-                <RefreshCw size={14} class="animate-spin" />
 
-              {:else}
-                {#if isFollowing}
-                  <UserMinus size={14} />
+        <!-- Stats row -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div
+            class="bg-surface-container rounded-md p-4 flex items-center justify-between gap-3"
+          >
+            <div class="min-w-0">
+              <span
+                class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/80"
+              >
+                Themes Rated
+              </span>
+              <div class="text-2xl font-black text-on-surface mt-1 tabular-nums">
+                {ratingsCount.toLocaleString()}
+              </div>
+            </div>
+            <div
+              class="size-10 rounded-md bg-surface-highest flex items-center justify-center text-primary shrink-0"
+              aria-hidden="true"
+            >
+              <LibraryMusic size={20} />
+            </div>
+          </div>
+
+          <div
+            class="relative bg-surface-low rounded-md p-4 flex items-center justify-between gap-3 border border-dashed border-outline-variant"
+          >
+            <span
+              class="absolute top-2 right-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm bg-surface-highest text-[9px] font-black uppercase tracking-wider text-on-surface-variant"
+            >
+              <Construction size={10} aria-hidden="true" />
+              WIP
+            </span>
+            <div class="min-w-0 pr-8">
+              <span
+                class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/80"
+              >
+                Average Score
+              </span>
+              <div class="text-2xl font-black text-on-surface-variant/40 mt-1">
+                —.—
+              </div>
+              <p class="text-[11px] text-on-surface-variant/70 mt-0.5">
+                Needs score aggregate API
+              </p>
+            </div>
+            <div
+              class="size-10 rounded-md bg-surface-highest flex items-center justify-center text-on-surface-variant/50 shrink-0"
+              aria-hidden="true"
+            >
+              <Star size={20} />
+            </div>
+          </div>
+
+          <div
+            class="relative bg-surface-low rounded-md p-4 flex items-center justify-between gap-3 border border-dashed border-outline-variant"
+          >
+            <span
+              class="absolute top-2 right-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm bg-surface-highest text-[9px] font-black uppercase tracking-wider text-on-surface-variant"
+            >
+              <Construction size={10} aria-hidden="true" />
+              WIP
+            </span>
+            <div class="min-w-0 pr-8">
+              <span
+                class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/80"
+              >
+                Animes in List
+              </span>
+              <div class="text-2xl font-black text-on-surface-variant/40 mt-1">
+                —
+              </div>
+              <p class="text-[11px] text-on-surface-variant/70 mt-0.5">
+                {#if data.profile.anilist_id}
+                  AniList linked — count API pending
                 {:else}
-                  <UserPlus size={14} />
+                  Link AniList or add list API
                 {/if}
+              </p>
+            </div>
+            <div
+              class="size-10 rounded-md bg-surface-highest flex items-center justify-center text-on-surface-variant/50 shrink-0"
+              aria-hidden="true"
+            >
+              <Clapperboard size={20} />
+            </div>
+          </div>
 
-              {/if}
-              {isFollowing ? "Unfollow" : "Follow"}
-            </button>
-            {#if authState.isAuthenticated}
-              <button
-                onclick={() => (showReportModal = true)}
-                class="flex items-center justify-center size-11 rounded-sm bg-red-500/50 hover:bg-red-500 border border-on-surface-variant/10 text-on-surface transition-all"
-                title="Report User"
+          <div
+            class="bg-surface-container rounded-md p-4 flex items-center justify-between gap-3"
+          >
+            <div class="min-w-0">
+              <span
+                class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/80"
               >
-                <Flag size={20} />
-              </button>
-            {:else}
-              <a
-                href="/login"
-                class="flex items-center justify-center size-11 rounded-sm bg-red-500/50 hover:bg-red-500 border border-on-surface-variant/10 text-on-surface transition-all"
-              >
-                <Flag size={14} />
-              </a>
-            {/if}
-          {/if}
+                Playlists & Favorites
+              </span>
+              <div class="text-2xl font-black text-on-surface mt-1 tabular-nums">
+                {playlistsAndFavorites.toLocaleString()}
+              </div>
+              <p class="text-[11px] text-on-surface-variant/80 mt-0.5 truncate">
+                {(data.playlistsCount ?? 0).toLocaleString()} playlists · {(data.favoritesCount ?? 0).toLocaleString()} favorites
+              </p>
+            </div>
+            <div
+              class="size-10 rounded-md bg-surface-highest flex items-center justify-center text-primary shrink-0"
+              aria-hidden="true"
+            >
+              <ListMusic size={20} />
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </section>
 
-    <!-- User Report Modal -->
     <UserReportModal
       show={showReportModal}
       reportedUser={data.profile}
       onClose={() => (showReportModal = false)}
     />
 
-    <!-- content -->
-    <div class="max-w-7xl mx-auto px-6 py-6">
-      <div class="py-6 border-b border-primary/10 mb-8">
-        <div class="flex gap-8 overflow-x-auto no-scrollbar">
+    <!-- Sticky tabs -->
+    <nav
+      class="sticky top-16 z-40 bg-surface border-b border-outline-variant/20"
+      aria-label="Profile sections"
+    >
+      <div
+        class="max-w-7xl mx-auto px-6 lg:px-12 flex items-center gap-2 overflow-x-auto py-3 no-scrollbar"
+      >
+        <a
+          href={basePath}
+          class="px-4 py-2 rounded-md font-semibold text-xs tracking-tight whitespace-nowrap transition-colors {tabClass(
+            tabActive(basePath),
+          )}"
+        >
+          Overview
+        </a>
+        {#if data.profile.anilist_id}
           <a
-            href={`/users/${data.profile.slug}`}
-            class="pb-4 font-bold transition-all border-b-2 {page.url
-              .pathname === `/users/${data.profile.slug}`
-              ? ''
-              : 'border-transparent text-on-surface-variant hover:text-on-surface'}"
-            style={page.url.pathname === `/users/${data.profile.slug}`
-              ? `border-color: ${accentColor}; color: ${accentColor}`
-              : ""}>Overview</a
+            href="{basePath}/anime-list"
+            class="px-4 py-2 rounded-md font-semibold text-xs tracking-tight whitespace-nowrap transition-colors {tabClass(
+              tabActive(`${basePath}/anime-list`),
+            )}"
           >
-          {#if data.profile.anilist_id}
-            <a
-              href={`/users/${data.profile.slug}/anime-list`}
-              class="pb-4 font-bold transition-all border-b-2 {page.url
-                .pathname === `/users/${data.profile.slug}/anime-list`
-                ? ''
-                : 'border-transparent text-on-surface-variant hover:text-on-surface'}"
-              style={page.url.pathname ===
-              `/users/${data.profile.slug}/anime-list`
-                ? `border-color: ${accentColor}; color: ${accentColor}`
-                : ""}>Anime List</a
-            >
-          {/if}
-          <a
-            href={`/users/${data.profile.slug}/playlists`}
-            class="pb-4 font-bold transition-all border-b-2 {page.url
-              .pathname === `/users/${data.profile.slug}/playlists`
-              ? ''
-              : 'border-transparent text-on-surface-variant hover:text-on-surface'}"
-            style={page.url.pathname === `/users/${data.profile.slug}/playlists`
-              ? `border-color: ${accentColor}; color: ${accentColor}`
-              : ""}>Playlists</a
-          >
-          <a
-            href={`/users/${data.profile.slug}/favorites`}
-            class="pb-4 font-bold transition-all border-b-2 {page.url
-              .pathname === `/users/${data.profile.slug}/favorites`
-              ? ''
-              : 'border-transparent text-on-surface-variant hover:text-on-surface'}"
-            style={page.url.pathname === `/users/${data.profile.slug}/favorites`
-              ? `border-color: ${accentColor}; color: ${accentColor}`
-              : ""}>Favorites</a
-          >
-          <a
-            href={`/users/${data.profile.slug}/artists`}
-            class="pb-4 font-bold transition-all border-b-2 {page.url
-              .pathname === `/users/${data.profile.slug}/artists`
-              ? ''
-              : 'border-transparent text-on-surface-variant hover:text-on-surface'}"
-            style={page.url.pathname === `/users/${data.profile.slug}/artists`
-              ? `border-color: ${accentColor}; color: ${accentColor}`
-              : ""}>Artists</a
-          >
-          <a
-            href={`/users/${data.profile.slug}/followers`}
-            class="pb-4 font-bold transition-all border-b-2 {page.url
-              .pathname === `/users/${data.profile.slug}/followers`
-              ? ''
-              : 'border-transparent text-on-surface-variant hover:text-on-surface'} flex gap-2 items-center"
-            style={page.url.pathname === `/users/${data.profile.slug}/followers`
-              ? `border-color: ${accentColor}; color: ${accentColor}`
-              : ""}
-          >
-            Followers
-            <span
-              class="text-[10px] bg-surface-highest px-2 py-0.5 rounded-full font-bold text-on-surface-variant"
-              >{followersCount}</span
-            >
+            Anime List
           </a>
-          <a
-            href={`/users/${data.profile.slug}/following`}
-            class="pb-4 font-bold transition-all border-b-2 {page.url
-              .pathname === `/users/${data.profile.slug}/following`
-              ? ''
-              : 'border-transparent text-on-surface-variant hover:text-on-surface'} flex gap-2 items-center"
-            style={page.url.pathname === `/users/${data.profile.slug}/following`
-              ? `border-color: ${accentColor}; color: ${accentColor}`
-              : ""}
+        {/if}
+        <a
+          href="{basePath}/playlists"
+          class="px-4 py-2 rounded-md font-semibold text-xs tracking-tight whitespace-nowrap transition-colors {tabClass(
+            tabActive(`${basePath}/playlists`),
+          )}"
+        >
+          Playlists
+        </a>
+        <a
+          href="{basePath}/favorites"
+          class="px-4 py-2 rounded-md font-semibold text-xs tracking-tight whitespace-nowrap transition-colors {tabClass(
+            tabActive(`${basePath}/favorites`),
+          )}"
+        >
+          Favorites
+        </a>
+        <a
+          href="{basePath}/artists"
+          class="px-4 py-2 rounded-md font-semibold text-xs tracking-tight whitespace-nowrap transition-colors {tabClass(
+            tabActive(`${basePath}/artists`),
+          )}"
+        >
+          Artists
+        </a>
+        <a
+          href="{basePath}/followers"
+          class="px-4 py-2 rounded-md font-semibold text-xs tracking-tight whitespace-nowrap transition-colors inline-flex items-center gap-2 {tabClass(
+            tabActive(`${basePath}/followers`),
+          )}"
+        >
+          Followers
+          <span
+            class="text-[10px] px-1.5 py-0.5 rounded-sm font-bold {tabActive(
+              `${basePath}/followers`,
+            )
+              ? 'bg-primary-container text-white'
+              : 'bg-surface-highest text-on-surface-variant'}"
           >
-            Following
-            <span
-              class="text-[10px] bg-surface-highest px-2 py-0.5 rounded-full font-bold text-on-surface-variant"
-              >{followingCount}</span
-            >
-          </a>
-        </div>
+            {followersCount}
+          </span>
+        </a>
+        <a
+          href="{basePath}/following"
+          class="px-4 py-2 rounded-md font-semibold text-xs tracking-tight whitespace-nowrap transition-colors inline-flex items-center gap-2 {tabClass(
+            tabActive(`${basePath}/following`),
+          )}"
+        >
+          Following
+          <span
+            class="text-[10px] px-1.5 py-0.5 rounded-sm font-bold {tabActive(
+              `${basePath}/following`,
+            )
+              ? 'bg-primary-container text-white'
+              : 'bg-surface-highest text-on-surface-variant'}"
+          >
+            {followingCount}
+          </span>
+        </a>
       </div>
+    </nav>
 
-      <!-- Render the active sub-route here -->
+    <div class="max-w-7xl mx-auto px-6 lg:px-12 py-8">
       {@render children()}
     </div>
   </div>
@@ -359,17 +568,17 @@
     in:fade
   >
     <div
-      class="w-24 h-24 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 mb-6"
+      class="w-24 h-24 rounded-full bg-surface-container flex items-center justify-center text-red-500 mb-6"
     >
-      <UserX size={48} />
+      <UserX size={48} aria-hidden="true" />
     </div>
     <h1 class="text-3xl font-black text-on-surface mb-2">User Not Found</h1>
-    <p class="text-on-surface-variant max-w-md">
+    <p class="text-on-surface-variant/80 max-w-md">
       The profile you're looking for doesn't exist or has been removed.
     </p>
     <a
       href="/"
-      class="mt-8 bg-primary hover:bg-primary/80 text-white px-8 py-3.5 rounded-sm font-bold text-sm transition-all shadow-lg shadow-primary/20"
+      class="mt-8 bg-primary hover:bg-primary-container text-white px-8 py-3.5 rounded-md font-bold text-sm transition-colors"
     >
       Back to Home
     </a>

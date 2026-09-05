@@ -4,12 +4,15 @@ export type AutoAdvance = "never" | "all_rated";
 export type RateStatus = "lobby" | "waiting" | "rating" | "finished";
 export type SourceMode = "manual" | "seasonal_pool";
 export type SeasonalPoolThemeType = "all" | "OP" | "ED";
+/** Anime format slug from taxonomy, or "all". */
+export type SeasonalPoolFormat = string;
 
 /** Host → server: load happens automatically on start_session when source_mode is seasonal_pool. */
 export interface SeasonalPoolRequest {
 	year: string;
 	season: string;
 	theme_type: SeasonalPoolThemeType;
+	format?: SeasonalPoolFormat;
 	pool_limit?: number;
 }
 
@@ -25,6 +28,7 @@ export interface RateConfig {
 	pool_year?: string;
 	pool_season?: string;
 	pool_theme_type?: SeasonalPoolThemeType;
+	pool_format?: SeasonalPoolFormat;
 	pool_limit?: number;
 }
 

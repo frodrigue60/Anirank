@@ -18,6 +18,8 @@ const (
 	PoolThemeOP  = "OP"
 	PoolThemeED  = "ED"
 
+	PoolFormatAll = "all"
+
 	DefaultQueueLimitPerUser = 3
 	MinQueueLimitPerUser     = 1
 	MaxQueueLimitPerUser     = 10
@@ -80,10 +82,15 @@ func sanitizeConfig(cfg *domain.RateConfig) {
 		default:
 			cfg.PoolThemeType = PoolThemeAll
 		}
+		// Anime format slug from taxonomy (TV, TV_SHORT, MOVIE, ONA, …). "all"/"any"/"" = no filter.
+		if cfg.PoolFormat == "" || cfg.PoolFormat == "any" {
+			cfg.PoolFormat = PoolFormatAll
+		}
 	} else {
 		cfg.PoolYear = ""
 		cfg.PoolSeason = ""
 		cfg.PoolThemeType = ""
+		cfg.PoolFormat = ""
 		cfg.PoolLimit = 0
 	}
 }

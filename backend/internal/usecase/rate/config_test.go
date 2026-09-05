@@ -102,8 +102,30 @@ func TestSanitizeSeasonalPool(t *testing.T) {
 		PoolLimit:     20,
 	}
 	sanitizeConfig(&manual)
-	if manual.PoolYear != "" || manual.PoolSeason != "" || manual.PoolLimit != 0 {
+	if manual.PoolYear != "" || manual.PoolSeason != "" || manual.PoolLimit != 0 || manual.PoolFormat != "" {
 		t.Fatalf("manual mode should clear pool fields: %+v", manual)
+	}
+
+	withFormat := domain.RateConfig{
+		SourceMode: SourceModeSeasonalPool,
+		PoolYear:   "2026",
+		PoolSeason: "summer",
+		PoolFormat: "TV",
+	}
+	sanitizeConfig(&withFormat)
+	if withFormat.PoolFormat != "TV" {
+		t.Fatalf("expected PoolFormat TV, got %q", withFormat.PoolFormat)
+	}
+
+	emptyFormat := domain.RateConfig{
+		SourceMode: SourceModeSeasonalPool,
+		PoolYear:   "2026",
+		PoolSeason: "summer",
+		PoolFormat: "",
+	}
+	sanitizeConfig(&emptyFormat)
+	if emptyFormat.PoolFormat != PoolFormatAll {
+		t.Fatalf("expected PoolFormat all, got %q", emptyFormat.PoolFormat)
 	}
 }
 

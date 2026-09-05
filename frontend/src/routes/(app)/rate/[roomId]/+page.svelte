@@ -177,16 +177,22 @@
     if (!seasonalActive || !config) return "";
     const type =
       config.pool_theme_type && config.pool_theme_type !== "all" ? ` · ${config.pool_theme_type}` : "";
-    return `${config.pool_season || ""} ${config.pool_year || ""}${type}`.trim();
+    const format =
+      config.pool_format && config.pool_format !== "all" ? ` · ${config.pool_format}` : "";
+    return `${config.pool_season || ""} ${config.pool_year || ""}${type}${format}`.trim();
   });
 
   let editSourceMode = $state<SourceMode>("manual");
   let editPoolYear = $state("");
   let editPoolSeason = $state("");
   let editPoolThemeType = $state<SeasonalPoolThemeType>("all");
+  let editPoolFormat = $state("all");
   let editPoolLimit = $state<number | "">("");
   let sortedYears = $derived(
     [...configState.years].sort((a, b) => Number(b.slug) - Number(a.slug) || b.name.localeCompare(a.name))
+  );
+  let formatOptions = $derived(
+    configState.formats.map((f) => ({ value: f.slug, label: f.name })),
   );
 
   $effect(() => {
@@ -195,6 +201,7 @@
       editPoolYear = config.pool_year || "";
       editPoolSeason = config.pool_season || "";
       editPoolThemeType = (config.pool_theme_type as SeasonalPoolThemeType) || "all";
+      editPoolFormat = config.pool_format || "all";
       editPoolLimit = config.pool_limit && config.pool_limit > 0 ? config.pool_limit : "";
     }
   });
@@ -441,6 +448,7 @@
       pool_year: editSourceMode === "seasonal_pool" ? editPoolYear : "",
       pool_season: editSourceMode === "seasonal_pool" ? editPoolSeason : "",
       pool_theme_type: editSourceMode === "seasonal_pool" ? editPoolThemeType : "all",
+      pool_format: editSourceMode === "seasonal_pool" ? editPoolFormat : "all",
       pool_limit:
         editSourceMode === "seasonal_pool" && typeof editPoolLimit === "number" && editPoolLimit > 0
           ? editPoolLimit
@@ -671,6 +679,15 @@
                       <option value="all">ALL</option>
                       <option value="OP">OP</option>
                       <option value="ED">ED</option>
+                    </select>
+                  </label>
+                  <label class="block space-y-1">
+                    <span class="text-xs font-bold text-on-surface-variant">Series format</span>
+                    <select bind:value={editPoolFormat} class="w-full h-10 bg-surface border border-outline-variant rounded-sm px-2 text-sm">
+                      <option value="all">All formats</option>
+                      {#each formatOptions as fmt}
+                        <option value={fmt.value}>{fmt.label}</option>
+                      {/each}
                     </select>
                   </label>
                   <label class="block space-y-1">

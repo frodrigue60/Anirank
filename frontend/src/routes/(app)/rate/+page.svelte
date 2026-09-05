@@ -36,6 +36,7 @@
     pool_year?: string;
     pool_season?: string;
     pool_theme_type?: string;
+    pool_format?: string;
   }
 
   let rooms = $state<RoomInfo[]>([]);
@@ -58,6 +59,7 @@
   let poolYear = $state("");
   let poolSeason = $state("");
   let poolThemeType = $state<SeasonalPoolThemeType>("all");
+  let poolFormat = $state("all");
   let poolLimit = $state<number | "">("");
 
   let joinCode = $state("");
@@ -65,6 +67,9 @@
 
   let sortedYears = $derived(
     [...configState.years].sort((a, b) => Number(b.slug) - Number(a.slug) || b.name.localeCompare(a.name))
+  );
+  let formatOptions = $derived(
+    configState.formats.map((f) => ({ value: f.slug, label: f.name })),
   );
 
   function generateUUID(): string {
@@ -158,6 +163,7 @@
                 pool_year: poolYear,
                 pool_season: poolSeason,
                 pool_theme_type: poolThemeType,
+                pool_format: poolFormat,
                 pool_limit: typeof poolLimit === "number" && poolLimit > 0 ? poolLimit : 0,
               }
             : {}),
@@ -199,7 +205,8 @@
   function sourceLabel(room: RoomInfo) {
     if (room.source_mode === "seasonal_pool") {
       const type = room.pool_theme_type && room.pool_theme_type !== "all" ? ` · ${room.pool_theme_type}` : "";
-      return `${room.pool_season || "season"} ${room.pool_year || ""}${type}`.trim();
+      const format = room.pool_format && room.pool_format !== "all" ? ` · ${room.pool_format}` : "";
+      return `${room.pool_season || "season"} ${room.pool_year || ""}${type}${format}`.trim();
     }
     return queueModeLabel(room.queue_mode);
   }
@@ -379,6 +386,15 @@
             <option value="all">ALL</option>
             <option value="OP">OP</option>
             <option value="ED">ED</option>
+          </select>
+        </label>
+        <label class="block space-y-1">
+          <span class="text-xs font-bold text-on-surface-variant uppercase tracking-wide">Series format</span>
+          <select bind:value={poolFormat} class="w-full h-11 bg-surface border border-outline-variant rounded-sm px-3 text-sm">
+            <option value="all">All formats</option>
+            {#each formatOptions as fmt}
+              <option value={fmt.value}>{fmt.label}</option>
+            {/each}
           </select>
         </label>
         <label class="block space-y-1">

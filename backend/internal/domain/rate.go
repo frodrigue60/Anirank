@@ -16,6 +16,7 @@ type RateConfig struct {
 	PoolYear      string `json:"pool_year,omitempty"`       // years.slug
 	PoolSeason    string `json:"pool_season,omitempty"`     // seasons.slug
 	PoolThemeType string `json:"pool_theme_type,omitempty"` // "all" | "OP" | "ED"
+	PoolFormat    string `json:"pool_format,omitempty"`     // "all" | formats.slug (TV, MOVIE, ONA, …)
 	PoolLimit     int    `json:"pool_limit,omitempty"`
 }
 
@@ -64,4 +65,5 @@ type RateRoomInfo struct {
 	PoolYear       string `json:"pool_year,omitempty"`
 	PoolSeason     string `json:"pool_season,omitempty"`
 	PoolThemeType  string `json:"pool_theme_type,omitempty"`
+	PoolFormat     string `json:"pool_format,omitempty"`
 }

@@ -1053,6 +1053,7 @@ func (r *LobbyRoom) GetRoomInfo() domain.RateRoomInfo {
 		PoolYear:       r.Config.PoolYear,
 		PoolSeason:     r.Config.PoolSeason,
 		PoolThemeType:  r.Config.PoolThemeType,
+		PoolFormat:     r.Config.PoolFormat,
 	}
 }
 
@@ -1061,6 +1062,7 @@ func (r *LobbyRoom) loadSeasonalPoolAsync() {
 	year := r.Config.PoolYear
 	season := r.Config.PoolSeason
 	themeType := r.Config.PoolThemeType
+	format := r.Config.PoolFormat
 	limit := r.Config.PoolLimit
 	r.mu.RUnlock()
 
@@ -1075,6 +1077,9 @@ func (r *LobbyRoom) loadSeasonalPoolAsync() {
 		}
 		if themeType != "" && themeType != PoolThemeAll {
 			filters.Type = themeType
+		}
+		if format != "" && format != PoolFormatAll {
+			filters.Format = format
 		}
 		if limit <= 0 {
 			limit = UnlimitedPoolFetchLimit
@@ -1161,6 +1166,9 @@ func (r *LobbyRoom) handlePoolLoaded(ev *PoolLoadedEvent) {
 	label := fmt.Sprintf("%s %s", cfg.PoolSeason, cfg.PoolYear)
 	if cfg.PoolThemeType != "" && cfg.PoolThemeType != PoolThemeAll {
 		label = fmt.Sprintf("%s (%s)", label, cfg.PoolThemeType)
+	}
+	if cfg.PoolFormat != "" && cfg.PoolFormat != PoolFormatAll {
+		label = fmt.Sprintf("%s · %s", label, cfg.PoolFormat)
 	}
 	r.broadcastPersonalizedState()
 	r.broadcast("chat_message", map[string]interface{}{

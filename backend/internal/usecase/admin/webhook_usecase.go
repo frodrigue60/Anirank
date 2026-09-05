@@ -123,7 +123,7 @@ func (u *webhookUsecase) triggerForAnime(ctx context.Context, w *domain.Webhook,
 		baseURL = "http://localhost:3000"
 	}
 
-	animeURL := fmt.Sprintf("%s/anime/%s", baseURL, anime.Slug)
+	animeURL := fmt.Sprintf("%s/animes/%s", baseURL, anime.Slug)
 	
 	description := "Check out the latest themes available on AniRank!"
 	if anime.Description != nil && *anime.Description != "" {
@@ -218,7 +218,7 @@ func (u *webhookUsecase) triggerForSong(ctx context.Context, w *domain.Webhook, 
 		baseURL = "http://localhost:3000"
 	}
 
-	songURL := fmt.Sprintf("%s/anime/%s/%s", baseURL, anime.Slug, song.Slug)
+	songURL := fmt.Sprintf("%s/animes/%s/%s", baseURL, anime.Slug, song.Slug)
 
 	var coverURL string
 	if anime.Cover != nil {

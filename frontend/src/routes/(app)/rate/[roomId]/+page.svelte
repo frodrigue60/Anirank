@@ -46,7 +46,16 @@
   let queue = $derived(roomState?.queue || []);
   let ratingData = $derived(roomState?.rating_data);
   let mySessionId = $derived(roomState?.my_session_id || "");
-  let me = $derived(players.find((p) => p.session_id === mySessionId) as RatePlayer | undefined);
+  let me = $derived.by(() => {
+    const bySession = players.find((p) => p.session_id === mySessionId);
+    if (bySession && !bySession.offline) return bySession;
+    const uuid = authState.user?.uuid;
+    if (uuid) {
+      const byUser = players.find((p) => p.user_uuid === uuid && !p.offline);
+      if (byUser) return byUser;
+    }
+    return bySession;
+  });
   let isHost = $derived(!!me?.is_host);
   let playersVersion = $state(0);
 

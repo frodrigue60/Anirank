@@ -128,4 +128,27 @@ describe("room state reducers", () => {
 		expect(next?.rating_data?.session_avg).toBe(80);
 		expect(next?.rating_data?.my_score).toBe(80);
 	});
+
+	it("preserves my_session_id when omitted from a later payload", () => {
+		const first = applyLobbyStateUpdate(null, {
+			room_id: "ABC",
+			status: "waiting",
+			config: baseConfig,
+			players: [authPlayer],
+			spectators: [],
+			queue: [],
+			my_session_id: "s1",
+		} as RateRoomState);
+
+		const second = applyLobbyStateUpdate(first, {
+			room_id: "ABC",
+			status: "waiting",
+			config: baseConfig,
+			players: [authPlayer],
+			spectators: [],
+			queue: [],
+		} as RateRoomState);
+
+		expect(second.my_session_id).toBe("s1");
+	});
 });

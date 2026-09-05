@@ -296,6 +296,7 @@ func (r *LobbyRoom) handleJoin(ev *JoinEvent) {
 	var existingPlayer *domain.RatePlayer
 	var oldSessionID string
 
+	// 1) Authenticated: reclaim seat by user UUID (covers leave/rejoin and multi-tab).
 	if ev.User != nil {
 		for sid, p := range r.Players {
 			if p.UserUUID == ev.User.UUID {
@@ -304,16 +305,36 @@ func (r *LobbyRoom) handleJoin(ev *JoinEvent) {
 				break
 			}
 		}
-	} else if ev.DeviceID != "" {
+	}
+
+	// 2) Same browser/device: reclaim even if prior seat was auth or guest.
+	//    Without this, a reconnect that briefly lacks a JWT creates a ghost guest
+	//    while the offline auth seat remains — queue adds then fail (everyone mode
+	//    requires user_uuid) and MaxPlayers fills with zombies.
+	if existingPlayer == nil && ev.DeviceID != "" {
+		var offlineMatch *domain.RatePlayer
+		var offlineSID string
 		for sid, p := range r.Players {
-			if p.UserUUID == "" && p.DeviceID == ev.DeviceID {
-				existingPlayer = p
-				oldSessionID = sid
+			if p.DeviceID != ev.DeviceID {
+				continue
+			}
+			if p.Offline {
+				offlineMatch = p
+				offlineSID = sid
 				break
 			}
+			if existingPlayer == nil {
+				existingPlayer = p
+				oldSessionID = sid
+			}
+		}
+		if offlineMatch != nil {
+			existingPlayer = offlineMatch
+			oldSessionID = offlineSID
 		}
 	}
 
+	// 3) Guest nickname fallback (offline only).
 	if existingPlayer == nil && ev.User == nil {
 		for sid, p := range r.Players {
 			if p.UserUUID == "" && p.Nickname == ev.Nickname && p.Offline {
@@ -324,13 +345,13 @@ func (r *LobbyRoom) handleJoin(ev *JoinEvent) {
 		}
 	}
 
-	totalNonSpectators := 0
+	onlineNonSpectators := 0
 	for sid, p := range r.Players {
 		if existingPlayer != nil && sid == oldSessionID {
 			continue
 		}
-		if !p.IsSpectator {
-			totalNonSpectators++
+		if !p.IsSpectator && !p.Offline {
+			onlineNonSpectators++
 		}
 	}
 
@@ -353,6 +374,9 @@ func (r *LobbyRoom) handleJoin(ev *JoinEvent) {
 		existingPlayer.Offline = false
 		existingPlayer.OfflineSince = nil
 		existingPlayer.Nickname = ev.Nickname
+		existingPlayer.DeviceID = ev.DeviceID
+		existingPlayer.IsSpectator = ev.AsSpectator
+		// Preserve UserID/UserUUID when reconnect arrives without JWT; upgrade when present.
 		if ev.User != nil {
 			existingPlayer.UserID = ev.User.ID
 			existingPlayer.UserUUID = ev.User.UUID
@@ -368,16 +392,15 @@ func (r *LobbyRoom) handleJoin(ev *JoinEvent) {
 		r.Players[ev.SessionID] = existingPlayer
 		r.Conns[ev.SessionID] = ev.Conn
 	} else {
-		if !ev.AsSpectator && totalNonSpectators >= r.Config.MaxPlayers {
+		if !ev.AsSpectator && onlineNonSpectators >= r.Config.MaxPlayers {
 			r.mu.Unlock()
-			// Conn not registered yet — write directly
 			if ev.Conn != nil {
 				_ = ev.Conn.WriteJSON(outMessage{Type: "error", Payload: "Room is full"})
 			}
 			return
 		}
 
-		isHost := !ev.AsSpectator && totalNonSpectators == 0
+		isHost := !ev.AsSpectator && onlineNonSpectators == 0
 		avatar := ""
 		if ev.User != nil && ev.User.AvatarUrl != nil {
 			avatar = *ev.User.AvatarUrl
@@ -407,6 +430,9 @@ func (r *LobbyRoom) handleJoin(ev *JoinEvent) {
 		r.Players[ev.SessionID] = player
 		r.Conns[ev.SessionID] = ev.Conn
 	}
+
+	// Drop duplicate seats for this user/device left by flaky reconnect races.
+	r.dedupePlayerSeatsLocked(ev.SessionID, ev.DeviceID, ev.User)
 
 	r.ensureHostActive()
 	status := r.Status
@@ -449,6 +475,35 @@ func (r *LobbyRoom) handleJoin(ev *JoinEvent) {
 			"type":      "system",
 			"timestamp": time.Now(),
 		})
+	}
+}
+
+// dedupePlayerSeatsLocked removes leftover seats that share this device or user UUID.
+// Caller must hold r.mu.
+func (r *LobbyRoom) dedupePlayerSeatsLocked(keepSessionID, deviceID string, user *domain.User) {
+	for sid, p := range r.Players {
+		if sid == keepSessionID {
+			continue
+		}
+		sameDevice := deviceID != "" && p.DeviceID == deviceID
+		sameUser := user != nil && user.UUID != "" && p.UserUUID == user.UUID
+		if !sameDevice && !sameUser {
+			continue
+		}
+		delete(r.Players, sid)
+		delete(r.Conns, sid)
+		if score, ok := r.CurrentRatings[sid]; ok {
+			delete(r.CurrentRatings, sid)
+			if _, exists := r.CurrentRatings[keepSessionID]; !exists {
+				r.CurrentRatings[keepSessionID] = score
+			}
+		}
+		if prior, ok := r.PriorScores[sid]; ok {
+			delete(r.PriorScores, sid)
+			if _, exists := r.PriorScores[keepSessionID]; !exists {
+				r.PriorScores[keepSessionID] = prior
+			}
+		}
 	}
 }
 
@@ -555,6 +610,7 @@ func (r *LobbyRoom) handleQueueAdd(ev *QueueAddEvent) {
 	r.mu.RUnlock()
 
 	if !exists || player.IsSpectator || player.Offline {
+		r.sendTo(ev.SessionID, "error", "You cannot add songs right now — reconnect if this persists")
 		return
 	}
 	if seasonal {

@@ -154,6 +154,8 @@ export function applyLobbyStateUpdate(
 		spectators: payload.spectators || [],
 		queue: payload.queue || [],
 		rating_data: payload.rating_data || prev?.rating_data,
+		// Keep identity if a partial/stale payload omits it (reconnect races).
+		my_session_id: payload.my_session_id || prev?.my_session_id,
 	};
 }
 

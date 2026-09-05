@@ -598,7 +598,7 @@ func (r *LobbyRoom) handleQueueAdd(ev *QueueAddEvent) {
 
 	song, err := r.loadSong(ev.SongUUID)
 	if err != nil || song == nil {
-		r.sendTo(ev.SessionID, "error", "Song not found")
+		r.sendTo(ev.SessionID, "error", rateSongLoadErrorMessage(err))
 		return
 	}
 
@@ -666,7 +666,7 @@ func (r *LobbyRoom) handleSetSong(ev *SetSongEvent) {
 
 	song, err := r.loadSong(ev.SongUUID)
 	if err != nil || song == nil {
-		r.sendTo(ev.SessionID, "error", "Song not found")
+		r.sendTo(ev.SessionID, "error", rateSongLoadErrorMessage(err))
 		return
 	}
 
@@ -1109,7 +1109,9 @@ func (r *LobbyRoom) loadSeasonalPoolAsync() {
 		}
 
 		if len(enriched) == 0 {
-			r.SendEvent(RoomEvent{Type: EvPoolLoaded, Data: &PoolLoadedEvent{Error: "No playable themes found for that season"}})
+			r.SendEvent(RoomEvent{Type: EvPoolLoaded, Data: &PoolLoadedEvent{
+				Error: "No playable themes found for that season (inactive or missing video)",
+			}})
 			return
 		}
 
@@ -1219,6 +1221,11 @@ func (r *LobbyRoom) loadSong(songUUID string) (*domain.Song, error) {
 	if err == nil {
 		song.Artists = artists
 	}
+
+	audioURL := resolvePlayableAudioURL(r.MediaService, song)
+	if err := validateSongForRate(song, audioURL); err != nil {
+		return nil, err
+	}
 	return song, nil
 }
 
@@ -1259,19 +1266,7 @@ func (r *LobbyRoom) buildQueueItem(song *domain.Song, player *domain.RatePlayer)
 }
 
 func (r *LobbyRoom) resolveAudioURL(song *domain.Song) string {
-	if song == nil || len(song.Variants) == 0 {
-		return ""
-	}
-	v := song.Variants[0]
-	if v.Video != nil {
-		if v.Video.LocalUrl != nil {
-			return r.MediaService.GetURL(*v.Video.LocalUrl)
-		}
-		if v.Video.VideoSrc != nil {
-			return r.MediaService.GetURL(*v.Video.VideoSrc)
-		}
-	}
-	return ""
+	return resolvePlayableAudioURL(r.MediaService, song)
 }
 
 func (r *LobbyRoom) buildSongDTO(song *domain.Song) dto.SongMinimalDTO {

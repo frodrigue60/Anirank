@@ -146,19 +146,32 @@ func (r *taxonomyRepository) GetStudioBySlug(ctx context.Context, slug string) (
 
 func (r *taxonomyRepository) GetAnimesByStudioID(ctx context.Context, studioID uint64, limit, offset int) ([]domain.Anime, error) {
 	var animes []domain.Anime
+	// COALESCE year/season IDs and nested taxonomy fields: animes.year_id/season_id/format_id
+	// are nullable, and LEFT JOIN NULLs cannot scan into uint64/string without erroring.
 	query := `
 		SELECT 
-			a.id, a.uuid, a.title, a.slug, a.description, a.anilist_id, a.status, a.cover, a.banner, a.year_id, a.season_id, a.format_id, a.created_at, a.updated_at,
-			f.id as "format.id", f.name as "format.name",
-			y.id as "year.id", y.name as "year.name",
-			s.id as "season.id", s.name as "season.name"
+			a.id, a.uuid, a.title, a.slug, a.description, a.anilist_id, a.status, a.cover, a.banner,
+			COALESCE(a.year_id, 0) AS year_id,
+			COALESCE(a.season_id, 0) AS season_id,
+			a.format_id, a.created_at, a.updated_at,
+			COALESCE(a.enabled_songs, 0) AS enabled_songs,
+			COALESCE(a.songs_count, 0) AS songs_count,
+			COALESCE(f.uuid::text, '') AS "format.uuid",
+			COALESCE(f.name, '') AS "format.name",
+			COALESCE(f.slug, '') AS "format.slug",
+			COALESCE(y.uuid::text, '') AS "year.uuid",
+			COALESCE(y.name, '') AS "year.name",
+			COALESCE(y.slug, '') AS "year.slug",
+			COALESCE(s.uuid::text, '') AS "season.uuid",
+			COALESCE(s.name, '') AS "season.name",
+			COALESCE(s.slug, '') AS "season.slug"
 		FROM animes a
 		LEFT JOIN formats f ON a.format_id = f.id
 		LEFT JOIN years y ON a.year_id = y.id
 		LEFT JOIN seasons s ON a.season_id = s.id
 		JOIN anime_studio asu ON a.id = asu.anime_id
 		WHERE asu.studio_id = $1 AND a.status = true
-		ORDER BY a.year_id DESC, a.season_id DESC
+		ORDER BY a.year_id DESC NULLS LAST, a.season_id DESC NULLS LAST
 		LIMIT $2 OFFSET $3
 	`
 	err := r.db.SelectContext(ctx, &animes, query, studioID, limit, offset)
@@ -229,19 +242,31 @@ func (r *taxonomyRepository) GetProducerBySlug(ctx context.Context, slug string)
 
 func (r *taxonomyRepository) GetAnimesByProducerID(ctx context.Context, producerID uint64, limit, offset int) ([]domain.Anime, error) {
 	var animes []domain.Anime
+	// Same NULL-safe scan pattern as GetAnimesByStudioID (nullable year/season/format).
 	query := `
 		SELECT 
-			a.id, a.uuid, a.title, a.slug, a.description, a.anilist_id, a.status, a.cover, a.banner, a.year_id, a.season_id, a.format_id, a.created_at, a.updated_at,
-			f.id as "format.id", f.name as "format.name",
-			y.id as "year.id", y.name as "year.name",
-			s.id as "season.id", s.name as "season.name"
+			a.id, a.uuid, a.title, a.slug, a.description, a.anilist_id, a.status, a.cover, a.banner,
+			COALESCE(a.year_id, 0) AS year_id,
+			COALESCE(a.season_id, 0) AS season_id,
+			a.format_id, a.created_at, a.updated_at,
+			COALESCE(a.enabled_songs, 0) AS enabled_songs,
+			COALESCE(a.songs_count, 0) AS songs_count,
+			COALESCE(f.uuid::text, '') AS "format.uuid",
+			COALESCE(f.name, '') AS "format.name",
+			COALESCE(f.slug, '') AS "format.slug",
+			COALESCE(y.uuid::text, '') AS "year.uuid",
+			COALESCE(y.name, '') AS "year.name",
+			COALESCE(y.slug, '') AS "year.slug",
+			COALESCE(s.uuid::text, '') AS "season.uuid",
+			COALESCE(s.name, '') AS "season.name",
+			COALESCE(s.slug, '') AS "season.slug"
 		FROM animes a
 		LEFT JOIN formats f ON a.format_id = f.id
 		LEFT JOIN years y ON a.year_id = y.id
 		LEFT JOIN seasons s ON a.season_id = s.id
 		JOIN anime_producer apu ON a.id = apu.anime_id
 		WHERE apu.producer_id = $1 AND a.status = true
-		ORDER BY a.year_id DESC, a.season_id DESC
+		ORDER BY a.year_id DESC NULLS LAST, a.season_id DESC NULLS LAST
 		LIMIT $2 OFFSET $3
 	`
 	err := r.db.SelectContext(ctx, &animes, query, producerID, limit, offset)

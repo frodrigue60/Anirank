@@ -24,6 +24,10 @@ export const load: PageLoad = async ({ params, url }) => {
         };
     } catch (err: any) {
         logLoadError('(app)/producers/[slug]', err);
-        throw error(404, 'Producer not found');
+        const status = err?.response?.status;
+        if (status === 404) {
+            throw error(404, 'Producer not found');
+        }
+        throw error(status && status >= 400 ? status : 500, 'Failed to load producer');
     }
 };

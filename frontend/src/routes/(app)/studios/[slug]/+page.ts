@@ -1,6 +1,7 @@
 import type { PageLoad } from './$types';
 import api from '$lib/api';
 import { error } from '@sveltejs/kit';
+import { logLoadError } from '$lib/logger';
 
 export const load: PageLoad = async ({ params, url }) => {
     try {
@@ -22,7 +23,11 @@ export const load: PageLoad = async ({ params, url }) => {
             params: queryParams
         };
     } catch (err: any) {
-        console.error('Error loading studio:', err);
-        throw error(404, 'Studio not found');
+        logLoadError('(app)/studios/[slug]', err);
+        const status = err?.response?.status;
+        if (status === 404) {
+            throw error(404, 'Studio not found');
+        }
+        throw error(status && status >= 400 ? status : 500, 'Failed to load studio');
     }
 };

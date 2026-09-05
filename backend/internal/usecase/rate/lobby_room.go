@@ -54,6 +54,8 @@ type JoinEvent struct {
 	Nickname    string
 	DeviceID    string
 	AsSpectator bool
+	// Done is closed when handleJoin finishes (success or reject). Optional.
+	Done chan struct{}
 }
 
 type ConfigUpdateEvent struct {
@@ -297,6 +299,12 @@ func (r *LobbyRoom) broadcastPersonalizedState() {
 }
 
 func (r *LobbyRoom) handleJoin(ev *JoinEvent) {
+	defer func() {
+		if ev.Done != nil {
+			close(ev.Done)
+		}
+	}()
+
 	r.mu.Lock()
 
 	var existingPlayer *domain.RatePlayer

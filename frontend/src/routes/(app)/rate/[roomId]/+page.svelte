@@ -22,11 +22,18 @@
   import {
     applyLobbyStateUpdate,
     applyRatingUpdate,
-    canAddToQueue,
     defaultRateConfig,
     fromCanonicalScore,
+    hostNextControl,
     isSeasonalPool,
+    playNowControl,
+    queueAddControl,
+    resolveSongUuid,
+    roundIdentity,
+    searchAnimeControl,
+    submitRatingControl,
     toCanonicalScore,
+    voteSkipControl,
     type RatePlayer,
     type RateRoomState,
     type SourceMode,
@@ -39,6 +46,8 @@
 
   let ws = $state<WebSocket | null>(null);
   let roomState = $state<RateRoomState | null>(null);
+  let wsReady = $state(false);
+  let pendingWsMessages: Array<{ type: string; payload: Record<string, unknown> }> = [];
   let status = $derived(roomState?.status || "lobby");
   let config = $derived(roomState?.config);
   let players = $derived(roomState?.players || []);
@@ -59,6 +68,8 @@
   });
   let isHost = $derived(!!me?.is_host);
   let playersVersion = $state(0);
+  let joined = $derived(!!roomState?.my_session_id && !!me && !me.offline);
+  let authSeatReconnectAttempted = false;
 
   let deviceId = $state("");
   let guestNickname = $state("");
@@ -128,9 +139,33 @@
   let scoreFormat = $derived(authState.user?.score_format || "POINT_10_DECIMAL");
   let draftScore = $state(0);
   let submitting = $state(false);
+  let actionBusy = $state<null | "next" | "vote_skip" | "play" | "queue_add" | "submit_rating">(null);
+  let actionBusyTimer: ReturnType<typeof setTimeout> | null = null;
   // Range inputs may coerce $state to string via bind:value — always compare as number.
-  let canSubmitRating = $derived(Number(draftScore) > 0);
   let draftSongKey = $state("");
+  let currentSongUuid = $derived(
+    resolveSongUuid(currentSong, ratingData?.song_uuid)
+  );
+  let roundKey = $derived(roundIdentity(status, currentSongUuid));
+  let connected = $derived(wsReady && joined);
+
+  function clearActionBusy() {
+    actionBusy = null;
+    if (actionBusyTimer) {
+      clearTimeout(actionBusyTimer);
+      actionBusyTimer = null;
+    }
+  }
+
+  function beginAction(kind: NonNullable<typeof actionBusy>, ttlMs = 2500) {
+    actionBusy = kind;
+    if (actionBusyTimer) clearTimeout(actionBusyTimer);
+    actionBusyTimer = setTimeout(() => {
+      actionBusy = null;
+      actionBusyTimer = null;
+      if (kind === "submit_rating") submitting = false;
+    }, ttlMs);
+  }
 
   function setDraftScore(value: number) {
     const n = Number(value);
@@ -178,15 +213,51 @@
             : status
   );
 
-  let queuePermission = $derived(
-    canAddToQueue(config || defaultRateConfig(), me, queue)
+  let alreadyRated = $derived(
+    status === "rating" &&
+      !!currentSongUuid &&
+      !!me &&
+      !!ratingData?.ratings?.[me.session_id]?.rated &&
+      (!ratingData.song_uuid || ratingData.song_uuid === currentSongUuid)
   );
 
-  let canOpenSearch = $derived(
-    (status === "waiting" || status === "rating") &&
-      !isSeasonalPool(config) &&
-      (isHost || (config?.queue_mode !== "disabled" && queuePermission.ok))
+  let controlCtx = $derived({
+    status,
+    config: config || defaultRateConfig(),
+    me,
+    connected,
+    queue,
+    skipVote,
+    authenticated: authState.isAuthenticated,
+    draftScore: Number(draftScore) || 0,
+    alreadyRated,
+    busy: false,
+  });
+
+  let searchCtrl = $derived(
+    searchAnimeControl({ ...controlCtx, busy: actionBusy === "queue_add" || actionBusy === "play" })
   );
+  let nextCtrl = $derived(
+    hostNextControl({ ...controlCtx, busy: actionBusy === "next" || actionBusy === "vote_skip" })
+  );
+  let voteSkipCtrl = $derived(
+    voteSkipControl({ ...controlCtx, busy: actionBusy === "vote_skip" || actionBusy === "next" })
+  );
+  let playCtrl = $derived(
+    playNowControl({ ...controlCtx, busy: actionBusy === "play" || actionBusy === "next" })
+  );
+  let queueAddCtrl = $derived(
+    queueAddControl({ ...controlCtx, busy: actionBusy === "queue_add" })
+  );
+  let submitCtrl = $derived(
+    submitRatingControl({
+      ...controlCtx,
+      busy: submitting || actionBusy === "submit_rating",
+    })
+  );
+
+  // Back-compat alias used in empty-state copy.
+  let canOpenSearch = $derived(searchCtrl.visible);
 
   let seasonalActive = $derived(isSeasonalPool(config));
   let poolLabel = $derived.by(() => {
@@ -224,6 +295,41 @@
 
   let showSessionControls = $derived(status === "waiting" || status === "rating");
 
+  // Drop sticky locks whenever the round identity changes (next song / waiting / finished).
+  $effect(() => {
+    void roundKey;
+    submitting = false;
+    clearActionBusy();
+  });
+
+  $effect(() => {
+    if (showSearchModal && (status === "lobby" || status === "finished" || isSeasonalPool(config))) {
+      showSearchModal = false;
+      selectedAnime = null;
+      animeSongs = [];
+      animeResults = [];
+      searchQuery = "";
+    }
+  });
+
+  $effect(() => {
+    // If we joined as guest before auth hydrated, reconnect once with the JWT so
+    // everyone-mode queue adds and ratings work without a full page refresh.
+    const needsAuthSeat =
+      authState.isAuthenticated &&
+      !!getAuthToken() &&
+      !!roomState?.my_session_id &&
+      !!me &&
+      !me.user_uuid &&
+      !me.is_spectator &&
+      wsReady;
+    if (!needsAuthSeat || authSeatReconnectAttempted) return;
+    authSeatReconnectAttempted = true;
+    // Defer so the first lobby_state_update can settle before we tear down the socket.
+    const t = setTimeout(() => connectWebSocket(), 50);
+    return () => clearTimeout(t);
+  });
+
   onMount(() => {
     isSpectator = page.url.searchParams.get("spectator") === "true";
     if (typeof window !== "undefined") {
@@ -246,6 +352,7 @@
     closeWebSocket();
     if (reconnectTimer) clearTimeout(reconnectTimer);
     if (searchTimer) clearTimeout(searchTimer);
+    clearActionBusy();
   });
 
   $effect(() => {
@@ -260,6 +367,8 @@
 
   function connectWebSocket() {
     closeWebSocket();
+    wsReady = false;
+    pendingWsMessages = [];
     let base = PUBLIC_API_URL;
     if (base.endsWith("/api")) base = base.slice(0, -4);
     else if (base.endsWith("/api/")) base = base.slice(0, -5);
@@ -268,6 +377,14 @@
     const wsUrl = `${wsProtocol}${host}/api/rate/ws/${roomId}?token=${encodeURIComponent(getAuthToken() || "")}&device_id=${encodeURIComponent(deviceId)}&nickname=${encodeURIComponent(guestNickname)}&spectator=${isSpectator}`;
 
     ws = new WebSocket(wsUrl);
+    ws.onopen = () => {
+      wsReady = true;
+      const queued = pendingWsMessages;
+      pendingWsMessages = [];
+      for (const msg of queued) {
+        ws?.send(JSON.stringify(msg));
+      }
+    };
     ws.onmessage = (event) => {
       try {
         handleMessage(JSON.parse(event.data));
@@ -276,6 +393,7 @@
       }
     };
     ws.onclose = () => {
+      wsReady = false;
       reconnectTimer = setTimeout(connectWebSocket, 3000);
     };
     ws.onerror = () => {
@@ -286,9 +404,12 @@
   function closeWebSocket() {
     if (ws) {
       ws.onclose = null;
+      ws.onopen = null;
       ws.close();
       ws = null;
     }
+    wsReady = false;
+    pendingWsMessages = [];
   }
 
   function handleMessage(msg: { type: string; payload: any }) {
@@ -296,9 +417,12 @@
       case "lobby_state_update":
         roomState = applyLobbyStateUpdate(roomState, msg.payload);
         playersVersion += 1;
+        // Same-round updates (queue add, player join) should release queue lock only.
+        // Round changes are cleared by the roundKey $effect.
+        if (actionBusy === "queue_add") clearActionBusy();
         if (msg.payload?.status === "rating") {
           applyDraftFromSong(
-            msg.payload?.rating_data?.song_uuid || msg.payload?.current_song?.uuid,
+            msg.payload?.rating_data?.song_uuid || msg.payload?.current_song?.uuid || msg.payload?.current_song?.id,
             msg.payload?.rating_data?.prior_score,
             msg.payload?.rating_data?.my_score
           );
@@ -310,6 +434,7 @@
         roomState = applyRatingUpdate(roomState, msg.payload);
         playersVersion += 1;
         submitting = false;
+        if (actionBusy === "submit_rating") clearActionBusy();
         break;
       case "song_started":
         if (msg.payload?.audio_url && roomState) {
@@ -320,18 +445,20 @@
             status: "rating",
           };
         }
+        submitting = false;
+        clearActionBusy();
         applyDraftFromSong(
-          msg.payload?.song?.uuid,
+          msg.payload?.song?.uuid || msg.payload?.song?.id,
           msg.payload?.prior_score,
           null
         );
-        submitting = false;
         break;
       case "chat_message":
         chatMessages = [...chatMessages.slice(-80), msg.payload];
         break;
       case "error":
         submitting = false;
+        clearActionBusy();
         errorBanner = typeof msg.payload === "string" ? msg.payload : "Error";
         setTimeout(() => (errorBanner = ""), 4000);
         break;
@@ -342,31 +469,47 @@
   }
 
   function send(type: string, payload: Record<string, unknown> = {}) {
+    const msg = { type, payload };
     if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type, payload }));
+      ws.send(JSON.stringify(msg));
+      return;
     }
+    // Buffer while the socket is still connecting (create→navigate race).
+    if (ws && ws.readyState === WebSocket.CONNECTING && pendingWsMessages.length < 32) {
+      pendingWsMessages.push(msg);
+      return;
+    }
+    errorBanner = "Not connected — try again";
+    setTimeout(() => (errorBanner = ""), 3000);
   }
 
   function submitRating() {
-    if (!authState.isAuthenticated) {
-      errorBanner = "Login required to rate";
+    const gate = submitRatingControl({
+      ...controlCtx,
+      busy: submitting || actionBusy === "submit_rating",
+    });
+    if (!gate.enabled) {
+      if (gate.reason) {
+        errorBanner = gate.reason;
+        setTimeout(() => (errorBanner = ""), 3000);
+      }
       return;
     }
     const score = Number(draftScore);
-    if (!Number.isFinite(score) || score <= 0) {
-      errorBanner = "Pick a score greater than 0";
-      return;
-    }
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
-      errorBanner = "Not connected — try again";
-      return;
-    }
     submitting = true;
+    beginAction("submit_rating", 4000);
     // Always send a JSON number; range bind:value can leave draftScore as a string.
     send("submit_rating", { score });
   }
 
   function openSearchModal() {
+    if (!searchCtrl.enabled) {
+      if (searchCtrl.reason) {
+        errorBanner = searchCtrl.reason;
+        setTimeout(() => (errorBanner = ""), 3000);
+      }
+      return;
+    }
     showSearchModal = true;
     searchQuery = "";
     animeResults = [];
@@ -426,28 +569,73 @@
     return `${type}${num} · ${name}`;
   }
 
+  function requestNext() {
+    const gate = hostNextControl({
+      ...controlCtx,
+      busy: actionBusy === "next" || actionBusy === "vote_skip",
+    });
+    if (!gate.enabled) {
+      if (gate.reason) {
+        errorBanner = gate.reason;
+        setTimeout(() => (errorBanner = ""), 3000);
+      }
+      return;
+    }
+    beginAction("next");
+    send("next");
+  }
+
+  function requestVoteSkip() {
+    const gate = voteSkipControl({
+      ...controlCtx,
+      busy: actionBusy === "vote_skip" || actionBusy === "next",
+    });
+    if (!gate.enabled) {
+      if (gate.reason) {
+        errorBanner = gate.reason;
+        setTimeout(() => (errorBanner = ""), 3000);
+      }
+      return;
+    }
+    beginAction("vote_skip");
+    send("vote_skip");
+  }
+
   function addSong(song: any) {
     const uuid = song.id || song.uuid;
     if (!uuid) return;
-    if (!queuePermission.ok && !isHost) {
-      errorBanner = queuePermission.reason || "Cannot add to queue";
+    const gate = queueAddControl({
+      ...controlCtx,
+      busy: actionBusy === "queue_add",
+    });
+    if (!gate.enabled) {
+      // Disabled queue still allows host play-now fallback.
+      if (config?.queue_mode === "disabled" && isHost) {
+        playNow(song);
+        return;
+      }
+      errorBanner = gate.reason || "Cannot add to queue";
+      setTimeout(() => (errorBanner = ""), 3000);
       return;
     }
-    if (config?.queue_mode === "disabled") {
-      if (isHost) playNow(song);
-      return;
-    }
-    if (!queuePermission.ok) {
-      errorBanner = queuePermission.reason || "Cannot add to queue";
-      return;
-    }
+    beginAction("queue_add", 1500);
     send("queue_add", { song_uuid: uuid });
     closeSearchModal();
   }
 
   function playNow(song: any) {
     const uuid = song.id || song.uuid;
-    if (!uuid || !isHost) return;
+    if (!uuid) return;
+    const gate = playNowControl({
+      ...controlCtx,
+      busy: actionBusy === "play" || actionBusy === "next",
+    });
+    if (!gate.enabled) {
+      errorBanner = gate.reason || "Cannot play now";
+      setTimeout(() => (errorBanner = ""), 3000);
+      return;
+    }
+    beginAction("play");
     send("set_song", { song_uuid: uuid });
     closeSearchModal();
   }
@@ -480,6 +668,8 @@
   }
 
   function playerRated(p: RatePlayer) {
+    if (status !== "rating" || !currentSongUuid) return false;
+    if (ratingData?.song_uuid && ratingData.song_uuid !== currentSongUuid) return false;
     return !!ratingData?.ratings?.[p.session_id]?.rated;
   }
 
@@ -740,9 +930,10 @@
 
               <button
                 onclick={() => send("start_session")}
-                class="h-12 px-8 bg-primary hover:bg-primary-container text-white font-bold rounded-sm cursor-pointer transition-colors"
+                disabled={!joined}
+                class="h-12 px-8 bg-primary hover:bg-primary-container text-white font-bold rounded-sm cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Start Session
+                {joined ? "Start Session" : "Connecting…"}
               </button>
             {:else}
               <p class="text-sm text-on-surface-variant">Waiting for host to start…</p>
@@ -793,7 +984,7 @@
                   <p class="text-sm text-on-surface-variant">
                     Log in to rate this song (saves to your global ranking).
                   </p>
-                {:else if playerRated(me!)}
+                {:else if alreadyRated}
                   <div class="flex items-center justify-between">
                     <span class="text-xs font-semibold text-on-surface-variant">Your score</span>
                     <span class="text-2xl font-black text-primary tabular-nums">
@@ -817,7 +1008,8 @@
                           onclick={() => {
                             setDraftScore(toCanonicalScore(n, scoreFormat));
                           }}
-                          class="h-10 rounded-sm text-sm font-bold bg-surface-container text-on-surface hover:bg-primary hover:text-white cursor-pointer transition-colors"
+                          disabled={submitting}
+                          class="h-10 rounded-sm text-sm font-bold bg-surface-container text-on-surface hover:bg-primary hover:text-white cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           aria-label="Set score to {n}"
                         >
                           {n}
@@ -832,8 +1024,9 @@
                           max="100"
                           step="1"
                           value={draftScore}
+                          disabled={submitting}
                           oninput={(e) => setDraftScore(Number(e.currentTarget.value))}
-                          class="w-full h-2 rounded-sm cursor-pointer accent-primary"
+                          class="w-full h-2 rounded-sm cursor-pointer accent-primary disabled:opacity-50"
                           aria-label="Score slider"
                         />
                       </div>
@@ -846,8 +1039,9 @@
                         max="100"
                         step="1"
                         value={draftScore}
+                        disabled={submitting}
                         oninput={(e) => setDraftScore(Number(e.currentTarget.value))}
-                        class="w-full h-2 rounded-sm cursor-pointer accent-primary"
+                        class="w-full h-2 rounded-sm cursor-pointer accent-primary disabled:opacity-50"
                         aria-label="Score slider"
                       />
                     </div>
@@ -856,7 +1050,8 @@
                       {#each [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5] as n}
                         <button
                           onclick={() => setDraftScore(toCanonicalScore(n, "POINT_5"))}
-                          class="h-10 rounded-sm text-sm font-bold bg-surface-container text-on-surface hover:bg-primary hover:text-white cursor-pointer transition-colors"
+                          disabled={submitting}
+                          class="h-10 rounded-sm text-sm font-bold bg-surface-container text-on-surface hover:bg-primary hover:text-white cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           aria-label="Set score to {n}"
                         >
                           {n}
@@ -867,10 +1062,15 @@
 
                   <button
                     onclick={submitRating}
-                    disabled={submitting || !canSubmitRating}
+                    disabled={!submitCtrl.enabled}
                     class="w-full mt-3 py-2.5 px-4 rounded-sm font-bold text-sm text-white bg-primary hover:bg-primary-container transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={submitCtrl.reason}
                   >
-                    {canSubmitRating ? "Submit rating" : "Pick a score to submit"}
+                    {submitCtrl.enabled
+                      ? "Submit rating"
+                      : submitCtrl.reason === "Saving…"
+                        ? "Saving…"
+                        : submitCtrl.reason || "Pick a score to submit"}
                   </button>
                 {/if}
               </div>
@@ -894,33 +1094,37 @@
           {#if showSessionControls}
             <div class="mt-4 flex items-center justify-between gap-3 flex-wrap text-xs">
               <div class="flex items-center gap-2 flex-wrap">
-                {#if canOpenSearch}
+                {#if searchCtrl.visible}
                   <button
                     onclick={openSearchModal}
-                    class="px-3.5 py-2 rounded-sm bg-primary hover:bg-primary-container text-white font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+                    disabled={!searchCtrl.enabled}
+                    class="px-3.5 py-2 rounded-sm bg-primary hover:bg-primary-container text-white font-medium flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     type="button"
+                    title={searchCtrl.reason}
                   >
                     <Search size={14} aria-hidden="true" />
                     <span>Search anime</span>
                   </button>
                 {/if}
-                {#if isHost}
+                {#if nextCtrl.visible}
                   <button
-                    onclick={() => send("next")}
-                    class="px-3 py-2 rounded-sm bg-surface-highest text-primary hover:bg-surface-low font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+                    onclick={requestNext}
+                    disabled={!nextCtrl.enabled}
+                    class="px-3 py-2 rounded-sm bg-surface-highest text-primary hover:bg-surface-low font-medium flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     type="button"
+                    title={nextCtrl.reason}
                   >
                     <SkipForward size={14} aria-hidden="true" />
                     <span>{seasonalActive ? "Next from pool" : "Next"}</span>
                   </button>
                 {/if}
-                {#if config?.vote_skip && status === "rating" && !me?.is_spectator}
+                {#if voteSkipCtrl.visible}
                   <button
-                    onclick={() => send("vote_skip")}
-                    disabled={!!skipVote?.my_voted}
+                    onclick={requestVoteSkip}
+                    disabled={!voteSkipCtrl.enabled}
                     class="px-3 py-2 rounded-sm bg-surface-highest text-on-surface-variant hover:text-primary hover:bg-surface-low font-medium flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     type="button"
-                    title={skipVote?.my_voted ? "You already voted to skip" : "Vote to skip this song"}
+                    title={voteSkipCtrl.reason || (skipVote?.my_voted ? "You already voted to skip" : "Vote to skip this song")}
                   >
                     <SkipForward size={14} aria-hidden="true" />
                     <span>
@@ -1154,20 +1358,24 @@
                   <p class="text-sm font-bold text-on-surface truncate">{songLabel(song)}</p>
                 </div>
                 <div class="flex gap-2 shrink-0">
-                  {#if isHost}
+                  {#if playCtrl.visible}
                     <button
                       onclick={() => playNow(song)}
-                      class="h-9 px-3 text-xs font-bold text-white bg-primary hover:bg-primary-container rounded-sm cursor-pointer transition-colors"
+                      disabled={!playCtrl.enabled}
+                      class="h-9 px-3 text-xs font-bold text-white bg-primary hover:bg-primary-container rounded-sm cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       type="button"
+                      title={playCtrl.reason}
                     >
                       Play
                     </button>
                   {/if}
-                  {#if config?.queue_mode !== "disabled" && queuePermission.ok}
+                  {#if queueAddCtrl.visible}
                     <button
                       onclick={() => addSong(song)}
-                      class="h-9 px-3 text-xs font-bold text-primary bg-surface-highest hover:bg-surface-low rounded-sm cursor-pointer transition-colors"
+                      class="h-9 px-3 text-xs font-bold text-primary bg-surface-highest hover:bg-surface-low rounded-sm cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       type="button"
+                      disabled={!queueAddCtrl.enabled}
+                      title={queueAddCtrl.reason}
                     >
                       + Queue
                     </button>

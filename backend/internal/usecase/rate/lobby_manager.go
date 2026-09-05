@@ -103,6 +103,7 @@ func (m *LobbyManager) JoinRoom(roomID, sessionID string, conn WSConn, user *dom
 	if room == nil {
 		return errors.New("room not found")
 	}
+	done := make(chan struct{})
 	room.SendEvent(RoomEvent{
 		Type: EvJoin,
 		Data: &JoinEvent{
@@ -112,9 +113,15 @@ func (m *LobbyManager) JoinRoom(roomID, sessionID string, conn WSConn, user *dom
 			Nickname:    nickname,
 			DeviceID:    deviceID,
 			AsSpectator: asSpectator,
+			Done:        done,
 		},
 	})
-	return nil
+	select {
+	case <-done:
+		return nil
+	case <-time.After(5 * time.Second):
+		return errors.New("join timed out")
+	}
 }
 
 func (m *LobbyManager) LeaveRoom(roomID, sessionID string) {

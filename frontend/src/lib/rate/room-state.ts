@@ -154,6 +154,218 @@ export function canAddToQueue(
 	return { ok: true };
 }
 
+/** Session statuses where playback / queue / rating controls apply. */
+export function isLiveSessionStatus(status: RateStatus | string | undefined): boolean {
+	return status === "waiting" || status === "rating";
+}
+
+/** Stable round identity for resetting client locks between songs. */
+export function roundIdentity(
+	status: RateStatus | string | undefined,
+	songUuid: string | undefined | null
+): string {
+	return `${status || ""}:${songUuid || ""}`;
+}
+
+export function resolveSongUuid(
+	song: unknown,
+	ratingSongUuid?: string | null
+): string {
+	if (ratingSongUuid) return ratingSongUuid;
+	if (!song || typeof song !== "object") return "";
+	const s = song as { id?: string; uuid?: string };
+	return s.id || s.uuid || "";
+}
+
+export type RateControlState = {
+	/** Show the control in the UI. */
+	visible: boolean;
+	/** Accept clicks (connected + role + round state). */
+	enabled: boolean;
+	reason?: string;
+};
+
+export type RateControlContext = {
+	status: RateStatus | string;
+	config: RateConfig;
+	me?: RatePlayer | null;
+	/** WebSocket open and seat online. */
+	connected: boolean;
+	queue: RateQueueItem[];
+	skipVote?: SkipVoteData | null;
+	authenticated: boolean;
+	draftScore: number;
+	alreadyRated: boolean;
+	/** Short-lived client lock after sending an action. */
+	busy?: boolean;
+};
+
+function offlinePlayerAsOnline(player: RatePlayer): RatePlayer {
+	return player.offline ? { ...player, offline: false } : player;
+}
+
+/** Search anime (open modal) — host always, others when queue mode allows. */
+export function searchAnimeControl(ctx: RateControlContext): RateControlState {
+	if (!isLiveSessionStatus(ctx.status)) {
+		return { visible: false, enabled: false, reason: "Session not active" };
+	}
+	if (isSeasonalPool(ctx.config)) {
+		return { visible: false, enabled: false, reason: "Seasonal pool mode" };
+	}
+	const me = ctx.me;
+	if (!me || me.is_spectator) {
+		return { visible: false, enabled: false, reason: "Spectators cannot search" };
+	}
+	if (me.is_host) {
+		if (!ctx.connected) {
+			return { visible: true, enabled: false, reason: "Reconnecting…" };
+		}
+		if (ctx.busy) {
+			return { visible: true, enabled: false, reason: "Please wait…" };
+		}
+		return { visible: true, enabled: true };
+	}
+	if (ctx.config.queue_mode === "disabled") {
+		return { visible: false, enabled: false, reason: "Queue is disabled" };
+	}
+	const perm = canAddToQueue(ctx.config, offlinePlayerAsOnline(me), ctx.queue);
+	if (!perm.ok) {
+		return { visible: false, enabled: false, reason: perm.reason };
+	}
+	if (!ctx.connected || me.offline) {
+		return { visible: true, enabled: false, reason: "Reconnecting…" };
+	}
+	if (ctx.busy) {
+		return { visible: true, enabled: false, reason: "Please wait…" };
+	}
+	return { visible: true, enabled: true };
+}
+
+/** Host Next / Next from pool. */
+export function hostNextControl(ctx: RateControlContext): RateControlState {
+	const me = ctx.me;
+	if (!me?.is_host || me.is_spectator) {
+		return { visible: false, enabled: false };
+	}
+	if (!isLiveSessionStatus(ctx.status)) {
+		return { visible: false, enabled: false, reason: "Session not active" };
+	}
+	if (!ctx.connected || me.offline) {
+		return { visible: true, enabled: false, reason: "Reconnecting…" };
+	}
+	if (ctx.busy) {
+		return { visible: true, enabled: false, reason: "Advancing…" };
+	}
+	return { visible: true, enabled: true };
+}
+
+/** Vote skip during the current rating round. */
+export function voteSkipControl(ctx: RateControlContext): RateControlState {
+	if (!ctx.config.vote_skip) {
+		return { visible: false, enabled: false };
+	}
+	const me = ctx.me;
+	if (!me || me.is_spectator) {
+		return { visible: false, enabled: false };
+	}
+	if (ctx.status !== "rating") {
+		return { visible: false, enabled: false, reason: "No song playing" };
+	}
+	if (!ctx.connected || me.offline) {
+		return { visible: true, enabled: false, reason: "Reconnecting…" };
+	}
+	if (ctx.skipVote?.my_voted) {
+		return { visible: true, enabled: false, reason: "Already voted" };
+	}
+	if (ctx.busy) {
+		return { visible: true, enabled: false, reason: "Please wait…" };
+	}
+	return { visible: true, enabled: true };
+}
+
+/** Host Play now (set_song) from search modal. */
+export function playNowControl(ctx: RateControlContext): RateControlState {
+	const me = ctx.me;
+	if (!me?.is_host || me.is_spectator) {
+		return { visible: false, enabled: false };
+	}
+	if (!isLiveSessionStatus(ctx.status)) {
+		return { visible: false, enabled: false, reason: "Session not active" };
+	}
+	if (isSeasonalPool(ctx.config)) {
+		return { visible: false, enabled: false, reason: "Use Next in seasonal pool" };
+	}
+	if (!ctx.connected || me.offline) {
+		return { visible: true, enabled: false, reason: "Reconnecting…" };
+	}
+	if (ctx.busy) {
+		return { visible: true, enabled: false, reason: "Please wait…" };
+	}
+	return { visible: true, enabled: true };
+}
+
+/** + Queue from search modal. */
+export function queueAddControl(ctx: RateControlContext): RateControlState {
+	if (!isLiveSessionStatus(ctx.status)) {
+		return { visible: false, enabled: false, reason: "Session not active" };
+	}
+	if (isSeasonalPool(ctx.config) || ctx.config.queue_mode === "disabled") {
+		return { visible: false, enabled: false, reason: "Queue is disabled" };
+	}
+	const me = ctx.me;
+	if (!me || me.is_spectator) {
+		return { visible: false, enabled: false };
+	}
+	if (me.is_host) {
+		if (!ctx.connected || me.offline) {
+			return { visible: true, enabled: false, reason: "Reconnecting…" };
+		}
+		if (ctx.busy) {
+			return { visible: true, enabled: false, reason: "Please wait…" };
+		}
+		return { visible: true, enabled: true };
+	}
+	const perm = canAddToQueue(ctx.config, offlinePlayerAsOnline(me), ctx.queue);
+	if (!perm.ok) {
+		return { visible: false, enabled: false, reason: perm.reason };
+	}
+	if (!ctx.connected || me.offline) {
+		return { visible: true, enabled: false, reason: "Reconnecting…" };
+	}
+	if (ctx.busy) {
+		return { visible: true, enabled: false, reason: "Please wait…" };
+	}
+	return { visible: true, enabled: true };
+}
+
+/** Submit rating form for the current song. */
+export function submitRatingControl(ctx: RateControlContext): RateControlState {
+	if (ctx.status !== "rating") {
+		return { visible: false, enabled: false, reason: "No song is being rated" };
+	}
+	const me = ctx.me;
+	if (!me || me.is_spectator) {
+		return { visible: false, enabled: false };
+	}
+	if (!ctx.authenticated) {
+		return { visible: true, enabled: false, reason: "Login required to rate" };
+	}
+	if (ctx.alreadyRated) {
+		return { visible: true, enabled: false, reason: "Already rated" };
+	}
+	if (!ctx.connected || me.offline) {
+		return { visible: true, enabled: false, reason: "Reconnecting…" };
+	}
+	if (ctx.busy) {
+		return { visible: true, enabled: false, reason: "Saving…" };
+	}
+	const score = Number(ctx.draftScore);
+	if (!Number.isFinite(score) || score <= 0) {
+		return { visible: true, enabled: false, reason: "Pick a score to submit" };
+	}
+	return { visible: true, enabled: true };
+}
+
 export function applyLobbyStateUpdate(
 	prev: RateRoomState | null,
 	payload: RateRoomState
@@ -164,7 +376,10 @@ export function applyLobbyStateUpdate(
 		players: payload.players || [],
 		spectators: payload.spectators || [],
 		queue: payload.queue || [],
-		rating_data: payload.rating_data || prev?.rating_data,
+		// Prefer incoming snapshot so a new round never keeps stale ratings/skip votes.
+		rating_data:
+			payload.rating_data !== undefined ? payload.rating_data : prev?.rating_data,
+		skip_vote: payload.skip_vote !== undefined ? payload.skip_vote : prev?.skip_vote,
 		// Keep identity if a partial/stale payload omits it (reconnect races).
 		my_session_id: payload.my_session_id || prev?.my_session_id,
 	};

@@ -4,7 +4,14 @@ import {
 	applyRatingUpdate,
 	canAddToQueue,
 	fromCanonicalScore,
+	hostNextControl,
+	playNowControl,
+	queueAddControl,
+	roundIdentity,
+	searchAnimeControl,
+	submitRatingControl,
 	toCanonicalScore,
+	voteSkipControl,
 	type RateConfig,
 	type RatePlayer,
 	type RateQueueItem,
@@ -83,6 +90,68 @@ describe("canAddToQueue", () => {
 		);
 		expect(result.ok).toBe(false);
 		expect(result.reason).toMatch(/seasonal/i);
+	});
+});
+
+describe("session control gates", () => {
+	const host: RatePlayer = {
+		...authPlayer,
+		is_host: true,
+	};
+
+	const liveCtx = {
+		status: "rating" as const,
+		config: baseConfig,
+		me: host,
+		connected: true,
+		queue: [] as RateQueueItem[],
+		skipVote: { enabled: true, count: 0, needed: 1, my_voted: false },
+		authenticated: true,
+		draftScore: 70,
+		alreadyRated: false,
+		busy: false,
+	};
+
+	it("enables search/play/queue/next for connected host", () => {
+		expect(searchAnimeControl(liveCtx).enabled).toBe(true);
+		expect(hostNextControl(liveCtx).enabled).toBe(true);
+		expect(playNowControl(liveCtx).enabled).toBe(true);
+		expect(
+			queueAddControl({ ...liveCtx, config: { ...baseConfig, queue_mode: "host_only" } }).enabled
+		).toBe(true);
+		expect(submitRatingControl(liveCtx).enabled).toBe(true);
+		expect(
+			voteSkipControl({ ...liveCtx, config: { ...baseConfig, vote_skip: true } }).enabled
+		).toBe(true);
+	});
+
+	it("keeps controls visible but disabled while reconnecting", () => {
+		const offline = { ...liveCtx, connected: false };
+		expect(searchAnimeControl(offline)).toMatchObject({ visible: true, enabled: false });
+		expect(hostNextControl(offline)).toMatchObject({ visible: true, enabled: false });
+		expect(submitRatingControl(offline)).toMatchObject({ visible: true, enabled: false });
+	});
+
+	it("hides vote skip outside rating and after voting", () => {
+		const cfg = { ...baseConfig, vote_skip: true };
+		expect(voteSkipControl({ ...liveCtx, config: cfg, status: "waiting" }).visible).toBe(false);
+		expect(
+			voteSkipControl({
+				...liveCtx,
+				config: cfg,
+				skipVote: { enabled: true, count: 1, needed: 1, my_voted: true },
+			})
+		).toMatchObject({ visible: true, enabled: false });
+	});
+
+	it("blocks submit when already rated or score is empty", () => {
+		expect(submitRatingControl({ ...liveCtx, alreadyRated: true }).enabled).toBe(false);
+		expect(submitRatingControl({ ...liveCtx, draftScore: 0 }).enabled).toBe(false);
+	});
+
+	it("roundIdentity changes between songs", () => {
+		expect(roundIdentity("rating", "a")).not.toBe(roundIdentity("rating", "b"));
+		expect(roundIdentity("rating", "a")).not.toBe(roundIdentity("waiting", "a"));
 	});
 });
 

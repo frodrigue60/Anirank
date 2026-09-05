@@ -77,7 +77,29 @@
   let chatInput = $state("");
   let chatMessages = $state<Array<{ sender: string; text: string; type: string }>>([]);
   let errorBanner = $state("");
+  let errorBannerTimer: ReturnType<typeof setTimeout> | null = null;
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  let animeLoadAbort: AbortController | null = null;
+  let animeLoadSeq = 0;
+
+  function clearErrorBanner() {
+    errorBanner = "";
+    if (errorBannerTimer) {
+      clearTimeout(errorBannerTimer);
+      errorBannerTimer = null;
+    }
+  }
+
+  function flashError(message: string, ms = 5000) {
+    clearErrorBanner();
+    errorBanner = message;
+    if (ms > 0) {
+      errorBannerTimer = setTimeout(() => {
+        errorBanner = "";
+        errorBannerTimer = null;
+      }, ms);
+    }
+  }
 
   let mediaEl = $state<HTMLVideoElement | null>(null);
   let audioUrl = $derived(roomState?.audio_url || "");
@@ -353,6 +375,8 @@
     if (reconnectTimer) clearTimeout(reconnectTimer);
     if (searchTimer) clearTimeout(searchTimer);
     clearActionBusy();
+    clearErrorBanner();
+    animeLoadAbort?.abort();
   });
 
   $effect(() => {
@@ -397,7 +421,7 @@
       reconnectTimer = setTimeout(connectWebSocket, 3000);
     };
     ws.onerror = () => {
-      errorBanner = "Connection error";
+      flashError("Connection error");
     };
   }
 
@@ -459,8 +483,7 @@
       case "error":
         submitting = false;
         clearActionBusy();
-        errorBanner = typeof msg.payload === "string" ? msg.payload : "Error";
-        setTimeout(() => (errorBanner = ""), 4000);
+        flashError(typeof msg.payload === "string" ? msg.payload : "Error");
         break;
       case "room_closed":
         goto("/rate");
@@ -479,8 +502,7 @@
       pendingWsMessages.push(msg);
       return;
     }
-    errorBanner = "Not connected — try again";
-    setTimeout(() => (errorBanner = ""), 3000);
+    flashError("Not connected — try again", 3000);
   }
 
   function submitRating() {
@@ -489,10 +511,7 @@
       busy: submitting || actionBusy === "submit_rating",
     });
     if (!gate.enabled) {
-      if (gate.reason) {
-        errorBanner = gate.reason;
-        setTimeout(() => (errorBanner = ""), 3000);
-      }
+      if (gate.reason) flashError(gate.reason, 3000);
       return;
     }
     const score = Number(draftScore);
@@ -504,10 +523,7 @@
 
   function openSearchModal() {
     if (!searchCtrl.enabled) {
-      if (searchCtrl.reason) {
-        errorBanner = searchCtrl.reason;
-        setTimeout(() => (errorBanner = ""), 3000);
-      }
+      if (searchCtrl.reason) flashError(searchCtrl.reason, 3000);
       return;
     }
     showSearchModal = true;
@@ -519,11 +535,14 @@
   }
 
   function closeSearchModal() {
+    animeLoadAbort?.abort();
+    animeLoadAbort = null;
     showSearchModal = false;
     selectedAnime = null;
     animeSongs = [];
     animeResults = [];
     searchQuery = "";
+    songsLoading = false;
   }
 
   function runAnimeSearch() {
@@ -546,19 +565,56 @@
     }, 300);
   }
 
+  function isRequestCanceled(err: unknown): boolean {
+    const e = err as { code?: string; name?: string };
+    return e?.code === "ERR_CANCELED" || e?.name === "CanceledError" || e?.name === "AbortError";
+  }
+
   async function selectAnime(anime: any) {
+    const slug = typeof anime?.slug === "string" ? anime.slug.trim() : "";
+    if (!slug) {
+      flashError("Invalid anime result — missing slug");
+      return;
+    }
+
     selectedAnime = anime;
     animeSongs = [];
     songsLoading = true;
     themeFilter = "ALL";
+    clearErrorBanner();
+
+    animeLoadAbort?.abort();
+    const ac = new AbortController();
+    animeLoadAbort = ac;
+    const seq = ++animeLoadSeq;
+
+    const fetchSongs = async () => {
+      const res = await api.get(`/animes/${encodeURIComponent(slug)}`, {
+        signal: ac.signal,
+      });
+      return res.data?.data?.songs || [];
+    };
+
     try {
-      const res = await api.get(`/animes/${anime.slug}`);
-      animeSongs = res.data?.data?.songs || [];
-    } catch {
-      errorBanner = "Failed to load anime themes";
+      let songs: any[] = [];
+      try {
+        songs = await fetchSongs();
+      } catch (firstErr) {
+        if (ac.signal.aborted || isRequestCanceled(firstErr) || seq !== animeLoadSeq) return;
+        // Anime detail can be heavy on cold cache — one short retry.
+        await new Promise((r) => setTimeout(r, 350));
+        if (ac.signal.aborted || seq !== animeLoadSeq) return;
+        songs = await fetchSongs();
+      }
+      if (seq !== animeLoadSeq) return;
+      animeSongs = songs;
+    } catch (err) {
+      if (ac.signal.aborted || isRequestCanceled(err) || seq !== animeLoadSeq) return;
+      const apiMsg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      flashError(apiMsg || "Failed to load anime themes");
       animeSongs = [];
     } finally {
-      songsLoading = false;
+      if (seq === animeLoadSeq) songsLoading = false;
     }
   }
 
@@ -575,10 +631,7 @@
       busy: actionBusy === "next" || actionBusy === "vote_skip",
     });
     if (!gate.enabled) {
-      if (gate.reason) {
-        errorBanner = gate.reason;
-        setTimeout(() => (errorBanner = ""), 3000);
-      }
+      if (gate.reason) flashError(gate.reason, 3000);
       return;
     }
     beginAction("next");
@@ -591,10 +644,7 @@
       busy: actionBusy === "vote_skip" || actionBusy === "next",
     });
     if (!gate.enabled) {
-      if (gate.reason) {
-        errorBanner = gate.reason;
-        setTimeout(() => (errorBanner = ""), 3000);
-      }
+      if (gate.reason) flashError(gate.reason, 3000);
       return;
     }
     beginAction("vote_skip");
@@ -614,8 +664,7 @@
         playNow(song);
         return;
       }
-      errorBanner = gate.reason || "Cannot add to queue";
-      setTimeout(() => (errorBanner = ""), 3000);
+      flashError(gate.reason || "Cannot add to queue", 3000);
       return;
     }
     beginAction("queue_add", 1500);
@@ -631,8 +680,7 @@
       busy: actionBusy === "play" || actionBusy === "next",
     });
     if (!gate.enabled) {
-      errorBanner = gate.reason || "Cannot play now";
-      setTimeout(() => (errorBanner = ""), 3000);
+      flashError(gate.reason || "Cannot play now", 3000);
       return;
     }
     beginAction("play");
@@ -649,7 +697,7 @@
   function saveLobbyConfig() {
     if (!isHost || status !== "lobby") return;
     if (editSourceMode === "seasonal_pool" && (!editPoolYear || !editPoolSeason)) {
-      errorBanner = "Pick year and season for seasonal pool";
+      flashError("Pick year and season for seasonal pool", 4000);
       return;
     }
     send("update_lobby_config", {
@@ -711,7 +759,20 @@
 
 <main class="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-6 space-y-4">
   {#if errorBanner}
-    <div class="p-3 bg-red-50 text-red-700 text-sm rounded-sm" role="alert">{errorBanner}</div>
+    <div
+      class="p-3 bg-red-50 text-red-700 text-sm rounded-sm flex items-start justify-between gap-3"
+      role="alert"
+    >
+      <span class="min-w-0 flex-1">{errorBanner}</span>
+      <button
+        type="button"
+        class="shrink-0 p-0.5 rounded-sm text-red-700/70 hover:text-red-900 hover:bg-red-100 cursor-pointer transition-colors"
+        onclick={clearErrorBanner}
+        aria-label="Dismiss error"
+      >
+        <X size={16} aria-hidden="true" />
+      </button>
+    </div>
   {/if}
 
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">

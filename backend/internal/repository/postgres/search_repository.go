@@ -32,19 +32,37 @@ func (r *SearchRepository) GlobalSearch(ctx context.Context, term string, limit 
 	}
 	tsQuery := strings.Join(words, " & ")
 
-	// 2. Query against search_index
-	// We use 'simple' configuration as defined in the migration.
+	// 2. Query against search_index, excluding inactive catalog entities.
+	// Defense in depth vs stale index rows (trigger sync also filters status).
 	query := `
 		SELECT 
-			item_type, 
-			item_id, 
-			title, 
-			subtitle, 
-			slug, 
-			image_url,
-			ts_rank(search_vector, to_tsquery('simple', :query)) as rank
-		FROM search_index
-		WHERE search_vector @@ to_tsquery('simple', :query)
+			si.item_type, 
+			si.item_id, 
+			si.title, 
+			si.subtitle, 
+			si.slug, 
+			si.image_url,
+			ts_rank(si.search_vector, to_tsquery('simple', :query)) as rank
+		FROM search_index si
+		WHERE si.search_vector @@ to_tsquery('simple', :query)
+		  AND (
+			(si.item_type = 'anime' AND EXISTS (
+				SELECT 1 FROM animes a
+				WHERE a.uuid = si.item_id AND a.status = true
+			))
+			OR (si.item_type = 'song' AND EXISTS (
+				SELECT 1 FROM songs s
+				JOIN animes a ON a.id = s.anime_id
+				WHERE s.uuid = si.item_id
+				  AND s.status = true
+				  AND a.status = true
+			))
+			OR (si.item_type = 'artist' AND EXISTS (
+				SELECT 1 FROM artists ar
+				WHERE ar.uuid = si.item_id AND ar.status = true
+			))
+			OR si.item_type NOT IN ('anime', 'song', 'artist')
+		  )
 		ORDER BY rank DESC
 		LIMIT :limit
 	`

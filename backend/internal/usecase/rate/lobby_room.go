@@ -780,10 +780,20 @@ func (r *LobbyRoom) handleSubmitRating(ev *RatingEvent) {
 	song := r.CurrentSong
 	r.mu.RUnlock()
 
-	if !exists || player.IsSpectator || player.Offline {
+	if !exists {
+		r.sendTo(ev.SessionID, "error", "You are not in this room")
+		return
+	}
+	if player.IsSpectator {
+		r.sendTo(ev.SessionID, "error", "Spectators cannot rate")
+		return
+	}
+	if player.Offline {
+		r.sendTo(ev.SessionID, "error", "Reconnect before rating")
 		return
 	}
 	if status != "rating" || song == nil {
+		r.sendTo(ev.SessionID, "error", "No song is being rated right now")
 		return
 	}
 	if player.UserUUID == "" || player.UserID == 0 {

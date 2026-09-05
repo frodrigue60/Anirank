@@ -201,15 +201,23 @@ func (h *RateHandler) WSHandler(c *websocket.Conn) {
 		case "next":
 			room.SendEvent(rate.RoomEvent{Type: rate.EvNext, Data: sessionID})
 		case "submit_rating":
+			// Accept number or numeric string (range inputs may stringify on the client).
 			var payload struct {
-				Score float64 `json:"score"`
+				Score json.Number `json:"score"`
 			}
-			if err := json.Unmarshal(msg.Payload, &payload); err == nil {
-				room.SendEvent(rate.RoomEvent{Type: rate.EvSubmitRating, Data: &rate.RatingEvent{
-					SessionID: sessionID,
-					Score:     payload.Score,
-				}})
+			if err := json.Unmarshal(msg.Payload, &payload); err != nil {
+				_ = c.WriteJSON(fiber.Map{"type": "error", "payload": "Invalid rating payload"})
+				continue
 			}
+			score, err := payload.Score.Float64()
+			if err != nil {
+				_ = c.WriteJSON(fiber.Map{"type": "error", "payload": "Score must be a number"})
+				continue
+			}
+			room.SendEvent(rate.RoomEvent{Type: rate.EvSubmitRating, Data: &rate.RatingEvent{
+				SessionID: sessionID,
+				Score:     score,
+			}})
 		case "end_session":
 			room.SendEvent(rate.RoomEvent{Type: rate.EvEndSession, Data: sessionID})
 		case "reset_to_lobby":

@@ -118,25 +118,31 @@
   let scoreFormat = $derived(authState.user?.score_format || "POINT_10_DECIMAL");
   let draftScore = $state(0);
   let submitting = $state(false);
-  let canSubmitRating = $derived(draftScore > 0);
+  // Range inputs may coerce $state to string via bind:value — always compare as number.
+  let canSubmitRating = $derived(Number(draftScore) > 0);
   let draftSongKey = $state("");
+
+  function setDraftScore(value: number) {
+    const n = Number(value);
+    draftScore = Number.isFinite(n) ? Math.min(100, Math.max(0, n)) : 0;
+  }
 
   function applyDraftFromSong(songUUID: string | undefined, priorScore: number | null | undefined, sessionScore: number | null | undefined) {
     const key = songUUID || "";
     if (key && key === draftSongKey) return;
     draftSongKey = key;
-    if (sessionScore != null && sessionScore > 0) {
-      draftScore = sessionScore;
+    if (sessionScore != null && Number(sessionScore) > 0) {
+      setDraftScore(Number(sessionScore));
       return;
     }
-    if (priorScore != null && priorScore > 0) {
-      draftScore = priorScore;
+    if (priorScore != null && Number(priorScore) > 0) {
+      setDraftScore(Number(priorScore));
       return;
     }
     draftScore = 0;
   }
 
-  let displayDraft = $derived(fromCanonicalScore(draftScore, scoreFormat));
+  let displayDraft = $derived(fromCanonicalScore(Number(draftScore) || 0, scoreFormat));
   let sessionAvgDisplay = $derived(
     ratingData?.session_avg != null
       ? getFormattedScore(ratingData.session_avg, scoreFormat)
@@ -315,6 +321,7 @@
         chatMessages = [...chatMessages.slice(-80), msg.payload];
         break;
       case "error":
+        submitting = false;
         errorBanner = typeof msg.payload === "string" ? msg.payload : "Error";
         setTimeout(() => (errorBanner = ""), 4000);
         break;
@@ -335,12 +342,18 @@
       errorBanner = "Login required to rate";
       return;
     }
-    if (draftScore <= 0) {
+    const score = Number(draftScore);
+    if (!Number.isFinite(score) || score <= 0) {
       errorBanner = "Pick a score greater than 0";
       return;
     }
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      errorBanner = "Not connected — try again";
+      return;
+    }
     submitting = true;
-    send("submit_rating", { score: draftScore });
+    // Always send a JSON number; range bind:value can leave draftScore as a string.
+    send("submit_rating", { score });
   }
 
   function openSearchModal() {
@@ -789,7 +802,7 @@
                       {#each [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as n}
                         <button
                           onclick={() => {
-                            draftScore = toCanonicalScore(n, scoreFormat);
+                            setDraftScore(toCanonicalScore(n, scoreFormat));
                           }}
                           class="h-10 rounded-sm text-sm font-bold bg-surface-container text-on-surface hover:bg-primary hover:text-white cursor-pointer transition-colors"
                           aria-label="Set score to {n}"
@@ -805,7 +818,8 @@
                           min="0"
                           max="100"
                           step="1"
-                          bind:value={draftScore}
+                          value={draftScore}
+                          oninput={(e) => setDraftScore(Number(e.currentTarget.value))}
                           class="w-full h-2 rounded-sm cursor-pointer accent-primary"
                           aria-label="Score slider"
                         />
@@ -818,7 +832,8 @@
                         min="0"
                         max="100"
                         step="1"
-                        bind:value={draftScore}
+                        value={draftScore}
+                        oninput={(e) => setDraftScore(Number(e.currentTarget.value))}
                         class="w-full h-2 rounded-sm cursor-pointer accent-primary"
                         aria-label="Score slider"
                       />
@@ -827,7 +842,7 @@
                     <div class="grid grid-cols-5 gap-2 mb-3">
                       {#each [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5] as n}
                         <button
-                          onclick={() => (draftScore = toCanonicalScore(n, "POINT_5"))}
+                          onclick={() => setDraftScore(toCanonicalScore(n, "POINT_5"))}
                           class="h-10 rounded-sm text-sm font-bold bg-surface-container text-on-surface hover:bg-primary hover:text-white cursor-pointer transition-colors"
                           aria-label="Set score to {n}"
                         >

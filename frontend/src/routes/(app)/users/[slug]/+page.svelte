@@ -154,52 +154,6 @@
       </section>
     {/if}
 
-    <!-- Score distribution — WIP -->
-    <section
-      class="relative bg-surface-low rounded-md p-5 sm:p-6 border border-dashed border-outline-variant"
-      aria-label="Score distribution, work in progress"
-    >
-      <span
-        class="absolute top-3 right-3 inline-flex items-center gap-1 px-2 py-0.5 rounded-sm bg-surface-highest text-[10px] font-black uppercase tracking-wider text-on-surface-variant"
-      >
-        <Construction size={12} aria-hidden="true" />
-        WIP
-      </span>
-      <h2 class="text-lg font-bold text-on-surface tracking-tight pr-16">
-        Score Distribution
-      </h2>
-      <p class="text-xs text-on-surface-variant/80 mt-1 mb-5">
-        Needs per-user histogram endpoint
-      </p>
-      <div class="flex flex-col gap-3">
-        {#each [
-          { label: "90 – 100", width: "42%" },
-          { label: "75 – 89", width: "36%" },
-          { label: "50 – 74", width: "17%" },
-          { label: "< 50", width: "5%" },
-        ] as row}
-          <div class="flex items-center gap-3 text-xs">
-            <span
-              class="w-24 sm:w-28 font-medium text-on-surface-variant/70 shrink-0"
-            >
-              {row.label}
-            </span>
-            <div
-              class="flex-1 h-3 rounded-sm bg-surface-highest overflow-hidden"
-            >
-              <div
-                class="h-full rounded-sm bg-outline-variant/60"
-                style="width: {row.width}"
-              ></div>
-            </div>
-            <span class="w-10 text-right font-mono text-on-surface-variant/40"
-              >—</span
-            >
-          </div>
-        {/each}
-      </div>
-    </section>
-
     <!-- Top seasons — WIP -->
     <section
       class="relative flex flex-col gap-4"
@@ -278,6 +232,54 @@
               <div class="h-2 w-1/2 rounded-sm bg-surface-highest"></div>
             </div>
             <div class="h-5 w-8 rounded-sm bg-surface-highest"></div>
+          </div>
+        {/each}
+      </div>
+    </section>
+
+    <!-- Score distribution — WIP -->
+    <section
+      class="relative bg-surface-low rounded-md p-5 border border-dashed border-outline-variant"
+      aria-label="Score distribution, work in progress"
+    >
+      <span
+        class="absolute top-3 right-3 inline-flex items-center gap-1 px-2 py-0.5 rounded-sm bg-surface-highest text-[10px] font-black uppercase tracking-wider text-on-surface-variant"
+      >
+        <Construction size={12} aria-hidden="true" />
+        WIP
+      </span>
+      <h3
+        class="text-sm font-bold uppercase tracking-tight text-on-surface pr-14"
+      >
+        Score Distribution
+      </h3>
+      <p class="text-xs text-on-surface-variant/80 mt-1 mb-4">
+        Needs per-user histogram endpoint
+      </p>
+      <div class="flex flex-col gap-2.5">
+        {#each [
+          { label: "90–100", width: "42%" },
+          { label: "75–89", width: "36%" },
+          { label: "50–74", width: "17%" },
+          { label: "<50", width: "5%" },
+        ] as row}
+          <div class="flex items-center gap-2 text-[11px]">
+            <span
+              class="w-14 font-medium text-on-surface-variant/70 shrink-0"
+            >
+              {row.label}
+            </span>
+            <div
+              class="flex-1 h-2.5 rounded-sm bg-surface-highest overflow-hidden"
+            >
+              <div
+                class="h-full rounded-sm bg-outline-variant/60"
+                style="width: {row.width}"
+              ></div>
+            </div>
+            <span class="w-6 text-right font-mono text-on-surface-variant/40"
+              >—</span
+            >
           </div>
         {/each}
       </div>

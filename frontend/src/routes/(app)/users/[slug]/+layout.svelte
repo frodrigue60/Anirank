@@ -230,21 +230,32 @@
                   {data.profile.name}
                 </h1>
                 {#if data.profile.badges?.length}
-                  {#each data.profile.badges.slice(0, 3) as badge}
-                    <span
-                      class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm bg-surface-container text-[11px] font-bold uppercase tracking-wider text-on-surface"
-                      title={badge.description || badge.name}
-                    >
-                      <OptimizedImage
-                        src={badge.icon_url || badge.image_url}
-                        sources={badge.icon_sources}
-                        alt=""
-                        class="w-3.5 h-3.5"
-                        sizes="14px"
-                      />
-                      {badge.name}
-                    </span>
-                  {/each}
+                  <div class="flex flex-wrap items-center gap-1.5">
+                    {#each data.profile.badges as badge}
+                      {@const tip = badge.description
+                        ? `${badge.name} — ${badge.description}`
+                        : badge.name}
+                      <span
+                        class="relative group inline-flex size-8 items-center justify-center rounded-sm bg-surface-container hover:bg-surface-highest transition-colors"
+                        title={tip}
+                        tabindex="0"
+                      >
+                        <OptimizedImage
+                          src={badge.icon_url || badge.image_url}
+                          sources={badge.icon_sources}
+                          alt={badge.name}
+                          class="w-5 h-5"
+                          sizes="20px"
+                        />
+                        <span
+                          role="tooltip"
+                          class="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-1.5 z-30 whitespace-nowrap rounded-sm bg-surface-highest px-2 py-1 text-[10px] font-bold text-on-surface opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity shadow-sm"
+                        >
+                          {badge.name}
+                        </span>
+                      </span>
+                    {/each}
+                  </div>
                 {/if}
               </div>
 
@@ -481,6 +492,7 @@
       >
         <a
           href={basePath}
+          data-sveltekit-noscroll
           class="px-4 py-2 rounded-md font-semibold text-xs tracking-tight whitespace-nowrap transition-colors {tabClass(
             tabActive(basePath),
           )}"
@@ -490,6 +502,7 @@
         {#if data.profile.anilist_id}
           <a
             href="{basePath}/anime-list"
+            data-sveltekit-noscroll
             class="px-4 py-2 rounded-md font-semibold text-xs tracking-tight whitespace-nowrap transition-colors {tabClass(
               tabActive(`${basePath}/anime-list`),
             )}"
@@ -499,6 +512,7 @@
         {/if}
         <a
           href="{basePath}/playlists"
+          data-sveltekit-noscroll
           class="px-4 py-2 rounded-md font-semibold text-xs tracking-tight whitespace-nowrap transition-colors {tabClass(
             tabActive(`${basePath}/playlists`),
           )}"
@@ -507,6 +521,7 @@
         </a>
         <a
           href="{basePath}/favorites"
+          data-sveltekit-noscroll
           class="px-4 py-2 rounded-md font-semibold text-xs tracking-tight whitespace-nowrap transition-colors {tabClass(
             tabActive(`${basePath}/favorites`),
           )}"
@@ -515,6 +530,7 @@
         </a>
         <a
           href="{basePath}/artists"
+          data-sveltekit-noscroll
           class="px-4 py-2 rounded-md font-semibold text-xs tracking-tight whitespace-nowrap transition-colors {tabClass(
             tabActive(`${basePath}/artists`),
           )}"
@@ -523,6 +539,7 @@
         </a>
         <a
           href="{basePath}/followers"
+          data-sveltekit-noscroll
           class="px-4 py-2 rounded-md font-semibold text-xs tracking-tight whitespace-nowrap transition-colors inline-flex items-center gap-2 {tabClass(
             tabActive(`${basePath}/followers`),
           )}"
@@ -540,6 +557,7 @@
         </a>
         <a
           href="{basePath}/following"
+          data-sveltekit-noscroll
           class="px-4 py-2 rounded-md font-semibold text-xs tracking-tight whitespace-nowrap transition-colors inline-flex items-center gap-2 {tabClass(
             tabActive(`${basePath}/following`),
           )}"

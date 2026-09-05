@@ -19,6 +19,7 @@ const baseConfig: RateConfig = {
 	reveal_mode: "blind",
 	max_players: 16,
 	auto_advance: "never",
+	vote_skip: false,
 	source_mode: "manual",
 };
 

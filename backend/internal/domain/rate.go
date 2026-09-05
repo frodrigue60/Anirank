@@ -11,6 +11,8 @@ type RateConfig struct {
 	RevealMode        string `json:"reveal_mode"`          // "blind" | "live"
 	MaxPlayers        int    `json:"max_players"`
 	AutoAdvance       string `json:"auto_advance"` // "never" | "all_rated"
+	// VoteSkip enables majority skip during rating (host Next always works).
+	VoteSkip bool `json:"vote_skip"`
 	// SourceMode: "manual" (search/queue) or "seasonal_pool" (fixed year/season pool; no manual adds).
 	SourceMode    string `json:"source_mode"`
 	PoolYear      string `json:"pool_year,omitempty"`       // years.slug

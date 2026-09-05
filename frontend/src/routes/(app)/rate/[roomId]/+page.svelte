@@ -45,6 +45,7 @@
   let spectators = $derived(roomState?.spectators || []);
   let queue = $derived(roomState?.queue || []);
   let ratingData = $derived(roomState?.rating_data);
+  let skipVote = $derived(roomState?.skip_vote);
   let mySessionId = $derived(roomState?.my_session_id || "");
   let me = $derived.by(() => {
     const bySession = players.find((p) => p.session_id === mySessionId);
@@ -662,6 +663,9 @@
                 {#if config?.queue_mode === "everyone"} (max {config.queue_limit_per_user}/user){/if}
               {/if}
               · Reveal: {config?.reveal_mode}
+              {#if config?.vote_skip}
+                · Vote skip on
+              {/if}
             </p>
 
             {#if isHost}
@@ -908,6 +912,24 @@
                   >
                     <SkipForward size={14} aria-hidden="true" />
                     <span>{seasonalActive ? "Next from pool" : "Next"}</span>
+                  </button>
+                {/if}
+                {#if config?.vote_skip && status === "rating" && !me?.is_spectator}
+                  <button
+                    onclick={() => send("vote_skip")}
+                    disabled={!!skipVote?.my_voted}
+                    class="px-3 py-2 rounded-sm bg-surface-highest text-on-surface-variant hover:text-primary hover:bg-surface-low font-medium flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    type="button"
+                    title={skipVote?.my_voted ? "You already voted to skip" : "Vote to skip this song"}
+                  >
+                    <SkipForward size={14} aria-hidden="true" />
+                    <span>
+                      {#if skipVote?.my_voted}
+                        Skip ({skipVote.count}/{skipVote.needed})
+                      {:else}
+                        Vote skip ({skipVote?.count ?? 0}/{skipVote?.needed ?? 0})
+                      {/if}
+                    </span>
                   </button>
                 {/if}
               </div>

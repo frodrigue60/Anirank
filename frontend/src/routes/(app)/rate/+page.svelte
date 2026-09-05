@@ -55,6 +55,7 @@
   let revealMode = $state<RevealMode>("blind");
   let maxPlayers = $state(16);
   let autoAdvance = $state<AutoAdvance>("never");
+  let voteSkip = $state(false);
   let isPrivate = $state(false);
   let poolYear = $state("");
   let poolSeason = $state("");
@@ -157,6 +158,7 @@
           reveal_mode: revealMode,
           max_players: maxPlayers,
           auto_advance: autoAdvance,
+          vote_skip: voteSkip,
           source_mode: sourceMode,
           ...(sourceMode === "seasonal_pool"
             ? {
@@ -441,6 +443,16 @@
           <option value="never">Host advances manually</option>
           <option value="all_rated">When everyone has rated</option>
         </select>
+      </label>
+
+      <label class="flex items-start gap-2 text-sm text-on-surface cursor-pointer">
+        <input type="checkbox" bind:checked={voteSkip} class="mt-0.5 rounded-sm" />
+        <span>
+          <span class="font-semibold">Vote skip</span>
+          <span class="block text-xs text-on-surface-variant mt-0.5">
+            Majority of online players can vote to skip the current song (host can always Next).
+          </span>
+        </span>
       </label>
 
       <label class="block space-y-1">

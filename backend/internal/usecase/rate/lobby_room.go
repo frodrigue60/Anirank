@@ -33,6 +33,7 @@ const (
 	EvSetSong
 	EvNext
 	EvSubmitRating
+	EvVoteSkip
 	EvEndSession
 	EvResetToLobby
 	EvChat
@@ -112,7 +113,9 @@ type LobbyRoom struct {
 	CurrentRatings map[string]float64
 	// PriorScores maps sessionID -> existing global rating (0-100) loaded at beginRating.
 	PriorScores map[string]float64
-	SongsRated  int
+	// SkipVotes maps sessionID -> true when that player voted to skip the current song.
+	SkipVotes  map[string]bool
+	SongsRated int
 	EventChan   chan RoomEvent
 	CreatedAt   time.Time
 	LastActive  time.Time
@@ -149,6 +152,7 @@ func NewLobbyRoom(
 		Queue:          make([]queuedSong, 0),
 		CurrentRatings: make(map[string]float64),
 		PriorScores:    make(map[string]float64),
+		SkipVotes:      make(map[string]bool),
 		EventChan:      make(chan RoomEvent, 100),
 		CreatedAt:      now,
 		LastActive:     now,
@@ -224,6 +228,8 @@ func (r *LobbyRoom) handleEvent(ev RoomEvent) {
 		r.handleNext(ev.Data.(string))
 	case EvSubmitRating:
 		r.handleSubmitRating(ev.Data.(*RatingEvent))
+	case EvVoteSkip:
+		r.handleVoteSkip(ev.Data.(string))
 	case EvEndSession:
 		r.handleEndSession(ev.Data.(string))
 	case EvResetToLobby:
@@ -369,6 +375,10 @@ func (r *LobbyRoom) handleJoin(ev *JoinEvent) {
 			delete(r.PriorScores, oldSessionID)
 			r.PriorScores[ev.SessionID] = prior
 		}
+		if voted, ok := r.SkipVotes[oldSessionID]; ok {
+			delete(r.SkipVotes, oldSessionID)
+			r.SkipVotes[ev.SessionID] = voted
+		}
 
 		existingPlayer.SessionID = ev.SessionID
 		existingPlayer.Offline = false
@@ -504,6 +514,12 @@ func (r *LobbyRoom) dedupePlayerSeatsLocked(keepSessionID, deviceID string, user
 				r.PriorScores[keepSessionID] = prior
 			}
 		}
+		if voted, ok := r.SkipVotes[sid]; ok {
+			delete(r.SkipVotes, sid)
+			if _, exists := r.SkipVotes[keepSessionID]; !exists {
+				r.SkipVotes[keepSessionID] = voted
+			}
+		}
 	}
 }
 
@@ -553,6 +569,7 @@ func (r *LobbyRoom) handleConfigUpdate(ev *ConfigUpdateEvent) {
 		r.CurrentSong = nil
 		r.CurrentRatings = make(map[string]float64)
 		r.PriorScores = make(map[string]float64)
+		r.SkipVotes = make(map[string]bool)
 	}
 	r.mu.Unlock()
 	r.broadcastPersonalizedState()
@@ -751,6 +768,7 @@ func (r *LobbyRoom) handleNext(sessionID string) {
 		r.CurrentSong = nil
 		r.CurrentRatings = make(map[string]float64)
 		r.PriorScores = make(map[string]float64)
+		r.SkipVotes = make(map[string]bool)
 		r.Status = "waiting"
 		r.mu.Unlock()
 		r.broadcastPersonalizedState()
@@ -778,6 +796,7 @@ func (r *LobbyRoom) beginRating(song *domain.Song) {
 	r.CurrentSong = song
 	r.CurrentRatings = make(map[string]float64)
 	r.PriorScores = make(map[string]float64)
+	r.SkipVotes = make(map[string]bool)
 	r.Status = "rating"
 	lookups := make([]lookup, 0, len(r.Players))
 	for sid, p := range r.Players {
@@ -890,6 +909,66 @@ func (r *LobbyRoom) handleSubmitRating(ev *RatingEvent) {
 	}
 }
 
+func (r *LobbyRoom) handleVoteSkip(sessionID string) {
+	r.mu.Lock()
+	player, exists := r.Players[sessionID]
+	if !exists || player.IsSpectator || player.Offline {
+		r.mu.Unlock()
+		r.sendTo(sessionID, "error", "You cannot vote to skip right now")
+		return
+	}
+	if !r.Config.VoteSkip {
+		r.mu.Unlock()
+		r.sendTo(sessionID, "error", "Vote skip is disabled for this room")
+		return
+	}
+	if r.Status != "rating" || r.CurrentSong == nil {
+		r.mu.Unlock()
+		r.sendTo(sessionID, "error", "No song is playing to skip")
+		return
+	}
+	if r.SkipVotes == nil {
+		r.SkipVotes = make(map[string]bool)
+	}
+	r.SkipVotes[sessionID] = true
+
+	eligible := 0
+	votes := 0
+	for _, p := range r.Players {
+		if p.IsSpectator || p.Offline {
+			continue
+		}
+		eligible++
+		if r.SkipVotes[p.SessionID] {
+			votes++
+		}
+	}
+	majority := eligible > 0 && votes*2 > eligible
+	hostSID := ""
+	if majority {
+		for sid, p := range r.Players {
+			if p.IsHost {
+				hostSID = sid
+				break
+			}
+		}
+	}
+	r.mu.Unlock()
+
+	r.broadcastPersonalizedState()
+	if majority {
+		r.broadcast("chat_message", map[string]interface{}{
+			"sender":    "System",
+			"text":      "Skip vote passed — advancing",
+			"type":      "system",
+			"timestamp": time.Now(),
+		})
+		if hostSID != "" {
+			r.SendEvent(RoomEvent{Type: EvNext, Data: hostSID})
+		}
+	}
+}
+
 func (r *LobbyRoom) broadcastPersonalizedRatingUpdate() {
 	r.mu.RLock()
 	sids := make([]string, 0, len(r.Conns))
@@ -929,6 +1008,7 @@ func (r *LobbyRoom) handleEndSession(sessionID string) {
 	r.CurrentSong = nil
 	r.CurrentRatings = make(map[string]float64)
 	r.PriorScores = make(map[string]float64)
+	r.SkipVotes = make(map[string]bool)
 	r.mu.Unlock()
 	r.broadcastPersonalizedState()
 }
@@ -944,6 +1024,7 @@ func (r *LobbyRoom) handleResetToLobby(sessionID string) {
 	r.CurrentSong = nil
 	r.CurrentRatings = make(map[string]float64)
 	r.PriorScores = make(map[string]float64)
+	r.SkipVotes = make(map[string]bool)
 	r.Queue = make([]queuedSong, 0)
 	r.SongsRated = 0
 	r.mu.Unlock()
@@ -1035,6 +1116,7 @@ func (r *LobbyRoom) cleanupOfflinePlayers() {
 			delete(r.Players, sid)
 			delete(r.Conns, sid)
 			delete(r.CurrentRatings, sid)
+			delete(r.SkipVotes, sid)
 			changed = true
 		}
 	}
@@ -1538,6 +1620,40 @@ func (r *LobbyRoom) getRoomStatePayload(forSessionID string) map[string]interfac
 			"prior_score":  priorScore,
 			"reveal_mode":  r.Config.RevealMode,
 		},
+		"skip_vote":     r.buildSkipVoteSnapshotLocked(forSessionID),
 		"my_session_id": forSessionID,
+	}
+}
+
+func (r *LobbyRoom) buildSkipVoteSnapshotLocked(forSessionID string) map[string]interface{} {
+	if !r.Config.VoteSkip {
+		return map[string]interface{}{
+			"enabled":  false,
+			"count":    0,
+			"needed":   0,
+			"my_voted": false,
+		}
+	}
+	eligible := 0
+	count := 0
+	for _, p := range r.Players {
+		if p.IsSpectator || p.Offline {
+			continue
+		}
+		eligible++
+		if r.SkipVotes != nil && r.SkipVotes[p.SessionID] {
+			count++
+		}
+	}
+	needed := 0
+	if eligible > 0 {
+		needed = eligible/2 + 1
+	}
+	myVoted := r.SkipVotes != nil && r.SkipVotes[forSessionID]
+	return map[string]interface{}{
+		"enabled":  true,
+		"count":    count,
+		"needed":   needed,
+		"my_voted": myVoted,
 	}
 }

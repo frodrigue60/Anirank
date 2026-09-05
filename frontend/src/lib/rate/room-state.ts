@@ -24,6 +24,8 @@ export interface RateConfig {
 	reveal_mode: RevealMode;
 	max_players: number;
 	auto_advance: AutoAdvance;
+	/** When true, majority of online players can vote to skip the current song. */
+	vote_skip: boolean;
 	source_mode: SourceMode;
 	pool_year?: string;
 	pool_season?: string;
@@ -74,6 +76,13 @@ export interface RatingData {
 	reveal_mode?: RevealMode;
 }
 
+export interface SkipVoteData {
+	enabled: boolean;
+	count: number;
+	needed: number;
+	my_voted: boolean;
+}
+
 export interface RateRoomState {
 	room_id: string;
 	status: RateStatus;
@@ -85,6 +94,7 @@ export interface RateRoomState {
 	audio_url?: string;
 	songs_rated?: number;
 	rating_data?: RatingData;
+	skip_vote?: SkipVoteData;
 	my_session_id?: string;
 }
 
@@ -97,6 +107,7 @@ export function defaultRateConfig(): RateConfig {
 		reveal_mode: "blind",
 		max_players: 16,
 		auto_advance: "never",
+		vote_skip: false,
 		source_mode: "manual",
 	};
 }

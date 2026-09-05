@@ -200,6 +200,8 @@ func (h *RateHandler) WSHandler(c *websocket.Conn) {
 			}
 		case "next":
 			room.SendEvent(rate.RoomEvent{Type: rate.EvNext, Data: sessionID})
+		case "vote_skip":
+			room.SendEvent(rate.RoomEvent{Type: rate.EvVoteSkip, Data: sessionID})
 		case "submit_rating":
 			// Accept number or numeric string (range inputs may stringify on the client).
 			var payload struct {

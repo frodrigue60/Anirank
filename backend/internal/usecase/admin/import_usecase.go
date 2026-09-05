@@ -472,7 +472,7 @@ func (u *ImportUsecase) processAnime(ctx context.Context, job *domain.ImportJob,
 		AnimeThemesID: (*uint64)(&atAnime.ID),
 		YearID:        year.ID,
 		SeasonID:      season.ID,
-		FormatID:      format.ID,
+		FormatID:      &format.ID,
 	}
 
 	upsertResult, err := u.animeRepo.UpsertFromAnimeThemes(ctx, anime)

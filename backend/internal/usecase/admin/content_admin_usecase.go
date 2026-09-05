@@ -447,7 +447,7 @@ func (u *ContentAdminUsecase) BatchFetchAnimes(ctx context.Context, season strin
 						Status:      status,
 						YearID:      yearObj.ID,
 						SeasonID:    seasonObj.ID,
-						FormatID:    formatObj.ID,
+						FormatID:    &formatObj.ID,
 						UUID:        uuid.New().String(),
 					}
 					err := u.animeRepo.Create(ctx, &newAnime)
@@ -547,7 +547,7 @@ func (u *ContentAdminUsecase) CreateAnimeFromAnilist(ctx context.Context, anilis
 		Status:      status,
 		YearID:      yearObj.ID,
 		SeasonID:    seasonObj.ID,
-		FormatID:    formatObj.ID,
+		FormatID:    &formatObj.ID,
 		UUID:        uuid.New().String(),
 	}
 
@@ -598,7 +598,7 @@ func (u *ContentAdminUsecase) SyncAnime(ctx context.Context, id uint64, meta dom
 	}
 	formatObj, err := u.taxonomyRepo.GetOrCreateFormat(ctx, media.Format)
 	if err == nil {
-		anime.FormatID = formatObj.ID
+		anime.FormatID = &formatObj.ID
 	}
 
 	if anime.Slug == "" && anime.Title != "" {
@@ -1431,7 +1431,7 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 			anime.AnimeThemesID = &atID
 			anime.YearID = yearObj.ID
 			anime.SeasonID = seasonObj.ID
-			anime.FormatID = formatObj.ID
+			anime.FormatID = &formatObj.ID
 			enrichAnimeTitlesFromAnilist(anime, alData)
 			err := u.animeRepo.Update(ctx, anime)
 			if err != nil {
@@ -1458,7 +1458,7 @@ func (u *ContentAdminUsecase) syncAnimeThemesCollection(ctx context.Context, ani
 				AnimeThemesID: &atID,
 				YearID:        yearObj.ID,
 				SeasonID:      seasonObj.ID,
-				FormatID:      formatObj.ID,
+				FormatID:      &formatObj.ID,
 				Status:        true,
 				UUID:          uuid.New().String(),
 			}

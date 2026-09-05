@@ -410,8 +410,10 @@ func (r *animeRepository) LoadRelations(ctx context.Context, anime *domain.Anime
 		anime.Season = &season
 	}
 	var format domain.Format
-	if err := r.db.GetContext(ctx, &format, "SELECT id, name, slug FROM formats WHERE id = $1", anime.FormatID); err == nil {
-		anime.Format = &format
+	if anime.FormatID != nil {
+		if err := r.db.GetContext(ctx, &format, "SELECT id, name, slug FROM formats WHERE id = $1", *anime.FormatID); err == nil {
+			anime.Format = &format
+		}
 	}
 
 	// 2. Many-To-Many Joins
@@ -468,8 +470,8 @@ func (r *animeRepository) LoadManyRelations(ctx context.Context, animes []domain
 		if a.SeasonID > 0 {
 			seasonIDsMap[a.SeasonID] = true
 		}
-		if a.FormatID > 0 {
-			formatIDsMap[a.FormatID] = true
+		if a.FormatID != nil && *a.FormatID > 0 {
+			formatIDsMap[*a.FormatID] = true
 		}
 	}
 
@@ -527,8 +529,10 @@ func (r *animeRepository) LoadManyRelations(ctx context.Context, animes []domain
 				fMap[f.ID] = f
 			}
 			for i := range animes {
-				if f, ok := fMap[animes[i].FormatID]; ok {
-					animes[i].Format = &f
+				if animes[i].FormatID != nil {
+					if f, ok := fMap[*animes[i].FormatID]; ok {
+						animes[i].Format = &f
+					}
 				}
 			}
 		}

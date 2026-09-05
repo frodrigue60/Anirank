@@ -230,7 +230,7 @@ func (u *ImportUsecase) processIncrementalTheme(
 		AnimeThemesID: &atAnime.ID,
 		YearID:        year.ID,
 		SeasonID:      season.ID,
-		FormatID:      format.ID,
+		FormatID:      &format.ID,
 	}
 
 	upsertResult, err := u.animeRepo.UpsertFromAnimeThemes(ctx, anime)

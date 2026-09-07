@@ -316,21 +316,16 @@ export function queueAddControl(ctx: RateControlContext): RateControlState {
 	if (!me || me.is_spectator) {
 		return { visible: false, enabled: false };
 	}
-	if (me.is_host) {
-		if (!ctx.connected || me.offline) {
-			return { visible: true, enabled: false, reason: "Reconnecting…" };
-		}
-		if (ctx.busy) {
-			return { visible: true, enabled: false, reason: "Please wait…" };
-		}
-		return { visible: true, enabled: true };
-	}
-	const perm = canAddToQueue(ctx.config, offlinePlayerAsOnline(me), ctx.queue);
-	if (!perm.ok) {
-		return { visible: false, enabled: false, reason: perm.reason };
+	// everyone mode requires login on the server even for the host — mirror that here
+	// so the first click after start does not silently fail / look like a lost add.
+	if (ctx.config.queue_mode === "everyone" && !me.user_uuid) {
+		return { visible: true, enabled: false, reason: "Login required to queue songs" };
 	}
 	if (!ctx.connected || me.offline) {
 		return { visible: true, enabled: false, reason: "Reconnecting…" };
+	}
+	if (ctx.config.queue_mode === "host_only" && !me.is_host) {
+		return { visible: false, enabled: false, reason: "Only the host can add songs" };
 	}
 	if (ctx.busy) {
 		return { visible: true, enabled: false, reason: "Please wait…" };
@@ -368,14 +363,40 @@ export function submitRatingControl(ctx: RateControlContext): RateControlState {
 
 export function applyLobbyStateUpdate(
 	prev: RateRoomState | null,
-	payload: RateRoomState
+	payload: RateRoomState,
+	opts?: { pendingSongUuids?: string[] }
 ): RateRoomState {
+	const incomingQueue = payload.queue || [];
+	let queue = incomingQueue;
+
+	// Protect against a stale empty/short snapshot arriving after we already
+	// optimistically queued songs (reconnect / out-of-order apply races).
+	const pending = opts?.pendingSongUuids?.filter(Boolean) || [];
+	if (pending.length && prev?.queue?.length) {
+		const serverHasPending = pending.some((uuid) =>
+			incomingQueue.some((q) => q.song_uuid === uuid)
+		);
+		if (!serverHasPending && incomingQueue.length < prev.queue.length) {
+			queue = prev.queue;
+		} else if (!serverHasPending) {
+			const serverUuids = new Set(incomingQueue.map((q) => q.song_uuid));
+			const extras = prev.queue.filter(
+				(q) =>
+					(q.item_id.startsWith("opt-") || pending.includes(q.song_uuid)) &&
+					!serverUuids.has(q.song_uuid)
+			);
+			if (extras.length) {
+				queue = [...incomingQueue, ...extras];
+			}
+		}
+	}
+
 	return {
 		...(prev || ({} as RateRoomState)),
 		...payload,
 		players: payload.players || [],
 		spectators: payload.spectators || [],
-		queue: payload.queue || [],
+		queue,
 		// Prefer incoming snapshot so a new round never keeps stale ratings/skip votes.
 		rating_data:
 			payload.rating_data !== undefined ? payload.rating_data : prev?.rating_data,

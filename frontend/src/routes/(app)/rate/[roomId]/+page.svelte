@@ -165,6 +165,8 @@
   let actionBusyTimer: ReturnType<typeof setTimeout> | null = null;
   // Range inputs may coerce $state to string via bind:value — always compare as number.
   let draftSongKey = $state("");
+  let pendingQueueSongUuids = $state<string[]>([]);
+  let pendingQueueSeq = 0;
   let currentSongUuid = $derived(
     resolveSongUuid(currentSong, ratingData?.song_uuid)
   );
@@ -322,6 +324,9 @@
     void roundKey;
     submitting = false;
     clearActionBusy();
+    if (status === "lobby" || status === "finished") {
+      pendingQueueSongUuids = [];
+    }
   });
 
   $effect(() => {
@@ -439,11 +444,24 @@
   function handleMessage(msg: { type: string; payload: any }) {
     switch (msg.type) {
       case "lobby_state_update":
-        roomState = applyLobbyStateUpdate(roomState, msg.payload);
+        roomState = applyLobbyStateUpdate(roomState, msg.payload, {
+          pendingSongUuids: pendingQueueSongUuids,
+        });
         playersVersion += 1;
-        // Same-round updates (queue add, player join) should release queue lock only.
-        // Round changes are cleared by the roundKey $effect.
-        if (actionBusy === "queue_add") clearActionBusy();
+        // Drop pending optimistics once the server queue includes them.
+        if (pendingQueueSongUuids.length) {
+          const serverUuids = new Set((msg.payload?.queue || []).map((q: any) => q.song_uuid));
+          const stillPending = pendingQueueSongUuids.filter((u) => !serverUuids.has(u));
+          if (stillPending.length !== pendingQueueSongUuids.length) {
+            pendingQueueSongUuids = stillPending;
+            if (actionBusy === "queue_add" && stillPending.length === 0) {
+              clearActionBusy();
+              closeSearchModal();
+            }
+          }
+        } else if (actionBusy === "queue_add") {
+          clearActionBusy();
+        }
         if (msg.payload?.status === "rating") {
           applyDraftFromSong(
             msg.payload?.rating_data?.song_uuid || msg.payload?.current_song?.uuid || msg.payload?.current_song?.id,
@@ -482,6 +500,16 @@
         break;
       case "error":
         submitting = false;
+        if (pendingQueueSongUuids.length && roomState) {
+          const pending = new Set(pendingQueueSongUuids);
+          roomState = {
+            ...roomState,
+            queue: (roomState.queue || []).filter(
+              (q) => !(q.item_id.startsWith("opt-") && pending.has(q.song_uuid))
+            ),
+          };
+          pendingQueueSongUuids = [];
+        }
         clearActionBusy();
         flashError(typeof msg.payload === "string" ? msg.payload : "Error");
         break;
@@ -652,8 +680,11 @@
   }
 
   function addSong(song: any) {
-    const uuid = song.id || song.uuid;
-    if (!uuid) return;
+    const uuid = String(song.id || song.uuid || "").trim();
+    if (!uuid) {
+      flashError("Theme is missing an id", 3000);
+      return;
+    }
     const gate = queueAddControl({
       ...controlCtx,
       busy: actionBusy === "queue_add",
@@ -667,9 +698,37 @@
       flashError(gate.reason || "Cannot add to queue", 3000);
       return;
     }
-    beginAction("queue_add", 1500);
+    if (!ws || (ws.readyState !== WebSocket.OPEN && ws.readyState !== WebSocket.CONNECTING)) {
+      flashError("Not connected — try again", 3000);
+      return;
+    }
+
+    // Optimistic row so the first post-start add is visible immediately even if
+    // loadSong is slow or a stale empty snapshot arrives briefly.
+    pendingQueueSeq += 1;
+    const optimisticId = `opt-${pendingQueueSeq}`;
+    const optimisticItem = {
+      item_id: optimisticId,
+      song_uuid: uuid,
+      song_name: getSongName(song) || song.name || "Theme",
+      anime_title: selectedAnime?.title || song.anime?.title || "",
+      anime_slug: selectedAnime?.slug || song.anime?.slug || "",
+      theme_label: `${(song.type || "").toUpperCase()}${song.theme_num || ""}`,
+      added_by_session_id: mySessionId,
+      added_by_user_uuid: me?.user_uuid || "",
+      added_by_nickname: me?.nickname || guestNickname || "You",
+    };
+    pendingQueueSongUuids = [...pendingQueueSongUuids, uuid];
+    if (roomState) {
+      roomState = {
+        ...roomState,
+        queue: [...(roomState.queue || []), optimisticItem],
+      };
+    }
+
+    beginAction("queue_add", 8000);
     send("queue_add", { song_uuid: uuid });
-    closeSearchModal();
+    // Keep modal open until lobby_state_update confirms the song (or error rolls back).
   }
 
   function playNow(song: any) {

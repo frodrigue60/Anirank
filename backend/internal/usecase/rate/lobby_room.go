@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"strings"
 	"sync"
 	"time"
 
@@ -621,7 +622,8 @@ func (r *LobbyRoom) handleStartSession(sessionID string) {
 }
 
 func (r *LobbyRoom) handleQueueAdd(ev *QueueAddEvent) {
-	if ev.SongUUID == "" {
+	if strings.TrimSpace(ev.SongUUID) == "" {
+		r.sendTo(ev.SessionID, "error", "song_uuid is required")
 		return
 	}
 
@@ -643,6 +645,7 @@ func (r *LobbyRoom) handleQueueAdd(ev *QueueAddEvent) {
 		return
 	}
 	if status != "lobby" && status != "waiting" && status != "rating" {
+		r.sendTo(ev.SessionID, "error", "Session is not accepting queue adds right now")
 		return
 	}
 	if queueMode == QueueModeDisabled {
@@ -679,6 +682,7 @@ func (r *LobbyRoom) handleQueueAdd(ev *QueueAddEvent) {
 
 	song, err := r.loadSong(ev.SongUUID)
 	if err != nil || song == nil {
+		log.Printf("[RATE] queue_add loadSong failed room=%s song=%s: %v", r.RoomID, ev.SongUUID, err)
 		r.sendTo(ev.SessionID, "error", rateSongLoadErrorMessage(err))
 		return
 	}

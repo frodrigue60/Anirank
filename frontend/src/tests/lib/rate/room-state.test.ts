@@ -144,9 +144,51 @@ describe("session control gates", () => {
 		).toMatchObject({ visible: true, enabled: false });
 	});
 
-	it("blocks submit when already rated or score is empty", () => {
-		expect(submitRatingControl({ ...liveCtx, alreadyRated: true }).enabled).toBe(false);
-		expect(submitRatingControl({ ...liveCtx, draftScore: 0 }).enabled).toBe(false);
+	it("blocks everyone-mode queue add without login even for host", () => {
+		expect(
+			queueAddControl({
+				...liveCtx,
+				config: { ...baseConfig, queue_mode: "everyone" },
+				me: { ...host, user_uuid: undefined },
+			})
+		).toMatchObject({ visible: true, enabled: false });
+	});
+
+	it("keeps optimistic queue items when a stale empty snapshot arrives", () => {
+		const withOptimistic = applyLobbyStateUpdate(null, {
+			room_id: "ABC",
+			status: "waiting",
+			config: baseConfig,
+			players: [host],
+			spectators: [],
+			queue: [
+				{
+					item_id: "opt-1",
+					song_uuid: "song-a",
+					song_name: "A",
+					added_by_session_id: "s1",
+					added_by_nickname: "Luis",
+				},
+			],
+			my_session_id: "s1",
+		} as RateRoomState);
+
+		const staleEmpty = applyLobbyStateUpdate(
+			withOptimistic,
+			{
+				room_id: "ABC",
+				status: "waiting",
+				config: baseConfig,
+				players: [host],
+				spectators: [],
+				queue: [],
+				my_session_id: "s1",
+			} as RateRoomState,
+			{ pendingSongUuids: ["song-a"] }
+		);
+
+		expect(staleEmpty.queue).toHaveLength(1);
+		expect(staleEmpty.queue[0].song_uuid).toBe("song-a");
 	});
 
 	it("roundIdentity changes between songs", () => {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"anirank/api/internal/domain"
 	"anirank/api/internal/usecase/auth"
@@ -172,12 +173,18 @@ func (h *RateHandler) WSHandler(c *websocket.Conn) {
 			var payload struct {
 				SongUUID string `json:"song_uuid"`
 			}
-			if err := json.Unmarshal(msg.Payload, &payload); err == nil {
-				room.SendEvent(rate.RoomEvent{Type: rate.EvQueueAdd, Data: &rate.QueueAddEvent{
-					SessionID: sessionID,
-					SongUUID:  payload.SongUUID,
-				}})
+			if err := json.Unmarshal(msg.Payload, &payload); err != nil {
+				_ = c.WriteJSON(fiber.Map{"type": "error", "payload": "Invalid queue_add payload"})
+				continue
 			}
+			if strings.TrimSpace(payload.SongUUID) == "" {
+				_ = c.WriteJSON(fiber.Map{"type": "error", "payload": "song_uuid is required"})
+				continue
+			}
+			room.SendEvent(rate.RoomEvent{Type: rate.EvQueueAdd, Data: &rate.QueueAddEvent{
+				SessionID: sessionID,
+				SongUUID:  strings.TrimSpace(payload.SongUUID),
+			}})
 		case "queue_remove":
 			var payload struct {
 				ItemID string `json:"item_id"`

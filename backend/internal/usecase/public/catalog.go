@@ -482,17 +482,17 @@ func (u *CatalogUsecase) getPersonalGeneratedPlaylistDescriptors(ctx context.Con
 	if u.generatedRepo == nil {
 		return nil, domain.NewAppError(500, "Generated playlists are unavailable", nil)
 	}
-	ratedCount, err := u.generatedRepo.CountGeneratedPersonalSongs(ctx, userID, "rated")
-	if err != nil {
-		return nil, domain.NewAppError(500, "Failed to count rated songs", err)
-	}
-	likedCount, err := u.generatedRepo.CountGeneratedPersonalSongs(ctx, userID, "liked")
-	if err != nil {
-		return nil, domain.NewAppError(500, "Failed to count liked songs", err)
-	}
-	descriptors := []domain.GeneratedPlaylistDescriptor{
-		personalGeneratedPlaylistDescriptor("rated", ratedCount),
-		personalGeneratedPlaylistDescriptor("liked", likedCount),
+	kinds := []string{"rated", "liked", "favorited"}
+	descriptors := make([]domain.GeneratedPlaylistDescriptor, 0, len(kinds))
+	for _, kind := range kinds {
+		count, err := u.generatedRepo.CountGeneratedPersonalSongs(ctx, userID, kind)
+		if err != nil {
+			return nil, domain.NewAppError(500, "Failed to count "+kind+" songs", err)
+		}
+		descriptors = append(
+			descriptors,
+			personalGeneratedPlaylistDescriptor(kind, count),
+		)
 	}
 	for i := range descriptors {
 		if descriptors[i].SongCount == 0 {
@@ -510,13 +510,24 @@ func (u *CatalogUsecase) getPersonalGeneratedPlaylistDescriptors(ctx context.Con
 func personalGeneratedPlaylistDescriptor(kind string, count int) domain.GeneratedPlaylistDescriptor {
 	ratedDescription := "Songs you have rated, newest activity first"
 	likedDescription := "Songs you have liked, newest activity first"
-	if kind == "rated" {
+	favoritedDescription := "Songs you have favorited, newest activity first"
+	switch kind {
+	case "rated":
 		return domain.GeneratedPlaylistDescriptor{
 			Key:         "generated-rated",
 			Kind:        "rated",
 			Name:        "Rated Songs",
 			Description: &ratedDescription,
 			Href:        "/playlists/generated/user/rated",
+			SongCount:   count,
+		}
+	case "favorited":
+		return domain.GeneratedPlaylistDescriptor{
+			Key:         "generated-favorited",
+			Kind:        "favorited",
+			Name:        "Favorite Songs",
+			Description: &favoritedDescription,
+			Href:        "/playlists/generated/user/favorited",
 			SongCount:   count,
 		}
 	}
@@ -531,7 +542,7 @@ func personalGeneratedPlaylistDescriptor(kind string, count int) domain.Generate
 }
 
 func (u *CatalogUsecase) GetPersonalGeneratedPlaylist(ctx context.Context, userID uint64, kind string, limit, offset int) (*domain.GeneratedPlaylistDescriptor, []domain.Song, int, error) {
-	if kind != "rated" && kind != "liked" {
+	if kind != "rated" && kind != "liked" && kind != "favorited" {
 		return nil, nil, 0, domain.NewAppError(404, "Generated playlist not found", nil)
 	}
 	if u.generatedRepo == nil {

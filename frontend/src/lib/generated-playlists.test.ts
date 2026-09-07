@@ -9,6 +9,9 @@ describe("generatedPlaylistApiPath", () => {
     expect(generatedPlaylistApiPath("user", "liked")).toBe(
       "/me/playlists/generated/liked",
     );
+    expect(generatedPlaylistApiPath("user", "favorited")).toBe(
+      "/me/playlists/generated/favorited",
+    );
   });
 
   it("maps year and seasonal playlists", () => {

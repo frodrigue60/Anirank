@@ -997,8 +997,12 @@ func (r *songRepository) GetGeneratedPersonalSongs(ctx context.Context, userID u
 		join = "JOIN song_reactions i ON i.song_id = s.id"
 		predicate = "i.user_id = $1 AND i.type = 1"
 		order = "i.updated_at DESC, i.id DESC"
+	case "favorited":
+		join = "JOIN song_user i ON i.song_id = s.id"
+		predicate = "i.user_id = $1"
+		order = "i.updated_at DESC, i.id DESC"
 	default:
-		return nil, domain.NewAppError(400, "Generated playlist kind must be rated or liked", nil)
+		return nil, domain.NewAppError(400, "Generated playlist kind must be rated, liked, or favorited", nil)
 	}
 	return r.getGeneratedSongs(ctx, join, predicate, order, []interface{}{userID, limit, offset})
 }
@@ -1012,8 +1016,11 @@ func (r *songRepository) CountGeneratedPersonalSongs(ctx context.Context, userID
 	case "liked":
 		join = "JOIN song_reactions i ON i.song_id = s.id"
 		predicate = "i.user_id = $1 AND i.type = 1"
+	case "favorited":
+		join = "JOIN song_user i ON i.song_id = s.id"
+		predicate = "i.user_id = $1"
 	default:
-		return 0, domain.NewAppError(400, "Generated playlist kind must be rated or liked", nil)
+		return 0, domain.NewAppError(400, "Generated playlist kind must be rated, liked, or favorited", nil)
 	}
 	return r.countGeneratedSongs(ctx, join, predicate, userID)
 }

@@ -1,7 +1,14 @@
-export function generatedPlaylistApiPath(kind: string, key: string): string | null {
+export function generatedPlaylistApiPath(
+  kind: string,
+  key: string,
+): string | null {
   const parts = key.split("/").filter(Boolean).map(encodeURIComponent);
 
-  if (kind === "user" && parts.length === 1 && ["rated", "liked"].includes(parts[0])) {
+  if (
+    kind === "user" &&
+    parts.length === 1 &&
+    ["rated", "liked", "favorited"].includes(parts[0])
+  ) {
     return `/me/playlists/generated/${parts[0]}`;
   }
   if (kind === "year" && parts.length === 1) {

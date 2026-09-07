@@ -76,6 +76,27 @@ func TestSongRepository_GetGeneratedLikedSongs(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
+func TestSongRepository_GetGeneratedFavoritedSongs(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	repo := &songRepository{db: sqlx.NewDb(db, "postgres").Unsafe()}
+	rows := sqlmock.NewRows([]string{"id", "uuid", "song_romaji"}).
+		AddRow(9, "song-uuid", "Song")
+	mock.ExpectQuery(`(?s)JOIN song_user i ON i.song_id = s.id.*i.user_id = \$1.*s.status = true AND a.status = true.*ORDER BY i.updated_at DESC`).
+		WithArgs(uint64(7), 10, 0).
+		WillReturnRows(rows)
+
+	songs, err := repo.GetGeneratedPersonalSongs(context.Background(), 7, "favorited", 10, 0)
+	assert.NoError(t, err)
+	assert.Len(t, songs, 1)
+	assert.Equal(t, "song-uuid", songs[0].UUID)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
 func TestSongRepository_GetGeneratedPlaylistDescriptors(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {

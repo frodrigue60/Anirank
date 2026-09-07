@@ -61,6 +61,20 @@ func TestSetGeneratedPlaylistThumbnailUsesBannerAndCoverFallback(t *testing.T) {
 	}
 }
 
+func TestPersonalGeneratedPlaylistDescriptorSupportsFavorites(t *testing.T) {
+	descriptor := personalGeneratedPlaylistDescriptor("favorited", 12)
+
+	if descriptor.Kind != "favorited" {
+		t.Fatalf("unexpected kind: %s", descriptor.Kind)
+	}
+	if descriptor.Href != "/playlists/generated/user/favorited" {
+		t.Fatalf("unexpected href: %s", descriptor.Href)
+	}
+	if descriptor.Name != "Favorite Songs" || descriptor.SongCount != 12 {
+		t.Fatalf("unexpected descriptor: %+v", descriptor)
+	}
+}
+
 func videoSrcPointer(value string) *string {
 	return &value
 }

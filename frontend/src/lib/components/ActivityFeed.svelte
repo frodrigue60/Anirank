@@ -10,10 +10,13 @@
   import ArrowLeft from "lucide-svelte/icons/arrow-left";
   import OptimizedImage from "$lib/components/OptimizedImage.svelte";
 
-  let { recentOnly = false } = $props();
+  let {
+    recentOnly = false,
+    initialActivities = [],
+  }: { recentOnly?: boolean; initialActivities?: any[] } = $props();
 
-  let activities = $state<any[]>([]);
-  let loading = $state(true);
+  let activities = $state<any[]>(initialActivities);
+  let loading = $state(initialActivities.length === 0);
 
   let page = $state(1);
   let hasMore = $state(true);
@@ -60,6 +63,7 @@
   }
 
   onMount(() => {
+    if (initialActivities.length > 0) return;
     void fetchActivities(1);
   });
 </script>

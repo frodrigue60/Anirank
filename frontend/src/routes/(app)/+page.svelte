@@ -515,7 +515,10 @@
       </section>
 
       <!-- Activity Feed -->
-      <ActivityFeed recentOnly />
+      <ActivityFeed
+        recentOnly
+        initialActivities={data.recentActivities || []}
+      />
     </div>
 
     <!-- Right Column (Sidebar) -->
@@ -574,7 +577,7 @@
       <!-- Announcements -->
       <AnnouncementSidebar />
       <!-- Communities -->
-      <CommunitySection />
+      <CommunitySection initialPartners={data.partners || []} />
     </aside>
   {/if}
 </main>

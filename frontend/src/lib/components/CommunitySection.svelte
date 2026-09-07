@@ -15,10 +15,15 @@
     type?: string;
   }
 
-  let partners = $state<Partner[]>([]);
-  let loading = $state(true);
+  let {
+    initialPartners = [],
+  }: { initialPartners?: Partner[] } = $props();
+
+  let partners = $state<Partner[]>(initialPartners);
+  let loading = $state(initialPartners.length === 0);
 
   onMount(async () => {
+    if (initialPartners.length > 0) return;
     try {
       partners = await getActivePartners();
     } catch (e) {

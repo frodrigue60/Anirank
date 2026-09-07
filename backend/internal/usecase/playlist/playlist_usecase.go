@@ -202,9 +202,21 @@ func (u *PlaylistUsecase) GetPlaylistSongs(ctx context.Context, playlistID uint6
 		return nil, err
 	}
 
+	songIDs := make([]uint64, 0, len(items))
+	for i := range items {
+		if items[i].Song != nil {
+			songIDs = append(songIDs, items[i].Song.ID)
+		}
+	}
+	variantsBySong, err := u.songRepo.GetVariantsBySongIDs(ctx, songIDs)
+	if err != nil {
+		return nil, domain.NewAppError(500, "Failed to load playlist videos", err)
+	}
+
 	// Enrich each song
 	for i := range items {
 		if items[i].Song != nil {
+			items[i].Song.Variants = u.resolvePlaylistVariants(variantsBySong[items[i].Song.ID])
 			u.enrichPlaylistSong(ctx, items[i].Song, requestingUserID)
 		}
 	}
@@ -231,36 +243,6 @@ func (u *PlaylistUsecase) enrichPlaylistSong(ctx context.Context, s *domain.Song
 			}
 		}
 		s.Artists = artists
-	}
-
-	// Load Variants with videos (storage keys only — S3/R2)
-	if len(s.Variants) == 0 {
-		variants, _ := u.songRepo.GetVariantsBySongID(ctx, s.ID)
-
-		var activeVariants []domain.SongVariant
-		for _, v := range variants {
-			if !v.Status {
-				continue
-			}
-			storageVideos := make([]domain.SongVariantVideo, 0, len(v.Videos))
-			for j := range v.Videos {
-				if !domain.IsStorageVideoSrc(v.Videos[j].VideoSrc) {
-					continue
-				}
-				if v.Videos[j].LocalUrl != nil {
-					v.Videos[j].LocalUrl = u.mediaService.Resolve(v.Videos[j].LocalUrl)
-				}
-				storageVideos = append(storageVideos, v.Videos[j])
-			}
-			v.Videos = storageVideos
-			if len(v.Videos) > 0 {
-				v.Video = &v.Videos[0]
-			} else {
-				v.Video = nil
-			}
-			activeVariants = append(activeVariants, v)
-		}
-		s.Variants = activeVariants
 	}
 
 	// Interaction Flags
@@ -297,6 +279,30 @@ func (u *PlaylistUsecase) enrichPlaylistSong(ctx context.Context, s *domain.Song
 		avg, _ := u.interactionRepo.GetAverageRating(ctx, s.ID)
 		s.AverageRating = avg
 	}
+}
+
+func (u *PlaylistUsecase) resolvePlaylistVariants(variants []domain.SongVariant) []domain.SongVariant {
+	playable := make([]domain.SongVariant, 0, len(variants))
+	for _, variant := range variants {
+		if !variant.Status {
+			continue
+		}
+		videos := make([]domain.SongVariantVideo, 0, len(variant.Videos))
+		for _, video := range variant.Videos {
+			if !domain.IsStorageVideoSrc(video.VideoSrc) {
+				continue
+			}
+			video.LocalUrl = u.mediaService.Resolve(video.VideoSrc)
+			videos = append(videos, video)
+		}
+		if len(videos) == 0 {
+			continue
+		}
+		variant.Videos = videos
+		variant.Video = &variant.Videos[0]
+		playable = append(playable, variant)
+	}
+	return playable
 }
 
 func (u *PlaylistUsecase) enrichPlaylist(p *domain.Playlist) {

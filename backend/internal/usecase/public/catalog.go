@@ -531,7 +531,9 @@ func (u *CatalogUsecase) GetPersonalGeneratedPlaylist(ctx context.Context, userI
 	if err != nil {
 		return nil, nil, 0, domain.NewAppError(500, "Failed to count generated playlist songs", err)
 	}
-	u.enrichGeneratedSongs(ctx, &userID, songs)
+	if err := u.enrichGeneratedSongs(ctx, &userID, songs); err != nil {
+		return nil, nil, 0, err
+	}
 	descriptor := personalGeneratedPlaylistDescriptor(kind, total)
 	return &descriptor, songs, total, nil
 }
@@ -550,7 +552,9 @@ func (u *CatalogUsecase) GetYearGeneratedPlaylist(ctx context.Context, userID *u
 		return nil, nil, 0, domain.NewAppError(500, "Failed to count generated playlist songs", err)
 	}
 	descriptor.SongCount = total
-	u.enrichGeneratedSongs(ctx, userID, songs)
+	if err := u.enrichGeneratedSongs(ctx, userID, songs); err != nil {
+		return nil, nil, 0, err
+	}
 	return descriptor, songs, total, nil
 }
 
@@ -569,7 +573,9 @@ func (u *CatalogUsecase) GetSeasonGeneratedPlaylist(ctx context.Context, userID 
 		return nil, nil, 0, domain.NewAppError(500, "Failed to count generated playlist songs", err)
 	}
 	descriptor.SongCount = total
-	u.enrichGeneratedSongs(ctx, userID, songs)
+	if err := u.enrichGeneratedSongs(ctx, userID, songs); err != nil {
+		return nil, nil, 0, err
+	}
 	return descriptor, songs, total, nil
 }
 
@@ -591,10 +597,10 @@ func (u *CatalogUsecase) findGlobalGeneratedPlaylist(ctx context.Context, kind s
 	return nil, domain.NewAppError(404, "Generated playlist not found", nil)
 }
 
-func (u *CatalogUsecase) enrichGeneratedSongs(ctx context.Context, userID *uint64, songs []domain.Song) {
+func (u *CatalogUsecase) enrichGeneratedSongs(ctx context.Context, userID *uint64, songs []domain.Song) error {
 	u.enrichSongsBulk(ctx, userID, songs)
 	if len(songs) == 0 {
-		return
+		return nil
 	}
 	ids := make([]uint64, len(songs))
 	for i := range songs {
@@ -602,7 +608,7 @@ func (u *CatalogUsecase) enrichGeneratedSongs(ctx context.Context, userID *uint6
 	}
 	variants, err := u.songRepo.GetVariantsBySongIDs(ctx, ids)
 	if err != nil {
-		return
+		return domain.NewAppError(500, "Failed to load playlist videos", err)
 	}
 	for i := range songs {
 		active := activeVariantsForSong(variants[songs[i].ID], u.mediaService)
@@ -614,6 +620,7 @@ func (u *CatalogUsecase) enrichGeneratedSongs(ctx context.Context, userID *uint6
 		}
 		songs[i].Variants = playable
 	}
+	return nil
 }
 
 func (u *CatalogUsecase) enrichGeneratedPlaylistDescriptor(descriptor *domain.GeneratedPlaylistDescriptor) {

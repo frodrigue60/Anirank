@@ -15,9 +15,9 @@ func resolveVariantVideos(v *domain.SongVariant, mediaService infrastructure.Med
 		if !domain.IsStorageVideoSrc(v.Videos[j].VideoSrc) {
 			continue
 		}
-		if v.Videos[j].LocalUrl != nil {
-			v.Videos[j].LocalUrl = mediaService.Resolve(v.Videos[j].LocalUrl)
-		}
+		// video_src is the canonical object-storage key. Older rows may not
+		// have local_url populated, so always derive the public URL from it.
+		v.Videos[j].LocalUrl = mediaService.Resolve(v.Videos[j].VideoSrc)
 		storageVideos = append(storageVideos, v.Videos[j])
 	}
 	v.Videos = storageVideos

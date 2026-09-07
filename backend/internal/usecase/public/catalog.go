@@ -70,9 +70,9 @@ func NewCatalogUsecase(
 
 // ─── Songs ───
 
-func (u *CatalogUsecase) enrichSongsBulk(ctx context.Context, userID *uint64, songs []domain.Song) {
+func (u *CatalogUsecase) enrichSongsBulk(ctx context.Context, userID *uint64, songs []domain.Song) error {
 	if len(songs) == 0 {
-		return
+		return nil
 	}
 
 	songIDs := make([]uint64, len(songs))
@@ -105,10 +105,12 @@ func (u *CatalogUsecase) enrichSongsBulk(ctx context.Context, userID *uint64, so
 	// 3. User interactions & Moderation
 	var userInteractions map[uint64]domain.UserSongInteraction
 	var reportedMap map[uint64]bool
+	var interactionErr error
 	if userID != nil {
 		var err error
 		userInteractions, err = u.interactionRepo.GetUserInteractionsBySongIDs(ctx, *userID, songIDs)
 		if err != nil {
+			interactionErr = err
 			log.Printf("[Enrich] Error fetching interactions for user %d: %v", *userID, err)
 		} else {
 			log.Printf("[Enrich] Found %d interactions for user %d on %d songs", len(userInteractions), *userID, len(songIDs))
@@ -205,6 +207,8 @@ func (u *CatalogUsecase) enrichSongsBulk(ctx context.Context, userID *uint64, so
 			}
 		}
 	}
+
+	return interactionErr
 }
 
 // ─── Songs ───
@@ -610,7 +614,9 @@ func (u *CatalogUsecase) findGlobalGeneratedPlaylist(ctx context.Context, kind s
 }
 
 func (u *CatalogUsecase) enrichGeneratedSongs(ctx context.Context, userID *uint64, songs []domain.Song) error {
-	u.enrichSongsBulk(ctx, userID, songs)
+	if err := u.enrichSongsBulk(ctx, userID, songs); err != nil {
+		return domain.NewAppError(500, "Failed to load playlist interaction state", err)
+	}
 	if len(songs) == 0 {
 		return nil
 	}

@@ -35,6 +35,14 @@
     readPlayerVolume,
     writePlayerVolume,
   } from "$lib/player-volume";
+  import {
+    applyOptimisticFavorite,
+    applyOptimisticReaction,
+    restoreSongInteractions,
+    snapshotSongInteractions,
+    syncFavoriteState,
+    syncReactionCounts,
+  } from "$lib/song-interactions";
 
   let { data }: { data: any } = $props();
   // svelte-ignore state_referenced_locally
@@ -46,6 +54,7 @@
   // svelte-ignore state_referenced_locally
   let pagination = $state(data.pagination || null);
   let loadingMore = $state(false);
+  let interactionPending = $state(false);
   let openMenuId = $state<number | null>(null);
 
   let selectedVariantIndex = $state(0);
@@ -305,30 +314,32 @@
       goto(`/login?redirect=${encodeURIComponent(page.url.pathname)}`);
       return;
     }
-    if (!currentSong) return;
+    if (!currentSong || interactionPending) return;
 
+    const song = currentSong;
+    const previous = snapshotSongInteractions(song);
+    applyOptimisticReaction(song, "like");
+    interactionPending = true;
     try {
       const resp = await api.post(`/interactions/reactions`, {
-        entity_id: currentSong.id,
+        entity_id: song.id,
         entity_type: "song",
         type: "like",
       });
-      if (resp.data.success) {
-        currentSong.is_liked = !currentSong.is_liked;
-        if (currentSong.is_liked) currentSong.is_disliked = false;
-        currentSong.likes_count = resp.data.likesCount;
-        currentSong.dislikes_count = resp.data.dislikesCount;
-        toastState.addToast(
-          currentSong.is_liked ? "Song liked!" : "Like removed!",
-          "success",
-        );
-      }
+      syncReactionCounts(song, resp);
+      toastState.addToast(
+        song.is_liked ? "Song liked!" : "Like removed!",
+        "success",
+      );
     } catch (e: any) {
+      restoreSongInteractions(song, previous);
       console.error(e);
       toastState.addToast(
         e.response?.data?.message || "Failed to update like status",
         "error",
       );
+    } finally {
+      interactionPending = false;
     }
   }
 
@@ -337,30 +348,32 @@
       goto(`/login?redirect=${encodeURIComponent(page.url.pathname)}`);
       return;
     }
-    if (!currentSong) return;
+    if (!currentSong || interactionPending) return;
 
+    const song = currentSong;
+    const previous = snapshotSongInteractions(song);
+    applyOptimisticReaction(song, "dislike");
+    interactionPending = true;
     try {
       const resp = await api.post(`/interactions/reactions`, {
-        entity_id: currentSong.id,
+        entity_id: song.id,
         entity_type: "song",
         type: "dislike",
       });
-      if (resp.data.success) {
-        currentSong.is_disliked = !currentSong.is_disliked;
-        if (currentSong.is_disliked) currentSong.is_liked = false;
-        currentSong.likes_count = resp.data.likesCount;
-        currentSong.dislikes_count = resp.data.dislikesCount;
-        toastState.addToast(
-          currentSong.is_disliked ? "Song disliked!" : "Dislike removed!",
-          "success",
-        );
-      }
+      syncReactionCounts(song, resp);
+      toastState.addToast(
+        song.is_disliked ? "Song disliked!" : "Dislike removed!",
+        "success",
+      );
     } catch (e: any) {
+      restoreSongInteractions(song, previous);
       console.error(e);
       toastState.addToast(
         e.response?.data?.message || "Failed to update dislike status",
         "error",
       );
+    } finally {
+      interactionPending = false;
     }
   }
 
@@ -369,27 +382,30 @@
       goto(`/login?redirect=${encodeURIComponent(page.url.pathname)}`);
       return;
     }
-    if (!currentSong) return;
+    if (!currentSong || interactionPending) return;
+    const song = currentSong;
+    const previous = snapshotSongInteractions(song);
+    applyOptimisticFavorite(song);
+    interactionPending = true;
     try {
       const resp = await api.post(`/interactions/favorites`, {
-        entity_id: currentSong.id,
+        entity_id: song.id,
         entity_type: "song",
       });
-      if (resp.data.success || resp.status === 200 || resp.status === 201) {
-        currentSong.is_favorited = resp.data.favorited || resp.data.favorite;
-        toastState.addToast(
-          currentSong.is_favorited
-            ? "Added to favorites!"
-            : "Removed from favorites",
-          "success",
-        );
-      }
+      syncFavoriteState(song, resp);
+      toastState.addToast(
+        song.is_favorited ? "Added to favorites!" : "Removed from favorites",
+        "success",
+      );
     } catch (e: any) {
+      restoreSongInteractions(song, previous);
       console.error(e);
       toastState.addToast(
         e.response?.data?.message || "Failed to update favorites",
         "error",
       );
+    } finally {
+      interactionPending = false;
     }
   }
 </script>
@@ -491,8 +507,9 @@
         >
           <div class="flex items-center gap-6">
             <button
-              class="flex flex-col items-center gap-1 group"
+              class="flex flex-col items-center gap-1 group disabled:opacity-50"
               onclick={toggleFavorite}
+              disabled={interactionPending}
             >
                 <Heart
                   size={20}
@@ -507,8 +524,9 @@
               </span>
             </button>
             <button
-              class="flex flex-col items-center gap-1 group"
+              class="flex flex-col items-center gap-1 group disabled:opacity-50"
               onclick={toggleLike}
+              disabled={interactionPending}
             >
                 <ThumbsUp
                   size={20}
@@ -523,8 +541,9 @@
               </span>
             </button>
             <button
-              class="flex flex-col items-center gap-1 group"
+              class="flex flex-col items-center gap-1 group disabled:opacity-50"
               onclick={toggleDislike}
+              disabled={interactionPending}
             >
                 <ThumbsDown
                   size={20}
@@ -805,8 +824,11 @@
             <button
               class="w-8 h-8 rounded-full flex items-center justify-center transition-colors {currentSong?.is_favorited
                 ? 'text-primary'
-                : 'text-white/40'}"
+                : 'text-white/40'} disabled:opacity-50"
               onclick={toggleFavorite}
+              disabled={interactionPending}
+              aria-label="Toggle favorite"
+              title="Toggle favorite"
             >
               <Heart
                 size={18}
@@ -816,8 +838,11 @@
             <button
               class="w-8 h-8 rounded-full flex items-center justify-center transition-colors {currentSong?.is_liked
                 ? 'text-primary'
-                : 'text-white/40'}"
+                : 'text-white/40'} disabled:opacity-50"
               onclick={toggleLike}
+              disabled={interactionPending}
+              aria-label="Toggle like"
+              title="Toggle like"
             >
               <ThumbsUp
                 size={18}
@@ -827,8 +852,11 @@
             <button
               class="w-8 h-8 rounded-full flex items-center justify-center transition-colors {currentSong?.is_disliked
                 ? 'text-primary'
-                : 'text-white/40'}"
+                : 'text-white/40'} disabled:opacity-50"
               onclick={toggleDislike}
+              disabled={interactionPending}
+              aria-label="Toggle dislike"
+              title="Toggle dislike"
             >
               <ThumbsDown
                 size={18}

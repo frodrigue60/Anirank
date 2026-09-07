@@ -105,53 +105,59 @@ func (r *interactionRepository) GetUserInteractionsBySongIDs(ctx context.Context
 
 	// 1. Favorites
 	queryFavs, argsFavs, err := sqlx.In("SELECT song_id FROM song_user WHERE user_id = ? AND song_id IN (?)", userID, songIDs)
-	if err == nil {
-		queryFavs = r.db.Rebind(queryFavs)
-		var favIDs []uint64
-		if err := r.db.SelectContext(ctx, &favIDs, queryFavs, argsFavs...); err == nil {
-			for _, id := range favIDs {
-				inter := result[id]
-				inter.IsFavorited = true
-				result[id] = inter
-			}
-		}
+	if err != nil {
+		return nil, fmt.Errorf("build favorites interaction query: %w", err)
+	}
+	queryFavs = r.db.Rebind(queryFavs)
+	var favIDs []uint64
+	if err := r.db.SelectContext(ctx, &favIDs, queryFavs, argsFavs...); err != nil {
+		return nil, fmt.Errorf("load favorites interactions: %w", err)
+	}
+	for _, id := range favIDs {
+		inter := result[id]
+		inter.IsFavorited = true
+		result[id] = inter
 	}
 
 	// 2. Reactions (Likes/Dislikes)
 	queryReacts, argsReacts, err := sqlx.In("SELECT song_id, type FROM song_reactions WHERE user_id = ? AND song_id IN (?)", userID, songIDs)
-	if err == nil {
-		queryReacts = r.db.Rebind(queryReacts)
-		type ReactRow struct {
-			SongID uint64 `db:"song_id"`
-			Type   int8   `db:"type"`
-		}
-		var reactRows []ReactRow
-		if err := r.db.SelectContext(ctx, &reactRows, queryReacts, argsReacts...); err == nil {
-			for _, row := range reactRows {
-				inter := result[row.SongID]
-				inter.Reaction = row.Type
-				result[row.SongID] = inter
-			}
-		}
+	if err != nil {
+		return nil, fmt.Errorf("build reactions interaction query: %w", err)
+	}
+	queryReacts = r.db.Rebind(queryReacts)
+	type ReactRow struct {
+		SongID uint64 `db:"song_id"`
+		Type   int8   `db:"type"`
+	}
+	var reactRows []ReactRow
+	if err := r.db.SelectContext(ctx, &reactRows, queryReacts, argsReacts...); err != nil {
+		return nil, fmt.Errorf("load reactions interactions: %w", err)
+	}
+	for _, row := range reactRows {
+		inter := result[row.SongID]
+		inter.Reaction = row.Type
+		result[row.SongID] = inter
 	}
 
 	// 3. Ratings
 	queryRatings, argsRatings, err := sqlx.In("SELECT song_id, rating FROM song_ratings WHERE user_id = ? AND song_id IN (?)", userID, songIDs)
-	if err == nil {
-		queryRatings = r.db.Rebind(queryRatings)
-		type RatingRow struct {
-			SongID uint64  `db:"song_id"`
-			Rating float64 `db:"rating"`
-		}
-		var ratingRows []RatingRow
-		if err := r.db.SelectContext(ctx, &ratingRows, queryRatings, argsRatings...); err == nil {
-			for _, row := range ratingRows {
-				inter := result[row.SongID]
-				val := row.Rating
-				inter.Rating = &val
-				result[row.SongID] = inter
-			}
-		}
+	if err != nil {
+		return nil, fmt.Errorf("build ratings interaction query: %w", err)
+	}
+	queryRatings = r.db.Rebind(queryRatings)
+	type RatingRow struct {
+		SongID uint64  `db:"song_id"`
+		Rating float64 `db:"rating"`
+	}
+	var ratingRows []RatingRow
+	if err := r.db.SelectContext(ctx, &ratingRows, queryRatings, argsRatings...); err != nil {
+		return nil, fmt.Errorf("load ratings interactions: %w", err)
+	}
+	for _, row := range ratingRows {
+		inter := result[row.SongID]
+		val := row.Rating
+		inter.Rating = &val
+		result[row.SongID] = inter
 	}
 
 	return result, nil

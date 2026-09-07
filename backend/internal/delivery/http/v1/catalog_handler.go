@@ -394,13 +394,18 @@ func generatedPlaylistDTOs(generated []domain.GeneratedPlaylistDescriptor) []dto
 }
 
 func generatedPlaylistResponse(c *fiber.Ctx, playlist *domain.GeneratedPlaylistDescriptor, songs []domain.Song, total, page, limit int) fiber.Map {
-	songDTOs := make([]dto.SongMinimalDTO, len(songs))
-	for i := range songs {
-		songDTOs[i] = dto.ToSongMinimalDTO(&songs[i])
-	}
+	songDTOs := generatedPlaylistSongDTOs(songs)
 	response := paginatedResponse(c, songDTOs, total, page, limit)
 	response["playlist"] = dto.ToGeneratedPlaylistDescriptorDTO(playlist)
 	return response
+}
+
+func generatedPlaylistSongDTOs(songs []domain.Song) []dto.SongDTO {
+	songDTOs := make([]dto.SongDTO, len(songs))
+	for i := range songs {
+		songDTOs[i] = dto.ToSongDTO(&songs[i])
+	}
+	return songDTOs
 }
 
 // ─── Users ───

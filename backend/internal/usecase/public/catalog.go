@@ -486,10 +486,21 @@ func (u *CatalogUsecase) getPersonalGeneratedPlaylistDescriptors(ctx context.Con
 	if err != nil {
 		return nil, domain.NewAppError(500, "Failed to count liked songs", err)
 	}
-	return []domain.GeneratedPlaylistDescriptor{
+	descriptors := []domain.GeneratedPlaylistDescriptor{
 		personalGeneratedPlaylistDescriptor("rated", ratedCount),
 		personalGeneratedPlaylistDescriptor("liked", likedCount),
-	}, nil
+	}
+	for i := range descriptors {
+		if descriptors[i].SongCount == 0 {
+			continue
+		}
+		preview, err := u.generatedRepo.GetGeneratedPersonalSongs(ctx, userID, descriptors[i].Kind, 1, 0)
+		if err != nil {
+			return nil, domain.NewAppError(500, "Failed to load generated playlist thumbnail", err)
+		}
+		u.setGeneratedPlaylistThumbnail(&descriptors[i], preview)
+	}
+	return descriptors, nil
 }
 
 func personalGeneratedPlaylistDescriptor(kind string, count int) domain.GeneratedPlaylistDescriptor {
@@ -535,6 +546,7 @@ func (u *CatalogUsecase) GetPersonalGeneratedPlaylist(ctx context.Context, userI
 		return nil, nil, 0, err
 	}
 	descriptor := personalGeneratedPlaylistDescriptor(kind, total)
+	u.setGeneratedPlaylistThumbnail(&descriptor, songs)
 	return &descriptor, songs, total, nil
 }
 
@@ -628,6 +640,17 @@ func (u *CatalogUsecase) enrichGeneratedPlaylistDescriptor(descriptor *domain.Ge
 	if descriptor.LatestBanner != nil {
 		descriptor.BannerSources = u.mediaService.GetImageSources(*descriptor.LatestBanner)
 	}
+}
+
+func (u *CatalogUsecase) setGeneratedPlaylistThumbnail(descriptor *domain.GeneratedPlaylistDescriptor, songs []domain.Song) {
+	if descriptor == nil || len(songs) == 0 || songs[0].Anime == nil {
+		return
+	}
+	descriptor.LatestBanner = songs[0].Anime.Banner
+	if descriptor.LatestBanner == nil {
+		descriptor.LatestBanner = songs[0].Anime.Cover
+	}
+	u.enrichGeneratedPlaylistDescriptor(descriptor)
 }
 
 // ─── Users ───

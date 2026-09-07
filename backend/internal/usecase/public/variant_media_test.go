@@ -39,6 +39,28 @@ func TestActiveVariantsForSongResolvesCanonicalVideoSrc(t *testing.T) {
 	}
 }
 
+func TestSetGeneratedPlaylistThumbnailUsesBannerAndCoverFallback(t *testing.T) {
+	banner := "animes/banners/banner.avif"
+	cover := "animes/covers/cover.avif"
+	usecase := &CatalogUsecase{mediaService: &resolvingMediaService{}}
+
+	withBanner := domain.GeneratedPlaylistDescriptor{}
+	usecase.setGeneratedPlaylistThumbnail(&withBanner, []domain.Song{{
+		Anime: &domain.Anime{Banner: &banner, Cover: &cover},
+	}})
+	if withBanner.BannerURL == nil || *withBanner.BannerURL != "https://media.example/animes/banners/banner.avif" {
+		t.Fatalf("unexpected banner thumbnail: %v", withBanner.BannerURL)
+	}
+
+	withCover := domain.GeneratedPlaylistDescriptor{}
+	usecase.setGeneratedPlaylistThumbnail(&withCover, []domain.Song{{
+		Anime: &domain.Anime{Cover: &cover},
+	}})
+	if withCover.BannerURL == nil || *withCover.BannerURL != "https://media.example/animes/covers/cover.avif" {
+		t.Fatalf("unexpected cover fallback: %v", withCover.BannerURL)
+	}
+}
+
 func videoSrcPointer(value string) *string {
 	return &value
 }

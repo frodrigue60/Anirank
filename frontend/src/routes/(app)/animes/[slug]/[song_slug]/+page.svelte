@@ -44,6 +44,12 @@
   import Loader2 from "lucide-svelte/icons/loader-2";
   import OptimizedImage from "$lib/components/OptimizedImage.svelte";
   import type { ImageSource } from "$lib/types/media";
+  import {
+    DEFAULT_PLAYER_VOLUME,
+    readPlayerVolume,
+    writePlayerVolume,
+  } from "$lib/player-volume";
+  import { browser } from "$app/environment";
   import api from "$lib/api";
   import type { Song, Artist, SongVariant as Variant } from "$lib/types/song";
   interface User {
@@ -112,6 +118,12 @@
     },
   );
   let videoError = $state(false);
+  let preferredVolume = $state(
+    browser ? readPlayerVolume(localStorage) : DEFAULT_PLAYER_VOLUME,
+  );
+  let volumeFadeTimer: ReturnType<typeof setInterval> | undefined;
+  let fadingVolume = false;
+  let fadedVideoURL = "";
 
   type VariantContextPart = { kind: "period"; text: string };
 
@@ -136,6 +148,11 @@
   let variantContextHasPeriod = $derived(
     variantContextParts.some((part) => part.kind === "period"),
   );
+
+  $effect(() => {
+    selectedVideo?.video_url;
+    return () => cancelVolumeFade();
+  });
 
   let comments: Comment[] = $state([]);
   let commentsTotal = $state(0);
@@ -610,25 +627,57 @@
     }
   }
 
+  function cancelVolumeFade() {
+    if (volumeFadeTimer !== undefined) {
+      clearInterval(volumeFadeTimer);
+      volumeFadeTimer = undefined;
+    }
+    fadingVolume = false;
+  }
+
   function fadeInVolume() {
     if (!videoElement) return;
+
+    const sourceURL =
+      selectedVideo?.video_url || selectedVideo?.local_url || "";
+    if (sourceURL && sourceURL === fadedVideoURL) {
+      videoElement.volume = preferredVolume;
+      return;
+    }
+
+    cancelVolumeFade();
+    fadedVideoURL = sourceURL;
+    const targetVolume = preferredVolume;
+    fadingVolume = true;
     videoElement.volume = 0;
     videoElement.muted = false;
 
+    if (targetVolume === 0) {
+      fadingVolume = false;
+      return;
+    }
+
     let volume = 0;
-    const interval = setInterval(() => {
+    const increment = targetVolume / 20;
+    volumeFadeTimer = setInterval(() => {
       if (!videoElement) {
-        clearInterval(interval);
+        cancelVolumeFade();
         return;
       }
-      volume += 0.05;
-      if (volume >= 1) {
-        videoElement.volume = 1;
-        clearInterval(interval);
+      volume += increment;
+      if (volume >= targetVolume) {
+        videoElement.volume = targetVolume;
+        cancelVolumeFade();
       } else {
         videoElement.volume = volume;
       }
-    }, 100); // Sube el volumen cada 100ms
+    }, 100);
+  }
+
+  function persistVideoVolume() {
+    if (!browser || !videoElement || fadingVolume || videoElement.muted) return;
+    preferredVolume = videoElement.volume;
+    writePlayerVolume(localStorage, preferredVolume);
   }
 
   async function deleteComment(uuid: string, parentUuid: string | null = null) {
@@ -805,6 +854,7 @@
               controls
               autoplay
               onplay={fadeInVolume}
+              onvolumechange={persistVideoVolume}
               onerror={() => (videoError = true)}
             >
               <track kind="captions" />

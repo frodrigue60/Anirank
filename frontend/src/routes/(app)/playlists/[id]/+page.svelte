@@ -30,6 +30,11 @@
   import { PUBLIC_API_URL } from "$lib/api";
   import OptimizedImage from "$lib/components/OptimizedImage.svelte";
   import { variantStoragePlaybackUrl } from "$lib/videoStorageSrc";
+  import {
+    DEFAULT_PLAYER_VOLUME,
+    readPlayerVolume,
+    writePlayerVolume,
+  } from "$lib/player-volume";
 
   let { data }: { data: any } = $props();
   // svelte-ignore state_referenced_locally
@@ -75,7 +80,7 @@
   }
 
   let videoElement: HTMLVideoElement | undefined = $state();
-  let maxVolume = $state(1); // Default max volume
+  let maxVolume = $state(DEFAULT_PLAYER_VOLUME);
 
   import { browser } from "$app/environment";
 
@@ -92,10 +97,7 @@
 
   $effect(() => {
     if (browser) {
-      const storedVolume = localStorage.getItem("anirank_volume");
-      if (storedVolume !== null) {
-        maxVolume = parseFloat(storedVolume);
-      }
+      maxVolume = readPlayerVolume(localStorage);
     }
   });
 
@@ -103,7 +105,7 @@
     const target = event.target as HTMLInputElement;
     maxVolume = parseFloat(target.value);
     if (browser) {
-      localStorage.setItem("anirank_volume", maxVolume.toString());
+      writePlayerVolume(localStorage, maxVolume);
     }
     if (videoElement) {
       videoElement.volume = maxVolume; // Update immediately if playing

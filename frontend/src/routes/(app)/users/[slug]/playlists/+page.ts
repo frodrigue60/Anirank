@@ -3,18 +3,20 @@ import api from '$lib/api';
 export const load = async ({ params, parent }: { params: { slug: string }, parent: () => Promise<any> }) => {
     const parentData = await parent();
     if (!parentData.profile) {
-        return { playlists: [] };
+        return { playlists: [], generatedPlaylists: [] };
     }
 
     try {
         const res = await api.get(`/users/${params.slug}/playlists`);
         return {
-            playlists: res.data.data || []
+            playlists: res.data.data || [],
+            generatedPlaylists: res.data.generated || []
         };
     } catch (e: any) {
         console.error("Failed to load user playlists", e);
         return {
-            playlists: []
+            playlists: [],
+            generatedPlaylists: []
         };
     }
 };

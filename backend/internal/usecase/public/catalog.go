@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"anirank/api/internal/domain"
@@ -19,6 +20,7 @@ type CatalogUsecase struct {
 	taxonomyRepo    domain.TaxonomyRepository
 	userRepo        domain.UserRepository
 	playlistRepo    domain.PlaylistRepository
+	generatedRepo   domain.GeneratedPlaylistRepository
 	interactionRepo domain.InteractionRepository
 	moderationRepo  domain.ModerationRepository
 	anilistClient   anilist.AnilistClient
@@ -48,6 +50,7 @@ func NewCatalogUsecase(
 	appCache domain.Cache,
 	encKey string,
 ) *CatalogUsecase {
+	generatedRepo, _ := sr.(domain.GeneratedPlaylistRepository)
 	return &CatalogUsecase{
 		animeRepo:       ar,
 		songRepo:        sr,
@@ -55,6 +58,7 @@ func NewCatalogUsecase(
 		taxonomyRepo:    tr,
 		userRepo:        ur,
 		playlistRepo:    plr,
+		generatedRepo:   generatedRepo,
 		interactionRepo: ir,
 		moderationRepo:  mr,
 		anilistClient:   anilist,
@@ -428,10 +432,10 @@ func (u *CatalogUsecase) GetAnimesByProducerSlug(ctx context.Context, slug strin
 
 // ─── Playlists ───
 
-func (u *CatalogUsecase) GetPaginatedPlaylists(ctx context.Context, limit, offset int, filters domain.PlaylistFilters) ([]domain.Playlist, int, error) {
+func (u *CatalogUsecase) GetPaginatedPlaylists(ctx context.Context, limit, offset int, filters domain.PlaylistFilters) ([]domain.Playlist, int, []domain.GeneratedPlaylistDescriptor, error) {
 	playlists, err := u.playlistRepo.GetPaginatedPublicPlaylists(ctx, limit, offset, filters)
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, nil, err
 	}
 	total, _ := u.playlistRepo.CountPublicPlaylists(ctx, filters)
 
@@ -439,7 +443,184 @@ func (u *CatalogUsecase) GetPaginatedPlaylists(ctx context.Context, limit, offse
 		u.enrichPlaylist(&playlists[i])
 	}
 
-	return playlists, total, nil
+	generated, err := u.getGlobalGeneratedPlaylistDescriptors(ctx)
+	if err != nil {
+		return nil, 0, nil, err
+	}
+	return playlists, total, generated, nil
+}
+
+func (u *CatalogUsecase) getGlobalGeneratedPlaylistDescriptors(ctx context.Context) ([]domain.GeneratedPlaylistDescriptor, error) {
+	if u.generatedRepo == nil {
+		return nil, domain.NewAppError(500, "Generated playlists are unavailable", nil)
+	}
+
+	const cacheKey = "playlists:generated:descriptors:v1"
+	var descriptors []domain.GeneratedPlaylistDescriptor
+	if err := u.safeCacheGet(ctx, cacheKey, &descriptors); err != nil {
+		var repoErr error
+		descriptors, repoErr = u.generatedRepo.GetGeneratedPlaylistDescriptors(ctx)
+		if repoErr != nil {
+			return nil, domain.NewAppError(500, "Failed to load generated playlists", repoErr)
+		}
+		for i := range descriptors {
+			u.enrichGeneratedPlaylistDescriptor(&descriptors[i])
+		}
+		u.safeCacheSet(ctx, cacheKey, descriptors, 15*time.Minute)
+	}
+	if descriptors == nil {
+		descriptors = []domain.GeneratedPlaylistDescriptor{}
+	}
+	return descriptors, nil
+}
+
+func (u *CatalogUsecase) getPersonalGeneratedPlaylistDescriptors(ctx context.Context, userID uint64) ([]domain.GeneratedPlaylistDescriptor, error) {
+	if u.generatedRepo == nil {
+		return nil, domain.NewAppError(500, "Generated playlists are unavailable", nil)
+	}
+	ratedCount, err := u.generatedRepo.CountGeneratedPersonalSongs(ctx, userID, "rated")
+	if err != nil {
+		return nil, domain.NewAppError(500, "Failed to count rated songs", err)
+	}
+	likedCount, err := u.generatedRepo.CountGeneratedPersonalSongs(ctx, userID, "liked")
+	if err != nil {
+		return nil, domain.NewAppError(500, "Failed to count liked songs", err)
+	}
+	return []domain.GeneratedPlaylistDescriptor{
+		personalGeneratedPlaylistDescriptor("rated", ratedCount),
+		personalGeneratedPlaylistDescriptor("liked", likedCount),
+	}, nil
+}
+
+func personalGeneratedPlaylistDescriptor(kind string, count int) domain.GeneratedPlaylistDescriptor {
+	ratedDescription := "Songs you have rated, newest activity first"
+	likedDescription := "Songs you have liked, newest activity first"
+	if kind == "rated" {
+		return domain.GeneratedPlaylistDescriptor{
+			Key:         "generated-rated",
+			Kind:        "rated",
+			Name:        "Rated Songs",
+			Description: &ratedDescription,
+			Href:        "/playlists/generated/user/rated",
+			SongCount:   count,
+		}
+	}
+	return domain.GeneratedPlaylistDescriptor{
+		Key:         "generated-liked",
+		Kind:        "liked",
+		Name:        "Liked Songs",
+		Description: &likedDescription,
+		Href:        "/playlists/generated/user/liked",
+		SongCount:   count,
+	}
+}
+
+func (u *CatalogUsecase) GetPersonalGeneratedPlaylist(ctx context.Context, userID uint64, kind string, limit, offset int) (*domain.GeneratedPlaylistDescriptor, []domain.Song, int, error) {
+	if kind != "rated" && kind != "liked" {
+		return nil, nil, 0, domain.NewAppError(404, "Generated playlist not found", nil)
+	}
+	if u.generatedRepo == nil {
+		return nil, nil, 0, domain.NewAppError(500, "Generated playlists are unavailable", nil)
+	}
+
+	songs, err := u.generatedRepo.GetGeneratedPersonalSongs(ctx, userID, kind, limit, offset)
+	if err != nil {
+		return nil, nil, 0, domain.NewAppError(500, "Failed to load generated playlist", err)
+	}
+	total, err := u.generatedRepo.CountGeneratedPersonalSongs(ctx, userID, kind)
+	if err != nil {
+		return nil, nil, 0, domain.NewAppError(500, "Failed to count generated playlist songs", err)
+	}
+	u.enrichGeneratedSongs(ctx, &userID, songs)
+	descriptor := personalGeneratedPlaylistDescriptor(kind, total)
+	return &descriptor, songs, total, nil
+}
+
+func (u *CatalogUsecase) GetYearGeneratedPlaylist(ctx context.Context, userID *uint64, year, limit, offset int) (*domain.GeneratedPlaylistDescriptor, []domain.Song, int, error) {
+	descriptor, err := u.findGlobalGeneratedPlaylist(ctx, "year", year, "")
+	if err != nil {
+		return nil, nil, 0, err
+	}
+	songs, err := u.generatedRepo.GetGeneratedYearSongs(ctx, year, limit, offset)
+	if err != nil {
+		return nil, nil, 0, domain.NewAppError(500, "Failed to load generated playlist", err)
+	}
+	total, err := u.generatedRepo.CountGeneratedYearSongs(ctx, year)
+	if err != nil {
+		return nil, nil, 0, domain.NewAppError(500, "Failed to count generated playlist songs", err)
+	}
+	descriptor.SongCount = total
+	u.enrichGeneratedSongs(ctx, userID, songs)
+	return descriptor, songs, total, nil
+}
+
+func (u *CatalogUsecase) GetSeasonGeneratedPlaylist(ctx context.Context, userID *uint64, year int, season string, limit, offset int) (*domain.GeneratedPlaylistDescriptor, []domain.Song, int, error) {
+	season = strings.ToLower(strings.TrimSpace(season))
+	descriptor, err := u.findGlobalGeneratedPlaylist(ctx, "season", year, season)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+	songs, err := u.generatedRepo.GetGeneratedSeasonSongs(ctx, year, season, limit, offset)
+	if err != nil {
+		return nil, nil, 0, domain.NewAppError(500, "Failed to load generated playlist", err)
+	}
+	total, err := u.generatedRepo.CountGeneratedSeasonSongs(ctx, year, season)
+	if err != nil {
+		return nil, nil, 0, domain.NewAppError(500, "Failed to count generated playlist songs", err)
+	}
+	descriptor.SongCount = total
+	u.enrichGeneratedSongs(ctx, userID, songs)
+	return descriptor, songs, total, nil
+}
+
+func (u *CatalogUsecase) findGlobalGeneratedPlaylist(ctx context.Context, kind string, year int, season string) (*domain.GeneratedPlaylistDescriptor, error) {
+	if year < 1900 || year > 3000 {
+		return nil, domain.NewAppError(404, "Generated playlist not found", nil)
+	}
+	descriptors, err := u.getGlobalGeneratedPlaylistDescriptors(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for i := range descriptors {
+		d := &descriptors[i]
+		if d.Kind == kind && d.Year != nil && *d.Year == year &&
+			(kind != "season" || (d.Season != nil && strings.EqualFold(*d.Season, season))) {
+			return d, nil
+		}
+	}
+	return nil, domain.NewAppError(404, "Generated playlist not found", nil)
+}
+
+func (u *CatalogUsecase) enrichGeneratedSongs(ctx context.Context, userID *uint64, songs []domain.Song) {
+	u.enrichSongsBulk(ctx, userID, songs)
+	if len(songs) == 0 {
+		return
+	}
+	ids := make([]uint64, len(songs))
+	for i := range songs {
+		ids[i] = songs[i].ID
+	}
+	variants, err := u.songRepo.GetVariantsBySongIDs(ctx, ids)
+	if err != nil {
+		return
+	}
+	for i := range songs {
+		active := activeVariantsForSong(variants[songs[i].ID], u.mediaService)
+		playable := make([]domain.SongVariant, 0, len(active))
+		for _, variant := range active {
+			if len(variant.Videos) > 0 {
+				playable = append(playable, variant)
+			}
+		}
+		songs[i].Variants = playable
+	}
+}
+
+func (u *CatalogUsecase) enrichGeneratedPlaylistDescriptor(descriptor *domain.GeneratedPlaylistDescriptor) {
+	descriptor.BannerURL = u.mediaService.Resolve(descriptor.LatestBanner)
+	if descriptor.LatestBanner != nil {
+		descriptor.BannerSources = u.mediaService.GetImageSources(*descriptor.LatestBanner)
+	}
 }
 
 // ─── Users ───
@@ -461,22 +642,24 @@ func (u *CatalogUsecase) GetUserBySlug(ctx context.Context, requestingUserID *ui
 	return user, nil
 }
 
-func (u *CatalogUsecase) GetUserPlaylists(ctx context.Context, requestingUserID *uint64, slug string, limit, offset int) ([]domain.Playlist, int, error) {
+func (u *CatalogUsecase) GetUserPlaylists(ctx context.Context, requestingUserID *uint64, slug string, limit, offset int) ([]domain.Playlist, int, []domain.GeneratedPlaylistDescriptor, error) {
 	user, err := u.userRepo.GetBySlug(ctx, slug)
 	if err != nil {
-		return nil, 0, domain.NewAppError(404, "User not found", err)
+		return nil, 0, nil, domain.NewAppError(404, "User not found", err)
 	}
 
 	includePrivate := false
+	isOwner := false
 	if requestingUserID != nil {
 		if *requestingUserID == user.ID {
 			includePrivate = true
+			isOwner = true
 		}
 	}
 
 	playlists, err := u.playlistRepo.GetByUserID(ctx, user.ID, includePrivate, limit, offset)
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, nil, err
 	}
 
 	total, _ := u.playlistRepo.CountByUserID(ctx, user.ID, includePrivate)
@@ -485,7 +668,15 @@ func (u *CatalogUsecase) GetUserPlaylists(ctx context.Context, requestingUserID 
 		u.enrichPlaylist(&playlists[i])
 	}
 
-	return playlists, total, nil
+	generated := []domain.GeneratedPlaylistDescriptor{}
+	if isOwner {
+		generated, err = u.getPersonalGeneratedPlaylistDescriptors(ctx, user.ID)
+		if err != nil {
+			return nil, 0, nil, err
+		}
+	}
+
+	return playlists, total, generated, nil
 }
 
 func (u *CatalogUsecase) GetUserFavorites(ctx context.Context, userID string, limit, offset int) ([]domain.Song, int, error) {

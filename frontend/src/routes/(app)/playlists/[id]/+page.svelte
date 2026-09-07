@@ -31,13 +31,16 @@
   import OptimizedImage from "$lib/components/OptimizedImage.svelte";
   import { variantStoragePlaybackUrl } from "$lib/videoStorageSrc";
 
-  let { data } = $props();
+  let { data }: { data: any } = $props();
   // svelte-ignore state_referenced_locally
   let playlist = $state(data.playlist);
   // svelte-ignore state_referenced_locally
   let songs = $state((playlist.songs || []) as Song[]);
   // svelte-ignore state_referenced_locally
   let currentSong = $state(songs[0] || null);
+  // svelte-ignore state_referenced_locally
+  let pagination = $state(data.pagination || null);
+  let loadingMore = $state(false);
   let openMenuId = $state<number | null>(null);
 
   let selectedVariantIndex = $state(0);
@@ -204,9 +207,13 @@
   }
 
   $effect(() => {
-    // Reset variant index when song changes to ensure we play the first variant
+    // Prefer the first variant that actually has playable object-storage media.
     if (currentSong) {
-      selectedVariantIndex = 0;
+      const playableIndex =
+        currentSong.variants?.findIndex((variant) =>
+          Boolean(variantStoragePlaybackUrl(variant)),
+        ) ?? -1;
+      selectedVariantIndex = playableIndex >= 0 ? playableIndex : 0;
     }
   });
 
@@ -231,6 +238,29 @@
         e.response?.data?.message || "Failed to remove song",
         "error",
       );
+    }
+  }
+
+  async function loadMoreGeneratedSongs() {
+    if (!data.generatedApiPath || loadingMore || !pagination?.has_more) return;
+
+    loadingMore = true;
+    try {
+      const nextPage = (pagination.current_page || 1) + 1;
+      const response = await api.get(data.generatedApiPath, {
+        params: { page: nextPage, limit: pagination.per_page || 100 },
+      });
+      const incoming = (response.data.data || []) as Song[];
+      const existing = new Set(songs.map((song) => song.id));
+      songs = [...songs, ...incoming.filter((song) => !existing.has(song.id))];
+      pagination = response.data.pagination;
+    } catch (e: any) {
+      toastState.addToast(
+        e.response?.data?.message || "Failed to load more songs",
+        "error",
+      );
+    } finally {
+      loadingMore = false;
     }
   }
 
@@ -363,9 +393,9 @@
 </script>
 
 <SEO
-  title={`${playlist.name} - Playlist by ${playlist.user?.name || "User"} - AniRank`}
-  description={`Listen to the "${playlist.name}" playlist curated by ${playlist.user?.name || "User"} on AniRank. Featuring ${songs.length} anime theme songs.`}
-  image={`${PUBLIC_API_URL}/og/playlist/${playlist.id}`}
+  title={`${playlist.name} - Playlist by ${playlist.user?.name || "AniRank"} - AniRank`}
+  description={`Listen to the "${playlist.name}" playlist curated by ${playlist.user?.name || "AniRank"} on AniRank. Featuring ${playlist.song_count ?? songs.length} anime theme songs.`}
+  image={playlist.banner_url || `${PUBLIC_API_URL}/og/playlist/${playlist.id}`}
 />
 
 <svelte:window onclick={closeMenu} />
@@ -508,13 +538,15 @@
             </button>
           </div>
           <div class="flex items-center gap-4">
-            <button
-              onclick={() => currentSong && removeFromPlaylist(currentSong.id)}
-              class="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-red-400 hover:bg-red-500/10 transition-colors"
-              title="Remove from Playlist"
-            >
-              <ListMinus size={18} />
-            </button>
+            {#if !playlist.read_only}
+              <button
+                onclick={() => currentSong && removeFromPlaylist(currentSong.id)}
+                class="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-red-400 hover:bg-red-500/10 transition-colors"
+                title="Remove from Playlist"
+              >
+                <ListMinus size={18} />
+              </button>
+            {/if}
             <button
               onclick={reportSong}
               class="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-white hover:bg-white/5 transition-colors"
@@ -635,6 +667,15 @@
             <Music2 size={64} class="font-thin" />
             <p class="mt-4 font-bold">This playlist is empty</p>
           </div>
+        {/if}
+        {#if pagination?.has_more}
+          <button
+            onclick={loadMoreGeneratedSongs}
+            disabled={loadingMore}
+            class="min-h-11 w-full rounded-sm bg-surface-dark px-4 py-3 font-bold text-white transition-colors hover:text-primary disabled:opacity-70"
+          >
+            {loadingMore ? "Loading..." : "Load more songs"}
+          </button>
         {/if}
       </div>
 
@@ -799,13 +840,15 @@
             >
               <Share2 size={18} />
             </button>
-            <button
-              onclick={() => currentSong && removeFromPlaylist(currentSong.id)}
-              class="w-8 h-8 rounded-full flex items-center justify-center text-red-400 transition-colors"
-              title="Remove from Playlist"
-            >
-              <ListMinus size={18} />
-            </button>
+            {#if !playlist.read_only}
+              <button
+                onclick={() => currentSong && removeFromPlaylist(currentSong.id)}
+                class="w-8 h-8 rounded-full flex items-center justify-center text-red-400 transition-colors"
+                title="Remove from Playlist"
+              >
+                <ListMinus size={18} />
+              </button>
+            {/if}
           </div>
         </div>
       </div>
@@ -896,6 +939,15 @@
             <Music2 size={48} class="font-thin" />
             <p class="mt-3 font-bold text-sm">This playlist is empty</p>
           </div>
+        {/if}
+        {#if pagination?.has_more}
+          <button
+            onclick={loadMoreGeneratedSongs}
+            disabled={loadingMore}
+            class="min-h-11 w-full rounded-sm bg-surface-dark px-4 py-3 text-sm font-bold text-white transition-colors disabled:opacity-70"
+          >
+            {loadingMore ? "Loading..." : "Load more songs"}
+          </button>
         {/if}
       </div>
     </div>

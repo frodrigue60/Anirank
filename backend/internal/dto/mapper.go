@@ -167,7 +167,6 @@ func ToSongMinimalDTO(s *domain.Song) SongMinimalDTO {
 		}
 	}
 
-
 	artists := make([]ArtistMinimalDTO, 0)
 	for _, a := range s.Artists {
 		artists = append(artists, ToArtistMinimalDTO(&a))
@@ -579,24 +578,24 @@ func ToAnimeMinimalDTO(a *domain.Anime) AnimeMinimalDTO {
 	}
 
 	return AnimeMinimalDTO{
-			ID:            a.UUID,
-			AnilistID:     a.AnilistID,
-			Title:         a.Title,
-			TitleEnglish:  a.TitleEnglish,
-			TitleNative:   a.TitleNative,
-			Synonyms:      []string(a.Synonyms),
-			Slug:          a.Slug,
-			CoverUrl:      a.CoverUrl,
-			CoverSources:  a.CoverSources,
-			BannerUrl:     a.BannerUrl,
-			BannerSources: a.BannerSources,
-			SongsCount:    a.EnabledSongs, // Abstract as only enabled songs for public
-			EnabledSongs:  a.EnabledSongs,
-			DisabledSongs: a.DisabledSongs,
-			Season:        season,
-			Year:          year,
-			Format:        format,
-		}
+		ID:            a.UUID,
+		AnilistID:     a.AnilistID,
+		Title:         a.Title,
+		TitleEnglish:  a.TitleEnglish,
+		TitleNative:   a.TitleNative,
+		Synonyms:      []string(a.Synonyms),
+		Slug:          a.Slug,
+		CoverUrl:      a.CoverUrl,
+		CoverSources:  a.CoverSources,
+		BannerUrl:     a.BannerUrl,
+		BannerSources: a.BannerSources,
+		SongsCount:    a.EnabledSongs, // Abstract as only enabled songs for public
+		EnabledSongs:  a.EnabledSongs,
+		DisabledSongs: a.DisabledSongs,
+		Season:        season,
+		Year:          year,
+		Format:        format,
+	}
 }
 
 func ToAnimeDTO(a *domain.Anime) AnimeDTO {
@@ -651,9 +650,9 @@ func ToStudioDTO(s *domain.Studio) StudioDTO {
 		return StudioDTO{}
 	}
 	return StudioDTO{
-		ID:         s.UUID,
-		Name:       s.Name,
-		Slug:       s.Slug,
+		ID:            s.UUID,
+		Name:          s.Name,
+		Slug:          s.Slug,
 		LogoUrl:       s.LogoUrl,
 		LogoSources:   s.LogoSources,
 		BannerUrl:     s.BannerUrl,
@@ -667,9 +666,9 @@ func ToProducerDTO(p *domain.Producer) ProducerDTO {
 		return ProducerDTO{}
 	}
 	return ProducerDTO{
-		ID:         p.UUID,
-		Name:       p.Name,
-		Slug:       p.Slug,
+		ID:            p.UUID,
+		Name:          p.Name,
+		Slug:          p.Slug,
 		LogoUrl:       p.LogoUrl,
 		LogoSources:   p.LogoSources,
 		BannerUrl:     p.BannerUrl,
@@ -731,14 +730,14 @@ func ToPlaylistMinimalDTO(p *domain.Playlist) PlaylistMinimalDTO {
 		return PlaylistMinimalDTO{}
 	}
 	return PlaylistMinimalDTO{
-		ID:           p.UUID,
-		Name:         p.Name,
-		Slug:         p.Name,
+		ID:            p.UUID,
+		Name:          p.Name,
+		Slug:          p.Name,
 		BannerUrl:     p.BannerUrl,
 		BannerSources: p.BannerSources,
-		SongCount:    p.SongCount,
-		IsPublic:     p.IsPublic,
-		ContainsSong: p.ContainsSong,
+		SongCount:     p.SongCount,
+		IsPublic:      p.IsPublic,
+		ContainsSong:  p.ContainsSong,
 	}
 }
 
@@ -760,6 +759,26 @@ func ToPlaylistSongDTO(ps *domain.PlaylistSong) SongMinimalDTO {
 		return SongMinimalDTO{}
 	}
 	return ToSongMinimalDTO(ps.Song)
+}
+
+func ToGeneratedPlaylistDescriptorDTO(p *domain.GeneratedPlaylistDescriptor) GeneratedPlaylistDescriptorDTO {
+	if p == nil {
+		return GeneratedPlaylistDescriptorDTO{}
+	}
+	return GeneratedPlaylistDescriptorDTO{
+		ID:            p.Key,
+		Kind:          p.Kind,
+		Name:          p.Name,
+		Description:   p.Description,
+		Year:          p.Year,
+		Season:        p.Season,
+		Href:          p.Href,
+		SongCount:     p.SongCount,
+		BannerURL:     p.BannerURL,
+		BannerSources: p.BannerSources,
+		IsPublic:      p.Kind == "year" || p.Kind == "season",
+		ReadOnly:      true,
+	}
 }
 
 // ─── Comment Mappers ───
@@ -911,7 +930,7 @@ func ToActivityDTO(item domain.Activity) ActivityItemDTO {
 	if item.Badge != nil {
 		dto := ToBadgeDTO(item.Badge)
 		badgeDto = &dto
-		
+
 		// If target is empty, set it to the badge UUID for consistent TargetID
 		if targetID == "" {
 			targetID = item.Badge.UUID
@@ -937,14 +956,14 @@ func ToTournamentMinimalDTO(t *domain.Tournament) TournamentMinimalDTO {
 		return TournamentMinimalDTO{}
 	}
 	return TournamentMinimalDTO{
-		ID:        t.UUID,
-		Name:      t.Name,
-		Slug:      t.Slug,
-		Size:      t.Size,
-		Status:    t.Status,
-		CurrentRound: t.CurrentRound,
+		ID:                   t.UUID,
+		Name:                 t.Name,
+		Slug:                 t.Slug,
+		Size:                 t.Size,
+		Status:               t.Status,
+		CurrentRound:         t.CurrentRound,
 		MatchupDurationHours: t.MatchupDurationHours,
-		CreatedAt: t.CreatedAt,
+		CreatedAt:            t.CreatedAt,
 	}
 }
 

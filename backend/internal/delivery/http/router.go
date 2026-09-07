@@ -11,15 +11,15 @@ import (
 	"anirank/api/internal/infrastructure/og"
 	"anirank/api/internal/repository/postgres"
 	"anirank/api/internal/usecase/admin"
+	"anirank/api/internal/usecase/amq"
 	"anirank/api/internal/usecase/announcement"
 	"anirank/api/internal/usecase/auth"
 	"anirank/api/internal/usecase/interaction"
 	"anirank/api/internal/usecase/moderation"
 	"anirank/api/internal/usecase/notification"
 	"anirank/api/internal/usecase/playlist"
-	"anirank/api/internal/usecase/amq"
-	"anirank/api/internal/usecase/rate"
 	"anirank/api/internal/usecase/public"
+	"anirank/api/internal/usecase/rate"
 	"anirank/api/internal/usecase/tournament"
 	"context"
 	"log"
@@ -126,7 +126,7 @@ func SetupPublicRoutes(app *fiber.App,
 	recommendationRepo := postgres.NewRecommendationRepository(db)
 	recommendationUsecase := public.NewRecommendationUsecase(recommendationRepo, songRepo, animeRepo, interactionRepo, moderationRepo, mediaService, appCache)
 	recommendationHandler := v1.NewRecommendationHandler(recommendationUsecase)
- 
+
 	amqLobbyManager := amq.NewLobbyManager(animeRepo, songRepo, userRepo, xpUsecase, mediaService, anilistClient)
 	amqHandler := v1.NewAMQHandler(amqLobbyManager, jwtService, userRepo)
 
@@ -214,6 +214,8 @@ func SetupPublicRoutes(app *fiber.App,
 
 	// Catalog: Playlists
 	catalogApi.Get("/playlists", middleware.OptionalAuthMiddleware(jwtService, userRepo, appCache), catalogHandler.PlaylistIndex)
+	catalogApi.Get("/playlists/generated/year/:year", middleware.OptionalAuthMiddleware(jwtService, userRepo, appCache), catalogHandler.GeneratedYearPlaylist)
+	catalogApi.Get("/playlists/generated/season/:year/:season", middleware.OptionalAuthMiddleware(jwtService, userRepo, appCache), catalogHandler.GeneratedSeasonPlaylist)
 
 	// Sitemap
 	catalogApi.Get("/catalog/sitemap", catalogHandler.GetSitemap)
@@ -273,7 +275,7 @@ func SetupPublicRoutes(app *fiber.App,
 	catalogApi.Post("/animes/bulk-check", catalogHandler.BulkCheckAnilistIDs)
 	api.Post("/users/favorites/themes", catalogHandler.UserFavorites)
 	api.Post("/users/favorites/artists", catalogHandler.UserArtistFavorites)
- 
+
 	// Anime Music Quiz (AMQ) Endpoints
 	api.Post("/amq/rooms", middleware.OptionalAuthMiddleware(jwtService, userRepo, appCache), amqHandler.CreateRoom)
 	api.Get("/amq/rooms", amqHandler.ListRooms)
@@ -282,7 +284,7 @@ func SetupPublicRoutes(app *fiber.App,
 	api.Post("/rate/rooms", middleware.OptionalAuthMiddleware(jwtService, userRepo, appCache), rateHandler.CreateRoom)
 	api.Get("/rate/rooms", rateHandler.ListRooms)
 	api.Get("/rate/ws/:roomID", rateHandler.WSUpgrade, websocket.New(rateHandler.WSHandler))
- 
+
 	// --- PROTECTED ROUTES ---
 	protected := api.Group("/", middleware.AuthMiddleware(jwtService, userRepo, appCache))
 	vRequired := middleware.VerifiedMiddleware()
@@ -338,6 +340,7 @@ func SetupPublicRoutes(app *fiber.App,
 
 	// --- PROTECTED PLAYLISTS ---
 	protected.Get("/me/playlists", playlistHandler.GetMyPlaylists)
+	protected.Get("/me/playlists/generated/:kind", catalogHandler.PersonalGeneratedPlaylist)
 	protected.Post("/playlists", vRequired, playlistHandler.Create)
 	protected.Put("/playlists/:id", vRequired, playlistHandler.Update)
 	protected.Delete("/playlists/:id", vRequired, playlistHandler.Delete)

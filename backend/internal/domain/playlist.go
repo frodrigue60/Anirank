@@ -21,10 +21,10 @@ type Playlist struct {
 	Songs []PlaylistSong `db:"-" json:"songs,omitempty"`
 
 	// Enriched
-	SongCount    int     `db:"song_count" json:"song_count"`
-	ContainsSong bool    `db:"contains_song" json:"contains_song"`
-	LatestBanner *string `db:"latest_banner" json:"-"`
-	BannerUrl     *string `db:"-" json:"banner_url"`
+	SongCount     int           `db:"song_count" json:"song_count"`
+	ContainsSong  bool          `db:"contains_song" json:"contains_song"`
+	LatestBanner  *string       `db:"latest_banner" json:"-"`
+	BannerUrl     *string       `db:"-" json:"banner_url"`
 	BannerSources []ImageSource `db:"-" json:"banner_sources,omitempty"`
 }
 
@@ -33,6 +33,32 @@ type PlaylistFilters struct {
 	IsPublic *bool
 	UserID   *uint64
 	Sort     string
+}
+
+// GeneratedPlaylistDescriptor describes a read-only playlist computed from
+// catalog or interaction data. It is never persisted in playlists.
+type GeneratedPlaylistDescriptor struct {
+	Key           string        `db:"key"`
+	Kind          string        `db:"kind"`
+	Name          string        `db:"name"`
+	Description   *string       `db:"description"`
+	Year          *int          `db:"year"`
+	Season        *string       `db:"season"`
+	Href          string        `db:"href"`
+	SongCount     int           `db:"song_count"`
+	LatestBanner  *string       `db:"latest_banner"`
+	BannerURL     *string       `db:"-"`
+	BannerSources []ImageSource `db:"-"`
+}
+
+type GeneratedPlaylistRepository interface {
+	GetGeneratedPlaylistDescriptors(ctx context.Context) ([]GeneratedPlaylistDescriptor, error)
+	GetGeneratedPersonalSongs(ctx context.Context, userID uint64, kind string, limit, offset int) ([]Song, error)
+	CountGeneratedPersonalSongs(ctx context.Context, userID uint64, kind string) (int, error)
+	GetGeneratedYearSongs(ctx context.Context, year int, limit, offset int) ([]Song, error)
+	CountGeneratedYearSongs(ctx context.Context, year int) (int, error)
+	GetGeneratedSeasonSongs(ctx context.Context, year int, season string, limit, offset int) ([]Song, error)
+	CountGeneratedSeasonSongs(ctx context.Context, year int, season string) (int, error)
 }
 
 // PlaylistSong represents the pivot row enriched with Song data

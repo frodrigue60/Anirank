@@ -14,6 +14,8 @@
 
   // svelte-ignore state_referenced_locally
   let playlists = $state<any[]>(data.playlists);
+  // svelte-ignore state_referenced_locally
+  let generatedPlaylists = $state<any[]>(data.generatedPlaylists || []);
   let searchQuery = $state("");
   let showCreateModal = $state(false);
   let isEditModalOpen = $state(false);
@@ -22,12 +24,18 @@
   // Non-reactive guard for prop changes
   // svelte-ignore state_referenced_locally
   let _sourcePlaylists = data.playlists;
+  // svelte-ignore state_referenced_locally
+  let _sourceGeneratedPlaylists = data.generatedPlaylists;
 
   // Sync state if navigation happens or props change
   $effect(() => {
     if (_sourcePlaylists !== data.playlists) {
       _sourcePlaylists = data.playlists;
       playlists = data.playlists;
+    }
+    if (_sourceGeneratedPlaylists !== data.generatedPlaylists) {
+      _sourceGeneratedPlaylists = data.generatedPlaylists;
+      generatedPlaylists = data.generatedPlaylists || [];
     }
   });
 
@@ -43,9 +51,8 @@
       api
         .get(`/users/${data.profile.slug}/playlists`)
         .then((res) => {
-          if (res.data.playlists) {
-            playlists = res.data.playlists;
-          }
+          playlists = res.data.data || [];
+          generatedPlaylists = res.data.generated || [];
         })
         .catch((err) =>
           console.error("Could not fetch private playlists", err),
@@ -72,8 +79,9 @@
     }
   }
 
+  let allPlaylists = $derived([...generatedPlaylists, ...playlists]);
   let filteredPlaylists = $derived(
-    playlists.filter(
+    allPlaylists.filter(
       (p: any) =>
         p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (p.description &&
@@ -128,7 +136,7 @@
 
     {#if filteredPlaylists.length > 0}
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {#each filteredPlaylists as playlist (playlist.id)}
+        {#each filteredPlaylists as playlist (playlist.href || playlist.id)}
           <PlaylistCard
             {playlist}
             profile={data.profile}

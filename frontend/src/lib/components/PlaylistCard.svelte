@@ -47,7 +47,7 @@
     class="absolute inset-0 bg-linear-to-t from-black via-black/40 to-transparent"
   ></div>
 
-  {#if authState.user?.id === profile?.id}
+  {#if !playlist.read_only && authState.user?.uuid === profile?.uuid}
     <div
       class="absolute top-0 left-0 right-0 p-2 z-10 flex items-center justify-between pointer-events-none"
     >
@@ -95,16 +95,17 @@
     </div>
 
     <a
-      href="/playlists/{playlist.id}"
+      href={playlist.href || `/playlists/${playlist.id}`}
       class="text-xl font-bold text-white mb-1 group-hover:text-primary transition-colors uppercase truncate"
     >
       {playlist.name}
     </a>
 
     <p class="text-slate-300 text-xs font-medium opacity-80">
-      Created by <span class="text-slate-400 font-semibold"
-        >{profile?.name}</span
-      >
+      {playlist.read_only ? "Updated automatically" : "Created by"}
+      {#if !playlist.read_only}
+        <span class="text-slate-400 font-semibold">{profile?.name}</span>
+      {/if}
     </p>
   </div>
 </div>

@@ -317,7 +317,7 @@ func (h *CatalogHandler) PlaylistIndex(c *fiber.Ctx) error {
 		Search: c.Query("name", ""),
 	}
 
-	playlists, total, err := h.usecase.GetPaginatedPlaylists(c.Context(), limit, offset, filters)
+	playlists, total, generated, err := h.usecase.GetPaginatedPlaylists(c.Context(), limit, offset, filters)
 	if err != nil {
 		return err
 	}
@@ -327,7 +327,80 @@ func (h *CatalogHandler) PlaylistIndex(c *fiber.Ctx) error {
 		dtoPlaylists[i] = dto.ToPlaylistMinimalDTO(&p)
 	}
 
-	return c.JSON(paginatedResponse(c, dtoPlaylists, total, page, limit))
+	response := paginatedResponse(c, dtoPlaylists, total, page, limit)
+	response["generated"] = generatedPlaylistDTOs(generated)
+	return c.JSON(response)
+}
+
+// GeneratedYearPlaylist handles GET /api/playlists/generated/year/:year.
+func (h *CatalogHandler) GeneratedYearPlaylist(c *fiber.Ctx) error {
+	year, err := strconv.Atoi(c.Params("year"))
+	if err != nil {
+		return domain.NewAppError(404, "Generated playlist not found", nil)
+	}
+	limit, offset := parsePagination(c, 24)
+	page := queryPage(c)
+	playlist, songs, total, err := h.usecase.GetYearGeneratedPlaylist(c.Context(), h.getUserID(c), year, limit, offset)
+	if err != nil {
+		return err
+	}
+	return c.JSON(generatedPlaylistResponse(c, playlist, songs, total, page, limit))
+}
+
+// GeneratedSeasonPlaylist handles GET /api/playlists/generated/season/:year/:season.
+func (h *CatalogHandler) GeneratedSeasonPlaylist(c *fiber.Ctx) error {
+	year, err := strconv.Atoi(c.Params("year"))
+	if err != nil {
+		return domain.NewAppError(404, "Generated playlist not found", nil)
+	}
+	limit, offset := parsePagination(c, 24)
+	page := queryPage(c)
+	playlist, songs, total, err := h.usecase.GetSeasonGeneratedPlaylist(c.Context(), h.getUserID(c), year, c.Params("season"), limit, offset)
+	if err != nil {
+		return err
+	}
+	return c.JSON(generatedPlaylistResponse(c, playlist, songs, total, page, limit))
+}
+
+// PersonalGeneratedPlaylist handles GET /api/me/playlists/generated/:kind.
+func (h *CatalogHandler) PersonalGeneratedPlaylist(c *fiber.Ctx) error {
+	userID := h.getUserID(c)
+	if userID == nil {
+		return domain.NewAppError(401, "Authentication required", nil)
+	}
+	limit, offset := parsePagination(c, 24)
+	page := queryPage(c)
+	playlist, songs, total, err := h.usecase.GetPersonalGeneratedPlaylist(c.Context(), *userID, strings.ToLower(c.Params("kind")), limit, offset)
+	if err != nil {
+		return err
+	}
+	return c.JSON(generatedPlaylistResponse(c, playlist, songs, total, page, limit))
+}
+
+func queryPage(c *fiber.Ctx) int {
+	page, _ := strconv.Atoi(c.Query("page", "1"))
+	if page < 1 {
+		return 1
+	}
+	return page
+}
+
+func generatedPlaylistDTOs(generated []domain.GeneratedPlaylistDescriptor) []dto.GeneratedPlaylistDescriptorDTO {
+	result := make([]dto.GeneratedPlaylistDescriptorDTO, len(generated))
+	for i := range generated {
+		result[i] = dto.ToGeneratedPlaylistDescriptorDTO(&generated[i])
+	}
+	return result
+}
+
+func generatedPlaylistResponse(c *fiber.Ctx, playlist *domain.GeneratedPlaylistDescriptor, songs []domain.Song, total, page, limit int) fiber.Map {
+	songDTOs := make([]dto.SongMinimalDTO, len(songs))
+	for i := range songs {
+		songDTOs[i] = dto.ToSongMinimalDTO(&songs[i])
+	}
+	response := paginatedResponse(c, songDTOs, total, page, limit)
+	response["playlist"] = dto.ToGeneratedPlaylistDescriptorDTO(playlist)
+	return response
 }
 
 // ─── Users ───
@@ -351,7 +424,7 @@ func (h *CatalogHandler) UserPlaylists(c *fiber.Ctx) error {
 	}
 
 	requestingUserID := h.getUserID(c)
-	playlists, total, err := h.usecase.GetUserPlaylists(c.Context(), requestingUserID, c.Params("slug"), limit, offset)
+	playlists, total, generated, err := h.usecase.GetUserPlaylists(c.Context(), requestingUserID, c.Params("slug"), limit, offset)
 	if err != nil {
 		return err
 	}
@@ -361,7 +434,9 @@ func (h *CatalogHandler) UserPlaylists(c *fiber.Ctx) error {
 		dtoPlaylists[i] = dto.ToPlaylistMinimalDTO(&p)
 	}
 
-	return c.JSON(paginatedResponse(c, dtoPlaylists, total, page, limit))
+	response := paginatedResponse(c, dtoPlaylists, total, page, limit)
+	response["generated"] = generatedPlaylistDTOs(generated)
+	return c.JSON(response)
 }
 
 type userFavoritesReq struct {

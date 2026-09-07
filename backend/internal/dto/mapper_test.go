@@ -161,9 +161,9 @@ func TestToArtistMappers(t *testing.T) {
 	artistUUID := "artist-uuid-2"
 
 	artist := &domain.Artist{
-		ID:           forbiddenID,
-		UUID:         artistUUID,
-		Name:         "Aimer",
+		ID:             forbiddenID,
+		UUID:           artistUUID,
+		Name:           "Aimer",
 		FavoritesCount: 100,
 	}
 
@@ -182,6 +182,29 @@ func TestToArtistMappers(t *testing.T) {
 		}
 		testutil.AssertNoInternalIDs(t, dto, forbiddenID)
 	})
+}
+
+func TestToGeneratedPlaylistDescriptorDTO(t *testing.T) {
+	year := 2026
+	season := "summer"
+	descriptor := &domain.GeneratedPlaylistDescriptor{
+		Key:       "generated-season-2026-summer",
+		Kind:      "season",
+		Name:      "Summer 2026",
+		Year:      &year,
+		Season:    &season,
+		Href:      "/playlists/generated/season/2026/summer",
+		SongCount: 42,
+	}
+
+	result := ToGeneratedPlaylistDescriptorDTO(descriptor)
+	if result.ID != descriptor.Key || !result.ReadOnly || !result.IsPublic {
+		t.Fatalf("unexpected generated descriptor mapping: %+v", result)
+	}
+	if result.Year == nil || *result.Year != 2026 || result.Season == nil || *result.Season != "summer" {
+		t.Fatalf("year/season were not mapped: %+v", result)
+	}
+	testutil.AssertNoInternalIDs(t, result, uint64(2026_000_042))
 }
 
 func TestToAnimeMappers(t *testing.T) {

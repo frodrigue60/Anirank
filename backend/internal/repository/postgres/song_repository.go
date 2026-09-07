@@ -428,7 +428,7 @@ func (r *songRepository) GetVariantsBySongIDs(ctx context.Context, songIDs []uin
 			COALESCE(v.source, 'TV') AS source,
 			COALESCE(v.overlap, 'None') AS overlap
 		FROM song_variants sv
-		LEFT JOIN videos v ON sv.id = v.song_variant_id
+		LEFT JOIN videos v ON sv.id = v.song_variant_id AND v.status = true
 		WHERE sv.song_id IN (?)
 		ORDER BY sv.song_id, sv.version_number ASC, v.resolution DESC, v.is_nc DESC
 	`, songIDs)
@@ -521,7 +521,7 @@ func (r *songRepository) GetVariantsBySongID(ctx context.Context, songID uint64)
 			COALESCE(v.source, 'TV') AS source,
 			COALESCE(v.overlap, 'None') AS overlap
 		FROM song_variants sv
-		LEFT JOIN videos v ON sv.id = v.song_variant_id
+		LEFT JOIN videos v ON sv.id = v.song_variant_id AND v.status = true
 		WHERE sv.song_id = $1
 		ORDER BY sv.version_number ASC, v.resolution DESC, v.is_nc DESC
 	`
@@ -928,6 +928,158 @@ func (r *songRepository) GetFavoritesByUserID(ctx context.Context, userID uint64
 	return songs, err
 }
 
+func (r *songRepository) GetGeneratedPlaylistDescriptors(ctx context.Context) ([]domain.GeneratedPlaylistDescriptor, error) {
+	query := `
+		WITH active_songs AS (
+			SELECT s.id, s.anime_id, s.year_id, s.season_id, s.average_score, s.views
+			FROM songs s
+			JOIN animes a ON a.id = s.anime_id
+			WHERE s.status = true AND a.status = true
+		),
+		year_lists AS (
+			SELECT
+				'generated-year-' || y.name::text AS key,
+				'year'::text AS kind,
+				y.name::text AS name,
+				('Top rated songs from ' || y.name::text)::text AS description,
+				y.name::integer AS year,
+				NULL::text AS season,
+				('/playlists/generated/year/' || y.name::text)::text AS href,
+				COUNT(*)::integer AS song_count,
+				(ARRAY_AGG(a.banner ORDER BY s.average_score DESC NULLS LAST, s.views DESC, s.id DESC)
+					FILTER (WHERE a.banner IS NOT NULL))[1] AS latest_banner
+			FROM active_songs s
+			JOIN years y ON y.id = s.year_id
+			JOIN animes a ON a.id = s.anime_id
+			GROUP BY y.id, y.name
+		),
+		season_lists AS (
+			SELECT
+				'generated-season-' || y.name::text || '-' || se.slug AS key,
+				'season'::text AS kind,
+				(se.name || ' ' || y.name::text)::text AS name,
+				('Top rated songs from ' || se.name || ' ' || y.name::text)::text AS description,
+				y.name::integer AS year,
+				se.slug::text AS season,
+				('/playlists/generated/season/' || y.name::text || '/' || se.slug)::text AS href,
+				COUNT(*)::integer AS song_count,
+				(ARRAY_AGG(a.banner ORDER BY s.average_score DESC NULLS LAST, s.views DESC, s.id DESC)
+					FILTER (WHERE a.banner IS NOT NULL))[1] AS latest_banner
+			FROM active_songs s
+			JOIN years y ON y.id = s.year_id
+			JOIN seasons se ON se.id = s.season_id
+			JOIN animes a ON a.id = s.anime_id
+			GROUP BY y.id, y.name, se.id, se.name, se.slug
+		)
+		SELECT * FROM year_lists
+		UNION ALL
+		SELECT * FROM season_lists
+		ORDER BY year DESC, kind, season NULLS FIRST
+	`
+	var descriptors []domain.GeneratedPlaylistDescriptor
+	if err := r.db.SelectContext(ctx, &descriptors, query); err != nil {
+		return nil, err
+	}
+	if descriptors == nil {
+		descriptors = []domain.GeneratedPlaylistDescriptor{}
+	}
+	return descriptors, nil
+}
+
+func (r *songRepository) GetGeneratedPersonalSongs(ctx context.Context, userID uint64, kind string, limit, offset int) ([]domain.Song, error) {
+	var join, predicate, order string
+	switch kind {
+	case "rated":
+		join = "JOIN song_ratings i ON i.song_id = s.id"
+		predicate = "i.user_id = $1"
+		order = "i.updated_at DESC, i.id DESC"
+	case "liked":
+		join = "JOIN song_reactions i ON i.song_id = s.id"
+		predicate = "i.user_id = $1 AND i.type = 1"
+		order = "i.updated_at DESC, i.id DESC"
+	default:
+		return nil, domain.NewAppError(400, "Generated playlist kind must be rated or liked", nil)
+	}
+	return r.getGeneratedSongs(ctx, join, predicate, order, []interface{}{userID, limit, offset})
+}
+
+func (r *songRepository) CountGeneratedPersonalSongs(ctx context.Context, userID uint64, kind string) (int, error) {
+	var join, predicate string
+	switch kind {
+	case "rated":
+		join = "JOIN song_ratings i ON i.song_id = s.id"
+		predicate = "i.user_id = $1"
+	case "liked":
+		join = "JOIN song_reactions i ON i.song_id = s.id"
+		predicate = "i.user_id = $1 AND i.type = 1"
+	default:
+		return 0, domain.NewAppError(400, "Generated playlist kind must be rated or liked", nil)
+	}
+	return r.countGeneratedSongs(ctx, join, predicate, userID)
+}
+
+func (r *songRepository) GetGeneratedYearSongs(ctx context.Context, year int, limit, offset int) ([]domain.Song, error) {
+	return r.getGeneratedSongs(ctx, "JOIN years gy ON gy.id = s.year_id", "gy.name = $1", generatedPlaylistOrder, []interface{}{year, limit, offset})
+}
+
+func (r *songRepository) CountGeneratedYearSongs(ctx context.Context, year int) (int, error) {
+	return r.countGeneratedSongs(ctx, "JOIN years gy ON gy.id = s.year_id", "gy.name = $1", year)
+}
+
+func (r *songRepository) GetGeneratedSeasonSongs(ctx context.Context, year int, season string, limit, offset int) ([]domain.Song, error) {
+	return r.getGeneratedSongs(ctx, "JOIN years gy ON gy.id = s.year_id JOIN seasons gs ON gs.id = s.season_id", "gy.name = $1 AND LOWER(gs.slug) = LOWER($2)", generatedPlaylistOrder, []interface{}{year, season, limit, offset})
+}
+
+func (r *songRepository) CountGeneratedSeasonSongs(ctx context.Context, year int, season string) (int, error) {
+	return r.countGeneratedSongs(ctx, "JOIN years gy ON gy.id = s.year_id JOIN seasons gs ON gs.id = s.season_id", "gy.name = $1 AND LOWER(gs.slug) = LOWER($2)", year, season)
+}
+
+const generatedPlaylistOrder = "s.average_score DESC NULLS LAST, s.likes_count DESC, s.views DESC, s.id DESC"
+
+func (r *songRepository) getGeneratedSongs(ctx context.Context, join, predicate, order string, args []interface{}) ([]domain.Song, error) {
+	limitPosition := len(args) - 1
+	offsetPosition := len(args)
+	query := fmt.Sprintf(`
+		SELECT %s,
+		       st.id AS "song_type.id", st.uuid AS "song_type.uuid", st.name AS "song_type.name", st.slug AS "song_type.slug", st.description AS "song_type.description",
+		       a.id AS "anime.id", a.uuid AS "anime.uuid", a.title AS "anime.title", a.title_english AS "anime.title_english", a.title_native AS "anime.title_native",
+		       a.slug AS "anime.slug", a.cover AS "anime.cover", a.banner AS "anime.banner", a.status AS "anime.status",
+		       sy.id AS "year.id", sy.uuid AS "year.uuid", sy.name AS "year.name", sy.slug AS "year.slug", sy.current AS "year.current",
+		       ss.id AS "season.id", ss.uuid AS "season.uuid", ss.name AS "season.name", ss.slug AS "season.slug", ss.current AS "season.current"
+		FROM songs s
+		JOIN animes a ON a.id = s.anime_id
+		LEFT JOIN song_types st ON st.id = s.type_id
+		LEFT JOIN years sy ON sy.id = s.year_id
+		LEFT JOIN seasons ss ON ss.id = s.season_id
+		%s
+		WHERE %s AND s.status = true AND a.status = true
+		ORDER BY %s
+		LIMIT $%d OFFSET $%d
+	`, songColumns, join, predicate, order, limitPosition, offsetPosition)
+
+	var songs []domain.Song
+	if err := r.db.SelectContext(ctx, &songs, query, args...); err != nil {
+		return nil, err
+	}
+	if songs == nil {
+		songs = []domain.Song{}
+	}
+	return songs, nil
+}
+
+func (r *songRepository) countGeneratedSongs(ctx context.Context, join, predicate string, args ...interface{}) (int, error) {
+	query := fmt.Sprintf(`
+		SELECT COUNT(*)
+		FROM songs s
+		JOIN animes a ON a.id = s.anime_id
+		%s
+		WHERE %s AND s.status = true AND a.status = true
+	`, join, predicate)
+	var count int
+	err := r.db.GetContext(ctx, &count, query, args...)
+	return count, err
+}
+
 func (r *songRepository) GetRanking(ctx context.Context, rankingType, songType string, limit, offset int) ([]domain.Song, error) {
 	var songs []domain.Song
 	var query string
@@ -1088,7 +1240,7 @@ func (r *songRepository) UpsertSongFromAnimeThemes(ctx context.Context, song *do
 			ON CONFLICT (slug) DO UPDATE SET slug = EXCLUDED.slug
 			RETURNING id
 		`, newTypeUUID, song.Type, song.Type).Scan(&typeID)
-		
+
 		if errInsert != nil {
 			// Fallback to first type if completely failed
 			_ = r.db.GetContext(ctx, &typeID, `SELECT id FROM song_types ORDER BY id LIMIT 1`)

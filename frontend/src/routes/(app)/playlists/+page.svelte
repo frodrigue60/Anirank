@@ -14,6 +14,8 @@ import OptimizedImage from "$lib/components/OptimizedImage.svelte";
   // svelte-ignore state_referenced_locally
   let playlists = $state(data.playlists?.data || []);
   // svelte-ignore state_referenced_locally
+  let generatedPlaylists = $state(data.playlists?.generated || []);
+  // svelte-ignore state_referenced_locally
   let currentPage = $state(data.playlists?.pagination?.current_page || 1);
   // svelte-ignore state_referenced_locally
   let lastPage = $state(data.playlists?.pagination?.last_page || 1);
@@ -26,6 +28,7 @@ import OptimizedImage from "$lib/components/OptimizedImage.svelte";
     // Reset infinite scroll on data change (filters)
     if (data.playlists && data.playlists.pagination?.current_page === 1) {
       playlists = data.playlists.data;
+      generatedPlaylists = data.playlists.generated || [];
       currentPage = data.playlists.pagination.current_page;
       lastPage = data.playlists.pagination.last_page;
     }
@@ -83,7 +86,7 @@ import OptimizedImage from "$lib/components/OptimizedImage.svelte";
   }
 </script>
 
-<main class="flex-1 w-full max-w-[1440px] mx-auto px-6 space-y-6 py-6">
+<main class="flex-1 w-full max-w-360 mx-auto px-6 space-y-6 py-6">
   <!-- Header -->
   <div class="mb-10 text-center lg:text-left">
     <h1 class="text-4xl font-black text-on-surface mb-2 tracking-tight">
@@ -93,6 +96,48 @@ import OptimizedImage from "$lib/components/OptimizedImage.svelte";
       Explore community curated collections
     </p>
   </div>
+
+  {#if generatedPlaylists.length > 0 && !params.name}
+    <section class="space-y-4" aria-labelledby="automatic-playlists-title">
+      <div>
+        <h2 id="automatic-playlists-title" class="text-2xl font-bold text-on-surface">
+          Automatic collections
+        </h2>
+        <p class="text-on-surface-variant">
+          Explore every active theme grouped by year and anime season.
+        </p>
+      </div>
+
+      <div class="flex gap-4 overflow-x-auto pb-3 snap-x">
+        {#each generatedPlaylists as playlist (playlist.href)}
+          <a
+            href={playlist.href}
+            class="group flex min-w-70 items-center gap-4 rounded-sm bg-surface-container p-4 transition-colors hover:bg-surface-highest sm:min-w-85 snap-start"
+          >
+            <OptimizedImage
+              src={playlist.banner_url}
+              sources={playlist.banner_sources}
+              alt=""
+              class="h-20 w-24 shrink-0 rounded-sm object-cover"
+              sizes="96px"
+            />
+            <div class="min-w-0">
+              <p class="mb-1 text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
+                Automatic playlist
+              </p>
+              <h3 class="truncate text-xl font-bold text-on-surface group-hover:text-primary">
+                {playlist.name}
+              </h3>
+              <p class="mt-2 flex items-center gap-2 text-sm font-semibold text-on-surface-variant">
+                <Music size={14} />
+                {playlist.song_count || 0} Songs
+              </p>
+            </div>
+          </a>
+        {/each}
+      </div>
+    </section>
+  {/if}
 
   <!-- Filter Row -->
   <section

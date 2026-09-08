@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"anirank/api/internal/domain"
@@ -27,6 +28,8 @@ type CatalogUsecase struct {
 	mediaService    infrastructure.MediaService
 	cache           domain.Cache
 	encryptionKey   string
+	viewDeduperOnce sync.Once
+	viewDeduper     *viewDeduper
 }
 
 type RankingResponse struct {
@@ -239,18 +242,13 @@ func (u *CatalogUsecase) GetSongByAnimeSongSlug(ctx context.Context, userID *uin
 	song.Anime = anime
 	u.enrichSong(ctx, userID, song)
 
-	// Increment views with cache protection
+	// Increment views with distributed cache protection and an in-memory fallback.
 	if clientIP := ctx.Value("client_ip"); clientIP != nil {
 		ipStr := clientIP.(string)
 		cacheKey := fmt.Sprintf("view:%s:%d", ipStr, song.ID)
 
-		// Use the new cache interface instead of viewCache
-		var lastView time.Time
-		err := u.safeCacheGet(ctx, cacheKey, &lastView)
-
-		if err != nil { // Cache miss or error
+		if u.shouldCountView(ctx, cacheKey, time.Now()) {
 			_ = u.songRepo.IncrementViews(ctx, song.ID)
-			u.safeCacheSet(ctx, cacheKey, time.Now(), 24*time.Hour)
 		}
 	}
 
@@ -1298,4 +1296,29 @@ func (u *CatalogUsecase) safeCacheSet(ctx context.Context, key string, val inter
 	cacheCtx, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
 	defer cancel()
 	_ = u.cache.Set(cacheCtx, key, val, exp)
+}
+
+func (u *CatalogUsecase) shouldCountView(ctx context.Context, cacheKey string, now time.Time) bool {
+	u.viewDeduperOnce.Do(func() {
+		u.viewDeduper = newViewDeduper(24 * time.Hour)
+	})
+
+	if !u.viewDeduper.MarkIfNew(cacheKey, now) {
+		return false
+	}
+
+	if u.cache == nil || !u.cache.IsAvailable() {
+		return true
+	}
+
+	var lastView time.Time
+	if err := u.safeCacheGet(ctx, cacheKey, &lastView); err == nil {
+		u.viewDeduper.SetExpiry(cacheKey, lastView.Add(24*time.Hour), now)
+		return false
+	}
+
+	// Reserve the distributed key before updating the counter. If Redis fails,
+	// the local reservation above still prevents refresh inflation in this instance.
+	u.safeCacheSet(ctx, cacheKey, now, 24*time.Hour)
+	return true
 }

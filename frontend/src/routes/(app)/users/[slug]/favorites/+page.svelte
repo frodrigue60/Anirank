@@ -37,10 +37,12 @@
     loading = true;
     try {
       const nextPage = songsPage + 1;
-      const response = await api.post(`/users/favorites/themes`, {
-        user_uuid: data.profile.uuid || data.profile.id,
-        page: nextPage,
-      });
+      const response = await api.get(
+        `/users/${data.profile.slug}/favorites/themes`,
+        {
+          params: { page: nextPage },
+        },
+      );
 
       const songsData = response.data.songs || response.data;
       if (songsData?.data) {

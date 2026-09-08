@@ -108,7 +108,8 @@ func (r *userRepository) GetBySlug(ctx context.Context, slug string) (*domain.Us
 		SELECT u.*, sf.slug AS score_format, u.truth_score, u.is_shadowbanned,
 		       (SELECT COUNT(*) FROM follows WHERE followed_id = u.id) as followers_count,
 		       (SELECT COUNT(*) FROM follows WHERE follower_id = u.id) as following_count,
-		       (SELECT COUNT(*) FROM song_ratings WHERE user_id = u.id) as ratings_count
+		       (SELECT COUNT(*) FROM song_ratings WHERE user_id = u.id) as ratings_count,
+		       (SELECT COUNT(*) FROM song_user WHERE user_id = u.id) as favorites_count
 		FROM users u
 		LEFT JOIN score_formats sf ON u.score_format_id = sf.id
 		WHERE u.slug = $1
@@ -123,7 +124,6 @@ func (r *userRepository) GetBySlug(ctx context.Context, slug string) (*domain.Us
 	}
 	return &user, err
 }
-
 
 func (r *userRepository) GetByUUID(ctx context.Context, uuid string) (*domain.User, error) {
 	var user domain.User
@@ -637,7 +637,7 @@ func (r *userRepository) GetLastInteractionTime(ctx context.Context, userID uint
 			return time.Time{}, nil
 		}
 		// Check if it's just a NULL result from MAX() on empty set
-		return time.Time{}, nil 
+		return time.Time{}, nil
 	}
 	return lastTime, nil
 }
@@ -647,4 +647,3 @@ func (r *userRepository) UpdateSoftbanStatus(ctx context.Context, userID uint64,
 	_, err := r.db.ExecContext(ctx, query, status, userID)
 	return err
 }
-

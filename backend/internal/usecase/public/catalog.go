@@ -772,13 +772,13 @@ func (u *CatalogUsecase) GetUserPlaylists(ctx context.Context, requestingUserID 
 	return playlists, total, generated, nil
 }
 
-func (u *CatalogUsecase) GetUserFavorites(ctx context.Context, userID string, limit, offset int) ([]domain.Song, int, error) {
-	if userID == "" {
+func (u *CatalogUsecase) GetUserFavorites(ctx context.Context, slug string, limit, offset int) ([]domain.Song, int, error) {
+	if slug == "" {
 		return []domain.Song{}, 0, nil
 	}
-	user, err := u.userRepo.GetByUUID(ctx, userID)
+	user, err := u.userRepo.GetBySlug(ctx, slug)
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, domain.NewAppError(404, "User not found", err)
 	}
 	internalID := user.ID
 
@@ -802,13 +802,13 @@ func (u *CatalogUsecase) GetUserFavorites(ctx context.Context, userID string, li
 	return songs, total, nil
 }
 
-func (u *CatalogUsecase) GetUserFavoriteArtists(ctx context.Context, userID string, limit, offset int) ([]domain.Artist, int, error) {
-	if userID == "" {
+func (u *CatalogUsecase) GetUserFavoriteArtists(ctx context.Context, slug string, limit, offset int) ([]domain.Artist, int, error) {
+	if slug == "" {
 		return []domain.Artist{}, 0, nil
 	}
-	user, err := u.userRepo.GetByUUID(ctx, userID)
+	user, err := u.userRepo.GetBySlug(ctx, slug)
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, domain.NewAppError(404, "User not found", err)
 	}
 	internalID := user.ID
 	total, err := u.artistRepo.CountFavoritesByUserID(ctx, internalID)

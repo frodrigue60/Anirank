@@ -208,6 +208,8 @@ func SetupPublicRoutes(app *fiber.App,
 
 	// Catalog: Users
 	catalogApi.Get("/users/ranking", catalogHandler.UserRanking)
+	catalogApi.Get("/users/:slug/favorites/themes", catalogHandler.UserFavorites)
+	catalogApi.Get("/users/:slug/favorites/artists", catalogHandler.UserArtistFavorites)
 	catalogApi.Get("/users/:slug/insights", catalogHandler.UserRatingInsights)
 	catalogApi.Get("/users/:slug", middleware.OptionalAuthMiddleware(jwtService, userRepo, appCache), catalogHandler.UserProfile)
 	// Catalog: Home
@@ -274,8 +276,6 @@ func SetupPublicRoutes(app *fiber.App,
 	api.Get("/users/:slug/followers", catalogHandler.UserFollowers)
 	api.Get("/users/:slug/following", catalogHandler.UserFollowing)
 	catalogApi.Post("/animes/bulk-check", catalogHandler.BulkCheckAnilistIDs)
-	api.Post("/users/favorites/themes", catalogHandler.UserFavorites)
-	api.Post("/users/favorites/artists", catalogHandler.UserArtistFavorites)
 
 	// Anime Music Quiz (AMQ) Endpoints
 	api.Post("/amq/rooms", middleware.OptionalAuthMiddleware(jwtService, userRepo, appCache), amqHandler.CreateRoom)

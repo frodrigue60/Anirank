@@ -36,6 +36,7 @@ type User struct {
 	FollowersCount int  `db:"followers_count" json:"followers_count"`
 	FollowingCount int  `db:"following_count" json:"following_count"`
 	RatingsCount   int  `db:"ratings_count" json:"ratings_count"`
+	FavoritesCount int  `db:"favorites_count" json:"favorites_count"`
 	CommentsCount  int  `db:"comments_count" json:"comments_count"`
 	IsFollowing    bool `db:"is_following" json:"is_following"`
 
@@ -101,19 +102,19 @@ type Permission struct {
 }
 
 type Badge struct {
-	ID               uint64     `db:"id" json:"admin_id"`
-	UUID             string     `db:"uuid" json:"id"`
-	Name             string     `db:"name" json:"name"`
-	Description      *string    `db:"description" json:"description"`
-	Icon             *string    `db:"icon" json:"-"`
-	IconUrl          *string    `db:"-" json:"icon_url,omitempty"`
+	ID               uint64        `db:"id" json:"admin_id"`
+	UUID             string        `db:"uuid" json:"id"`
+	Name             string        `db:"name" json:"name"`
+	Description      *string       `db:"description" json:"description"`
+	Icon             *string       `db:"icon" json:"-"`
+	IconUrl          *string       `db:"-" json:"icon_url,omitempty"`
 	IconSources      []ImageSource `db:"-" json:"icon_sources,omitempty"`
-	IsActive         bool       `db:"is_active" json:"is_active"`
-	IsAutomatic      bool       `db:"is_automatic" json:"is_automatic"`
-	RequirementType  *string    `db:"requirement_type" json:"requirement_type,omitempty"`
-	RequirementValue *int       `db:"requirement_value" json:"requirement_value,omitempty"`
-	CreatedAt        *time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt        *time.Time `db:"updated_at" json:"updated_at"`
+	IsActive         bool          `db:"is_active" json:"is_active"`
+	IsAutomatic      bool          `db:"is_automatic" json:"is_automatic"`
+	RequirementType  *string       `db:"requirement_type" json:"requirement_type,omitempty"`
+	RequirementValue *int          `db:"requirement_value" json:"requirement_value,omitempty"`
+	CreatedAt        *time.Time    `db:"created_at" json:"created_at"`
+	UpdatedAt        *time.Time    `db:"updated_at" json:"updated_at"`
 }
 
 // Repositories

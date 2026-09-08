@@ -37,10 +37,12 @@
     loading = true;
     try {
       const nextPage = artistsPage + 1;
-      const response = await api.post(`/users/favorites/artists`, {
-        user_uuid: data.profile.uuid || data.profile.id,
-        page: nextPage,
-      });
+      const response = await api.get(
+        `/users/${data.profile.slug}/favorites/artists`,
+        {
+          params: { page: nextPage },
+        },
+      );
 
       const producersData = response.data.artists || response.data;
       if (producersData?.data) {

@@ -453,32 +453,15 @@ func (h *CatalogHandler) UserPlaylists(c *fiber.Ctx) error {
 	return c.JSON(response)
 }
 
-type userFavoritesReq struct {
-	UserID   string `json:"user_id"`
-	UserUUID string `json:"user_uuid"`
-	Page     int    `json:"page"`
-}
-
-// UserFavorites handles POST /api/users/favorites
+// UserFavorites handles GET /api/users/:slug/favorites/themes.
 func (h *CatalogHandler) UserFavorites(c *fiber.Ctx) error {
-	var req userFavoritesReq
-	if err := c.BodyParser(&req); err != nil {
-		return domain.NewAppError(400, "Invalid request payload", err)
-	}
-
 	limit, offset := parsePagination(c, 24)
-	page := req.Page
+	page, _ := strconv.Atoi(c.Query("page", "1"))
 	if page < 1 {
 		page = 1
 	}
-	offset = (page - 1) * limit
 
-	userID := req.UserID
-	if userID == "" {
-		userID = req.UserUUID
-	}
-
-	songs, total, err := h.usecase.GetUserFavorites(c.Context(), userID, limit, offset)
+	songs, total, err := h.usecase.GetUserFavorites(c.Context(), c.Params("slug"), limit, offset)
 	if err != nil {
 		return err
 	}
@@ -491,26 +474,15 @@ func (h *CatalogHandler) UserFavorites(c *fiber.Ctx) error {
 	return c.JSON(paginatedResponse(c, songDTOs, total, page, limit))
 }
 
-// UserArtistFavorites handles POST /api/users/artists/favorites
+// UserArtistFavorites handles GET /api/users/:slug/favorites/artists.
 func (h *CatalogHandler) UserArtistFavorites(c *fiber.Ctx) error {
-	var req userFavoritesReq
-	if err := c.BodyParser(&req); err != nil {
-		return domain.NewAppError(400, "Invalid request payload", err)
-	}
-
 	limit, offset := parsePagination(c, 24)
-	page := req.Page
+	page, _ := strconv.Atoi(c.Query("page", "1"))
 	if page < 1 {
 		page = 1
 	}
-	offset = (page - 1) * limit
 
-	userID := req.UserID
-	if userID == "" {
-		userID = req.UserUUID
-	}
-
-	artists, total, err := h.usecase.GetUserFavoriteArtists(c.Context(), userID, limit, offset)
+	artists, total, err := h.usecase.GetUserFavoriteArtists(c.Context(), c.Params("slug"), limit, offset)
 	if err != nil {
 		return err
 	}

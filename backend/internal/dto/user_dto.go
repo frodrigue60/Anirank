@@ -22,10 +22,10 @@ type UserMinimalDTO struct {
 }
 
 type BadgeDTO struct {
-	ID          string  `json:"id"`
-	Name        string  `json:"name"`
-	Description *string `json:"description"`
-	IconUrl     *string `json:"icon_url,omitempty"`
+	ID          string               `json:"id"`
+	Name        string               `json:"name"`
+	Description *string              `json:"description"`
+	IconUrl     *string              `json:"icon_url,omitempty"`
 	IconSources []domain.ImageSource `json:"icon_sources,omitempty"`
 }
 
@@ -40,6 +40,7 @@ type UserDTO struct {
 	ProfileColor     *string                 `json:"profile_color,omitempty"`
 	FollowersCount   int                     `json:"followers_count"`
 	FollowingCount   int                     `json:"following_count"`
+	FavoritesCount   int                     `json:"favorites_count"`
 	IsFollowing      bool                    `json:"is_following"`
 	TruthScore       int                     `json:"truth_score"`
 	IsShadowbanned   bool                    `json:"is_shadowbanned"`

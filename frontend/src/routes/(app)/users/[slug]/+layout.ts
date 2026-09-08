@@ -18,16 +18,9 @@ export const load = async ({ params }: { params: { slug: string } }) => {
       };
     }
 
-    const [playlistsRes, favoritesRes, ratingInsightsRes] = await Promise.all([
+    const [playlistsRes, ratingInsightsRes] = await Promise.all([
       api
         .get(`/users/${slug}/playlists`)
-        .then((res) => res.data)
-        .catch(() => null),
-      api
-        .post(`/users/favorites/themes`, {
-          user_uuid: user.uuid,
-          page: 1,
-        })
         .then((res) => res.data)
         .catch(() => null),
       api
@@ -39,14 +32,11 @@ export const load = async ({ params }: { params: { slug: string } }) => {
     const playlistsCount =
       playlistsRes?.pagination?.total ??
       (Array.isArray(playlistsRes?.data) ? playlistsRes.data.length : 0);
-    const favoritesCount =
-      favoritesRes?.pagination?.total ??
-      (Array.isArray(favoritesRes?.data) ? favoritesRes.data.length : 0);
 
     return {
       profile: user,
       playlistsCount,
-      favoritesCount,
+      favoritesCount: user.favorites_count ?? 0,
       ratingInsights: ratingInsightsRes?.data ?? null,
     };
   } catch (e: any) {

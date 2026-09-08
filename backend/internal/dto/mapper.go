@@ -80,6 +80,7 @@ func ToUserDTO(u *domain.User) UserDTO {
 		ProfileColor:     u.ProfileColor,
 		FollowersCount:   u.FollowersCount,
 		FollowingCount:   u.FollowingCount,
+		FavoritesCount:   u.FavoritesCount,
 		IsFollowing:      u.IsFollowing,
 		TruthScore:       u.TruthScore,
 		IsShadowbanned:   u.IsShadowbanned,

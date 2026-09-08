@@ -33,9 +33,10 @@ func TestToUserDTO(t *testing.T) {
 	badgeUUID := "badge-uuid"
 
 	user := &domain.User{
-		ID:   forbiddenID,
-		UUID: userUUID,
-		Name: "Test User",
+		ID:             forbiddenID,
+		UUID:           userUUID,
+		Name:           "Test User",
+		FavoritesCount: 12,
 		Badges: []domain.Badge{
 			{
 				ID:   badgeForbiddenID,
@@ -72,6 +73,9 @@ func TestToUserDTO(t *testing.T) {
 
 	if len(dto.Roles) != 1 || dto.Roles[0] != "admin" {
 		t.Errorf("Expected role 'admin', got %v", dto.Roles)
+	}
+	if dto.FavoritesCount != 12 {
+		t.Errorf("Expected 12 favorites, got %d", dto.FavoritesCount)
 	}
 
 	// Security checks for both user and child relations

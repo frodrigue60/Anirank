@@ -97,7 +97,7 @@ func TestEndpoints_SQLi_Parameters(t *testing.T) {
 		nil, nil, // artistRepo, taxonomyRepo
 		userRepo,
 		nil, nil, nil, // playlistRepo, interactionRepo, moderationRepo
-		nil,      // anilistClient
+		nil, // anilistClient
 		mediaSvc,
 		mockCache,
 		"test_encryption_key",
@@ -121,7 +121,6 @@ func TestEndpoints_SQLi_Parameters(t *testing.T) {
 	app.Get("/api/search", searchHandler.Search)
 	app.Get("/api/songs", catalogHandler.SongIndex)
 	app.Get("/api/songs/:anime_slug/:song_slug", catalogHandler.SongShow)
-	app.Post("/api/users/favorites", catalogHandler.UserFavorites)
 
 	for _, payload := range testutil.SQLIPayloads {
 		t.Run("Endpoint_Search_Payload_"+payload, func(t *testing.T) {

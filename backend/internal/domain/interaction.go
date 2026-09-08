@@ -16,13 +16,32 @@ const (
 // Interactions & Polymorphic Emulations
 
 type Rating struct {
-	ID        uint64    `db:"id" json:"id"`
-	Rating    float64   `db:"rating" json:"rating"`
-	SongID    uint64    `db:"song_id" json:"song_id"`
-	UserID    uint64    `db:"user_id" json:"user_id"`
-	CreatedAt time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
+	ID             uint64    `db:"id" json:"id"`
+	Rating         float64   `db:"rating" json:"rating"`
+	SongID         uint64    `db:"song_id" json:"song_id"`
+	UserID         uint64    `db:"user_id" json:"user_id"`
+	CreatedAt      time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt      time.Time `db:"updated_at" json:"updated_at"`
 	IsShadowbanned bool      `db:"is_shadowbanned" json:"is_shadowbanned"`
+}
+
+type UserScoreBucket struct {
+	Label string
+	Count int
+}
+
+type UserRecentRating struct {
+	Rating  float64
+	RatedAt time.Time
+	SongID  uint64
+	Song    *Song
+}
+
+type UserRatingInsights struct {
+	AverageScore  *float64
+	TotalRatings  int
+	Distribution  []UserScoreBucket
+	RecentRatings []UserRecentRating
 }
 
 type Reaction struct {
@@ -36,12 +55,12 @@ type Reaction struct {
 }
 
 type SongReaction struct {
-	ID        uint64    `db:"id" json:"id"`
-	UserID    uint64    `db:"user_id" json:"user_id"`
-	SongID    uint64    `db:"song_id" json:"song_id"`
-	Type      int8      `db:"type" json:"type"` // 1 = like, -1 = dislike
-	CreatedAt time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
+	ID             uint64    `db:"id" json:"id"`
+	UserID         uint64    `db:"user_id" json:"user_id"`
+	SongID         uint64    `db:"song_id" json:"song_id"`
+	Type           int8      `db:"type" json:"type"` // 1 = like, -1 = dislike
+	CreatedAt      time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt      time.Time `db:"updated_at" json:"updated_at"`
 	IsShadowbanned bool      `db:"is_shadowbanned" json:"is_shadowbanned"`
 }
 
@@ -84,14 +103,14 @@ type ActivityItem struct {
 }
 
 type Comment struct {
-	ID         uint64    `db:"id" json:"id"`
-	UUID       string    `db:"uuid" json:"uuid"`
-	ParentID   *uint64   `db:"parent_id" json:"parent_id"`
-	SongID     *uint64   `db:"song_id" json:"song_id,omitempty"`
-	UserID     uint64    `db:"user_id" json:"user_id"`
-	Content    string    `db:"content" json:"content"`
-	CreatedAt  time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt  time.Time `db:"updated_at" json:"updated_at"`
+	ID             uint64    `db:"id" json:"id"`
+	UUID           string    `db:"uuid" json:"uuid"`
+	ParentID       *uint64   `db:"parent_id" json:"parent_id"`
+	SongID         *uint64   `db:"song_id" json:"song_id,omitempty"`
+	UserID         uint64    `db:"user_id" json:"user_id"`
+	Content        string    `db:"content" json:"content"`
+	CreatedAt      time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt      time.Time `db:"updated_at" json:"updated_at"`
 	IsShadowbanned bool      `db:"is_shadowbanned" json:"is_shadowbanned"`
 
 	// Relational Output Data
@@ -115,6 +134,7 @@ type InteractionRepository interface {
 	GetAverageRatingsBySongIDs(ctx context.Context, songIDs []uint64) (map[uint64]float64, error)
 	GetUserInteractionsBySongIDs(ctx context.Context, userID uint64, songIDs []uint64) (map[uint64]UserSongInteraction, error)
 	CountRatingsByUser(ctx context.Context, userID uint64) (int, error) // For automatic badges
+	GetUserRatingInsights(ctx context.Context, userID uint64, recentLimit int) (*UserRatingInsights, error)
 
 	// Reactions (Likes & Dislikes)
 	ToggleReaction(ctx context.Context, reaction *Reaction) error // Executes TX to increment/decrement Counter too.

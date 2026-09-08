@@ -208,6 +208,7 @@ func SetupPublicRoutes(app *fiber.App,
 
 	// Catalog: Users
 	catalogApi.Get("/users/ranking", catalogHandler.UserRanking)
+	catalogApi.Get("/users/:slug/insights", catalogHandler.UserRatingInsights)
 	catalogApi.Get("/users/:slug", middleware.OptionalAuthMiddleware(jwtService, userRepo, appCache), catalogHandler.UserProfile)
 	// Catalog: Home
 	catalogApi.Get("/home", middleware.OptionalAuthMiddleware(jwtService, userRepo, appCache), middleware.NewResponseCache(storage, 5*time.Minute), catalogHandler.Home)

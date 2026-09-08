@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	"anirank/api/internal/domain"
 
@@ -61,6 +62,83 @@ func (r *interactionRepository) CountRatingsByUser(ctx context.Context, userID u
 	query := "SELECT COUNT(*) FROM song_ratings WHERE user_id = $1"
 	err := r.db.GetContext(ctx, &count, query, userID)
 	return count, err
+}
+
+func (r *interactionRepository) GetUserRatingInsights(ctx context.Context, userID uint64, recentLimit int) (*domain.UserRatingInsights, error) {
+	if recentLimit < 1 {
+		recentLimit = 6
+	}
+	if recentLimit > 20 {
+		recentLimit = 20
+	}
+
+	type summaryRow struct {
+		AverageScore *float64 `db:"average_score"`
+		TotalRatings int      `db:"total_ratings"`
+		Score90To100 int      `db:"score_90_100"`
+		Score75To89  int      `db:"score_75_89"`
+		Score50To74  int      `db:"score_50_74"`
+		ScoreBelow50 int      `db:"score_below_50"`
+	}
+
+	var summary summaryRow
+	summaryQuery := `
+		SELECT
+			AVG(sr.rating)::float8 AS average_score,
+			COUNT(*)::int AS total_ratings,
+			COUNT(*) FILTER (WHERE sr.rating >= 90)::int AS score_90_100,
+			COUNT(*) FILTER (WHERE sr.rating >= 75 AND sr.rating < 90)::int AS score_75_89,
+			COUNT(*) FILTER (WHERE sr.rating >= 50 AND sr.rating < 75)::int AS score_50_74,
+			COUNT(*) FILTER (WHERE sr.rating < 50)::int AS score_below_50
+		FROM song_ratings sr
+		JOIN songs s ON s.id = sr.song_id AND s.status = true
+		JOIN animes a ON a.id = s.anime_id AND a.status = true
+		WHERE sr.user_id = $1 AND sr.is_shadowbanned = false
+	`
+	if err := r.db.GetContext(ctx, &summary, summaryQuery, userID); err != nil {
+		return nil, err
+	}
+
+	type recentRow struct {
+		SongID  uint64    `db:"song_id"`
+		Rating  float64   `db:"rating"`
+		RatedAt time.Time `db:"rated_at"`
+	}
+
+	var recentRows []recentRow
+	recentQuery := `
+		SELECT sr.song_id, sr.rating, sr.updated_at AS rated_at
+		FROM song_ratings sr
+		JOIN songs s ON s.id = sr.song_id AND s.status = true
+		JOIN animes a ON a.id = s.anime_id AND a.status = true
+		WHERE sr.user_id = $1 AND sr.is_shadowbanned = false
+		ORDER BY sr.updated_at DESC, sr.id DESC
+		LIMIT $2
+	`
+	if err := r.db.SelectContext(ctx, &recentRows, recentQuery, userID, recentLimit); err != nil {
+		return nil, err
+	}
+
+	recentRatings := make([]domain.UserRecentRating, len(recentRows))
+	for i, row := range recentRows {
+		recentRatings[i] = domain.UserRecentRating{
+			SongID:  row.SongID,
+			Rating:  row.Rating,
+			RatedAt: row.RatedAt,
+		}
+	}
+
+	return &domain.UserRatingInsights{
+		AverageScore: summary.AverageScore,
+		TotalRatings: summary.TotalRatings,
+		Distribution: []domain.UserScoreBucket{
+			{Label: "90–100", Count: summary.Score90To100},
+			{Label: "75–89", Count: summary.Score75To89},
+			{Label: "50–74", Count: summary.Score50To74},
+			{Label: "<50", Count: summary.ScoreBelow50},
+		},
+		RecentRatings: recentRatings,
+	}, nil
 }
 
 func (r *interactionRepository) GetAverageRatingsBySongIDs(ctx context.Context, songIDs []uint64) (map[uint64]float64, error) {

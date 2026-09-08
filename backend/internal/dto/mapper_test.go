@@ -399,6 +399,42 @@ func TestToActivityMappers(t *testing.T) {
 	})
 }
 
+func TestToUserRatingInsightsDTO(t *testing.T) {
+	forbiddenSongID := uint64(54321)
+	average := 82.5
+	insights := &domain.UserRatingInsights{
+		AverageScore: &average,
+		TotalRatings: 4,
+		Distribution: []domain.UserScoreBucket{
+			{Label: "90–100", Count: 1},
+			{Label: "75–89", Count: 2},
+		},
+		RecentRatings: []domain.UserRecentRating{
+			{
+				Rating: 95,
+				SongID: forbiddenSongID,
+				Song: &domain.Song{
+					ID:         forbiddenSongID,
+					UUID:       "public-song-uuid",
+					SongRomaji: pointer("Recent Song"),
+				},
+			},
+		},
+	}
+
+	result := ToUserRatingInsightsDTO(insights)
+	if result.AverageScore == nil || *result.AverageScore != average {
+		t.Fatalf("unexpected average score: %v", result.AverageScore)
+	}
+	if result.Distribution[0].Percentage != 25 {
+		t.Fatalf("unexpected percentage: %v", result.Distribution[0].Percentage)
+	}
+	if len(result.RecentRatings) != 1 || result.RecentRatings[0].Song.ID != "public-song-uuid" {
+		t.Fatalf("unexpected recent ratings: %+v", result.RecentRatings)
+	}
+	testutil.AssertNoInternalIDs(t, result, forbiddenSongID)
+}
+
 func pointer[T any](v T) *T {
 	return &v
 }

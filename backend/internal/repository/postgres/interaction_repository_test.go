@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/jmoiron/sqlx"
@@ -66,5 +67,53 @@ func TestGetUserInteractionsBySongIDsPropagatesQueryErrors(t *testing.T) {
 	)
 	if err == nil {
 		t.Fatal("expected interaction query error")
+	}
+}
+
+func TestGetUserRatingInsightsReturnsSummaryAndRecentRatings(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	repo := &interactionRepository{db: sqlx.NewDb(db, "postgres").Unsafe()}
+	ratedAt := time.Date(2026, time.September, 8, 12, 0, 0, 0, time.UTC)
+
+	mock.ExpectQuery(`AVG\(sr\.rating\)::float8 AS average_score`).
+		WithArgs(uint64(7)).
+		WillReturnRows(sqlmock.NewRows([]string{
+			"average_score",
+			"total_ratings",
+			"score_90_100",
+			"score_75_89",
+			"score_50_74",
+			"score_below_50",
+		}).AddRow(81.25, 4, 1, 2, 1, 0))
+
+	mock.ExpectQuery(`SELECT sr\.song_id, sr\.rating, sr\.updated_at AS rated_at`).
+		WithArgs(uint64(7), 6).
+		WillReturnRows(sqlmock.NewRows([]string{"song_id", "rating", "rated_at"}).
+			AddRow(11, 95, ratedAt).
+			AddRow(12, 80, ratedAt.Add(-time.Hour)))
+
+	insights, err := repo.GetUserRatingInsights(context.Background(), 7, 6)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if insights.AverageScore == nil || *insights.AverageScore != 81.25 {
+		t.Fatalf("unexpected average score: %v", insights.AverageScore)
+	}
+	if insights.TotalRatings != 4 || len(insights.Distribution) != 4 {
+		t.Fatalf("unexpected summary: %+v", insights)
+	}
+	if insights.Distribution[0].Count != 1 || insights.Distribution[1].Count != 2 {
+		t.Fatalf("unexpected distribution: %+v", insights.Distribution)
+	}
+	if len(insights.RecentRatings) != 2 || insights.RecentRatings[0].SongID != 11 {
+		t.Fatalf("unexpected recent ratings: %+v", insights.RecentRatings)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatal(err)
 	}
 }

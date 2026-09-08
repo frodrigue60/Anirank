@@ -21,6 +21,7 @@
   import Calendar from "lucide-svelte/icons/calendar";
   import Construction from "lucide-svelte/icons/construction";
   import OptimizedImage from "$lib/components/OptimizedImage.svelte";
+  import { getFormattedScore } from "$lib/song-utils";
 
   let { data, children } = $props();
 
@@ -159,6 +160,14 @@
 
   const memberSince = $derived(memberSinceLabel(data.profile?.created_at));
   const ratingsCount = $derived(data.profile?.ratings_count ?? 0);
+  const averageScore = $derived(data.ratingInsights?.average_score ?? null);
+  const scoreScale = $derived(
+    data.profile?.score_format === "POINT_100"
+      ? 100
+      : data.profile?.score_format === "POINT_5"
+        ? 5
+        : 10,
+  );
   const playlistsAndFavorites = $derived(
     (data.playlistsCount ?? 0) + (data.favoritesCount ?? 0),
   );
@@ -386,29 +395,32 @@
           </div>
 
           <div
-            class="relative bg-surface-low rounded-md p-4 flex items-center justify-between gap-3 border border-dashed border-outline-variant"
+            class="bg-surface-container rounded-md p-4 flex items-center justify-between gap-3"
           >
-            <span
-              class="absolute top-2 right-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm bg-surface-highest text-[9px] font-black uppercase tracking-wider text-on-surface-variant"
-            >
-              <Construction size={10} aria-hidden="true" />
-              WIP
-            </span>
-            <div class="min-w-0 pr-8">
+            <div class="min-w-0">
               <span
                 class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/80"
               >
                 Average Score
               </span>
-              <div class="text-2xl font-black text-on-surface-variant/40 mt-1">
-                —.—
-              </div>
-              <p class="text-[11px] text-on-surface-variant/70 mt-0.5">
-                Needs score aggregate API
-              </p>
+              {#if averageScore !== null}
+                <div class="text-2xl font-black text-on-surface mt-1 tabular-nums">
+                  {getFormattedScore(
+                    averageScore,
+                    data.profile?.score_format,
+                  )}
+                  <span class="text-sm text-on-surface-variant/80"
+                    >/{scoreScale}</span
+                  >
+                </div>
+              {:else}
+                <div class="text-2xl font-black text-on-surface-variant/70 mt-1">
+                  —
+                </div>
+              {/if}
             </div>
             <div
-              class="size-10 rounded-md bg-surface-highest flex items-center justify-center text-on-surface-variant/50 shrink-0"
+              class="size-10 rounded-md bg-surface-highest flex items-center justify-center text-primary shrink-0"
               aria-hidden="true"
             >
               <Star size={20} />

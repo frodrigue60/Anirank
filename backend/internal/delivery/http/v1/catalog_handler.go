@@ -420,6 +420,15 @@ func (h *CatalogHandler) UserProfile(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"data": dto.ToUserDTO(user)})
 }
 
+// UserRatingInsights handles GET /api/users/:slug/insights.
+func (h *CatalogHandler) UserRatingInsights(c *fiber.Ctx) error {
+	insights, err := h.usecase.GetUserRatingInsights(c.Context(), c.Params("slug"), 6)
+	if err != nil {
+		return err
+	}
+	return c.JSON(fiber.Map{"data": dto.ToUserRatingInsightsDTO(insights)})
+}
+
 // UserPlaylists handles GET /api/users/:slug/playlists
 func (h *CatalogHandler) UserPlaylists(c *fiber.Ctx) error {
 	limit, offset := parsePagination(c, 24)

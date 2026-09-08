@@ -10,7 +10,11 @@
   import Construction from "lucide-svelte/icons/construction";
   import ChevronRight from "lucide-svelte/icons/chevron-right";
   import { PUBLIC_API_URL } from "$lib/api";
-  import { getSongName, getSongArtistNames } from "$lib/song-utils";
+  import {
+    getSongName,
+    getSongArtistNames,
+    getFormattedScore,
+  } from "$lib/song-utils";
   import OptimizedImage from "$lib/components/OptimizedImage.svelte";
 
   let { data } = $props();
@@ -19,10 +23,28 @@
   const hasFavorites = $derived(
     (data.initialSongs?.length ?? 0) > 0 || (data.artists?.length ?? 0) > 0,
   );
+  const recentRatings = $derived(data.ratingInsights?.recent_ratings ?? []);
+  const scoreDistribution = $derived(
+    data.ratingInsights?.score_distribution ?? [],
+  );
+  const totalRatings = $derived(data.ratingInsights?.total_ratings ?? 0);
+  const scoreScale = $derived(
+    data.profile?.score_format === "POINT_100"
+      ? 100
+      : data.profile?.score_format === "POINT_5"
+        ? 5
+        : 10,
+  );
 
   function renderMarkdown(text: string | null | undefined) {
     if (!text) return "";
     return createTrustedHTML(snarkdown(text));
+  }
+
+  function formatRatedAt(value: string) {
+    return new Intl.DateTimeFormat("en", {
+      dateStyle: "medium",
+    }).format(new Date(value));
   }
 </script>
 
@@ -36,47 +58,68 @@
 <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
   <!-- Left column -->
   <div class="lg:col-span-8 flex flex-col gap-8">
-    <!-- Recent rating activity — WIP -->
-    <section
-      class="relative bg-surface-low rounded-md p-5 sm:p-6 border border-dashed border-outline-variant"
-      aria-label="Recent rating activity, work in progress"
-    >
-      <span
-        class="absolute top-3 right-3 inline-flex items-center gap-1 px-2 py-0.5 rounded-sm bg-surface-highest text-[10px] font-black uppercase tracking-wider text-on-surface-variant"
-      >
-        <Construction size={12} aria-hidden="true" />
-        WIP
-      </span>
-      <div class="flex items-center gap-3 mb-4 pr-16">
+    <!-- Recent rating activity -->
+    <section class="bg-surface-low rounded-md p-5 sm:p-6">
+      <div class="flex items-center gap-3 mb-4">
         <div class="w-1 h-5 rounded-sm bg-primary shrink-0" aria-hidden="true"></div>
         <h2 class="text-lg font-black tracking-tight text-on-surface uppercase">
           Recent Rating Activity
         </h2>
       </div>
-      <p class="text-sm text-on-surface-variant/80 mb-4">
-        Per-user rating feed requires a new API. Placeholder layout below.
-      </p>
-      <div class="flex flex-col gap-3">
-        {#each [1, 2, 3] as _}
-          <div
-            class="bg-surface-container rounded-md p-4 flex items-center gap-4"
-          >
-            <div
-              class="size-14 rounded-md bg-surface-highest shrink-0"
-              aria-hidden="true"
-            ></div>
-            <div class="flex-1 min-w-0 space-y-2">
-              <div class="h-3 w-1/3 rounded-sm bg-surface-highest"></div>
-              <div class="h-4 w-2/3 rounded-sm bg-surface-highest"></div>
-              <div class="h-3 w-1/2 rounded-sm bg-surface-highest"></div>
-            </div>
-            <div
-              class="h-8 w-12 rounded-sm bg-surface-highest shrink-0"
-              aria-hidden="true"
-            ></div>
-          </div>
-        {/each}
-      </div>
+      {#if recentRatings.length > 0}
+        <div class="flex flex-col gap-3">
+          {#each recentRatings as item (item.song.id)}
+            <a
+              href="/animes/{item.song.anime.slug}/{item.song.slug}"
+              class="group bg-surface-container hover:bg-surface-highest rounded-md p-3 sm:p-4 flex items-center gap-4 transition-colors"
+              title="View theme: {getSongName(item.song)}"
+            >
+              <div
+                class="size-14 sm:size-16 rounded-md overflow-hidden bg-surface-highest shrink-0"
+              >
+                <OptimizedImage
+                  src={item.song.anime?.cover_url}
+                  alt=""
+                  class="w-full h-full object-cover"
+                  sizes="64px"
+                />
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-xs text-on-surface-variant/80 truncate">
+                  {item.song.anime?.title}
+                </p>
+                <h3
+                  class="text-base font-bold text-on-surface tracking-tight truncate mt-0.5 group-hover:text-primary transition-colors"
+                >
+                  {getSongName(item.song)}
+                </h3>
+                <p class="text-xs text-on-surface-variant/80 truncate mt-0.5">
+                  {getSongArtistNames(item.song.artists)} · {formatRatedAt(
+                    item.rated_at,
+                  )}
+                </p>
+              </div>
+              <div
+                class="min-w-16 rounded-md bg-surface-highest px-2 py-2 text-center shrink-0"
+              >
+                <span class="block text-lg font-black text-primary tabular-nums">
+                  {getFormattedScore(
+                    item.rating,
+                    data.profile?.score_format,
+                  )}
+                </span>
+                <span class="block text-[10px] font-bold text-on-surface-variant/80">
+                  /{scoreScale}
+                </span>
+              </div>
+            </a>
+          {/each}
+        </div>
+      {:else}
+        <p class="py-8 text-center text-sm text-on-surface-variant">
+          This user has not rated any themes yet.
+        </p>
+      {/if}
     </section>
 
     <!-- Favorite themes (live data) -->
@@ -237,52 +280,44 @@
       </div>
     </section>
 
-    <!-- Score distribution — WIP -->
-    <section
-      class="relative bg-surface-low rounded-md p-5 border border-dashed border-outline-variant"
-      aria-label="Score distribution, work in progress"
-    >
-      <span
-        class="absolute top-3 right-3 inline-flex items-center gap-1 px-2 py-0.5 rounded-sm bg-surface-highest text-[10px] font-black uppercase tracking-wider text-on-surface-variant"
-      >
-        <Construction size={12} aria-hidden="true" />
-        WIP
-      </span>
+    <!-- Score distribution -->
+    <section class="bg-surface-low rounded-md p-5">
       <h3
-        class="text-sm font-bold uppercase tracking-tight text-on-surface pr-14"
+        class="text-sm font-bold uppercase tracking-tight text-on-surface"
       >
         Score Distribution
       </h3>
-      <p class="text-xs text-on-surface-variant/80 mt-1 mb-4">
-        Needs per-user histogram endpoint
-      </p>
-      <div class="flex flex-col gap-2.5">
-        {#each [
-          { label: "90–100", width: "42%" },
-          { label: "75–89", width: "36%" },
-          { label: "50–74", width: "17%" },
-          { label: "<50", width: "5%" },
-        ] as row}
-          <div class="flex items-center gap-2 text-[11px]">
-            <span
-              class="w-14 font-medium text-on-surface-variant/70 shrink-0"
-            >
-              {row.label}
-            </span>
+      {#if totalRatings > 0 && scoreDistribution.length > 0}
+        <div class="flex flex-col gap-2.5 mt-4">
+          {#each scoreDistribution as row (row.label)}
             <div
-              class="flex-1 h-2.5 rounded-sm bg-surface-highest overflow-hidden"
+              class="flex items-center gap-2 text-[11px]"
+              aria-label="{row.label}: {row.count} ratings"
             >
+              <span
+                class="w-14 font-medium text-on-surface-variant shrink-0"
+              >
+                {row.label}
+              </span>
               <div
-                class="h-full rounded-sm bg-outline-variant/60"
-                style="width: {row.width}"
-              ></div>
+                class="flex-1 h-2.5 rounded-sm bg-surface-highest overflow-hidden"
+              >
+                <div
+                  class="h-full rounded-sm bg-primary"
+                  style="width: {row.percentage}%"
+                ></div>
+              </div>
+              <span class="w-8 text-right font-mono text-on-surface-variant">
+                {row.count}
+              </span>
             </div>
-            <span class="w-6 text-right font-mono text-on-surface-variant/40"
-              >—</span
-            >
-          </div>
-        {/each}
-      </div>
+          {/each}
+        </div>
+      {:else}
+        <p class="mt-4 text-xs text-on-surface-variant">
+          No rating data available.
+        </p>
+      {/if}
     </section>
 
     <!-- Bio -->
@@ -330,11 +365,11 @@
       </section>
     {/if}
 
-    {#if !hasFavorites && !data.profile.about}
+    {#if !hasFavorites && !data.profile.about && recentRatings.length === 0}
       <EmptyState
         title="Quiet Profile"
         message="This user hasn't added favorites or a bio yet."
-        icon={History}
+        icon={History as any}
       />
     {/if}
   </aside>

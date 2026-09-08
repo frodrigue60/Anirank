@@ -689,6 +689,52 @@ func (u *CatalogUsecase) GetUserBySlug(ctx context.Context, requestingUserID *ui
 	return user, nil
 }
 
+func (u *CatalogUsecase) GetUserRatingInsights(ctx context.Context, slug string, recentLimit int) (*domain.UserRatingInsights, error) {
+	user, err := u.userRepo.GetBySlug(ctx, slug)
+	if err != nil {
+		return nil, domain.NewAppError(404, "User not found", err)
+	}
+
+	insights, err := u.interactionRepo.GetUserRatingInsights(ctx, user.ID, recentLimit)
+	if err != nil {
+		return nil, domain.NewAppError(500, "Could not load user rating insights", err)
+	}
+	if len(insights.RecentRatings) == 0 {
+		return insights, nil
+	}
+
+	songIDs := make([]uint64, 0, len(insights.RecentRatings))
+	for _, item := range insights.RecentRatings {
+		songIDs = append(songIDs, item.SongID)
+	}
+
+	songs, err := u.songRepo.GetMany(ctx, songIDs)
+	if err != nil {
+		return nil, domain.NewAppError(500, "Could not load recently rated songs", err)
+	}
+	if err := u.enrichSongsBulk(ctx, nil, songs); err != nil {
+		return nil, domain.NewAppError(500, "Could not enrich recently rated songs", err)
+	}
+
+	songsByID := make(map[uint64]*domain.Song, len(songs))
+	for i := range songs {
+		songsByID[songs[i].ID] = &songs[i]
+	}
+
+	hydrated := make([]domain.UserRecentRating, 0, len(insights.RecentRatings))
+	for _, item := range insights.RecentRatings {
+		song, ok := songsByID[item.SongID]
+		if !ok {
+			continue
+		}
+		item.Song = song
+		hydrated = append(hydrated, item)
+	}
+	insights.RecentRatings = hydrated
+
+	return insights, nil
+}
+
 func (u *CatalogUsecase) GetUserPlaylists(ctx context.Context, requestingUserID *uint64, slug string, limit, offset int) ([]domain.Playlist, int, []domain.GeneratedPlaylistDescriptor, error) {
 	user, err := u.userRepo.GetBySlug(ctx, slug)
 	if err != nil {

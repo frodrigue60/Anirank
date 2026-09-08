@@ -1097,3 +1097,44 @@ func ToNotificationDTO(n domain.Notification) NotificationDTO {
 		CreatedAt:   n.CreatedAt,
 	}
 }
+
+func ToUserRatingInsightsDTO(insights *domain.UserRatingInsights) UserRatingInsightsDTO {
+	if insights == nil {
+		return UserRatingInsightsDTO{
+			Distribution:  []UserScoreBucketDTO{},
+			RecentRatings: []UserRecentRatingDTO{},
+		}
+	}
+
+	distribution := make([]UserScoreBucketDTO, 0, len(insights.Distribution))
+	for _, bucket := range insights.Distribution {
+		percentage := 0.0
+		if insights.TotalRatings > 0 {
+			percentage = float64(bucket.Count) * 100 / float64(insights.TotalRatings)
+		}
+		distribution = append(distribution, UserScoreBucketDTO{
+			Label:      bucket.Label,
+			Count:      bucket.Count,
+			Percentage: percentage,
+		})
+	}
+
+	recentRatings := make([]UserRecentRatingDTO, 0, len(insights.RecentRatings))
+	for _, item := range insights.RecentRatings {
+		if item.Song == nil {
+			continue
+		}
+		recentRatings = append(recentRatings, UserRecentRatingDTO{
+			Rating:  item.Rating,
+			RatedAt: item.RatedAt,
+			Song:    ToSongSlimDTO(item.Song),
+		})
+	}
+
+	return UserRatingInsightsDTO{
+		AverageScore:  insights.AverageScore,
+		TotalRatings:  insights.TotalRatings,
+		Distribution:  distribution,
+		RecentRatings: recentRatings,
+	}
+}

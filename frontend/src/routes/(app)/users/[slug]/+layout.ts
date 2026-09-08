@@ -14,10 +14,11 @@ export const load = async ({ params }: { params: { slug: string } }) => {
         profile: null,
         playlistsCount: 0,
         favoritesCount: 0,
+        ratingInsights: null,
       };
     }
 
-    const [playlistsRes, favoritesRes] = await Promise.all([
+    const [playlistsRes, favoritesRes, ratingInsightsRes] = await Promise.all([
       api
         .get(`/users/${slug}/playlists`)
         .then((res) => res.data)
@@ -27,6 +28,10 @@ export const load = async ({ params }: { params: { slug: string } }) => {
           user_uuid: user.uuid,
           page: 1,
         })
+        .then((res) => res.data)
+        .catch(() => null),
+      api
+        .get(`/users/${slug}/insights`)
         .then((res) => res.data)
         .catch(() => null),
     ]);
@@ -42,6 +47,7 @@ export const load = async ({ params }: { params: { slug: string } }) => {
       profile: user,
       playlistsCount,
       favoritesCount,
+      ratingInsights: ratingInsightsRes?.data ?? null,
     };
   } catch (e: any) {
     console.error("Failed to load user profile layout", e);
@@ -49,6 +55,7 @@ export const load = async ({ params }: { params: { slug: string } }) => {
       profile: null,
       playlistsCount: 0,
       favoritesCount: 0,
+      ratingInsights: null,
     };
   }
 };

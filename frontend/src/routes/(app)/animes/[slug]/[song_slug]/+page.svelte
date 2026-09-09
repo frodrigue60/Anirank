@@ -98,6 +98,14 @@
   let currentSong: Song = $state(data.song);
   // svelte-ignore state_referenced_locally
   let relatedSongs: Song[] = $state(data.related);
+  let reactionTotal = $derived(
+    (currentSong.likes_count || 0) + (currentSong.dislikes_count || 0),
+  );
+  let likeRatio = $derived(
+    reactionTotal > 0
+      ? ((currentSong.likes_count || 0) / reactionTotal) * 100
+      : 0,
+  );
 
   let selectedVariantIndex = $state(0);
   let selectedVariant = $derived(currentSong.variants?.[selectedVariantIndex]);
@@ -285,6 +293,7 @@
   let editingCommentUuid = $state<string | null>(null);
   let editText = $state("");
   let openDropdownUuid = $state<string | null>(null);
+  let songActionsOpen = $state(false);
 
   function openCommentReportModal(uuid: string) {
     if (!authState.isAuthenticated) {
@@ -1042,7 +1051,7 @@
         </div>
         <!-- Meta Info Bar -->
         <div
-          class="bg-surface-container rounded-md p-3 md:p-4 border border-outline-variant/10 space-y-3"
+          class="bg-surface-container rounded-md p-4 md:p-4 border border-outline-variant/10 space-y-3"
         >
           <!-- Row 1: episode context + primary vote CTA -->
           <div
@@ -1065,15 +1074,15 @@
               </span>
             </span>
             <button
-              class="inline-flex items-center justify-center gap-1.5 min-h-[44px] px-2 py-1 text-xs font-medium shrink-0 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary {currentSong.user_rating !=
+              class="inline-flex items-center justify-center gap-1.5 min-h-[44px] ps-2 py-1 text-xs font-medium shrink-0 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary {currentSong.user_rating !=
               null && currentSong.user_rating !== undefined
                 ? 'text-yellow-400'
-                : 'text-on-surface-variant/70 hover:text-yellow-400'}"
+                : 'text-primary hover:text-yellow-400'}"
               onclick={handleRatingClick}
               title="Rate this theme"
               aria-label="Rate this theme"
             >
-              Vote
+              Vote now
               <Star
                 size={15}
                 class={currentSong.user_rating != null &&
@@ -1084,152 +1093,163 @@
             </button>
           </div>
 
-          <!-- Row 2: stats | actions -->
-          <div
-            class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
-          >
-            <div
-              class="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs md:text-sm text-on-surface-variant/70"
-            >
+          <!-- Row 2: engagement and secondary actions -->
+          <div class="flex w-full items-end justify-between gap-3">
+            <div class="flex min-w-0 flex-1 flex-col items-start gap-2.5">
               <span
-                class="inline-flex items-center gap-1.5 font-medium whitespace-nowrap"
+                class="inline-flex items-center gap-1.5 text-xs md:text-sm font-medium text-on-surface-variant/80 whitespace-nowrap"
               >
                 <Eye size={15} class="shrink-0" />
                 {currentSong.views.toLocaleString()} views
               </span>
-              <span
-                class="inline-flex items-center gap-1 font-medium whitespace-nowrap"
-                aria-label="{currentSong.likes_count || 0} likes"
+
+              <div
+                class="grid w-full grid-cols-4 overflow-hidden sm:inline-grid sm:w-auto"
+                aria-label="Theme reactions, average score and favorite"
               >
-                <ThumbsUp size={14} class="shrink-0 text-on-surface-variant/70" />
-                {currentSong.likes_count || 0}
-              </span>
-              <span
-                class="inline-flex items-center gap-1 font-medium whitespace-nowrap"
-                aria-label="{currentSong.dislikes_count || 0} dislikes"
-              >
-                <ThumbsDown
-                  size={14}
-                  class="shrink-0 text-on-surface-variant/70"
-                />
-                {currentSong.dislikes_count || 0}
-              </span>
-              <span
-                class="inline-flex items-center gap-1 font-bold text-yellow-400"
-                aria-label="Average rating"
-              >
-                <Star size={14} class="fill-yellow-400 text-yellow-400" />
-                {getFormattedScore(
-                  currentSong.average_rating,
-                  authState.user?.score_format,
-                )}
-              </span>
+                <!-- Like button -->
+                <button
+                  class="inline-flex min-h-11 items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold transition-colors {currentSong.is_liked
+                    ? 'text-primary'
+                    : 'text-on-surface-variant/70 hover:text-primary'}"
+                  onclick={toggleLike}
+                  title={currentSong.is_liked ? "Remove like" : "Like this theme"}
+                  aria-label="{currentSong.is_liked ? 'Unlike' : 'Like'} theme, {currentSong.likes_count || 0} likes"
+                >
+                  <ThumbsUp
+                    size={15}
+                    class={currentSong.is_liked ? "fill-current" : ""}
+                  />
+                  <span class="tabular-nums">{currentSong.likes_count || 0}</span>
+                </button>
+                <!-- Dislike button -->
+                <button
+                  class="inline-flex min-h-11 items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold transition-colors {currentSong.is_disliked
+                    ? 'text-red-500'
+                    : 'text-on-surface-variant/70 hover:text-red-500'}"
+                  onclick={toggleDislike}
+                  title={currentSong.is_disliked
+                    ? "Remove dislike"
+                    : "Dislike this theme"}
+                  aria-label="{currentSong.is_disliked
+                    ? 'Undislike'
+                    : 'Dislike'} theme, {currentSong.dislikes_count || 0} dislikes"
+                >
+                  <ThumbsDown
+                    size={15}
+                    class={currentSong.is_disliked ? "fill-current" : ""}
+                  />
+                  <span class="tabular-nums">{currentSong.dislikes_count || 0}</span>
+                </button>
+                <!-- Average rating -->
+                <span
+                  class="inline-flex min-h-11 items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold text-on-surface-variant/70"
+                  aria-label="Average rating"
+                >
+                  <Star size={14} class="fill-current" />
+                  <span class="tabular-nums">
+                    {getFormattedScore(
+                      currentSong.average_rating,
+                      authState.user?.score_format,
+                    )}
+                  </span>
+                </span>
+                <!-- Favorite button -->
+                <button
+                  class="inline-flex min-h-11 items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors {currentSong.is_favorited
+                    ? 'text-pink-500'
+                    : 'text-on-surface-variant/70 hover:bg-surface-container hover:text-on-surface'}"
+                  onclick={toggleFavorite}
+                  title={currentSong.is_favorited
+                    ? "Remove from favorites"
+                    : "Add to favorites"}
+                  aria-label={currentSong.is_favorited
+                    ? "Remove from favorites"
+                    : "Add to favorites"}
+                >
+                  <Heart
+                    size={15}
+                    class={currentSong.is_favorited ? "fill-pink-500" : ""}
+                  />
+                  <span>{currentSong.is_favorited ? "Saved" : "Save"}</span>
+                </button>
+                <!-- Reaction meter -->
+                <div
+                  class="col-span-2 flex h-1.5 overflow-hidden bg-outline-variant"
+                  role="meter"
+                  aria-label="{currentSong.likes_count || 0} likes versus {currentSong.dislikes_count || 0} dislikes"
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                  aria-valuenow={Math.round(likeRatio)}
+                >
+                  {#if reactionTotal > 0}
+                    <div
+                      class="h-full bg-primary transition-[width] duration-500 ease-out"
+                      style="width: {likeRatio}%"
+                      aria-hidden="true"
+                    ></div>
+                    <div
+                      class="h-full flex-1 bg-red-500 transition-[width] duration-500 ease-out"
+                      aria-hidden="true"
+                    ></div>
+                  {/if}
+                </div>
+              </div>
             </div>
 
-            <span
-              class="hidden sm:block h-5 w-px bg-outline-variant/20 shrink-0"
-              aria-hidden="true"
-            ></span>
+            <div class="relative shrink-0">
+              <button
+                class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md text-on-surface-variant/70 transition-colors hover:bg-surface-highest hover:text-on-surface"
+                onclick={(event) => {
+                  event.stopPropagation();
+                  songActionsOpen = !songActionsOpen;
+                }}
+                title="More theme actions"
+                aria-label="More theme actions"
+                aria-haspopup="menu"
+                aria-expanded={songActionsOpen}
+              >
+                <MoreVertical size={18} />
+              </button>
 
-            <div
-              class="flex flex-wrap items-center gap-x-4 gap-y-1 self-start sm:self-auto sm:ml-auto"
-            >
-              <button
-                class="inline-flex items-center gap-1.5 min-h-[44px] py-1 text-xs font-medium transition-colors {currentSong.is_favorited
-                  ? 'text-pink-500'
-                  : 'text-on-surface-variant/70 hover:text-on-surface'}"
-                onclick={toggleFavorite}
-                title={currentSong.is_favorited
-                  ? "Remove from favorites"
-                  : "Add to favorites"}
-                aria-label={currentSong.is_favorited
-                  ? "Remove from favorites"
-                  : "Add to favorites"}
-              >
-                <Heart
-                  size={15}
-                  class={currentSong.is_favorited ? "fill-pink-500" : ""}
-                />
-                {currentSong.is_favorited ? "Saved" : "Save"}
-              </button>
-              <button
-                class="inline-flex items-center gap-1.5 min-h-[44px] py-1 text-xs font-medium transition-colors {currentSong.is_liked
-                  ? 'text-primary'
-                  : 'text-on-surface-variant/70 hover:text-on-surface'}"
-                onclick={toggleLike}
-                title={currentSong.is_liked ? "Remove like" : "Like this theme"}
-                aria-label={currentSong.is_liked ? "Unlike theme" : "Like theme"}
-              >
-                <ThumbsUp
-                  size={15}
-                  class={currentSong.is_liked ? "fill-primary" : ""}
-                />
-                Like
-              </button>
-              <button
-                class="inline-flex items-center gap-1.5 min-h-[44px] py-1 text-xs font-medium transition-colors {currentSong.is_disliked
-                  ? 'text-red-500'
-                  : 'text-on-surface-variant/70 hover:text-red-400'}"
-                onclick={toggleDislike}
-                title={currentSong.is_disliked
-                  ? "Remove dislike"
-                  : "Dislike this theme"}
-                aria-label={currentSong.is_disliked
-                  ? "Undislike theme"
-                  : "Dislike theme"}
-              >
-                <ThumbsDown
-                  size={15}
-                  class={currentSong.is_disliked ? "fill-red-500" : ""}
-                />
-                Dislike
-              </button>
-              <button
-                class="inline-flex items-center gap-1.5 min-h-[44px] py-1 text-xs font-medium text-on-surface-variant/70 hover:text-on-surface transition-colors"
-                onclick={handlePlaylistClick}
-                title="Add to Playlist"
-                aria-label="Add this theme to a playlist"
-              >
-                <ListPlus size={15} />
-                Add to list
-              </button>
-              <button
-                class="inline-flex items-center gap-1.5 min-h-[44px] py-1 text-xs font-medium transition-colors {currentSong.is_reported
-                  ? 'text-red-500/70 cursor-not-allowed'
-                  : 'text-on-surface-variant/70 hover:text-red-400'}"
-                onclick={reportSong}
-                disabled={currentSong.is_reported}
-                title={currentSong.is_reported
-                  ? "Already reported"
-                  : "Report Song"}
-                aria-label={currentSong.is_reported
-                  ? "Already reported"
-                  : "Report this theme"}
-              >
-                <Flag
-                  size={15}
-                  class={currentSong.is_reported ? "fill-red-500/70" : ""}
-                />
-                Report
-              </button>
+              {#if songActionsOpen}
+                <div
+                  class="absolute right-0 top-full z-20 mt-2 w-44 overflow-hidden rounded-md bg-surface-highest py-1"
+                  role="menu"
+                  aria-label="Theme actions"
+                >
+                  <button
+                    class="flex min-h-11 w-full items-center gap-2 px-4 py-2 text-left text-xs font-medium text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
+                    onclick={() => {
+                      songActionsOpen = false;
+                      handlePlaylistClick();
+                    }}
+                    role="menuitem"
+                  >
+                    <ListPlus size={15} />
+                    Add to playlist
+                  </button>
+                  <button
+                    class="flex min-h-11 w-full items-center gap-2 px-4 py-2 text-left text-xs font-medium transition-colors {currentSong.is_reported
+                      ? 'cursor-not-allowed text-red-500/70'
+                      : 'text-on-surface-variant hover:bg-surface-container hover:text-red-500'}"
+                    onclick={() => {
+                      songActionsOpen = false;
+                      reportSong();
+                    }}
+                    disabled={currentSong.is_reported}
+                    role="menuitem"
+                  >
+                    <Flag
+                      size={15}
+                      class={currentSong.is_reported ? "fill-red-500/70" : ""}
+                    />
+                    {currentSong.is_reported ? "Already reported" : "Report theme"}
+                  </button>
+                </div>
+              {/if}
             </div>
           </div>
-
-          {#if (currentSong.likes_count || 0) + (currentSong.dislikes_count || 0) > 0}
-            <div
-              class="h-1 w-full overflow-hidden rounded-full bg-primary/20"
-              role="presentation"
-              aria-hidden="true"
-            >
-              <div
-                class="h-full bg-primary transition-all duration-500 ease-out"
-                style="width: {((currentSong.likes_count || 0) /
-                  ((currentSong.likes_count || 0) +
-                    (currentSong.dislikes_count || 0))) *
-                  100}%"
-              ></div>
-            </div>
-          {/if}
         </div>
       </div>
 
@@ -2001,4 +2021,9 @@
   />
 {/if}
 
-<svelte:window onclick={() => (openDropdownUuid = null)} />
+<svelte:window
+  onclick={() => {
+    openDropdownUuid = null;
+    songActionsOpen = false;
+  }}
+/>
